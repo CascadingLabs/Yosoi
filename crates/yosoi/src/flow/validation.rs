@@ -224,7 +224,12 @@ pub(super) fn validate_expectation(
             actual: u128::MAX,
             maximum: MAX_EXPECTATIONS,
         })?;
-    if *count > MAX_EXPECTATIONS as u128 {
+    let maximum_count =
+        u128::try_from(MAX_EXPECTATIONS).map_err(|_| FlowValidationError::TooManyExpectations {
+            actual: u128::MAX,
+            maximum: MAX_EXPECTATIONS,
+        })?;
+    if *count > maximum_count {
         return Err(FlowValidationError::TooManyExpectations {
             actual: *count,
             maximum: MAX_EXPECTATIONS,
@@ -233,10 +238,9 @@ pub(super) fn validate_expectation(
 
     match expectation {
         Expectation::Condition { condition } => match condition {
-            Condition::Exists { selector } | Condition::Visible { selector } => {
-                validate_selector(selector, step_index, limits.max_selector_bytes)?;
-            }
-            Condition::CountAtLeast { selector, .. } => {
+            Condition::Exists { selector }
+            | Condition::Visible { selector }
+            | Condition::CountAtLeast { selector, .. } => {
                 validate_selector(selector, step_index, limits.max_selector_bytes)?;
             }
         },
@@ -316,7 +320,12 @@ pub(super) fn validate_expectation(
             }
             if expectations.len() > MAX_EXPECTATIONS {
                 return Err(FlowValidationError::TooManyExpectations {
-                    actual: expectations.len() as u128,
+                    actual: u128::try_from(expectations.len()).map_err(|_| {
+                        FlowValidationError::TooManyExpectations {
+                            actual: u128::MAX,
+                            maximum: MAX_EXPECTATIONS,
+                        }
+                    })?,
                     maximum: MAX_EXPECTATIONS,
                 });
             }
@@ -353,20 +362,17 @@ fn validate_json_pointer(pointer: &str, step_index: u64) -> Result<(), FlowValid
             reason: "JSON match path must be an RFC 6901 JSON Pointer".into(),
         });
     }
-    let bytes = pointer.as_bytes();
-    let mut index = 0_usize;
-    while index < bytes.len() {
-        if bytes[index] == b'~' {
-            let escaped = bytes.get(index + 1).copied();
+    let mut bytes = pointer.bytes();
+    while let Some(byte) = bytes.next() {
+        if byte == b'~' {
+            let escaped = bytes.next();
             if !matches!(escaped, Some(b'0' | b'1')) {
                 return Err(FlowValidationError::InvalidExpectation {
                     step_index,
                     reason: "JSON Pointer contains an invalid escape".into(),
                 });
             }
-            index += 1;
         }
-        index += 1;
     }
     Ok(())
 }

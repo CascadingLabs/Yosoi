@@ -12,6 +12,8 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+use yosoi::automation_record as yosoi_automation_record;
+use yosoi::flow as yosoi_flow;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -184,10 +186,12 @@ fn enabled() -> bool {
 }
 
 fn browser_policy() -> Result<Policy, Box<dyn Error>> {
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let mut policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     policy.request.maximum_elapsed = MaximumElapsed::try_from(10_000_000)?;
     Ok(policy)
 }
@@ -208,6 +212,11 @@ async fn close(session: &session::Session) -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn continuation_respects_nearest_scope_and_cancellation_authority()
 -> Result<(), Box<dyn Error>> {
     if !enabled() {
@@ -242,11 +251,11 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
     assert_eq!(continued.steps.len(), 2);
     assert_eq!(
         continued.steps[0].failure,
-        Some(yosoi::flow::FlowFailureCause::Rejected)
+        Some(yosoi_flow::FlowFailureCause::Rejected)
     );
     assert_eq!(
         continued.steps[0].receipt.status,
-        yosoi::automation_record::OperationStatus::Rejected
+        yosoi_automation_record::OperationStatus::Rejected
     );
     assert_eq!(continued.terminal, FlowTermination::CompletedWithIssues);
     assert!(continued.require_completed().is_err());
@@ -287,15 +296,15 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
     assert_eq!(local_cancelled.steps.len(), 2);
     assert_eq!(
         local_cancelled.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Step)
+        Some(yosoi_flow::FlowCancellationCause::Step)
     );
     assert_eq!(
         local_cancelled.steps[0].receipt.status,
-        yosoi::automation_record::OperationStatus::Rejected
+        yosoi_automation_record::OperationStatus::Rejected
     );
     assert_eq!(
         local_cancelled.steps[1].receipt.status,
-        yosoi::automation_record::OperationStatus::Observed
+        yosoi_automation_record::OperationStatus::Observed
     );
     assert!(!fixture.paths()?.iter().any(|path| path == "/drop"));
     assert!(local_cancelled.require_completed().is_err());
@@ -316,7 +325,7 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
     assert_eq!(nested_cancelled.steps[0].flow_path, [0, 0]);
     assert_eq!(
         nested_cancelled.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Step)
+        Some(yosoi_flow::FlowCancellationCause::Step)
     );
     assert_eq!(nested_cancelled.steps[1].flow_path, [1]);
     assert!(nested_cancelled.require_completed().is_err());
@@ -340,7 +349,7 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
     assert_eq!(root_cancelled.steps.len(), 1);
     assert_eq!(
         root_cancelled.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Invocation)
+        Some(yosoi_flow::FlowCancellationCause::Invocation)
     );
     assert_ne!(root_cancelled.terminal, FlowTermination::Completed);
     assert_eq!(
@@ -348,7 +357,7 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
             .stop_reason
             .as_ref()
             .map(|reason| reason.cause),
-        Some(yosoi::flow::FlowStopCause::Cancellation)
+        Some(yosoi_flow::FlowStopCause::Cancellation)
     );
     assert_eq!(root_cancelled.skipped_steps.len(), 1);
     assert_eq!(root_cancelled.skipped_steps[0].flow_path, [1]);
@@ -393,18 +402,18 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
     assert_eq!(managed.steps.len(), 3);
     assert_eq!(
         managed.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Step)
+        Some(yosoi_flow::FlowCancellationCause::Step)
     );
     assert_eq!(
         managed.steps[2].receipt.status,
-        yosoi::automation_record::OperationStatus::Observed
+        yosoi_automation_record::OperationStatus::Observed
     );
     assert_eq!(managed.cleanup.len(), 2);
     assert!(
         managed
             .cleanup
             .iter()
-            .all(|receipt| receipt.status == yosoi::automation_record::OperationStatus::Observed)
+            .all(|receipt| receipt.status == yosoi_automation_record::OperationStatus::Observed)
     );
     assert!(!acquisition_root_cancel.is_cancelled());
     assert!(managed.require_completed().is_err());
@@ -415,6 +424,11 @@ async fn continuation_respects_nearest_scope_and_cancellation_authority()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn unknown_dispatch_stops_safely_under_continue_and_fences_the_borrowed_tab()
 -> Result<(), Box<dyn Error>> {
     if !enabled() {
@@ -469,26 +483,26 @@ async fn unknown_dispatch_stops_safely_under_continue_and_fences_the_borrowed_ta
         .map_err(|_| io::Error::other("unknown navigation did not stop"))??;
 
     drop(invocation);
-    drop(bound);
+
     fixture.release_held_response();
     assert_eq!(outcome.continuation_defaults, policy.flow);
     assert_eq!(outcome.terminal, FlowTermination::Unknown);
     assert_eq!(outcome.steps.len(), 1);
     assert_eq!(
         outcome.steps[0].receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown
+        yosoi_automation_record::OperationStatus::Unknown
     );
     assert_eq!(
         outcome.steps[0].failure,
-        Some(yosoi::flow::FlowFailureCause::UnknownOutcome)
+        Some(yosoi_flow::FlowFailureCause::UnknownOutcome)
     );
     assert_eq!(
         outcome.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Step)
+        Some(yosoi_flow::FlowCancellationCause::Step)
     );
     assert_eq!(
         outcome.stop_reason.as_ref().map(|reason| reason.cause),
-        Some(yosoi::flow::FlowStopCause::UnknownOutcome)
+        Some(yosoi_flow::FlowStopCause::UnknownOutcome)
     );
     assert_eq!(
         outcome
@@ -512,6 +526,11 @@ async fn unknown_dispatch_stops_safely_under_continue_and_fences_the_borrowed_ta
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn owning_session_cancel_hard_stops_continue_flow_and_records_unknown_fencing()
 -> Result<(), Box<dyn Error>> {
     if !enabled() {
@@ -567,32 +586,35 @@ async fn owning_session_cancel_hard_stops_continue_flow_and_records_unknown_fenc
         .map_err(|_| io::Error::other("Session cancellation did not stop the Flow"))??;
 
     drop(invocation);
-    drop(bound);
+
     fixture.release_held_response();
     assert_eq!(outcome.continuation_defaults, policy.flow);
     assert_eq!(outcome.terminal, FlowTermination::Unknown);
     assert_eq!(outcome.steps.len(), 1);
     assert_eq!(
         outcome.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Session)
+        Some(yosoi_flow::FlowCancellationCause::Session)
     );
     assert_eq!(
         outcome.steps[0].failure,
-        Some(yosoi::flow::FlowFailureCause::UnknownOutcome)
+        Some(yosoi_flow::FlowFailureCause::UnknownOutcome)
     );
     assert_eq!(
         outcome.steps[0].receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown
+        yosoi_automation_record::OperationStatus::Unknown
     );
     assert_eq!(
         outcome.stop_reason.as_ref().map(|reason| reason.cause),
-        Some(yosoi::flow::FlowStopCause::UnknownOutcome)
+        Some(yosoi_flow::FlowStopCause::UnknownOutcome)
     );
     assert_eq!(outcome.skipped_steps.len(), 1);
     assert_eq!(outcome.skipped_steps[0].flow_path, [1]);
     assert_eq!(outcome.skipped_steps[0].scope, StopScope::Invocation);
     // The caller owns this borrowed Work's release and Session close.
-    assert!(outcome.cleanup.is_empty());
+    assert_eq!(
+        outcome.cleanup,
+        Vec::<yosoi_automation_record::OperationReceipt>::new()
+    );
 
     assert!(work.navigate(&fixture.url("/write")).await.is_err());
     work.release().await?;

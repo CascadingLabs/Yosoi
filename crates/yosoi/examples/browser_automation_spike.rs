@@ -5,6 +5,7 @@
 //! Replay only archived evidence, without starting the local server or a browser:
 //! `cargo run -p yosoi --features browser --example browser_automation_spike -- --replay <output-dir>`
 
+use std::iter as std_iter;
 use std::{
     env,
     error::Error,
@@ -14,6 +15,11 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use tokio::sync as tokio_sync;
+use tokio::time as tokio_time;
+use yosoi::automation_record as yosoi_automation_record;
+use yosoi::flow as yosoi_flow;
+use yosoi::policy as yosoi_policy;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -23,6 +29,7 @@ use tokio::{
 };
 use yosoi::{
     Archive, action,
+    automation_record::Observation,
     automation_record::{
         AutomationContext, AutomationRecord, AutomationRecordRef, OperationReceipt, OperationStatus,
     },
@@ -32,9 +39,10 @@ use yosoi::{
     policy::{Acquisition, BrowserMode, DocumentRequest, Page, Policy},
     request::{self, AttemptState},
     session::{self, SessionError, SessionPolicy},
-    view::{View, ViewError},
+    view::{View, ViewCursor, ViewError},
 };
 
+#[cfg(not(test))]
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut arguments = env::args_os().skip(1);
@@ -64,154 +72,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(crate) async fn run_spike(url: &str, output_dir: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn run_spike(url: &str, output_dir: &Path) -> Result<(), Box<dyn Error>> {
     fs::create_dir_all(output_dir)?;
     let archive_root = output_dir.join("archive");
     let browser_policy = browser_policy()?;
     let effective_policy_identity = effective_policy_identity(&browser_policy)?;
     let flow_session_policy = SessionPolicy::default();
 
-    // Ordinary Requests still follow the caller's explicit browser acquisition policy.
-    let browser_response = request::new(url.to_owned())
-        .bind(&browser_policy)
-        .send()
-        .await?;
-    if !has_completed_browser_document(&browser_response) {
-        return Err(io::Error::other(
-            "simple Browser Request did not produce a rendered-DOM Document",
-        )
-        .into());
-    }
-    println!("simple Browser Request: Browser attempt and rendered-DOM Document completed");
+    let session_operations = retained_request_evidence(url, &browser_policy).await?;
 
-    // Subscribe both watchers before navigation and two Work-bound Requests.
-    let session = session::new()
-        .bind(&browser_policy)
-        .configure(SessionPolicy::default())
-        .acquire()
-        .await?;
-    let mut watcher_one = session.watch();
-    let mut watcher_two = session.watch();
-    let work = session.work().await?;
-    let navigation = work.navigate(url).await?;
-    let first_navigation_event = watcher_one.next().await?;
-    let second_navigation_event = watcher_two.next().await?;
-    require_same_event(&navigation, &first_navigation_event)?;
-    require_same_event(&navigation, &second_navigation_event)?;
-
-    let first_work_response = request::new(url.to_owned()).with_work(&work).send().await?;
-    if first_work_response.termination() != yosoi::ResponseTermination::Completed {
-        return Err(io::Error::other("first Work-bound Request did not complete").into());
-    }
-    if !has_completed_browser_document(&first_work_response) {
-        return Err(io::Error::other(
-            "first Work-bound Request did not produce a rendered-DOM Document",
-        )
-        .into());
-    }
-    let first_request_event = watcher_one.next().await?;
-    let first_request_event_copy = watcher_two.next().await?;
-    require_same_event(&first_request_event, &first_request_event_copy)?;
-    require_request_event_for_response(&first_request_event, &first_work_response)?;
-
-    let drift_request_url = format!("{url}?variant=drift");
-    let second_work_response = request::new(drift_request_url)
-        .with_work(&work)
-        .send()
-        .await?;
-    if second_work_response.termination() != yosoi::ResponseTermination::Completed {
-        return Err(io::Error::other("second Work-bound Request did not complete").into());
-    }
-    if !has_completed_browser_document(&second_work_response) {
-        return Err(io::Error::other(
-            "second Work-bound Request did not produce a rendered-DOM Document",
-        )
-        .into());
-    }
-    let second_request_event = watcher_one.next().await?;
-    let second_request_event_copy = watcher_two.next().await?;
-    require_same_event(&second_request_event, &second_request_event_copy)?;
-    require_request_event_for_response(&second_request_event, &second_work_response)?;
-    if first_request_event.id == second_request_event.id
-        || first_work_response.request_id() == second_work_response.request_id()
-    {
-        return Err(io::Error::other("two Work-bound Requests reused an identity").into());
-    }
-
-    let session_operations = vec![
-        (*first_navigation_event).clone(),
-        (*first_request_event).clone(),
-        (*second_request_event).clone(),
-    ];
-    match work.evaluate("40 + 2").await {
-        Err(SessionError::Denied) => {
-            println!("default Session policy denied JavaScript before dispatch")
-        }
-        Err(error) => {
-            return Err(
-                io::Error::other(format!("unexpected default JavaScript result: {error}")).into(),
-            );
-        }
-        Ok(_) => return Err(io::Error::other("default Session policy allowed JavaScript").into()),
-    }
-    watcher_one.close();
-    watcher_two.close();
-    work.release().await?;
-    session.close().await?;
-    let first_document = rendered_dom_document(&first_work_response)
-        .ok_or_else(|| io::Error::other("first Work response lost its rendered-DOM Document"))?;
-    let second_document = rendered_dom_document(&second_work_response)
-        .ok_or_else(|| io::Error::other("second Work response lost its rendered-DOM Document"))?;
-    let first_document_rows = count_document_matches(first_document, ".row")?;
-    let second_document_rows = count_document_matches(second_document, ".row")?;
-    if first_document_rows != 12 || second_document_rows != 4 {
-        return Err(io::Error::other(format!(
-            "retained Work response Documents had {first_document_rows} and {second_document_rows} rows after Session close"
-        ))
-        .into());
-    }
-    println!(
-        "two same-Work Requests reached both watchers; after Session close, retained Documents located {first_document_rows} and {second_document_rows} rows"
-    );
-
-    // Build a live View while caller-owned Work remains open, before Archive persistence.
     let passing_flow = passing_flow();
-    let flow_session = session::new()
-        .bind(&browser_policy)
-        .configure(flow_session_policy.clone())
-        .acquire()
-        .await?;
-    let flow_work = flow_session.work().await?;
-    let passing_outcome = navigating_flow(url, &passing_flow)
-        .bind(&browser_policy)
-        .with_lease(&flow_work)
-        .invoke()
-        .await?;
-    require_terminal(&passing_outcome, FlowTermination::Completed)?;
-    if !has_screenshot(&passing_outcome) {
-        return Err(io::Error::other("passing Flow did not retain its screenshot").into());
-    }
-    let live_observation = flow_observation(&passing_outcome)?;
-    let live_page = View::from_observation(live_observation, 3)?;
-    let live_condition = Condition::CountAtLeast {
-        selector: ".row".to_owned(),
-        count: 12,
-    };
-    if !live_page.verify_condition(live_observation, &live_condition)? {
-        return Err(io::Error::other("live View did not verify the baseline row count").into());
-    }
-    let live_cursor = live_page
-        .next_cursor()
-        .cloned()
-        .ok_or_else(|| io::Error::other("live fixture DOM did not produce a second View page"))?;
-    let live_second_page = View::continue_from(live_observation, &live_cursor)?;
-    if live_page.rows().len() != 3 || live_second_page.rows().len() != 3 {
-        return Err(io::Error::other("live View did not page three rows at a time").into());
-    }
-    println!("live View paged the open Work capture before Archive write and Session close");
-    flow_work.release().await?;
-    flow_session.close().await?;
-    println!("explicit Work Flow: passing assertions and screenshot retained");
+    let (passing_outcome, live_cursor) =
+        passing_flow_evidence(url, &passing_flow, &browser_policy, &flow_session_policy).await?;
 
     // Default continuation preserves the assertion failure and then runs the screenshot.
     let failing_flow = flow::new([
@@ -223,61 +95,9 @@ pub(crate) async fn run_spike(url: &str, output_dir: &Path) -> Result<(), Box<dy
         action::screenshot(),
     ]);
     let failing_outcome = navigating_flow(url, &failing_flow).invoke().await?;
-    require_terminal(&failing_outcome, FlowTermination::CompletedWithIssues)?;
-    if failing_outcome.steps.len() != 4
-        || failing_outcome
-            .steps
-            .get(2)
-            .is_none_or(|step| step.receipt.status != OperationStatus::Rejected)
-        || failing_outcome
-            .steps
-            .last()
-            .is_none_or(|step| step.receipt.status != OperationStatus::Observed)
-    {
-        return Err(io::Error::other(
-            "continued Flow did not retain its failure and later screenshot",
-        )
-        .into());
-    }
-    println!("managed Flow: failed assertion retained; later screenshot step ran");
+    verify_continued_failure(&failing_outcome)?;
 
-    // JavaScript stays opt-in and runs on the same caller-held Work substrate.
-    let js_policy = SessionPolicy {
-        allow_arbitrary_js: true,
-        ..SessionPolicy::default()
-    };
-    let js_session = session::new()
-        .bind(&browser_policy)
-        .configure(js_policy.clone())
-        .acquire()
-        .await?;
-    let js_work = js_session.work().await?;
-    js_work.navigate(url).await?;
-    let value = js_work.evaluate("40 + 2").await?;
-    if value.result.as_ref() != Some(&serde_json::json!(42)) {
-        return Err(io::Error::other("opt-in JavaScript value result did not match 42").into());
-    }
-    let mutation = js_work
-        .evaluate(
-            "document.body.dataset.spikeMutation = 'recorded'; document.body.dataset.spikeMutation",
-        )
-        .await?;
-    if mutation.result.as_ref() != Some(&serde_json::json!("recorded")) {
-        return Err(io::Error::other("opt-in JavaScript mutation result was not retained").into());
-    }
-    let script_error = js_work
-        .evaluate("(() => { throw new Error('intentional local fixture error'); })()")
-        .await?;
-    if script_error.status != OperationStatus::Unknown || script_error.error.is_none() {
-        return Err(io::Error::other(
-            "JavaScript exception was not retained as an unknown receipt",
-        )
-        .into());
-    }
-    let js_operations = vec![value, mutation, script_error];
-    js_work.release().await?;
-    js_session.close().await?;
-    println!("opt-in JavaScript: value, mutation, and unknown exception receipts retained");
+    let (js_policy, js_operations) = javascript_evidence(url, &browser_policy).await?;
 
     // Persist the default-policy Session evidence and opt-in JavaScript evidence separately.
     let record = AutomationRecord::new(
@@ -379,37 +199,7 @@ pub(crate) async fn run_spike(url: &str, output_dir: &Path) -> Result<(), Box<dy
         .await?;
     require_terminal(&drift_outcome, FlowTermination::CompletedWithIssues)?;
     let drift_observation = validate_drift_artifact(&drift_outcome, &passing_flow, &drift_url)?;
-    let drift_page = View::from_observation(drift_observation, 3)?;
-    if !drift_page.verify_condition(
-        drift_observation,
-        &Condition::CountAtLeast {
-            selector: ".row".to_owned(),
-            count: 4,
-        },
-    )? || drift_page.verify_condition(
-        drift_observation,
-        &Condition::CountAtLeast {
-            selector: ".row".to_owned(),
-            count: 5,
-        },
-    )? {
-        return Err(io::Error::other("drift View did not retain exactly four result rows").into());
-    }
-    match View::continue_from(drift_observation, &live_cursor) {
-        Err(ViewError::ForeignCursor) => {}
-        Err(error) => {
-            return Err(io::Error::other(format!(
-                "old live View cursor failed with the wrong typed error: {error}"
-            ))
-            .into());
-        }
-        Ok(_) => {
-            return Err(io::Error::other(
-                "old live View cursor was accepted against the changed capture",
-            )
-            .into());
-        }
-    }
+    verify_drift_view(drift_observation, &live_cursor)?;
     let archive = Archive::open(&archive_root).await?;
     let rerun_ref = rerun_record.write_to(&archive).await?;
     let drift_record = AutomationRecord::new(
@@ -447,7 +237,7 @@ pub(crate) async fn run_spike(url: &str, output_dir: &Path) -> Result<(), Box<dy
 }
 
 /// Reopens the supplied immutable record and evaluates only retained evidence.
-pub(crate) async fn replay_spike(output_dir: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn replay_spike(output_dir: &Path) -> Result<(), Box<dyn Error>> {
     let record_ref = read_record_ref(output_dir.join("record_ref.json"))?;
     let js_ref = read_record_ref(output_dir.join("js_ref.json"))?;
     let rerun_ref = read_record_ref(output_dir.join("rerun_ref.json"))?;
@@ -601,6 +391,287 @@ pub(crate) async fn replay_spike(output_dir: &Path) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Keep fixture ownership through verification and explicit cleanup; values moved into asynchronous tasks are not local owners to drop early."
+)]
+async fn retained_request_evidence(
+    url: &str,
+    policy: &Policy,
+) -> Result<Vec<OperationReceipt>, Box<dyn Error>> {
+    // Ordinary Requests still follow the caller's explicit browser acquisition policy.
+    let browser_response = request::new(url.to_owned()).bind(policy).send().await?;
+    if !has_completed_browser_document(&browser_response) {
+        return Err(io::Error::other(
+            "simple Browser Request did not produce a rendered-DOM Document",
+        )
+        .into());
+    }
+    println!("simple Browser Request: Browser attempt and rendered-DOM Document completed");
+
+    // Subscribe both watchers before navigation and two Work-bound Requests.
+    let session = session::new()
+        .bind(policy)
+        .configure(SessionPolicy::default())
+        .acquire()
+        .await?;
+    let mut watcher_one = session.watch();
+    let mut watcher_two = session.watch();
+    let work = session.work().await?;
+    let navigation = work.navigate(url).await?;
+    let first_navigation_event = watcher_one.next().await?;
+    let second_navigation_event = watcher_two.next().await?;
+    require_same_event(&navigation, &first_navigation_event)?;
+    require_same_event(&navigation, &second_navigation_event)?;
+
+    let first_work_response = request::new(url.to_owned()).with_work(&work).send().await?;
+    if first_work_response.termination() != yosoi::ResponseTermination::Completed {
+        return Err(io::Error::other("first Work-bound Request did not complete").into());
+    }
+    if !has_completed_browser_document(&first_work_response) {
+        return Err(io::Error::other(
+            "first Work-bound Request did not produce a rendered-DOM Document",
+        )
+        .into());
+    }
+    let first_request_event = watcher_one.next().await?;
+    let first_request_event_copy = watcher_two.next().await?;
+    require_same_event(&first_request_event, &first_request_event_copy)?;
+    require_request_event_for_response(&first_request_event, &first_work_response)?;
+
+    let drift_request_url = format!("{url}?variant=drift");
+    let second_work_response = request::new(drift_request_url)
+        .with_work(&work)
+        .send()
+        .await?;
+    if second_work_response.termination() != yosoi::ResponseTermination::Completed {
+        return Err(io::Error::other("second Work-bound Request did not complete").into());
+    }
+    if !has_completed_browser_document(&second_work_response) {
+        return Err(io::Error::other(
+            "second Work-bound Request did not produce a rendered-DOM Document",
+        )
+        .into());
+    }
+    let second_request_event = watcher_one.next().await?;
+    let second_request_event_copy = watcher_two.next().await?;
+    require_same_event(&second_request_event, &second_request_event_copy)?;
+    require_request_event_for_response(&second_request_event, &second_work_response)?;
+    if first_request_event.id == second_request_event.id
+        || first_work_response.request_id() == second_work_response.request_id()
+    {
+        return Err(io::Error::other("two Work-bound Requests reused an identity").into());
+    }
+
+    let session_operations = vec![
+        (*first_navigation_event).clone(),
+        (*first_request_event).clone(),
+        (*second_request_event).clone(),
+    ];
+    verify_default_javascript_denial(&work).await?;
+    watcher_one.close();
+    watcher_two.close();
+    work.release().await?;
+    session.close().await?;
+    let first_document = rendered_dom_document(&first_work_response)
+        .ok_or_else(|| io::Error::other("first Work response lost its rendered-DOM Document"))?;
+    let second_document = rendered_dom_document(&second_work_response)
+        .ok_or_else(|| io::Error::other("second Work response lost its rendered-DOM Document"))?;
+    let first_document_rows = count_document_matches(first_document, ".row")?;
+    let second_document_rows = count_document_matches(second_document, ".row")?;
+    if first_document_rows != 12 || second_document_rows != 4 {
+        return Err(io::Error::other(format!(
+            "retained Work response Documents had {first_document_rows} and {second_document_rows} rows after Session close"
+        ))
+        .into());
+    }
+    println!(
+        "two same-Work Requests reached both watchers; after Session close, retained Documents located {first_document_rows} and {second_document_rows} rows"
+    );
+
+    Ok(session_operations)
+}
+
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Keep fixture ownership through verification and explicit cleanup; values moved into asynchronous tasks are not local owners to drop early."
+)]
+async fn passing_flow_evidence(
+    url: &str,
+    recipe: &Flow,
+    policy: &Policy,
+    settings: &SessionPolicy,
+) -> Result<(FlowOutcome, ViewCursor), Box<dyn Error>> {
+    // Build a live View while caller-owned Work remains open, before Archive persistence.
+    let flow_session = session::new()
+        .bind(policy)
+        .configure(settings.clone())
+        .acquire()
+        .await?;
+    let flow_work = flow_session.work().await?;
+    let passing_outcome = navigating_flow(url, recipe)
+        .bind(policy)
+        .with_lease(&flow_work)
+        .invoke()
+        .await?;
+    require_terminal(&passing_outcome, FlowTermination::Completed)?;
+    if !has_screenshot(&passing_outcome) {
+        return Err(io::Error::other("passing Flow did not retain its screenshot").into());
+    }
+    let live_observation = flow_observation(&passing_outcome)?;
+    let live_cursor = baseline_view_cursor(live_observation)?;
+    println!("live View paged the open Work capture before Archive write and Session close");
+    flow_work.release().await?;
+    flow_session.close().await?;
+    println!("explicit Work Flow: passing assertions and screenshot retained");
+
+    Ok((passing_outcome, live_cursor))
+}
+
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Keep fixture ownership through verification and explicit cleanup; values moved into asynchronous tasks are not local owners to drop early."
+)]
+async fn javascript_evidence(
+    url: &str,
+    policy: &Policy,
+) -> Result<(SessionPolicy, Vec<OperationReceipt>), Box<dyn Error>> {
+    // JavaScript stays opt-in and runs on the same caller-held Work substrate.
+    let js_policy = SessionPolicy {
+        allow_arbitrary_js: true,
+        ..SessionPolicy::default()
+    };
+    let js_session = session::new()
+        .bind(policy)
+        .configure(js_policy.clone())
+        .acquire()
+        .await?;
+    let js_work = js_session.work().await?;
+    js_work.navigate(url).await?;
+    let value = js_work.evaluate("40 + 2").await?;
+    if value.result.as_ref() != Some(&serde_json::json!(42)) {
+        return Err(io::Error::other("opt-in JavaScript value result did not match 42").into());
+    }
+    let mutation = js_work
+        .evaluate(
+            "document.body.dataset.spikeMutation = 'recorded'; document.body.dataset.spikeMutation",
+        )
+        .await?;
+    if mutation.result.as_ref() != Some(&serde_json::json!("recorded")) {
+        return Err(io::Error::other("opt-in JavaScript mutation result was not retained").into());
+    }
+    let script_error = js_work
+        .evaluate("(() => { throw new Error('intentional local fixture error'); })()")
+        .await?;
+    if script_error.status != OperationStatus::Unknown || script_error.error.is_none() {
+        return Err(io::Error::other(
+            "JavaScript exception was not retained as an unknown receipt",
+        )
+        .into());
+    }
+    let js_operations = vec![value, mutation, script_error];
+    js_work.release().await?;
+    js_session.close().await?;
+    println!("opt-in JavaScript: value, mutation, and unknown exception receipts retained");
+
+    Ok((js_policy, js_operations))
+}
+
+async fn verify_default_javascript_denial(work: &session::Work) -> Result<(), Box<dyn Error>> {
+    match work.evaluate("40 + 2").await {
+        Err(SessionError::Denied) => {
+            println!("default Session policy denied JavaScript before dispatch");
+        }
+        Err(error) => {
+            return Err(
+                io::Error::other(format!("unexpected default JavaScript result: {error}")).into(),
+            );
+        }
+        Ok(_) => return Err(io::Error::other("default Session policy allowed JavaScript").into()),
+    }
+    Ok(())
+}
+
+fn verify_continued_failure(outcome: &FlowOutcome) -> Result<(), Box<dyn Error>> {
+    require_terminal(outcome, FlowTermination::CompletedWithIssues)?;
+    if outcome.steps.len() != 4
+        || outcome
+            .steps
+            .get(2)
+            .is_none_or(|step| step.receipt.status != OperationStatus::Rejected)
+        || outcome
+            .steps
+            .last()
+            .is_none_or(|step| step.receipt.status != OperationStatus::Observed)
+    {
+        return Err(io::Error::other(
+            "continued Flow did not retain its failure and later screenshot",
+        )
+        .into());
+    }
+    println!("managed Flow: failed assertion retained; later screenshot step ran");
+
+    Ok(())
+}
+
+fn baseline_view_cursor(observation: &Observation) -> Result<ViewCursor, Box<dyn Error>> {
+    let live_page = View::from_observation(observation, 3)?;
+    let live_condition = Condition::CountAtLeast {
+        selector: ".row".to_owned(),
+        count: 12,
+    };
+    if !live_page.verify_condition(observation, &live_condition)? {
+        return Err(io::Error::other("live View did not verify the baseline row count").into());
+    }
+    let live_cursor = live_page
+        .next_cursor()
+        .cloned()
+        .ok_or_else(|| io::Error::other("live fixture DOM did not produce a second View page"))?;
+    let live_second_page = View::continue_from(observation, &live_cursor)?;
+    if live_page.rows().len() != 3 || live_second_page.rows().len() != 3 {
+        return Err(io::Error::other("live View did not page three rows at a time").into());
+    }
+    Ok(live_cursor)
+}
+
+fn verify_drift_view(
+    observation: &Observation,
+    live_cursor: &ViewCursor,
+) -> Result<(), Box<dyn Error>> {
+    let drift_page = View::from_observation(observation, 3)?;
+    if !drift_page.verify_condition(
+        observation,
+        &Condition::CountAtLeast {
+            selector: ".row".to_owned(),
+            count: 4,
+        },
+    )? || drift_page.verify_condition(
+        observation,
+        &Condition::CountAtLeast {
+            selector: ".row".to_owned(),
+            count: 5,
+        },
+    )? {
+        return Err(io::Error::other("drift View did not retain exactly four result rows").into());
+    }
+    match View::continue_from(observation, live_cursor) {
+        Err(ViewError::ForeignCursor) => {}
+        Err(error) => {
+            return Err(io::Error::other(format!(
+                "old live View cursor failed with the wrong typed error: {error}"
+            ))
+            .into());
+        }
+        Ok(_) => {
+            return Err(io::Error::other(
+                "old live View cursor was accepted against the changed capture",
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
 fn automation_context(
     effective_policy_identity: &str,
     session_policy: SessionPolicy,
@@ -689,8 +760,8 @@ fn validate_flow_artifact<'a>(
     outcome: &'a FlowOutcome,
     expected: &Flow,
     expected_url: &str,
-) -> io::Result<&'a yosoi::automation_record::Observation> {
-    if !matches!(outcome.version, 1 | 2 | 3) || outcome.terminal != FlowTermination::Completed {
+) -> io::Result<&'a yosoi_automation_record::Observation> {
+    if !matches!(outcome.version, 1..=3) || outcome.terminal != FlowTermination::Completed {
         return Err(io::Error::other(
             "archived Flow outcome is not a supported completed record",
         ));
@@ -757,7 +828,7 @@ fn validate_drift_artifact<'a>(
     outcome: &'a FlowOutcome,
     expected: &Flow,
     expected_url: &str,
-) -> io::Result<&'a yosoi::automation_record::Observation> {
+) -> io::Result<&'a yosoi_automation_record::Observation> {
     if outcome.version != 3 || outcome.terminal != FlowTermination::CompletedWithIssues {
         return Err(io::Error::other(
             "drift Flow outcome did not finish with retained issues",
@@ -832,7 +903,7 @@ fn validate_drift_artifact<'a>(
         || !flow_path_matches_version(failed, outcome.version, expected_index)
         || failed.receipt.kind != "assert"
         || failed.receipt.status != OperationStatus::Rejected
-        || failed.failure != Some(yosoi::flow::FlowFailureCause::Rejected)
+        || failed.failure != Some(yosoi_flow::FlowFailureCause::Rejected)
         || failed.receipt.result.as_ref() != Some(&expected_result)
     {
         return Err(io::Error::other(
@@ -859,11 +930,11 @@ fn validate_drift_artifact<'a>(
     Ok(observation)
 }
 
-fn flow_path_matches_version(step: &yosoi::flow::StepOutcome, version: u32, index: u64) -> bool {
+fn flow_path_matches_version(step: &yosoi_flow::StepOutcome, version: u32, index: u64) -> bool {
     match version {
         1 => step.flow_path.is_empty(),
         2 => step.flow_path.len() == 1 && step.flow_path.first() == Some(&index),
-        3 => step.flow_path.as_slice() == &[index],
+        3 => step.flow_path.as_slice() == [index],
         _ => false,
     }
 }
@@ -875,10 +946,10 @@ fn validate_failure_screenshot_receipt(outcome: &FlowOutcome) -> io::Result<()> 
         .ok_or_else(|| io::Error::other("failed Flow has no post-failure screenshot receipt"))?;
     match (receipt.kind.as_str(), receipt.status) {
         ("screenshot", OperationStatus::Observed) => {
-            if !receipt
+            if receipt
                 .observation
                 .as_ref()
-                .is_some_and(|observation| observation.screenshot.is_some())
+                .is_none_or(|observation| observation.screenshot.is_none())
             {
                 return Err(io::Error::other(
                     "observed failure screenshot receipt has no screenshot bytes",
@@ -906,7 +977,7 @@ fn flow_navigation_url(flow: &Flow) -> io::Result<&str> {
     }
 }
 
-fn flow_observation(outcome: &FlowOutcome) -> io::Result<&yosoi::automation_record::Observation> {
+fn flow_observation(outcome: &FlowOutcome) -> io::Result<&yosoi_automation_record::Observation> {
     outcome
         .steps
         .iter()
@@ -917,15 +988,17 @@ fn flow_observation(outcome: &FlowOutcome) -> io::Result<&yosoi::automation_reco
 }
 
 fn browser_policy() -> Result<Policy, Box<dyn Error>> {
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     Ok(policy)
 }
 
 fn navigating_flow(url: &str, recipe: &Flow) -> Flow {
-    flow::new(std::iter::once(action::navigate(url)).chain(recipe.steps().iter().cloned()))
+    flow::new(std_iter::once(action::navigate(url)).chain(recipe.steps().iter().cloned()))
         .with_failure_capture(recipe.failure_capture_policy())
 }
 
@@ -978,7 +1051,7 @@ fn has_completed_browser_document(response: &request::Response) -> bool {
     response.attempts().any(|attempt| {
         matches!(
             attempt.acquisition(),
-            yosoi::policy::AcquisitionKind::Browser { .. }
+            yosoi_policy::AcquisitionKind::Browser { .. }
         ) && attempt.state() == AttemptState::Completed
             && attempt.documents().any(|document| {
                 document.requested() == DocumentRequest::RenderedDom
@@ -1019,7 +1092,7 @@ fn require_request_event_for_response(
 fn rendered_dom_document(response: &request::Response) -> Option<DocumentRef<'_>> {
     response
         .attempts()
-        .flat_map(|attempt| attempt.documents())
+        .flat_map(yosoi::request::Attempt::documents)
         .find_map(|document| {
             if document.requested() != DocumentRequest::RenderedDom {
                 return None;
@@ -1060,7 +1133,7 @@ fn require_same_event(expected: &OperationReceipt, observed: &OperationReceipt) 
 }
 
 #[derive(Debug)]
-pub(crate) struct LocalFixture {
+pub struct LocalFixture {
     pub(crate) url: String,
     shutdown: Option<oneshot::Sender<()>>,
     task: JoinHandle<io::Result<()>>,
@@ -1074,7 +1147,7 @@ impl LocalFixture {
         let (shutdown, mut shutdown_rx) = oneshot::channel();
         let task = tokio::spawn(async move {
             let mut connections = JoinSet::new();
-            let capacity = Arc::new(tokio::sync::Semaphore::new(64));
+            let capacity = Arc::new(tokio_sync::Semaphore::new(64));
             loop {
                 tokio::select! {
                     biased;
@@ -1114,7 +1187,7 @@ impl LocalFixture {
 
 async fn serve_fixture(mut stream: TcpStream, body: &[u8]) -> io::Result<()> {
     let mut request = [0_u8; 4_096];
-    let read = tokio::time::timeout(Duration::from_secs(5), stream.read(&mut request))
+    let read = tokio_time::timeout(Duration::from_secs(5), stream.read(&mut request))
         .await
         .map_err(|_| {
             io::Error::new(io::ErrorKind::TimedOut, "local fixture request timed out")

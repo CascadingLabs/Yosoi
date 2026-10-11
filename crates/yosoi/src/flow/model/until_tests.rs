@@ -37,7 +37,7 @@ fn attached_contract_settings_override_trigger_settings() {
     }
     .timeout(300)
     .on_failure(inherited_failure);
-    let mut attached = UntilExpectation::new(expect::visible("#confirmation").into());
+    let mut attached = UntilExpectation::new(expect::visible("#confirmation"));
     attached.timeout = Some(Duration::from_millis(700));
     attached.on_failure = Some(attached_failure);
 

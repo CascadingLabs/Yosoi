@@ -4,6 +4,9 @@
 //!
 //! Opt in with `YOSOI_BROWSER_TESTS=1` when running on regular Chrome Stable.
 
+use std::fs as std_fs;
+use std::future as std_future;
+use std::path as std_path;
 use std::{
     env,
     error::Error,
@@ -17,6 +20,7 @@ use std::{
     task::Poll,
     time::Duration,
 };
+use yosoi::expect as yosoi_expect;
 
 use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
@@ -75,6 +79,11 @@ struct InvalidMoneyContract {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn trigger_until_correlates_fresh_response_waits_for_all_evidence_and_yields_capacity()
 -> Result<(), TestError> {
     if !enabled() {
@@ -152,7 +161,7 @@ async fn trigger_until_correlates_fresh_response_waits_for_all_evidence_and_yiel
     );
 
     let mut competing_write = Box::pin(a.click("#trigger"));
-    let write_result = std::future::poll_fn(|context| {
+    let write_result = std_future::poll_fn(|context| {
         Poll::Ready(match competing_write.as_mut().poll(context) {
             Poll::Pending => None,
             Poll::Ready(result) => Some(result),
@@ -237,7 +246,7 @@ async fn trigger_until_correlates_fresh_response_waits_for_all_evidence_and_yiel
     assert_eq!(pool.snapshot().queued, 0);
 
     drop(invocation);
-    drop(bound);
+
     drop(other_tab_observation);
     a.release().await?;
     b.release().await?;
@@ -247,6 +256,11 @@ async fn trigger_until_correlates_fresh_response_waits_for_all_evidence_and_yiel
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn immediate_trigger_response_is_not_lost_by_observation_setup() -> Result<(), TestError> {
     if !enabled() {
         return Ok(());
@@ -286,7 +300,6 @@ async fn immediate_trigger_response_is_not_lost_by_observation_setup() -> Result
     assert_eq!(fixture.request_count("/trigger?attempt=fast")?, 1);
     assert_eq!(fixture.request_count("/api?attempt=fast&fast=1")?, 1);
 
-    drop(bound);
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -294,6 +307,11 @@ async fn immediate_trigger_response_is_not_lost_by_observation_setup() -> Result
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn background_enter_text_until_yields_capacity_and_confirms_the_typed_value()
 -> Result<(), TestError> {
     if !enabled() {
@@ -320,7 +338,7 @@ async fn background_enter_text_until_yields_capacity_and_confirms_the_typed_valu
     let typed_value = "Blueberry-42";
     let confirmation = format!("#confirmation[data-value=\"{typed_value}\"]");
     let expectation = expect::all([
-        expect::visible(confirmation).into(),
+        expect::visible(confirmation),
         expect::ax(format!("Entered {typed_value}"))
             .role("status")
             .into(),
@@ -448,7 +466,7 @@ async fn background_enter_text_until_yields_capacity_and_confirms_the_typed_valu
         .as_ref()
         .and_then(|observation| observation.html.as_deref())
         .ok_or("confirmed text entry omitted its DOM observation")?;
-    assert!(!captured_html.is_empty());
+    assert_ne!(captured_html, "");
     let fresh_observation = timeout(Duration::from_secs(5), work_a.observe()).await??;
     assert_eq!(
         fresh_observation.document_epoch,
@@ -465,7 +483,7 @@ async fn background_enter_text_until_yields_capacity_and_confirms_the_typed_valu
     assert_eq!(pool.snapshot().parked, 0);
     assert_eq!(pool.snapshot().queued, 0);
     drop(invocation);
-    drop(bound);
+
     work_a.release().await?;
     work_b.release().await?;
     browser.close().await?;
@@ -474,6 +492,11 @@ async fn background_enter_text_until_yields_capacity_and_confirms_the_typed_valu
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn enter_text_rejects_a_focus_replaced_target_without_typing_into_the_trap()
 -> Result<(), TestError> {
     if !enabled() {
@@ -564,7 +587,7 @@ async fn enter_text_rejects_a_focus_replaced_target_without_typing_into_the_trap
     assert_eq!(pool.snapshot().active, 0);
     assert_eq!(pool.snapshot().parked, 0);
     assert_eq!(pool.snapshot().queued, 0);
-    drop(bound);
+
     work_a.release().await?;
     work_b.release().await?;
     browser.close().await?;
@@ -573,6 +596,11 @@ async fn enter_text_rejects_a_focus_replaced_target_without_typing_into_the_trap
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn identical_network_response_started_before_trigger_cannot_satisfy_until()
 -> Result<(), TestError> {
     if !enabled() {
@@ -643,7 +671,7 @@ async fn identical_network_response_started_before_trigger_cannot_satisfy_until(
     assert_eq!(fixture.request_count("/marker?attempt=pretrigger")?, 1);
 
     drop(invocation);
-    drop(bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -651,6 +679,11 @@ async fn identical_network_response_started_before_trigger_cannot_satisfy_until(
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn standalone_until_uses_fresh_dom_evidence_after_the_page_changes() -> Result<(), TestError>
 {
     if !enabled() {
@@ -699,7 +732,7 @@ async fn standalone_until_uses_fresh_dom_evidence_after_the_page_changes() -> Re
     );
 
     drop(invocation);
-    drop(bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -707,6 +740,11 @@ async fn standalone_until_uses_fresh_dom_evidence_after_the_page_changes() -> Re
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn contract_until_checks_one_fresh_record_and_immediate_assertion_stays_one_shot()
 -> Result<(), TestError> {
     if !enabled() {
@@ -804,7 +842,7 @@ async fn contract_until_checks_one_fresh_record_and_immediate_assertion_stays_on
     assert!(contract_report.source_error.is_none());
 
     drop(invocation);
-    drop(bound);
+
     // The attached builder uses the same record semantics after one click.
     work.navigate(&fixture.url("/until?attempt=attached&contract=1"))
         .await?;
@@ -857,7 +895,7 @@ async fn contract_until_checks_one_fresh_record_and_immediate_assertion_stays_on
     assert_eq!(fixture.request_count("/trigger?attempt=attached")?, 1);
 
     drop(attached);
-    drop(bound);
+
     // A plain builder converted into a Step captures once while the page's
     // network response is still held, then retains that false result.
     work.navigate(&fixture.url("/until?attempt=oneshot&auto=1&stages=1"))
@@ -902,7 +940,6 @@ async fn contract_until_checks_one_fresh_record_and_immediate_assertion_stays_on
             .all(|check| check.passed == Some(false))
     );
 
-    drop(bound);
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -910,6 +947,11 @@ async fn contract_until_checks_one_fresh_record_and_immediate_assertion_stays_on
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_terminal()
 -> Result<(), TestError> {
     if !enabled() {
@@ -961,7 +1003,7 @@ async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_te
     fixture.release_all()?;
 
     drop(invocation);
-    drop(bound);
+
     work.navigate(&fixture.url("/until?attempt=invalid"))
         .await?;
     let calls = Arc::new(AtomicUsize::new(0));
@@ -990,8 +1032,6 @@ async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_te
     );
     assert_eq!(calls.load(Ordering::SeqCst), 0);
 
-    drop(bound);
-
     let panic_assertion = action::assert_all::<UntilContract>(
         UntilContract::plan()?,
         [check(|_contract: &UntilContract| {
@@ -1017,7 +1057,6 @@ async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_te
         Some(CheckError::Panicked)
     );
 
-    drop(bound);
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1025,6 +1064,11 @@ async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_te
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn ax_only_and_network_only_until_keep_source_evidence_without_html() -> Result<(), TestError>
 {
     if !enabled() {
@@ -1082,7 +1126,7 @@ async fn ax_only_and_network_only_until_keep_source_evidence_without_html() -> R
     );
 
     drop(ax_wait);
-    drop(ax_bound);
+
     work.navigate(&fixture.url("/until?attempt=network-only&fast=1"))
         .await?;
     let network_flow = flow::new([action::click("#trigger").until(
@@ -1133,7 +1177,7 @@ async fn ax_only_and_network_only_until_keep_source_evidence_without_html() -> R
     assert_eq!(fixture.request_count("/trigger?attempt=ax-only")?, 1);
     assert_eq!(fixture.request_count("/trigger?attempt=network-only")?, 1);
     drop(network_wait);
-    drop(network_bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1141,6 +1185,11 @@ async fn ax_only_and_network_only_until_keep_source_evidence_without_html() -> R
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn oversized_trigger_result_returns_unknown_with_structured_until_metadata()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1186,7 +1235,6 @@ async fn oversized_trigger_result_returns_unknown_with_structured_until_metadata
     assert!(trigger.result.is_none());
     assert!(trigger.error.is_some());
 
-    drop(bound);
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1194,6 +1242,11 @@ async fn oversized_trigger_result_returns_unknown_with_structured_until_metadata
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn aggregate_evidence_fallback_preserves_the_observed_trigger_receipt()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1216,9 +1269,9 @@ async fn aggregate_evidence_fallback_preserves_the_observed_trigger_receipt()
     let checks = (0..64)
         .map(|index| {
             let selector = format!(".until-evidence-{}-{index}", "x".repeat(512));
-            expect::visible(selector).into()
+            expect::visible(selector)
         })
-        .collect::<Vec<yosoi::expect::Expectation>>();
+        .collect::<Vec<yosoi_expect::Expectation>>();
     let flow = flow::new([action::click("#trigger")
         .until(expect::all(checks))
         .timeout(10_000)]);
@@ -1285,7 +1338,7 @@ async fn aggregate_evidence_fallback_preserves_the_observed_trigger_receipt()
 
     let fenced = timeout(Duration::from_secs(5), work.observe()).await?;
     assert!(matches!(fenced, Err(session::SessionError::Closed)));
-    drop(bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1293,6 +1346,11 @@ async fn aggregate_evidence_fallback_preserves_the_observed_trigger_receipt()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn direct_work_until_shares_one_session_deadline_with_its_trigger_and_wait()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1309,7 +1367,7 @@ async fn direct_work_until_shares_one_session_deadline_with_its_trigger_and_wait
     work.navigate(&fixture.url("/until?attempt=direct-budget"))
         .await?;
     let trigger = action::click("#trigger");
-    let expectation: yosoi::expect::Expectation =
+    let expectation: yosoi_expect::Expectation =
         expect::response(fixture.url("/api?attempt=direct-budget"))
             .status(200)
             .json("/attempt", "direct-budget")
@@ -1370,6 +1428,11 @@ async fn direct_work_until_shares_one_session_deadline_with_its_trigger_and_wait
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn stress_reordered_updates_across_four_tabs_and_one_worker() -> Result<(), TestError> {
     let Some(rounds) = configured_stress_rounds()? else {
         eprintln!("SKIPPED: set YOSOI_UNTIL_STRESS_ROUNDS to 1..=20 for serial stress");
@@ -1516,10 +1579,6 @@ async fn stress_reordered_updates_across_four_tabs_and_one_worker() -> Result<()
         assert_eq!(pool.snapshot().parked, 0);
         assert_eq!(pool.snapshot().queued, 0);
         drop(all);
-        drop(bound0);
-        drop(bound1);
-        drop(bound2);
-        drop(bound3);
 
         if round % 5 == 0 {
             let attempt = format!("stress-cancel-{round}");
@@ -1566,7 +1625,7 @@ async fn stress_reordered_updates_across_four_tabs_and_one_worker() -> Result<()
                 Some(OperationStatus::Observed)
             );
             drop(invocation);
-            drop(bound);
+
             fixture.release(&format!("api:{attempt}"))?;
             assert_eq!(pool.snapshot().active, 0);
             assert_eq!(pool.snapshot().parked, 0);
@@ -1613,7 +1672,7 @@ async fn stress_reordered_updates_across_four_tabs_and_one_worker() -> Result<()
     assert_eq!(queued_receipt.kind, "not-dispatched:until");
     assert_eq!(fixture.request_count("/trigger?attempt=stress-queue")?, 0);
     drop(queued);
-    drop(queued_bound);
+
     drop(permit);
     let _ = timeout(Duration::from_secs(5), work0.observe()).await??;
     assert_eq!(pool.snapshot().active, 0);
@@ -1630,6 +1689,11 @@ async fn stress_reordered_updates_across_four_tabs_and_one_worker() -> Result<()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn queued_deadline_expires_before_trigger_and_leaves_the_tab_reusable()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1683,7 +1747,7 @@ async fn queued_deadline_expires_before_trigger_and_leaves_the_tab_reusable()
     assert!(receipt.result.is_none());
     assert_eq!(fixture.request_count("/trigger?attempt=current")?, 0);
     drop(invocation);
-    drop(bound);
+
     drop(permit);
     let _ = timeout(Duration::from_secs(5), work.observe()).await??;
     assert_eq!(pool.snapshot().queued, 0);
@@ -1697,6 +1761,11 @@ async fn queued_deadline_expires_before_trigger_and_leaves_the_tab_reusable()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1765,7 +1834,7 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
     let fenced = timeout(Duration::from_secs(5), work.observe()).await?;
     assert!(matches!(fenced, Err(session::SessionError::Closed)));
     drop(invocation);
-    drop(bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1773,6 +1842,11 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn navigation_invalidates_a_pending_check_in_its_original_document() -> Result<(), TestError>
 {
     if !enabled() {
@@ -1835,7 +1909,7 @@ async fn navigation_invalidates_a_pending_check_in_its_original_document() -> Re
     ));
 
     drop(invocation);
-    drop(bound);
+
     work.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
@@ -1843,6 +1917,11 @@ async fn navigation_invalidates_a_pending_check_in_its_original_document() -> Re
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn cancellation_and_timeout_keep_the_trigger_receipt_and_release_resources()
 -> Result<(), TestError> {
     if !enabled() {
@@ -1875,7 +1954,6 @@ async fn cancellation_and_timeout_keep_the_trigger_receipt_and_release_resources
     assert_eq!(before_step.receipt.kind, "not-dispatched:until");
     assert!(before_step.receipt.result.is_none());
     assert_eq!(fixture.request_count("/trigger?attempt=current")?, 0);
-    drop(cancelled_before_bound);
 
     let after_trigger = CancellationToken::new();
     let flow = flow::new([
@@ -1925,7 +2003,7 @@ async fn cancellation_and_timeout_keep_the_trigger_receipt_and_release_resources
         OperationStatus::Observed
     );
     drop(invocation);
-    drop(bound);
+
     fixture.release("api:current")?;
     assert_eq!(pool.snapshot().active, 0);
     assert_eq!(pool.snapshot().parked, 0);
@@ -1955,7 +2033,7 @@ async fn cancellation_and_timeout_keep_the_trigger_receipt_and_release_resources
         Some(OperationStatus::Observed)
     );
     drop(timed);
-    drop(timed_bound);
+
     fixture.release("api:deadline")?;
     let _ = timeout(Duration::from_secs(5), work.observe()).await??;
     assert_eq!(pool.snapshot().active, 0);
@@ -1974,7 +2052,7 @@ async fn cancellation_and_timeout_keep_the_trigger_receipt_and_release_resources
     request_before_result(&mut dropped, &mut fixture, "/trigger?attempt=drop").await?;
     request_before_result(&mut dropped, &mut fixture, "/api?attempt=drop").await?;
     drop(dropped);
-    drop(dropped_bound);
+
     fixture.release_all()?;
     assert!(matches!(
         work.observe().await,
@@ -2008,14 +2086,11 @@ where
                 "Until completed before fixture reached {target}: {}", serde_json::to_string(&outcome)?
             )).into())
         }
-        result = request => match result {
-            Ok(event) => Ok(event?),
-            Err(_) => {
-                if let Ok(Ok(outcome)) = timeout(Duration::from_secs(4), invocation.as_mut()).await {
-                    save_outcome("until-fixture-event-timeout", &outcome)?;
-                }
-                Err(io::Error::other(format!("fixture event did not arrive: {target}")).into())
+        result = request => if let Ok(event) = result { Ok(event?) } else {
+            if let Ok(Ok(outcome)) = timeout(Duration::from_secs(4), invocation.as_mut()).await {
+                save_outcome("until-fixture-event-timeout", &outcome)?;
             }
+            Err(io::Error::other(format!("fixture event did not arrive: {target}")).into())
         },
     }
 }
@@ -2091,8 +2166,8 @@ where
 
 fn save_outcome(name: &str, outcome: &FlowOutcome) -> Result<(), TestError> {
     if let Some(directory) = env::var_os("YOSOI_BROWSER_OUTPUT_DIR") {
-        std::fs::write(
-            std::path::PathBuf::from(directory).join(format!("{name}.json")),
+        std_fs::write(
+            std_path::PathBuf::from(directory).join(format!("{name}.json")),
             serde_json::to_vec_pretty(outcome)?,
         )?;
     }

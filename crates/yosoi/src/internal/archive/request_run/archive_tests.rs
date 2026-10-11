@@ -241,8 +241,10 @@ async fn schema3_policy_records_preserve_v5_and_v6_timeout_identities() -> Resul
     assert_eq!(reopened_legacy.effective_identity, legacy_identity);
     assert_eq!(reopened_legacy.policy.default_action_timeout_ms, 10_000);
 
-    let mut current_policy = Policy::default();
-    current_policy.default_action_timeout_ms = 20_000;
+    let current_policy = Policy {
+        default_action_timeout_ms: 20_000,
+        ..Policy::default()
+    };
     let current_reference = archive.write(&current_policy).await?;
     let reopened_current = read_policy_record(&archive, &current_reference).await?;
     assert_eq!(reopened_current.effective_identity.version(), 7);

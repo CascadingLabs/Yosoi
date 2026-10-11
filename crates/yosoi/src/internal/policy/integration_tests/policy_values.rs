@@ -3,6 +3,7 @@
 
 use super::common;
 use crate::internal::policy as internal_policy;
+use crate::internal::policy::policy as internal_policy_policy;
 
 use std::io;
 
@@ -147,8 +148,10 @@ fn semantic_policy_changes_change_effective_identity() -> TestResult {
         redirects_disabled.effective_identity()?.digest()
     );
 
-    let mut longer_action_default = Policy::default();
-    longer_action_default.default_action_timeout_ms = 20_000;
+    let longer_action_default = Policy {
+        default_action_timeout_ms: 20_000,
+        ..Policy::default()
+    };
     assert_ne!(
         default_policy.effective_identity()?.digest(),
         longer_action_default.effective_identity()?.digest()
@@ -220,11 +223,13 @@ fn default_action_timeout_is_serde_defaulted_and_validated() -> TestResult {
         5
     );
 
-    let mut zero = Policy::default();
-    zero.default_action_timeout_ms = 0;
+    let zero = Policy {
+        default_action_timeout_ms: 0,
+        ..Policy::default()
+    };
     assert_eq!(
         zero.validate(),
-        Err(crate::internal::policy::PolicyError::InvalidDefaultActionTimeout)
+        Err(internal_policy::PolicyError::InvalidDefaultActionTimeout)
     );
 
     Ok(())
@@ -232,9 +237,11 @@ fn default_action_timeout_is_serde_defaulted_and_validated() -> TestResult {
 
 #[test]
 fn legacy_identity_projections_reject_unrepresented_action_timeouts() -> TestResult {
-    let mut policy = Policy::default();
-    policy.default_action_timeout_ms = 20_000;
-    policy.search = crate::internal::policy::policy::Search::disabled();
+    let policy = Policy {
+        default_action_timeout_ms: 20_000,
+        search: internal_policy_policy::Search::disabled(),
+        ..Policy::default()
+    };
 
     assert_eq!(
         policy.archived_v2_identity(),

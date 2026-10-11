@@ -1,3 +1,5 @@
+use crate::internal::documents as internal_documents;
+use crate::internal::engine::browser_document::dom as internal_engine_browser_document_dom;
 use std::fmt;
 
 use crate::internal::documents::{
@@ -23,11 +25,9 @@ pub enum ParseError {
 #[derive(Debug, Error)]
 pub enum ObservedDomError {
     #[error(transparent)]
-    Policy(#[from] crate::internal::documents::ResourceBudgetError),
+    Policy(#[from] internal_documents::ResourceBudgetError),
     #[error(transparent)]
-    Normalize(
-        #[from] crate::internal::engine::browser_document::dom::RenderedDomNormalizationError,
-    ),
+    Normalize(#[from] internal_engine_browser_document_dom::RenderedDomNormalizationError),
 }
 
 /// An immutable document with an explicit representation.
@@ -60,7 +60,7 @@ impl Document {
         policy: &Policy,
     ) -> Result<Self, ObservedDomError> {
         Ok(
-            crate::internal::engine::browser_document::dom::normalize_rendered_dom(
+            internal_engine_browser_document_dom::normalize_rendered_dom(
                 id,
                 epoch,
                 html,

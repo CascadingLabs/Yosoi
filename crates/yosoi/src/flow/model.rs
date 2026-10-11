@@ -1,6 +1,7 @@
 //! Serializable Flow actions, outcomes and validation vocabulary.
 
 use super::Flow;
+use crate::automation_record;
 pub use crate::internal::policy::policy::{Continuation, FlowPolicy, StopScope};
 use crate::request::CancellationToken;
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
     automation_record::OperationReceipt,
     expect::{Expectation, UntilExpectation},
 };
+use serde::ser as serde_ser;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as _};
 use std::{error::Error, fmt, time::Duration};
 
@@ -51,18 +53,18 @@ pub enum Step {
     /// the trigger executes once. One timeout covers both the action and wait.
     Until {
         /// One supported action, executed once after observation starts.
-        trigger: Option<Box<Step>>,
+        trigger: Option<Box<Self>>,
         /// Serializable, bounded expectation data.
         expectation: Expectation,
     },
     /// Applies one execution budget to the complete action.
     Timed {
-        action: Box<Step>,
+        action: Box<Self>,
         timeout: Duration,
     },
     /// Local continuation overrides and optional runtime cancellation binding.
     Configured {
-        action: Box<Step>,
+        action: Box<Self>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         on_failure: Option<Continuation>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -291,7 +293,11 @@ impl StepSettings {
     }
 }
 
-fn is_false(value: &bool) -> bool {
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "Serde skip_serializing_if callbacks require a reference."
+)]
+const fn is_false(value: &bool) -> bool {
     !*value
 }
 
@@ -323,7 +329,7 @@ impl Step {
     }
 
     fn compose_until(
-        trigger: Option<Box<Step>>,
+        trigger: Option<Box<Self>>,
         expected: UntilExpectation,
         trigger_settings: StepSettings,
     ) -> Self {
@@ -340,7 +346,7 @@ impl Step {
         })
     }
 
-    fn into_until_parts(self) -> (Step, StepSettings) {
+    fn into_until_parts(self) -> (Self, StepSettings) {
         let mut operation = self;
         let mut settings = StepSettings::default();
         loop {
@@ -447,7 +453,7 @@ impl Step {
         }
     }
 
-    pub(crate) fn operation(&self) -> &Step {
+    pub(crate) fn operation(&self) -> &Self {
         match self {
             Self::Timed { action, .. } | Self::Configured { action, .. } => action.operation(),
             action => action,
@@ -513,7 +519,7 @@ impl Step {
             Self::Timed { action, .. } => action.requires_cancellation_binding(),
             Self::Until { trigger, .. } => trigger
                 .as_deref()
-                .is_some_and(Step::requires_cancellation_binding),
+                .is_some_and(Self::requires_cancellation_binding),
             _ => false,
         }
     }
@@ -536,8 +542,7 @@ impl Step {
             Self::Timed { action, .. } => action.has_local_continuation_settings(),
             Self::Until { trigger, .. } => trigger
                 .as_deref()
-                .is_some_and(Step::has_local_continuation_settings),
-            Self::NestedFlow { .. } => false,
+                .is_some_and(Self::has_local_continuation_settings),
             _ => false,
         }
     }
@@ -577,8 +582,7 @@ impl Step {
         match self {
             Self::AssertAll { .. } => "assert_all",
             Self::Until { .. } => "until",
-            Self::Timed { action, .. } => action.kind(),
-            Self::Configured { action, .. } => action.kind(),
+            Self::Timed { action, .. } | Self::Configured { action, .. } => action.kind(),
             Self::NestedFlow { .. } => "nested_flow",
             Self::Navigate { .. } => "navigate",
             Self::Click { .. } => "click",
@@ -751,7 +755,7 @@ impl Serialize for FlowOutcome {
                         || step.cancelled_flow.is_some()
                 }))
         {
-            return Err(<S::Error as serde::ser::Error>::custom(
+            return Err(<S::Error as serde_ser::Error>::custom(
                 "legacy Flow outcome versions cannot represent continuation settings",
             ));
         }
@@ -788,7 +792,7 @@ impl Serialize for FlowOutcome {
     }
 }
 
-fn is_empty_slice<T>(value: &&[T]) -> bool {
+const fn is_empty_slice<T>(value: &&[T]) -> bool {
     value.is_empty()
 }
 
@@ -798,11 +802,12 @@ impl FlowOutcome {
         if self.terminal == FlowTermination::Completed
             && self.stop_reason.is_none()
             && self.skipped_steps.is_empty()
-            && self.cleanup.iter().all(|receipt| {
-                receipt.status == crate::automation_record::OperationStatus::Observed
-            })
+            && self
+                .cleanup
+                .iter()
+                .all(|receipt| receipt.status == automation_record::OperationStatus::Observed)
             && self.steps.iter().all(|step| {
-                step.receipt.status == crate::automation_record::OperationStatus::Observed
+                step.receipt.status == automation_record::OperationStatus::Observed
                     && step.failure.is_none()
                     && step.cancellation.is_none()
             })
@@ -839,6 +844,10 @@ pub enum FailureCapturePolicy {
 }
 
 impl FailureCapturePolicy {
+    #[expect(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "Serde skip_serializing_if callbacks require a reference."
+    )]
     pub(super) const fn is_disabled(&self) -> bool {
         matches!(self, Self::Disabled)
     }

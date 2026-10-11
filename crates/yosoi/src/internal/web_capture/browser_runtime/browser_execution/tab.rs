@@ -3,12 +3,13 @@ use super::{
     ManagerInner, Mutex, TabEntry, Weak, cleanup_deadline, fmt, oneshot, poison_slot, provider,
     timeout_at, yosoi,
 };
+use tokio::sync as tokio_sync;
 
 mod create;
 pub(super) use create::create_additional_tab;
 
 pub(super) struct NavigationTabParts {
-    pub(super) control_waiters: Arc<tokio::sync::Semaphore>,
+    pub(super) control_waiters: Arc<tokio_sync::Semaphore>,
     pub(super) page: Arc<provider::Page>,
     pub(super) gate: Arc<Mutex<()>>,
     pub(super) closing: CancellationToken,
@@ -56,11 +57,16 @@ impl RuntimeBrowserTabLease {
         resource.authorize_profile_admission()
     }
 
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Keep lease and manager ownership through every cleanup/accounting exit; tab entries are borrowed under bounded state guards."
+    )]
     pub async fn close(&self) -> Result<(), BrowserExecutionManagerError> {
         let resource = self
             .resource
             .upgrade()
             .ok_or(BrowserExecutionManagerError::TabReleased)?;
+
         let manager = resource
             .manager
             .upgrade()
@@ -70,6 +76,7 @@ impl RuntimeBrowserTabLease {
             if lease_state.releasing || lease_state.release_result.is_some() {
                 return Err(BrowserExecutionManagerError::TabReleased);
             }
+
             let entry = lease_state
                 .tabs
                 .get_mut(&self.id)
@@ -135,6 +142,10 @@ impl RuntimeBrowserTabLease {
         Err(BrowserExecutionManagerError::TabCloseFailed)
     }
 
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Borrowed tab entries have no owned Drop; the state guard is explicitly released after cloning routing facts."
+    )]
     pub(in crate::internal::web_capture) async fn page(
         &self,
     ) -> Result<Arc<provider::Page>, BrowserExecutionManagerError> {
@@ -147,6 +158,7 @@ impl RuntimeBrowserTabLease {
         if state.releasing || state.release_result.is_some() {
             return Err(BrowserExecutionManagerError::TabReleased);
         }
+
         let entry = state
             .tabs
             .get(&self.id)
@@ -176,6 +188,10 @@ impl RuntimeBrowserTabLease {
         })
     }
 
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Borrowed tab entries have no owned Drop; the state guard is explicitly released after cloning routing facts."
+    )]
     pub(super) async fn navigation_parts(
         &self,
     ) -> Result<NavigationTabParts, BrowserExecutionManagerError> {
@@ -188,6 +204,7 @@ impl RuntimeBrowserTabLease {
         if state.releasing || state.release_result.is_some() {
             return Err(BrowserExecutionManagerError::TabReleased);
         }
+
         let entry = state
             .tabs
             .get(&self.id)

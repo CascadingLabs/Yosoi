@@ -1,5 +1,6 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
+use std::env as std_env;
 use std::error::Error;
 
 use crate::internal::browser::{
@@ -36,9 +37,9 @@ fn data_url(html: &str) -> String {
 }
 
 async fn browser_session() -> BrowserSession {
-    let mode = std::env::var("YOSOI_MODE")
+    let mode = std_env::var("YOSOI_MODE")
         .ok()
-        .or_else(|| std::env::var("YOSOI_YIELD_MODE").ok());
+        .or_else(|| std_env::var("YOSOI_YIELD_MODE").ok());
     if mode.as_deref() == Some("headful") {
         BrowserSession::builder()
             .headful()
@@ -55,7 +56,7 @@ async fn browser_session() -> BrowserSession {
 }
 
 fn browser_tests_enabled() -> bool {
-    if std::env::var("YOSOI_BROWSER_TESTS").as_deref() == Ok("1") {
+    if std_env::var("YOSOI_BROWSER_TESTS").as_deref() == Ok("1") {
         true
     } else {
         eprintln!("SKIPPED: set YOSOI_BROWSER_TESTS=1 for scoped provider input tests");
@@ -78,6 +79,10 @@ fn network_only_watch_options() -> ObservationWatchOptions {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn scoped_native_input_rejects_replacement_document_and_accepts_current_scope()
 -> Result<(), TestError> {
     if !browser_tests_enabled() {
@@ -170,6 +175,10 @@ async fn scoped_native_input_rejects_replacement_document_and_accepts_current_sc
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn observation_watch_cannot_authorize_native_input_on_another_page() -> Result<(), TestError>
 {
     if !browser_tests_enabled() {
@@ -229,6 +238,10 @@ async fn observation_watch_cannot_authorize_native_input_on_another_page() -> Re
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn observation_scoped_eval_rejects_replacement_context_and_accepts_current_watch()
 -> Result<(), TestError> {
     if !browser_tests_enabled() {

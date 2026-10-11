@@ -1,3 +1,4 @@
+#![allow(dead_code)] // Shared fixture capabilities are used by different test/example consumers.
 //! A real HTTP quote service. Controlled completions are test events; timed
 //! completions model upstream I/O latency for the live comparison, not polling.
 use std::{
@@ -6,6 +7,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use tokio::time as tokio_time;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -162,7 +164,7 @@ async fn serve(
             None => None,
         };
         match latency {
-            Some(duration) => tokio::time::sleep(duration).await,
+            Some(duration) => tokio_time::sleep(duration).await,
             None => signal.notified().await,
         }
         (

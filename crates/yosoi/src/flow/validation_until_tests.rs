@@ -54,6 +54,29 @@ fn rejects_empty_and_malformed_expectation_data() {
 }
 
 #[test]
+fn response_json_pointers_follow_rfc6901_escape_rules() {
+    for pointer in ["", "/cart/quantity", "/a~0b/~1", "/雪/~01", "/~00", "/~10"] {
+        Flow::new([expect::response("https://shop.example/api/cart")
+            .json(pointer, 1)
+            .until()])
+        .validate()
+        .expect("root, Unicode and escaped JSON Pointer tokens are valid");
+    }
+    for pointer in ["cart", "/x~", "/x~2", "/x~~0", "/x~é"] {
+        assert!(
+            matches!(
+                Flow::new([expect::response("https://shop.example/api/cart")
+                    .json(pointer, 1)
+                    .until()])
+                .validate(),
+                Err(FlowValidationError::InvalidExpectation { .. })
+            ),
+            "invalid JSON Pointer: {pointer}"
+        );
+    }
+}
+
+#[test]
 fn caps_nested_expectations() {
     let too_deep = (0..10).fold(expect::visible("#confirmation"), |inner, _| {
         expect::all([inner]).into()

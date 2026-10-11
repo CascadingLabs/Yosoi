@@ -4,6 +4,7 @@ use crate::{
     flow::{Condition, Continuation, Step},
     request::CancellationToken,
 };
+use std::time as std_time;
 
 #[derive(Clone, Debug)]
 enum AssertionKind {
@@ -22,7 +23,7 @@ pub struct AssertionBuilder {
 }
 
 impl AssertionBuilder {
-    pub(crate) fn new_contract(assertion: LocalAssertion) -> Self {
+    pub(crate) const fn new_contract(assertion: LocalAssertion) -> Self {
         Self {
             assertion: AssertionKind::Contract(assertion),
             timeout_ms: None,
@@ -32,7 +33,7 @@ impl AssertionBuilder {
         }
     }
 
-    pub(crate) fn new_condition(condition: Condition) -> Self {
+    pub(crate) const fn new_condition(condition: Condition) -> Self {
         Self {
             assertion: AssertionKind::Condition(condition),
             timeout_ms: None,
@@ -43,19 +44,19 @@ impl AssertionBuilder {
     }
 
     /// Sets the timeout in milliseconds; it applies to the complete assertion step.
-    pub fn timeout(mut self, milliseconds: u64) -> Self {
+    pub const fn timeout(mut self, milliseconds: u64) -> Self {
         self.timeout_ms = Some(milliseconds);
         self
     }
 
     /// Sets this assertion step's failure continuation.
-    pub fn on_failure(mut self, continuation: Continuation) -> Self {
+    pub const fn on_failure(mut self, continuation: Continuation) -> Self {
         self.on_failure = Some(continuation);
         self
     }
 
     /// Sets this assertion step's cancellation continuation.
-    pub fn on_cancellation(mut self, continuation: Continuation) -> Self {
+    pub const fn on_cancellation(mut self, continuation: Continuation) -> Self {
         self.on_cancellation = Some(continuation);
         self
     }
@@ -118,8 +119,8 @@ impl From<AssertionBuilder> for UntilExpectation {
             AssertionKind::Condition(condition) => Expectation::Condition { condition },
             AssertionKind::Contract(assertion) => Expectation::Contract { assertion },
         };
-        let mut expected = UntilExpectation::new(expectation);
-        expected.timeout = timeout_ms.map(std::time::Duration::from_millis);
+        let mut expected = Self::new(expectation);
+        expected.timeout = timeout_ms.map(std_time::Duration::from_millis);
         expected.on_failure = on_failure;
         expected.on_cancellation = on_cancellation;
         expected.cancellation = cancellation;
@@ -129,10 +130,12 @@ impl From<AssertionBuilder> for UntilExpectation {
 
 #[cfg(test)]
 mod tests {
+    use crate::expect;
     use crate::{
         action,
         flow::{Condition, Continuation, Step, StopScope},
     };
+    use std::time as std_time;
 
     #[test]
     fn condition_assertion_converts_to_an_immediate_assert_step() {
@@ -157,7 +160,7 @@ mod tests {
             step.operation(),
             Step::Until {
                 trigger: None,
-                expectation: crate::expect::Expectation::Condition {
+                expectation: expect::Expectation::Condition {
                     condition: expected
                 }
             } if expected == &condition
@@ -182,11 +185,11 @@ mod tests {
         let trigger = action::click("#place-order")
             .timeout(300)
             .on_failure(inherited_failure);
-        let combined = trigger.clone().until(builder.clone());
+        let combined = trigger.until(builder);
 
         assert_eq!(
             combined.timeout_duration(),
-            Some(std::time::Duration::from_millis(700))
+            Some(std_time::Duration::from_millis(700))
         );
         assert_eq!(combined.failure_override(), Some(attached_failure));
         assert_eq!(
@@ -206,7 +209,7 @@ mod tests {
 
         assert_eq!(
             step.timeout_duration(),
-            Some(std::time::Duration::from_millis(900))
+            Some(std_time::Duration::from_millis(900))
         );
         assert_eq!(step.failure_override(), Some(inherited_failure));
         assert_eq!(step.cancellation_override(), Some(attached_cancellation));
@@ -214,7 +217,7 @@ mod tests {
             step.operation(),
             Step::Until {
                 trigger: Some(trigger),
-                expectation: crate::expect::Expectation::Condition {
+                expectation: expect::Expectation::Condition {
                     condition: expected
                 }
             } if matches!(trigger.as_ref(), Step::Click { selector } if selector == "#place-order")

@@ -31,7 +31,11 @@ async fn work_requests_retain_documents_after_session_close() -> Result<(), Box<
             io::Error::other("set YOSOI_BROWSER_OUTPUT_DIR to persist the evidence artifact")
         })?;
     let fixture = browser_automation_spike::LocalFixture::start().await?;
-    let proof = browser_automation_spike::run_spike(&fixture.url, &output_dir).await;
+    let proof = Box::pin(browser_automation_spike::run_spike(
+        &fixture.url,
+        &output_dir,
+    ))
+    .await;
     let shutdown = fixture.shutdown().await;
     proof?;
     shutdown?;

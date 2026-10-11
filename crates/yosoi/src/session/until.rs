@@ -1,6 +1,11 @@
 //! Event-driven confirmation on the existing owned tab and worker pool.
 
+use crate::automation_record;
+use crate::expect;
+#[cfg(feature = "browser")]
+use crate::timing;
 use serde::{Deserialize, Serialize};
+use std::io as std_io;
 
 use super::{SessionError, Work};
 use crate::{automation_record::OperationReceipt, expect::Expectation, flow::Step};
@@ -44,7 +49,7 @@ pub enum UntilCheckState {
 }
 
 /// Bounded evidence and diagnostics for one leaf check.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilCheck {
     pub index: u64,
@@ -55,7 +60,7 @@ pub struct UntilCheck {
 }
 
 /// Immutable confirmation evidence. Rust predicate code is never archived.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilReport {
     pub version: u32,
@@ -92,7 +97,7 @@ impl UntilReport {
         {
             return Err(UntilReportError("frame or loader identity"));
         }
-        if self.checks.is_empty() || self.checks.len() > crate::expect::MAX_EXPECTATIONS {
+        if self.checks.is_empty() || self.checks.len() > expect::MAX_EXPECTATIONS {
             return Err(UntilReportError("check count"));
         }
         for (position, check) in self.checks.iter().enumerate() {
@@ -126,7 +131,7 @@ impl UntilReport {
             {
                 return Err(UntilReportError("trigger receipt"));
             }
-            if trigger.status == crate::automation_record::OperationStatus::Observed
+            if trigger.status == automation_record::OperationStatus::Observed
                 && (trigger.error.is_some()
                     || trigger.result.as_ref().is_none_or(|result| {
                         !result.is_object()
@@ -150,14 +155,14 @@ impl UntilReport {
                     .iter()
                     .any(|check| check.state != UntilCheckState::Satisfied)
                 || self.trigger.as_ref().is_some_and(|trigger| {
-                    trigger.status != crate::automation_record::OperationStatus::Observed
+                    trigger.status != automation_record::OperationStatus::Observed
                 }))
         {
             return Err(UntilReportError("satisfaction claim"));
         }
         if self.termination == UntilTermination::TriggerFailed
             && self.trigger.as_ref().is_none_or(|trigger| {
-                trigger.status == crate::automation_record::OperationStatus::Observed
+                trigger.status == automation_record::OperationStatus::Observed
             })
         {
             return Err(UntilReportError("trigger failure claim"));
@@ -176,17 +181,17 @@ impl UntilReport {
 
     pub(crate) fn encoded_size(&self) -> Result<usize, UntilReportError> {
         struct Counter(usize);
-        impl std::io::Write for Counter {
-            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        impl std_io::Write for Counter {
+            fn write(&mut self, bytes: &[u8]) -> std_io::Result<usize> {
                 let size = self
                     .0
                     .checked_add(bytes.len())
                     .filter(|size| *size <= MAX_UNTIL_REPORT_BYTES)
-                    .ok_or_else(|| std::io::Error::other("confirmation report byte limit"))?;
+                    .ok_or_else(|| std_io::Error::other("confirmation report byte limit"))?;
                 self.0 = size;
                 Ok(bytes.len())
             }
-            fn flush(&mut self) -> std::io::Result<()> {
+            fn flush(&mut self) -> std_io::Result<()> {
                 Ok(())
             }
         }
@@ -206,10 +211,10 @@ impl Work {
     ) -> Result<OperationReceipt, SessionError> {
         #[cfg(feature = "browser")]
         {
-            let deadline = crate::timing::deadline()
-                .or_else(|| crate::timing::checked_deadline(self.timeout()))
+            let deadline = timing::deadline()
+                .or_else(|| timing::checked_deadline(self.timeout()))
                 .ok_or(SessionError::InvalidInput)?;
-            crate::timing::scope(deadline, Box::pin(self.until_owned(trigger, expectation))).await
+            timing::scope(deadline, Box::pin(self.until_owned(trigger, expectation))).await
         }
         #[cfg(not(feature = "browser"))]
         {

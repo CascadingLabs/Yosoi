@@ -1,3 +1,6 @@
+use std::future as std_future;
+use yosoi::flow as yosoi_flow;
+use yosoi::timing as yosoi_timing;
 use yosoi::{
     action,
     automation_record::{OperationReceipt, OperationStatus},
@@ -102,10 +105,9 @@ fn action_helpers_construct_the_same_typed_steps() {
 
 #[test]
 fn timeout_builders_are_milliseconds_and_legacy_microseconds_keep_their_unit() {
-    let flow =
-        Flow::new([action::screenshot().timeout(30_000)]).timeout(yosoi::timing::seconds(10));
-    assert_eq!(yosoi::timing::seconds(60), 60_000);
-    assert_eq!(yosoi::timing::milliseconds(5), 5);
+    let flow = Flow::new([action::screenshot().timeout(30_000)]).timeout(yosoi_timing::seconds(10));
+    assert_eq!(yosoi_timing::seconds(60), 60_000);
+    assert_eq!(yosoi_timing::milliseconds(5), 5);
 
     let encoded = serde_json::to_value(&flow).expect("Flow should serialize");
     assert_eq!(encoded["schema_version"], 3);
@@ -141,7 +143,7 @@ fn timeout_builders_are_milliseconds_and_legacy_microseconds_keep_their_unit() {
 #[test]
 fn nested_flows_are_native_steps_and_validation_bounds_expansion() {
     let child = Flow::new([action::screenshot()]).timeout(30_000);
-    let parent = Flow::new([child.clone().into(), action::screenshot()]).timeout(10_000);
+    let parent = Flow::new([child.into(), action::screenshot()]).timeout(10_000);
     parent.validate().expect("nested Flow should validate");
 
     let wire = serde_json::to_value(&parent).expect("nested Flow should serialize");
@@ -154,7 +156,7 @@ fn nested_flows_are_native_steps_and_validation_bounds_expansion() {
             max_steps: 2,
             ..FlowLimits::default()
         }),
-        Err(yosoi::flow::FlowValidationError::TooManySteps { .. })
+        Err(yosoi_flow::FlowValidationError::TooManySteps { .. })
     ));
 
     let too_deep = (0..10).fold(Flow::new([action::screenshot()]), |nested, _| {
@@ -162,7 +164,7 @@ fn nested_flows_are_native_steps_and_validation_bounds_expansion() {
     });
     assert!(matches!(
         too_deep.validate(),
-        Err(yosoi::flow::FlowValidationError::TooDeep { .. })
+        Err(yosoi_flow::FlowValidationError::TooDeep { .. })
     ));
 
     assert!(matches!(
@@ -170,14 +172,14 @@ fn nested_flows_are_native_steps_and_validation_bounds_expansion() {
             max_serialized_bytes: 1,
             ..FlowLimits::default()
         }),
-        Err(yosoi::flow::FlowValidationError::SerializedInputTooLarge { .. })
+        Err(yosoi_flow::FlowValidationError::SerializedInputTooLarge { .. })
     ));
 
     let child_capture =
         Flow::new([action::screenshot()]).with_failure_capture(FailureCapturePolicy::Screenshot);
     assert!(matches!(
         Flow::new([child_capture.into()]).validate(),
-        Err(yosoi::flow::FlowValidationError::NestedFailureCaptureUnsupported)
+        Err(yosoi_flow::FlowValidationError::NestedFailureCaptureUnsupported)
     ));
 }
 
@@ -185,7 +187,7 @@ fn nested_flows_are_native_steps_and_validation_bounds_expansion() {
 fn flow_timeouts_reject_zero_overflow_and_ambiguous_persisted_units() {
     assert!(matches!(
         Flow::new([action::screenshot()]).timeout(0).validate(),
-        Err(yosoi::flow::FlowValidationError::InvalidTimeout)
+        Err(yosoi_flow::FlowValidationError::InvalidTimeout)
     ));
     let overflowing: Flow = serde_json::from_str(
         r#"{"schema_version":2,"steps":[],"timeout":{"secs":18446744073709551615,"nanos":999999999}}"#,
@@ -193,7 +195,7 @@ fn flow_timeouts_reject_zero_overflow_and_ambiguous_persisted_units() {
     .expect("large serialized Duration should deserialize as an explicit duration");
     assert!(matches!(
         overflowing.validate(),
-        Err(yosoi::flow::FlowValidationError::InvalidTimeout)
+        Err(yosoi_flow::FlowValidationError::InvalidTimeout)
     ));
     assert!(
         serde_json::from_str::<Flow>(r#"{"schema_version":2,"steps":[],"timeout_us":10000}"#)
@@ -232,7 +234,7 @@ fn invoke_futures_support_send_without_consuming_recipe_or_lease() {
     use yosoi::{policy::Policy, request::CancellationToken, session::Work};
 
     fn check(recipe: &Flow, lease: &Work, policy: &Policy, token: &CancellationToken) {
-        fn require_send(_: impl std::future::Future + Send) {}
+        fn require_send(_: impl std_future::Future + Send) {}
         require_send(recipe.invoke());
         require_send(recipe.with_cancellation(token).invoke());
         require_send(recipe.with_lease(lease).invoke());
@@ -275,7 +277,7 @@ fn flow_validation_enforces_step_selector_and_wait_until_bounds() {
 
     assert!(matches!(
         flow.validate_with_limits(limits),
-        Err(yosoi::flow::FlowValidationError::TooManySteps { .. })
+        Err(yosoi_flow::FlowValidationError::TooManySteps { .. })
     ));
 
     let selector_too_long = Flow::new([Step::Click {
@@ -289,7 +291,7 @@ fn flow_validation_enforces_step_selector_and_wait_until_bounds() {
             max_source_bytes: 32,
             max_serialized_bytes: 1_048_576,
         }),
-        Err(yosoi::flow::FlowValidationError::SelectorTooLong { .. })
+        Err(yosoi_flow::FlowValidationError::SelectorTooLong { .. })
     ));
 
     let empty_selector = Flow::new([Step::Click {
@@ -297,7 +299,7 @@ fn flow_validation_enforces_step_selector_and_wait_until_bounds() {
     }]);
     assert!(matches!(
         empty_selector.validate(),
-        Err(yosoi::flow::FlowValidationError::EmptySelector { .. })
+        Err(yosoi_flow::FlowValidationError::EmptySelector { .. })
     ));
 
     let zero_timeout = Flow::new([Step::WaitUntil {
@@ -308,7 +310,7 @@ fn flow_validation_enforces_step_selector_and_wait_until_bounds() {
     }]);
     assert!(matches!(
         zero_timeout.validate(),
-        Err(yosoi::flow::FlowValidationError::ZeroTimeout { .. })
+        Err(yosoi_flow::FlowValidationError::ZeroTimeout { .. })
     ));
 }
 
@@ -351,7 +353,7 @@ fn failed_outcome_serialization_keeps_earlier_and_terminal_step_receipts() {
             },
         ],
         terminal: FlowTermination::Failed,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),
@@ -428,7 +430,7 @@ fn flow_capture_policy_and_legacy_flow_outcomes_round_trip() {
             cancelled_flow: None,
         }],
         terminal: FlowTermination::Failed,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),

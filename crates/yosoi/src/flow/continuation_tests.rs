@@ -1,4 +1,4 @@
-use super::{ActionExecutionFuture, execute_flow_steps_with_policy};
+use super::{ActionExecutionFuture, FlowExecution, execute_flow_steps_with_policy};
 use crate::{
     automation_record::{OperationReceipt, OperationStatus},
     flow::{
@@ -12,6 +12,8 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+use tokio::sync::oneshot as tokio_sync_oneshot;
+use tokio::time as tokio_time;
 
 #[derive(Clone, Copy, Debug)]
 enum Event {
@@ -155,6 +157,15 @@ async fn run_matrix_case(
         .or(child_override)
         .or(parent_override)
         .unwrap_or(policy_continuation);
+    assert_matrix_result(&result, &trace_snapshot(&trace), event, selected);
+}
+
+fn assert_matrix_result(
+    result: &FlowExecution,
+    trace: &[String],
+    event: Event,
+    selected: Continuation,
+) {
     let (dispatched_trace, expected_skipped, expected_scope) = match selected {
         Continuation::Continue => (
             vec!["leaf", "child_sibling", "parent_sibling"],
@@ -181,7 +192,7 @@ async fn run_matrix_case(
         dispatched_trace
     };
     assert_eq!(
-        trace_snapshot(&trace),
+        trace,
         expected_trace
             .iter()
             .map(|label| (*label).to_owned())
@@ -218,6 +229,15 @@ async fn run_matrix_case(
     };
     assert_eq!(result.terminal, expected_terminal);
 
+    assert_matrix_receipts(result, event, expected_scope, selected);
+}
+
+fn assert_matrix_receipts(
+    result: &FlowExecution,
+    event: Event,
+    expected_scope: Option<StopScope>,
+    selected: Continuation,
+) {
     let first = result.steps.first().expect("the failing leaf is attempted");
     match event {
         Event::Failure => {
@@ -238,7 +258,10 @@ async fn run_matrix_case(
     }
     match expected_scope {
         Some(StopScope::Invocation) => {
-            let stop_reason = result.stop_reason.expect("Stop policy retains its reason");
+            let stop_reason = result
+                .stop_reason
+                .as_ref()
+                .expect("Stop policy retains its reason");
             assert_eq!(stop_reason.flow_path, [0, 0]);
             assert_eq!(stop_reason.cause, event.cause());
             assert_eq!(stop_reason.continuation, Some(selected));
@@ -517,7 +540,7 @@ async fn invocation_and_session_cancellation_cannot_be_revived_by_continue() {
         execute,
     )
     .await;
-    assert!(trace_snapshot(&trace).is_empty());
+    assert_eq!(trace_snapshot(&trace), Vec::<String>::new());
     assert_ne!(result.terminal, FlowTermination::Completed);
     assert_eq!(
         result.steps.first().and_then(|step| step.cancellation),
@@ -560,7 +583,7 @@ async fn invocation_and_session_cancellation_cannot_be_revived_by_continue() {
         },
     )
     .await;
-    assert!(trace_snapshot(&session_trace).is_empty());
+    assert_eq!(trace_snapshot(&session_trace), Vec::<String>::new());
     assert_ne!(session_cancelled.terminal, FlowTermination::Completed);
     assert_eq!(
         session_cancelled
@@ -647,7 +670,7 @@ async fn cancelling_outer_child_in_grandchild_skips_its_whole_subtree_only() {
     let root_token = CancellationToken::new();
     let trace = Arc::new(Mutex::new(Vec::new()));
     let execute_trace = Arc::clone(&trace);
-    let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+    let (started_tx, started_rx) = tokio_sync_oneshot::channel();
     let mut started_tx = Some(started_tx);
     let execution_root_token = root_token.clone();
     let execute = move |step: Step,
@@ -692,12 +715,12 @@ async fn cancelling_outer_child_in_grandchild_skips_its_whole_subtree_only() {
         .await
     });
 
-    tokio::time::timeout(Duration::from_secs(1), started_rx)
+    tokio_time::timeout(Duration::from_secs(1), started_rx)
         .await
         .expect("grandchild action should start")
         .expect("grandchild start notification should arrive");
     outer_child_token.cancel();
-    let result = tokio::time::timeout(Duration::from_secs(1), execution)
+    let result = tokio_time::timeout(Duration::from_secs(1), execution)
         .await
         .expect("outer Flow cancellation should stop its subtree")
         .expect("mocked executor task should finish");

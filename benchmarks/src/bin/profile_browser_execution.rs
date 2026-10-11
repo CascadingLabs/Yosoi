@@ -176,6 +176,7 @@ async fn main() -> Result<()> {
     let before = manager.snapshot().await?;
     manager.shutdown().await?;
     let after = manager.snapshot().await?;
+    drop(manager);
     println!(
         "{}",
         serde_json::to_string(&SummaryRecord {

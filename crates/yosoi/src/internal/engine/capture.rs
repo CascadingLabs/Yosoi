@@ -1,6 +1,14 @@
+use crate::internal::direct_http as internal_direct_http;
+#[cfg(feature = "browser")]
+use crate::internal::engine::session as internal_engine_session;
+use crate::internal::web_capture as internal_web_capture;
 use std::fmt;
 #[cfg(feature = "browser")]
+use std::time as std_time;
+#[cfg(feature = "browser")]
 use std::time::{Duration, SystemTime};
+#[cfg(feature = "browser")]
+use tokio::time as tokio_time;
 
 use crate::internal::direct_http::{
     DirectHttpCapture, DirectHttpCaptureError, capture_direct_http_with_redirect_policy,
@@ -140,7 +148,7 @@ pub enum PolicyCaptureExecutionError {
     /// Browser adapter execution failed with its terminal execution evidence.
     #[cfg(feature = "browser")]
     #[error("browser capture failed")]
-    Browser(#[source] Box<crate::internal::web_capture::VoidCrawlAdapterError>),
+    Browser(#[source] Box<internal_web_capture::VoidCrawlAdapterError>),
     /// Browser finalization failed; the original adapter result remains available.
     #[error("browser capture finalization failed")]
     BrowserFinalization {
@@ -237,7 +245,7 @@ impl ResolvedPolicyAttempt {
     #[cfg(feature = "browser")]
     pub async fn execute_on_browser_control(
         self,
-        control: &crate::internal::web_capture::RuntimeBrowserControl,
+        control: &internal_web_capture::RuntimeBrowserControl,
         cancellation: &CancellationToken,
     ) -> Result<PolicyCapture, PolicyCaptureError> {
         let (spec, applied_policy) = self.into_parts();
@@ -304,8 +312,8 @@ impl ResolvedPolicyAttempt {
 }
 
 async fn execute_direct_http(
-    spec: Box<crate::internal::direct_http::ResolvedDirectHttpCaptureSpec>,
-    redirect_targets: crate::internal::direct_http::DirectHttpRedirectTargetPolicy,
+    spec: Box<internal_direct_http::ResolvedDirectHttpCaptureSpec>,
+    redirect_targets: internal_direct_http::DirectHttpRedirectTargetPolicy,
     applied_policy: AppliedPolicy,
     cancellation: &CancellationToken,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
@@ -329,12 +337,12 @@ async fn execute_direct_http(
 
 #[cfg(feature = "browser")]
 async fn execute_browser(
-    spec: Box<crate::internal::web_capture::ResolvedBrowserCaptureSpec>,
+    spec: Box<internal_web_capture::ResolvedBrowserCaptureSpec>,
     applied_policy: AppliedPolicy,
     cancellation: &CancellationToken,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
     let mode = spec.environment().mode();
-    let started = std::time::Instant::now();
+    let started = std_time::Instant::now();
     let started_at: chrono::DateTime<chrono::Utc> = SystemTime::now().into();
     let maximum = Duration::from_micros(
         spec.observation()
@@ -344,15 +352,15 @@ async fn execute_browser(
     );
     let acquiring = cancellation.child_token();
     let _cancel_acquisition = acquiring.clone().drop_guard();
-    let acquired = tokio::time::timeout(
+    let acquired = tokio_time::timeout(
         maximum,
-        crate::internal::engine::session::BrowserSession::acquire(mode, 1, false, &acquiring),
+        internal_engine_session::BrowserSession::acquire(mode, 1, false, &acquiring),
     )
     .await
     .map_err(|_| PolicyCaptureError::Execution {
         applied_policy: applied_policy.clone(),
         source: Box::new(PolicyCaptureExecutionError::Browser(Box::new(
-            crate::internal::web_capture::VoidCrawlAdapterError::DeadlineBeforeOwnership,
+            internal_web_capture::VoidCrawlAdapterError::DeadlineBeforeOwnership,
         ))),
     })?;
     let session = acquired.map_err(|source| PolicyCaptureError::Execution {
@@ -360,8 +368,7 @@ async fn execute_browser(
         source: Box::new(PolicyCaptureExecutionError::Browser(Box::new(source))),
     })?;
     let remaining = maximum.saturating_sub(started.elapsed());
-    let controlled = session.control(&session.initial_tab(), remaining).await;
-    let result = match controlled {
+    let result = match session.control(&session.initial_tab(), remaining).await {
         Ok(control) => {
             execute_browser_on_control_started(
                 spec,
@@ -376,11 +383,12 @@ async fn execute_browser(
         Err(error) => Err(PolicyCaptureError::Execution {
             applied_policy: applied_policy.clone(),
             source: Box::new(PolicyCaptureExecutionError::Browser(Box::new(
-                crate::internal::engine::session::control_error(error),
+                internal_engine_session::control_error(&error),
             ))),
         }),
     };
     let cleanup = session.close().await;
+    drop(session);
     match (result, cleanup) {
         (Ok(capture), Ok(())) => Ok(capture),
         (Err(error), _) => Err(error),
@@ -393,17 +401,17 @@ async fn execute_browser(
 
 #[cfg(feature = "browser")]
 async fn execute_browser_on_control(
-    spec: Box<crate::internal::web_capture::ResolvedBrowserCaptureSpec>,
+    spec: Box<internal_web_capture::ResolvedBrowserCaptureSpec>,
     applied_policy: AppliedPolicy,
     cancellation: &CancellationToken,
-    control: &crate::internal::web_capture::RuntimeBrowserControl,
+    control: &internal_web_capture::RuntimeBrowserControl,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
     execute_browser_on_control_started(
         spec,
         applied_policy,
         cancellation,
         control,
-        std::time::Instant::now(),
+        std_time::Instant::now(),
         SystemTime::now().into(),
     )
     .await
@@ -411,22 +419,20 @@ async fn execute_browser_on_control(
 
 #[cfg(feature = "browser")]
 async fn execute_browser_on_control_started(
-    spec: Box<crate::internal::web_capture::ResolvedBrowserCaptureSpec>,
+    spec: Box<internal_web_capture::ResolvedBrowserCaptureSpec>,
     applied_policy: AppliedPolicy,
     cancellation: &CancellationToken,
-    control: &crate::internal::web_capture::RuntimeBrowserControl,
-    started: std::time::Instant,
+    control: &internal_web_capture::RuntimeBrowserControl,
+    started: std_time::Instant,
     started_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
-    let result = match Box::pin(
-        crate::internal::web_capture::capture_attempt_on_control_started(
-            control,
-            &spec,
-            cancellation,
-            started,
-            started_at,
-        ),
-    )
+    let result = match Box::pin(internal_web_capture::capture_attempt_on_control_started(
+        control,
+        &spec,
+        cancellation,
+        started,
+        started_at,
+    ))
     .await
     {
         Ok(result) => result,
@@ -446,7 +452,7 @@ async fn execute_browser_on_control_started(
         resource_origin: Observation::Unobserved,
         initiator_origin: Observation::Unobserved,
     };
-    match crate::internal::web_capture::finalize_browser_capture(result, input) {
+    match internal_web_capture::finalize_browser_capture(result, input) {
         Ok(bundle) => Ok(PolicyCapture::new(
             applied_policy,
             PolicyCaptureOutcome::Browser {

@@ -1,8 +1,12 @@
+use std::env as std_env;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+use std::process as std_process;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
+use yosoi::flow as yosoi_flow;
+use yosoi::session as yosoi_session;
 
 use yosoi::Archive;
 use yosoi::automation_record::{
@@ -32,7 +36,7 @@ fn observation() -> Observation {
     reason = "Assertions report persistence contract failures."
 )]
 async fn archived_record_reference_reopens_in_a_fresh_process() -> Result<(), Box<dyn Error>> {
-    if std::env::var_os(CHILD_ROOT_ENV).is_some() {
+    if std_env::var_os(CHILD_ROOT_ENV).is_some() {
         return Ok(());
     }
 
@@ -63,7 +67,7 @@ async fn archived_record_reference_reopens_in_a_fresh_process() -> Result<(), Bo
             cancelled_flow: None,
         }],
         terminal: FlowTermination::Completed,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),
@@ -85,7 +89,7 @@ async fn archived_record_reference_reopens_in_a_fresh_process() -> Result<(), Bo
     fs::write(&reference_path, serde_json::to_vec(&reference)?)?;
     drop(archive);
 
-    let executable = std::env::current_exe()?;
+    let executable = std_env::current_exe()?;
     let status = Command::new(executable)
         .args([
             "--exact",
@@ -127,7 +131,7 @@ async fn archived_record_read_reports_missing_and_corrupt_artifacts() -> Result<
             cancelled_flow: None,
         }],
         terminal: FlowTermination::Completed,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),
@@ -149,7 +153,7 @@ async fn archived_record_read_reports_missing_and_corrupt_artifacts() -> Result<
     let reference = record.write_to(&archive).await?;
 
     let mut missing_reference_value = serde_json::to_value(&reference)?;
-    let missing_key = yosoi::session::new_operation_id();
+    let missing_key = yosoi_session::new_operation_id();
     let missing_document = missing_reference_value
         .as_object_mut()
         .and_then(|value| value.get_mut("document"))
@@ -204,8 +208,8 @@ async fn archived_record_read_reports_missing_and_corrupt_artifacts() -> Result<
 async fn archived_record_reference_reopens_in_a_fresh_process_child() -> Result<(), Box<dyn Error>>
 {
     let (Some(root), Some(reference_path)) = (
-        std::env::var_os(CHILD_ROOT_ENV),
-        std::env::var_os(CHILD_REFERENCE_ENV),
+        std_env::var_os(CHILD_ROOT_ENV),
+        std_env::var_os(CHILD_REFERENCE_ENV),
     ) else {
         return Ok(());
     };
@@ -243,6 +247,10 @@ async fn archived_record_reference_reopens_in_a_fresh_process_child() -> Result<
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn nested_flow_results_must_be_a_depth_first_path_prefix() -> Result<(), Box<dyn Error>> {
     let flow = Flow::new([
         Step::Screenshot,
@@ -291,10 +299,7 @@ fn nested_outcome(flow: Flow, paths: Vec<Vec<u64>>, terminal: FlowTermination) -
             .into_iter()
             .enumerate()
             .map(|(index, flow_path)| {
-                let result_index = match u64::try_from(index) {
-                    Ok(index) => index,
-                    Err(_) => u64::MAX,
-                };
+                let result_index = u64::try_from(index).unwrap_or(u64::MAX);
                 StepOutcome {
                     index: result_index,
                     flow_path,
@@ -317,7 +322,7 @@ fn nested_outcome(flow: Flow, paths: Vec<Vec<u64>>, terminal: FlowTermination) -
             })
             .collect(),
         terminal,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),
@@ -327,7 +332,7 @@ fn nested_outcome(flow: Flow, paths: Vec<Vec<u64>>, terminal: FlowTermination) -
 
 fn unique_temp_path(prefix: &str) -> Result<PathBuf, Box<dyn Error>> {
     let nanos = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
-    Ok(std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id())))
+    Ok(std_env::temp_dir().join(format!("{prefix}-{}-{nanos}", std_process::id())))
 }
 
 fn document_payload_path(archive: &Archive, reference: &AutomationRecordRef) -> PathBuf {

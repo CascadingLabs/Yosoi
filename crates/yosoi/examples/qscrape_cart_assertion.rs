@@ -83,20 +83,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ])
     .with_failure_capture(FailureCapturePolicy::Screenshot);
 
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     let outcome = shopping.bind(&policy).invoke().await?;
     fs::write(
         output.join("outcome.json"),
         serde_json::to_vec_pretty(&outcome)?,
     )?;
     for step in &outcome.steps {
-        if step.receipt.kind == "assert_all" {
-            if let Some(result) = &step.receipt.result {
-                println!("{}", serde_json::to_string_pretty(result)?);
-            }
+        if step.receipt.kind == "assert_all"
+            && let Some(result) = &step.receipt.result
+        {
+            println!("{}", serde_json::to_string_pretty(result)?);
         }
     }
     println!(

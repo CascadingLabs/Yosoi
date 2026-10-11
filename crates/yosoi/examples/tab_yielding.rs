@@ -2,6 +2,7 @@
 //! cargo run -p yosoi --features browser --example tab_yielding -- --iterations 3
 //! Use run-yielding.sh for a hardened headless/headful Docker comparison.
 use serde::Serialize;
+use std::time as std_time;
 use std::{
     env,
     error::Error,
@@ -9,7 +10,9 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
+use tokio::time as tokio_time;
 use tokio::{sync::oneshot, task::JoinSet, time::timeout};
+use yosoi::flow as yosoi_flow;
 use yosoi::{
     action::{self, check},
     flow::{self, Condition},
@@ -201,10 +204,10 @@ fn memory_sample() -> MemoryPeak {
     if let Ok(processes) = fs::read_dir("/proc") {
         for process in processes.flatten() {
             let name = fs::read_to_string(process.path().join("comm")).unwrap_or_default();
-            if name.trim().starts_with("chrome") {
-                if let Some(value) = field_kib(process.path().join("smaps_rollup"), "Pss:") {
-                    pss = Some(pss.unwrap_or(0_u64).saturating_add(value));
-                }
+            if name.trim().starts_with("chrome")
+                && let Some(value) = field_kib(process.path().join("smaps_rollup"), "Pss:")
+            {
+                pss = Some(pss.unwrap_or(0_u64).saturating_add(value));
             }
         }
     }
@@ -225,8 +228,8 @@ fn maximize(target: &mut Option<u64>, sample: Option<u64>) {
 async fn sample_memory(pool: ExecutionPool, mut stop: oneshot::Receiver<()>) -> MemoryPeak {
     let mut peak = MemoryPeak::default();
     // Telemetry sampling is intentional, not a readiness or retry loop.
-    let mut ticks = tokio::time::interval(Duration::from_millis(100));
-    ticks.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let mut ticks = tokio_time::interval(Duration::from_millis(100));
+    ticks.set_missed_tick_behavior(tokio_time::MissedTickBehavior::Skip);
     loop {
         tokio::select! {
             biased;
@@ -285,7 +288,7 @@ async fn quote_job(
     url: String,
     id: u32,
     wait_ms: u64,
-) -> Result<(u32, std::time::Instant, yosoi::flow::FlowOutcome), DemoError> {
+) -> Result<(u32, std_time::Instant, yosoi_flow::FlowOutcome), DemoError> {
     let recipe = shipping_quote(url, id, wait_ms)?;
     let executed = recipe.with_lease(&work).invoke().await;
     let release = work.release().await;
@@ -295,7 +298,7 @@ async fn quote_job(
 }
 fn save_quote(
     id: u32,
-    outcome: &yosoi::flow::FlowOutcome,
+    outcome: &yosoi_flow::FlowOutcome,
     directory: &Path,
 ) -> Result<(), DemoError> {
     fs::create_dir_all(directory)?;
@@ -313,6 +316,16 @@ fn save_quote(
     }
     Ok(())
 }
+#[derive(Clone, Copy)]
+struct BatchLabel {
+    mode: &'static str,
+    iteration: u32,
+}
+
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Keep fixture ownership through verification and explicit cleanup; values moved into asynchronous tasks are not local owners to drop early."
+)]
 async fn batch(
     scenario: Scenario,
     browsers: &[session::Session],
@@ -320,9 +333,9 @@ async fn batch(
     pool: &ExecutionPool,
     service: &fixture::QuoteService,
     output: Option<PathBuf>,
-    mode: &'static str,
-    iteration: u32,
+    label: BatchLabel,
 ) -> Result<Round, DemoError> {
+    let BatchLabel { mode, iteration } = label;
     let mut leases = Vec::new();
     let mut tab_cursor = 0_usize;
     for browser in browsers {
@@ -472,6 +485,10 @@ async fn batch(
         },
     })
 }
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn run_case(
     scenario: Scenario,
     yielded: bool,
@@ -517,7 +534,13 @@ async fn run_case(
         let artifact =
             (iteration == repeats).then(|| output.join(format!("{}-{mode}", scenario.name)));
         match batch(
-            scenario, &browsers, &tabs, &pool, &service, artifact, mode, iteration,
+            scenario,
+            &browsers,
+            &tabs,
+            &pool,
+            &service,
+            artifact,
+            BatchLabel { mode, iteration },
         )
         .await
         {
@@ -535,10 +558,10 @@ async fn run_case(
         }
     }
     for browser in &browsers {
-        if let Err(error) = browser.close().await {
-            if failure.is_none() {
-                failure = Some(Box::new(error));
-            }
+        if let Err(error) = browser.close().await
+            && failure.is_none()
+        {
+            failure = Some(Box::new(error));
         }
     }
     service.stop().await?;
@@ -552,10 +575,15 @@ async fn run_case(
     })
 }
 #[tokio::main(flavor = "current_thread")]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn main() -> Result<(), DemoError> {
-    let mut output = env::var_os("YOSOI_BROWSER_OUTPUT_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("target/tab-yielding-evidence"));
+    let mut output = env::var_os("YOSOI_BROWSER_OUTPUT_DIR").map_or_else(
+        || PathBuf::from("target/tab-yielding-evidence"),
+        PathBuf::from,
+    );
     let mut repeats = 3_u32;
     let mut selected = None;
     let mut network_url = None;

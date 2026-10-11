@@ -3,8 +3,12 @@
 use super::{BrowserExecutionManagerError, RuntimeBrowserTabLease};
 use crate::internal::browser as provider;
 use serde_json::Value;
+use std::fmt;
+use std::str as std_str;
+use std::sync as std_sync;
 use std::{sync::Arc, time::Duration};
 use thiserror::Error;
+use tokio::time as tokio_time;
 use tokio::{
     sync::OwnedMutexGuard,
     time::{Instant, timeout_at},
@@ -52,7 +56,7 @@ impl BrowserControlError {
         };
         message.chars().take(4096).collect()
     }
-    pub fn requires_fence(&self) -> bool {
+    pub const fn requires_fence(&self) -> bool {
         matches!(
             self,
             Self::Cancelled
@@ -85,35 +89,23 @@ fn navigation_failure_kind(reason: &str) -> &'static str {
     }
 }
 
-#[cfg(test)]
-mod navigation_diagnostic_tests {
-    use super::{BrowserControlError, provider};
-
-    #[test]
-    fn reports_network_abort_without_exposing_arbitrary_provider_text() {
-        let aborted = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
-            "net::ERR_ABORTED".to_owned(),
-        ));
-        assert!(aborted.execution_message().contains("network_aborted"));
-        let private = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
-            "https://example.test/?access_token=private-token".to_owned(),
-        ));
-        let message = private.execution_message();
-        assert!(message.contains("provider_navigation_failure"));
-        assert!(!message.contains("private-token"));
-        assert!(!message.contains("example.test"));
-    }
-}
-
 /// Held control on a concrete tab. Provider handles remain inside the capture crate.
 pub struct RuntimeBrowserControl {
     page: Arc<provider::Page>,
     authority: Arc<ControlAuthority>,
     closing: CancellationToken,
 }
+impl fmt::Debug for RuntimeBrowserControl {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("RuntimeBrowserControl")
+            .field("closing", &self.closing.is_cancelled())
+            .finish_non_exhaustive()
+    }
+}
 
 pub(super) struct ControlAuthority {
-    guard: std::sync::Mutex<Option<OwnedMutexGuard<()>>>,
+    guard: std_sync::Mutex<Option<OwnedMutexGuard<()>>>,
 }
 impl ControlAuthority {
     pub(super) fn revoke(&self) {
@@ -147,7 +139,7 @@ impl RuntimeBrowserTabLease {
         // Revalidate after waiting; a second handle may have closed the tab.
         let page = self.page().await?;
         let authority = Arc::new(ControlAuthority {
-            guard: std::sync::Mutex::new(Some(guard)),
+            guard: std_sync::Mutex::new(Some(guard)),
         });
         let resource = self
             .resource
@@ -345,12 +337,11 @@ impl RuntimeBrowserControl {
         self.check_authority()?;
         // Stateful work must leave page loading/rendering intact. The Request
         // capture recipe separately retains its DOM-checkpoint finalization.
-        match tokio::time::timeout(timeout, self.page.navigate(url)).await {
-            Ok(result) => result?,
-            Err(_) => {
-                self.fence();
-                return Err(BrowserControlError::Deadline);
-            }
+        if let Ok(result) = tokio_time::timeout(timeout, self.page.navigate(url)).await {
+            result?;
+        } else {
+            self.fence();
+            return Err(BrowserControlError::Deadline);
         }
         Ok(())
     }
@@ -472,7 +463,7 @@ impl RuntimeBrowserControl {
                 return Err(BrowserControlError::IncompleteCapture);
             }
         };
-        let html = std::str::from_utf8(captured.bytes())
+        let html = std_str::from_utf8(captured.bytes())
             .map_err(|_| BrowserControlError::IncompleteCapture)?
             .to_owned();
         Ok((html, epoch))
@@ -481,5 +472,25 @@ impl RuntimeBrowserControl {
     pub async fn screenshot(&self) -> Result<Vec<u8>, BrowserControlError> {
         self.check_authority()?;
         Ok(self.page.screenshot_png().await?)
+    }
+}
+
+#[cfg(test)]
+mod navigation_diagnostic_tests {
+    use super::{BrowserControlError, provider};
+
+    #[test]
+    fn reports_network_abort_without_exposing_arbitrary_provider_text() {
+        let aborted = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
+            "net::ERR_ABORTED".to_owned(),
+        ));
+        assert!(aborted.execution_message().contains("network_aborted"));
+        let private = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
+            "https://example.test/?access_token=private-token".to_owned(),
+        ));
+        let message = private.execution_message();
+        assert!(message.contains("provider_navigation_failure"));
+        assert!(!message.contains("private-token"));
+        assert!(!message.contains("example.test"));
     }
 }

@@ -1,5 +1,7 @@
 #![cfg(feature = "browser")]
 use std::{env, error::Error};
+use yosoi::assertions as yosoi_assertions;
+use yosoi::automation_record as yosoi_automation_record;
 use yosoi::{
     action::{self, check},
     flow::{self, FlowTermination},
@@ -18,16 +20,23 @@ struct Fixture {
     rows: Vec<String>,
 }
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn browser_group_captures_once_and_continues_to_next_click() -> Result<(), Box<dyn Error>> {
     if env::var("YOSOI_BROWSER_TESTS").ok().as_deref() != Some("1") {
         eprintln!("SKIPPED: requires browser opt-in");
         return Ok(());
     }
     let fixture = fixture::SessionFixture::start().await?;
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     let session = session::new().bind(&policy).acquire().await?;
     let lease = session.work().await?;
     lease.navigate(&fixture.url("/assertions")).await?;
@@ -46,7 +55,7 @@ async fn browser_group_captures_once_and_continues_to_next_click() -> Result<(),
     assert_eq!(outcome.terminal, FlowTermination::CompletedWithIssues);
     assert_eq!(outcome.steps.len(), 2);
     let receipt = &outcome.steps.first().ok_or("missing receipt")?.receipt;
-    let report: yosoi::assertions::AssertionReport =
+    let report: yosoi_assertions::AssertionReport =
         serde_json::from_value(receipt.result.clone().ok_or("missing report")?)?;
     assert_eq!(
         report
@@ -59,13 +68,13 @@ async fn browser_group_captures_once_and_continues_to_next_click() -> Result<(),
     let observation = receipt.observation.as_ref().ok_or("missing observation")?;
     match &report.located {
         ys::LocateOutcome::Matched { result } => {
-            assert_eq!(result.document_id().as_str(), observation.id)
+            assert_eq!(result.document_id().as_str(), observation.id);
         }
         _ => return Err("missing located evidence".into()),
     }
     assert_eq!(
         outcome.steps.get(1).map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Observed)
+        Some(yosoi_automation_record::OperationStatus::Observed)
     );
     let passing = flow::new([
         action::assert_all::<Fixture>(

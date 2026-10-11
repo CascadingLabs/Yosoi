@@ -5,6 +5,7 @@
 //! them under their normal browser-worker capacity.
 
 use super::{Page, shared::event_listener_config};
+use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime as js_runtime;
 use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     cdp::{
@@ -31,6 +32,7 @@ use crate::internal::browser::{DocumentEpoch, DocumentScope, Result, VoidCrawlEr
 use base64::{engine::general_purpose::STANDARD, read::DecoderReader};
 use futures::{StreamExt, future::pending};
 use serde::{Deserialize, Serialize};
+use std::mem as std_mem;
 use std::{
     collections::{HashMap, HashSet},
     fmt,
@@ -42,6 +44,7 @@ use std::{
     time::Duration,
 };
 use tokio::runtime::Handle;
+use tokio::time as tokio_time;
 
 const BINDING_NAME: &str = "__yosoi_observation_watch";
 const MAX_WATCH_EVENTS: usize = 4_096;
@@ -205,6 +208,7 @@ pub enum ObservationChange {
 }
 
 /// Bounded response metadata from a request that began after this watch armed.
+///
 /// The response request ID is serialized as source evidence; private target and
 /// watch identities remain unavailable to consumers.
 #[derive(Clone, PartialEq, Eq, Serialize)]
@@ -238,7 +242,7 @@ impl fmt::Debug for CompletedResponseCandidate {
             .field("top_level", &self.top_level)
             .field("started_at_unix_us", &self.started_at_unix_us)
             .field("epoch", &self.epoch)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -291,7 +295,7 @@ pub struct ObservationWatch {
     start_scope: DocumentScope,
     start_frame_id: String,
     start_loader_id: String,
-    main_context_id: Option<crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::ExecutionContextId>,
+    main_context_id: Option<js_runtime::ExecutionContextId>,
     watch_id: u64,
     reservation: Option<PageWatchReservation>,
     dom_observer: Option<RemoteObjectId>,
@@ -334,7 +338,7 @@ impl ObservationWatch {
     }
 
     /// The document scope observed before installation was activated.
-    pub fn start_scope(&self) -> &DocumentScope {
+    pub const fn start_scope(&self) -> &DocumentScope {
         &self.start_scope
     }
 
@@ -360,47 +364,11 @@ impl ObservationWatch {
 
         loop {
             match self.next_source_event().await {
-                SourceEvent::Dom(delivery) => match delivery {
-                    Some(EventDelivery::Event(event)) => {
-                        if event.name != BINDING_NAME
-                            || self
-                                .main_context_id
-                                .as_ref()
-                                .is_some_and(|context| context != &event.execution_context_id)
-                        {
-                            continue;
-                        }
-                        if event.payload.len() > 128 {
-                            return Err(watch_lost("DOM notification exceeded its bound"));
-                        }
-                        let notification: DomNotification = serde_json::from_str(&event.payload)
-                            .map_err(|_| watch_lost("DOM notification was malformed"))?;
-                        if notification.watch_id != self.watch_id {
-                            continue;
-                        }
-                        let expected_sequence = self
-                            .last_dom_sequence
-                            .checked_add(1)
-                            .ok_or_else(|| watch_lost("DOM notification sequence exhausted"))?;
-                        if notification.sequence != expected_sequence {
-                            return Err(watch_lost("DOM notification sequence was incomplete"));
-                        }
-                        self.last_dom_sequence = notification.sequence;
-                        return self.report_change(
-                            ObservationChange::DomChanged {
-                                sequence: notification.sequence,
-                            },
-                            16,
-                        );
+                SourceEvent::Dom(delivery) => {
+                    if let Some(change) = self.observe_dom_delivery(delivery)? {
+                        return Ok(change);
                     }
-                    Some(EventDelivery::Lagged { dropped }) => {
-                        return Err(watch_lost(&format!(
-                            "DOM notification listener lost {} event(s)",
-                            dropped.get()
-                        )));
-                    }
-                    None => return Err(watch_lost("DOM notification stream closed")),
-                },
+                }
                 SourceEvent::AxNodes(delivery) => match delivery {
                     Some(EventDelivery::Event(event)) => {
                         return self.report_change(
@@ -526,6 +494,52 @@ impl ObservationWatch {
         }
     }
 
+    fn observe_dom_delivery(
+        &mut self,
+        delivery: Option<EventDelivery<EventBindingCalled>>,
+    ) -> Result<Option<ObservationChange>> {
+        match delivery {
+            Some(EventDelivery::Event(event)) => {
+                if event.name != BINDING_NAME
+                    || self
+                        .main_context_id
+                        .as_ref()
+                        .is_some_and(|context| context != &event.execution_context_id)
+                {
+                    return Ok(None);
+                }
+                if event.payload.len() > 128 {
+                    return Err(watch_lost("DOM notification exceeded its bound"));
+                }
+                let notification: DomNotification = serde_json::from_str(&event.payload)
+                    .map_err(|_| watch_lost("DOM notification was malformed"))?;
+                if notification.watch_id != self.watch_id {
+                    return Ok(None);
+                }
+                let expected_sequence = self
+                    .last_dom_sequence
+                    .checked_add(1)
+                    .ok_or_else(|| watch_lost("DOM notification sequence exhausted"))?;
+                if notification.sequence != expected_sequence {
+                    return Err(watch_lost("DOM notification sequence was incomplete"));
+                }
+                self.last_dom_sequence = notification.sequence;
+                self.report_change(
+                    ObservationChange::DomChanged {
+                        sequence: notification.sequence,
+                    },
+                    16,
+                )
+                .map(Some)
+            }
+            Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!(
+                "DOM notification listener lost {} event(s)",
+                dropped.get()
+            ))),
+            None => Err(watch_lost("DOM notification stream closed")),
+        }
+    }
+
     /// Stop the JS observer, unregister its binding, and disable AX events.
     /// Repeated calls are harmless; all cleanup commands have a one-second cap.
     pub async fn settle(&mut self) -> Result<()> {
@@ -549,24 +563,22 @@ impl ObservationWatch {
         Ok(())
     }
 
-    fn next_source_event(&mut self) -> impl std::future::Future<Output = SourceEvent> + '_ {
-        async move {
-            tokio::select! {
-                biased;
-                event = next_delivery(&mut self.requests) => SourceEvent::Request(event),
-                event = next_delivery(&mut self.responses) => SourceEvent::Response(event),
-                event = next_delivery(&mut self.finished) => SourceEvent::Finished(event),
-                event = next_delivery(&mut self.failed) => SourceEvent::Failed(event),
-                event = next_delivery(&mut self.frame_navigations) => SourceEvent::FrameNavigation(event),
-                event = next_delivery(&mut self.dom_events) => SourceEvent::Dom(event),
-                event = next_delivery(&mut self.ax_nodes) => SourceEvent::AxNodes(event),
-                event = next_delivery(&mut self.ax_load) => SourceEvent::AxLoad(event),
-            }
+    async fn next_source_event(&mut self) -> SourceEvent {
+        tokio::select! {
+            biased;
+            event = next_delivery(&mut self.requests) => SourceEvent::Request(event),
+            event = next_delivery(&mut self.responses) => SourceEvent::Response(event),
+            event = next_delivery(&mut self.finished) => SourceEvent::Finished(event),
+            event = next_delivery(&mut self.failed) => SourceEvent::Failed(event),
+            event = next_delivery(&mut self.frame_navigations) => SourceEvent::FrameNavigation(event),
+            event = next_delivery(&mut self.dom_events) => SourceEvent::Dom(event),
+            event = next_delivery(&mut self.ax_nodes) => SourceEvent::AxNodes(event),
+            event = next_delivery(&mut self.ax_load) => SourceEvent::AxLoad(event),
         }
     }
 
     fn report_change(
-        &mut self,
+        &self,
         change: ObservationChange,
         byte_weight: usize,
     ) -> Result<ObservationChange> {
@@ -1051,7 +1063,7 @@ impl Page {
                 .await
                 .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
             let source = dom_observer_source(watch_id)?;
-            let params = crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::EvaluateParams::builder()
+            let params = js_runtime::EvaluateParams::builder()
                 .expression(source)
                 .await_promise(false)
                 .return_by_value(false)
@@ -1062,7 +1074,7 @@ impl Page {
                 .evaluate_expression(params)
                 .await
                 .map_err(|error| VoidCrawlError::JsEvalError(error.to_string()))?;
-            setup.dom_observer = evaluated.object().object_id.clone();
+            setup.dom_observer.clone_from(&evaluated.object().object_id);
             if setup.dom_observer.is_none() {
                 return Err(watch_lost("DOM observer installation returned no handle"));
             }
@@ -1105,8 +1117,8 @@ impl Page {
             watch_id,
             reservation: setup.reservation.take(),
             dom_observer: setup.dom_observer.take(),
-            remove_binding: std::mem::replace(&mut setup.remove_binding, false),
-            disable_accessibility: std::mem::replace(&mut setup.disable_accessibility, false),
+            remove_binding: std_mem::replace(&mut setup.remove_binding, false),
+            disable_accessibility: std_mem::replace(&mut setup.disable_accessibility, false),
             frame_navigations: Some(frame_navigations),
             dom_events,
             ax_nodes,
@@ -1213,14 +1225,14 @@ fn pending_weight(request: &PendingRequest) -> Result<usize> {
         request.request_id.len(),
         request.url.len(),
         request.method.len(),
-        std::mem::size_of::<u64>(),
+        std_mem::size_of::<u64>(),
     ]
     .into_iter()
     .chain([
         request.loader_id.as_ref().map_or(0, String::len),
         request.frame_id.as_ref().map_or(0, String::len),
     ])
-    .try_fold(96usize, |total, size| total.checked_add(size))
+    .try_fold(96usize, usize::checked_add)
     .ok_or_else(|| watch_lost("network metadata size overflowed"))
 }
 
@@ -1229,12 +1241,12 @@ fn candidate_weight(candidate: &CompletedResponseCandidate) -> Result<usize> {
         candidate.request_id.len(),
         candidate.url.len(),
         candidate.method.len(),
-        std::mem::size_of::<u64>(),
+        std_mem::size_of::<u64>(),
         candidate.loader_id.as_ref().map_or(0, String::len),
         candidate.frame_id.as_ref().map_or(0, String::len),
     ]
     .into_iter()
-    .try_fold(96usize, |total, size| total.checked_add(size))
+    .try_fold(96usize, usize::checked_add)
     .ok_or_else(|| watch_lost("response candidate size overflowed"))
 }
 
@@ -1253,7 +1265,7 @@ fn early_mark_weight(request_id: &str) -> Result<usize> {
         .ok_or_else(|| watch_lost("early request marker size overflowed"))
 }
 
-fn event_weight_fits(max_bytes: usize, byte_weight: usize) -> bool {
+const fn event_weight_fits(max_bytes: usize, byte_weight: usize) -> bool {
     byte_weight <= max_bytes
 }
 
@@ -1427,6 +1439,7 @@ impl PageWatchReservation {
                 "this page already has an active observation watch",
             ));
         }
+        drop(active);
         Ok(Self { target_id })
     }
 }
@@ -1449,12 +1462,12 @@ struct SetupCleanup {
     remove_binding: bool,
     disable_accessibility: bool,
     watch_id: Option<u64>,
-    main_context_id: Option<crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::ExecutionContextId>,
+    main_context_id: Option<js_runtime::ExecutionContextId>,
     committed: bool,
 }
 
 impl SetupCleanup {
-    fn new(page: CdpPage, executor: Handle, reservation: PageWatchReservation) -> Self {
+    const fn new(page: CdpPage, executor: Handle, reservation: PageWatchReservation) -> Self {
         Self {
             page,
             executor,
@@ -1506,7 +1519,7 @@ async fn cleanup_watch(
         let source = format!(
             "(() => {{ const registry = globalThis[Symbol.for('yosoi.observation.watchers')]; const state = registry instanceof Map ? registry.get({watch_id}) : undefined; if (state) state.stop(); return !!state; }})()"
         );
-        let params = crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::EvaluateParams::builder()
+        let params = js_runtime::EvaluateParams::builder()
             .expression(source)
             .await_promise(false)
             .return_by_value(true)
@@ -1515,7 +1528,7 @@ async fn cleanup_watch(
         match params {
             Ok(params) => {
                 if let Err(error) =
-                    tokio::time::timeout(Duration::from_secs(1), page.execute(params))
+                    tokio_time::timeout(Duration::from_secs(1), page.execute(params))
                         .await
                         .map_err(|_| watch_lost("DOM observer registry cleanup timed out"))
                         .and_then(|result| {
@@ -1538,7 +1551,7 @@ async fn cleanup_watch(
         match stop {
             Ok(params) => {
                 if let Err(error) =
-                    tokio::time::timeout(Duration::from_secs(1), page.execute(params))
+                    tokio_time::timeout(Duration::from_secs(1), page.execute(params))
                         .await
                         .map_err(|_| watch_lost("DOM observer cleanup timed out"))
                         .and_then(|result| {
@@ -1550,55 +1563,54 @@ async fn cleanup_watch(
             }
             Err(error) => first_error = Some(error),
         }
-        if let Err(error) = tokio::time::timeout(
+        if let Err(error) = tokio_time::timeout(
             Duration::from_secs(1),
             page.execute(ReleaseObjectParams::new(object)),
         )
         .await
         .map_err(|_| watch_lost("observer handle release timed out"))
         .and_then(|result| result.map_err(|error| VoidCrawlError::PageError(error.to_string())))
+            && first_error.is_none()
         {
-            if first_error.is_none() {
-                first_error = Some(error);
-            }
+            first_error = Some(error);
         }
     }
-    if remove_binding {
-        if let Err(error) = tokio::time::timeout(
+    if remove_binding
+        && let Err(error) = tokio_time::timeout(
             Duration::from_secs(1),
             page.execute(RemoveBindingParams::new(BINDING_NAME)),
         )
         .await
         .map_err(|_| watch_lost("runtime binding cleanup timed out"))
         .and_then(|result| result.map_err(|error| VoidCrawlError::PageError(error.to_string())))
-        {
-            if first_error.is_none() {
-                first_error = Some(error);
-            }
-        }
+        && first_error.is_none()
+    {
+        first_error = Some(error);
     }
-    if disable_accessibility {
-        if let Err(error) = tokio::time::timeout(
+    if disable_accessibility
+        && let Err(error) = tokio_time::timeout(
             Duration::from_secs(1),
             page.execute(AccessibilityDisableParams::default()),
         )
         .await
         .map_err(|_| watch_lost("AX event cleanup timed out"))
         .and_then(|result| result.map_err(|error| VoidCrawlError::PageError(error.to_string())))
-        {
-            if first_error.is_none() {
-                first_error = Some(error);
-            }
-        }
+        && first_error.is_none()
+    {
+        first_error = Some(error);
     }
     first_error.map_or(Ok(()), Err)
 }
 
-fn invalid_watch_input(reason: &'static str) -> VoidCrawlError {
+const fn invalid_watch_input(reason: &'static str) -> VoidCrawlError {
     VoidCrawlError::InvalidInput {
         operation: "start_observation_watch",
         reason,
     }
+}
+
+fn watch_lost(reason: &str) -> VoidCrawlError {
+    VoidCrawlError::PageError(format!("observation watch incomplete: {reason}"))
 }
 
 #[cfg(test)]
@@ -1673,8 +1685,4 @@ mod tests {
         assert!(unix_micros_from_seconds(f64::INFINITY).is_err());
         assert!(unix_micros_from_seconds(18_446_744_073_710.0).is_err());
     }
-}
-
-fn watch_lost(reason: &str) -> VoidCrawlError {
-    VoidCrawlError::PageError(format!("observation watch incomplete: {reason}"))
 }

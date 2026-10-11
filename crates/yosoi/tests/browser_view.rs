@@ -54,7 +54,7 @@ fn view_pages_are_bounded_and_cursors_bind_to_the_capture() -> Result<(), Box<dy
         Err(ViewError::ForeignCursor)
     ));
 
-    let mut stale = capture.clone();
+    let mut stale = capture;
     stale.document_epoch += 1;
     assert!(matches!(
         View::continue_from(&stale, cursor),
@@ -101,7 +101,7 @@ fn offline_selector_assertions_use_captured_html_only() -> Result<(), Box<dyn Er
         Err(ViewError::UnsupportedCondition { kind: "visible" })
     ));
 
-    let mut changed = capture.clone();
+    let mut changed = capture;
     changed.html = Some("<p>Changed under the same capture identity</p>".to_owned());
     assert!(matches!(
         view.verify_condition(
@@ -116,10 +116,7 @@ fn offline_selector_assertions_use_captured_html_only() -> Result<(), Box<dyn Er
 }
 
 #[test]
-#[expect(
-    clippy::panic_in_result_fn,
-    reason = "Assertions report unavailable-evidence behavior."
-)]
+
 fn view_reports_html_unavailable_when_capture_does_not_retain_it() {
     let mut capture = observation();
     capture.html = None;

@@ -1,7 +1,11 @@
 //! Millisecond timeout inputs and runtime deadline scopes.
 
 use std::{future::Future, time::Duration};
+#[cfg(any(not(feature = "browser"), test))]
+use tokio::time as tokio_time;
 use tokio::time::Instant;
+#[cfg(any(not(feature = "browser"), test))]
+use tokio::time::error as tokio_time_error;
 
 /// Converts seconds to milliseconds. The `u32` input always fits in `u64`.
 pub fn seconds(value: u32) -> u64 {
@@ -35,6 +39,6 @@ pub(crate) fn checked_deadline(duration: Duration) -> Option<Instant> {
 pub(crate) async fn bound<T>(
     duration: Duration,
     future: impl Future<Output = T>,
-) -> Result<T, tokio::time::error::Elapsed> {
-    tokio::time::timeout(duration, future).await
+) -> Result<T, tokio_time_error::Elapsed> {
+    tokio_time::timeout(duration, future).await
 }

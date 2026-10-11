@@ -1,5 +1,8 @@
 //! Serial execution of the acquisitions authored by one page request.
 
+use crate::internal::direct_http as internal_direct_http;
+use crate::internal::engine as internal_engine;
+use crate::internal::web_capture as internal_web_capture;
 use std::fmt;
 
 pub use crate::internal::direct_http::{DirectHttpRedirectErrorKind, DirectHttpTransportErrorKind};
@@ -39,7 +42,7 @@ pub use outcome::{
 pub use standard::StandardExecutionSetupError;
 
 pub(in crate::internal::engine) fn direct_http_executor_with_user_agent(
-    user_agent: crate::internal::web_capture::UserAgent,
+    user_agent: internal_web_capture::UserAgent,
 ) -> Result<RequestExecutor, StandardExecutionSetupError> {
     let mut inputs = standard::direct_http_inputs()?;
     inputs.acquisition = inputs.acquisition.with_user_agent(user_agent);
@@ -104,7 +107,7 @@ impl RequestExecutor {
         &self,
         prepared: PreparedPageRequest,
         cancellation: &CancellationToken,
-        control: &crate::internal::web_capture::RuntimeBrowserControl,
+        control: &internal_web_capture::RuntimeBrowserControl,
     ) -> Response {
         self.execute_prepared_using(prepared, cancellation, Some(control))
             .await
@@ -114,9 +117,7 @@ impl RequestExecutor {
         &self,
         prepared: PreparedPageRequest,
         cancellation: &CancellationToken,
-        #[cfg(feature = "browser")] control: Option<
-            &crate::internal::web_capture::RuntimeBrowserControl,
-        >,
+        #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
     ) -> Response {
         let mut attempts = Vec::with_capacity(prepared.attempts().len());
         let mut termination = if cancellation.is_cancelled() {
@@ -163,9 +164,7 @@ impl RequestExecutor {
         prepared: &PreparedPageRequest,
         attempt: &PreparedAttempt,
         cancellation: &CancellationToken,
-        #[cfg(feature = "browser")] control: Option<
-            &crate::internal::web_capture::RuntimeBrowserControl,
-        >,
+        #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
     ) -> AttemptOutcome {
         let Some(context) = self.context_for(attempt) else {
             return AttemptOutcome::failed(
@@ -318,7 +317,7 @@ impl BoundPageRequest<'_> {
     #[cfg(feature = "browser")]
     pub async fn send_on_browser_control(
         &self,
-        control: &crate::internal::web_capture::RuntimeBrowserControl,
+        control: &internal_web_capture::RuntimeBrowserControl,
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
@@ -356,11 +355,11 @@ impl BoundPageRequest<'_> {
 }
 
 fn execution_failure_facts(
-    error: &crate::internal::engine::PolicyCaptureError,
+    error: &internal_engine::PolicyCaptureError,
 ) -> (AttemptDiagnostic, Option<AttemptCaptureFailureFacts>) {
     match error.execution_error() {
         PolicyCaptureExecutionError::DirectHttp(source) => match source.as_ref() {
-            crate::internal::direct_http::DirectHttpCaptureError::Transport(failure) => (
+            internal_direct_http::DirectHttpCaptureError::Transport(failure) => (
                 AttemptDiagnostic::DirectHttpTransport(failure.error().kind()),
                 Some(AttemptCaptureFailureFacts::direct_http(
                     failure.resolution().cloned(),
@@ -369,7 +368,7 @@ fn execution_failure_facts(
                     Some(failure.error().kind()),
                 )),
             ),
-            crate::internal::direct_http::DirectHttpCaptureError::Body(failure) => (
+            internal_direct_http::DirectHttpCaptureError::Body(failure) => (
                 AttemptDiagnostic::DirectHttpBodyFailed,
                 Some(AttemptCaptureFailureFacts::direct_http(
                     Some(failure.resolution().clone()),
@@ -378,16 +377,14 @@ fn execution_failure_facts(
                     None,
                 )),
             ),
-            crate::internal::direct_http::DirectHttpCaptureError::Finalization {
-                evidence, ..
-            } => (
+            internal_direct_http::DirectHttpCaptureError::Finalization { evidence, .. } => (
                 AttemptDiagnostic::DirectHttpFinalizationFailed,
                 Some(AttemptCaptureFailureFacts::direct_http(
                     evidence.resolution().cloned(),
                     None,
                     evidence
                         .response()
-                        .map(crate::internal::direct_http::DirectHttpResponseFacts::status),
+                        .map(internal_direct_http::DirectHttpResponseFacts::status),
                     None,
                 )),
             ),

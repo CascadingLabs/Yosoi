@@ -1,6 +1,11 @@
 #![cfg(feature = "browser")]
+use std::future as std_future;
 use std::{env, error::Error, future::Future, task::Poll, time::Duration};
+use tokio::time as tokio_time;
 use tokio::{sync::oneshot, time::timeout};
+use yosoi::action as yosoi_action;
+use yosoi::automation_record as yosoi_automation_record;
+use yosoi::flow as yosoi_flow;
 use yosoi::{
     flow::Condition,
     session::{self, ExecutionPool, SessionError, SessionPolicy},
@@ -10,6 +15,11 @@ mod fixture;
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn long_condition_wait_outlives_the_transport_default_while_other_work_progresses()
 -> TestResult {
     if !enabled() {
@@ -31,7 +41,7 @@ async fn long_condition_wait_outlives_the_transport_default_while_other_work_pro
     a.click("#start").await?;
     timeout(Duration::from_secs(5), service.started.recv()).await??;
     let mut events = pool.subscribe();
-    let recipe = yosoi::flow::new([yosoi::action::wait_until(
+    let recipe = yosoi_flow::new([yosoi_action::wait_until(
         Condition::Visible {
             selector: "#done".into(),
         },
@@ -44,15 +54,15 @@ async fn long_condition_wait_outlives_the_transport_default_while_other_work_pro
         assert_eq!(pool.snapshot().active, 0);
         Ok::<_, Box<dyn Error + Send + Sync>>(())
     };
-    let started = tokio::time::Instant::now();
+    let started = tokio_time::Instant::now();
     let invocation = recipe.with_lease(&a);
-    let (outcome, other) = timeout(Duration::from_secs(45), async {
+    let (outcome, other) = Box::pin(timeout(Duration::from_secs(45), async {
         tokio::join!(invocation.invoke(), progress)
-    })
+    }))
     .await?;
     other?;
     let outcome = outcome?;
-    assert_eq!(outcome.terminal, yosoi::flow::FlowTermination::Completed);
+    assert_eq!(outcome.terminal, yosoi_flow::FlowTermination::Completed);
     assert!(started.elapsed() >= Duration::from_secs(30));
     assert_eq!(pool.snapshot().active, 0);
     assert_eq!(pool.snapshot().parked, 0);
@@ -67,6 +77,11 @@ fn enabled() -> bool {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn queued_deadline_is_predispatch_and_does_not_fence_the_tab() -> TestResult {
     if !enabled() {
         eprintln!("SKIPPED: opt in to browser proof");
@@ -77,16 +92,16 @@ async fn queued_deadline_is_predispatch_and_does_not_fence_the_tab() -> TestResu
     let browser = session::new().execution_pool(&pool).acquire().await?;
     let work = browser.work().await?;
     let held = pool.acquire().await?;
-    let recipe = yosoi::flow::new([yosoi::action::navigate(service.url(0)).timeout(100)]);
+    let recipe = yosoi_flow::new([yosoi_action::navigate(service.url(0)).timeout(100)]);
     let outcome = recipe.with_lease(&work).invoke().await?;
     // Default continuation retains the rejected step without stopping the invocation.
     assert_eq!(
         outcome.terminal,
-        yosoi::flow::FlowTermination::CompletedWithIssues
+        yosoi_flow::FlowTermination::CompletedWithIssues
     );
     assert_eq!(
         outcome.steps.first().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Rejected)
+        Some(yosoi_automation_record::OperationStatus::Rejected)
     );
     assert_eq!(pool.snapshot().queued, 0);
     drop(held);
@@ -98,6 +113,11 @@ async fn queued_deadline_is_predispatch_and_does_not_fence_the_tab() -> TestResu
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn resumption_does_not_restart_the_deadline_or_hide_prior_dispatch() -> TestResult {
     if !enabled() {
         eprintln!("SKIPPED: opt in to browser proof");
@@ -111,7 +131,7 @@ async fn resumption_does_not_restart_the_deadline_or_hide_prior_dispatch() -> Te
     work.click("#start").await?;
     timeout(Duration::from_secs(5), service.started.recv()).await??;
     let mut events = pool.subscribe();
-    let recipe = yosoi::flow::new([yosoi::action::wait_until(
+    let recipe = yosoi_flow::new([yosoi_action::wait_until(
         Condition::Visible {
             selector: "#done".into(),
         },
@@ -132,17 +152,17 @@ async fn resumption_does_not_restart_the_deadline_or_hide_prior_dispatch() -> Te
         drop(held);
         Ok::<_, Box<dyn Error + Send + Sync>>(())
     };
-    let started = tokio::time::Instant::now();
+    let started = tokio_time::Instant::now();
     let (outcome, held) = timeout(Duration::from_secs(5), async {
         tokio::join!(invoke, hold_resume)
     })
     .await?;
     held?;
     let outcome = outcome?;
-    assert_eq!(outcome.terminal, yosoi::flow::FlowTermination::Unknown);
+    assert_eq!(outcome.terminal, yosoi_flow::FlowTermination::Unknown);
     assert_eq!(
         outcome.steps.first().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Unknown)
+        Some(yosoi_automation_record::OperationStatus::Unknown)
     );
     assert!(started.elapsed() < Duration::from_secs(2));
     assert_eq!(pool.snapshot().queued, 0);
@@ -166,6 +186,11 @@ fn settings(tabs: u32) -> SessionPolicy {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn parked_tab_retains_ownership_while_another_tab_completes() -> TestResult {
     if !enabled() {
         eprintln!("SKIPPED: opt in to browser proof");
@@ -202,23 +227,22 @@ async fn parked_tab_retains_ownership_while_another_tab_completes() -> TestResul
             1
         );
         service.complete(1)?;
-        let b_receipt = b
-            .wait_until(
-                &Condition::Visible {
-                    selector: "#done".into(),
-                },
-                5_000,
-            )
-            .await?;
+        let b_receipt = Box::pin(b.wait_until(
+            &Condition::Visible {
+                selector: "#done".into(),
+            },
+            5_000,
+        ))
+        .await?;
         assert_eq!(
             b_receipt.status,
-            yosoi::automation_record::OperationStatus::Observed
+            yosoi_automation_record::OperationStatus::Observed
         );
         // B is done, but A still waits for its service response and owns its tab.
         let snapshot = browser.execution_snapshot();
         assert_eq!(snapshot.parked, 1);
         assert_eq!(snapshot.active, 0);
-        std::future::poll_fn(|cx| {
+        std_future::poll_fn(|cx| {
             assert!(matches!(contender.as_mut().poll(cx), Poll::Pending));
             Poll::Ready(())
         })
@@ -226,14 +250,14 @@ async fn parked_tab_retains_ownership_while_another_tab_completes() -> TestResul
         service.complete(0)?;
         Ok::<_, Box<dyn Error + Send + Sync>>(())
     };
-    let (a_receipt, b_result) = timeout(Duration::from_secs(10), async {
+    let (a_receipt, b_result) = Box::pin(timeout(Duration::from_secs(10), async {
         tokio::join!(&mut a_wait, b_job)
-    })
+    }))
     .await?;
     b_result?;
     assert_eq!(
         a_receipt?.status,
-        yosoi::automation_record::OperationStatus::Observed
+        yosoi_automation_record::OperationStatus::Observed
     );
     drop(a_wait);
     a.release().await?;
@@ -248,6 +272,11 @@ async fn parked_tab_retains_ownership_while_another_tab_completes() -> TestResul
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn shared_pool_allows_progress_in_another_browser_process() -> TestResult {
     if !enabled() {
         eprintln!("SKIPPED: opt in to browser proof");
@@ -275,15 +304,15 @@ async fn shared_pool_allows_progress_in_another_browser_process() -> TestResult 
             1
         );
         service.complete(1)?;
-        b.wait_until(&condition, 5_000).await?;
+        Box::pin(b.wait_until(&condition, 5_000)).await?;
         assert_eq!(pool.snapshot().parked, 1);
         assert!(pool.snapshot().peak_active <= 1);
         service.complete(0)?;
         Ok::<_, Box<dyn Error + Send + Sync>>(())
     };
-    let (waiting, progressed) = timeout(Duration::from_secs(10), async {
+    let (waiting, progressed) = Box::pin(timeout(Duration::from_secs(10), async {
         tokio::join!(a.wait_until(&condition, 5_000), other)
-    })
+    }))
     .await?;
     waiting?;
     progressed?;
@@ -298,6 +327,11 @@ async fn shared_pool_allows_progress_in_another_browser_process() -> TestResult 
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn dropping_parked_wait_fences_only_its_tab_and_returns_capacity() -> TestResult {
     if !enabled() {
         eprintln!("SKIPPED: opt in to browser proof");

@@ -10,10 +10,12 @@ use crate::{
     timing,
 };
 use std::time::Duration;
+use tokio::task as tokio_task;
+use tokio::time as tokio_time;
 
 async fn simulated_control_call(duration: Duration) -> Result<(), SessionError> {
     let remaining = timing::remaining().ok_or(SessionError::InvalidInput)?;
-    timing::bound(remaining, tokio::time::sleep(duration))
+    timing::bound(remaining, tokio_time::sleep(duration))
         .await
         .map_err(|_| SessionError::Deadline)
 }
@@ -36,7 +38,7 @@ async fn longer_nested_flow_runs_past_parent_and_sibling_restores_parent_timeout
     let child_timeout = resolve_flow_timeout(&child, parent_timeout);
     assert_eq!(child_timeout, Duration::from_secs(30));
 
-    let child_started = tokio::time::Instant::now();
+    let child_started = tokio_time::Instant::now();
     execute_action(
         child_timeout,
         simulated_control_call(Duration::from_secs(6)),
@@ -62,14 +64,13 @@ async fn native_nested_execution_keeps_child_receipt_path_and_parent_sibling_bud
     }])
     .timeout(30_000);
     let parent = Flow::new([child.into(), Step::Screenshot]).timeout(5_000);
-    let started = tokio::time::Instant::now();
+    let started = tokio_time::Instant::now();
 
     let (steps, terminal) =
         execute_flow_steps(&parent, Duration::from_secs(10), |step, timeout| {
             Box::pin(async move {
                 let operation_duration = match step {
-                    Step::Click { .. } => Duration::from_secs(6),
-                    Step::Screenshot => Duration::from_secs(6),
+                    Step::Click { .. } | Step::Screenshot => Duration::from_secs(6),
                     _ => return Err(SessionError::InvalidInput),
                 };
                 execute_action(timeout, async move {
@@ -154,11 +155,11 @@ async fn internal_action_phases_share_one_deadline() {
 #[tokio::test(start_paused = true)]
 async fn concurrent_action_scopes_do_not_leak_deadlines() {
     let short = execute_action(Duration::from_secs(5), async {
-        tokio::task::yield_now().await;
+        tokio_task::yield_now().await;
         timing::remaining().ok_or(SessionError::InvalidInput)
     });
     let long = execute_action(Duration::from_secs(30), async {
-        tokio::task::yield_now().await;
+        tokio_task::yield_now().await;
         timing::remaining().ok_or(SessionError::InvalidInput)
     });
     let (short, long) = tokio::join!(short, long);
@@ -172,8 +173,10 @@ async fn concurrent_action_scopes_do_not_leak_deadlines() {
 
 #[test]
 fn bound_policy_overrides_session_policy_and_unbound_flow_inherits_session_policy() {
-    let mut owning_policy = Policy::default();
-    owning_policy.default_action_timeout_ms = 20_000;
+    let owning_policy = Policy {
+        default_action_timeout_ms: 20_000,
+        ..Policy::default()
+    };
     let session_policy_default = Duration::from_millis(owning_policy.default_action_timeout_ms);
     let session_policy_direct_work_default =
         Duration::from_millis(SessionPolicy::default().operation_timeout_ms);

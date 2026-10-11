@@ -172,14 +172,14 @@ pub enum FlowInvokeError {
     #[error("session operation failed: {source}")]
     Session {
         source: SessionError,
-        outcome: Option<FlowOutcome>,
+        outcome: Option<Box<FlowOutcome>>,
         cleanup: Option<SessionError>,
     },
 }
 
 impl FlowInvokeError {
     /// Returns a managed cleanup error without replacing the primary failure.
-    pub fn cleanup_error(&self) -> Option<&SessionError> {
+    pub const fn cleanup_error(&self) -> Option<&SessionError> {
         match self {
             Self::Session { cleanup, .. } => cleanup.as_ref(),
             _ => None,
@@ -188,7 +188,7 @@ impl FlowInvokeError {
     /// Returns the partial flow outcome when managed cleanup failed after execution.
     pub fn partial_outcome(&self) -> Option<&FlowOutcome> {
         match self {
-            Self::Session { outcome, .. } => outcome.as_ref(),
+            Self::Session { outcome, .. } => outcome.as_deref(),
             Self::InvalidFlow(_) | Self::Policy(_) => None,
         }
     }

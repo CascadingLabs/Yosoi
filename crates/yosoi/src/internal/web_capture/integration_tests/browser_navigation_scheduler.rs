@@ -253,6 +253,10 @@ const fn navigation_limits(
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn queued_navigation_terminates_at_the_configured_queue_deadline() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler_with_policy(1, 1, 2, 16, 25);
@@ -296,6 +300,10 @@ async fn queued_navigation_terminates_at_the_configured_queue_deadline() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn direct_manager_shutdown_drains_active_and_queued_scheduler_jobs() {
     let fixture = Fixture::start().await;
     let manager = manager(1, 2, 5_000);
@@ -343,6 +351,10 @@ async fn direct_manager_shutdown_drains_active_and_queued_scheduler_jobs() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn scheduler_attachment_is_unique_and_released_after_drop() {
     let manager = manager(1, 1, 5_000);
     let first = BrowserNavigationScheduler::new(manager.clone(), navigation_limits(1, 1, 16))
@@ -358,6 +370,10 @@ async fn scheduler_attachment_is_unique_and_released_after_drop() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn progress_loss_is_bounded_and_reported_without_losing_readiness() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler_with_progress(1, 1, 1, 1);
@@ -410,6 +426,10 @@ async fn terminal(
         .expect("navigation terminal receipt")
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn arbitrary_tab_count(tab_count: u32) {
     let fixture = Fixture::start().await;
     let scheduler = scheduler(tab_count, tab_count, tab_count);
@@ -470,6 +490,10 @@ async fn scheduler_supports_sixty_four_tabs_when_policy_and_ram_allow_it() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn slow_tab_yields_while_each_tab_remains_serial() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler(2, 2, 4);
@@ -551,6 +575,10 @@ async fn slow_tab_yields_while_each_tab_remains_serial() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn queue_is_bounded_and_runnable_tabs_do_not_wait_behind_a_busy_tab() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler(2, 1, 2);
@@ -632,6 +660,10 @@ async fn queue_is_bounded_and_runnable_tabs_do_not_wait_behind_a_busy_tab() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn readiness_is_typed_and_network_idle_is_rejected() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler(1, 1, 2);
@@ -698,6 +730,10 @@ async fn readiness_is_typed_and_network_idle_is_rejected() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn cancellation_tab_release_and_shutdown_wake_every_waiter_once() {
     let fixture = Fixture::start().await;
     let scheduler = scheduler(1, 1, 2);

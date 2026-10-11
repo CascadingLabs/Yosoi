@@ -10,6 +10,10 @@ const MAX_EXPORT_NAME_BYTES: usize = 4_096;
 /// Bounds applied while capturing a local JavaScript module graph.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "The public limits distinguish maximum bounds from observed module counts and sizes."
+)]
 pub struct JavaScriptModuleLimits {
     pub(super) max_modules: usize,
     pub(super) max_module_source_bytes: usize,
@@ -57,7 +61,7 @@ impl JavaScriptModuleLimits {
         self.max_total_source_bytes
     }
 
-    pub(super) fn validate(self) -> Result<(), JavaScriptModuleError> {
+    pub(super) const fn validate(self) -> Result<(), JavaScriptModuleError> {
         if self.max_modules == 0
             || self.max_modules > MAX_MODULE_COUNT
             || self.max_module_source_bytes == 0
@@ -81,7 +85,7 @@ pub struct JavaScriptModuleSource {
 
 impl JavaScriptModuleSource {
     /// Returns the exact source snapshot for this module.
-    pub fn snapshot(&self) -> &JavaScriptSourceSnapshot {
+    pub const fn snapshot(&self) -> &JavaScriptSourceSnapshot {
         &self.snapshot
     }
 
@@ -113,7 +117,7 @@ impl JavaScriptModuleImport {
     }
 
     /// Returns the UTF-8 byte range of the full quoted specifier literal.
-    pub fn source_range(&self) -> &Range<usize> {
+    pub const fn source_range(&self) -> &Range<usize> {
         &self.source_range
     }
 

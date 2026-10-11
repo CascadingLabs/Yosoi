@@ -151,15 +151,16 @@ async fn archived_v2_effective_identity_is_rejected_for_current_map_search_polic
         )?],
     )?;
 
+    let current_version = policy.effective_identity()?.version();
     if !matches!(
         archive.write(&run).await,
         Err(ArchiveError::InvalidRequestRun(
             RequestRunRecordError::EffectivePolicyIdentityMismatch {
-                expected_version: 5,
+                expected_version,
                 found_version: 2,
                 ..
             }
-        ))
+        )) if expected_version == current_version
     ) {
         return Err(
             "Archive accepted a v2 effective identity for a Map and Search-aware Policy".into(),

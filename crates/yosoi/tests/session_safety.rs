@@ -5,7 +5,14 @@
 //! Run serially with a regular Stable browser selected by the environment:
 //! `YOSOI_BROWSER_TESTS=1 cargo test -p yosoi --features browser --test session_safety -- --nocapture --test-threads=1`
 
+use std::iter as std_iter;
+use std::net as std_net;
+use std::sync as std_sync;
+use std::task as std_task;
 use std::{env, error::Error, io, time::Duration};
+use tokio::task as tokio_task;
+use tokio::time as tokio_time;
+use yosoi::automation_record as yosoi_automation_record;
 
 use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
@@ -33,10 +40,12 @@ fn enabled(test_name: &str) -> bool {
 }
 
 fn browser_policy(maximum_elapsed_micros: u64) -> Result<Policy, Box<dyn Error>> {
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let mut policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     policy.request.maximum_elapsed = MaximumElapsed::try_from(maximum_elapsed_micros)?;
     Ok(policy)
 }
@@ -57,6 +66,11 @@ async fn close(session: &session::Session) -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn same_tab_has_one_control_owner_and_held_work_reuse_completes() -> Result<(), Box<dyn Error>>
 {
     if !enabled("same_tab_has_one_control_owner_and_held_work_reuse_completes") {
@@ -80,7 +94,7 @@ async fn same_tab_has_one_control_owner_and_held_work_reuse_completes() -> Resul
     let (early_result, queued_behind_owner) = tokio::select! {
         biased;
         result = &mut competing => (Some(result), false),
-        () = tokio::task::yield_now() => (None, true),
+        () = tokio_task::yield_now() => (None, true),
     };
     first.release().await?;
     let second = match early_result {
@@ -165,6 +179,11 @@ async fn same_tab_has_one_control_owner_and_held_work_reuse_completes() -> Resul
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn borrowed_flow_child_timeout_overrides_parent_and_session_operation_default()
 -> Result<(), Box<dyn Error>> {
     if !enabled("borrowed_flow_child_timeout_overrides_parent_and_session_operation_default") {
@@ -182,7 +201,7 @@ async fn borrowed_flow_child_timeout_overrides_parent_and_session_operation_defa
     let work = session.work().await?;
 
     let unannotated = Flow::new([action::wait(150)]);
-    let default_started = tokio::time::Instant::now();
+    let default_started = tokio_time::Instant::now();
     let default_result = timeout(
         Duration::from_secs(5),
         unannotated.with_lease(&work).invoke(),
@@ -192,7 +211,7 @@ async fn borrowed_flow_child_timeout_overrides_parent_and_session_operation_defa
 
     let child = Flow::new([action::wait(350)]).timeout(3_000);
     let flow = Flow::new([child.into(), action::screenshot().timeout(3_000)]).timeout(200);
-    let started = tokio::time::Instant::now();
+    let started = tokio_time::Instant::now();
     let result = timeout(Duration::from_secs(10), flow.with_lease(&work).invoke()).await;
     let elapsed = started.elapsed();
 
@@ -223,7 +242,7 @@ async fn borrowed_flow_child_timeout_overrides_parent_and_session_operation_defa
     );
     assert_eq!(
         outcome.steps.first().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Observed)
+        Some(yosoi_automation_record::OperationStatus::Observed)
     );
     assert!(
         outcome
@@ -244,6 +263,11 @@ async fn borrowed_flow_child_timeout_overrides_parent_and_session_operation_defa
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Result<(), Box<dyn Error>>
 {
     if !enabled("tabs_share_session_cookies_while_fresh_sessions_are_isolated") {
@@ -280,8 +304,8 @@ async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Resul
     );
     let navigations_completed = matches!(concurrent_navigations,
         Ok((Ok(first_receipt), Ok(second_receipt)))
-            if first_receipt.status == yosoi::automation_record::OperationStatus::Observed
-                && second_receipt.status == yosoi::automation_record::OperationStatus::Observed
+            if first_receipt.status == yosoi_automation_record::OperationStatus::Observed
+                && second_receipt.status == yosoi_automation_record::OperationStatus::Observed
     );
 
     first.release().await?;
@@ -306,7 +330,7 @@ async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Resul
 
     assert_eq!(
         seeded.status,
-        yosoi::automation_record::OperationStatus::Observed,
+        yosoi_automation_record::OperationStatus::Observed,
         "fixture did not seed the session cookie"
     );
     assert!(
@@ -320,7 +344,7 @@ async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Resul
     );
     assert_eq!(
         fresh_navigation.status,
-        yosoi::automation_record::OperationStatus::Observed,
+        yosoi_automation_record::OperationStatus::Observed,
         "fresh Session navigation failed"
     );
     assert!(
@@ -331,6 +355,11 @@ async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Resul
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn close_revokes_held_work_and_wakes_watchers_on_close_and_cancel()
 -> Result<(), Box<dyn Error>> {
     if !enabled("close_revokes_held_work_and_wakes_watchers_on_close_and_cancel") {
@@ -349,7 +378,7 @@ async fn close_revokes_held_work_and_wakes_watchers_on_close_and_cancel()
     let (early_watcher_result, watcher_was_pending) = tokio::select! {
         biased;
         result = &mut watcher_next => (Some(result), false),
-        () = tokio::task::yield_now() => (None, true),
+        () = tokio_task::yield_now() => (None, true),
     };
 
     let close_result = timeout(Duration::from_secs(8), session.close()).await;
@@ -394,7 +423,7 @@ async fn close_revokes_held_work_and_wakes_watchers_on_close_and_cancel()
     let (early_cancel_result, watcher_was_pending) = tokio::select! {
         biased;
         result = &mut cancelled_next => (Some(result), false),
-        () = tokio::task::yield_now() => (None, true),
+        () = tokio_task::yield_now() => (None, true),
     };
     cancelled.cancel();
     let cancel_result = match early_cancel_result {
@@ -414,6 +443,11 @@ async fn close_revokes_held_work_and_wakes_watchers_on_close_and_cancel()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn default_policy_denies_scripts_and_domless_observations_keep_document_epoch()
 -> Result<(), Box<dyn Error>> {
     if !enabled("default_policy_denies_scripts_and_domless_observations_keep_document_epoch") {
@@ -474,6 +508,11 @@ async fn default_policy_denies_scripts_and_domless_observations_keep_document_ep
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn watcher_queue_is_bounded_and_reports_lag() -> Result<(), Box<dyn Error>> {
     if !enabled("watcher_queue_is_bounded_and_reports_lag") {
         return Ok(());
@@ -506,6 +545,11 @@ async fn watcher_queue_is_bounded_and_reports_lag() -> Result<(), Box<dyn Error>
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
 -> Result<(), Box<dyn Error>> {
     if !enabled("request_and_flow_bind_limits_intersect_with_session_deadlines") {
@@ -524,7 +568,7 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
     // A looser Request policy must still obey the shorter Session deadline.
     let request_policy = browser_policy(2_000_000)?;
     let mut request_watcher = session.watch();
-    let request_started = tokio::time::Instant::now();
+    let request_started = tokio_time::Instant::now();
     let request_result = timeout(
         Duration::from_secs(3),
         request::new(fixture.url("/delay/500"))
@@ -551,7 +595,7 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
     };
     let request_watcher_result = timeout(Duration::from_secs(2), request_watcher.next()).await;
     let request_watcher_not_success = match request_watcher_result {
-        Ok(Ok(receipt)) => receipt.status != yosoi::automation_record::OperationStatus::Observed,
+        Ok(Ok(receipt)) => receipt.status != yosoi_automation_record::OperationStatus::Observed,
         Ok(Err(SessionError::WatchDeadline)) => true,
         _ => false,
     };
@@ -610,6 +654,11 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn incomplete_browser_request_is_not_reported_as_observed() -> Result<(), Box<dyn Error>> {
     if !enabled("incomplete_browser_request_is_not_reported_as_observed") {
         return Ok(());
@@ -636,21 +685,18 @@ async fn incomplete_browser_request_is_not_reported_as_observed() -> Result<(), 
     .await;
 
     let response_incomplete = match &response_result {
-        Ok(Ok(response)) => {
-            let incomplete_document = response.attempts().any(|attempt| {
-                attempt.documents().any(|document| {
-                    document.requested() == DocumentRequest::RenderedDom
-                        && !matches!(document.outcome(), DocumentOutcome::Produced(_))
-                })
-            });
-            incomplete_document
-        }
+        Ok(Ok(response)) => response.attempts().any(|attempt| {
+            attempt.documents().any(|document| {
+                document.requested() == DocumentRequest::RenderedDom
+                    && !matches!(document.outcome(), DocumentOutcome::Produced(_))
+            })
+        }),
         Ok(Err(_)) => true,
         Err(_) => false,
     };
     let watcher_result = timeout(Duration::from_secs(5), watcher.next()).await;
     let watcher_not_success = match watcher_result {
-        Ok(Ok(receipt)) => receipt.status != yosoi::automation_record::OperationStatus::Observed,
+        Ok(Ok(receipt)) => receipt.status != yosoi_automation_record::OperationStatus::Observed,
         Ok(Err(SessionError::WatchDeadline)) => true,
         _ => false,
     };
@@ -671,6 +717,11 @@ async fn incomplete_browser_request_is_not_reported_as_observed() -> Result<(), 
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn closing_an_additional_tab_revokes_only_its_held_work() -> Result<(), Box<dyn Error>> {
     if !enabled("closing_an_additional_tab_revokes_only_its_held_work") {
         return Ok(());
@@ -695,7 +746,7 @@ async fn closing_an_additional_tab_revokes_only_its_held_work() -> Result<(), Bo
     let initial_receipt = initial.navigate(&fixture.url("/check")).await?;
     let initial_observation = initial.observe().await?;
     let initial_work_usable = initial_receipt.status
-        == yosoi::automation_record::OperationStatus::Observed
+        == yosoi_automation_record::OperationStatus::Observed
         && initial_observation
             .html
             .as_deref()
@@ -718,6 +769,11 @@ async fn closing_an_additional_tab_revokes_only_its_held_work() -> Result<(), Bo
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn action_receipt_is_unknown_when_dom_evidence_exceeds_its_bound()
 -> Result<(), Box<dyn Error>> {
     if !enabled("action_receipt_is_unknown_when_dom_evidence_exceeds_its_bound") {
@@ -744,7 +800,7 @@ async fn action_receipt_is_unknown_when_dom_evidence_exceeds_its_bound()
 
     assert_eq!(
         receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "an action with incomplete DOM evidence was reported as observed"
     );
     assert!(
@@ -755,6 +811,11 @@ async fn action_receipt_is_unknown_when_dom_evidence_exceeds_its_bound()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn json_unsupported_javascript_result_is_not_observed_as_null() -> Result<(), Box<dyn Error>>
 {
     if !enabled("json_unsupported_javascript_result_is_not_observed_as_null") {
@@ -781,7 +842,7 @@ async fn json_unsupported_javascript_result_is_not_observed_as_null() -> Result<
 
     assert_eq!(
         receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "a JavaScript BigInt without a JSON representation was reported as observed"
     );
     assert_ne!(
@@ -793,6 +854,11 @@ async fn json_unsupported_javascript_result_is_not_observed_as_null() -> Result<
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn targeted_evaluation_rejects_stale_missing_and_unsupported_targets_before_dispatch()
 -> Result<(), Box<dyn Error>> {
     if !enabled("targeted_evaluation_rejects_stale_missing_and_unsupported_targets_before_dispatch")
@@ -864,6 +930,11 @@ async fn targeted_evaluation_rejects_stale_missing_and_unsupported_targets_befor
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn process_browser_limit_bounds_waiting_acquisitions() -> Result<(), Box<dyn Error>> {
     if !enabled("process_browser_limit_bounds_waiting_acquisitions") {
         return Ok(());
@@ -893,7 +964,7 @@ async fn process_browser_limit_bounds_waiting_acquisitions() -> Result<(), Box<d
         result = &mut third => {
             (Some(result), false)
         },
-        () = tokio::task::yield_now() => (None, true),
+        () = tokio_task::yield_now() => (None, true),
     };
     cancellation.cancel();
     let third_result = match early_third_result {
@@ -921,6 +992,11 @@ async fn process_browser_limit_bounds_waiting_acquisitions() -> Result<(), Box<d
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame() -> Result<(), Box<dyn Error>>
 {
     if !enabled("targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame") {
@@ -961,7 +1037,7 @@ async fn targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame() -> Result<
 
     assert_eq!(
         created.status,
-        yosoi::automation_record::OperationStatus::Observed,
+        yosoi_automation_record::OperationStatus::Observed,
         "creating the srcdoc frame did not produce an observed action receipt"
     );
     assert_eq!(
@@ -971,7 +1047,7 @@ async fn targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame() -> Result<
     );
     assert_eq!(
         evaluated.status,
-        yosoi::automation_record::OperationStatus::Observed,
+        yosoi_automation_record::OperationStatus::Observed,
         "evaluation in the uniquely selected srcdoc frame was not observed"
     );
     assert_eq!(
@@ -983,6 +1059,11 @@ async fn targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame() -> Result<
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn same_tab_work_waiters_are_bounded_and_abandoned_waits_release_capacity()
 -> Result<(), Box<dyn Error>> {
     if !enabled("same_tab_work_waiters_are_bounded_and_abandoned_waits_release_capacity") {
@@ -1003,15 +1084,15 @@ async fn same_tab_work_waiters_are_bounded_and_abandoned_waits_release_capacity(
         waiters.push(Box::pin(session.work()));
     }
 
-    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let mut context = std::task::Context::from_waker(std_task::Waker::noop());
     let all_waiters_pending = waiters
         .iter_mut()
-        .all(|waiter| matches!(waiter.as_mut().poll(&mut context), std::task::Poll::Pending));
+        .all(|waiter| matches!(waiter.as_mut().poll(&mut context), std_task::Poll::Pending));
 
     let mut overflow = Box::pin(session.work());
     let overflow_rejected = matches!(
         overflow.as_mut().poll(&mut context),
-        std::task::Poll::Ready(Err(SessionError::Admission))
+        std_task::Poll::Ready(Err(SessionError::Admission))
     );
     drop(overflow);
 
@@ -1019,7 +1100,7 @@ async fn same_tab_work_waiters_are_bounded_and_abandoned_waits_release_capacity(
     let mut replacement = Box::pin(session.work());
     let replacement_waited_for_held_tab = matches!(
         replacement.as_mut().poll(&mut context),
-        std::task::Poll::Pending
+        std_task::Poll::Pending
     );
     drop(replacement);
     drop(waiters);
@@ -1045,6 +1126,11 @@ async fn same_tab_work_waiters_are_bounded_and_abandoned_waits_release_capacity(
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_one_tab()
 -> Result<(), Box<dyn Error>> {
     if !enabled("javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_one_tab") {
@@ -1095,7 +1181,7 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
     let same_work_fenced = matches!(subsequent_same_work, Err(SessionError::Closed));
     let same_tab_acquisition_rejected = new_work_on_fenced_tab.is_err();
     let additional_tab_usable = additional_tab_receipt.status
-        == yosoi::automation_record::OperationStatus::Observed
+        == yosoi_automation_record::OperationStatus::Observed
         && additional_tab_receipt.result
             == Some(serde_json::Value::String(
                 "additional-tab-still-usable".to_owned(),
@@ -1109,7 +1195,7 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
 
     assert_eq!(
         oversized.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "a JavaScript result over the configured byte limit was reported as observed"
     );
     assert!(
@@ -1118,7 +1204,7 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
     );
     assert_eq!(
         thrown.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "a JavaScript exception was reported as observed"
     );
     assert!(
@@ -1128,7 +1214,7 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
     );
     assert_eq!(
         pending.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "an unresolved JavaScript promise was reported as observed"
     );
     assert!(
@@ -1147,6 +1233,11 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn watchers_receive_session_wide_receipts_for_two_tabs_and_close_independently()
 -> Result<(), Box<dyn Error>> {
     if !enabled("watchers_receive_session_wide_receipts_for_two_tabs_and_close_independently") {
@@ -1172,8 +1263,8 @@ async fn watchers_receive_session_wide_receipts_for_two_tabs_and_close_independe
     let second_events = [second_watcher.next().await?, second_watcher.next().await?];
 
     let event_matches_receipt =
-        |events: &[std::sync::Arc<yosoi::automation_record::OperationReceipt>],
-         expected: &yosoi::automation_record::OperationReceipt| {
+        |events: &[std_sync::Arc<yosoi_automation_record::OperationReceipt>],
+         expected: &yosoi_automation_record::OperationReceipt| {
             events.iter().any(|event| {
                 event.id == expected.id
                     && event.observation.as_ref().is_some_and(|observed| {
@@ -1241,6 +1332,11 @@ async fn watchers_receive_session_wide_receipts_for_two_tabs_and_close_independe
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn dropping_a_dispatched_work_request_fences_its_tab_until_session_close()
 -> Result<(), Box<dyn Error>> {
     if !enabled("dropping_a_dispatched_work_request_fences_its_tab_until_session_close") {
@@ -1261,7 +1357,7 @@ async fn dropping_a_dispatched_work_request_fences_its_tab_until_session_close()
         .await?;
     let work = session.work().await?;
 
-    let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
+    let listener = TcpListener::bind((std_net::Ipv4Addr::LOCALHOST, 0)).await?;
     let address = listener.local_addr()?;
     let (request_seen_tx, request_seen_rx) = oneshot::channel();
     let (allow_response_tx, allow_response_rx) = oneshot::channel();
@@ -1336,13 +1432,15 @@ async fn dropping_a_dispatched_work_request_fences_its_tab_until_session_close()
     } else {
         server.abort();
     }
-    let server_finished = match timeout(Duration::from_secs(3), &mut server).await {
-        Ok(Ok(Ok(()))) => true,
-        _ => {
-            server.abort();
-            let _ = server.await;
-            false
-        }
+    let server_finished = if matches!(
+        timeout(Duration::from_secs(3), &mut server).await,
+        Ok(Ok(Ok(())))
+    ) {
+        true
+    } else {
+        server.abort();
+        let _ = server.await;
+        false
     };
 
     assert!(
@@ -1369,6 +1467,11 @@ async fn dropping_a_dispatched_work_request_fences_its_tab_until_session_close()
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn empty_browser_document_selection_cannot_report_a_deadline_as_observed()
 -> Result<(), Box<dyn Error>> {
     if !enabled("empty_browser_document_selection_cannot_report_a_deadline_as_observed") {
@@ -1390,11 +1493,10 @@ async fn empty_browser_document_selection_cannot_report_a_deadline_as_observed()
 
     let mut empty_documents_policy = browser_policy(2_000_000)?;
     empty_documents_policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless)
-            .documents(std::iter::empty::<DocumentRequest>()),
+        Acquisition::Browser(BrowserMode::Headless).documents(std_iter::empty::<DocumentRequest>()),
     ])?;
     let mut watcher = session.watch();
-    let started = tokio::time::Instant::now();
+    let started = tokio_time::Instant::now();
     let response = timeout(
         Duration::from_secs(3),
         request::new(fixture.url("/delay/500"))
@@ -1425,7 +1527,7 @@ async fn empty_browser_document_selection_cannot_report_a_deadline_as_observed()
 
     assert_eq!(
         receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown,
+        yosoi_automation_record::OperationStatus::Unknown,
         "an empty-document Request past its deadline was reported as observed"
     );
     assert!(

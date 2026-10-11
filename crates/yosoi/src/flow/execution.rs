@@ -1,6 +1,8 @@
 //! Shared execution for managed and caller-owned Flow invocations.
 
 pub use super::error::FlowInvokeError;
+use crate::expect;
+use crate::request;
 use crate::{
     assertions::AssertionError,
     automation_record::{OperationReceipt, OperationStatus},
@@ -13,13 +15,21 @@ use crate::{
     session::{self, SessionError, Work},
     timing,
 };
+use std::future as std_future;
+#[cfg(test)]
+use std::iter as std_iter;
+use std::vec as std_vec;
 use std::{future::Future, pin::Pin, time::Duration};
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Ownership is moved into a task or consumed by async release; the nursery follows Drop fields after that move."
+)]
 pub(super) async fn invoke(
     flow: &Flow,
     policy: Option<&Policy>,
     work: Option<&Work>,
-    cancellation: &crate::request::CancellationToken,
+    cancellation: &request::CancellationToken,
     allow_javascript: bool,
 ) -> Result<FlowOutcome, FlowInvokeError> {
     flow.validate_with_limits(FlowLimits::default())
@@ -76,12 +86,11 @@ pub(super) async fn invoke(
         cleanup: None,
     })?;
 
-    let work_result = tokio::select! {
+    let work = match tokio::select! {
         biased;
         () = cancellation.cancelled() => Err(SessionError::Cancelled),
         result = session.work() => result,
-    };
-    let work = match work_result {
+    } {
         Ok(work) => work,
         Err(source) => {
             let cleanup = session.close().await.err();
@@ -106,6 +115,7 @@ pub(super) async fn invoke(
     let executed = session::with_cancellation(cancellation, scoped).await;
     let release_result = work.release().await;
     let close_result = session.close().await;
+    drop(session);
     let mut outcome = match executed {
         Ok(outcome) => outcome,
         Err(source) => {
@@ -154,14 +164,12 @@ fn validate_bound_assertions(flow: &Flow) -> Result<(), FlowValidationError> {
     Ok(())
 }
 
-fn validate_bound_expectation(
-    expected: &crate::expect::Expectation,
-) -> Result<(), FlowValidationError> {
+fn validate_bound_expectation(expected: &expect::Expectation) -> Result<(), FlowValidationError> {
     match expected {
-        crate::expect::Expectation::Contract { assertion } if !assertion.is_bound() => {
+        expect::Expectation::Contract { assertion } if !assertion.is_bound() => {
             Err(FlowValidationError::Assertion(AssertionError::Unbound))
         }
-        crate::expect::Expectation::All { expectations } => {
+        expect::Expectation::All { expectations } => {
             for child in expectations {
                 validate_bound_expectation(child)?;
             }
@@ -177,7 +185,7 @@ struct FlowFrame<'a> {
     inherited_timeout: Duration,
     on_failure: Continuation,
     on_cancellation: Continuation,
-    local_cancellation: Option<crate::request::CancellationToken>,
+    local_cancellation: Option<request::CancellationToken>,
 }
 
 type ActionExecutionFuture<'a> =
@@ -195,7 +203,7 @@ async fn execute_flow(
     work: &Work,
     default_timeout: Duration,
     policy: FlowPolicy,
-    cancellation: &crate::request::CancellationToken,
+    cancellation: &request::CancellationToken,
 ) -> FlowOutcome {
     let execution = execute_flow_steps_with_policy(
         flow,
@@ -205,10 +213,10 @@ async fn execute_flow(
         || work.session_cancelled(),
         |step, timeout, action_cancellation| {
             Box::pin(async move {
-                session::with_cancellation(
+                Box::pin(session::with_cancellation(
                     &action_cancellation,
                     execute_action(timeout, execute_step(step.operation(), work)),
-                )
+                ))
                 .await
             })
         },
@@ -241,13 +249,13 @@ async fn execute_flow_steps_with_policy<'flow, 'action, F, C>(
     flow: &'flow Flow,
     default_timeout: Duration,
     policy: FlowPolicy,
-    cancellation: &crate::request::CancellationToken,
+    cancellation: &request::CancellationToken,
     session_cancelled: C,
     mut execute: F,
 ) -> FlowExecution
 where
     C: Fn() -> bool,
-    F: FnMut(Step, Duration, crate::request::CancellationToken) -> ActionExecutionFuture<'action>,
+    F: FnMut(Step, Duration, request::CancellationToken) -> ActionExecutionFuture<'action>,
 {
     let root_timeout = resolve_flow_timeout(flow, default_timeout);
     let mut frames = vec![FlowFrame {
@@ -268,41 +276,24 @@ where
     let mut had_issues = false;
 
     while !frames.is_empty() {
-        let (current_flow, step_index, inherited_timeout, on_failure, on_cancellation) =
-            match frames.last_mut() {
-                Some(frame) if frame.cursor < frame.flow.steps.len() => {
-                    let step_index = frame.cursor;
-                    frame.cursor = match frame.cursor.checked_add(1) {
-                        Some(cursor) => cursor,
-                        None => {
-                            terminal = FlowTermination::Failed;
-                            break;
-                        }
-                    };
-                    (
-                        frame.flow,
-                        step_index,
-                        frame.inherited_timeout,
-                        frame.on_failure,
-                        frame.on_cancellation,
-                    )
-                }
-                Some(_) => {
-                    frames.pop();
-                    if !frames.is_empty() {
-                        let _ = flow_path.pop();
-                    }
-                    continue;
-                }
-                None => break,
-            };
-
-        let step_index_u64 = match u64::try_from(step_index) {
-            Ok(index) => index,
-            Err(_) => {
+        let FrameStep {
+            flow: current_flow,
+            index: step_index,
+            inherited_timeout,
+            on_failure,
+            on_cancellation,
+        } = match advance_frame(&mut frames, &mut flow_path) {
+            FrameAdvance::Ready(step) => step,
+            FrameAdvance::Complete => break,
+            FrameAdvance::Overflow => {
                 terminal = FlowTermination::Failed;
                 break;
             }
+        };
+
+        let Ok(step_index_u64) = u64::try_from(step_index) else {
+            terminal = FlowTermination::Failed;
+            break;
         };
         let Some(step) = current_flow.steps.get(step_index) else {
             terminal = FlowTermination::Failed;
@@ -340,35 +331,17 @@ where
         }
         let mut provenance = flow_path.clone();
         provenance.push(step_index_u64);
-        let mut local_cancelled = false;
-        let result = if session_cancelled() || cancellation.is_cancelled() {
-            Err(SessionError::Cancelled)
-        } else if local_tokens.iter().any(|token| token.is_cancelled()) {
-            local_cancelled = true;
-            Err(SessionError::Cancelled)
+        let (result, local_cancelled) = if session_cancelled() || cancellation.is_cancelled() {
+            (Err(SessionError::Cancelled), false)
         } else {
-            let action_cancellation = cancellation.child_token();
-            let action = execute(
-                step.operation().clone(),
+            dispatch_action(
+                step,
                 selected_timeout,
-                action_cancellation.clone(),
-            );
-            tokio::pin!(action);
-            if local_tokens.is_empty() {
-                action.await
-            } else {
-                let stopped = cancellation_trigger(local_tokens.clone().into_iter());
-                tokio::pin!(stopped);
-                tokio::select! {
-                    biased;
-                    result = &mut action => result,
-                    () = &mut stopped => {
-                        local_cancelled = true;
-                        action_cancellation.cancel();
-                        action.await
-                    }
-                }
-            }
+                cancellation,
+                local_tokens,
+                &mut execute,
+            )
+            .await
         };
         let session_stopped = session_cancelled();
         let authority_closed = matches!(&result, Err(SessionError::Closed));
@@ -379,22 +352,17 @@ where
                     frame
                         .local_cancellation
                         .as_ref()
-                        .is_some_and(crate::request::CancellationToken::is_cancelled)
+                        .is_some_and(request::CancellationToken::is_cancelled)
                         .then_some(index)
                 })
             } else {
                 None
             };
-        let cancelled_flow = cancelled_flow_frame.map(|frame_index| {
-            let path_length = frame_index.min(flow_path.len());
-            flow_path[..path_length].to_vec()
-        });
-        let result_index = match u64::try_from(steps.len()) {
-            Ok(index) => index,
-            Err(_) => {
-                terminal = FlowTermination::Failed;
-                break;
-            }
+        let cancelled_flow = cancelled_flow_frame
+            .map(|frame_index| flow_path.iter().take(frame_index).copied().collect());
+        let Ok(result_index) = u64::try_from(steps.len()) else {
+            terminal = FlowTermination::Failed;
+            break;
         };
         let (receipt, failure, mut step_cancellation) = match result {
             Ok(receipt) => {
@@ -406,23 +374,12 @@ where
                 (receipt, failure, None)
             }
             Err(source) => {
-                let failure = if source.is_unknown() {
-                    Some(FlowFailureCause::UnknownOutcome)
-                } else if source.is_cancelled() && (invocation_stopped || session_stopped) {
-                    None
-                } else if authority_closed {
-                    Some(FlowFailureCause::Execution)
-                } else if source.is_cancelled()
-                    && !local_cancelled
-                    && !invocation_stopped
-                    && !session_stopped
-                {
-                    Some(FlowFailureCause::Execution)
-                } else if source.is_cancelled() {
-                    None
-                } else {
-                    Some(FlowFailureCause::Execution)
-                };
+                let failure = classify_action_failure(
+                    &source,
+                    invocation_stopped || session_stopped,
+                    authority_closed,
+                    local_cancelled,
+                );
                 (error_receipt(step, step_index_u64, &source), failure, None)
             }
         };
@@ -446,21 +403,12 @@ where
             cancelled_flow,
         });
 
-        if unknown || session_stopped || invocation_stopped || authority_closed {
-            terminal = if unknown {
-                FlowTermination::Unknown
-            } else if session_stopped || invocation_stopped {
-                FlowTermination::Cancelled
-            } else {
-                FlowTermination::Failed
-            };
-            let cause = if unknown {
-                FlowStopCause::UnknownOutcome
-            } else if session_stopped || invocation_stopped {
-                FlowStopCause::Cancellation
-            } else {
-                FlowStopCause::UnsafeState
-            };
+        if let Some((boundary, cause)) = terminal_boundary(
+            unknown,
+            invocation_stopped || session_stopped,
+            authority_closed,
+        ) {
+            terminal = boundary;
             skip_invocation_remaining(&frames, &flow_path, &provenance, cause, &mut skipped_steps);
             stop_reason = Some(FlowStopReason {
                 flow_path: provenance,
@@ -485,34 +433,27 @@ where
                 StopScope::Invocation => 1_u8,
             });
 
-        if let Some(cancelled_frame) = cancelled_flow_frame {
-            if let Some((continuation, StopScope::Invocation)) = selected_stop {
-                let cause = if cancellation_continuation.is_some_and(|value| value == continuation)
-                {
-                    FlowStopCause::Cancellation
-                } else {
-                    FlowStopCause::Failure
-                };
-                terminal = if cause == FlowStopCause::Cancellation {
-                    FlowTermination::Cancelled
-                } else {
-                    FlowTermination::Failed
-                };
-                skip_invocation_remaining(
-                    &frames,
-                    &flow_path,
-                    &provenance,
-                    cause,
-                    &mut skipped_steps,
-                );
-                stop_reason = Some(FlowStopReason {
-                    flow_path: provenance,
-                    cause,
-                    continuation: Some(continuation),
-                });
-                break;
-            }
+        if let Some((continuation, StopScope::Invocation)) = selected_stop {
+            let cause = if cancellation_continuation.is_some_and(|value| value == continuation) {
+                FlowStopCause::Cancellation
+            } else {
+                FlowStopCause::Failure
+            };
+            terminal = if cause == FlowStopCause::Cancellation {
+                FlowTermination::Cancelled
+            } else {
+                FlowTermination::Failed
+            };
+            skip_invocation_remaining(&frames, &flow_path, &provenance, cause, &mut skipped_steps);
+            stop_reason = Some(FlowStopReason {
+                flow_path: provenance,
+                cause,
+                continuation: Some(continuation),
+            });
+            break;
+        }
 
+        if let Some(cancelled_frame) = cancelled_flow_frame {
             skip_cancelled_flow_remaining(
                 &frames,
                 &flow_path,
@@ -527,32 +468,12 @@ where
             continue;
         }
 
-        if let Some((continuation, scope)) = selected_stop {
+        if let Some((continuation, StopScope::CurrentFlow)) = selected_stop {
             let cause = if cancellation_continuation.is_some_and(|value| value == continuation) {
                 FlowStopCause::Cancellation
             } else {
                 FlowStopCause::Failure
             };
-            if scope == StopScope::Invocation {
-                terminal = if cause == FlowStopCause::Cancellation {
-                    FlowTermination::Cancelled
-                } else {
-                    FlowTermination::Failed
-                };
-                skip_invocation_remaining(
-                    &frames,
-                    &flow_path,
-                    &provenance,
-                    cause,
-                    &mut skipped_steps,
-                );
-                stop_reason = Some(FlowStopReason {
-                    flow_path: provenance,
-                    cause,
-                    continuation: Some(continuation),
-                });
-                break;
-            }
 
             skip_current_flow_remaining(
                 &frames,
@@ -600,7 +521,7 @@ async fn execute_flow_steps<'flow, 'action, F>(
 where
     F: FnMut(Step, Duration) -> ActionExecutionFuture<'action>,
 {
-    let cancellation = crate::request::CancellationToken::new();
+    let cancellation = request::CancellationToken::new();
     let execution = execute_flow_steps_with_policy(
         flow,
         default_timeout,
@@ -614,7 +535,7 @@ where
 }
 
 fn cancellation_trigger(
-    mut tokens: std::vec::IntoIter<crate::request::CancellationToken>,
+    mut tokens: std_vec::IntoIter<request::CancellationToken>,
 ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
     Box::pin(async move {
         if let Some(token) = tokens.next() {
@@ -624,9 +545,118 @@ fn cancellation_trigger(
                 () = cancellation_trigger(tokens) => {},
             }
         } else {
-            std::future::pending::<()>().await;
+            std_future::pending::<()>().await;
         }
     })
+}
+
+const fn classify_action_failure(
+    source: &SessionError,
+    hard_cancelled: bool,
+    authority_closed: bool,
+    local_cancelled: bool,
+) -> Option<FlowFailureCause> {
+    if source.is_unknown() {
+        Some(FlowFailureCause::UnknownOutcome)
+    } else if source.is_cancelled() && hard_cancelled {
+        None
+    } else if authority_closed || !source.is_cancelled() || !local_cancelled {
+        Some(FlowFailureCause::Execution)
+    } else {
+        None
+    }
+}
+
+const fn terminal_boundary(
+    unknown: bool,
+    hard_cancelled: bool,
+    authority_closed: bool,
+) -> Option<(FlowTermination, FlowStopCause)> {
+    if unknown {
+        Some((FlowTermination::Unknown, FlowStopCause::UnknownOutcome))
+    } else if hard_cancelled {
+        Some((FlowTermination::Cancelled, FlowStopCause::Cancellation))
+    } else if authority_closed {
+        Some((FlowTermination::Failed, FlowStopCause::UnsafeState))
+    } else {
+        None
+    }
+}
+
+struct FrameStep<'a> {
+    flow: &'a Flow,
+    index: usize,
+    inherited_timeout: Duration,
+    on_failure: Continuation,
+    on_cancellation: Continuation,
+}
+enum FrameAdvance<'a> {
+    Ready(FrameStep<'a>),
+    Complete,
+    Overflow,
+}
+fn advance_frame<'a>(frames: &mut Vec<FlowFrame<'a>>, path: &mut Vec<u64>) -> FrameAdvance<'a> {
+    loop {
+        let Some(frame) = frames.last_mut() else {
+            return FrameAdvance::Complete;
+        };
+        if frame.cursor < frame.flow.steps.len() {
+            let index = frame.cursor;
+            let Some(cursor) = index.checked_add(1) else {
+                return FrameAdvance::Overflow;
+            };
+            frame.cursor = cursor;
+            return FrameAdvance::Ready(FrameStep {
+                flow: frame.flow,
+                index,
+                inherited_timeout: frame.inherited_timeout,
+                on_failure: frame.on_failure,
+                on_cancellation: frame.on_cancellation,
+            });
+        }
+        frames.pop();
+        if !frames.is_empty() {
+            path.pop();
+        }
+    }
+}
+
+async fn dispatch_action<'action, F>(
+    step: &Step,
+    timeout: Duration,
+    cancellation: &request::CancellationToken,
+    local_tokens: Vec<request::CancellationToken>,
+    execute: &mut F,
+) -> (Result<OperationReceipt, SessionError>, bool)
+where
+    F: FnMut(Step, Duration, request::CancellationToken) -> ActionExecutionFuture<'action>,
+{
+    if local_tokens
+        .iter()
+        .any(request::CancellationToken::is_cancelled)
+    {
+        return (Err(SessionError::Cancelled), true);
+    }
+    let action_cancellation = cancellation.child_token();
+    let action = execute(
+        step.operation().clone(),
+        timeout,
+        action_cancellation.clone(),
+    );
+    tokio::pin!(action);
+    if local_tokens.is_empty() {
+        return (action.await, false);
+    }
+    let stopped = cancellation_trigger(local_tokens.into_iter());
+    tokio::pin!(stopped);
+    tokio::select! {
+        biased;
+        result = &mut action => (result, false),
+        () = &mut stopped => {
+            action_cancellation.cancel();
+            (action.await, true)
+        }
+    }
 }
 
 fn skip_invocation_remaining(
@@ -637,10 +667,10 @@ fn skip_invocation_remaining(
     output: &mut Vec<SkippedStep>,
 ) {
     for (frame_index, frame) in frames.iter().enumerate().rev() {
-        let prefix_len = frame_index.min(flow_path.len());
+        let prefix: Vec<_> = flow_path.iter().take(frame_index).copied().collect();
         append_remaining_from_frame(
             frame,
-            &flow_path[..prefix_len],
+            &prefix,
             stopped_by,
             cause,
             StopScope::Invocation,
@@ -657,10 +687,10 @@ fn skip_current_flow_remaining(
     output: &mut Vec<SkippedStep>,
 ) {
     if let Some((index, frame)) = frames.iter().enumerate().next_back() {
-        let prefix_len = index.min(flow_path.len());
+        let prefix: Vec<_> = flow_path.iter().take(index).copied().collect();
         append_remaining_from_frame(
             frame,
-            &flow_path[..prefix_len],
+            &prefix,
             stopped_by,
             cause,
             StopScope::CurrentFlow,
@@ -677,10 +707,10 @@ fn skip_cancelled_flow_remaining(
     output: &mut Vec<SkippedStep>,
 ) {
     for (frame_index, frame) in frames.iter().enumerate().skip(owner_frame).rev() {
-        let prefix_len = frame_index.min(flow_path.len());
+        let prefix: Vec<_> = flow_path.iter().take(frame_index).copied().collect();
         append_remaining_from_frame(
             frame,
-            &flow_path[..prefix_len],
+            &prefix,
             stopped_by,
             FlowStopCause::Cancellation,
             StopScope::CurrentFlow,
@@ -775,7 +805,7 @@ async fn execute_step(step: &Step, work: &Work) -> Result<OperationReceipt, Sess
         Step::WaitUntil {
             condition,
             timeout_ms,
-        } => work.wait_until(condition, *timeout_ms).await,
+        } => Box::pin(work.wait_until(condition, *timeout_ms)).await,
         Step::Evaluate { source } => work.evaluate(source).await,
         Step::EvaluateFile { snapshot } => work.evaluate_file(snapshot).await,
         Step::EvaluateModule { bundle } => work.evaluate_module(bundle).await,
@@ -849,12 +879,16 @@ fn cleanup_receipt(kind: &'static str, result: Result<(), SessionError>) -> Oper
 
 #[cfg(all(test, feature = "browser"))]
 #[test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn public_invocation_futures_stay_below_the_inline_size_budget() {
     use std::mem::size_of_val;
 
     const MAX_INLINE_BYTES: usize = 4 * 1024;
 
-    let flow = Flow::new(std::iter::empty());
+    let flow = Flow::new(std_iter::empty());
     let policy = Policy::default();
     let bound = flow.bind(&policy);
 

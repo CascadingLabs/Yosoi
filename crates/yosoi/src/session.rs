@@ -1,4 +1,22 @@
 //! Explicit browser authority; the managed APIs compose this same substrate.
+use crate::assertions;
+use crate::automation_record;
+#[cfg(feature = "browser")]
+use crate::documents;
+use crate::internal::engine as internal_engine;
+#[cfg(feature = "browser")]
+use crate::internal::engine::execution as internal_engine_execution;
+#[cfg(feature = "browser")]
+use crate::internal::engine::session as internal_engine_session;
+use crate::internal::policy::policy as internal_policy_policy;
+#[cfg(feature = "browser")]
+use crate::internal::web_capture as internal_web_capture;
+use crate::request;
+use std::fmt as std_fmt;
+use std::future as std_future;
+use tokio::sync as tokio_sync;
+#[cfg(feature = "browser")]
+use tokio::time as tokio_time;
 mod evaluation;
 mod javascript;
 mod until;
@@ -13,9 +31,11 @@ pub use crate::internal::engine::execution::{
 };
 pub use crate::internal::policy::policy::BrowserMode;
 #[cfg(feature = "browser")]
-use crate::{assertions::AssertionReport, documents::Document};
 use crate::{
-    assertions::LocalAssertion,
+    assertions::{AssertionReport, LocalAssertion},
+    documents::Document,
+};
+use crate::{
     automation_record::{Observation, OperationReceipt, OperationStatus},
     flow::Condition,
     policy::Policy,
@@ -32,7 +52,7 @@ tokio::task_local! { static SCOPED_POLICY: Policy; }
 tokio::task_local! { static SCOPED_CANCELLATION: CancellationToken; }
 pub(crate) async fn with_cancellation<T>(
     cancellation: &CancellationToken,
-    future: impl std::future::Future<Output = T>,
+    future: impl std_future::Future<Output = T>,
 ) -> T {
     SCOPED_CANCELLATION
         .scope(cancellation.clone(), future)
@@ -136,7 +156,7 @@ impl SessionPolicy {
             || self.maximum_observation_bytes == 0
             || self.maximum_input_bytes > 1024 * 1024
             || self.maximum_result_bytes > 1024 * 1024
-            || self.maximum_observation_bytes > crate::automation_record::MAX_OBSERVATION_HTML_BYTES
+            || self.maximum_observation_bytes > automation_record::MAX_OBSERVATION_HTML_BYTES
             || self.allowed_actions.len() > 7
         {
             return Err(SessionError::InvalidPolicy);
@@ -219,7 +239,7 @@ impl SessionError {
 }
 
 pub fn new_operation_id() -> String {
-    crate::internal::engine::ActivityId::random().to_string()
+    internal_engine::ActivityId::random().to_string()
 }
 pub fn new() -> SessionBuilder {
     SessionBuilder {
@@ -235,7 +255,7 @@ pub enum SessionRequestError {
     #[error(transparent)]
     Session(#[from] SessionError),
     #[error(transparent)]
-    Request(#[from] crate::request::RequestSendError),
+    Request(#[from] request::RequestSendError),
 }
 
 enum RequestAuthority<'scope> {
@@ -243,26 +263,26 @@ enum RequestAuthority<'scope> {
     Work(&'scope Work),
 }
 pub struct SessionRequest<'scope> {
-    request: crate::request::PageRequest,
+    request: request::PageRequest,
     policy: Policy,
     authority: RequestAuthority<'scope>,
 }
-impl std::fmt::Debug for SessionRequest<'_> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl std_fmt::Debug for SessionRequest<'_> {
+    fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result {
         formatter
             .debug_struct("SessionRequest")
             .finish_non_exhaustive()
     }
 }
 impl<'scope> SessionRequest<'scope> {
-    pub(crate) fn new(request: crate::request::PageRequest, session: &'scope Session) -> Self {
+    pub(crate) fn new(request: request::PageRequest, session: &'scope Session) -> Self {
         Self {
             request,
             policy: session.request_policy(),
             authority: RequestAuthority::Session(session),
         }
     }
-    pub(crate) fn on_work(request: crate::request::PageRequest, work: &'scope Work) -> Self {
+    pub(crate) fn on_work(request: request::PageRequest, work: &'scope Work) -> Self {
         Self {
             request,
             policy: work.session.request_policy(),
@@ -273,17 +293,21 @@ impl<'scope> SessionRequest<'scope> {
         self.policy = policy.clone();
         self
     }
-    pub async fn send(&self) -> Result<crate::request::Response, SessionRequestError> {
+    pub async fn send(&self) -> Result<request::Response, SessionRequestError> {
         let cancellation = SCOPED_CANCELLATION
             .try_with(Clone::clone)
             .unwrap_or_default();
-        self.send_cancellable(&cancellation).await
+        Box::pin(self.send_cancellable(&cancellation)).await
     }
     /// Executes while honoring caller cancellation through acquisition and request settlement.
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Ownership is moved into a task or consumed by async release; the nursery follows Drop fields after that move."
+    )]
     pub async fn send_cancellable(
         &self,
         cancellation: &CancellationToken,
-    ) -> Result<crate::request::Response, SessionRequestError> {
+    ) -> Result<request::Response, SessionRequestError> {
         let scoped = SCOPED_CANCELLATION
             .try_with(Clone::clone)
             .unwrap_or_default();
@@ -293,26 +317,29 @@ impl<'scope> SessionRequest<'scope> {
                 // has been dispatched until `work()` returns successfully.
                 let acquiring = session.work();
                 tokio::pin!(acquiring);
+
                 let work = tokio::select! {
                     biased;
                     () = cancellation.cancelled() => return Err(SessionError::Cancelled.into()),
                     () = scoped.cancelled() => return Err(SessionError::Cancelled.into()),
                     result = &mut acquiring => result?,
                 };
-                let response = self.send_on_cancellable(&work, cancellation).await;
+                let response = Box::pin(self.send_on_cancellable(&work, cancellation)).await;
                 let release = work.release().await;
                 let response = response?;
                 release?;
                 Ok(response)
             }
-            RequestAuthority::Work(work) => self.send_on_cancellable(work, cancellation).await,
+            RequestAuthority::Work(work) => {
+                Box::pin(self.send_on_cancellable(work, cancellation)).await
+            }
         }
     }
     async fn send_on_cancellable(
         &self,
         work: &Work,
         cancellation: &CancellationToken,
-    ) -> Result<crate::request::Response, SessionRequestError> {
+    ) -> Result<request::Response, SessionRequestError> {
         #[cfg(feature = "browser")]
         {
             let scoped = SCOPED_CANCELLATION
@@ -348,8 +375,8 @@ impl<'scope> SessionRequest<'scope> {
         &self,
         work: &Work,
         cancellation: &CancellationToken,
-    ) -> Result<crate::request::Response, SessionRequestError> {
-        let _operation = work.operation().await?;
+    ) -> Result<request::Response, SessionRequestError> {
+        let _operation = work.operation()?;
         work.authorize(ActionKind::Navigate, self.request.target().as_str())?;
         self.policy
             .validate()
@@ -405,9 +432,9 @@ impl<'scope> SessionRequest<'scope> {
                 policy.request.browser.dom_utf8_bytes.get().min(bytes),
             )
             .map_err(|_| SessionError::InvalidPolicy)?;
-            let deadline = crate::timing::deadline()
+            let deadline = timing::deadline()
                 .or_else(|| {
-                    crate::timing::checked_deadline(Duration::from_micros(
+                    timing::checked_deadline(Duration::from_micros(
                         policy.request.maximum_elapsed.as_microseconds(),
                     ))
                 })
@@ -418,7 +445,7 @@ impl<'scope> SessionRequest<'scope> {
                 .map_err(|_| SessionError::Closed)?;
             let remaining = u64::try_from(
                 deadline
-                    .saturating_duration_since(tokio::time::Instant::now())
+                    .saturating_duration_since(tokio_time::Instant::now())
                     .as_micros(),
             )
             .map_err(|_| SessionError::InvalidPolicy)?;
@@ -433,6 +460,7 @@ impl<'scope> SessionRequest<'scope> {
                     .min(remaining),
             )
             .map_err(|_| SessionError::InvalidPolicy)?;
+
             let mut dispatch = DispatchFence {
                 control: &work.control,
                 unresolved: true,
@@ -451,49 +479,45 @@ impl<'scope> SessionRequest<'scope> {
             };
             // A returned Response has authoritative per-attempt finalization.
             // Dropping the future before this point leaves the tab fenced.
-            let settled =
-                response.attempts().all(|attempt| {
-                    attempt.inner.result().is_some_and(|result| {
-                        matches!(
-                            result.transport(),
-                            crate::internal::engine::AttemptTransportOutcome::Browser {
-                                cleanup: crate::internal::web_capture::CleanupState::Complete,
-                                ..
-                            }
-                        ) && matches!(
+            let settled = response.attempts().all(|attempt| {
+                attempt.inner.result().is_some_and(|result| {
+                    matches!(
+                        result.transport(),
+                        internal_engine::AttemptTransportOutcome::Browser {
+                            cleanup: internal_web_capture::CleanupState::Complete,
+                            ..
+                        }
+                    ) && matches!(
                         result.capture_facts().observation().termination(),
-                        crate::internal::web_capture::CaptureTermination::Settled(_)
-                            | crate::internal::web_capture::CaptureTermination::ControllerStopped(_)
+                        internal_web_capture::CaptureTermination::Settled(_)
+                            | internal_web_capture::CaptureTermination::ControllerStopped(_)
                     )
-                    })
-                });
+                })
+            });
             dispatch.unresolved = !settled;
             drop(execution);
             let states = response
                 .attempts()
-                .map(|attempt| attempt.state())
+                .map(request::Attempt::state)
                 .collect::<Vec<_>>();
             let documents = response
                 .attempts()
-                .flat_map(|attempt| attempt.documents())
+                .flat_map(request::Attempt::documents)
                 .collect::<Vec<_>>();
             let produced = documents
                 .iter()
                 .filter(|document| {
-                    matches!(
-                        document.outcome(),
-                        crate::request::DocumentOutcome::Produced(_)
-                    )
+                    matches!(document.outcome(), request::DocumentOutcome::Produced(_))
                 })
                 .count();
             let succeeded = settled
                 && states
                     .iter()
-                    .all(|state| *state == crate::request::AttemptState::Completed)
+                    .all(|state| *state == request::AttemptState::Completed)
                 && produced == documents.len();
             let completed = states
                 .iter()
-                .filter(|state| **state == crate::request::AttemptState::Completed)
+                .filter(|state| **state == request::AttemptState::Completed)
                 .count();
             let capture_ids = response
                 .attempts()
@@ -517,6 +541,7 @@ impl<'scope> SessionRequest<'scope> {
                     Some("browser acquisition failed or was interrupted".into())
                 },
             };
+            drop(dispatch);
             work.session.publish(&receipt);
             Ok(response)
         }
@@ -557,21 +582,18 @@ impl SessionBuilder {
     }
     pub fn bind(mut self, policy: &Policy) -> Self {
         self.policy = policy.clone();
-        if !self.configured {
-            if let Some(mode) =
+        if !self.configured
+            && let Some(mode) =
                 policy
                     .page
                     .acquisitions
                     .iter()
                     .find_map(|acquisition| match acquisition.kind() {
-                        crate::internal::policy::policy::AcquisitionKind::Browser { mode } => {
-                            Some(mode)
-                        }
-                        crate::internal::policy::policy::AcquisitionKind::DirectHttp => None,
+                        internal_policy_policy::AcquisitionKind::Browser { mode } => Some(mode),
+                        internal_policy_policy::AcquisitionKind::DirectHttp => None,
                     })
-            {
-                self.settings.mode = mode;
-            }
+        {
+            self.settings.mode = mode;
         }
         self
     }
@@ -601,10 +623,10 @@ impl SessionBuilder {
             .acquisitions
             .iter()
             .any(|acquisition| match acquisition.kind() {
-                crate::internal::policy::policy::AcquisitionKind::Browser { mode } => {
+                internal_policy_policy::AcquisitionKind::Browser { mode } => {
                     mode != self.settings.mode
                 }
-                crate::internal::policy::policy::AcquisitionKind::DirectHttp => false,
+                internal_policy_policy::AcquisitionKind::DirectHttp => false,
             })
         {
             return Err(SessionError::InvalidPolicy);
@@ -619,9 +641,9 @@ impl SessionBuilder {
             // Startup uses the acquisition Policy budget, not a tiny per-Work IO bound.
             let maximum =
                 Duration::from_micros(self.policy.request.maximum_elapsed.as_microseconds());
-            let backend = tokio::time::timeout(
+            let backend = tokio_time::timeout(
                 maximum,
-                crate::internal::engine::session::BrowserSession::acquire(
+                internal_engine_session::BrowserSession::acquire(
                     self.settings.mode,
                     self.settings.maximum_tabs,
                     false,
@@ -638,7 +660,7 @@ impl SessionBuilder {
                 }
             })?;
             let (events, _) = broadcast::channel(self.settings.watch_capacity);
-            return Ok(Session {
+            Ok(Session {
                 inner: Arc::new(SessionInner {
                     policy: self.policy,
                     settings: self.settings,
@@ -646,7 +668,7 @@ impl SessionBuilder {
                     events,
                     execution,
                 }),
-            });
+            })
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -662,15 +684,15 @@ struct SessionInner {
     policy: Policy,
     settings: SessionPolicy,
     #[cfg(feature = "browser")]
-    backend: crate::internal::engine::session::BrowserSession,
+    backend: internal_engine_session::BrowserSession,
     events: broadcast::Sender<Arc<OperationReceipt>>,
 }
 #[derive(Clone)]
 pub struct Session {
     inner: Arc<SessionInner>,
 }
-impl std::fmt::Debug for Session {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl std_fmt::Debug for Session {
+    fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result {
         f.debug_struct("Session")
             .field("settings", &self.inner.settings)
             .finish_non_exhaustive()
@@ -712,7 +734,7 @@ impl Session {
     #[cfg(feature = "browser")]
     async fn work_on(
         &self,
-        tab: crate::internal::web_capture::RuntimeBrowserTabLease,
+        tab: internal_web_capture::RuntimeBrowserTabLease,
     ) -> Result<Work, SessionError> {
         let control = self
             .inner
@@ -724,7 +746,7 @@ impl Session {
             session: self.clone(),
             tab_id: tab.id().to_string(),
             control,
-            operations: tokio::sync::Mutex::new(()),
+            operations: tokio_sync::Mutex::new(()),
         })
     }
     pub async fn new_tab(&self) -> Result<Tab, SessionError> {
@@ -736,10 +758,10 @@ impl Session {
                 .new_tab()
                 .await
                 .map_err(|_| SessionError::Admission)?;
-            return Ok(Tab {
+            Ok(Tab {
                 session: self.clone(),
                 lease,
-            });
+            })
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -783,10 +805,10 @@ impl Session {
 pub struct Tab {
     session: Session,
     #[cfg(feature = "browser")]
-    lease: crate::internal::web_capture::RuntimeBrowserTabLease,
+    lease: internal_web_capture::RuntimeBrowserTabLease,
 }
-impl std::fmt::Debug for Tab {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl std_fmt::Debug for Tab {
+    fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result {
         formatter.debug_struct("Tab").finish_non_exhaustive()
     }
 }
@@ -818,8 +840,8 @@ pub struct Watcher {
     session: Session,
     receiver: broadcast::Receiver<Arc<OperationReceipt>>,
 }
-impl std::fmt::Debug for Watcher {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl std_fmt::Debug for Watcher {
+    fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result {
         formatter.debug_struct("Watcher").finish_non_exhaustive()
     }
 }
@@ -832,7 +854,7 @@ impl Watcher {
         let received = tokio::select! {
             biased;
             () = cancellation.cancelled() => return Err(SessionError::Cancelled),
-            value = tokio::time::timeout(self.session.timeout(), self.receiver.recv()) => value,
+            value = tokio_time::timeout(self.session.timeout(), self.receiver.recv()) => value,
         };
         #[cfg(not(feature = "browser"))]
         let received = tokio::time::timeout(self.session.timeout(), self.receiver.recv()).await;
@@ -853,14 +875,14 @@ impl Watcher {
 pub struct Work {
     session: Session,
     tab_id: String,
-    operations: tokio::sync::Mutex<()>,
+    operations: tokio_sync::Mutex<()>,
     #[cfg(feature = "browser")]
-    pub(crate) control: crate::internal::web_capture::RuntimeBrowserControl,
+    pub(crate) control: internal_web_capture::RuntimeBrowserControl,
 }
 
 #[cfg(feature = "browser")]
 struct DispatchFence<'a> {
-    control: &'a crate::internal::web_capture::RuntimeBrowserControl,
+    control: &'a internal_web_capture::RuntimeBrowserControl,
     unresolved: bool,
 }
 #[cfg(feature = "browser")]
@@ -871,8 +893,8 @@ impl Drop for DispatchFence<'_> {
         }
     }
 }
-impl std::fmt::Debug for Work {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl std_fmt::Debug for Work {
+    fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result {
         f.debug_struct("Work")
             .field("tab_id", &self.tab_id)
             .finish_non_exhaustive()
@@ -893,7 +915,7 @@ impl Work {
     pub(crate) async fn scoped<T>(
         &self,
         policy: &Policy,
-        future: impl std::future::Future<Output = T>,
+        future: impl std_future::Future<Output = T>,
     ) -> Result<T, SessionError> {
         policy.validate().map_err(|_| SessionError::InvalidPolicy)?;
         if policy
@@ -901,10 +923,10 @@ impl Work {
             .acquisitions
             .iter()
             .any(|acquisition| match acquisition.kind() {
-                crate::internal::policy::policy::AcquisitionKind::Browser { mode } => {
+                internal_policy_policy::AcquisitionKind::Browser { mode } => {
                     mode != self.session.settings().mode
                 }
-                crate::internal::policy::policy::AcquisitionKind::DirectHttp => false,
+                internal_policy_policy::AcquisitionKind::DirectHttp => false,
             })
         {
             return Err(SessionError::InvalidPolicy);
@@ -912,23 +934,24 @@ impl Work {
         Ok(SCOPED_POLICY.scope(policy.clone(), future).await)
     }
     fn timeout(&self) -> Duration {
-        if let Some(remaining) = crate::timing::remaining() {
+        if let Some(remaining) = timing::remaining() {
             return remaining;
         }
         SCOPED_POLICY
             .try_with(|policy| {
                 Duration::from_micros(policy.request.maximum_elapsed.as_microseconds())
             })
-            .map_or(self.session.timeout(), |scope| {
-                self.session.timeout().min(scope)
-            })
+            .map_or_else(
+                |_| self.session.timeout(),
+                |scope| self.session.timeout().min(scope),
+            )
     }
     /// Default used by a Flow that borrows this Work without a bound Policy.
     /// A Policy explicitly bound to the Flow selects its own root fallback.
     pub(crate) fn default_action_timeout(&self) -> Duration {
         Duration::from_millis(self.session.policy().default_action_timeout_ms)
     }
-    pub(crate) fn flow_policy(&self) -> &crate::internal::policy::policy::FlowPolicy {
+    pub(crate) fn flow_policy(&self) -> &internal_policy_policy::FlowPolicy {
         &self.session.policy().flow
     }
     fn observation_limit(&self) -> usize {
@@ -952,14 +975,14 @@ impl Work {
             })
             .map_or(base, |scope| base.min(scope))
     }
-    async fn operation(&self) -> Result<tokio::sync::MutexGuard<'_, ()>, SessionError> {
+    fn operation(&self) -> Result<tokio_sync::MutexGuard<'_, ()>, SessionError> {
         // A held Work is an ordered controller, not an additional unbounded queue.
         self.operations
             .try_lock()
             .map_err(|_| SessionError::Admission)
     }
     fn authorize(&self, kind: ActionKind, input: &str) -> Result<(), SessionError> {
-        if crate::timing::remaining().is_some_and(|remaining| remaining.is_zero()) {
+        if timing::remaining().is_some_and(|remaining| remaining.is_zero()) {
             return Err(SessionError::Deadline);
         }
         if SCOPED_CANCELLATION
@@ -989,17 +1012,15 @@ impl Work {
     #[cfg(feature = "browser")]
     async fn call<T>(
         &self,
-        future: impl std::future::Future<
-            Output = Result<T, crate::internal::web_capture::BrowserControlError>,
-        >,
+        future: impl std_future::Future<Output = Result<T, internal_web_capture::BrowserControlError>>,
     ) -> Result<T, SessionError> {
         self.call_with_capacity(future, true).await
     }
     #[cfg(feature = "browser")]
     async fn execution_permit(
         &self,
-        deadline: tokio::time::Instant,
-    ) -> Result<crate::internal::engine::execution::ExecutionPermit, SessionError> {
+        deadline: tokio_time::Instant,
+    ) -> Result<internal_engine_execution::ExecutionPermit, SessionError> {
         let cancel = self.session.inner.backend.cancellation();
         let closing = self.control.closing();
         let scoped = SCOPED_CANCELLATION
@@ -1010,23 +1031,21 @@ impl Work {
             () = scoped.cancelled() => Err(SessionError::Cancelled),
             () = cancel.cancelled() => Err(SessionError::Cancelled),
             () = closing.cancelled() => Err(SessionError::Closed),
-            result = tokio::time::timeout_at(deadline, self.session.inner.execution.acquire()) =>
+            result = tokio_time::timeout_at(deadline, self.session.inner.execution.acquire()) =>
                 result.map_err(|_| SessionError::Deadline)?.map_err(SessionError::from),
         }
     }
     #[cfg(feature = "browser")]
     async fn call_with_capacity<T>(
         &self,
-        future: impl std::future::Future<
-            Output = Result<T, crate::internal::web_capture::BrowserControlError>,
-        >,
+        future: impl std_future::Future<Output = Result<T, internal_web_capture::BrowserControlError>>,
         active: bool,
     ) -> Result<T, SessionError> {
         if self.timeout().is_zero() {
             return Err(SessionError::Deadline);
         }
-        let deadline = crate::timing::deadline()
-            .or_else(|| crate::timing::checked_deadline(self.timeout()))
+        let deadline = timing::deadline()
+            .or_else(|| timing::checked_deadline(self.timeout()))
             .ok_or(SessionError::InvalidInput)?;
         let _permit = if active {
             Some(self.execution_permit(deadline).await?)
@@ -1043,6 +1062,7 @@ impl Work {
             .unwrap_or_default();
         // Dropping/timing out a dispatched future cannot hand an uncertain tab
         // to another controller. The caller must close that tab/session.
+
         let mut dispatch = DispatchFence {
             control: &self.control,
             unresolved: true,
@@ -1052,20 +1072,19 @@ impl Work {
             () = scoped.cancelled() => Err(SessionError::Unknown),
             () = cancel.cancelled() => Err(SessionError::Unknown),
             () = closing.cancelled() => Err(SessionError::Unknown),
-            result = tokio::time::timeout_at(deadline, future) => match result {
-                Ok(result) => {
-                    dispatch.unresolved = result.as_ref().err().is_some_and(crate::internal::web_capture::BrowserControlError::requires_fence);
+            result = tokio_time::timeout_at(deadline, future) => result.map_or_else(
+                |_| Err(SessionError::TimeoutAfterDispatch),
+                |result| {
+                    dispatch.unresolved = result.as_ref().err().is_some_and(internal_web_capture::BrowserControlError::requires_fence);
                     result.map_err(|error| match error {
-                        crate::internal::web_capture::BrowserControlError::InputTargetLost => SessionError::InputTargetLost,
+                        internal_web_capture::BrowserControlError::InputTargetLost => SessionError::InputTargetLost,
                         error => SessionError::Execution(error.execution_message()),
                     })
-                },
-                Err(_) => Err(SessionError::TimeoutAfterDispatch),
-            },
+                }),
         }
     }
     pub async fn observe(&self) -> Result<Observation, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.observe_inner().await
     }
     async fn observe_inner(&self) -> Result<Observation, SessionError> {
@@ -1087,7 +1106,7 @@ impl Work {
                 (None, self.call(self.control.document_epoch()).await?)
             };
             let url = self.call(self.control.url()).await?;
-            return Ok(Observation {
+            Ok(Observation {
                 id: new_operation_id(),
                 session_id: self.session.inner.backend.id(),
                 tab_id: self.tab_id.clone(),
@@ -1095,7 +1114,7 @@ impl Work {
                 html,
                 url,
                 screenshot: None,
-            });
+            })
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -1143,9 +1162,9 @@ impl Work {
         Ok(receipt)
     }
     pub async fn navigate(&self, url: &str) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Navigate, url)?;
-        crate::request::new(url)
+        request::new(url)
             .validate()
             .map_err(|_| SessionError::InvalidInput)?;
         #[cfg(feature = "browser")]
@@ -1176,7 +1195,7 @@ impl Work {
         Ok(())
     }
     pub async fn click(&self, selector: &str) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Click, selector)?;
         #[cfg(feature = "browser")]
         {
@@ -1195,9 +1214,9 @@ impl Work {
     /// Captures once, validates one Contract record, and checks it immediately.
     pub async fn assert_all(
         &self,
-        assertion: &crate::assertions::LocalAssertion,
+        assertion: &assertions::LocalAssertion,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Assert, "")?;
         assertion
             .validate(self.session.settings().maximum_input_bytes)
@@ -1208,7 +1227,7 @@ impl Work {
         #[cfg(feature = "browser")]
         {
             let deadline = timing::deadline()
-                .or_else(|| tokio::time::Instant::now().checked_add(self.timeout()))
+                .or_else(|| tokio_time::Instant::now().checked_add(self.timeout()))
                 .ok_or(SessionError::InvalidInput)?;
             let observation = self.observe_inner().await?;
             let html = observation
@@ -1218,7 +1237,7 @@ impl Work {
             let policy = SCOPED_POLICY
                 .try_with(Clone::clone)
                 .unwrap_or_else(|_| self.session.policy().clone());
-            let document = crate::documents::Document::observed_dom(
+            let document = documents::Document::observed_dom(
                 observation.id.clone(),
                 observation.document_epoch,
                 html.as_bytes().to_vec(),
@@ -1230,12 +1249,12 @@ impl Work {
                 .await?;
             let stopped = self.session.inner.backend.cancellation().is_cancelled()
                 || SCOPED_CANCELLATION
-                    .try_with(|token| token.is_cancelled())
+                    .try_with(CancellationToken::is_cancelled)
                     .unwrap_or(false);
             if stopped {
                 return Err(SessionError::Cancelled);
             }
-            if tokio::time::Instant::now() >= deadline {
+            if tokio_time::Instant::now() >= deadline {
                 return Err(SessionError::Deadline);
             }
             let passed = report.passed;
@@ -1308,7 +1327,7 @@ impl Work {
         selector: &str,
         text: &str,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::EnterText, selector)?;
         self.authorize(ActionKind::EnterText, text)?;
         #[cfg(feature = "browser")]
@@ -1326,18 +1345,18 @@ impl Work {
         }
     }
     pub async fn screenshot(&self) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Screenshot, "")?;
         #[cfg(feature = "browser")]
         {
             let bytes = self.call(self.control.screenshot()).await?;
-            if bytes.len() > crate::automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES {
+            if bytes.len() > automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES {
                 let receipt = OperationReceipt {
                     id: new_operation_id(),
                     kind: "screenshot".into(),
                     status: OperationStatus::Rejected,
                     result: Some(
-                        serde_json::json!({"captured_bytes":bytes.len(),"maximum_bytes":crate::automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES}),
+                        serde_json::json!({"captured_bytes":bytes.len(),"maximum_bytes":automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES}),
                     ),
                     observation: self.observe_inner().await.ok(),
                     error: Some(
@@ -1367,7 +1386,7 @@ impl Work {
         }
     }
     pub async fn wait(&self, milliseconds: u64) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Wait, "")?;
         let remaining = self.timeout();
         if remaining.is_zero() {
@@ -1375,7 +1394,7 @@ impl Work {
         }
         let wait_duration = Duration::from_millis(milliseconds);
         // Intentional Flow delay, never a readiness heuristic.
-        let _scoped = SCOPED_CANCELLATION
+        let scoped = SCOPED_CANCELLATION
             .try_with(Clone::clone)
             .unwrap_or_default();
         #[cfg(feature = "browser")]
@@ -1384,8 +1403,8 @@ impl Work {
         tokio::select! {
             biased;
             () = cancellation.cancelled() => return Err(SessionError::Cancelled),
-            () = _scoped.cancelled() => return Err(SessionError::Cancelled),
-            result = tokio::time::timeout(remaining, tokio::time::sleep(wait_duration)) => {
+            () = scoped.cancelled() => return Err(SessionError::Cancelled),
+            result = tokio_time::timeout(remaining, tokio_time::sleep(wait_duration)) => {
                 if result.is_err() {
                     return Err(SessionError::Deadline);
                 }
@@ -1404,7 +1423,7 @@ impl Work {
         &self,
         condition: &Condition,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Assert, "")?;
         #[cfg(feature = "browser")]
         {
@@ -1441,12 +1460,16 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "The dispatch/settlement fence must cover cancellation and the complete operation, including cleanup and evidence capture."
+    )]
     pub async fn wait_until(
         &self,
         condition: &Condition,
         timeout_ms: u64,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Wait, "")?;
         if timeout_ms == 0 {
             return Err(SessionError::InvalidInput);
@@ -1454,18 +1477,19 @@ impl Work {
         #[cfg(feature = "browser")]
         {
             let expression = condition_expression(condition)?;
-            let deadline = crate::timing::deadline()
-                .or_else(|| crate::timing::checked_deadline(self.timeout()))
+            let deadline = timing::deadline()
+                .or_else(|| timing::checked_deadline(self.timeout()))
                 .ok_or(SessionError::InvalidInput)?;
-            crate::timing::scope(deadline, async {
+            timing::scope(deadline, async {
                 let original_epoch = self.call(self.control.document_epoch()).await?;
                 let mut waiting = self.call(self.control.start_condition_wait(
                     &expression, Duration::from_millis(timeout_ms).min(self.timeout()),
                 )).await?;
+
                 let mut settlement = DispatchFence { control: &self.control, unresolved: true };
                 let parked = self.session.inner.execution.condition_wait(self.session.settings().yield_on_wait);
                 let result = self.call_with_capacity(async {
-                    waiting.finish().await.map_err(|_| crate::internal::web_capture::BrowserControlError::ConditionWaitLost)
+                    waiting.finish().await.map_err(|_| internal_web_capture::BrowserControlError::ConditionWaitLost)
                 }, !self.session.settings().yield_on_wait).await?;
                 drop(parked);
                 let resumed_epoch = self.call(self.control.document_epoch()).await.map_err(|error| {
@@ -1491,6 +1515,11 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    #[expect(
+        clippy::unused_async,
+        clippy::unused_async_trait_impl,
+        reason = "Keep the public async lifecycle contract; dropping Work releases its owned control."
+    )]
     pub async fn release(self) -> Result<(), SessionError> {
         drop(self);
         Ok(())

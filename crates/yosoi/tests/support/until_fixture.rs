@@ -1,3 +1,4 @@
+#![allow(dead_code)] // Shared fixture capabilities are used by different test/example consumers.
 use std::{
     collections::{HashMap, VecDeque},
     io,
@@ -14,10 +15,10 @@ use tokio::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct RequestEvent {
-    pub(crate) method: String,
-    pub(crate) target: String,
-    pub(crate) correlation: Option<String>,
+pub struct RequestEvent {
+    pub method: String,
+    pub target: String,
+    pub correlation: Option<String>,
 }
 
 #[derive(Default)]
@@ -28,7 +29,7 @@ struct Shared {
     open_gates: AtomicBool,
 }
 
-pub(crate) struct UntilFixture {
+pub struct UntilFixture {
     base_url: String,
     shutdown: Option<oneshot::Sender<()>>,
     task: Option<JoinHandle<io::Result<()>>>,
@@ -38,7 +39,7 @@ pub(crate) struct UntilFixture {
 }
 
 impl UntilFixture {
-    pub(crate) async fn start() -> io::Result<Self> {
+    pub async fn start() -> io::Result<Self> {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).await?;
         let address = listener.local_addr()?;
         let (shutdown, mut shutdown_rx) = oneshot::channel();
@@ -79,11 +80,11 @@ impl UntilFixture {
         })
     }
 
-    pub(crate) fn url(&self, path: &str) -> String {
+    pub fn url(&self, path: &str) -> String {
         format!("{}{path}", self.base_url)
     }
 
-    pub(crate) async fn wait_for(&mut self, target: &str) -> io::Result<RequestEvent> {
+    pub async fn wait_for(&mut self, target: &str) -> io::Result<RequestEvent> {
         if let Some(position) = self.pending.iter().position(|event| event.target == target) {
             return self
                 .pending
@@ -103,7 +104,7 @@ impl UntilFixture {
         }
     }
 
-    pub(crate) async fn wait_for_correlated(
+    pub async fn wait_for_correlated(
         &mut self,
         target: &str,
         correlation: &str,
@@ -128,7 +129,11 @@ impl UntilFixture {
         }
     }
 
-    pub(crate) fn release(&self, gate: &str) -> io::Result<()> {
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+    )]
+    pub fn release(&self, gate: &str) -> io::Result<()> {
         let gates = self
             .shared
             .gates
@@ -141,7 +146,11 @@ impl UntilFixture {
         Ok(())
     }
 
-    pub(crate) fn release_all(&self) -> io::Result<()> {
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+    )]
+    pub fn release_all(&self) -> io::Result<()> {
         self.shared.open_gates.store(true, Ordering::Release);
         let gates = self
             .shared
@@ -154,7 +163,7 @@ impl UntilFixture {
         Ok(())
     }
 
-    pub(crate) fn request_count(&self, target: &str) -> io::Result<usize> {
+    pub fn request_count(&self, target: &str) -> io::Result<usize> {
         let requests = self
             .shared
             .requests
@@ -163,7 +172,7 @@ impl UntilFixture {
         Ok(requests.get(target).copied().unwrap_or(0))
     }
 
-    pub(crate) async fn shutdown(mut self) -> io::Result<()> {
+    pub async fn shutdown(mut self) -> io::Result<()> {
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
@@ -316,6 +325,10 @@ fn register_request(
     Ok(receiver)
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn record(
     shared: &Shared,
     method: &str,

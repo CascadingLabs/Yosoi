@@ -5,6 +5,13 @@
 //! durable identity; source observation IDs and their session/tab coordinates
 //! remain the provenance carried by the record itself.
 
+use crate::assertions;
+use crate::flow;
+use crate::internal::engine as internal_engine;
+use crate::locators;
+use crate::session;
+use std::error as std_error;
+use std::io as std_io;
 use std::{fmt, io::Write};
 
 use serde::{Deserialize, Serialize};
@@ -58,7 +65,7 @@ pub enum OperationStatus {
 }
 
 /// One operation result and the evidence observed alongside it.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OperationReceipt {
     pub id: String,
@@ -74,7 +81,7 @@ pub struct OperationReceipt {
 #[serde(deny_unknown_fields)]
 pub struct AutomationRecordRef {
     version: u32,
-    document: crate::internal::engine::DocumentArchiveRef,
+    document: internal_engine::DocumentArchiveRef,
 }
 
 impl AutomationRecordRef {
@@ -84,17 +91,17 @@ impl AutomationRecordRef {
     }
 
     /// Returns the exact immutable Document reference persisted in Archive.
-    pub const fn document(&self) -> &crate::internal::engine::DocumentArchiveRef {
+    pub const fn document(&self) -> &internal_engine::DocumentArchiveRef {
         &self.document
     }
 }
 
 /// Run provenance recorded alongside canonical evidence.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AutomationContext {
     pub effective_policy_identity: String,
-    pub session_policy: crate::session::SessionPolicy,
+    pub session_policy: session::SessionPolicy,
     pub provider: String,
     pub browser_identity: Option<String>,
     pub source_revision: Option<String>,
@@ -159,7 +166,7 @@ impl AutomationRecord {
         self.flow_outcome.as_ref()
     }
 
-    pub fn context(&self) -> Option<&AutomationContext> {
+    pub const fn context(&self) -> Option<&AutomationContext> {
         self.context.as_ref()
     }
 
@@ -262,12 +269,12 @@ impl AutomationRecord {
     /// Writes this record as an immutable text Document and returns its handle.
     pub async fn write_to(
         &self,
-        archive: &crate::internal::engine::Archive,
+        archive: &internal_engine::Archive,
     ) -> Result<AutomationRecordRef, AutomationRecordError> {
         self.validate()?;
         let bytes = encode_record(self)?;
 
-        let document = crate::internal::engine::Document::text(self.id.clone(), bytes)
+        let document = internal_engine::Document::text(self.id.clone(), bytes)
             .map_err(|error| AutomationRecordError::Document(error.to_string()))?;
         let reference = archive
             .write(document.archive_value())
@@ -281,7 +288,7 @@ impl AutomationRecord {
 
     /// Reads and validates one archived record without browser or network work.
     pub async fn read_from(
-        archive: &crate::internal::engine::Archive,
+        archive: &internal_engine::Archive,
         reference: &AutomationRecordRef,
     ) -> Result<Self, AutomationRecordError> {
         if reference.version != AUTOMATION_RECORD_VERSION {
@@ -294,7 +301,7 @@ impl AutomationRecord {
             .read(&reference.document)
             .await
             .map_err(|error| AutomationRecordError::Archive(error.to_string()))?;
-        let document = crate::internal::engine::Document::from_archived(archived);
+        let document = internal_engine::Document::from_archived(archived);
         if document.class() != DocumentClass::SourceText
             || document.profile() != DocumentProfile::source_text()
         {
@@ -360,18 +367,16 @@ impl AutomationRecord {
             validate_identity("operation receipt id", &operation.id)?;
             validate_identity("operation kind", &operation.kind)?;
             validate_until_receipt(operation)?;
-            if operation.kind == "until" {
-                if let Some(trigger) = until_report(operation)?.trigger {
-                    if self
-                        .operations
-                        .iter()
-                        .any(|canonical| canonical.id == trigger.id && *canonical != trigger)
-                    {
-                        return Err(AutomationRecordError::InvalidUntilReport(
-                            "trigger identity has inconsistent canonical receipts".into(),
-                        ));
-                    }
-                }
+            if operation.kind == "until"
+                && let Some(trigger) = until_report(operation)?.trigger
+                && self
+                    .operations
+                    .iter()
+                    .any(|canonical| canonical.id == trigger.id && *canonical != trigger)
+            {
+                return Err(AutomationRecordError::InvalidUntilReport(
+                    "trigger identity has inconsistent canonical receipts".into(),
+                ));
             }
             if operation_ids
                 .iter()
@@ -478,7 +483,7 @@ impl AutomationRecord {
 }
 
 fn validate_flow_outcome(outcome: &FlowOutcome) -> Result<(), AutomationRecordError> {
-    if !matches!(outcome.version, 1 | 2 | 3) {
+    if !matches!(outcome.version, 1..=3) {
         return Err(AutomationRecordError::UnsupportedFlowVersion {
             observed: outcome.version,
             supported: 3,
@@ -525,13 +530,7 @@ fn validate_flow_outcome(outcome: &FlowOutcome) -> Result<(), AutomationRecordEr
         .steps
         .len()
         .checked_add(outcome.cleanup.len())
-        .and_then(|count| {
-            count.checked_add(if outcome.failure_capture.is_some() {
-                1
-            } else {
-                0
-            })
-        })
+        .and_then(|count| count.checked_add(usize::from(outcome.failure_capture.is_some())))
         .ok_or(AutomationRecordError::FlowStepCountMismatch)?;
     let mut receipt_ids: Vec<&String> = Vec::with_capacity(receipt_capacity);
     let mut until_trigger_ids: Vec<String> = Vec::new();
@@ -685,19 +684,19 @@ fn validate_flow_outcome(outcome: &FlowOutcome) -> Result<(), AutomationRecordEr
     Ok(())
 }
 
-fn validate_step_causes(step: &crate::flow::StepOutcome) -> Result<(), AutomationRecordError> {
+const fn validate_step_causes(step: &flow::StepOutcome) -> Result<(), AutomationRecordError> {
     let status = step.receipt.status;
     match (status, step.failure) {
-        (OperationStatus::Observed, Some(FlowFailureCause::UnknownOutcome))
-        | (OperationStatus::Rejected, Some(FlowFailureCause::UnknownOutcome)) => {
+        (
+            OperationStatus::Observed | OperationStatus::Rejected,
+            Some(FlowFailureCause::UnknownOutcome),
+        )
+        | (OperationStatus::Observed, Some(_)) => {
             return Err(AutomationRecordError::FlowTerminalMismatch);
         }
         (OperationStatus::Unknown, Some(FlowFailureCause::UnknownOutcome)) => {}
         (OperationStatus::Unknown, _) => return Err(AutomationRecordError::FlowTerminalMismatch),
         (OperationStatus::Rejected, None) if step.cancellation.is_none() => {
-            return Err(AutomationRecordError::FlowTerminalMismatch);
-        }
-        (OperationStatus::Observed, Some(_)) => {
             return Err(AutomationRecordError::FlowTerminalMismatch);
         }
         _ => {}
@@ -760,7 +759,7 @@ fn recorded_step_policy<'a>(
 
 fn validate_cancelled_flow(
     outcome: &FlowOutcome,
-    trigger: &crate::flow::StepOutcome,
+    trigger: &flow::StepOutcome,
 ) -> Result<(), AutomationRecordError> {
     let Some(scope) = &trigger.cancelled_flow else {
         return Ok(());
@@ -790,7 +789,7 @@ fn validate_cancelled_flow(
 }
 
 fn selected_stop_policy(
-    trigger: &crate::flow::StepOutcome,
+    trigger: &flow::StepOutcome,
     policy: FlowPolicy,
 ) -> Option<(Continuation, FlowStopCause)> {
     [
@@ -1088,9 +1087,7 @@ fn validate_receipt<'a>(
     Ok(())
 }
 
-fn until_report(
-    receipt: &OperationReceipt,
-) -> Result<crate::session::UntilReport, AutomationRecordError> {
+fn until_report(receipt: &OperationReceipt) -> Result<session::UntilReport, AutomationRecordError> {
     let value = receipt
         .result
         .as_ref()
@@ -1107,7 +1104,7 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
     report
         .validate()
         .map_err(|error| AutomationRecordError::InvalidUntilReport(error.to_string()))?;
-    let satisfied = report.termination == crate::session::UntilTermination::Satisfied;
+    let satisfied = report.termination == session::UntilTermination::Satisfied;
     if satisfied != (receipt.status == OperationStatus::Observed)
         || (satisfied && receipt.error.is_some())
     {
@@ -1128,20 +1125,19 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
             "successful confirmation lacks an observation".into(),
         ));
     }
-    if let Some(observation) = &receipt.observation {
-        if observation.session_id != report.scope.session_id
+    if let Some(observation) = &receipt.observation
+        && (observation.session_id != report.scope.session_id
             || observation.tab_id != report.scope.tab_id
-            || observation.document_epoch != report.scope.document_epoch
-        {
-            return Err(AutomationRecordError::InvalidUntilReport(
-                "confirmation scope differs from observation".into(),
-            ));
-        }
+            || observation.document_epoch != report.scope.document_epoch)
+    {
+        return Err(AutomationRecordError::InvalidUntilReport(
+            "confirmation scope differs from observation".into(),
+        ));
     }
     for check in report
         .checks
         .iter()
-        .filter(|check| check.state == crate::session::UntilCheckState::Satisfied)
+        .filter(|check| check.state == session::UntilCheckState::Satisfied)
     {
         let evidence = check.evidence.as_ref().ok_or_else(|| {
             AutomationRecordError::InvalidUntilReport("missing confirmed source evidence".into())
@@ -1207,16 +1203,14 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
                 .and_then(|trigger| trigger.result.as_ref())
                 .and_then(|result| result.get("started_at_unix_us"))
                 .and_then(serde_json::Value::as_u64)
-            {
-                if evidence
+                && evidence
                     .get("started_at_unix_us")
                     .and_then(serde_json::Value::as_u64)
                     .is_none_or(|request| request < start)
-                {
-                    return Err(AutomationRecordError::InvalidUntilReport(
-                        "response request precedes trigger dispatch".into(),
-                    ));
-                }
+            {
+                return Err(AutomationRecordError::InvalidUntilReport(
+                    "response request precedes trigger dispatch".into(),
+                ));
             }
         }
     }
@@ -1254,8 +1248,7 @@ fn validate_until_authored(
             });
         }
         trigger_ids.push(actual.id.clone());
-    } else if trigger.is_some() && report.termination == crate::session::UntilTermination::Satisfied
-    {
+    } else if trigger.is_some() && report.termination == session::UntilTermination::Satisfied {
         return Err(AutomationRecordError::InvalidUntilReport(
             "attached action has no trigger receipt".into(),
         ));
@@ -1315,12 +1308,12 @@ fn validate_until_authored(
                 let recorded = evidence.get("report").ok_or_else(|| {
                     AutomationRecordError::InvalidUntilReport("missing Contract report".into())
                 })?;
-                let assertion: crate::assertions::AssertionReport =
+                let assertion: assertions::AssertionReport =
                     serde_json::from_value(recorded.clone()).map_err(|error| {
                         AutomationRecordError::InvalidUntilReport(error.to_string())
                     })?;
                 let located_matches_observation = match &assertion.located {
-                    crate::locators::LocateOutcome::Matched { result } => {
+                    locators::LocateOutcome::Matched { result } => {
                         evidence
                             .get("observation_id")
                             .and_then(serde_json::Value::as_str)
@@ -1443,21 +1436,21 @@ fn validate_observation(observation: &Observation) -> Result<(), AutomationRecor
     validate_identity("observation id", &observation.id)?;
     validate_identity("session id", &observation.session_id)?;
     validate_identity("tab id", &observation.tab_id)?;
-    if let Some(html) = &observation.html {
-        if html.len() > MAX_OBSERVATION_HTML_BYTES {
-            return Err(AutomationRecordError::FieldSizeExceeded {
-                field: "html",
-                maximum: MAX_OBSERVATION_HTML_BYTES,
-            });
-        }
+    if let Some(html) = &observation.html
+        && html.len() > MAX_OBSERVATION_HTML_BYTES
+    {
+        return Err(AutomationRecordError::FieldSizeExceeded {
+            field: "html",
+            maximum: MAX_OBSERVATION_HTML_BYTES,
+        });
     }
-    if let Some(screenshot) = &observation.screenshot {
-        if screenshot.len() > MAX_OBSERVATION_SCREENSHOT_BYTES {
-            return Err(AutomationRecordError::FieldSizeExceeded {
-                field: "screenshot",
-                maximum: MAX_OBSERVATION_SCREENSHOT_BYTES,
-            });
-        }
+    if let Some(screenshot) = &observation.screenshot
+        && screenshot.len() > MAX_OBSERVATION_SCREENSHOT_BYTES
+    {
+        return Err(AutomationRecordError::FieldSizeExceeded {
+            field: "screenshot",
+            maximum: MAX_OBSERVATION_SCREENSHOT_BYTES,
+        });
     }
     Ok(())
 }
@@ -1567,7 +1560,7 @@ impl fmt::Display for AutomationRecordError {
     }
 }
 
-impl std::error::Error for AutomationRecordError {}
+impl std_error::Error for AutomationRecordError {}
 
 fn encode_record(record: &AutomationRecord) -> Result<Vec<u8>, AutomationRecordError> {
     let maximum = usize::try_from(MAX_AUTOMATION_RECORD_BYTES).map_err(|_| {
@@ -1579,10 +1572,7 @@ fn encode_record(record: &AutomationRecord) -> Result<Vec<u8>, AutomationRecordE
     let mut writer = BoundedJsonWriter::new(maximum);
     if let Err(error) = serde_json::to_writer(&mut writer, record) {
         if let Some(observed) = writer.exceeded_at {
-            let observed = match u64::try_from(observed) {
-                Ok(observed) => observed,
-                Err(_) => u64::MAX,
-            };
+            let observed = u64::try_from(observed).unwrap_or(u64::MAX);
             return Err(AutomationRecordError::EncodedSizeExceeded {
                 maximum: MAX_AUTOMATION_RECORD_BYTES,
                 observed,
@@ -1610,18 +1600,18 @@ impl BoundedJsonWriter {
 }
 
 impl Write for BoundedJsonWriter {
-    fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+    fn write(&mut self, buffer: &[u8]) -> std_io::Result<usize> {
         let Some(next_len) = self.bytes.len().checked_add(buffer.len()) else {
             self.exceeded_at = Some(usize::MAX);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::WriteZero,
+            return Err(std_io::Error::new(
+                std_io::ErrorKind::WriteZero,
                 "automation record exceeds its encoded size limit",
             ));
         };
         if next_len > self.maximum {
             self.exceeded_at = Some(next_len);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::WriteZero,
+            return Err(std_io::Error::new(
+                std_io::ErrorKind::WriteZero,
                 "automation record exceeds its encoded size limit",
             ));
         }
@@ -1629,7 +1619,7 @@ impl Write for BoundedJsonWriter {
         Ok(buffer.len())
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
+    fn flush(&mut self) -> std_io::Result<()> {
         Ok(())
     }
 }

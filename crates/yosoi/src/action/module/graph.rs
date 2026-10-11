@@ -24,7 +24,7 @@ impl JavaScriptModuleBundle {
             .parent()
             .ok_or_else(|| JavaScriptModuleError::InvalidEntryPath(entry_path.to_path_buf()))?
             .to_path_buf();
-        Self::from_canonical_root(root, canonical_entry, limits, result_export)
+        Self::from_canonical_root(&root, canonical_entry, limits, result_export)
     }
 
     pub(in crate::action) fn from_root_and_entry(
@@ -55,13 +55,13 @@ impl JavaScriptModuleBundle {
                 path: canonical_entry,
             });
         }
-        Self::from_canonical_root(root, canonical_entry, limits, result_export)
+        Self::from_canonical_root(&root, canonical_entry, limits, result_export)
     }
 }
 
 impl JavaScriptModuleBundle {
     fn from_canonical_root(
-        root: PathBuf,
+        root: &Path,
         canonical_entry: PathBuf,
         limits: JavaScriptModuleLimits,
         result_export: Option<String>,
@@ -69,7 +69,7 @@ impl JavaScriptModuleBundle {
         limits.validate()?;
         validate_result_export(result_export.as_deref())?;
         let entry_relative = canonical_entry
-            .strip_prefix(&root)
+            .strip_prefix(root)
             .map_err(|_| JavaScriptModuleError::InvalidEntryPath(canonical_entry.clone()))?;
         let entry = module_id_from_relative(entry_relative)?;
 
@@ -104,17 +104,17 @@ impl JavaScriptModuleBundle {
             let mut imports = Vec::with_capacity(parsed.len());
             for parsed_import in parsed {
                 let target_module = resolve_import_id(&module_id, &parsed_import.specifier)?;
-                let target_path = path_for_module_id(&root, &target_module)?;
+                let target_path = path_for_module_id(root, &target_module)?;
                 let canonical_target = fs::canonicalize(&target_path).map_err(|_| {
                     JavaScriptModuleError::ModuleNotFound {
                         importer: module_id.clone(),
                         specifier: parsed_import.specifier.clone(),
                     }
                 })?;
-                if !canonical_target.starts_with(&root) {
+                if !canonical_target.starts_with(root) {
                     return Err(JavaScriptModuleError::ModuleOutsideBundle {
-                        importer: module_id.clone(),
-                        specifier: parsed_import.specifier.clone(),
+                        importer: module_id,
+                        specifier: parsed_import.specifier,
                     });
                 }
                 imports.push(module_import(parsed_import, target_module.clone()));

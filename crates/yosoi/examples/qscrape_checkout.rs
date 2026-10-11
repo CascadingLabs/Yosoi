@@ -40,6 +40,10 @@ const CHISEL: Product = Product {
 };
 
 #[tokio::main(flavor = "current_thread")]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args().skip(1);
     let output = args.next().ok_or_else(|| {
@@ -62,10 +66,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     fs::create_dir_all(&output)?;
 
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     // No arbitrary JavaScript is needed: navigation, clicks, typing and assertions
     // all use the SDK's typed operations. A fresh Session owns an isolated cart.
     let session = session::new()
@@ -242,7 +248,7 @@ fn assert_visible(selector: String) -> flow::Step {
     action::assert(Condition::Visible { selector }).into()
 }
 
-fn wait_visible(selector: String) -> flow::Step {
+const fn wait_visible(selector: String) -> flow::Step {
     action::wait_until(Condition::Visible { selector }, READY_TIMEOUT_MS)
 }
 

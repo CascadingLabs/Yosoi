@@ -15,6 +15,10 @@ type TestError = Box<dyn Error + Send + Sync>;
 mod until_fixture;
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn authored_until_rejects_an_observed_click_receipt_carrying_a_report() -> Result<(), TestError> {
     let report = network_report("click-kind");
     let flow = network_step("click-kind");
@@ -38,6 +42,10 @@ fn authored_until_rejects_an_observed_click_receipt_carrying_a_report() -> Resul
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn satisfied_network_archive_requires_valid_trigger_and_request_timestamps() -> Result<(), TestError>
 {
     let positive = network_report("timestamp-positive");
@@ -77,6 +85,10 @@ fn satisfied_network_archive_requires_valid_trigger_and_request_timestamps() -> 
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn operations_vector_must_match_the_canonical_until_receipt_byte_for_byte() -> Result<(), TestError>
 {
     let report = network_report("canonical-payload");
@@ -84,12 +96,9 @@ fn operations_vector_must_match_the_canonical_until_receipt_byte_for_byte() -> R
     let receipt = until_receipt("canonical-until", &report)?;
     let outcome = outcome(flow, receipt.clone());
 
-    let canonical = AutomationRecord::new(
-        "canonical-operation-reference",
-        Vec::new(),
-        vec![receipt.clone()],
-    )?
-    .with_flow_outcome(outcome.clone());
+    let canonical =
+        AutomationRecord::new("canonical-operation-reference", Vec::new(), vec![receipt])?
+            .with_flow_outcome(outcome.clone());
     assert!(
         canonical.is_ok(),
         "an exact duplicate reference is canonical"
@@ -121,6 +130,7 @@ fn operations_vector_must_match_the_canonical_until_receipt_byte_for_byte() -> R
 fn record_with_report(report: UntilReport, attempt: &str) -> Result<AutomationRecord, TestError> {
     let flow = network_step(attempt);
     let receipt = until_receipt("network-until", &report)?;
+    drop(report);
     Ok(
         AutomationRecord::new("timestamp-report", Vec::new(), Vec::new())?
             .with_flow_outcome(outcome(flow, receipt))?,
@@ -287,6 +297,11 @@ mod browser_cleanup {
     type TestError = Box<dyn Error + Send + Sync>;
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::panic_in_result_fn,
+        clippy::significant_drop_tightening,
+        reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+    )]
     async fn cancellation_settles_the_partial_response_watch_and_tab_remains_reusable()
     -> Result<(), TestError> {
         if env::var("YOSOI_BROWSER_TESTS").as_deref() != Ok("1") {
@@ -368,7 +383,7 @@ mod browser_cleanup {
         assert_eq!(fixture.request_count("/trigger?attempt=cancel-cleanup")?, 1);
         assert_eq!(fixture.request_count("/api?attempt=cancel-cleanup")?, 1);
         drop(invocation);
-        drop(bound);
+
         assert_eq!(pool.snapshot().active, 0);
         assert_eq!(pool.snapshot().parked, 0);
         assert_eq!(pool.snapshot().queued, 0);
@@ -423,7 +438,6 @@ mod browser_cleanup {
         assert_eq!(pool.snapshot().parked, 0);
         assert_eq!(pool.snapshot().queued, 0);
 
-        drop(next_bound);
         work.release().await?;
         browser.close().await?;
         fixture.shutdown().await?;

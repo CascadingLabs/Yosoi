@@ -68,12 +68,12 @@ pub const fn screenshot() -> Step {
 ///
 /// Convert it into [`Step`] for one immediate check, or call `.until()` to wait
 /// for the condition without a separate trigger action.
-pub fn assert(condition: Condition) -> AssertionBuilder {
+pub const fn assert(condition: Condition) -> AssertionBuilder {
     AssertionBuilder::new_condition(condition)
 }
 
 /// Creates a typed assertion step bounded by a positive timeout in milliseconds.
-pub fn wait_until(condition: Condition, timeout_ms: u64) -> Step {
+pub const fn wait_until(condition: Condition, timeout_ms: u64) -> Step {
     Step::WaitUntil {
         condition,
         timeout_ms,
@@ -130,7 +130,9 @@ pub fn run_module_with_export(
 }
 
 /// Snapshots an entry module and its local import graph under an explicit
-/// filesystem root. Relative imports may reach sibling directories inside
+/// filesystem root.
+///
+/// Relative imports may reach sibling directories inside
 /// `root`; symlinks and paths that escape the root are rejected.
 pub fn run_module_from_root(
     root: impl AsRef<Path>,

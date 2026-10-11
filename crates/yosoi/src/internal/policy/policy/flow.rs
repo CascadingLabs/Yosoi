@@ -8,8 +8,10 @@ use serde::{Deserialize, Serialize};
     rename_all = "snake_case",
     deny_unknown_fields
 )]
+#[derive(Default)]
 pub enum Continuation {
     /// Keep executing later steps in the containing Flow.
+    #[default]
     Continue,
     /// Stop at the selected scope after recording the triggering result.
     Stop(StopScope),
@@ -35,12 +37,6 @@ pub struct FlowPolicy {
     /// Behavior when a step-local cancellation token is cancelled.
     #[serde(default)]
     pub on_cancellation: Continuation,
-}
-
-impl Default for Continuation {
-    fn default() -> Self {
-        Self::Continue
-    }
 }
 
 impl FlowPolicy {

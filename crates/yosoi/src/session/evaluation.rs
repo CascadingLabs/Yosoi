@@ -34,7 +34,7 @@ impl Work {
         target: &JsTarget,
         snapshot: &JavaScriptSourceSnapshot,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, "")?;
         snapshot
             .validate(self.session.settings().maximum_input_bytes)
@@ -57,7 +57,7 @@ impl Work {
         target: &JsTarget,
         bundle: &JavaScriptModuleBundle,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, "")?;
         if target.world == JsWorld::Isolated {
             return Err(SessionError::Unsupported("isolated JavaScript world"));
@@ -77,7 +77,7 @@ impl Work {
         source: &str,
         kind: &'static str,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, source)?;
         self.evaluate_authorized_targeted(target, source, kind)
             .await
@@ -94,10 +94,10 @@ impl Work {
         }
         #[cfg(feature = "browser")]
         {
-            if let Some(expected) = target.expected_document_epoch {
-                if self.call(self.control.document_epoch()).await? != expected {
-                    return Err(SessionError::InvalidInput);
-                }
+            if let Some(expected) = target.expected_document_epoch
+                && self.call(self.control.document_epoch()).await? != expected
+            {
+                return Err(SessionError::InvalidInput);
             }
             let frame = match &target.frame {
                 JsFrame::Main => None,

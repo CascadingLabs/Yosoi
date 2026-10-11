@@ -107,15 +107,13 @@ impl<'de> Deserialize<'de> for Flow {
             None | Some(1) if wire.timeout.is_none() && wire.timeout_ms.is_none() => {
                 wire.timeout_us.map(Duration::from_micros)
             }
-            Some(2 | 3 | 4) if wire.timeout_us.is_none() && wire.timeout_ms.is_none() => {
-                wire.timeout
-            }
+            Some(2..=4) if wire.timeout_us.is_none() && wire.timeout_ms.is_none() => wire.timeout,
             None | Some(1) => {
                 return Err(D::Error::custom(
                     "legacy Flow schema accepts only timeout_us; timeout values use microseconds",
                 ));
             }
-            Some(2 | 3 | 4) => {
+            Some(2..=4) => {
                 return Err(D::Error::custom(
                     "Flow schemas 2, 3 and 4 accept only their unit-bearing timeout field",
                 ));
@@ -175,25 +173,25 @@ impl Flow {
 
     /// Sets the inherited action timeout for this Flow, in milliseconds.
     /// A nearer nested Flow or action timeout overrides it.
-    pub fn timeout(mut self, milliseconds: u64) -> Self {
+    pub const fn timeout(mut self, milliseconds: u64) -> Self {
         self.timeout = Some(Duration::from_millis(milliseconds));
         self
     }
 
     /// Sets this Flow's failure behavior; a child or leaf override takes precedence.
-    pub fn on_failure(mut self, continuation: Continuation) -> Self {
+    pub const fn on_failure(mut self, continuation: Continuation) -> Self {
         self.on_failure = Some(continuation);
         self
     }
 
     /// Sets this Flow's local cancellation behavior; a child or leaf override takes precedence.
-    pub fn on_cancellation(mut self, continuation: Continuation) -> Self {
+    pub const fn on_cancellation(mut self, continuation: Continuation) -> Self {
         self.on_cancellation = Some(continuation);
         self
     }
 
     /// Optionally supplies an application-owned stop signal; invoke is always cancellable.
-    pub fn with_cancellation<'a>(&'a self, token: &'a CancellationToken) -> BoundFlow<'a> {
+    pub const fn with_cancellation<'a>(&'a self, token: &'a CancellationToken) -> BoundFlow<'a> {
         BoundFlow {
             flow: self,
             policy: None,
@@ -205,7 +203,7 @@ impl Flow {
 
     /// Configures an invocation's policy without executing or acquiring resources.
     /// Without a supplied lease, invoke acquires and closes its own Session.
-    pub fn bind<'a>(&'a self, policy: &'a Policy) -> BoundFlow<'a> {
+    pub const fn bind<'a>(&'a self, policy: &'a Policy) -> BoundFlow<'a> {
         BoundFlow {
             flow: self,
             policy: Some(policy),
@@ -218,7 +216,7 @@ impl Flow {
     /// Configures this invocation to borrow the caller's existing tab lease.
     /// This does not execute, acquire another lease, or take ownership of cleanup.
     /// Invoke runs on the lease's current tab; the caller releases it afterward.
-    pub fn with_lease<'a>(&'a self, lease: &'a Work) -> BoundFlow<'a> {
+    pub const fn with_lease<'a>(&'a self, lease: &'a Work) -> BoundFlow<'a> {
         BoundFlow {
             flow: self,
             policy: None,
@@ -241,7 +239,7 @@ impl Flow {
 
     /// Selects whether one bounded screenshot is captured after a failed or
     /// unknown step.
-    pub fn with_failure_capture(mut self, policy: FailureCapturePolicy) -> Self {
+    pub const fn with_failure_capture(mut self, policy: FailureCapturePolicy) -> Self {
         self.capture_on_failure = policy;
         self
     }
@@ -302,6 +300,7 @@ impl Flow {
 }
 
 /// A configured invocation borrowing its recipe, policy, and optional tab lease.
+///
 /// Configuration does not acquire resources or run actions. Without a lease,
 /// invoke owns acquisition and cleanup; with a lease, cleanup stays with its caller.
 #[derive(Debug)]
@@ -316,20 +315,20 @@ pub struct BoundFlow<'a> {
 impl<'a> BoundFlow<'a> {
     /// Explicitly permits JavaScript when this invocation acquires its own Session.
     /// A borrowed lease retains its Session's permission; this cannot elevate it.
-    pub fn allow_javascript(mut self) -> Self {
+    pub const fn allow_javascript(mut self) -> Self {
         self.allow_javascript = true;
         self
     }
     /// Applies this policy within the supplied Session's existing permission limits.
     /// This configures the invocation without executing it or changing its recipe.
-    pub fn bind(mut self, policy: &'a Policy) -> Self {
+    pub const fn bind(mut self, policy: &'a Policy) -> Self {
         self.policy = Some(policy);
         self
     }
 
     /// Uses the caller's existing lease without acquiring control or owning cleanup.
     /// This configures the invocation without executing it or changing its recipe.
-    pub fn with_lease(mut self, lease: &'a Work) -> Self {
+    pub const fn with_lease(mut self, lease: &'a Work) -> Self {
         self.lease = Some(lease);
         self
     }
@@ -348,7 +347,7 @@ impl<'a> BoundFlow<'a> {
     }
 
     /// Supplies an optional external stop signal without selecting a different executor.
-    pub fn with_cancellation(mut self, token: &'a CancellationToken) -> Self {
+    pub const fn with_cancellation(mut self, token: &'a CancellationToken) -> Self {
         self.cancellation = Some(token);
         self
     }

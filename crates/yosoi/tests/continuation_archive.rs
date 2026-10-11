@@ -1,4 +1,6 @@
 use serde_json::{Value, json};
+use std::env as std_env;
+use std::process as std_process;
 use std::{
     error::Error,
     fs,
@@ -6,6 +8,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio_util::sync::CancellationToken;
+use yosoi::flow as yosoi_flow;
 use yosoi::{
     Archive,
     automation_record::{AutomationRecord, OperationReceipt, OperationStatus},
@@ -165,8 +168,8 @@ async fn runtime_cancellation_authority_is_not_serialized_as_replayable() {
     );
     assert!(matches!(
         flow.invoke().await,
-        Err(yosoi::flow::FlowInvokeError::InvalidFlow(
-            yosoi::flow::FlowValidationError::UnboundCancellation
+        Err(yosoi_flow::FlowInvokeError::InvalidFlow(
+            yosoi_flow::FlowValidationError::UnboundCancellation
         ))
     ));
 
@@ -191,7 +194,7 @@ fn current_flow_and_outcome_schema_preserve_new_continuation_fields() {
         "steps": [],
         "terminal": "completed"
     });
-    let reopened: yosoi::flow::FlowOutcome =
+    let reopened: yosoi_flow::FlowOutcome =
         serde_json::from_value(legacy_outcome.clone()).expect("legacy outcome should reopen");
     let forwarded = serde_json::to_value(reopened).expect("legacy outcome should serialize");
     assert_eq!(forwarded["version"], 2);
@@ -290,7 +293,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
     assert_eq!(stored.skipped_steps.len(), 1);
     assert_eq!(stored.skipped_steps[0].flow_path, [0, 1]);
     assert_eq!(stored.skipped_steps[0].stopped_by, [0, 0]);
-    assert!(stored.cleanup.is_empty());
+    assert_eq!(stored.cleanup, Vec::<OperationReceipt>::new());
 
     let global_stop_defaults = FlowPolicy {
         on_failure: Continuation::Stop(StopScope::CurrentFlow),
@@ -361,7 +364,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
                 flow_path: vec![0, 0],
                 receipt: receipt("child-cancelled", OperationStatus::Rejected),
                 failure: None,
-                cancellation: Some(yosoi::flow::FlowCancellationCause::Step),
+                cancellation: Some(yosoi_flow::FlowCancellationCause::Step),
                 cancelled_flow: Some(vec![0]),
             },
             StepOutcome {
@@ -415,7 +418,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
             flow_path: vec![0],
             receipt: receipt("cancelled-step", OperationStatus::Rejected),
             failure: None,
-            cancellation: Some(yosoi::flow::FlowCancellationCause::Invocation),
+            cancellation: Some(yosoi_flow::FlowCancellationCause::Invocation),
             cancelled_flow: None,
         }],
         terminal: FlowTermination::Cancelled,
@@ -464,7 +467,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
     assert_eq!(cancellation_stored.terminal, FlowTermination::Cancelled);
     assert_eq!(
         cancellation_stored.steps[0].cancellation,
-        Some(yosoi::flow::FlowCancellationCause::Invocation)
+        Some(yosoi_flow::FlowCancellationCause::Invocation)
     );
     assert_eq!(cancellation_stored.cleanup.len(), 2);
     assert_eq!(cancellation_stored.cleanup[1].id, "close-failure");
@@ -489,8 +492,8 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
         .ok_or("archived legacy Flow outcome was missing")?;
     assert_eq!(legacy_stored.version, 2);
     assert_eq!(legacy_stored.continuation_defaults, FlowPolicy::default());
-    assert!(legacy_stored.skipped_steps.is_empty());
-    assert!(legacy_stored.cleanup.is_empty());
+    assert_eq!(legacy_stored.skipped_steps, Vec::<SkippedStep>::new());
+    assert_eq!(legacy_stored.cleanup, Vec::<OperationReceipt>::new());
 
     drop(archive);
     fs::remove_dir_all(&root)?;
@@ -590,7 +593,7 @@ fn archive_rejects_stops_without_matching_policy_or_cancellation_authority() {
             flow_path: vec![0],
             receipt: receipt("action-continue-cancelled", OperationStatus::Rejected),
             failure: None,
-            cancellation: Some(yosoi::flow::FlowCancellationCause::Step),
+            cancellation: Some(yosoi_flow::FlowCancellationCause::Step),
             cancelled_flow: None,
         }],
         terminal: FlowTermination::CompletedWithIssues,
@@ -619,7 +622,7 @@ fn archive_rejects_stops_without_matching_policy_or_cancellation_authority() {
             flow_path: vec![0],
             receipt: receipt("unknown-effect", OperationStatus::Unknown),
             failure: Some(FlowFailureCause::UnknownOutcome),
-            cancellation: Some(yosoi::flow::FlowCancellationCause::Invocation),
+            cancellation: Some(yosoi_flow::FlowCancellationCause::Invocation),
             cancelled_flow: None,
         }],
         terminal: FlowTermination::Cancelled,
@@ -683,7 +686,7 @@ fn archive_rejects_stops_without_matching_policy_or_cancellation_authority() {
             flow_path: vec![0, 0],
             receipt: receipt("root-cancelled-child", OperationStatus::Rejected),
             failure: None,
-            cancellation: Some(yosoi::flow::FlowCancellationCause::Invocation),
+            cancellation: Some(yosoi_flow::FlowCancellationCause::Invocation),
             cancelled_flow: Some(vec![0]),
         }],
         terminal: FlowTermination::Cancelled,
@@ -789,5 +792,5 @@ fn receipt(id: &str, status: OperationStatus) -> OperationReceipt {
 
 fn unique_temp_path(prefix: &str) -> Result<PathBuf, Box<dyn Error>> {
     let nanos = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
-    Ok(std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id())))
+    Ok(std_env::temp_dir().join(format!("{prefix}-{}-{nanos}", std_process::id())))
 }

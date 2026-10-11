@@ -8,6 +8,7 @@
 //! the first failed pass and retains the complete Flow outcomes before closing
 //! the tabs and Session.
 
+use std::process as std_process;
 use std::{
     env,
     error::Error,
@@ -157,6 +158,10 @@ fn parse_args() -> Result<(PathBuf, usize), io::Error> {
     Ok((output, iterations))
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn run_browser(
     output_dir: &Path,
     iterations: usize,
@@ -278,12 +283,12 @@ async fn run_browser(
     if let Some(archive) = archive {
         drop(archive);
     }
-    if let Some(tab) = second_tab {
-        if let Err(error) = tab.close().await {
-            report
-                .error
-                .get_or_insert_with(|| format!("second tab close failed: {error}"));
-        }
+    if let Some(tab) = second_tab
+        && let Err(error) = tab.close().await
+    {
+        report
+            .error
+            .get_or_insert_with(|| format!("second tab close failed: {error}"));
     }
     if let Err(error) = browser_session.close().await {
         report
@@ -306,6 +311,10 @@ async fn run_browser(
     }
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn execute_iteration(
     browser_session: &Session,
     second_tab: &Tab,
@@ -519,12 +528,12 @@ async fn persist_run(
             }
             (None, _) => {
                 archive_error =
-                    Some("archive is unavailable; the full JSON outcome was saved".to_owned())
+                    Some("archive is unavailable; the full JSON outcome was saved".to_owned());
             }
             (_, None) => {
                 archive_error = Some(
                     "archive context is unavailable; the full JSON outcome was saved".to_owned(),
-                )
+                );
             }
         }
     } else {
@@ -627,7 +636,7 @@ fn unique_nonce(iteration: usize) -> String {
         .ok()
         .and_then(|duration| u64::try_from(duration.as_nanos()).ok())
         .unwrap_or(0);
-    format!("{}-{iteration}-{unix_nanos}", std::process::id())
+    format!("{}-{iteration}-{unix_nanos}", std_process::id())
 }
 
 fn optional_env(name: &str) -> Option<String> {

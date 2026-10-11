@@ -1,4 +1,9 @@
+use crate::documents;
+use crate::session;
+use crate::session::javascript as session_javascript;
+use crate::timing;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::time as tokio_time;
 
 use crate::internal::web_capture::{
     CompletedResponseCandidate, ObservationChange, ObservationResponseFilter, ObservationWatch,
@@ -22,12 +27,16 @@ use crate::{
 const OBSERVER_CLEANUP_BUDGET: Duration = Duration::from_secs(1);
 
 impl Work {
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "The dispatch/settlement fence must cover cancellation and the complete operation, including cleanup and evidence capture."
+    )]
     pub(super) async fn until_owned(
         &self,
         trigger: Option<&Step>,
         expected: &Expectation,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation().await?;
+        let _operation = self.operation()?;
         self.authorize(ActionKind::Assert, "")?;
         self.authorize(ActionKind::Wait, "")?;
         Flow::new([Step::Until {
@@ -38,17 +47,17 @@ impl Work {
         .map_err(|_| SessionError::InvalidInput)?;
         let leaves = leaves(expected);
         for leaf in &leaves {
-            if let Expectation::Contract { assertion } = leaf {
-                if !assertion.is_bound() {
-                    return Err(SessionError::Unsupported("unbound local Rust checks"));
-                }
+            if let Expectation::Contract { assertion } = leaf
+                && !assertion.is_bound()
+            {
+                return Err(SessionError::Unsupported("unbound local Rust checks"));
             }
         }
         let prepared = trigger
             .map(|step| self.prepare_until_trigger(step))
             .transpose()?;
-        let deadline = crate::timing::deadline()
-            .or_else(|| crate::timing::checked_deadline(self.timeout()))
+        let deadline = timing::deadline()
+            .or_else(|| timing::checked_deadline(self.timeout()))
             .ok_or(SessionError::InvalidInput)?;
         let epoch = self.call(self.control.document_epoch()).await?;
         let options = watch_options(
@@ -70,6 +79,7 @@ impl Work {
             .await?;
         // Until acknowledged cleanup, dropping this invocation cannot return an
         // uncertain observer/trigger to another controller on this tab.
+
         let mut settlement = DispatchFence {
             control: &self.control,
             unresolved: true,
@@ -127,7 +137,7 @@ impl Work {
 
         // Cleanup gets its own bounded budget, independent of an expired or
         // cancelled action. It still participates in worker admission.
-        let cleanup = tokio::time::timeout(OBSERVER_CLEANUP_BUDGET, async {
+        let cleanup = tokio_time::timeout(OBSERVER_CLEANUP_BUDGET, async {
             let _permit = self
                 .session
                 .inner
@@ -252,7 +262,7 @@ impl Work {
             }
             Step::EvaluateModule { bundle } => {
                 self.authorize(ActionKind::Evaluate, "")?;
-                let source = crate::session::javascript::module_expression(
+                let source = session_javascript::module_expression(
                     bundle,
                     self.session.settings().maximum_input_bytes,
                 )?;
@@ -277,7 +287,7 @@ impl Work {
         } else {
             Ok(())
         };
-        let deadline = crate::timing::deadline().ok_or(SessionError::InvalidInput)?;
+        let deadline = timing::deadline().ok_or(SessionError::InvalidInput)?;
         let _permit = self.execution_permit(deadline).await?;
         if !self
             .call_with_capacity(self.control.observation_scope_is_current(watch), false)
@@ -430,7 +440,7 @@ impl Work {
                 .try_with(Clone::clone)
                 .unwrap_or_default();
             let closing = self.control.closing();
-            let _retained = if self.session.settings().yield_on_wait {
+            let retained = if self.session.settings().yield_on_wait {
                 None
             } else {
                 Some(self.execution_permit(deadline).await?)
@@ -445,12 +455,12 @@ impl Work {
                 () = scoped.cancelled() => return Err(SessionError::Cancelled),
                 () = cancellation.cancelled() => return Err(SessionError::Cancelled),
                 () = closing.cancelled() => return Err(SessionError::Closed),
-                event = tokio::time::timeout_at(deadline, watch.next()) => {
+                event = tokio_time::timeout_at(deadline, watch.next()) => {
                     event.map_err(|_| SessionError::WatchDeadline)?.map_err(|error| SessionError::Execution(format!("parked observation failed: {error}")))?
                 }
             };
             drop(parked);
-            drop(_retained);
+            drop(retained);
             if let ObservationChange::ResponseCompleted(candidate) = change {
                 self.capture_until_response(&candidate, leaves, report)
                     .await?;
@@ -503,7 +513,7 @@ impl Work {
             .html
             .as_ref()
             .map(|html| {
-                crate::documents::Document::observed_dom(
+                documents::Document::observed_dom(
                     current.id.clone(),
                     current.document_epoch,
                     html.as_bytes().to_vec(),
@@ -516,7 +526,7 @@ impl Work {
         for (expected, check) in leaves.iter().zip(&mut report.checks) {
             match expected {
                 Expectation::Condition { condition } => {
-                    let expression = crate::session::condition_expression(condition)?;
+                    let expression = session::condition_expression(condition)?;
                     let actual = self.call(self.control.evaluate_json(&expression)).await?;
                     let passed = actual.as_bool().ok_or(SessionError::EvidenceUnavailable)?;
                     check.state = if passed {
@@ -702,7 +712,7 @@ fn leaves(expected: &Expectation) -> Vec<&Expectation> {
     leaves
 }
 
-fn source(expected: &Expectation) -> &'static str {
+const fn source(expected: &Expectation) -> &'static str {
     match expected {
         Expectation::Condition { .. } | Expectation::Contract { .. } => "dom",
         Expectation::Accessibility { .. } => "accessibility",

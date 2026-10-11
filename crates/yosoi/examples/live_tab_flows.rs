@@ -42,6 +42,10 @@ const SITES: [Site; 4] = [
     },
 ];
 #[tokio::main(flavor = "current_thread")]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn main() -> Result<(), LiveError> {
     let output = env::args()
         .nth(1)

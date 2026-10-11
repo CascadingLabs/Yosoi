@@ -47,7 +47,7 @@ impl JavaScriptModuleBundle {
     }
 
     /// Returns the captured modules keyed by normalized bundle-relative ID.
-    pub fn modules(&self) -> &BTreeMap<String, JavaScriptModuleSource> {
+    pub const fn modules(&self) -> &BTreeMap<String, JavaScriptModuleSource> {
         &self.modules
     }
 

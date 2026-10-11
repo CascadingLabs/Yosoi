@@ -1,5 +1,7 @@
 //! Bounded offline views over captured browser observations.
 
+use crate::flow;
+use std::error as std_error;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -200,7 +202,7 @@ impl View {
     pub fn verify_condition(
         &self,
         observation: &Observation,
-        condition: &crate::flow::Condition,
+        condition: &flow::Condition,
     ) -> Result<bool, ViewError> {
         let capture = capture_token(observation)?;
         validate_capture_binding(&self.capture, &capture).map_err(|error| match error {
@@ -208,13 +210,11 @@ impl View {
             BindingError::Stale => ViewError::StaleObservation,
         })?;
         match condition {
-            crate::flow::Condition::Exists { selector } => {
-                Ok(matching_count(observation, selector)? > 0)
-            }
-            crate::flow::Condition::CountAtLeast { selector, count } => {
+            flow::Condition::Exists { selector } => Ok(matching_count(observation, selector)? > 0),
+            flow::Condition::CountAtLeast { selector, count } => {
                 Ok(matching_count(observation, selector)? >= *count)
             }
-            crate::flow::Condition::Visible { .. } => {
+            flow::Condition::Visible { .. } => {
                 Err(ViewError::UnsupportedCondition { kind: "visible" })
             }
         }
@@ -304,9 +304,8 @@ impl View {
                 ProjectedValue::Node(node) => node.clone(),
                 _ => return Err(ViewError::UnexpectedProjection),
             };
-            let full_text = match text.value() {
-                ProjectedValue::Text(value) => value,
-                _ => return Err(ViewError::UnexpectedProjection),
+            let ProjectedValue::Text(full_text) = text.value() else {
+                return Err(ViewError::UnexpectedProjection);
             };
             let (text_preview, text_truncated) = bounded_text_preview(full_text);
             rows.push(DomElementRow {
@@ -382,7 +381,9 @@ fn validate_cursor_binding(
     capture: &ViewCaptureToken,
     cursor: &ViewCursor,
 ) -> Result<(), ViewError> {
-    if cursor.page_size == 0 || cursor.page_size > MAX_VIEW_PAGE_SIZE as u64 || cursor.offset == 0 {
+    let maximum_page_size =
+        u64::try_from(MAX_VIEW_PAGE_SIZE).map_err(|_| ViewError::InvalidCursor)?;
+    if cursor.page_size == 0 || cursor.page_size > maximum_page_size || cursor.offset == 0 {
         return Err(ViewError::InvalidCursor);
     }
     validate_capture_binding(&cursor.capture, capture).map_err(|error| match error {
@@ -444,9 +445,9 @@ fn matching_count(observation: &Observation, selector: &str) -> Result<u64, View
             u64::try_from(result.findings().len()).map_err(|_| ViewError::RowCountOverflow)
         }
         LocateOutcome::NoMatch { .. } => Ok(0),
-        LocateOutcome::Indeterminate { reason_code, .. } => Err(ViewError::IncompleteEvidence {
-            reason_code: reason_code.clone(),
-        }),
+        LocateOutcome::Indeterminate { reason_code, .. } => {
+            Err(ViewError::IncompleteEvidence { reason_code })
+        }
         LocateOutcome::Failed { failure } => Err(ViewError::LocateFailed {
             detail: format!("{failure:?}"),
         }),
@@ -578,4 +579,4 @@ impl fmt::Display for ViewError {
     }
 }
 
-impl std::error::Error for ViewError {}
+impl std_error::Error for ViewError {}

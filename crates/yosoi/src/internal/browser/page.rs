@@ -8,6 +8,7 @@ use crate::internal::browser::{
     interrupt::InterruptRegistry,
     viewport::Viewport,
 };
+use crate::internal::types as internal_types;
 use std::time::Duration;
 use std::{
     fmt,
@@ -102,7 +103,7 @@ impl fmt::Debug for ProviderBrowserContextIdentity {
 #[derive(Debug)]
 pub struct Page {
     inner: CdpPage,
-    browser_mode: EnvironmentObservation<crate::internal::types::BrowserMode>,
+    browser_mode: EnvironmentObservation<internal_types::BrowserMode>,
     cdp_mode: CdpMode,
     attached_browser: bool,
     state_binding: BrowserStateBinding,

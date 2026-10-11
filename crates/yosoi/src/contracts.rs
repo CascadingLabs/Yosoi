@@ -1,5 +1,8 @@
 //! Describe typed records and inspect extraction and validation outcomes.
 
+use crate::internal::contract_validation as internal_contract_validation;
+use crate::internal::documents as internal_documents;
+use crate::internal::engine as internal_engine;
 use serde::Serialize;
 
 pub use crate::internal::engine::{
@@ -23,13 +26,13 @@ pub use crate::internal::contracts::RuntimeCandidate;
 #[derive(Clone, Debug, Serialize)]
 #[serde(transparent)]
 pub struct RuntimeContract {
-    inner: crate::internal::contract_validation::RuntimeContract,
+    inner: internal_contract_validation::RuntimeContract,
 }
 
 impl RuntimeContract {
     pub fn new(schema: ContractSchema) -> Result<Self, RuntimeContractError> {
         Ok(Self {
-            inner: crate::internal::contract_validation::RuntimeContract::new(schema)?,
+            inner: internal_contract_validation::RuntimeContract::new(schema)?,
         })
     }
 
@@ -38,7 +41,7 @@ impl RuntimeContract {
     }
 
     /// Extracts with the same default limits as `MyContract::extract`.
-    pub fn extract(&self, located: &crate::internal::documents::LocateOutcome) -> RuntimeExtracted {
+    pub fn extract(&self, located: &internal_documents::LocateOutcome) -> RuntimeExtracted {
         self.extract_with_limits(located, default_extraction_limits())
     }
 
@@ -46,7 +49,7 @@ impl RuntimeContract {
     /// static Contracts.
     pub fn extract_with_limits(
         &self,
-        located: &crate::internal::documents::LocateOutcome,
+        located: &internal_documents::LocateOutcome,
         limits: ExtractionLimits,
     ) -> RuntimeExtracted {
         self.inner.extract(located, limits)
@@ -54,7 +57,7 @@ impl RuntimeContract {
 }
 
 fn default_extraction_limits() -> ExtractionLimits {
-    let policy = crate::internal::engine::Policy::default();
+    let policy = internal_engine::Policy::default();
     let max_matches = policy.locators.max_matches.get();
     let max_regions = u64::from(policy.locators.max_regions.get());
     ExtractionLimits {

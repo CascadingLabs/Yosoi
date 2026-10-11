@@ -8,7 +8,10 @@ use crate::internal::browser::vendor::chromiumoxide::{
         RemoteObjectId,
     },
 };
+use std::time as std_time;
 use std::time::Duration;
+use tokio::runtime as tokio_runtime;
+use tokio::time as tokio_time;
 
 /// Owns exactly one DOM observer/timer and its remote promise handle.
 /// Dropping it requests bounded cancellation without releasing any tab authority.
@@ -16,8 +19,8 @@ use std::time::Duration;
 pub struct ConditionWait {
     page: CdpPage,
     object: Option<RemoteObjectId>,
-    executor: tokio::runtime::Handle,
-    response_deadline: std::time::Instant,
+    executor: tokio_runtime::Handle,
+    response_deadline: std_time::Instant,
 }
 impl ConditionWait {
     pub async fn finish(&mut self) -> Result<bool> {
@@ -64,9 +67,9 @@ impl Drop for ConditionWait {
                 .return_by_value(true)
                 .build();
             if let Ok(params) = params {
-                let _ = tokio::time::timeout(Duration::from_secs(1), page.execute(params)).await;
+                let _ = tokio_time::timeout(Duration::from_secs(1), page.execute(params)).await;
             }
-            let _ = tokio::time::timeout(
+            let _ = tokio_time::timeout(
                 Duration::from_secs(1),
                 page.execute(ReleaseObjectParams::new(object)),
             )
@@ -91,12 +94,12 @@ impl Page {
                 reason: "timeout must be positive",
             });
         }
-        let executor = tokio::runtime::Handle::try_current().map_err(|_| {
+        let executor = tokio_runtime::Handle::try_current().map_err(|_| {
             VoidCrawlError::JsEvalError("condition wait requires an executor".into())
         })?;
         let response_deadline = timeout
             .checked_add(Duration::from_secs(2))
-            .and_then(|duration| std::time::Instant::now().checked_add(duration))
+            .and_then(|duration| std_time::Instant::now().checked_add(duration))
             .ok_or_else(|| {
                 VoidCrawlError::JsEvalError("condition wait deadline is unrepresentable".into())
             })?;

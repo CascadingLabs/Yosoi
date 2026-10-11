@@ -3,6 +3,7 @@
 //! Opt-in JavaScript action coverage against loopback-only pages and regular
 //! Chrome Stable. Run through `spikes/browser-automation/run-container.sh`.
 
+use std::process as std_process;
 use std::{
     env,
     error::Error,
@@ -11,6 +12,7 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use yosoi::automation_record as yosoi_automation_record;
 
 use tokio::time::timeout;
 use tokio::{
@@ -40,7 +42,7 @@ impl TemporaryDirectory {
             .as_nanos();
         let path = env::temp_dir().join(format!(
             "yosoi-javascript-browser-{label}-{}-{nonce}",
-            std::process::id()
+            std_process::id()
         ));
         fs::create_dir(&path)?;
         Ok(Self(path))
@@ -72,8 +74,8 @@ impl ModuleFixture {
         let base_url = format!("http://{address}");
         let page = page.into().replace("__YOSOI_FIXTURE_ORIGIN__", &base_url);
         let content_security_policy = content_security_policy.map(str::to_owned);
-        let task_page = page.clone();
-        let task_policy = content_security_policy.clone();
+        let task_page = page;
+        let task_policy = content_security_policy;
         let task = tokio::spawn(async move {
             let mut hold_signal = Some(hold_signal);
             let mut release_hold_rx = Some(release_hold_rx);
@@ -252,10 +254,12 @@ fn enabled(test_name: &str) -> bool {
 }
 
 fn browser_policy(maximum_elapsed_micros: u64) -> Result<Policy, Box<dyn Error>> {
-    let mut policy = Policy::default();
-    policy.page = Page::new(vec![
-        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
-    ])?;
+    let mut policy = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
     policy.request.maximum_elapsed = MaximumElapsed::try_from(maximum_elapsed_micros)?;
     Ok(policy)
 }
@@ -271,6 +275,10 @@ async fn close(session: &session::Session) -> Result<(), Box<dyn Error>> {
 #[expect(
     clippy::panic_in_result_fn,
     reason = "Browser assertions report authorization and lease regressions."
+)]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
 )]
 async fn file_actions_are_opt_in_and_a_borrowed_lease_cannot_elevate_javascript()
 -> Result<(), Box<dyn Error>> {
@@ -364,7 +372,7 @@ async fn file_actions_are_opt_in_and_a_borrowed_lease_cannot_elevate_javascript(
     assert_eq!(default_denied.terminal, FlowTermination::Failed);
     assert_eq!(
         default_denied.steps.last().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Rejected)
+        Some(yosoi_automation_record::OperationStatus::Rejected)
     );
     assert_eq!(borrowed_denied.terminal, FlowTermination::Failed);
     assert_eq!(
@@ -372,7 +380,7 @@ async fn file_actions_are_opt_in_and_a_borrowed_lease_cannot_elevate_javascript(
             .steps
             .first()
             .map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Rejected)
+        Some(yosoi_automation_record::OperationStatus::Rejected)
     );
     assert_eq!(
         marker_absent.terminal,
@@ -386,6 +394,10 @@ async fn file_actions_are_opt_in_and_a_borrowed_lease_cannot_elevate_javascript(
 #[expect(
     clippy::panic_in_result_fn,
     reason = "Browser assertions report ECMAScript module semantics."
+)]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
 )]
 async fn modules_support_live_bindings_imports_reexports_and_top_level_await_on_one_flow_tab()
 -> Result<(), Box<dyn Error>> {
@@ -604,7 +616,7 @@ async fn modules_support_live_bindings_imports_reexports_and_top_level_await_on_
         invalid_outcomes.iter().all(|outcome| {
             outcome.terminal == FlowTermination::Unknown
                 && outcome.steps.first().is_some_and(|step| {
-                    step.receipt.status == yosoi::automation_record::OperationStatus::Unknown
+                    step.receipt.status == yosoi_automation_record::OperationStatus::Unknown
                         && step.receipt.result.is_none()
                         && step
                             .receipt
@@ -692,6 +704,10 @@ async fn module_action_adds_a_second_import_map_after_a_page_module_has_run()
     clippy::panic_in_result_fn,
     reason = "Browser assertions report cancellation and CSP outcome certainty."
 )]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn cancellation_after_module_mutation_and_csp_denial_keep_unknown_receipts()
 -> Result<(), Box<dyn Error>> {
     if !enabled("cancellation_after_module_mutation_and_csp_denial_keep_unknown_receipts") {
@@ -768,7 +784,7 @@ async fn cancellation_after_module_mutation_and_csp_denial_keep_unknown_receipts
     assert_eq!(cancelled.terminal, FlowTermination::Unknown);
     assert_eq!(
         cancelled.steps.first().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Unknown)
+        Some(yosoi_automation_record::OperationStatus::Unknown)
     );
     assert!(matches!(fenced_after_cancel, Err(SessionError::Closed)));
 
@@ -796,7 +812,7 @@ async fn cancellation_after_module_mutation_and_csp_denial_keep_unknown_receipts
         .ok_or_else(|| io::Error::other("CSP failure omitted its module receipt"))?;
     assert_eq!(
         csp_receipt.receipt.status,
-        yosoi::automation_record::OperationStatus::Unknown
+        yosoi_automation_record::OperationStatus::Unknown
     );
     assert!(csp_receipt.receipt.kind.contains("evaluate_module"));
     assert!(
@@ -813,6 +829,10 @@ async fn cancellation_after_module_mutation_and_csp_denial_keep_unknown_receipts
 #[expect(
     clippy::panic_in_result_fn,
     reason = "Browser assertions report result caps and unknown dispatch outcomes."
+)]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
 )]
 async fn module_result_caps_and_timeout_after_mutation_remain_unknown() -> Result<(), Box<dyn Error>>
 {
@@ -912,7 +932,7 @@ async fn module_result_caps_and_timeout_after_mutation_remain_unknown() -> Resul
     assert_eq!(timed_result.terminal, FlowTermination::Unknown);
     assert_eq!(
         timed_result.steps.first().map(|step| step.receipt.status),
-        Some(yosoi::automation_record::OperationStatus::Unknown)
+        Some(yosoi_automation_record::OperationStatus::Unknown)
     );
     assert!(matches!(fenced, Err(SessionError::Closed)));
     Ok(())

@@ -1,4 +1,5 @@
 use std::{io, net::Ipv4Addr, sync::Arc, time::Duration};
+use tokio::time as tokio_time;
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -7,14 +8,14 @@ use tokio::{
     task::{JoinHandle, JoinSet},
 };
 
-pub(crate) struct SessionFixture {
+pub struct SessionFixture {
     base_url: String,
     shutdown: Option<oneshot::Sender<()>>,
     task: JoinHandle<io::Result<()>>,
 }
 
 impl SessionFixture {
-    pub(crate) async fn start() -> io::Result<Self> {
+    pub async fn start() -> io::Result<Self> {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).await?;
         let address = listener.local_addr()?;
         let (shutdown, mut shutdown_rx) = oneshot::channel();
@@ -45,11 +46,11 @@ impl SessionFixture {
         })
     }
 
-    pub(crate) fn url(&self, path: &str) -> String {
+    pub fn url(&self, path: &str) -> String {
         format!("{}{path}", self.base_url)
     }
 
-    pub(crate) async fn shutdown(mut self) -> io::Result<()> {
+    pub async fn shutdown(mut self) -> io::Result<()> {
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
@@ -100,7 +101,7 @@ async fn serve(mut stream: TcpStream, rendezvous: Arc<Barrier>) -> io::Result<()
     if let Some(delay) = path.strip_prefix("/delay/")
         && let Ok(milliseconds) = delay.parse::<u64>()
     {
-        tokio::time::sleep(Duration::from_millis(milliseconds)).await;
+        tokio_time::sleep(Duration::from_millis(milliseconds)).await;
     }
     if path == "/rendezvous" {
         rendezvous.wait().await;
@@ -125,19 +126,11 @@ async fn serve(mut stream: TcpStream, rendezvous: Arc<Barrier>) -> io::Result<()
             "<!doctype html><html><body><main><h1>Cookie seeded</h1></main></body></html>",
             "Set-Cookie: yosoi_context=shared; Path=/; SameSite=Lax\r\n",
         ),
-        "/check" if shared_cookie => (
+        "/check" | "/rendezvous" if shared_cookie => (
             "<!doctype html><html><body><main><p id=\"context\">shared-context</p></main></body></html>",
             "",
         ),
-        "/rendezvous" if shared_cookie => (
-            "<!doctype html><html><body><main><p id=\"context\">shared-context</p></main></body></html>",
-            "",
-        ),
-        "/check" => (
-            "<!doctype html><html><body><main><p id=\"context\">isolated-context</p></main></body></html>",
-            "",
-        ),
-        "/rendezvous" => (
+        "/check" | "/rendezvous" => (
             "<!doctype html><html><body><main><p id=\"context\">isolated-context</p></main></body></html>",
             "",
         ),

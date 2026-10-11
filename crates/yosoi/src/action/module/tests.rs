@@ -4,6 +4,9 @@ use super::{
 };
 use crate::{action::run_module_from_root, flow::Step};
 use serde_json::{Value, json};
+use std::env as std_env;
+use std::path as std_path;
+use std::process as std_process;
 use std::{
     error::Error,
     fs,
@@ -18,13 +21,12 @@ struct TempDir(PathBuf);
 impl TempDir {
     fn new() -> Result<Self, Box<dyn Error>> {
         let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("yosoi-js-module-{}-{id}", std::process::id()));
+        let path = std_env::temp_dir().join(format!("yosoi-js-module-{}-{id}", std_process::id()));
         fs::create_dir_all(&path)?;
         Ok(Self(path))
     }
 
-    fn path(&self) -> &std::path::Path {
+    fn path(&self) -> &std_path::Path {
         &self.0
     }
 }
@@ -36,6 +38,10 @@ impl Drop for TempDir {
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn parser_finds_imports_reexports_and_literal_dynamic_imports_only() -> Result<(), Box<dyn Error>> {
     let source = r#"
 const text = "import('./string-only.js')";
@@ -76,6 +82,10 @@ const interpolated = `${import("./inside-template.js")}`;
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn parser_decodes_escaped_specifiers_and_rejects_unbounded_import_forms()
 -> Result<(), Box<dyn Error>> {
     let imports = parse_imports(
@@ -121,6 +131,10 @@ fn parser_decodes_escaped_specifiers_and_rejects_unbounded_import_forms()
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn explicit_root_captures_cycles_and_deserialization_rejects_tampered_ranges()
 -> Result<(), Box<dyn Error>> {
     let directory = TempDir::new()?;
@@ -182,6 +196,10 @@ fn module_bundle_limits_cannot_exceed_sdk_hard_caps() {
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn graph_rejects_external_and_parent_escape_imports() -> Result<(), Box<dyn Error>> {
     let directory = TempDir::new()?;
     let entry = directory.path().join("entry.js");

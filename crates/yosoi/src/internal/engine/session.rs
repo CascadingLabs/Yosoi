@@ -1,5 +1,8 @@
 //! Browser scopes shared by retained Sessions and ephemeral Requests.
 use crate::internal::web_capture as capture;
+use std::fmt;
+use std::mem as std_mem;
+use std::sync as std_sync;
 use std::{
     num::{NonZeroU32, NonZeroU64},
     sync::{
@@ -7,6 +10,9 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
 };
+use tokio::runtime as tokio_runtime;
+use tokio::sync as tokio_sync;
+use tokio::time as tokio_time;
 use tokio::{
     sync::Mutex,
     time::{Duration, Instant},
@@ -17,19 +23,27 @@ use tokio_util::sync::CancellationToken;
 pub struct BrowserSession {
     inner: Arc<Inner>,
 }
+impl fmt::Debug for BrowserSession {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("BrowserSession")
+            .field("closing", &self.inner.closing.load(Ordering::Acquire))
+            .finish_non_exhaustive()
+    }
+}
 struct Inner {
     manager: capture::BrowserExecutionManager,
     lease: capture::RuntimeBrowserLease,
     tabs: Mutex<Vec<capture::RuntimeBrowserTabLease>>,
     closing: AtomicBool,
     cancellation: CancellationToken,
-    budget: std::sync::Mutex<Option<BudgetGuard>>,
+    budget: std_sync::Mutex<Option<BudgetGuard>>,
 }
 
 struct BudgetGuard {
     manager: capture::BrowserExecutionManager,
-    permit: Option<tokio::sync::OwnedSemaphorePermit>,
-    executor: tokio::runtime::Handle,
+    permit: Option<tokio_sync::OwnedSemaphorePermit>,
+    executor: tokio_runtime::Handle,
 }
 impl BudgetGuard {
     fn released(&mut self) {
@@ -37,25 +51,25 @@ impl BudgetGuard {
     }
 }
 
-fn process_budget() -> Arc<tokio::sync::Semaphore> {
-    static BUDGET: OnceLock<Arc<tokio::sync::Semaphore>> = OnceLock::new();
-    Arc::clone(BUDGET.get_or_init(|| Arc::new(tokio::sync::Semaphore::new(2))))
+fn process_budget() -> Arc<tokio_sync::Semaphore> {
+    static BUDGET: OnceLock<Arc<tokio_sync::Semaphore>> = OnceLock::new();
+    Arc::clone(BUDGET.get_or_init(|| Arc::new(tokio_sync::Semaphore::new(2))))
 }
-fn wait_budget() -> Arc<tokio::sync::Semaphore> {
-    static WAITERS: OnceLock<Arc<tokio::sync::Semaphore>> = OnceLock::new();
-    Arc::clone(WAITERS.get_or_init(|| Arc::new(tokio::sync::Semaphore::new(32))))
+fn wait_budget() -> Arc<tokio_sync::Semaphore> {
+    static WAITERS: OnceLock<Arc<tokio_sync::Semaphore>> = OnceLock::new();
+    Arc::clone(WAITERS.get_or_init(|| Arc::new(tokio_sync::Semaphore::new(32))))
 }
-fn quarantine(permit: tokio::sync::OwnedSemaphorePermit) {
-    static QUARANTINED: OnceLock<std::sync::Mutex<Vec<tokio::sync::OwnedSemaphorePermit>>> =
+fn quarantine(permit: tokio_sync::OwnedSemaphorePermit) {
+    static QUARANTINED: OnceLock<std_sync::Mutex<Vec<tokio_sync::OwnedSemaphorePermit>>> =
         OnceLock::new();
     if let Ok(mut permits) = QUARANTINED
-        .get_or_init(|| std::sync::Mutex::new(Vec::new()))
+        .get_or_init(|| std_sync::Mutex::new(Vec::new()))
         .lock()
     {
         permits.push(permit);
     } else {
         // Preserve the slot rather than admitting another process after uncertainty.
-        std::mem::forget(permit);
+        std_mem::forget(permit);
     }
 }
 
@@ -66,7 +80,7 @@ impl BrowserSession {
         minimal_cdp: bool,
         cancellation: &CancellationToken,
     ) -> Result<Self, capture::VoidCrawlAdapterError> {
-        let executor = tokio::runtime::Handle::try_current()
+        let executor = tokio_runtime::Handle::try_current()
             .map_err(|_| capture::VoidCrawlAdapterError::InvalidResolvedSpec)?;
         let waiting = wait_budget()
             .try_acquire_owned()
@@ -74,7 +88,7 @@ impl BrowserSession {
         let budget = tokio::select! {
             biased;
             () = cancellation.cancelled() => return Err(capture::VoidCrawlAdapterError::CancelledBeforeOwnership),
-            permit = tokio::time::timeout(Duration::from_secs(10), process_budget().acquire_owned()) =>
+            permit = tokio_time::timeout(Duration::from_secs(10), process_budget().acquire_owned()) =>
                 permit.map_err(|_| capture::BrowserExecutionManagerError::QueueWaitDeadline)?
                     .map_err(|_| capture::BrowserExecutionManagerError::ManagerClosing)?,
         };
@@ -128,7 +142,7 @@ impl BrowserSession {
                 tabs: Mutex::new(vec![initial]),
                 closing: AtomicBool::new(false),
                 cancellation: CancellationToken::new(),
-                budget: std::sync::Mutex::new(Some(budget)),
+                budget: std_sync::Mutex::new(Some(budget)),
             }),
         })
     }
@@ -172,16 +186,15 @@ impl BrowserSession {
         self.inner.cancellation.cancel();
         let release = self.inner.lease.release().await;
         let shutdown = self.inner.manager.shutdown().await;
-        if shutdown.is_ok() {
-            if let Some(mut budget) = self
+        if shutdown.is_ok()
+            && let Some(mut budget) = self
                 .inner
                 .budget
                 .lock()
                 .map_err(|_| capture::BrowserExecutionManagerError::InternalInvariant)?
                 .take()
-            {
-                budget.released();
-            }
+        {
+            budget.released();
         }
         release?;
         shutdown
@@ -203,9 +216,9 @@ impl Drop for BudgetGuard {
     }
 }
 
-pub fn control_error(error: capture::BrowserControlError) -> capture::VoidCrawlAdapterError {
+pub fn control_error(error: &capture::BrowserControlError) -> capture::VoidCrawlAdapterError {
     match error {
-        capture::BrowserControlError::Ownership(error) => error.into(),
+        capture::BrowserControlError::Ownership(error) => (*error).into(),
         capture::BrowserControlError::Cancelled => {
             capture::VoidCrawlAdapterError::CancelledBeforeStaging
         }

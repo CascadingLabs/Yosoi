@@ -41,7 +41,7 @@ pub enum Expectation {
     /// Every clause must be confirmed in the same result cycle. Each source
     /// keeps its own evidence and timestamp; a response may be retained from
     /// earlier in the wait while DOM and accessibility evidence is fresh.
-    All { expectations: Vec<Expectation> },
+    All { expectations: Vec<Self> },
 }
 
 impl Expectation {
@@ -90,7 +90,7 @@ impl ResponseExpectation {
     }
 
     /// Requires this status code, in addition to the full URL.
-    pub fn status(mut self, status: u16) -> Self {
+    pub const fn status(mut self, status: u16) -> Self {
         self.status = Some(status);
         self
     }
@@ -187,7 +187,7 @@ pub struct UntilExpectation {
 }
 
 impl UntilExpectation {
-    pub(crate) fn new(expectation: Expectation) -> Self {
+    pub(crate) const fn new(expectation: Expectation) -> Self {
         Self {
             expectation,
             timeout: None,

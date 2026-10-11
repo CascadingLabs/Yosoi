@@ -677,6 +677,10 @@ fn assert_source_only_event_limit(result: &BrowserAdapterResult) {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn source_only_event_limit_preserves_navigation_accounting_direct_and_managed() {
     let _browser = browser_lock().lock().await;
 
@@ -837,6 +841,10 @@ async fn sequential_fresh_contexts_do_not_leak_browser_state() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn managed_captures_reuse_one_process_with_fresh_state_and_full_receipts() {
     let _browser = browser_lock().lock().await;
     let fixture = fixture::BrowserFixture::start().await.unwrap();
@@ -906,6 +914,10 @@ async fn managed_captures_reuse_one_process_with_fresh_state_and_full_receipts()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn managed_cancellation_and_deadline_release_capacity_with_terminal_receipts() {
     let _browser = browser_lock().lock().await;
 
@@ -974,6 +986,10 @@ async fn managed_cancellation_and_deadline_release_capacity_with_terminal_receip
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn managed_setup_collector_and_disconnect_terminals_keep_execution_receipts() {
     let _browser = browser_lock().lock().await;
 
@@ -1522,6 +1538,10 @@ fn assert_rendered_dom_contains(result: &BrowserAdapterResult, expected: &[u8]) 
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn managed_profile_state_persists_and_ephemeral_execution_cannot_mutate_it() {
     let _browser = browser_lock().lock().await;
     let profile_root = TestProfileRoot::new();
@@ -1665,6 +1685,10 @@ async fn capture_managed_with_overrides(
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn reused_ephemeral_process_resets_overrides_between_executions() {
     let _browser = browser_lock().lock().await;
     let fixture = fixture::BrowserFixture::start().await.unwrap();

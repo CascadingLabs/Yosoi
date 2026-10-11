@@ -86,7 +86,7 @@ impl JavaScriptSourceSnapshot {
     }
 
     /// Returns where this snapshot came from and its content identity.
-    pub fn provenance(&self) -> &JavaScriptSourceProvenance {
+    pub const fn provenance(&self) -> &JavaScriptSourceProvenance {
         &self.provenance
     }
 
@@ -132,7 +132,7 @@ pub struct JavaScriptSourceProvenance {
 
 impl JavaScriptSourceProvenance {
     /// Returns the authored source location.
-    pub fn origin(&self) -> &JavaScriptSourceOrigin {
+    pub const fn origin(&self) -> &JavaScriptSourceOrigin {
         &self.origin
     }
 
@@ -271,6 +271,9 @@ mod tests {
     use super::{JavaScriptSourceError, MAX_JAVASCRIPT_SOURCE_BYTES};
     use crate::action::{JavaScriptSourceOrigin, evaluate_file, evaluate_file_with_limit};
     use crate::flow::Step;
+    use std::env as std_env;
+    use std::path as std_path;
+    use std::process as std_process;
     use std::{
         error::Error,
         fs,
@@ -286,12 +289,12 @@ mod tests {
         fn new() -> Result<Self, Box<dyn Error>> {
             let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
             let path =
-                std::env::temp_dir().join(format!("yosoi-js-source-{}-{id}", std::process::id()));
+                std_env::temp_dir().join(format!("yosoi-js-source-{}-{id}", std_process::id()));
             fs::create_dir_all(&path)?;
             Ok(Self(path))
         }
 
-        fn path(&self) -> &std::path::Path {
+        fn path(&self) -> &std_path::Path {
             &self.0
         }
     }
@@ -303,6 +306,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+    )]
     fn file_action_keeps_exact_bounded_utf8_snapshot_and_provenance() -> Result<(), Box<dyn Error>>
     {
         let directory = TempDir::new()?;
@@ -329,6 +336,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+    )]
     fn file_snapshot_rejects_missing_oversized_and_non_utf8_sources() -> Result<(), Box<dyn Error>>
     {
         let directory = TempDir::new()?;

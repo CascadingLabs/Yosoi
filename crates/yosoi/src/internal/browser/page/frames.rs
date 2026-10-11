@@ -179,7 +179,7 @@ impl Page {
                 EvaluationResult::new(response.result)
             }
         };
-        super::document::json_evaluation(result)
+        super::document::json_evaluation(&result)
     }
 
     /// Evaluate a JS expression **inside a specific frame's** execution
@@ -229,7 +229,7 @@ impl Page {
             .evaluate_expression_in_frame(frame_id, session_id, params)
             .await
             .map_err(super::document::script_error)?;
-        super::document::json_evaluation(result)
+        super::document::json_evaluation(&result)
     }
 
     /// Navigate a uniquely matched frame through the flat CDP session that

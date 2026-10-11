@@ -230,6 +230,10 @@ fn provider_quota_error_maps_to_secret_safe_failure_receipt() -> Result<(), Box<
 }
 
 #[test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn direct_managed_manager_rejects_persisted_expired_and_quarantined_children()
 -> Result<(), Box<dyn Error>> {
     let (_temp, registry, lifecycle, service) = setup()?;

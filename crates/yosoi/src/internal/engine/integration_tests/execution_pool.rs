@@ -1,4 +1,5 @@
 use crate::internal::engine::execution::{ExecutionPool, ExecutionPoolError};
+use std::future as std_future;
 use std::{future::Future, task::Poll};
 
 #[tokio::test]
@@ -6,7 +7,7 @@ async fn bounded_queue_and_cancelled_waiter_return_capacity() {
     let pool = ExecutionPool::new(1, 1).expect("fixture pool");
     let held = pool.acquire().await.expect("first permit");
     let mut waiting = Box::pin(pool.acquire());
-    std::future::poll_fn(|cx| {
+    std_future::poll_fn(|cx| {
         assert!(matches!(waiting.as_mut().poll(cx), Poll::Pending));
         Poll::Ready(())
     })
@@ -32,14 +33,14 @@ async fn admission_is_fifo_without_binding_workers_to_tabs() {
     let held = pool.acquire().await.expect("held capacity");
     let mut first = Box::pin(pool.acquire());
     let mut second = Box::pin(pool.acquire());
-    std::future::poll_fn(|cx| {
+    std_future::poll_fn(|cx| {
         assert!(matches!(first.as_mut().poll(cx), Poll::Pending));
         assert!(matches!(second.as_mut().poll(cx), Poll::Pending));
         Poll::Ready(())
     })
     .await;
     drop(held);
-    std::future::poll_fn(|cx| {
+    std_future::poll_fn(|cx| {
         assert!(matches!(second.as_mut().poll(cx), Poll::Pending));
         Poll::Ready(())
     })

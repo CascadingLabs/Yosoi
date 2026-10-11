@@ -5,6 +5,7 @@ use super::{
     cleanup_deadline, mpsc, rollback_creation_inner, sleep_until, start_release, timeout_at,
     wait_for_release, yosoi,
 };
+use tokio::sync as tokio_sync;
 
 mod queue;
 
@@ -276,7 +277,7 @@ impl BrowserExecutionManager {
                 open: true,
                 closing: false,
                 navigation_gate: Arc::new(Mutex::new(())),
-                control_waiters: Arc::new(tokio::sync::Semaphore::new(32)),
+                control_waiters: Arc::new(tokio_sync::Semaphore::new(32)),
                 navigation_closing: CancellationToken::new(),
             },
         );

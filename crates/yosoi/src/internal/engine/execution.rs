@@ -4,6 +4,7 @@ use std::sync::{
     atomic::{AtomicU32, AtomicU64, Ordering},
 };
 use thiserror::Error;
+use tokio::sync as tokio_sync;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, broadcast};
 
 #[derive(Clone, Copy, Debug, Error, Eq, PartialEq)]
@@ -86,8 +87,8 @@ impl ExecutionPool {
     pub async fn acquire(&self) -> Result<ExecutionPermit, ExecutionPoolError> {
         let permit = match Arc::clone(&self.inner.workers).try_acquire_owned() {
             Ok(permit) => permit,
-            Err(tokio::sync::TryAcquireError::Closed) => return Err(ExecutionPoolError::Closed),
-            Err(tokio::sync::TryAcquireError::NoPermits) => {
+            Err(tokio_sync::TryAcquireError::Closed) => return Err(ExecutionPoolError::Closed),
+            Err(tokio_sync::TryAcquireError::NoPermits) => {
                 let waiting = Arc::clone(&self.inner.waiters)
                     .try_acquire_owned()
                     .map_err(|_| ExecutionPoolError::QueueFull)?;

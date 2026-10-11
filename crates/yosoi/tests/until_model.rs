@@ -1,4 +1,7 @@
 use std::error::Error;
+use std::io as std_io;
+use yosoi::assertions as yosoi_assertions;
+use yosoi::flow as yosoi_flow;
 
 use yosoi::{
     action::{self, check},
@@ -19,28 +22,28 @@ use yosoi::{
 type TestError = Box<dyn Error + Send + Sync>;
 
 #[test]
-fn satisfied_report_with_a_pending_check_is_rejected_by_report_and_record_validation()
--> Result<(), TestError> {
+
+fn satisfied_report_with_a_pending_check_is_rejected_by_report_and_record_validation() {
     let mut forged = valid_report();
     forged.checks[0].state = UntilCheckState::Pending;
     forged.checks[0].evidence = None;
 
     assert!(forged.validate().is_err());
     assert!(record_with_report(forged).is_err());
-    Ok(())
 }
 
 #[test]
-fn attached_until_report_must_match_the_receipt_observation_scope() -> Result<(), TestError> {
+
+fn attached_until_report_must_match_the_receipt_observation_scope() {
     let mut forged = valid_report();
     forged.scope.document_epoch = forged.scope.document_epoch.saturating_add(1);
 
     assert!(record_with_report(forged).is_err());
-    Ok(())
 }
 
 #[test]
-fn satisfied_until_report_requires_frame_and_loader_scope() -> Result<(), TestError> {
+
+fn satisfied_until_report_requires_frame_and_loader_scope() {
     let mut missing_frame = valid_report();
     missing_frame.scope.frame_id = None;
     assert!(missing_frame.validate().is_err());
@@ -50,21 +53,20 @@ fn satisfied_until_report_requires_frame_and_loader_scope() -> Result<(), TestEr
     missing_loader.scope.loader_id = None;
     assert!(missing_loader.validate().is_err());
     assert!(record_with_report(missing_loader).is_err());
-    Ok(())
 }
 
 #[test]
-fn attached_until_step_requires_its_trigger_receipt() -> Result<(), TestError> {
+
+fn attached_until_step_requires_its_trigger_receipt() {
     let mut forged = valid_report();
     forged.trigger = None;
 
     assert!(record_with_report(forged).is_err());
-    Ok(())
 }
 
 #[test]
-fn satisfied_until_rejects_errorful_trigger_and_trigger_result_without_value()
--> Result<(), TestError> {
+
+fn satisfied_until_rejects_errorful_trigger_and_trigger_result_without_value() {
     let mut errorful_trigger = valid_report();
     if let Some(trigger) = errorful_trigger.trigger.as_mut() {
         trigger.error = Some("trigger returned an error".to_owned());
@@ -77,21 +79,24 @@ fn satisfied_until_rejects_errorful_trigger_and_trigger_result_without_value()
         trigger.result = Some(serde_json::json!({"started_at_unix_us": 1_000}));
     }
     assert!(record_with_report(missing_value).is_err());
-    Ok(())
 }
 
 #[test]
-fn until_trigger_receipt_identity_must_be_unique_within_the_flow() -> Result<(), TestError> {
+
+fn until_trigger_receipt_identity_must_be_unique_within_the_flow() {
     let mut forged = valid_report();
     if let Some(trigger) = forged.trigger.as_mut() {
         trigger.id = "until-receipt".to_owned();
     }
 
     assert!(record_with_report(forged).is_err());
-    Ok(())
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn archive_requires_a_matching_nonignored_ax_node() -> Result<(), TestError> {
     let expected = "Ready product row";
     let valid = accessibility_report(expected, expected, "button", false);
@@ -110,6 +115,10 @@ fn archive_requires_a_matching_nonignored_ax_node() -> Result<(), TestError> {
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn network_evidence_must_match_the_top_level_loader_epoch_and_trigger_time() -> Result<(), TestError>
 {
     let attempt = "catalog-17";
@@ -160,6 +169,10 @@ fn network_evidence_must_match_the_top_level_loader_epoch_and_trigger_time() -> 
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn embedded_trigger_identity_cannot_collide_with_a_later_flow_receipt() -> Result<(), TestError> {
     let mut report = valid_report();
     let trigger = report
@@ -179,7 +192,7 @@ fn embedded_trigger_identity_cannot_collide_with_a_later_flow_receipt() -> Resul
             StepOutcome {
                 index: 0,
                 flow_path: vec![0],
-                receipt: until_receipt("until-receipt", encoded_report)?,
+                receipt: until_receipt("until-receipt", encoded_report),
                 failure: None,
                 cancellation: None,
                 cancelled_flow: None,
@@ -212,6 +225,10 @@ fn embedded_trigger_identity_cannot_collide_with_a_later_flow_receipt() -> Resul
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn a_report_is_bounded_and_many_valid_reports_share_the_record_evidence_budget()
 -> Result<(), TestError> {
     let mut oversized = network_report("single-large");
@@ -233,7 +250,7 @@ fn a_report_is_bounded_and_many_valid_reports_share_the_record_evidence_budget()
         outcomes.push(StepOutcome {
             index,
             flow_path: vec![index],
-            receipt: until_receipt(&format!("until-{index}"), report_value)?,
+            receipt: until_receipt(&format!("until-{index}"), report_value),
             failure: None,
             cancellation: None,
             cancelled_flow: None,
@@ -255,15 +272,15 @@ fn a_report_is_bounded_and_many_valid_reports_share_the_record_evidence_budget()
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn operations_vector_must_reference_the_same_until_receipt_as_flow_outcome() -> Result<(), TestError>
 {
     let attempt = "canonical-operation";
     let canonical_report = network_report(attempt);
-    let canonical = record_with_step(
-        canonical_report.clone(),
-        network_step(attempt),
-        "until-canonical",
-    )?;
+    let canonical = record_with_step(canonical_report, network_step(attempt), "until-canonical")?;
     let outcome = canonical
         .flow_outcome()
         .cloned()
@@ -282,18 +299,16 @@ fn operations_vector_must_reference_the_same_until_receipt_as_flow_outcome() -> 
     assert!(matching.is_ok());
 
     let mut inconsistent = network_report("different-payload");
-    if let Some(check) = inconsistent.checks.first_mut() {
-        if let Some(evidence) = check.evidence.as_mut() {
-            if let Some(body) = evidence
-                .get_mut("body")
-                .and_then(serde_json::Value::as_object_mut)
-            {
-                body.insert("attempt".to_owned(), serde_json::json!("different-payload"));
-            }
-        }
+    if let Some(check) = inconsistent.checks.first_mut()
+        && let Some(evidence) = check.evidence.as_mut()
+        && let Some(body) = evidence
+            .get_mut("body")
+            .and_then(serde_json::Value::as_object_mut)
+    {
+        body.insert("attempt".to_owned(), serde_json::json!("different-payload"));
     }
     let inconsistent_receipt =
-        until_receipt(&canonical_receipt.id, serde_json::to_value(inconsistent)?)?;
+        until_receipt(&canonical_receipt.id, serde_json::to_value(inconsistent)?);
     let mismatched = AutomationRecord::new(
         "mismatched-until-record",
         Vec::new(),
@@ -305,6 +320,10 @@ fn operations_vector_must_reference_the_same_until_receipt_as_flow_outcome() -> 
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn a_well_scoped_until_report_is_accepted_by_the_public_record_model() -> Result<(), TestError> {
     let report = valid_report();
     report.validate()?;
@@ -320,6 +339,10 @@ fn a_well_scoped_until_report_is_accepted_by_the_public_record_model() -> Result
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn until_flow_serialization_selects_schema_four_and_rejects_legacy_relabeling()
 -> Result<(), TestError> {
     let flow = Flow::new([action::click("#go").until(expect::visible("#receipt"))]);
@@ -335,6 +358,10 @@ fn until_flow_serialization_selects_schema_four_and_rejects_legacy_relabeling()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn deserialized_local_contract_until_is_rejected_before_session_acquisition()
 -> Result<(), TestError> {
     let step = action::assert_all::<UntilModelContract>(
@@ -350,13 +377,17 @@ async fn deserialized_local_contract_until_is_rejected_before_session_acquisitio
     assert!(matches!(
         restored.invoke().await,
         Err(FlowInvokeError::InvalidFlow(
-            FlowValidationError::Assertion(yosoi::assertions::AssertionError::Unbound)
+            FlowValidationError::Assertion(yosoi_assertions::AssertionError::Unbound)
         ))
     ));
     Ok(())
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn contract_until_archive_requires_exact_successful_declared_check_report() -> Result<(), TestError>
 {
     let plan = UntilModelContract::plan()?.clone();
@@ -381,7 +412,7 @@ fn contract_until_archive_requires_exact_successful_declared_check_report() -> R
     assert!(contract_until_record(missing, "contract-missing-check").is_err());
 
     let mut extra = evaluated.clone();
-    extra.checks.push(yosoi::assertions::CheckResult {
+    extra.checks.push(yosoi_assertions::CheckResult {
         index: 2,
         name: Some("undeclared".to_owned()),
         passed: Some(true),
@@ -518,7 +549,7 @@ fn contract_until_record(
             source: "dom".to_owned(),
             state: UntilCheckState::Satisfied,
             evidence: Some(serde_json::json!({
-                "report": assertion,
+                "report": serde_json::to_value(assertion)?,
                 "observation_id": CONTRACT_DOCUMENT_ID,
                 "document_epoch": 7,
                 "observed_at_unix_ms": 1
@@ -597,7 +628,7 @@ fn record_with_report(
 
 fn record_with_step(
     report: UntilReport,
-    step: yosoi::flow::Step,
+    step: yosoi_flow::Step,
     receipt_id: &str,
 ) -> Result<AutomationRecord, Box<dyn Error + Send + Sync>> {
     record_with_step_and_observation(report, step, receipt_id, observation())
@@ -605,12 +636,12 @@ fn record_with_step(
 
 fn record_with_step_and_observation(
     report: UntilReport,
-    step: yosoi::flow::Step,
+    step: yosoi_flow::Step,
     receipt_id: &str,
     observation: Observation,
 ) -> Result<AutomationRecord, Box<dyn Error + Send + Sync>> {
     let value = serde_json::to_value(report)?;
-    let mut receipt = until_receipt(receipt_id, value)?;
+    let mut receipt = until_receipt(receipt_id, value);
     receipt.observation = Some(observation);
     let outcome = FlowOutcome {
         version: 3,
@@ -643,18 +674,15 @@ fn record_with_outcome(
     )
 }
 
-fn until_receipt(
-    id: &str,
-    result: serde_json::Value,
-) -> Result<OperationReceipt, Box<dyn Error + Send + Sync>> {
-    Ok(OperationReceipt {
+fn until_receipt(id: &str, result: serde_json::Value) -> OperationReceipt {
+    OperationReceipt {
         id: id.to_owned(),
         kind: "until".to_owned(),
         status: OperationStatus::Observed,
         result: Some(result),
         observation: Some(observation()),
         error: None,
-    })
+    }
 }
 
 fn accessibility_step(name: &str) -> Step {
@@ -779,7 +807,7 @@ fn set_check_evidence_value(
         .first_mut()
         .and_then(|check| check.evidence.as_mut())
         .and_then(serde_json::Value::as_object_mut)
-        .ok_or_else(|| std::io::Error::other("network evidence missing"))?;
+        .ok_or_else(|| std_io::Error::other("network evidence missing"))?;
     evidence.insert(key.to_owned(), value);
     Ok(())
 }
@@ -791,7 +819,7 @@ fn set_network_body_attempt(report: &mut UntilReport, attempt: &str) -> Result<(
         .and_then(|check| check.evidence.as_mut())
         .and_then(|evidence| evidence.get_mut("body"))
         .and_then(serde_json::Value::as_object_mut)
-        .ok_or_else(|| std::io::Error::other("network body evidence missing"))?;
+        .ok_or_else(|| std_io::Error::other("network body evidence missing"))?;
     body.insert("attempt".to_owned(), serde_json::json!(attempt));
     Ok(())
 }
@@ -803,8 +831,8 @@ fn set_network_padding(report: &mut UntilReport, padding: String) -> Result<(), 
         .and_then(|check| check.evidence.as_mut())
         .and_then(|evidence| evidence.get_mut("body"))
         .and_then(serde_json::Value::as_object_mut)
-        .ok_or_else(|| std::io::Error::other("network body evidence missing"))?;
-    body.insert("padding".to_owned(), serde_json::json!(padding));
+        .ok_or_else(|| std_io::Error::other("network body evidence missing"))?;
+    body.insert("padding".to_owned(), serde_json::Value::String(padding));
     Ok(())
 }
 

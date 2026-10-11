@@ -1,5 +1,7 @@
 //! Immediate, local Rust predicates over one validated Contract observation.
 
+use crate::locators;
+use crate::session;
 use crate::{
     contracts::{ContractOutcome, FieldIssue, ValidateContract},
     documents::Document,
@@ -8,6 +10,8 @@ use crate::{
     session::new_operation_id,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::any as std_any;
+use std::panic as std_panic;
 use std::{
     fmt,
     io::{self, Write},
@@ -121,7 +125,7 @@ impl<'a, C: ValidateContract> AssertionGroup<'a, C> {
                 } else if let Some(record) = records.first() {
                     // All normal predicates run, including those after a false result.
                     for (check, result) in self.checks.iter().zip(&mut report.checks) {
-                        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        match std_panic::catch_unwind(std_panic::AssertUnwindSafe(|| {
                             (check.predicate)(&record.value)
                         })) {
                             Ok(passed) => result.passed = Some(passed),
@@ -132,19 +136,19 @@ impl<'a, C: ValidateContract> AssertionGroup<'a, C> {
                 }
             }
             ContractOutcome::NoMatch { .. } => {
-                report.source_error = Some(SourceError::RecordCount { actual: 0 })
+                report.source_error = Some(SourceError::RecordCount { actual: 0 });
             }
             ContractOutcome::Indeterminate { .. } => {
-                report.source_error = Some(SourceError::IncompleteEvidence)
+                report.source_error = Some(SourceError::IncompleteEvidence);
             }
             ContractOutcome::LocateFailed { .. } => {
-                report.source_error = Some(SourceError::LocateFailed)
+                report.source_error = Some(SourceError::LocateFailed);
             }
             ContractOutcome::ExtractionRejected { .. } => {
-                report.source_error = Some(SourceError::ExtractionRejected)
+                report.source_error = Some(SourceError::ExtractionRejected);
             }
             ContractOutcome::ValidationRejected { .. } => {
-                report.source_error = Some(SourceError::ValidationRejected)
+                report.source_error = Some(SourceError::ValidationRejected);
             }
         }
         Ok(report)
@@ -242,7 +246,7 @@ type Evaluator = dyn Fn(&Document, &Policy, usize, usize) -> Result<AssertionRep
 /// A local executable group plus a portable description. Closure code is never serialized.
 #[derive(Clone)]
 pub struct LocalAssertion {
-    descriptor: Descriptor,
+    descriptor: Box<Descriptor>,
     evaluator: Option<Arc<Evaluator>>,
 }
 impl fmt::Debug for LocalAssertion {
@@ -268,7 +272,7 @@ impl<'de> Deserialize<'de> for LocalAssertion {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let descriptor = Descriptor::deserialize(deserializer)?;
         Ok(Self {
-            descriptor,
+            descriptor: Box::new(descriptor),
             evaluator: None,
         })
     }
@@ -280,8 +284,8 @@ impl LocalAssertion {
     ) -> Self {
         let group = AssertionGroup::<C>::new(plan, checks);
         let descriptor = Descriptor {
-            id: crate::session::new_operation_id(),
-            contract_type: std::any::type_name::<C>().into(),
+            id: session::new_operation_id(),
+            contract_type: std_any::type_name::<C>().into(),
             plan: group.plan.clone(),
             names: group
                 .checks
@@ -290,7 +294,7 @@ impl LocalAssertion {
                 .collect(),
         };
         Self {
-            descriptor,
+            descriptor: Box::new(descriptor),
             evaluator: Some(Arc::new(move |document, policy, _, _| {
                 group.evaluate_with_policy(document, policy)
             })),
@@ -311,12 +315,12 @@ impl LocalAssertion {
         }
         validate_checks(names.iter().map(|name| name.as_deref()))?;
         let assertion = Self {
-            descriptor: Descriptor {
+            descriptor: Box::new(Descriptor {
                 id: new_operation_id(),
                 contract_type,
                 plan,
                 names,
-            },
+            }),
             evaluator: None,
         };
         assertion.validate(65_536)?;
@@ -380,19 +384,17 @@ impl LocalAssertion {
             return false;
         };
         result.findings().iter().all(|finding| {
-            matches!(
-                finding.completeness(),
-                crate::locators::Completeness::Complete
-            ) && outputs.iter().any(|output| {
-                output.get("id").and_then(serde_json::Value::as_str)
-                    == Some(finding.output_id().as_str())
-                    && output
-                        .get("parent_region")
-                        .and_then(serde_json::Value::as_str)
-                        == finding
-                            .parent_region()
-                            .map(|region| region.region_id().as_str())
-            })
+            matches!(finding.completeness(), locators::Completeness::Complete)
+                && outputs.iter().any(|output| {
+                    output.get("id").and_then(serde_json::Value::as_str)
+                        == Some(finding.output_id().as_str())
+                        && output
+                            .get("parent_region")
+                            .and_then(serde_json::Value::as_str)
+                            == finding
+                                .parent_region()
+                                .map(|region| region.region_id().as_str())
+                })
         }) && result.regions().iter().all(|region| {
             regions.iter().any(|declared| {
                 declared.get("id").and_then(serde_json::Value::as_str)

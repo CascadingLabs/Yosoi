@@ -13,6 +13,7 @@ use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::inpu
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::DispatchMouseEventParams;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::DispatchMouseEventType;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::MouseButton;
+use crate::internal::types as internal_types;
 use serde_json::Value;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -40,7 +41,7 @@ impl Page {
         if matches!(
             &self.browser_mode,
             EnvironmentObservation::Known {
-                value: crate::internal::types::BrowserMode::Headful
+                value: internal_types::BrowserMode::Headful
             }
         ) {
             // A new headful tab can put this leased page in the background.
@@ -250,7 +251,7 @@ impl Page {
         if !matches!(
             &self.browser_mode,
             EnvironmentObservation::Known {
-                value: crate::internal::types::BrowserMode::Headful
+                value: internal_types::BrowserMode::Headful
             }
         ) {
             self.inner

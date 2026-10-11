@@ -348,6 +348,7 @@ pub async fn capture_attempt_managed(
         .await
         .unwrap_or_else(|error| cleanup_receipt_for_error(admission.clone(), error));
     let accounting = lease.terminal_accounting_receipt().await?;
+    drop(lease);
     let primary_terminal_reason = operation
         .as_ref()
         .ok()

@@ -181,6 +181,7 @@ async fn main() -> Result<()> {
             );
         }
     }
+    drop(tabs);
     println!(
         "{}",
         serde_json::to_string(&SummaryRecord {

@@ -1,4 +1,5 @@
 use super::Page;
+use crate::internal::browser as internal_browser;
 use crate::internal::browser::document_snapshot::RenderedDomSnapshot;
 use crate::internal::browser::document_snapshot::rendered_dom;
 use crate::internal::browser::error::Result;
@@ -8,6 +9,7 @@ use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::
 };
 use crate::internal::browser::vendor::chromiumoxide::error::CdpError;
 use crate::internal::browser::vendor::chromiumoxide::js::EvaluationResult;
+use crate::internal::types as internal_types;
 use serde_json::Value;
 
 pub(super) fn script_error(error: CdpError) -> VoidCrawlError {
@@ -25,7 +27,7 @@ pub(super) fn script_error(error: CdpError) -> VoidCrawlError {
     VoidCrawlError::JsEvalError(message.chars().take(4096).collect())
 }
 
-pub(super) fn json_evaluation(result: EvaluationResult) -> Result<Value> {
+pub(super) fn json_evaluation(result: &EvaluationResult) -> Result<Value> {
     if let Some(value) = result.value() {
         return Ok(value.clone());
     }
@@ -170,7 +172,7 @@ const DOCUMENT_SNAPSHOT_JS: &str = r#"
 
 impl Page {
     /// Read bounded document identity without retaining a DOM representation.
-    pub async fn document_scope(&self) -> Result<crate::internal::browser::DocumentScope> {
+    pub async fn document_scope(&self) -> Result<internal_browser::DocumentScope> {
         self.top_level_document_scope().await
     }
 
@@ -226,7 +228,7 @@ impl Page {
     /// Capture the current rendered DOM using a validated browser byte limit.
     pub async fn rendered_dom_snapshot_with_limit(
         &self,
-        max_bytes: crate::internal::types::ByteLimit,
+        max_bytes: internal_types::ByteLimit,
     ) -> Result<RenderedDomSnapshot> {
         let max_bytes = max_bytes
             .as_usize()
@@ -277,6 +279,6 @@ impl Page {
             .evaluate(expression)
             .await
             .map_err(script_error)?;
-        json_evaluation(result)
+        json_evaluation(&result)
     }
 }

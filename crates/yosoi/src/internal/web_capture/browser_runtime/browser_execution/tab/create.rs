@@ -3,6 +3,7 @@
     reason = "private split module shares its facade's implementation context"
 )]
 use super::*;
+use tokio::sync as tokio_sync;
 
 #[allow(
     clippy::cognitive_complexity,
@@ -139,7 +140,7 @@ pub(in super::super) async fn create_additional_tab(
                     open: true,
                     closing: false,
                     navigation_gate: Arc::new(Mutex::new(())),
-                    control_waiters: Arc::new(tokio::sync::Semaphore::new(32)),
+                    control_waiters: Arc::new(tokio_sync::Semaphore::new(32)),
                     navigation_closing: CancellationToken::new(),
                 },
             );
@@ -165,6 +166,7 @@ pub(in super::super) async fn create_additional_tab(
             resource: Arc::downgrade(&resource),
         };
         let _ = lease.close().await;
+        drop(lease);
     }
     finish_tab_creation_success(&resource, &manager, id).await;
 }

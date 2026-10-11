@@ -1,9 +1,12 @@
+use std::env as std_env;
+use std::process as std_process;
 use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
+use yosoi::flow as yosoi_flow;
 
 use yosoi::{
     Archive, action,
@@ -19,9 +22,9 @@ impl TemporaryDirectory {
             .duration_since(UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_nanos();
-        let path = std::env::temp_dir().join(format!(
+        let path = std_env::temp_dir().join(format!(
             "yosoi-javascript-{label}-{}-{nonce}",
-            std::process::id()
+            std_process::id()
         ));
         fs::create_dir(&path)?;
         Ok(Self(path))
@@ -63,7 +66,7 @@ fn file_action_keeps_the_exact_utf8_snapshot_and_provenance_after_the_file_chang
     );
     assert_eq!(
         snapshot.provenance().origin(),
-        &action::JavaScriptSourceOrigin::File { path: path.clone() }
+        &action::JavaScriptSourceOrigin::File { path }
     );
 }
 
@@ -101,7 +104,7 @@ async fn file_and_module_sources_survive_an_archive_round_trip_exactly()
             unknown_step(1, vec![1], "evaluate_module"),
         ],
         terminal: FlowTermination::Unknown,
-        continuation_defaults: yosoi::flow::FlowPolicy::default(),
+        continuation_defaults: yosoi_flow::FlowPolicy::default(),
         stop_reason: None,
         skipped_steps: Vec::new(),
         cleanup: Vec::new(),
