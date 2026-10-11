@@ -6,7 +6,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { generatePreview, validateManifest } from './generate.mjs';
-import { copyPublicTree, authoredPages, readPublicNavigation } from './content.mjs';
+import {
+  copyPublicTree,
+  authoredPages,
+  readPublicNavigation,
+  preparePythonReference,
+} from './content.mjs';
 import { resolveNavigation } from './navigation.mjs';
 import * as jsonc from 'jsonc-parser';
 import { verifyReference } from './reference/generate.mjs';
@@ -41,11 +46,21 @@ export async function createBundle({ source, version, reference, out }) {
   let manifest, navigation;
   try {
     const archive = path.join(temp, 'public.tar');
-    git('archive', `--output=${archive}`, source, 'docs/public');
+    const python = git('ls-tree', '--name-only', source, '--', 'scripts/docs/python_reference.py')
+      .toString()
+      .trim();
+    git(
+      'archive',
+      `--output=${archive}`,
+      source,
+      'docs/public',
+      ...(python ? ['python/yosoi', 'scripts/docs/python_reference.py'] : []),
+    );
     execFileSync('tar', ['-xf', archive, '-C', temp]);
     navigation = await readPublicNavigation(path.join(temp, 'docs/public'), jsonc);
     await mkdir(path.join(out, 'docs/public'), { recursive: true });
     await copyPublicTree(path.join(temp, 'docs/public'), path.join(out, 'docs/public'));
+    preparePythonReference(temp, path.join(out, 'docs/public'), source);
     manifest = generatePreview({
       root: path.join(out, 'docs/public'),
       version,

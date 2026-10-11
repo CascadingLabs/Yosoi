@@ -111,7 +111,8 @@ export function verifyReference(directory) {
 		const bytes = fs.readFileSync(path.join(root, locale, descriptor.file));
 		if (sha256(bytes) !== descriptor.localeHashes[locale]) throw new Error(`Reference integrity failed for ${locale}/${slug}`);
 		const page = JSON.parse(bytes);
-		for (const source of [page.source, page.reexportSource, ...(page.members || []).map((member) => member.source), ...(page.examples || []).map(example => example.source), ...(page.members || []).flatMap(member => (member.examples || []).map(example => example.source)), manifest.sdk.manifest]) {
+		const members = (page.members || []).flatMap(member => [member, ...(member.fields || [])]);
+		for (const source of [page.source, page.reexportSource, ...members.map((member) => member.source), ...(page.examples || []).map(example => example.source), ...members.flatMap(member => (member.examples || []).map(example => example.source)), manifest.sdk.manifest]) {
 			if (!source) continue;
 			const expected = sourceLink({ filename: source.file, begin: [source.lineStart, 1], end: [source.lineEnd, 1] }, { ...manifest.source, checkout: root });
 			if (!expected || expected.url !== source.url) throw new Error('Source link does not match the artifact commit');

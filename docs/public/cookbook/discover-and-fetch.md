@@ -10,6 +10,10 @@ Map gives you a bounded inventory. Choose the URLs your application needs, then 
 
 ## Discover, then fetch
 
+## Example: discover and fetch
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -40,6 +44,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+Read the per-operation result before using its discovered URLs. This excerpt uses the public facade and explicit Policy.
+
+### Python
+
+```python
+import asyncio
+import yosoi as ys
+from yosoi.policy import Map, MapLimits, Policy
+
+async def main():
+    policy = Policy(map=Map(robots="respect", limits=MapLimits(max_requests=10)))
+    inventory = await ys.map.new("https://example.org/").bind(policy).send()
+    print("Map stopped:", inventory.termination)
+    pages = [page for page in inventory.pages if page.exploration == "inspected"]
+    for page in pages[:3]:
+        response = await ys.request.new(page.url).bind(policy).send()
+        for attempt in response.attempts:
+            print(page.url, attempt.state)
+
+asyncio.run(main())
+```
+
+The Python variant uses the same provider or discovery choices. Keep attempt and termination information alongside selected URLs.
+
+## Walk through the result
 
 This example fetches at most three pages sequentially and only chooses pages Map inspected. The extra requests are separate operations; they are not counted against the finished Map run's request budget. Requests also do not inherit Map's robots filtering, so apply your application's URL-admission rules to any different selection.
 

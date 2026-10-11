@@ -69,7 +69,36 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    not atomic: one registry may finish before the other fails; retries verify
    existing bytes before proceeding.
 5. GitHub assets include the Python distributions, native CLI archives, versioned
-   docs/reference bundle, release plan with source commit, and SHA256SUMS.
+   docs/reference bundle, release plan with source commit, `install.sh`,
+   `install.ps1`, and SHA256SUMS.
+
+## CLI distribution
+
+Native jobs package the existing `yosoi` executable into dependency-free
+`yosoi-cli` wheels using the wheel scripts installation scheme. These are
+`py3-none` wheels and do not import or depend on the Python SDK. There is no
+CLI source distribution: unsupported platforms must use manual Cargo builds.
+Linux wheels pass pinned auditwheel repair at the manylinux 2.39 baseline;
+macOS and Windows retain the existing native targets. Every native job installs
+its wheel through `uv tool install` in isolated tool directories, checks the
+installed version, help, request help and completions, then verifies an exact
+local HTTP document and a typed Request/Locate pipeline before uninstalling it.
+Verification requires all five CLI wheels in addition to the SDK matrix from
+0.2.1 onward. Validation-only replays of older tags retain their original SDK
+artifact requirements and skip the new CLI packaging steps.
+Registry retries query `yosoi` and `yosoi-cli` independently and compare hashes
+before skipping existing filenames.
+
+POSIX fixture tests exercise latest/pinned installation, supported CPU and OS
+selection, version matching, upgrades, corrupt archives, unsupported libc,
+and preservation of existing binaries and uv-managed symlinks. Native POSIX
+release jobs also run the installer using the actual built executable.
+The Windows native job runs `scripts/install/test-install.ps1` against the
+actual executable, covering latest selection, pinned upgrade, command execution,
+checksum rejection and preservation. Its PATH changes are restored afterward.
+Installers download a release plan to resolve latest once, then use versioned
+asset URLs. They verify SHA256SUMS over HTTPS before extraction and execution.
+Checksums detect corruption; they are not independent release signatures.
 
 Hosted Linux/Windows and Intel macOS builds use two Cargo workers; Apple Silicon
 uses one. Rayon and local workstation checks remain at one worker. Independent hosted runners
@@ -143,14 +172,19 @@ not the immutable source tag or any verification/publication gates. See
   `release-cd.yml`, environment `pypi`. The GitHub environment already exists;
   its existence does not prove the PyPI publisher is configured. No PyPI API
   token is required. OIDC is limited to the PyPI publication job.
+- The new `yosoi-cli` PyPI project needs its own pending Trusted Publisher:
+  project `yosoi-cli`, owner `CascadingLabs`, repository `Yosoi`, workflow
+  `release-cd.yml`, environment `pypi`. The SDK publisher does not authorize
+  another project. Configure this before publishing 0.2.1; no token or manual
+  first upload is needed with a pending publisher.
 - Users add the `yosoi` crate; first-party runtime modules ship inside that
-  package. Release CD uploads separately versioned support crates only when
+  package. Release CD uploads support crates only when
   their exact package version is absent from crates.io. For an existing version,
   it verifies the crates.io checksum and compares archived package contents,
   allowing only Cargo's generated VCS commit marker to differ before skipping
   the upload.
-  `yosoi-contracts-derive` keeps its own version and is bumped only when its
-  source needs a new registry release. Chromiumoxide and its checked-in CDP
+  `yosoi-contracts-derive` shares the workspace version and is synchronized
+  by `cargo xtask bump-version`. Chromiumoxide and its checked-in CDP
   bindings ship as internal modules in the `yosoi` package; neither fork is
   uploaded as a separate crate. Their source provenance and upstream licenses
   remain with the vendored modules. Packaging does not certify a new browser

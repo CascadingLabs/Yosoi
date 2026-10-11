@@ -1,51 +1,97 @@
 ---
-title: Install and quickstart
-description: Install Yosoi and make your first request.
-order: 1
+title: 'Get Started'
+description: 'Install Yosoi 0.2.1 and locate a value in local HTML.'
+order: 0
 ---
 
-# Install and quickstart
+# Get Started
 
-Use the CLI for terminal workflows or the Rust SDK to build Yosoi into an application.
+Install Yosoi, then read a heading from local HTML. This example needs no browser or network connection.
 
-## Install the CLI
+## Requirements
 
-With Rust installed, run this from the Yosoi repository root:
+Rust projects need Rust 1.99 or newer. Python projects need CPython 3.12 through 3.15 and uv. The Python package includes its native extension and depends on Pydantic.
 
-```sh
-CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi --features cli --bin yosoi --locked
-yosoi --help
-```
+Yosoi is published on [crates.io](https://crates.io/crates/yosoi) and [PyPI](https://pypi.org/project/yosoi/). Python wheels vary by operating system, architecture and interpreter ABI.
 
-## Fetch a page
+## Install
 
-```sh
-yosoi request https://example.org/ --raw > page.html
-```
-
-## Extract a heading
+### Cargo
 
 ```sh
-set -o pipefail
-yosoi request https://example.org/ | yosoi locate --css 'h1' --json
+cargo add yosoi
 ```
 
-## Try the SDK
+Save the Rust example below as `src/main.rs`, then run `cargo run`. Local document processing does not require browser support.
 
-Follow [SDK installation](sdk/installation.md) for the Cargo dependencies, then put this in `src/main.rs`:
+### uv
+
+```sh
+uv add yosoi
+```
+
+Save the Python example below as `example.py`, then run `uv run python example.py`. uv selects a compatible wheel when one is available for the target platform.
+
+## Example: read a heading
+
+### Rust
 
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let response = ys::request::new("https://example.org/").send().await?;
-    for attempt in response.attempts() {
-        println!("{:?}: {:?}", attempt.acquisition(), attempt.state());
+fn main() -> Result<(), Box<dyn Error>> {
+    let document = ys::Document::html(
+        "greeting",
+        b"<main><h1>Hello, Yosoi</h1></main>".to_vec(),
+    )?;
+    let plan = ys::Plan::new([
+        ys::output("title", ys::css("h1")?.text())?,
+    ])?;
+    let outcome = document.locate(&plan);
+    if let ys::LocateOutcome::Matched { result } = outcome {
+        for finding in result.findings() {
+            println!("{}: {:?}", finding.output_id(), finding.value());
+        }
+    } else {
+        return Err(std::io::Error::other("title was not located").into());
     }
     Ok(())
 }
 ```
 
-Read [Responses](sdk/responses.md) to use the returned documents, or follow the [structured extraction recipe](cookbook/extract-structured-data.md). For an example that needs no network, start with the [Rust SDK overview](sdk/index.md).
+`Document::html` retains the input bytes under the identity `greeting`. The Plan names one output, `title`. `locate` evaluates the CSS query. The loop prints the output name and its selected value.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.html(
+    "greeting",
+    "<main><h1>Hello, Yosoi</h1></main>",
+)
+plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+outcome = document.locate(plan)
+
+assert outcome.status == "matched"
+assert outcome.values("title") == ["Hello, Yosoi"]
+print(outcome.values("title"))
+```
+
+`Document.html` creates the same input. The Plan names the same output. The checks confirm that locating succeeded and returned exactly the heading text.
+
+## What happened
+
+The document is the input, the Plan describes the query, and the outcome keeps the evidence. The selector belongs to the controlled HTML in this example; a field description alone does not discover a selector on another site.
+
+1. Keep the supplied HTML bytes in a Document with the identity `greeting`.
+2. Name the heading query `title` in the Plan.
+3. Call `locate` to evaluate the Plan against that Document.
+4. Check the outcome and inspect the selected heading.
+
+## Next steps
+
+Read [Concepts](concepts/index.md), send a [Request](sdk/requests.md), or produce a typed record with [Contracts](sdk/contracts.md).
+
+For shell workflows, install the [CLI](cli/index.md). Browser execution also needs compatible regular Chrome or Chromium; see [Browser](sdk/browser.md).

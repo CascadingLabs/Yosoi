@@ -1,11 +1,14 @@
 //! Compile fixture proving the Contract derive respects a renamed dependency.
 
+#![deny(missing_docs)]
+
 use ys::contracts::{ContractSchema, ContractSchemaError};
 use ys::prelude as sdk;
 
 const PRODUCT_ROOT: sdk::PinnedLocator = sdk::locator::css("article.product");
 const PRODUCT_NAME: sdk::PinnedOutputLocator = sdk::locator::css("h2").text();
 
+/// Product record whose pinned evidence is extracted through a renamed SDK dependency.
 #[derive(Debug, sdk::Contract)]
 #[ys(
     id = "renamed_product",
@@ -13,10 +16,12 @@ const PRODUCT_NAME: sdk::PinnedOutputLocator = sdk::locator::css("h2").text();
     root = PRODUCT_ROOT
 )]
 pub struct RenamedProduct {
+    /// Displayed product name converted from the pinned heading's text evidence.
     #[ys(description = "Product name", locator = PRODUCT_NAME)]
     pub name: String,
 }
 
+/// Borrows the derived portable schema without acquiring or locating a document.
 pub fn schema() -> Result<&'static ContractSchema, ContractSchemaError> {
     RenamedProduct::schema()
 }

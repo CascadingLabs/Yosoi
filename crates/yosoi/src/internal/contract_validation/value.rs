@@ -29,7 +29,9 @@ impl RuntimeContractValue for String {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// Currency vocabulary supported by the current Contract money scalar.
 pub enum Currency {
+    /// United States dollars; minor units are integer cents and no exchange conversion is implied.
     Usd,
 }
 
@@ -89,9 +91,11 @@ impl Money {
         }
     }
 
+    /// Returns integer USD cents without floating-point rounding or currency conversion.
     pub const fn minor_units(&self) -> i64 {
         self.minor_units
     }
+    /// Returns the currency discriminator, currently limited to USD.
     pub const fn currency(&self) -> Currency {
         self.currency
     }
@@ -159,8 +163,15 @@ fn parse_usd(value: &str) -> Option<(Money, bool)> {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
+/// Projection conversion or scalar semantic rejection for one Contract field.
 pub enum RuntimeValueIssue {
+    /// The projection variant cannot be converted into the requested scalar vocabulary.
     UnsupportedProjectedValue,
+    /// Supported projection text could not be parsed into the requested scalar representation.
     ConversionFailed,
-    SemanticValidationFailed { code: ValidationCode },
+    /// Parsed scalar data violates a supported semantic rule, such as negative USD money.
+    SemanticValidationFailed {
+        /// Specific semantic rule rejecting the converted value.
+        code: ValidationCode,
+    },
 }

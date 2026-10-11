@@ -20,6 +20,7 @@ use crate::internal::documents::{LocateFailure, Plan, ResourceBudget};
 pub struct DocumentId(String);
 
 impl DocumentId {
+    /// Owns nonblank document identity text without normalizing spelling or acquiring a payload. Returns DocumentError::EmptyId for all-whitespace input.
     pub fn try_new(value: impl Into<String>) -> Result<Self, DocumentError> {
         let value = value.into();
         if value.trim().is_empty() {
@@ -29,6 +30,7 @@ impl DocumentId {
         }
     }
 
+    /// Borrows the retained document identity, not its source URL or content hash.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -63,12 +65,16 @@ impl TryFrom<String> for DocumentId {
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum DocumentError {
     #[error("document identity cannot be empty")]
+    /// Caller document identity has no non-whitespace text.
     EmptyId,
     #[error("non-text document payload cannot be empty")]
+    /// A non-text interpretation was supplied no payload bytes; source text can be empty.
     EmptyPayload,
     #[error("document payload length cannot be represented as u64")]
+    /// Payload bytes cannot fit portable u64 length accounting.
     PayloadLengthOverflow,
     #[error(transparent)]
+    /// Representation, syntax, schema, or epoch metadata fails the interpretation contract.
     InvalidProfile(#[from] DocumentProfileError),
 }
 

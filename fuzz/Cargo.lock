@@ -1757,7 +1757,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-derive"
-version = "0.1.2"
+version = "0.2.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1767,7 +1767,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-dev-support"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-compression",
  "base64",
@@ -1800,7 +1800,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture-fuzz"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "libfuzzer-sys",

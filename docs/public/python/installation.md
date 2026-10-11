@@ -6,6 +6,9 @@ order: 1
 
 # Install the Python SDK
 
+For the terminal command, use `uv tool install yosoi-cli` instead.
+See [CLI installation](../cli/index.md) for the prebuilt tool and installers.
+
 The package requires Python `>=3.12,<3.16` and Pydantic `>=2.14,<3`. Choose
 the wheel that matches both your Python ABI and platform:
 
@@ -24,7 +27,7 @@ If a compatible release is available from your configured package index,
 install it with:
 
 ```sh
-python -m pip install yosoi
+uv add yosoi
 ```
 
 For development from this repository, install the locked environment from the

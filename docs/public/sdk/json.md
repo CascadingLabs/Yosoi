@@ -8,6 +8,10 @@ order: 9
 
 Use JSON Pointer for a known path and JSONPath for simple array selection. Both return JSON values through `.value()`.
 
+## Example: json
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -32,6 +36,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+JSON Pointer selects one known field. JSONPath selects the names from the products array. Values preserve JSON scalar types.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.from_json(
+    "catalog.json",
+    '{"shop":"Corner","products":[{"name":"Tea"},{"name":"Coffee"}]}',
+)
+plan = ys.Plan(outputs=[
+    ys.output("shop", ys.json_pointer("/shop").value()),
+    ys.output("name", ys.json_path("$.products[*].name").value()),
+])
+outcome = document.locate(plan)
+assert outcome.values("shop") == ["Corner"]
+assert outcome.values("name") == ["Tea", "Coffee"]
+```
+
+The JSON constructor is `from_json`. The two projections select the same fields and retain product order.
+
+## Walk through the result
 
 The `name` output yields two findings. Numbers, booleans, objects, arrays, strings, and null retain their JSON types.
 

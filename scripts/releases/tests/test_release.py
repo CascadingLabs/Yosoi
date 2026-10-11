@@ -61,6 +61,20 @@ class ReleaseToolTests(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(release.ReleaseError):
                 release.parse_version(invalid)
 
+    def test_history_hides_candidates_without_removing_their_notes(self) -> None:
+        candidate = self.prepare("0.1.0-rc.1", previous=None)
+        self.finalize(candidate)
+        final = self.prepare("0.1.0", previous="0.1.0-rc.1")
+        self.finalize(final)
+        status, _, error = self.invoke("history")
+        self.assertEqual(status, 0, error)
+        index = (self.release_dir / "index.md").read_text(encoding="utf-8")
+        self.assertIn("[0.1.0](0-1-0.md)", index)
+        self.assertNotIn("0.1.0-rc.1", index)
+        self.assertTrue(candidate.is_file())
+        status, _, error = self.invoke("check", "0.1.0-rc.1")
+        self.assertEqual(status, 0, error)
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
@@ -251,9 +265,9 @@ class ReleaseToolTests(unittest.TestCase):
         status, _, error = self.invoke("history")
         self.assertEqual(status, 0, error)
         self.assertEqual(index.read_bytes(), first_result)
-        self.assertLess(first_result.index(b"0.10.0"), first_result.index(b"0.2.0"))
-        self.assertIn(b"**Recommended**", first_result)
-        self.assertIn(b"**Preview**", first_result)
+        self.assertLess(first_result.index(b"- [0.10.0]"), first_result.index(b"- [0.2.0]"))
+        self.assertNotIn(b"Recommended", first_result)
+        self.assertNotIn(b"Preview", first_result)
 
         edited = first_result + b"\nManual note.\n"
         index.write_bytes(edited)

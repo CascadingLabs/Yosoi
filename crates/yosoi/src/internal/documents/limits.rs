@@ -30,15 +30,25 @@ pub struct ResourceBudgetValues {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ResourceLimit {
+    /// Owned input bytes admitted for document parsing.
     InputBytes,
+    /// Parsed document nodes charged to the structural budget.
     Nodes,
+    /// Shared selector candidate, matcher-state, and tree-text visits during evaluation.
     SelectorVisits,
+    /// Encoded query and namespace metadata bytes.
     QueryBytes,
+    /// Query operations and traversal steps charged during evaluation.
     QuerySteps,
+    /// Retained repeated-region matches used for scoped findings.
     Regions,
+    /// Retained locator finding matches.
     Matches,
+    /// Materialized regular-expression capture values.
     Captures,
+    /// Document parse or structural traversal depth.
     Depth,
+    /// Owned projected value and output evidence bytes.
     OutputBytes,
 }
 

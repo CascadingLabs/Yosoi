@@ -8,6 +8,10 @@ order: 5
 
 A Document holds an identity, a representation profile, and immutable bytes. Create one from local data or borrow one from a [response](responses.md).
 
+## Example: documents
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -22,6 +26,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+`Document::html` stores the bytes and identity. The Plan names a heading output, and `locate` evaluates it without network I/O.
+
+### Python
+
+```python
+import yosoi as ys
+
+html = b"<article><h1>A small example</h1><p>Read me.</p></article>"
+document = ys.Document.html("article.html", html)
+plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+outcome = document.locate(plan)
+assert outcome.values("title") == ["A small example"]
+assert document.data == html
+print(outcome.values("title"))
+```
+
+`Document.html` creates the same input. The checks verify the heading value and retained bytes through the Python result and `data` field.
+
+## Walk through the result
 
 The identity is yours to choose. A filename or application record ID works well. It must not be empty. It is not a URL to fetch or a filename to open.
 

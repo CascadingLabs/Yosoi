@@ -6,7 +6,11 @@ order: 12
 
 # Contracts
 
-A Contract describes the record you want: its fields, their types, and where their evidence comes from. Derive it on a struct, then locate, extract, and validate.
+A Contract describes the record you want: fields, types and evidence bindings. Locate, extract and validate to produce records or inspect rejected candidates.
+
+## Example: contracts
+
+### Rust
 
 ```rust
 use std::error::Error;
@@ -38,6 +42,37 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+The struct defines required name and price fields plus an optional link. `locate`, `extract`, `validate` and `require_all` turn evidence into accepted records or report issues.
+
+### Python
+
+```python
+import yosoi as ys
+
+class Product(ys.Contract):
+    """A product for sale."""
+
+    root = ys.css("article")
+    name: str = ys.Field("Product name", locator=ys.css("h2"))
+    price: ys.Money = ys.Field("Price in USD", locator=ys.css(".price"))
+    href: str | None = ys.Field("Optional product link", locator=ys.css("a").attribute("href"))
+
+document = ys.Document.html(
+    "catalog.html",
+    "<article><h2>Tea</h2><span class='price'>$4.50</span></article>",
+)
+products = ys.extract(document, Product).validate().require_all()
+for product in products:
+    assert product.name == "Tea"
+    assert product.price.minor_units == 450
+    assert product.href is None
+    print(f"{product.name} costs {product.price}")
+```
+
+The model defines the same fields and cardinality. Rust validates the candidates, then Python exposes typed records. The checks show a 450-cent price and an absent optional link.
+
+## Walk through the result
+
 This prints `Tea costs $4.50`. The missing link becomes `None`.
 
 ## Page or repeated record
@@ -48,15 +83,15 @@ There are no separate `page` or `repeated` attributes. Scope follows from whethe
 
 ## Field cardinality
 
-| Rust field                          | Accepted evidence   |
-| ----------------------------------- | ------------------- |
-| `String` or `Money`                 | Exactly one value   |
-| `Option<String>` or `Option<Money>` | Zero or one value   |
-| `Vec<String>` or `Vec<Money>`       | Zero or more values |
+| Rust field          | Python annotation   | Accepted evidence   |
+| ------------------- | ------------------- | ------------------- |
+| `String` or `Money` | `str` or `ys.Money` | Exactly one value   |
+| `Option<T>`         | `T \| None`         | Zero or one value   |
+| `Vec<T>`            | `list[T]`           | Zero or more values |
 
-Missing required values and multiple values for a scalar are field issues. Nested wrappers such as `Option<Vec<String>>` are rejected by the derive.
+Missing required values and multiple values for a scalar are field issues. Nested wrappers such as `Option<Vec<String>>` or `list[list[str]]` are unsupported.
 
-Runtime conversion currently supports `String` and `Money`. Strings accept text, text-with-captures, and attribute values. Money accepts the strict USD text form described in [Validation](validation.md). Other Rust scalar types and custom runtime converters are not part of this facade.
+Runtime conversion currently supports `String` and `Money`. Strings accept text, text-with-captures, and attribute values. Money accepts the strict USD text form described in [Validation](validation.md). Other scalar types and custom runtime converters are outside this Contract slice.
 
 ## Static locators
 

@@ -45,10 +45,19 @@ Requests are asynchronous. Bind a Policy when the operation needs settings
 beyond defaults, and pass a caller-owned token to request cancellation.
 
 ```python
-response = await ys.request.new("https://example.org/").bind(policy).send()
+import asyncio
+import yosoi as ys
 
-for document in response.documents:
-    print(document.id, document.document_class, document.byte_len)
+async def main():
+    policy = ys.Policy()
+    request = ys.request.new("https://example.org/").bind(policy)
+    request.check()
+    response = await request.send()
+    print("Target:", response.requested_target)
+    for attempt in response.attempts:
+        print(attempt.acquisition, attempt.state)
+
+asyncio.run(main())
 ```
 
 `Response` records the policy snapshot, request termination, acquisition
@@ -64,10 +73,17 @@ payload bytes into a second parser stack. A returned document owns its Rust
 handle and profile.
 
 ```python
-token = ys.CancellationToken()
-token.cancel()
-cancelled = await ys.request.new("https://example.org/").send(cancellation=token)
-print(cancelled.termination)
+import asyncio
+import yosoi as ys
+
+async def main():
+    # A caller-owned token can stop work before dispatch.
+    token = ys.CancellationToken()
+    token.cancel()
+    response = await ys.request.new("https://example.org/").send(cancellation=token)
+    print(response.termination)
+
+asyncio.run(main())
 ```
 
 Cancellation is represented by the operation's typed result. It is not
@@ -81,13 +97,21 @@ budgets, and whether source documents are discarded or retained within a
 budget.
 
 ```python
-from yosoi.policy import Map, Policy
+import asyncio
+import yosoi as ys
+from yosoi.policy import Map, MapLimits, Policy
 
-map_policy = Policy(map=Map(documents="retain_within_budget"))
-map_outcome = await ys.map.new("https://example.org/").bind(map_policy).send()
-print(map_outcome.termination)
-print(map_outcome.pages)
-print(map_outcome.summary)
+async def main():
+    policy = Policy(map=Map(
+        robots="respect",
+        limits=MapLimits(max_requests=20, max_concurrency=2),
+    ))
+    outcome = await ys.map.new("https://example.org/").bind(policy).send()
+    print("Stopped:", outcome.termination)
+    for page in outcome.pages:
+        print(page.url, page.exploration)
+
+asyncio.run(main())
 ```
 
 The outcome preserves observations, source outcomes, relationships, frontier
@@ -103,12 +127,19 @@ per-provider profiles through Policy; the response keeps each provider's
 attempts and result status separate.
 
 ```python
+import asyncio
+import yosoi as ys
 from yosoi.policy import Policy, ProviderSelection, Search
 
-search_policy = Policy(search=Search(providers=[ProviderSelection(provider="bing")]))
-search_outcome = await ys.search.new("Yosoi Rust SDK").bind(search_policy).send()
-for provider in search_outcome.providers:
-    print(provider.provider, provider.outcome)
+async def main():
+    policy = Policy(search=Search(providers=[ProviderSelection(provider="bing")]))
+    request = ys.search.new("rust sdk").bind(policy)
+    request.check()
+    response = await request.send()
+    for provider in response.providers:
+        print(provider.provider, provider.outcome)
+
+asyncio.run(main())
 ```
 
 Provider outcomes distinguish results, empty pages, failures, cancellation,
@@ -120,5 +151,4 @@ certification. Search returns candidates; use Requests to fetch selected URLs.
 From the repository root, `python/examples/review.py contracts` shows the
 typed Contract and its evidence; `python/examples/review.py local` starts a
 loopback server for Requests and Map and demonstrates cancellation. Neither
-command needs a public website. Current native-wheel verification for the new
-Contract binding is pending; see [compatibility](compatibility.md).
+command needs a public website. See [compatibility](compatibility.md) for the exact recorded runtime and artifact evidence.

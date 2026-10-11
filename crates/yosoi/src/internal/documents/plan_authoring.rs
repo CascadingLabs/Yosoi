@@ -20,6 +20,7 @@ use super::validation::{
 pub struct OutputId(String);
 
 impl OutputId {
+    /// Owns a nonblank output identity; returns PlanError::EmptyOutputId for all-whitespace input. Plan compilation checks uniqueness across outputs.
     pub fn try_new(value: impl Into<String>) -> Result<Self, PlanError> {
         let value = value.into();
         if value.trim().is_empty() {
@@ -29,6 +30,7 @@ impl OutputId {
         }
     }
 
+    /// Borrows the original validated identity spelling used for finding or region attribution.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -55,6 +57,7 @@ impl<'de> Deserialize<'de> for OutputId {
 pub struct RegionId(String);
 
 impl RegionId {
+    /// Owns a nonblank repeated-region identity, returning QueryError::EmptyRegionId for all-whitespace input. This does not evaluate a region query.
     pub fn try_new(value: impl Into<String>) -> Result<Self, QueryError> {
         let value = value.into();
         if value.trim().is_empty() {
@@ -64,6 +67,7 @@ impl RegionId {
         }
     }
 
+    /// Borrows the original validated identity spelling used for finding or region attribution.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -97,14 +101,17 @@ impl RegionPlan {
         })
     }
 
+    /// Borrows the authored repeated-region lineage identity.
     pub const fn id(&self) -> &RegionId {
         &self.id
     }
 
+    /// Borrows the repeated-region root query without acquiring matched evidence.
     pub const fn query(&self) -> &QuerySpec {
         &self.query
     }
 
+    /// Clones this region declaration to scope an owned child query. Projection and plan validation are explicit; this does not locate document data.
     pub fn find(&self, query: QuerySpec) -> OutputSelection {
         OutputSelection {
             region: self.clone(),
@@ -194,6 +201,7 @@ impl OutputPlan {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+/// Owned authored identity and projected query declaration, validated for uniqueness when compiled into a Plan.
 pub struct NamedOutput {
     pub(super) id: OutputId,
     pub(super) output: OutputPlan,

@@ -28,7 +28,16 @@ try {
 /// let item = fixture_sdk::Public;
 /// \`\`\`
 pub struct Public;
-pub enum Payload { Tuple(u64), Record { value: bool } }
+/// Values received from the fixture transport.
+pub enum Payload {
+ /// An unnamed numeric payload returned by the transport.
+ Tuple(u64),
+ /// A structured payload indicating whether validation succeeded.
+ Record {
+  /// Whether the transport payload passed validation.
+  value: bool
+ }
+}
 impl Public {
  /// A regular method.
  pub fn base(&self) -> usize { 1 }
@@ -61,7 +70,16 @@ pub use fixture_macros::gated;
  const payload=get(one,'one','fixture_sdk::Payload');
  assert(payload.members.some(member=>member.signature==='Tuple(u64)'));
  assert(payload.members.some(member=>member.signature==='Record { value: bool }'));
+ assert.equal(payload.docs, 'Values received from the fixture transport.');
+ assert.equal(payload.members.find(member=>member.publicPath.endsWith('::Tuple')).docs, 'An unnamed numeric payload returned by the transport.');
+ assert.equal(payload.members.find(member=>member.publicPath.endsWith('::Record')).docs, 'A structured payload indicating whether validation succeeded.');
+ const variantField=payload.members.find(member=>member.publicPath.endsWith('::Record')).fields[0];
+ assert(variantField.publicPath.endsWith('::Record::value'));
+ assert.equal(variantField.docs, 'Whether the transport payload passed validation.');
+ assert.equal(variantField.signature, 'value: bool');
+ assert.equal(variantField.source.file, 'src/lib.rs');
  const publicOne=get(one,'one','fixture_sdk::Public');
+ assert.equal(publicOne.members.find(member=>member.publicPath.endsWith('::base')).docs, 'A regular method.');
  assert(publicOne.members.some(m=>m.publicPath.endsWith('::base')));
  assert(!publicOne.members.some(m=>m.publicPath.endsWith('::extra')));
  assert(Object.values(one.pages).some(p=>p.title==='fixture_sdk::exported'));

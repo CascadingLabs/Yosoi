@@ -46,12 +46,19 @@ pub const MAX_AUTOMATION_RECORD_EVIDENCE_BYTES: usize = 8 * 1024 * 1024;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Observation {
+    /// Unique identity of this retained observation within the record.
     pub id: String,
+    /// Browser Session provenance; it does not reopen or grant authority to that Session.
     pub session_id: String,
+    /// Source tab provenance, distinct from a live tab-control handle.
     pub tab_id: String,
+    /// Positive source-document generation used to bind DOM evidence.
     pub document_epoch: u64,
+    /// Captured HTML bytes represented as text, absent when not retained.
     pub html: Option<String>,
+    /// Observed source URL, if available; it can contain user-sensitive data.
     pub url: Option<String>,
+    /// Retained screenshot bytes, subject to observation and aggregate record limits.
     pub screenshot: Option<Vec<u8>>,
 }
 
@@ -59,8 +66,11 @@ pub struct Observation {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OperationStatus {
+    /// The operation returned a supported observed result; business success needs its own check.
     Observed,
+    /// The operation or assertion returned a known rejection.
     Rejected,
+    /// Possible dispatch or incomplete evidence prevents establishing the effect.
     Unknown,
 }
 
@@ -68,11 +78,17 @@ pub enum OperationStatus {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OperationReceipt {
+    /// Unique identity correlating this operation with recorded Flow evidence.
     pub id: String,
+    /// Operation category label, such as navigate, click, or until.
     pub kind: String,
+    /// Effect certainty, separate from authored continuation or business completion.
     pub status: OperationStatus,
+    /// Bounded operation-specific result payload, absent when none was established.
     pub result: Option<serde_json::Value>,
+    /// Current-tab evidence captured alongside the operation, if available.
     pub observation: Option<Observation>,
+    /// Retained failure or uncertainty explanation; it does not undo external effects.
     pub error: Option<String>,
 }
 
@@ -100,11 +116,17 @@ impl AutomationRecordRef {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AutomationContext {
+    /// Recorded resolved Policy identity used for the run.
     pub effective_policy_identity: String,
+    /// Execution and evidence settings recorded for the owning Session.
     pub session_policy: session::SessionPolicy,
+    /// Recorded browser provider label, not a live provider handle.
     pub provider: String,
+    /// Browser identity recorded by the caller, absent when unavailable.
     pub browser_identity: Option<String>,
+    /// Source revision provenance supplied by the caller, not verified by capture itself.
     pub source_revision: Option<String>,
+    /// Immutable parent record reference for linking separate evidence records.
     pub parent: Option<AutomationRecordRef>,
 }
 
@@ -166,10 +188,14 @@ impl AutomationRecord {
         self.flow_outcome.as_ref()
     }
 
+    /// Borrows optional run provenance without reopening browser resources.
     pub const fn context(&self) -> Option<&AutomationContext> {
         self.context.as_ref()
     }
 
+    /// Attaches owned run provenance after validating bounded context fields and the record.
+    /// Returns [`AutomationRecordError`] for invalid record shape or excessive retained bytes.
+    /// Caller-supplied browser and source identities remain provenance claims, not live authority.
     pub fn with_context(
         mut self,
         context: AutomationContext,
@@ -1467,26 +1493,84 @@ fn validate_identity(field: &'static str, value: &str) -> Result<(), AutomationR
 
 /// Failure while authoring or reading the prototype record container.
 #[derive(Clone, Debug, Eq, PartialEq)]
+/// Bounded record shape, provenance, encoding, or Archive persistence rejected the evidence.
 pub enum AutomationRecordError {
-    EmptyIdentity { field: &'static str },
-    IdentityTooLong { field: &'static str },
-    DuplicateIdentity { field: &'static str },
-    ItemLimitExceeded { field: &'static str, maximum: usize },
-    FieldSizeExceeded { field: &'static str, maximum: usize },
-    EvidenceSizeExceeded { maximum: usize },
-    EncodedSizeExceeded { maximum: u64, observed: u64 },
-    UnsupportedVersion { observed: u32, supported: u32 },
+    /// A required record, observation, or operation identity is blank.
+    EmptyIdentity {
+        /// Identity role whose value was rejected.
+        field: &'static str,
+    },
+    /// A required identity exceeds its UTF-8 byte bound.
+    IdentityTooLong {
+        /// Identity role whose text is oversized.
+        field: &'static str,
+    },
+    /// An observation or receipt identity is repeated within its record scope.
+    DuplicateIdentity {
+        /// Evidence category containing the repeated identity.
+        field: &'static str,
+    },
+    /// A retained evidence collection exceeds its item-count bound.
+    ItemLimitExceeded {
+        /// Collection whose items cannot all be retained.
+        field: &'static str,
+        /// Maximum permitted items in that collection.
+        maximum: usize,
+    },
+    /// One retained evidence field exceeds its byte bound.
+    FieldSizeExceeded {
+        /// Oversized field role, such as HTML or screenshot evidence.
+        field: &'static str,
+        /// Maximum permitted bytes for that field.
+        maximum: usize,
+    },
+    /// Aggregate raw or confirmation evidence exceeds record retention limits.
+    EvidenceSizeExceeded {
+        /// Maximum combined retained evidence bytes.
+        maximum: usize,
+    },
+    /// Encoded record or context data exceeds its permitted byte bound.
+    EncodedSizeExceeded {
+        /// Maximum accepted bytes for the rejected encoding or context field.
+        maximum: u64,
+        /// Recorded encoded or attempted field byte count.
+        observed: u64,
+    },
+    /// The logical automation record schema version is unsupported by this build.
+    UnsupportedVersion {
+        /// Version supplied by the record or reference.
+        observed: u32,
+        /// Record schema version supported by this build.
+        supported: u32,
+    },
+    /// Archived record bytes do not use the required source-text Document profile.
     WrongDocumentProfile,
+    /// Archived Document identity disagrees with the logical record identity.
     DocumentIdentityMismatch,
-    UnsupportedFlowVersion { observed: u32, supported: u32 },
+    /// The embedded Flow outcome schema is outside the supported legacy/current range.
+    UnsupportedFlowVersion {
+        /// Version supplied by the embedded outcome.
+        observed: u32,
+        /// Highest Flow outcome version understood by this build.
+        supported: u32,
+    },
+    /// Result, skipped-step, or cleanup counts cannot correspond to the authored Flow.
     FlowStepCountMismatch,
+    /// Recorded leaf indexes are not in the required deterministic execution order.
     InvalidFlowStepOrder,
+    /// A recorded leaf or stop path does not identify a valid authored action scope.
     InvalidFlowStepPath,
+    /// The terminal completion claim disagrees with retained receipts or stop evidence.
     FlowTerminalMismatch,
+    /// The embedded authored recipe fails current structural validation.
     InvalidFlow(String),
+    /// Saved Until confirmation shape, source coordinates, or success claims are inconsistent.
     InvalidUntilReport(String),
+    /// Bounded record encoding or decoding failed.
     Serialization(String),
+    /// Construction or interpretation of the immutable record Document failed.
     Document(String),
+    /// Archive persistence or retrieval failed before a valid record could be returned.
     Archive(String),
 }
 

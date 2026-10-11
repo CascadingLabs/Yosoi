@@ -17,11 +17,16 @@ pub const MAX_UNTIL_REPORT_BYTES: usize = 1024 * 1024;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilScope {
+    /// Owning browser Session identity shared by every confirmation source.
     pub session_id: String,
+    /// Retained tab identity whose authority was used for confirmation.
     pub tab_id: String,
+    /// Immutable document epoch to which retained confirmation evidence belongs.
     pub document_epoch: u64,
+    /// Browser frame identity when resolved; successful reports require it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frame_id: Option<String>,
+    /// Navigation loader identity when resolved; successful reports require it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loader_id: Option<String>,
 }
@@ -30,11 +35,17 @@ pub struct UntilScope {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UntilTermination {
+    /// Every leaf expectation has retained satisfying evidence in the same scope.
     Satisfied,
+    /// The shared confirmation deadline expired before satisfaction was established.
     TimedOut,
+    /// Caller or owning authority cancellation stopped confirmation, without undoing prior effects.
     Cancelled,
+    /// A supported expectation or report-level check established rejection.
     Rejected,
+    /// Required bounded source evidence was missing or incomplete.
     Unavailable,
+    /// The single trigger attempt did not return an observed successful dispatch receipt.
     TriggerFailed,
 }
 
@@ -42,9 +53,13 @@ pub enum UntilTermination {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UntilCheckState {
+    /// Satisfying or rejecting evidence has not yet been established for this leaf.
     Pending,
+    /// This leaf has retained evidence satisfying its expectation.
     Satisfied,
+    /// This leaf has retained rejection evidence or a supported rejection result.
     Rejected,
+    /// Required source evidence for this leaf is unavailable or incomplete.
     Unavailable,
 }
 
@@ -52,10 +67,15 @@ pub enum UntilCheckState {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilCheck {
+    /// Zero-based leaf position in the authored expectation conjunction.
     pub index: u64,
+    /// Evidence family label: `dom`, `accessibility`, or `network`.
     pub source: String,
+    /// Current confirmation result, distinct from trigger-dispatch status.
     pub state: UntilCheckState,
+    /// Retained bounded source evidence, required for a satisfied claim.
     pub evidence: Option<serde_json::Value>,
+    /// Bounded diagnostic explanation when no satisfying evidence was established.
     pub error: Option<String>,
 }
 
@@ -63,13 +83,19 @@ pub struct UntilCheck {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilReport {
+    /// Portable confirmation report format version, currently one.
     pub version: u32,
+    /// Why confirmation ended, independently of whether a trigger was dispatched.
     pub termination: UntilTermination,
+    /// Shared Session, tab, and document coordinates for all retained evidence.
     pub scope: UntilScope,
     /// The single trigger attempt, retained even if confirmation does not pass.
     pub trigger: Option<OperationReceipt>,
+    /// Number of expectation evaluations performed before termination.
     pub evaluations: u64,
+    /// Leaf results in authored conjunction order, retaining incomplete and failed states.
     pub checks: Vec<UntilCheck>,
+    /// Report-level diagnostic, absent for a structurally valid satisfied report.
     pub error: Option<String>,
 }
 

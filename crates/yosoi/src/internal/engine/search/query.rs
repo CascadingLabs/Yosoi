@@ -10,10 +10,17 @@ pub const MAX_SEARCH_QUERY_BYTES: usize = 512;
 /// Error in query intent, detected before provider I/O.
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum SearchQueryError {
+    /// The supplied query contains no non-whitespace text.
     #[error("search query must contain non-whitespace text")]
     Empty,
     #[error("search query exceeds {maximum} UTF-8 bytes (observed {observed})")]
-    TooLong { maximum: usize, observed: usize },
+    /// Original query text exceeds the UTF-8 byte limit; it is not silently truncated.
+    TooLong {
+        /// Maximum accepted UTF-8 bytes in the original authored query.
+        maximum: usize,
+        /// Actual UTF-8 byte count, including authored whitespace.
+        observed: usize,
+    },
 }
 
 /// Logical identity of one Search query across its provider Requests.
@@ -21,6 +28,7 @@ pub enum SearchQueryError {
 pub struct SearchRequestId(ActivityId);
 
 impl SearchRequestId {
+    /// Returns the shared activity identity used to correlate provider Requests.
     pub const fn activity_id(self) -> ActivityId {
         self.0
     }

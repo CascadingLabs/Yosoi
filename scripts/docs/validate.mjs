@@ -7,12 +7,14 @@ import { toMarkdown } from 'mdast-util-to-markdown';
 import { gfmToMarkdown } from 'mdast-util-gfm';
 import { generatePreview, parseFrontmatter } from './generate.mjs';
 import { resolveNavigation } from './navigation.mjs';
+import { validateTeachingBlocks } from './teaching.mjs';
 import {
   authoredPages,
   copyPublicTree,
   readPublicNavigation,
   rewriteMarkdownLinks,
   validateDocHeadings,
+  preparePythonReference,
 } from './content.mjs';
 
 export const publicRoot = fileURLToPath(new URL('../../docs/public/', import.meta.url));
@@ -22,6 +24,8 @@ export async function validatePublicDocs(root = publicRoot) {
   const stage = await mkdtemp(path.join(work, 'snapshot-'));
   try {
     await copyPublicTree(root, stage);
+    if (path.resolve(root) === path.resolve(publicRoot))
+      preparePythonReference(path.resolve(root, '../..'), stage, 'main');
     const manifest = generatePreview({
       root: stage,
       version: '0.0.0-preview',
@@ -49,6 +53,8 @@ export async function validatePublicDocs(root = publicRoot) {
         page.file,
       );
       const tree = await markdownToMdast(body, { features: { gfm: true } });
+      if (!page.file.startsWith('python-api/') && !page.file.startsWith('api/'))
+        validateTeachingBlocks(tree, page.file);
       validateDocHeadings(tree, page.file);
       rewriteMarkdownLinks(tree, page.file, pageMap, assets);
       const rewritten = toMarkdown(tree, { extensions: [gfmToMarkdown()] });

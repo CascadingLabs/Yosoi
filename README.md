@@ -21,6 +21,21 @@ Yosoi unifies scraping, crawling, and browser automation into a simple toolkit f
 
 Use the **SDK** in your application or the **CLI** in scripts and terminal pipelines.
 
+## Install the CLI
+
+```sh
+uv tool install yosoi-cli
+yosoi --help
+```
+
+The tool package contains the prebuilt CLI. Linux/macOS and Windows installers
+are also available as `install.sh` and `install.ps1` in the
+[latest release](https://github.com/CascadingLabs/Yosoi/releases/latest).
+See [CLI installation](docs/public/cli/index.md) for script commands, supported
+platforms, upgrades, and manual Cargo installation.
+
+For Python application code, install the separate SDK with `uv add yosoi`.
+
 ## Highlights
 
 - Async HTTP and browser-backed requests

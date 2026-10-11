@@ -59,34 +59,51 @@ pub(crate) async fn with_cancellation<T>(
         .await
 }
 
+/// Browser operation category checked against the Session's action allowlist.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionKind {
+    /// Navigate an owned tab to a requested destination.
     Navigate,
+    /// Dispatch a click to a uniquely resolved element.
     Click,
+    /// Dispatch keyboard input to a uniquely resolved editable target.
     EnterText,
+    /// Capture a screenshot from the current tab.
     Screenshot,
+    /// Wait for a duration or bounded condition confirmation.
     Wait,
+    /// Evaluate immediate or event-driven browser assertions.
     Assert,
+    /// Dispatch arbitrary JavaScript when separately permitted by Session settings.
     Evaluate,
 }
 
 /// Frame selection is resolved uniquely immediately before script dispatch.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum JsFrame {
+    /// Resolve the current main frame immediately before dispatch.
     #[default]
     Main,
+    /// Require one matching frame URL; ambiguous matches are rejected before dispatch.
     UrlContains(String),
 }
+/// JavaScript execution world within the selected current frame.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum JsWorld {
+    /// Execute in the page's main JavaScript world, sharing page-visible state.
     #[default]
     Main,
+    /// Reserved isolated-world selection; current Work evaluation rejects it as unsupported.
     Isolated,
 }
+/// Dispatch-time frame and world selection with optional snapshot-epoch protection.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct JsTarget {
+    /// Frame selection resolved uniquely immediately before dispatch.
     pub frame: JsFrame,
+    /// Selected execution world; current Work dispatch supports only `Main`.
     pub world: JsWorld,
+    /// Required current document epoch, absent when no epoch precondition was authored.
     pub expected_document_epoch: Option<u64>,
 }
 
@@ -98,20 +115,32 @@ pub struct SessionPolicy {
     #[serde(default = "default_execution_concurrency")]
     pub execution_concurrency: u32,
     #[serde(default = "default_execution_queue")]
+    /// Maximum controller operations queued for execution capacity, independent of tab count.
     pub maximum_queued_operations: u32,
     /// Keep tab ownership but park event-driven condition waits outside worker capacity.
     #[serde(default = "default_yield_on_wait")]
     pub yield_on_wait: bool,
+    /// Browser launch mode, which must agree with any browser acquisition modes in the bound Policy.
     pub mode: BrowserMode,
+    /// Maximum retained tabs; owning tabs does not grant simultaneous execution capacity.
     pub maximum_tabs: u32,
+    /// Permit DOM observation and retained rendered-DOM request output.
     pub dom: bool,
+    /// Explicit permission for arbitrary scripts; Evaluate must also be in `allowed_actions`.
     pub allow_arbitrary_js: bool,
+    /// Operation categories permitted for this Session.
     pub allowed_actions: Vec<ActionKind>,
+    /// Positive per-operation controller and evidence budget in milliseconds, not browser startup time.
     pub operation_timeout_ms: u64,
+    /// Maximum encoded bytes accepted for authored operation input.
     pub maximum_input_bytes: usize,
+    /// Maximum encoded JavaScript result bytes retained after dispatch.
     pub maximum_result_bytes: usize,
+    /// Maximum retained HTML observation bytes for current-tab evidence.
     pub maximum_observation_bytes: usize,
+    /// Bounded receipt broadcast capacity; slower watchers receive explicit lag errors.
     pub watch_capacity: usize,
+    /// Reserved remote endpoint configuration; non-`None` values are currently unsupported.
     pub remote_endpoint: Option<String>,
 }
 impl Default for SessionPolicy {
@@ -142,6 +171,11 @@ impl Default for SessionPolicy {
     }
 }
 impl SessionPolicy {
+    /// Validates bounded local execution settings without launching a browser.
+    ///
+    /// Returns [`SessionError::InvalidPolicy`] for unsupported numeric limits
+    /// and [`SessionError::Unsupported`] for a configured remote endpoint.
+    /// Acquisition additionally checks the complete bound Policy and mode agreement.
     pub fn validate(&self) -> Result<(), SessionError> {
         if !(1..=32).contains(&self.execution_concurrency)
             || !(1..=1024).contains(&self.maximum_queued_operations)
@@ -178,55 +212,86 @@ const fn default_yield_on_wait() -> bool {
     true
 }
 
+/// Browser authority, execution, evidence, or cleanup failure.
+///
+/// Post-dispatch uncertainty must not be treated as proof that no effect occurred.
+/// Use [`Self::is_unknown`] when deciding whether a dependent action can proceed.
 #[derive(Debug, Error)]
 pub enum SessionError {
+    /// A shared or local worker pool could not admit execution within its capacity rules.
     #[error(transparent)]
     ExecutionCapacity(#[from] ExecutionPoolError),
+    /// This build cannot acquire or execute browser-backed operations.
     #[error("browser feature is disabled")]
     BrowserFeatureDisabled,
+    /// Bounded settings, complete policy, or browser mode agreement failed validation.
     #[error("invalid bounded Session policy")]
     InvalidPolicy,
+    /// Authored input or dispatch target failed pre-dispatch validation.
     #[error("invalid browser input")]
     InvalidInput,
+    /// The editable typing target changed before keyboard dispatch could safely begin.
     #[error("native typing target changed before keyboard dispatch")]
     InputTargetLost,
+    /// Owning browser authority has closed or its receipt channel is no longer available.
     #[error("Session is closed")]
     Closed,
+    /// Session settings deny the selected action or required capability.
     #[error("operation is not permitted by Session policy")]
     Denied,
+    /// Cancellation was observed before an operation could be dispatched.
     #[error("operation cancelled before dispatch")]
     Cancelled,
+    /// Browser or exclusive tab control could not be acquired.
     #[error("browser capacity/control could not be acquired")]
     Admission,
+    /// Browser startup exceeded the bound Request acquisition deadline.
     #[error("Session acquisition deadline elapsed")]
     AcquisitionDeadline,
+    /// The operation budget expired before dispatch, so this failure does not claim an effect.
     #[error("execution deadline elapsed before dispatch")]
     Deadline,
+    /// The budget expired after possible dispatch; browser effects remain uncertain.
     #[error("execution deadline elapsed after possible dispatch; outcome is unknown")]
     TimeoutAfterDispatch,
+    /// Dispatch may have occurred without enough evidence to establish the outcome.
     #[error("browser outcome is unknown after possible dispatch")]
     Unknown,
+    /// Execution failed after possible dispatch; the message does not establish absence of effects.
     #[error("browser execution failed after possible dispatch: {0}")]
     Execution(String),
+    /// A dispatched script returned more encoded result bytes than can be retained.
     #[error("JavaScript result exceeded the configured byte limit of {maximum} after dispatch")]
-    ResultLimit { maximum: usize },
+    ResultLimit {
+        /// Maximum permitted encoded JavaScript result bytes.
+        maximum: usize,
+    },
+    /// Current browser evidence is missing or incomplete for the required observation.
     #[error("browser evidence unavailable or incomplete")]
     EvidenceUnavailable,
+    /// An assertion evaluator failed rather than returning a supported confirmation result.
     #[error("assertion evaluation failed: {0}")]
     AssertionEvaluation(String),
+    /// Browser or tab cleanup did not complete successfully.
     #[error("browser cleanup incomplete")]
     Cleanup,
+    /// The bounded receipt channel dropped this many items before a watcher consumed them.
     #[error("watcher lagged by {0} items")]
     WatchLagged(u64),
+    /// No receipt arrived within the watcher's per-operation wait budget.
     #[error("watcher deadline elapsed")]
     WatchDeadline,
+    /// The named capability has no supported implementation for this Session.
     #[error("unsupported Session capability: {0}")]
     Unsupported(&'static str),
 }
 impl SessionError {
+    /// Returns whether the failure represents observed cancellation or revoked owning authority.
     pub const fn is_cancelled(&self) -> bool {
         matches!(self, Self::Cancelled | Self::Closed)
     }
+    /// Returns whether possible dispatch prevents claiming the browser had no effect.
+    /// Includes post-dispatch timeouts, execution failures, and oversized script results.
     pub const fn is_unknown(&self) -> bool {
         matches!(
             self,
@@ -249,10 +314,12 @@ fn observation_capture_error(error: SessionError) -> SessionError {
     }
 }
 
+/// Generates a fresh activity UUID for operation correlation without dispatching anything.
 pub fn new_operation_id() -> String {
     internal_engine::ActivityId::random().to_string()
 }
 
+/// Creates a Session builder with package defaults; browser acquisition is explicit.
 pub fn new() -> SessionBuilder {
     SessionBuilder {
         policy: Policy::default(),
@@ -262,10 +329,13 @@ pub fn new() -> SessionBuilder {
     }
 }
 
+/// Borrowed-owner request could not acquire authority or prepare/settle its acquisition.
 #[derive(Debug, Error)]
 pub enum SessionRequestError {
+    /// Session or Work authority acquisition, execution capacity, or cleanup failed.
     #[error(transparent)]
     Session(#[from] SessionError),
+    /// Request preparation or adapter setup failed before a typed response was available.
     #[error(transparent)]
     Request(#[from] request::RequestSendError),
 }
@@ -274,6 +344,11 @@ enum RequestAuthority<'scope> {
     Session(&'scope Session),
     Work(&'scope Work),
 }
+/// Page request borrowing an existing Session or exclusive Work authority.
+///
+/// Sending retains the caller's browser lifetime. A Session-bound request
+/// acquires and settles temporary Work; a Work-bound request uses the held tab
+/// control without releasing the caller's lease.
 pub struct SessionRequest<'scope> {
     request: request::PageRequest,
     policy: Policy,
@@ -301,10 +376,14 @@ impl<'scope> SessionRequest<'scope> {
             authority: RequestAuthority::Work(work),
         }
     }
+    /// Snapshots a complete request Policy without transferring ownership of the browser owner.
     pub fn bind(mut self, policy: &Policy) -> Self {
         self.policy = policy.clone();
         self
     }
+    /// Executes on borrowed browser authority using any scoped invocation cancellation.
+    /// Returns typed acquisition attempts, including failures; completion alone
+    /// does not establish success. Authority/setup failures return [`SessionRequestError`].
     pub async fn send(&self) -> Result<request::Response, SessionRequestError> {
         let cancellation = SCOPED_CANCELLATION
             .try_with(Clone::clone)
@@ -565,6 +644,7 @@ impl<'scope> SessionRequest<'scope> {
     }
 }
 
+/// Owned policy and execution settings awaiting explicit browser acquisition.
 #[derive(Clone, Debug)]
 pub struct SessionBuilder {
     policy: Policy,
@@ -592,6 +672,8 @@ impl SessionBuilder {
         self.execution_pool = Some(pool.clone());
         self
     }
+    /// Snapshots complete acquisition policy; unconfigured settings adopt its browser mode.
+    /// Explicitly configured settings retain their mode and are checked for agreement at acquisition.
     pub fn bind(mut self, policy: &Policy) -> Self {
         self.policy = policy.clone();
         if !self.configured
@@ -609,14 +691,26 @@ impl SessionBuilder {
         }
         self
     }
+    /// Replaces execution settings without launching or validating a browser.
+    /// The replacement marks browser mode as explicit for later Policy agreement checks.
     pub fn configure(mut self, settings: SessionPolicy) -> Self {
         self.settings = settings;
         self.configured = true;
         self
     }
+    /// Consumes the builder and acquires an owned browser Session with default startup cancellation.
+    /// Returns [`SessionError`] for invalid policies, unavailable browser features,
+    /// capacity admission, or acquisition-deadline failure. Close the returned
+    /// Session explicitly when its retained browser lifetime should end.
     pub async fn acquire(self) -> Result<Session, SessionError> {
         self.acquire_cancellable(&CancellationToken::new()).await
     }
+    /// Acquires a browser Session while honoring caller cancellation during startup.
+    ///
+    /// Startup uses the bound Request's acquisition budget, separate from
+    /// per-Work operation timeouts. Consumes this builder; dropping the startup
+    /// future cancels pending acquisition. Returns [`SessionError`] for validation,
+    /// admission, cancellation, or startup deadline failures.
     pub async fn acquire_cancellable(
         self,
         cancellation: &CancellationToken,
@@ -699,6 +793,11 @@ struct SessionInner {
     backend: internal_engine_session::BrowserSession,
     events: broadcast::Sender<Arc<OperationReceipt>>,
 }
+/// Shared owner of a retained browser lifetime, tab inventory, and execution pool.
+///
+/// Clones share the same owner. Tab control is acquired through Work; worker
+/// capacity is bounded separately and can be yielded during event-driven waits.
+/// Explicit close revokes the shared authority and reports cleanup failures.
 #[derive(Clone)]
 pub struct Session {
     inner: Arc<SessionInner>,
@@ -727,12 +826,17 @@ impl Session {
             vec![Acquisition::Browser(self.settings().mode).documents(documents)];
         policy
     }
+    /// Borrows the complete policy snapshot retained when this Session was acquired.
     pub fn policy(&self) -> &Policy {
         &self.inner.policy
     }
+    /// Borrows the validated execution and evidence limits shared by Session clones.
     pub fn settings(&self) -> &SessionPolicy {
         &self.inner.settings
     }
+    /// Acquires exclusive control of the Session's initial tab without closing the Session.
+    /// Returns [`SessionError`] when browser support or control admission is unavailable.
+    /// Holding Work owns tab authority; execution permits are acquired per operation.
     pub async fn work(&self) -> Result<Work, SessionError> {
         #[cfg(feature = "browser")]
         {
@@ -761,6 +865,9 @@ impl Session {
             operations: tokio_sync::Mutex::new(()),
         })
     }
+    /// Creates a retained tab within the Session's tab-count bound.
+    /// Returns [`SessionError`] for disabled browser support or admission failure.
+    /// The returned tab does not grant exclusive Work control or execution capacity.
     pub async fn new_tab(&self) -> Result<Tab, SessionError> {
         #[cfg(feature = "browser")]
         {
@@ -780,16 +887,23 @@ impl Session {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    /// Subscribes to future bounded operation receipts without granting browser mutation authority.
+    /// Existing receipts are not replayed; a slow consumer receives an explicit lag error.
     pub fn watch(&self) -> Watcher {
         Watcher {
             session: self.clone(),
             receiver: self.inner.events.subscribe(),
         }
     }
+    /// Requests cancellation of shared browser authority without waiting for cleanup.
+    /// Prior external effects are not rolled back; use [`Self::close`] to settle owned resources.
     pub fn cancel(&self) {
         #[cfg(feature = "browser")]
         self.inner.backend.cancellation().cancel();
     }
+    /// Revokes the shared browser owner and awaits cleanup.
+    /// Returns [`SessionError::Cleanup`] when cleanup cannot complete; clones
+    /// refer to the same authority and do not preserve independent browser lifetimes.
     pub async fn close(&self) -> Result<(), SessionError> {
         #[cfg(feature = "browser")]
         {
@@ -814,6 +928,7 @@ impl Session {
     }
 }
 
+/// Retained tab identity within a Session, distinct from exclusive Work control.
 pub struct Tab {
     session: Session,
     #[cfg(feature = "browser")]
@@ -836,6 +951,8 @@ impl Tab {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    /// Acquires exclusive Work control for this tab, retaining its owning Session.
+    /// Returns [`SessionError`] when browser support or control admission is unavailable.
     pub async fn work(&self) -> Result<Work, SessionError> {
         #[cfg(feature = "browser")]
         {
@@ -848,6 +965,7 @@ impl Tab {
     }
 }
 
+/// Passive bounded subscription to future operation receipts from one shared Session.
 pub struct Watcher {
     session: Session,
     receiver: broadcast::Receiver<Arc<OperationReceipt>>,
@@ -879,11 +997,17 @@ impl Watcher {
             Err(_) => Err(SessionError::WatchDeadline),
         }
     }
+    /// Drops only this subscription; it does not close or cancel the owning Session.
     pub fn close(self) {
         drop(self);
     }
 }
 
+/// Exclusive authority to operate one retained tab, keeping its Session owner alive.
+///
+/// Work serializes operations on that tab. Each operation separately acquires
+/// bounded worker capacity; yielding a wait retains tab control while releasing
+/// that execution permit. Releasing Work does not close the Session or tab.
 pub struct Work {
     session: Session,
     tab_id: String,
@@ -1096,6 +1220,10 @@ impl Work {
                 }),
         }
     }
+    /// Captures owned current-tab DOM evidence within the configured observation bound.
+    /// Returns [`SessionError`] if authority, DOM permission, evidence, or
+    /// execution capacity is unavailable. This observes the current epoch; it
+    /// does not prove that a preceding business action succeeded.
     pub async fn observe(&self) -> Result<Observation, SessionError> {
         let _operation = self.operation()?;
         self.observe_inner().await
@@ -1174,6 +1302,10 @@ impl Work {
         self.session.publish(&receipt);
         Ok(receipt)
     }
+    /// Navigates the owned tab after validating `url` and checking action permission.
+    /// Returns a receipt recording observed, rejected, or unknown effects.
+    /// Authority, input, or pre-dispatch admission failures return [`SessionError`];
+    /// an observed command is not by itself a business-success assertion.
     pub async fn navigate(&self, url: &str) -> Result<OperationReceipt, SessionError> {
         let _operation = self.operation()?;
         self.authorize(ActionKind::Navigate, url)?;
@@ -1193,6 +1325,10 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    /// Dispatches a click to one selector-resolved target on the owned tab.
+    /// Returns an effect receipt, including known rejection or uncertainty;
+    /// permission, input, and pre-dispatch failures return [`SessionError`].
+    /// Confirm the expected page state separately rather than blindly retrying unknown effects.
     pub async fn click(&self, selector: &str) -> Result<OperationReceipt, SessionError> {
         let _operation = self.operation()?;
         self.authorize(ActionKind::Click, selector)?;
@@ -1210,6 +1346,11 @@ impl Work {
         }
     }
     /// Captures once, validates one Contract record, and checks it immediately.
+    /// Captures one current Contract observation and evaluates its local predicate group.
+    /// Returns a receipt with retained assertion evidence; failed checks are
+    /// not retried. Invalid or unbound assertions and unavailable authority or
+    /// evidence return [`SessionError`]. All ordinary predicates are evaluated,
+    /// including those after a false predicate.
     pub async fn assert_all(
         &self,
         assertion: &assertions::LocalAssertion,
@@ -1320,6 +1461,10 @@ impl Work {
                 .map_err(|error| SessionError::AssertionEvaluation(error.to_string())),
         }
     }
+    /// Types `text` into one selector-resolved editable target on the owned tab.
+    /// The target is checked again before keyboard dispatch. Returns an effect
+    /// receipt rather than a claim that application state accepted the text;
+    /// authority, permission, input, and pre-dispatch failures return [`SessionError`].
     pub async fn enter_text(
         &self,
         selector: &str,
@@ -1341,6 +1486,9 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    /// Captures the current tab screenshot and returns its bounded operation receipt.
+    /// Permission and authority failures return [`SessionError`]. A retained
+    /// screenshot is visual evidence, not an assertion of business completion.
     pub async fn screenshot(&self) -> Result<OperationReceipt, SessionError> {
         let _operation = self.operation()?;
         self.authorize(ActionKind::Screenshot, "")?;
@@ -1382,6 +1530,10 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
+    /// Waits an explicit millisecond duration, including zero, without confirming a condition.
+    /// Returns a receipt on completion; cancellation, operation-deadline, denied
+    /// action, and authority failures return [`SessionError`]. Prefer bounded
+    /// event-driven confirmation when readiness, rather than elapsed time, matters.
     pub async fn wait(&self, milliseconds: u64) -> Result<OperationReceipt, SessionError> {
         let _operation = self.operation()?;
         self.authorize(ActionKind::Wait, "")?;
@@ -1417,6 +1569,9 @@ impl Work {
         }
         self.receipt("wait", Ok(serde_json::Value::Null)).await
     }
+    /// Checks a DOM condition once against current-tab evidence without waiting or retrying.
+    /// Returns an observed or rejected assertion receipt. Invalid input,
+    /// denied assertions, and unavailable authority return [`SessionError`].
     pub async fn assert_condition(
         &self,
         condition: &Condition,
@@ -1462,6 +1617,10 @@ impl Work {
         clippy::significant_drop_tightening,
         reason = "The dispatch/settlement fence must cover cancellation and the complete operation, including cleanup and evidence capture."
     )]
+    /// Confirms a DOM condition within a positive millisecond deadline using browser events.
+    /// When configured, the wait retains exclusive tab authority while yielding
+    /// worker capacity. Returns a confirmation receipt, including rejection or
+    /// unavailable evidence; invalid input and authority failures return [`SessionError`].
     pub async fn wait_until(
         &self,
         condition: &Condition,
@@ -1518,6 +1677,10 @@ impl Work {
         clippy::unused_async_trait_impl,
         reason = "Keep the public async lifecycle contract; dropping Work releases its owned control."
     )]
+    /// Consumes Work and drops its exclusive control guard without closing the tab or Session.
+    /// The current implementation returns `Ok(())` immediately; it does not
+    /// await browser cleanup or resolve uncertain prior effects. Close the tab
+    /// or owning Session explicitly when cleanup confirmation is required.
     pub async fn release(self) -> Result<(), SessionError> {
         drop(self);
         Ok(())

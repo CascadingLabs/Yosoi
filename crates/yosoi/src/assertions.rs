@@ -21,9 +21,13 @@ use thiserror::Error;
 #[cfg(feature = "browser")]
 use tokio::task::spawn_blocking;
 
+/// Maximum predicates retained in one validated local assertion group.
 pub const MAX_CHECKS: usize = 128;
+/// Maximum UTF-8 bytes in a nonblank authored predicate name.
 pub const MAX_CHECK_NAME_BYTES: usize = 256;
+/// Maximum UTF-8 bytes retained for a predicate evaluation error message.
 pub const MAX_CHECK_ERROR_BYTES: usize = 1_024;
+/// Maximum UTF-8 bytes identifying the Contract type in a saved assertion descriptor.
 pub const MAX_ASSERTION_CONTRACT_TYPE_BYTES: usize = 256;
 
 /// A pure comparison. Captures may borrow when evaluated as a local group.
@@ -38,6 +42,8 @@ impl<C> fmt::Debug for Check<'_, C> {
             .finish_non_exhaustive()
     }
 }
+/// Captures a synchronous local predicate without evaluating it or performing browser I/O.
+/// The predicate can borrow caller state for `'a`; naming and evaluation are explicit.
 pub fn check<'a, C>(predicate: impl Fn(&C) -> bool + Send + Sync + 'a) -> Check<'a, C> {
     Check {
         name: None,
@@ -45,6 +51,8 @@ pub fn check<'a, C>(predicate: impl Fn(&C) -> bool + Send + Sync + 'a) -> Check<
     }
 }
 impl<C> Check<'_, C> {
+    /// Attaches an authored diagnostic name, validated when the group is evaluated.
+    /// The name must then be nonblank and within [`MAX_CHECK_NAME_BYTES`].
     pub fn named(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
@@ -65,15 +73,27 @@ impl<C> fmt::Debug for AssertionGroup<'_, C> {
     }
 }
 impl<'a, C: ValidateContract> AssertionGroup<'a, C> {
+    /// Owns a locator plan and local checks without executing or validating them yet.
+    /// Collection is bounded to detect an excess check count at evaluation;
+    /// predicates and names are checked by the evaluation path rather than silently dropped.
     pub fn new(plan: Plan, checks: impl IntoIterator<Item = Check<'a, C>>) -> Self {
         Self {
             plan,
             checks: checks.into_iter().take(MAX_CHECKS + 1).collect(),
         }
     }
+    /// Locates and validates one Contract record, then evaluates all local checks with default policy.
+    /// Performs no network acquisition or retry. Structural assertion failures
+    /// return [`AssertionError`]; source and predicate failures remain in the report.
     pub fn evaluate(&self, document: &Document) -> Result<AssertionReport, AssertionError> {
         self.evaluate_with_policy(document, &Policy::default())
     }
+    /// Evaluates one retained document using the supplied complete locator policy.
+    ///
+    /// Requires exactly one accepted Contract record without field or extraction
+    /// issues before predicates can run. All ordinary predicates run even after
+    /// a false result; predicate panics become check errors. Returns structural
+    /// [`AssertionError`] failures or a report retaining source and predicate evidence.
     pub fn evaluate_with_policy(
         &self,
         document: &Document,
@@ -155,62 +175,99 @@ impl<'a, C: ValidateContract> AssertionGroup<'a, C> {
     }
 }
 
+/// One local predicate result, including unevaluated and evaluator-failure distinctions.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CheckResult {
+    /// Zero-based position in the authored check list.
     pub index: usize,
+    /// Authored nonblank diagnostic name, absent for an unnamed check.
     pub name: Option<String>,
+    /// Predicate result, or `None` when no boolean result was established.
     pub passed: Option<bool>,
+    /// Evaluator failure, distinct from a predicate returning false.
     pub error: Option<CheckError>,
 }
 
+/// Predicate evaluator failed rather than returning an accepted boolean result.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CheckError {
+    /// Local predicate code unwound; subsequent ordinary predicates can still be evaluated.
     Panicked,
-    EvaluationFailed { message: String },
+    /// An external predicate evaluator returned a bounded failure message.
+    EvaluationFailed {
+        /// Retained evaluator explanation, not a successful predicate result.
+        message: String,
+    },
 }
+/// Source evidence cannot provide the one accepted record needed for local predicates.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SourceError {
-    RecordCount { actual: usize },
+    /// The accepted record count is not exactly one.
+    RecordCount {
+        /// Number of accepted Contract records, including zero for complete no-match.
+        actual: usize,
+    },
+    /// Field issues or extraction diagnostics prevented an all-accepted record claim.
     InvalidContract,
+    /// Partial or unknown evidence prevents complete Contract evaluation.
     IncompleteEvidence,
+    /// Locator execution failed before Contract evaluation.
     LocateFailed,
+    /// Schema or resource checks rejected candidate assembly.
     ExtractionRejected,
+    /// Schema or accounting budgets rejected record validation.
     ValidationRejected,
 }
+/// One immediate assertion evaluation with retained source, field, and predicate evidence.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AssertionReport {
+    /// True only when source evaluation succeeded and every predicate returned true.
     pub passed: bool,
+    /// Authored checks in order, including checks without a boolean result.
     pub checks: Vec<CheckResult>,
+    /// Source-level rejection that prevented ordinary predicate evaluation, when present.
     pub source_error: Option<SourceError>,
+    /// Retained field rejection details from Contract validation.
     pub field_issues: Vec<FieldIssue>,
+    /// Retained serialized candidate-grouping diagnostics.
     pub extraction_diagnostics: Vec<serde_json::Value>,
     /// Exact located values/coordinates, including evidence for successful records.
     pub located: LocateOutcome,
 }
+/// Structural or binding failure preventing a supported assertion report.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum AssertionError {
+    /// Retained diagnostic evidence could not be encoded into the supported report format.
     #[error("assertion diagnostic could not be encoded")]
     ReportEncoding,
+    /// The authored group contains zero checks or exceeds [`MAX_CHECKS`].
     #[error("assertion groups require 1..={MAX_CHECKS} checks")]
     CheckCount,
+    /// A supplied predicate name is blank or exceeds its UTF-8 byte bound.
     #[error("check names must be nonempty and at most {MAX_CHECK_NAME_BYTES} bytes")]
     CheckName,
+    /// A saved descriptor has not been rebound to local predicate code or an external evaluator.
     #[error("local Rust assertion checks must be rebound before invocation")]
     Unbound,
+    /// The assertion's authored plan exceeds its permitted encoded input bytes.
     #[error("assertion plan exceeds the configured input bound")]
     PlanLimit,
+    /// The saved Contract type identifier is blank or exceeds its UTF-8 byte bound.
     #[error(
         "assertion Contract type identifier must be nonempty and at most {MAX_ASSERTION_CONTRACT_TYPE_BYTES} bytes"
     )]
     ContractType,
+    /// External evaluator invocation failed before yielding a valid report.
     #[error("external assertion evaluator failed: {0}")]
     ExternalEvaluator(String),
+    /// An external evaluator returned structurally invalid or inconsistent report evidence.
     #[error("external assertion evaluator returned an invalid report")]
     ExternalReport,
+    /// The task executing predicate evaluation failed to settle successfully.
     #[error("assertion evaluator task failed")]
     EvaluatorTask,
 }
@@ -355,6 +412,8 @@ impl LocalAssertion {
         ));
     }
 
+    /// Returns whether executable predicate code or an external evaluator is bound to this descriptor.
+    /// A deserialized descriptor alone cannot evaluate assertions until explicitly rebound.
     pub fn is_bound(&self) -> bool {
         self.evaluator.is_some()
     }

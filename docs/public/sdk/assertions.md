@@ -1,23 +1,27 @@
 ---
-title: Immediate Rust assertions
+title: Assertions
 description: Check one validated Contract observation with ordinary Rust predicates.
 order: 14
 ---
 
-# Immediate Rust assertions
+# Assertions
 
 Use an assertion group to check the state when execution reaches that step.
 The browser captures one observation, locates the Contract evidence, validates
-exactly one record, and evaluates every check against that record. A false
-check stops the Flow before its next action.
+exactly one record, and evaluates every check against that record. Configure
+stop behavior when an unsuccessful check must prevent the next action.
 
-Checks use ordinary Rust comparisons and collection operations. They do not
-need names, a separate DSL, or an SDK method for each operator.
+Checks use ordinary comparisons and collection operations. Rust accepts typed
+closures; Python accepts named synchronous predicates.
 
-## Describe the record and its checks
+## Example: author a cart prerequisite
+
+### Rust
 
 ```rust
+use std::error::Error;
 use yosoi::{action::{self, check}, flow, prelude as ys};
+use yosoi::policy::{Continuation, StopScope};
 
 #[derive(ys::Contract)]
 #[ys(id = "cart", description = "Observed cart")]
@@ -28,21 +32,48 @@ struct Cart {
     items: Vec<String>,
 }
 
-// Inside a function returning Result:
-let expected_minor_units = 450;
-let checkout = flow::new([
-    action::assert_all::<Cart>(Cart::plan()?, [
-        check(move |cart: &Cart| cart.total.minor_units() == expected_minor_units),
-        check(|cart: &Cart| cart.items.len() >= 1),
-        check(|cart: &Cart| cart.items.iter().any(|item| item == "Tea")),
-    ]),
-    action::click("#proceed-to-checkout"),
-]);
-
-// Execute on a lease whose current page contains the cart:
-// let outcome = checkout.with_lease(&lease).invoke().await?;
-// outcome.require_completed()?;
+fn main() -> Result<(), Box<dyn Error>> {
+    let checkout = flow::new([
+        action::assert_all::<Cart>(Cart::plan()?, [
+            check(|cart: &Cart| cart.total.minor_units() == 450),
+            check(|cart: &Cart| !cart.items.is_empty()),
+            check(|cart: &Cart| cart.items.iter().any(|item| item == "Tea")),
+        ]).into(),
+        action::click("#proceed-to-checkout"),
+    ]).on_failure(Continuation::Stop(StopScope::Invocation));
+    checkout.validate()?;
+    println!("{checkout:?}");
+    Ok(())
+}
 ```
+
+The Contract binds cart fields to the supplied page. Each check reads the same validated record. Stop behavior prevents the dependent click after an unsuccessful prerequisite. This program authors and validates a recipe without opening a browser.
+
+### Python
+
+```python
+import yosoi as ys
+
+class Cart(ys.Contract):
+    """Observed cart."""
+
+    total: ys.Money = ys.Field("Total", locator=ys.css(".total"))
+    items: list[str] = ys.Field("Items", locator=ys.css(".item"))
+
+checkout = ys.flow([
+    ys.assert_all(Cart, checks=[
+        ys.check("expected total", lambda cart: cart.total.minor_units == 450),
+        ys.check("nonempty cart", lambda cart: len(cart.items) > 0),
+        ys.check("Tea is present", lambda cart: "Tea" in cart.items),
+    ]),
+    ys.click("#proceed-to-checkout"),
+], on_failure=ys.policy.Stop(scope="invocation"))
+print(checkout.to_json())
+```
+
+The same Contract and checks use named synchronous predicates. Serializing validates the recipe without executing the checks. Invocation requires a Work lease whose page contains the cart bindings.
+
+## Walk through the checks
 
 The explicit `&Cart` parameter annotation gives Rust enough type information
 for the free `check` helper. `Cart::plan()` is the existing locator Plan;
@@ -55,9 +86,8 @@ This feature does not add new Contract value conversions.
 
 An optional name improves a failure report:
 
-```rust
-check(|cart: &Cart| cart.items.len() == 1).named("one item")
-```
+In Rust, append `.named("one item")` to the check. In Python, pass the name
+to `ys.check("one item", predicate)`.
 
 Without a name, the report identifies a check by its zero-based group position.
 A bool-returning closure does not automatically expose its source expression
@@ -69,16 +99,75 @@ coordinates, along with validation issues and check results.
 A local group can borrow values and inspect an existing immutable Document
 without a browser:
 
-```rust
-use yosoi::assertions::AssertionGroup;
+## Example: check a retained cart
 
-let expected = 450;
-let group = AssertionGroup::<Cart>::new(Cart::plan()?.clone(), [
-    check(|cart: &Cart| cart.total.minor_units() == expected),
-    check(|cart: &Cart| cart.items.len() == 1),
-]);
-let report = group.evaluate(&document)?;
+### Rust
+
+```rust
+use std::error::Error;
+use yosoi::{action::check, assertions::AssertionGroup, prelude as ys};
+
+#[derive(ys::Contract)]
+#[ys(id = "cart", description = "Observed cart")]
+struct Cart {
+    #[ys(description = "Total", locator = ys::locator::css(".total").text())]
+    total: ys::Money,
+    #[ys(description = "Items", locator = ys::locator::css(".item").text())]
+    items: Vec<String>,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Use a controlled local capture instead of opening a browser.
+    let document = ys::Document::html(
+        "cart",
+        b"<b class='total'>$4.50</b><span class='item'>Tea</span>".to_vec(),
+    )?;
+    let expected = 450;
+
+    // Each predicate reads the same validated Cart.
+    let report = AssertionGroup::<Cart>::new(Cart::plan()?.clone(), [
+        check(|cart: &Cart| cart.total.minor_units() == expected).named("expected total"),
+        check(|cart: &Cart| cart.items.len() == 1).named("one item"),
+    ]).evaluate(&document)?;
+    println!("{report:?}");
+    if !report.passed {
+        return Err("cart checks failed".into());
+    }
+    Ok(())
+}
 ```
+
+The local group returns structured predicate results and retained evidence. Its checks
+can borrow the expected value because this group is evaluated in the same scope.
+
+### Python
+
+```python
+import yosoi as ys
+
+class Cart(ys.Contract):
+    """Observed cart."""
+
+    total: ys.Money = ys.Field("Total", locator=ys.css(".total"))
+    items: list[str] = ys.Field("Items", locator=ys.css(".item"))
+
+# Keep the input local so this example needs no browser.
+document = ys.Document.html(
+    "cart",
+    "<b class='total'>$4.50</b><span class='item'>Tea</span>",
+)
+
+# Validate the record before checking the business rules.
+cart, = ys.extract(document, Cart).validate().require_all()
+assert cart.total.minor_units == 450
+assert len(cart.items) == 1
+print(cart)
+```
+
+Python uses the supported local Contract extraction API, followed by ordinary assertions.
+The Rust local `AssertionGroup` report is not exposed as a Python local group API.
+
+## Owned and borrowed predicates
 
 The complete runnable example is `crates/yosoi/examples/assertion_groups.rs`:
 
@@ -107,8 +196,8 @@ panics cannot be recovered.
 The group accepts 1–128 checks and optional nonempty names of at most 256 bytes.
 Recipe, capture and result bounds still apply.
 
-Assertions do not wait for a condition to become true. `wait_until` remains a
-separate action. Async capture and ordered execution do not introduce polling
+Immediate assertions check once. Use [Until](../cookbook/assert-and-wait.md)
+to observe a supported condition within a bounded scope. Async capture and ordered execution do not introduce polling
 or retries. Checking after a click observes later state; it does not establish
 that the click caused the observed state.
 

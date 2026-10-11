@@ -5,25 +5,34 @@ use sha2::{Digest as _, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
+/// Portable schema version accepted by Contract construction and deserialization.
 pub const CONTRACT_SCHEMA_VERSION: u32 = 1;
 
+/// Boundary used to group located evidence into candidate records.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordScope {
+    /// Group compatible findings into one page-scoped candidate record.
     Page,
+    /// Group findings by repeated parent-region lineage into separate candidate records.
     Repeated,
 }
 
+/// Required number of accepted field values, enforced during validation rather than extraction.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Cardinality {
+    /// Require one value; missing or multiple candidate values are field issues.
     ExactlyOne,
+    /// Permit no value or one value; multiple candidates are a field issue.
     ZeroOrOne,
+    /// Permit an ordered collection, including an empty collection.
     Many,
 }
 
 /// Stable semantic identity for a Contract field value type.
 pub trait ContractValue {
+    /// Stable scalar type identifier included in schema identity, such as `string` or `money.usd`.
     const TYPE_ID: &'static str;
 }
 
@@ -31,6 +40,7 @@ impl ContractValue for String {
     const TYPE_ID: &'static str = "string";
 }
 
+/// Owned field meaning, cardinality, and conversion type metadata for a Contract schema.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FieldSchema {
@@ -41,6 +51,12 @@ pub struct FieldSchema {
 }
 
 impl FieldSchema {
+    /// Owns field metadata after rejecting blank identity, description, or type text.
+    ///
+    /// `description` explains the business meaning; it does not discover a
+    /// locator automatically. `cardinality` is enforced at validation, and
+    /// `value_type` declares conversion vocabulary without checking runtime
+    /// support here. Returns [`ContractSchemaError`] for blank required metadata.
     pub fn try_new(
         id: FieldId,
         description: impl Into<String>,
@@ -81,15 +97,19 @@ impl FieldSchema {
         )
     }
 
+    /// Borrows the authored identity used to associate output findings with this field.
     pub const fn id(&self) -> &FieldId {
         &self.id
     }
+    /// Borrows the field's business-meaning description, not a generated locator.
     pub fn description(&self) -> &str {
         &self.description
     }
+    /// Returns the accepted-value count constraint for validation.
     pub const fn cardinality(&self) -> Cardinality {
         self.cardinality
     }
+    /// Borrows the declared scalar conversion identifier without resolving an implementation.
     pub fn value_type(&self) -> &str {
         &self.value_type
     }
@@ -114,6 +134,7 @@ impl<'de> Deserialize<'de> for FieldSchema {
     }
 }
 
+/// Validated portable record schema; it defines meaning without locating or validating evidence.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContractSchema {
@@ -127,6 +148,13 @@ pub struct ContractSchema {
 }
 
 impl ContractSchema {
+    /// Owns a supported schema version, record meaning, scope, and ordered fields.
+    ///
+    /// Returns [`ContractSchemaError`] for an unsupported or zero version, blank
+    /// Contract identity or description, an empty field collection, or duplicate
+    /// field identities. Field order is retained and contributes to semantic
+    /// identity. This does not acquire documents, choose locators, or check that
+    /// every declared scalar type has a runtime conversion implementation.
     pub fn try_new(
         version: u32,
         id: ContractId,
@@ -186,18 +214,23 @@ impl ContractSchema {
         )
     }
 
+    /// Returns the portable schema format version accepted during construction.
     pub const fn version(&self) -> u32 {
         self.version
     }
+    /// Borrows the authored record identity included in semantic schema hashing.
     pub const fn id(&self) -> &ContractId {
         &self.id
     }
+    /// Borrows the record's business meaning; descriptive prose is excluded from identity hashing.
     pub fn description(&self) -> &str {
         &self.description
     }
+    /// Returns whether candidate grouping is page-scoped or repeated-region-scoped.
     pub const fn scope(&self) -> RecordScope {
         self.scope
     }
+    /// Borrows fields in authored order; changing this order changes semantic identity.
     pub fn fields(&self) -> &[FieldSchema] {
         &self.fields
     }
@@ -207,6 +240,13 @@ impl ContractSchema {
         self.fields.get(index)
     }
 
+    /// Hashes semantic metadata into a stable 32-byte Contract identity.
+    ///
+    /// Includes format version, Contract ID, scope, ordered field IDs,
+    /// cardinalities, and scalar type IDs. Contract and field descriptions are
+    /// excluded, so prose changes alone do not change identity. Returns
+    /// [`ContractSchemaError`] if a length cannot fit portable hash accounting.
+    /// This identifies schema semantics, not a document or execution occurrence.
     pub fn identity(&self) -> Result<ContractIdentity, ContractSchemaError> {
         let mut hasher = Sha256::new();
         hasher.update(self.version.to_le_bytes());
@@ -255,10 +295,12 @@ impl<'de> Deserialize<'de> for ContractSchema {
     }
 }
 
+/// Stable SHA-256 identity of portable Contract schema semantics, displayed as lowercase hex.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ContractIdentity([u8; 32]);
 
 impl ContractIdentity {
+    /// Borrows the exact 32 hash bytes without the hexadecimal display encoding.
     pub const fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }

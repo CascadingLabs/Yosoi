@@ -35,14 +35,23 @@ impl SelectedEncoding {
 }
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// Bounded reason retained source could not yield a supported canonical UTF-8 view.
 pub enum DecodingErrorCode {
+    /// Source format evidence was not classified before decoding.
     NotClassified,
+    /// Declared charset metadata is malformed or invalid.
     InvalidCharset,
+    /// Charset evidence conflicts beyond supported resolution rules.
     ConflictingCharset,
+    /// Selected character encoding has no supported decoder.
     UnsupportedCharset,
+    /// Source requires UTF-32 decoding outside the supported implementation.
     UnsupportedUtf32,
+    /// JSON source uses a Unicode encoding unsupported by the selected JSON decoder.
     UnsupportedJsonUnicode,
+    /// Input contains invalid encoded sequences that cannot satisfy the decoding contract.
     InvalidSequence,
+    /// Retained artifact metadata cannot support a valid decoded-source interpretation.
     ArtifactMetadata,
 }
 #[derive(Clone, Eq, PartialEq)]

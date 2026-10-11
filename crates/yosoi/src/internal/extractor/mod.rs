@@ -16,24 +16,39 @@ pub use execution::extract_contract_with_limit;
 #[doc(hidden)]
 pub use execution::{extract_contract_with_limits, extract_schema_with_limits};
 
+/// Candidate assembly result before cardinality, conversion, and semantic validation.
 pub enum Extracted<T: Contract> {
+    /// Located findings were grouped into candidates, possibly with nonfatal diagnostics.
     Candidates {
+        /// Identity of the document supplying the grouped findings.
         document_id: DocumentId,
+        /// Owned candidate evidence; values have not yet been converted or validated.
         candidates: Vec<T::Candidate>,
+        /// Nonfatal grouping issues preventing an unqualified all-accepted claim.
         diagnostics: Vec<ExtractionDiagnostic>,
     },
+    /// Complete locator evidence established no candidates within the requested scope.
     NoMatch {
+        /// Document whose evidence supports this scope-specific absence claim.
         document_id: DocumentId,
     },
+    /// Incomplete locator evidence prevents establishing candidate absence.
     Indeterminate {
+        /// Identity of the examined evidence document.
         document_id: DocumentId,
+        /// Partial or unknown coverage limiting the result.
         completeness: IncompleteEvidence,
+        /// Structural explanation of why extraction remains indeterminate.
         reason_code: String,
     },
+    /// Locator execution failed before usable candidate assembly.
     LocateFailed {
+        /// Typed locator failure, distinct from complete no-match evidence.
         failure: LocateFailure,
     },
+    /// Candidate assembly failed schema, accounting, or grouping checks.
     Rejected {
+        /// Typed extraction rejection; this is not an accepted partial candidate set.
         failure: ExtractionFailure,
     },
 }
@@ -94,6 +109,10 @@ impl<T: Contract> fmt::Debug for Extracted<T> {
 }
 
 impl<T: Contract> Extracted<T> {
+    /// Borrows assembled candidates, or an empty slice for other terminal states.
+    ///
+    /// This accessor alone cannot distinguish complete no-match, indeterminate
+    /// evidence, or extraction failure. Inspect the enum before claiming absence.
     pub fn candidates(&self) -> &[T::Candidate] {
         match self {
             Self::Candidates { candidates, .. } => candidates,
@@ -101,6 +120,8 @@ impl<T: Contract> Extracted<T> {
         }
     }
 
+    /// Borrows nonfatal candidate-grouping diagnostics when assembly produced candidates.
+    /// Returns an empty slice for other states without claiming successful extraction.
     pub fn diagnostics(&self) -> &[ExtractionDiagnostic] {
         match self {
             Self::Candidates { diagnostics, .. } => diagnostics,
@@ -109,10 +130,15 @@ impl<T: Contract> Extracted<T> {
     }
 }
 
+/// Nonfatal structural issue while mapping located findings into Contract candidate groups.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ExtractionDiagnostic {
-    IncompatibleLineage { output: OutputId },
+    /// Finding lineage is incompatible with the Contract's page or repeated-region grouping.
+    IncompatibleLineage {
+        /// Authored locator output whose evidence could not enter a compatible group.
+        output: OutputId,
+    },
 }
 
 #[doc(hidden)]
@@ -141,30 +167,49 @@ impl ExtractionLimits {
     }
 }
 
+/// Resource counter charged during candidate assembly, before value validation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExtractionLimit {
+    /// Repeated-region lineage entries scanned for candidate grouping.
     ScannedRegions,
+    /// Locator findings scanned while matching Contract output identifiers.
     ScannedFindings,
+    /// Findings matching authored Contract fields and eligible for grouping.
     MatchingFindings,
+    /// Distinct candidate records assembled from located evidence.
     Candidates,
+    /// Finding values retained for one Contract field within a candidate.
     ValuesPerField,
+    /// Finding evidence references retained across assembled candidates.
     RetainedEvidence,
+    /// Nonfatal grouping diagnostics retained for caller inspection.
     Diagnostics,
 }
 
+/// Schema or resource failure rejecting candidate assembly as an operation.
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum ExtractionFailure {
+    /// The Contract schema fails structural validation before extraction can proceed.
     #[error(transparent)]
     InvalidContractSchema(#[from] ContractSchemaError),
+    /// A resource count cannot fit the unsigned extraction accounting representation.
     #[error("extraction {limit:?} count cannot be represented as u64")]
-    CountOverflow { limit: ExtractionLimit },
+    CountOverflow {
+        /// Resource whose count could not be represented.
+        limit: ExtractionLimit,
+    },
+    /// Grouping state no longer corresponds to deterministic candidate order.
     #[error("extraction grouping index no longer matches candidate order")]
     GroupingIndexInvariant,
+    /// A configured assembly resource budget was exceeded.
     #[error("extraction {limit:?} limit exceeded: maximum {maximum}, observed {observed}")]
     LimitExceeded {
+        /// Resource whose budget was exceeded.
         limit: ExtractionLimit,
+        /// Maximum permitted count in units of that resource.
         maximum: u64,
+        /// Recorded or attempted count in the same units.
         observed: u64,
     },
 }

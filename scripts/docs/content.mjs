@@ -3,6 +3,34 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { parseFrontmatter } from './generate.mjs';
 import { parseNavigationMetadata } from './navigation.mjs';
+import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+
+export function preparePythonReference(repo, target, source, repository = 'CascadingLabs/Yosoi') {
+  const packageRoot = path.join(repo, 'python/yosoi');
+  const generator = path.join(repo, 'scripts/docs/python_reference.py');
+  if (!existsSync(generator) || !existsSync(path.join(packageRoot, '__init__.py'))) return;
+  execFileSync(
+    'uv',
+    [
+      'run',
+      '--no-project',
+      '--python',
+      '3.15',
+      'python',
+      generator,
+      '--package',
+      packageRoot,
+      '--out',
+      path.join(target, 'python-api'),
+      '--source',
+      source,
+      '--repository',
+      repository,
+    ],
+    { cwd: repo, stdio: 'inherit' },
+  );
+}
 
 export async function copyPublicTree(source, target, prefix = '') {
   for (const entry of (await readdir(source, { withFileTypes: true })).sort((a, b) =>
@@ -81,11 +109,23 @@ export async function readPublicNavigation(root, parser) {
 }
 
 export function authoredPages(manifest) {
-  const pages = Object.entries(manifest.pages).map(([route, item]) => ({
-    ...item,
-    route: route === '/' ? '' : route.slice(1),
-    id: route === '/' ? 'index' : route.slice(1),
-  }));
+  const pythonKinds = {
+    types: 'class',
+    functions: 'function',
+    aliases: 'type_alias',
+    constants: 'constant',
+  };
+  const pages = Object.entries(manifest.pages).map(([route, item]) => {
+    const category = /^\/python-api\/[^/]+\/(types|functions|aliases|constants)\/[^/]+$/.exec(
+      route,
+    )?.[1];
+    return {
+      ...item,
+      route: route === '/' ? '' : route.slice(1),
+      id: route === '/' ? 'index' : route.slice(1),
+      ...(category ? { kind: pythonKinds[category] } : {}),
+    };
+  });
   if (
     pages.some((page) =>
       ['api', 'archive', 'assets'].some(

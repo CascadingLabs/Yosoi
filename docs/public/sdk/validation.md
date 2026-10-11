@@ -10,6 +10,10 @@ Validation turns candidate evidence into typed records. It checks cardinality, c
 
 Use `.validate().require_all()?` when any rejected record should fail the operation. Match `ContractOutcome` when you want to keep valid records and inspect the rest.
 
+## Example: validation
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -50,6 +54,37 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+Tea has both required fields; Coffee lacks a price. The outcome retains accepted records, rejected candidates and diagnostics.
+
+### Python
+
+```python
+import yosoi as ys
+
+class Product(ys.Contract):
+    """A product whose required fields must be complete."""
+
+    root = ys.css("article")
+    name: str = ys.Field("Name", locator=ys.css("h2"))
+    price: ys.Money = ys.Field("USD price", locator=ys.css(".price"))
+
+document = ys.Document.html(
+    "catalog.html",
+    "<article><h2>Tea</h2><b class='price'>$4.50</b></article>"
+    "<article><h2>Coffee</h2></article>",
+)
+outcome = ys.extract(document, Product).validate()
+assert len(outcome.records) == 1
+assert outcome.records[0].value.name == "Tea"
+assert len(outcome.issues) == 1
+print(outcome.records)
+print(outcome.issues)
+```
+
+The checks confirm one accepted record and one rejected candidate. Keep issues beside records when partial acceptance is useful.
+
+## Walk through the result
 
 The Tea record validates. The Coffee record has a missing required price. Its candidate remains available in the record issue.
 

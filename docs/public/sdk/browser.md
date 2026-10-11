@@ -13,12 +13,16 @@ Use browser acquisition when you need evidence from a page after JavaScript runs
 Replace the SDK dependency in your application's `Cargo.toml` with:
 
 ```toml
-yosoi = { path = "../Yosoi/crates/yosoi", features = ["browser"] }
+yosoi = { version = "=0.2.1", features = ["browser"] }
 ```
 
 Install regular Chrome or Chromium Stable. Testing-only browser distributions are outside the project's supported baseline. The browser must be able to run with its sandbox and site/process isolation enabled. Headful mode also needs a working display.
 
 ## Request a rendered DOM
+
+## Example: browser
+
+### Rust
 
 ```rust
 use std::error::Error;
@@ -53,13 +57,42 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+Policy selects a browser acquisition and requests rendered DOM. Only produced documents are passed to the locator Plan.
+
+### Python
+
+```python
+import asyncio
+import yosoi as ys
+from yosoi.policy import Acquisition, Page, Policy
+
+async def main():
+    policy = Policy(page=Page(acquisitions=[
+        Acquisition.browser("headless").with_documents(["rendered_dom"]),
+    ]))
+    response = await ys.request.new("https://example.org/").bind(policy).send()
+    plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+    for attempt in response.attempts:
+        for selected in attempt.documents:
+            if selected.outcome.status == "produced":
+                print(selected.outcome.document.locate(plan))
+            else:
+                print(selected.outcome)
+
+asyncio.run(main())
+```
+
+The same acquisition and document request use Python models. Inspect unavailable and partial outcomes before relying on a capture.
+
+## Walk through the result
+
 Choose `BrowserMode::Headful` for a visible browser. Request `AccessibilityTree` to query roles, names, text, and states. Add `ResponseDocument` when you also need the source response.
 
 ## Capture timing
 
 The standard adapter uses `DomContentLoaded` when a browser acquisition does not request `ResponseDocument`. When it does, it uses controller completion. Additional settlement is disabled in the standard adapter.
 
-Neither choice guarantees that every asynchronous application update has finished. The facade does not expose a custom wait-for-selector, navigation script, or settlement builder. Inspect what was captured and handle missing evidence through the returned outcomes.
+Neither choice guarantees that every asynchronous application update has finished. This Request adapter does not apply custom wait-for-selector or settlement settings. Use an explicit Flow and a supported Until check for interactive waits. Inspect what was captured and handle missing evidence through the returned outcomes.
 
 ## Snapshot boundaries
 

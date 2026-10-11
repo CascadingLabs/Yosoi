@@ -46,7 +46,10 @@ impl Default for FlowLimits {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Step {
     /// Local Rust checks over one current Contract observation.
-    AssertAll { assertion: LocalAssertion },
+    AssertAll {
+        /// Saved bounded assertion descriptor with an explicitly bound evaluator.
+        assertion: LocalAssertion,
+    },
     /// Waits for an expectation, optionally after one trigger action.
     ///
     /// With a trigger, observation starts before that action is dispatched and
@@ -59,46 +62,84 @@ pub enum Step {
     },
     /// Applies one execution budget to the complete action.
     Timed {
+        /// Action or nested scope governed by this single execution budget.
         action: Box<Self>,
+        /// Positive maximum duration; serialization may use exact microseconds.
         timeout: Duration,
     },
     /// Local continuation overrides and optional runtime cancellation binding.
     Configured {
+        /// Wrapped action retaining its local continuation and cancellation settings.
         action: Box<Self>,
+        /// Override for known failures, absent to inherit the selected scope's fallback.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         on_failure: Option<Continuation>,
+        /// Override for observed cancellation, absent to inherit the selected scope's fallback.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         on_cancellation: Option<Continuation>,
+        /// Whether a saved runtime cancellation token must be rebound before invocation.
         #[serde(default, skip_serializing_if = "is_false")]
         cancellation_binding_required: bool,
+        /// Runtime-only token binding, deliberately omitted from serialized recipes.
         #[serde(skip)]
         cancellation: StepCancellationBinding,
     },
     /// Runs a child Flow as a nested timeout scope.
-    NestedFlow { flow: Box<Flow> },
+    NestedFlow {
+        /// Owned child recipe, retaining its scoped timeouts and continuation policies.
+        flow: Box<Flow>,
+    },
     /// Navigate the current tab to a URL.
-    Navigate { url: String },
+    Navigate {
+        /// Authored destination text validated before browser dispatch.
+        url: String,
+    },
     /// Click one selector-resolved target.
-    Click { selector: String },
+    Click {
+        /// CSS selector that must resolve to one supported click target.
+        selector: String,
+    },
     /// Enter text into one selector-resolved target.
-    EnterText { selector: String, text: String },
+    EnterText {
+        /// CSS selector for the editable target, checked again before keyboard dispatch.
+        selector: String,
+        /// Authored text to enter; it can contain user-sensitive values.
+        text: String,
+    },
     /// Wait for an explicit number of milliseconds.
-    Wait { milliseconds: u64 },
+    Wait {
+        /// Explicit delay in milliseconds, including zero; this is not readiness confirmation.
+        milliseconds: u64,
+    },
     /// Capture the current tab's screenshot.
     Screenshot,
     /// Check a condition once and stop if it is rejected.
-    Assert { condition: Condition },
+    Assert {
+        /// DOM condition checked once without a retry loop.
+        condition: Condition,
+    },
     /// Check a condition until the supplied positive timeout expires.
     WaitUntil {
+        /// DOM condition confirmed within the same retained document epoch.
         condition: Condition,
+        /// Positive authored maximum wait in milliseconds, also bounded by the enclosing budget.
         timeout_ms: u64,
     },
     /// Evaluate a policy-approved script on the current tab.
-    Evaluate { source: String },
+    Evaluate {
+        /// Authored JavaScript source; dispatch requires explicit Session permission.
+        source: String,
+    },
     /// Evaluates an exact construction-time file snapshot as a script.
-    EvaluateFile { snapshot: JavaScriptSourceSnapshot },
+    EvaluateFile {
+        /// Exact retained file bytes captured before execution, rather than a live path read.
+        snapshot: JavaScriptSourceSnapshot,
+    },
     /// Executes a construction-time local ES module graph.
-    EvaluateModule { bundle: JavaScriptModuleBundle },
+    EvaluateModule {
+        /// Retained local module graph and selected export captured at construction time.
+        bundle: JavaScriptModuleBundle,
+    },
 }
 
 impl<'de> Deserialize<'de> for Step {
@@ -603,11 +644,22 @@ impl Step {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Condition {
     /// At least one element matches the selector.
-    Exists { selector: String },
+    Exists {
+        /// CSS selector whose current matching set must be nonempty.
+        selector: String,
+    },
     /// At least one matching element is visible.
-    Visible { selector: String },
+    Visible {
+        /// CSS selector with at least one currently visible match.
+        selector: String,
+    },
     /// The number of matching elements meets or exceeds `count`.
-    CountAtLeast { selector: String, count: u64 },
+    CountAtLeast {
+        /// CSS selector whose current matches are counted.
+        selector: String,
+        /// Inclusive minimum matching-element count; zero is permitted.
+        count: u64,
+    },
 }
 
 /// Why the runner stopped executing the flow.
@@ -677,9 +729,13 @@ pub enum FlowCancellationCause {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FlowStopCause {
+    /// A known step failure activated a scoped or invocation stop policy.
     Failure,
+    /// Observed cancellation activated a scoped or invocation stop policy.
     Cancellation,
+    /// Possible dispatch without a known result prevented safe dependent execution.
     UnknownOutcome,
+    /// Browser or evidence safety state prevented continuation regardless of authored policy.
     UnsafeState,
 }
 
@@ -689,6 +745,7 @@ pub enum FlowStopCause {
 pub struct FlowStopReason {
     /// Path of the leaf that triggered the stop; empty if cancelled before the first leaf.
     pub flow_path: Vec<u64>,
+    /// Failure, cancellation, uncertainty, or safety classification causing the stop.
     pub cause: FlowStopCause,
     /// The authored continuation policy, absent for hard safety stops.
     pub continuation: Option<Continuation>,
@@ -702,7 +759,9 @@ pub struct SkippedStep {
     pub flow_path: Vec<u64>,
     /// Path of the action that stopped the selected scope.
     pub stopped_by: Vec<u64>,
+    /// Classification of the event that prevented dispatch of this leaf.
     pub cause: FlowStopCause,
+    /// Selected nested Flow or invocation boundary whose leaves were omitted.
     pub scope: StopScope,
 }
 
@@ -821,8 +880,10 @@ impl FlowOutcome {
     }
 }
 
+/// Retained outcome did not satisfy the strict clean-completion requirement.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct FlowCompletionError {
+    /// Recorded terminal state, including completed-with-issues rather than clean completion.
     pub terminal: FlowTermination,
 }
 impl fmt::Display for FlowCompletionError {

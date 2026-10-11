@@ -1,5 +1,7 @@
 //! Derive macro for Yosoi Contract declarations.
 
+#![deny(missing_docs)]
+
 mod field_expansion;
 mod support;
 
@@ -10,6 +12,17 @@ use std::collections::BTreeSet;
 use support::{contract_attributes, named_fields, reject_generics, yosoi_path};
 use syn::{DeriveInput, parse_macro_input};
 
+/// Defines portable record meaning and explicit extraction/validation helpers for a named struct.
+///
+/// Requires nonblank `#[ys(id = "...", description = "...")]` record metadata
+/// and supported named-field declarations with descriptions. An optional root
+/// locator selects repeated-region grouping; without a root the schema is page-scoped.
+/// Fields may pin locators, but if one is pinned every field must be pinned.
+///
+/// Generates schema access, owned candidate evidence, and explicit conversion
+/// and validation paths. It performs no document acquisition and does not infer
+/// locators from natural-language field descriptions. Invalid declarations emit
+/// compiler diagnostics rather than a partially usable record implementation.
 #[proc_macro_derive(Contract, attributes(ys))]
 pub fn derive_contract(input: TokenStream) -> TokenStream {
     match expand_contract(parse_macro_input!(input as DeriveInput)) {
@@ -100,6 +113,8 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
                 (&'static str, #yosoi::PinnedOutputLocator)
             ] = &[#(#plan_locators),*];
 
+            /// Borrows a cached compiled plan from all explicitly pinned field locators.
+            /// Returns a query/plan error for invalid declarations without acquiring documents.
             pub fn plan() -> Result<&'static #yosoi::Plan, #yosoi::ContractLocatorError> {
                 static PLAN: ::std::sync::OnceLock<
                     Result<#yosoi::Plan, #yosoi::ContractLocatorError>
@@ -111,6 +126,8 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
                 )).as_ref().map_err(Clone::clone)
             }
 
+            /// Locates pinned field evidence in the supplied retained document without network I/O.
+            /// Plan construction errors remain separate from typed locator failure or absence outcomes.
             pub fn locate(
                 document: &#yosoi::Document,
             ) -> Result<#yosoi::LocateOutcome, #yosoi::ContractLocatorError> {
@@ -122,6 +139,9 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
     };
 
     Ok(quote! {
+        /// Owned raw field findings and grouping provenance for one extracted record.
+        /// Field values have not been converted or semantically accepted;
+        /// validate extraction explicitly before treating this evidence as a business record.
         #[derive(Clone)]
         #visibility struct #candidate_name {
             __document_id: #yosoi::DocumentId,
@@ -228,14 +248,18 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
         }
 
         impl #extracted_name {
+            /// Borrows grouped raw candidates; an empty slice alone does not establish complete absence.
             pub fn candidates(&self) -> &[#candidate_name] {
                 self.__inner.candidates()
             }
 
+            /// Borrows nonfatal candidate-grouping issues rather than silently discarding them.
             pub fn diagnostics(&self) -> &[#yosoi::ExtractionDiagnostic] {
                 self.__inner.diagnostics()
             }
 
+            /// Consumes candidate evidence and applies default bounded cardinality, conversion, and semantic checks.
+            /// Accepted records, rejected candidates, and terminal evidence states remain separate.
             pub fn validate(self) -> #yosoi::ContractOutcome<#type_name> {
                 self.validate_with_limits(#yosoi::ValidationLimits::default())
             }
@@ -320,6 +344,8 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
         impl #type_name {
             const __YS_ROOT_LOCATOR: Option<#yosoi::PinnedLocator> = #root_locator;
 
+            /// Returns static repeated-region query data, or None for page-scoped grouping.
+            /// This does not acquire or evaluate document evidence.
             pub fn root_locator() -> Option<#yosoi::PinnedLocator> {
                 Self::__YS_ROOT_LOCATOR
             }
@@ -340,10 +366,13 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
                 Ok(Self { #(#record_fields),* })
             }
 
+            /// Borrows validated portable record meaning, returning a schema error for invalid metadata.
             pub fn schema() -> Result<&'static #yosoi::ContractSchema, #yosoi::ContractSchemaError> {
                 <Self as #yosoi::Contract>::schema()
             }
 
+            /// Groups supplied locator evidence into owned raw candidates without converting or validating values.
+            /// Call validate explicitly before treating candidates as accepted records.
             pub fn extract(
                 located: &#yosoi::LocateOutcome,
             ) -> #yosoi::Extracted<Self> {

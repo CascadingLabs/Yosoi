@@ -7,12 +7,16 @@ use thiserror::Error;
 use tokio::sync as tokio_sync;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, broadcast};
 
+/// Execution admission failed without transferring any browser or tab ownership.
 #[derive(Clone, Copy, Debug, Error, Eq, PartialEq)]
 pub enum ExecutionPoolError {
+    /// Worker concurrency or queue capacity falls outside the supported bounded ranges.
     #[error("execution capacity must be between 1 and 32; queue capacity between 1 and 1024")]
     InvalidLimits,
+    /// No bounded queue slot is available for another waiting operation.
     #[error("execution queue is full")]
     QueueFull,
+    /// The execution semaphore closed before a worker permit could be acquired.
     #[error("execution pool is closed")]
     Closed,
 }
@@ -36,18 +40,29 @@ struct Inner {
     peak: AtomicU32,
     admitted: AtomicU64,
 }
+/// Independent execution counters from one shared pool, without an atomic multi-counter guarantee.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ExecutionSnapshot {
+    /// Configured simultaneous worker permits, independent of retained tab count.
     pub capacity: u32,
+    /// Currently held worker permits across every Session sharing the pool.
     pub active: u32,
+    /// Operations waiting in bounded FIFO admission for a worker permit.
     pub queued: u32,
+    /// Condition waits retaining tab control while yielding worker capacity.
     pub parked: u32,
+    /// All tracked condition waits, including those that keep their worker permit.
     pub waiting: u32,
+    /// Highest recorded simultaneously held worker permits over this pool's lifetime.
     pub peak_active: u32,
+    /// Successful permit acquisitions, including resumed waits, not completed business operations.
     pub admitted: u64,
 }
 
 impl ExecutionPool {
+    /// Creates a shareable worker pool with explicit concurrency and waiting-queue bounds.
+    /// Returns [`ExecutionPoolError::InvalidLimits`] unless concurrency is 1–32
+    /// and queue capacity 1–1024. This allocates capacity, not a browser or tab lease.
     pub fn new(concurrency: u32, queue_capacity: u32) -> Result<Self, ExecutionPoolError> {
         if !(1..=32).contains(&concurrency) || !(1..=1024).contains(&queue_capacity) {
             return Err(ExecutionPoolError::InvalidLimits);
@@ -72,6 +87,9 @@ impl ExecutionPool {
             }),
         })
     }
+    /// Reads independent active, queued, waiting, and parked counters without acquiring a permit.
+    /// Concurrent changes can occur between counter reads; values are telemetry,
+    /// not an atomic ownership or business-completion receipt.
     pub fn snapshot(&self) -> ExecutionSnapshot {
         ExecutionSnapshot {
             capacity: self.inner.capacity,
@@ -168,6 +186,7 @@ impl ExecutionPool {
         }
     }
 }
+/// Owned worker permit returned to the pool on drop, without owning browser or tab authority.
 #[derive(Debug)]
 pub struct ExecutionPermit {
     inner: Arc<Inner>,

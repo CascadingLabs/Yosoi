@@ -28,7 +28,10 @@ pub enum AcquisitionKind {
     /// Use the standalone HTTP acquisition path.
     DirectHttp,
     /// Navigate with the selected browser windowing mode.
-    Browser { mode: BrowserMode },
+    Browser {
+        /// Selected browser windowing mode, checked against explicit Session configuration.
+        mode: BrowserMode,
+    },
 }
 
 /// Whether the authored acquisition uses the current document default or an

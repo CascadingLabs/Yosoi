@@ -15,9 +15,13 @@ use super::capture_facts::{AttemptCaptureFacts, AttemptCaptureFailureFacts};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AttemptFailureKind {
+    /// No executor context exists for the selected acquisition mechanism.
     MissingExecutionContext,
+    /// Authored policy could not resolve into a supported acquisition plan.
     PolicyResolution,
+    /// Capture acquisition or finalization failed after preparation.
     CaptureExecution,
+    /// Acquired evidence could not produce the requested document representation.
     Projection,
 }
 
@@ -27,18 +31,31 @@ pub use crate::internal::types::BrowserFailureReason;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum AttemptDiagnostic {
+    /// Selected acquisition has no configured execution adapter context.
     MissingExecutionContext,
+    /// Request policy resolution failed before dispatch.
     PolicyResolutionFailed,
+    /// Direct HTTP transport failed with a bounded provider-independent category.
     DirectHttpTransport(yosoi_web_capture_direct_http::DirectHttpTransportErrorKind),
+    /// Response-body acquisition failed before usable finalization.
     DirectHttpBodyFailed,
+    /// Direct HTTP capture artifact finalization failed.
     DirectHttpFinalizationFailed,
+    /// Browser acquisition observed cancellation.
     BrowserCancelled,
+    /// Browser acquisition observed cancellation and also failed cleanup.
     BrowserCancelledCleanupFailed,
+    /// Browser cleanup failed independently of cancellation classification.
     BrowserCleanupFailed,
+    /// Browser capture failed without a more specific available classification.
     BrowserCaptureFailed,
+    /// Browser capture failed with the supplied typed reason.
     BrowserFailure(BrowserFailureReason),
+    /// Browser capture could not finalize retained artifacts.
     BrowserFinalizationFailed,
+    /// This build lacks the selected browser acquisition feature.
     BrowserFeatureDisabled,
+    /// Captured evidence could not be projected into requested document outputs.
     ProjectionFailed,
 }
 
@@ -179,8 +196,10 @@ impl fmt::Debug for NotStartedAttempt {
     }
 }
 
+/// Reason a planned acquisition never started, retained instead of silently dropping its slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NotStartedReason {
+    /// Execution observed cancellation before this authored acquisition was invoked.
     Cancelled,
 }

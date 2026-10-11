@@ -36,22 +36,27 @@ pub struct ViewSource {
 }
 
 impl ViewSource {
+    /// Borrows the primary captured observation identity, not a live browser handle.
     pub fn observation_id(&self) -> &str {
         &self.observation_id
     }
 
+    /// Borrows recorded Session provenance without reopening browser authority.
     pub fn session_id(&self) -> &str {
         &self.session_id
     }
 
+    /// Borrows recorded tab provenance without granting tab control.
     pub fn tab_id(&self) -> &str {
         &self.tab_id
     }
 
+    /// Returns the captured document generation that scopes the retained DOM evidence.
     pub const fn document_epoch(&self) -> u64 {
         self.document_epoch
     }
 
+    /// Borrows the captured source URL, when available; it is not fetched by the View.
     pub fn url(&self) -> Option<&str> {
         self.url.as_deref()
     }
@@ -68,14 +73,17 @@ pub struct DomElementRow {
 }
 
 impl DomElementRow {
+    /// Returns the deterministic zero-based position among elements of the captured document.
     pub const fn ordinal(&self) -> u64 {
         self.ordinal
     }
 
+    /// Borrows the document-bound locator node reference for this exact row.
     pub const fn node(&self) -> &NodeReference {
         &self.node
     }
 
+    /// Borrows the native source-tree coordinate without resolving a live browser element.
     pub const fn coordinate(&self) -> &NativeCoordinate {
         self.node.coordinate()
     }
@@ -104,6 +112,7 @@ pub struct ViewCaptureToken {
 }
 
 impl ViewCaptureToken {
+    /// Borrows primary observation provenance shared by a View and its continuation cursor.
     pub const fn source(&self) -> &ViewSource {
         &self.source
     }
@@ -124,14 +133,17 @@ pub struct ViewCursor {
 }
 
 impl ViewCursor {
+    /// Returns the zero-based element offset requested for the next bounded page.
     pub const fn offset(&self) -> u64 {
         self.offset
     }
 
+    /// Returns the retained requested row bound, validated before continuation.
     pub const fn page_size(&self) -> u64 {
         self.page_size
     }
 
+    /// Borrows observation provenance binding this cursor to one immutable capture.
     pub const fn capture_token(&self) -> &ViewCaptureToken {
         &self.capture
     }
@@ -170,26 +182,32 @@ impl View {
         Self::page(observation, capture, cursor.offset, page_size)
     }
 
+    /// Borrows the exact observation provenance used to build this offline page.
     pub const fn source(&self) -> &ViewSource {
         &self.source
     }
 
+    /// Borrows the source binding used to reject foreign or stale continuation cursors.
     pub const fn capture_token(&self) -> &ViewCaptureToken {
         &self.capture
     }
 
+    /// Borrows retained bounded DOM rows in deterministic source order.
     pub fn rows(&self) -> &[DomElementRow] {
         &self.rows
     }
 
+    /// Returns the complete captured-document element count, not a live DOM count.
     pub const fn total_rows(&self) -> u64 {
         self.total_rows
     }
 
+    /// Returns the requested maximum rows per page; the final page can contain fewer.
     pub const fn page_size(&self) -> u64 {
         self.page_size
     }
 
+    /// Borrows a bound cursor when captured rows remain, or `None` after the final page.
     pub const fn next_cursor(&self) -> Option<&ViewCursor> {
         self.next_cursor.as_ref()
     }
@@ -489,27 +507,85 @@ fn bounded_text_preview(value: &str) -> (String, bool) {
 /// Typed failure while constructing or paging an offline View.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ViewError {
-    EmptyIdentity { field: &'static str },
-    IdentityTooLong { field: &'static str },
+    /// A required observation, Session, or tab identity is blank.
+    EmptyIdentity {
+        /// Provenance identity role whose text was rejected.
+        field: &'static str,
+    },
+    /// A provenance identity exceeds its UTF-8 byte bound.
+    IdentityTooLong {
+        /// Identity role whose text is oversized.
+        field: &'static str,
+    },
+    /// The source epoch is zero and cannot scope immutable browser evidence.
     InvalidDocumentEpoch,
+    /// No captured HTML is available for offline element reconstruction.
     HtmlUnavailable,
-    HtmlTooLarge { maximum: usize, observed: usize },
-    UrlTooLong { maximum: usize },
-    SelectorTooLong { maximum: usize, observed: usize },
-    InvalidPageSize { maximum: usize },
+    /// Captured HTML exceeds the supported offline byte limit.
+    HtmlTooLarge {
+        /// Maximum accepted captured HTML bytes.
+        maximum: usize,
+        /// Actual captured HTML byte length.
+        observed: usize,
+    },
+    /// Captured source URL text exceeds its retained byte bound.
+    UrlTooLong {
+        /// Maximum retained UTF-8 URL bytes.
+        maximum: usize,
+    },
+    /// An offline assertion selector exceeds its UTF-8 byte limit.
+    SelectorTooLong {
+        /// Maximum accepted selector bytes.
+        maximum: usize,
+        /// Actual authored selector byte length.
+        observed: usize,
+    },
+    /// Requested rows per page are zero or exceed the supported maximum.
+    InvalidPageSize {
+        /// Maximum supported rows per page.
+        maximum: usize,
+    },
+    /// A continuation cursor has invalid structure, page bounds, or platform representation.
     InvalidCursor,
+    /// Cursor provenance belongs to another observation, Session, or tab.
     ForeignCursor,
+    /// Cursor provenance names the same observation but changed epoch, URL, or HTML fingerprint.
     StaleCursor,
+    /// Assertion evidence belongs to another observation, Session, or tab than this View.
     ForeignObservation,
+    /// Assertion evidence disagrees on epoch, URL, or the advisory captured-HTML fingerprint.
     StaleObservation,
-    UnsupportedCondition { kind: &'static str },
-    CursorOutOfRange { offset: u64, total_rows: u64 },
+    /// The condition needs live browser state unavailable in an offline View.
+    UnsupportedCondition {
+        /// Unsupported condition label, currently visible.
+        kind: &'static str,
+    },
+    /// A continuation position is outside the remaining captured element rows.
+    CursorOutOfRange {
+        /// Zero-based row position supplied by the cursor.
+        offset: u64,
+        /// Total captured-document rows established by locator extraction.
+        total_rows: u64,
+    },
+    /// Captured element count cannot fit portable row accounting.
     RowCountOverflow,
+    /// Locator output is not the node projection required for exact element rows.
     UnexpectedProjection,
+    /// Node and text projections do not form matching ordered element evidence.
     MismatchedLocatorProjection,
-    IncompleteEvidence { reason_code: String },
-    LocateFailed { detail: String },
+    /// Partial or unknown locator evidence prevents an unqualified offline result.
+    IncompleteEvidence {
+        /// Structural reason that evidence completeness could not be established.
+        reason_code: String,
+    },
+    /// Locator execution failed instead of yielding complete captured evidence.
+    LocateFailed {
+        /// Retained typed-failure explanation for caller inspection.
+        detail: String,
+    },
+    /// Retained observation HTML could not form the required source Document.
     Document(String),
+    /// The internal supported offline locator plan could not be constructed.
     Plan(String),
 }
 

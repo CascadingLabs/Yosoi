@@ -40,6 +40,7 @@ pub struct FlowPolicy {
 }
 
 impl FlowPolicy {
+    /// Returns whether both failure and cancellation fallbacks use the package-default Continue policy.
     pub const fn is_default(&self) -> bool {
         matches!(self.on_failure, Continuation::Continue)
             && matches!(self.on_cancellation, Continuation::Continue)
