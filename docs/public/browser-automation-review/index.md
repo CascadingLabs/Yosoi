@@ -47,6 +47,12 @@ which jobs to submit; Yosoi enforces ownership and resource bounds.
 
 ## Where we are
 
+The default workspace now contains the integrated Rust and Python 0.2.0 beta
+SDK. CAS-574 is complete with local installed-wheel proof. Start with the
+[current release checkpoint](release.md) and [Python browser workflows](../python/browser-workflows.md)
+for shipping scope, examples and remaining gates. The concept-review history
+below predates that integration.
+
 The Rust first pass exists locally at `browser-actions-spike`, revision
 `d7a16cc4`. The controlled browser and Archive tests passed in Docker on
 October 5. This guide does not claim a fresh test run or a finished 0.2.0 release.

@@ -14,7 +14,8 @@ or GitHub release is authorized here.
 The integration combines SDK revision `1f172423e03ce367a65ab99d8e6c7a06e22bf6bb`
 with the `0.1.2` mainline at `46f9625`; separately published private browser
 fork packages are not part of this integration. A fresh installed-wheel and
-browser run from the assembled integration worktree is still pending.
+browser run from the assembled integration source passed; the results and exact
+source identity are recorded below. Release-profile and hosted proof remain pending.
 
 ## What 0.2.0 adds
 

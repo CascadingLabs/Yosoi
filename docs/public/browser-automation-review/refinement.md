@@ -6,6 +6,13 @@ order: 0
 
 # Refinement notebook: decisions and open work
 
+**October 11 checkpoint:** the default workspace contains the integrated
+Rust/Python beta SDK and private browser runtime. CAS-574 is complete with local
+installed-wheel proof; Python is required for 0.2.0. The
+[release checklist](release.md) and [current Python workflows](../python/browser-workflows.md)
+supersede the parked/proposed Python notes below. Earlier refinement discussions
+remain as history; deferred hardening does not automatically block the beta.
+
 This is the dedicated notebook for refining the 0.2.0 browser automation spike.
 It records the discussion through October 9, 2026. Keep it current as we review
 the SDK. The Linear cleanup project tracks implementation work; this page keeps

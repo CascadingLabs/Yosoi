@@ -1,130 +1,127 @@
 ---
 title: 'What earns a 0.2.0 release'
-description: '0.2.0 release preparation, supported scope decisions and remaining verification.'
+description: 'The current 0.2.0 beta scope, artifact targets and remaining release gates.'
 order: 9
 ---
 
 # What earns a 0.2.0 release
 
-## October 10 preparation checkpoint
+## October 11 preparation checkpoint
 
-The default workspace, `/home/andrew/Desktop/cl/Yosoi`, now combines browser
-actions, native nested timeout scopes, immediate Rust assertion groups and both
-Qscrape examples. The previous assertion integration and timeout revision remain
-separate parents, preserving their review history. This checkout is the active
-browser automation integration workspace.
+The default workspace contains the integrated Rust browser SDK, Python browser
+SDK, private browser runtime, release tooling and docs publication pipeline.
+CAS-574 is complete. The integrated SDK source is
+`5453ee65c417776bd7a72e3334c8017c199ff664`, including main `46f9625a`.
+The later live-test source `05995a173b988c152dc10758ab85c6c6de4ecdf1` also
+includes a navigation-diagnostic classifier and opt-in stress coverage. Default
+parent `517abee1` records those results; preparation edits here affect docs only.
 
-Focused checks on the combined code pass: seven executor tests, ten Flow-model
-tests, four automation-record tests and four assertion-group tests. The combined
-browser tests compile. Two focused hardened-container controls also pass: the
-longer child timeout and an assertion group that blocks the next click on failure.
-These use the existing Chrome 153.0.8010.36 spike image; current Stable release
-certification remains separate. Nested saved
-assertion descriptors are checked before browser acquisition; they remain
-inspectable but require explicit Rust predicate rebinding to execute.
+Local release metadata is synchronized at `0.2.0`, with citation date
+`2026-10-11`. This is preparation metadata, not a published version. GitHub's
+published comparison baseline is [v0.1.2](https://github.com/CascadingLabs/Yosoi/releases/tag/v0.1.2),
+published October 11 at 05:57:20 UTC. Earlier notes saying integration, Python
+completion or the version bump were still pending are superseded.
 
-### Decisions to make next
+## Beta scope
 
-| Decision                   | Recommendation to review                                                                                                                             | Issue            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| Release completion API     | Distinguish a release request from confirmed safe handoff; retain the agreed fence-and-error default for unresolved borrowed tabs.                   | CAS-570          |
-| Deferred assertions        | Scoped Until is implemented locally; review [its current evidence and live-navigation limitation](until.md) before release inclusion.                | CAS-572          |
-| Archive and Views in 0.2.0 | Ship bounded records and inspection only if their integrity and installed-artifact checks pass; defer stronger durable/replay guarantees.            | CAS-566, CAS-567 |
-| Python release scope       | Require parity for the core shipped Rust API, including optional lease, timeouts and cancellation; decide supported platform/interpreter guarantees. | CAS-574          |
+Andrew accepted the current browser SDK limitations for beta. Further edge
+cases and hardening follow real usage; deferred refinements do not become new
+release blockers. This matrix describes the supported surface and the remaining
+release assignment to review.
 
-Already agreed: integer timeouts are milliseconds, nearest scope wins, Stop
-returns a structured in-execution outcome, parked Flows retain exclusive tab
-ownership while yielding worker capacity, and unresolved borrowed cleanup leaves
-the tab fenced and returns an error. JS files and bounded local modules are also
-approved for implementation now (CAS-573), with construction-time snapshots and
-explicit managed permission. Those choices need no repeat decision.
+| Surface                | 0.2.0 preparation scope                                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust browser SDK       | Sessions, exclusive Work leases, browser Requests, typed actions, Flows, immediate assertions, scoped Until, millisecond timeouts and structured outcomes.                                  |
+| Python browser SDK     | Async managed and borrowed invocation over the same engine, Session/Work context managers, Requests, typed Contract predicates, timeouts and cancellation.                                  |
+| JavaScript             | Explicit permission, bounded construction-time file snapshots and local module graphs; selected exports are read as JSON-compatible values.                                                 |
+| Rust Archive and Views | Existing bounded records and inspection remain available; final notes must state their release assignment explicitly. Stronger integrity, durability and replay guarantees remain deferred. |
+| Python limits          | Initial Session tab and one borrowed Work lease. Explicit tab creation, Watcher streams, remote attachment and the Rust Archive/View facade are outside this Python beta surface.           |
+| Browser runtime        | Regular Chrome/Chromium installed separately, with sandboxing enabled. Browser regression results and full Chrome/CDP certification remain separate evidence.                               |
 
-Failure and local child cancellation now default to Continue, with independent
-nearest-scope overrides through Stop(CurrentFlow) and Stop(Invocation). An
-explicit Continue overrides a global Stop. CAS-569 implements this approved
-contract; a cancelled child never resumes its own subtree, while its parent can
-continue. Root/Session cancellation and uncertain dispatch remain hard boundaries.
+Failure and local child cancellation default to Continue, with nearest-scope
+Stop overrides. Outcomes retain failed and uncertain receipts; returning an
+outcome does not mean every step succeeded. Python callers can use
+`require_completed()` for a strict success path. Borrowed invocations do not
+close the caller's Session or elevate its permissions. Unresolved cleanup can
+fence a Work lease and return an error.
 
-### Release preparation checklist
+Firefox/BiDi, distributed placement, durable browser resumption, isolated
+JavaScript worlds and package/network module imports are outside this release
+scope. See [Python browser workflows](../python/browser-workflows.md) for current
+examples and limits.
 
-- [x] Integrate browser actions, assertions, examples and timeout scopes in default.
-- [x] Run focused model, executor, record and assertion checks on the combined code.
-- [x] Preview `cargo xtask bump-version 0.2.0 --dry-run`; 24 metadata files need
-      updating. No release version or date has been applied.
-- [x] Compile browser integration cases on the combined code.
-- [x] Compile `qscrape_checkout`, `qscrape_cart_assertion`, `assertion_groups`
-      and `browser_automation_spike` with the browser feature on the combined code.
-- [ ] Reconcile this branch with current `main` before building release artifacts.
-      The inspected `main` is `38f601f4` and has Python parity, release CD and docs
-      publication changes absent from this local branch. Integrate through review;
-      do not replace those changes with the older browser base.
-- [ ] Freeze the shipping matrix and finish the required lifecycle behavior.
-- [ ] Verify current regular Stable Chrome and supported browser/controller identities.
-- [ ] Run controlled cancellation, contention, fencing and cleanup cases on the
-      final integrated source; then run live stateful and multi-tab examples.
-- [ ] Build/install supported Python wheels and exercise the shipped SDK from
-      clean consumer environments. Rust model checks do not establish Python parity.
-- [ ] Apply the approved version/date through the existing `bump-version` command
-      after the shipping scope is frozen. A dry-run is preparation, not an applied bump.
-- [ ] Prepare canonical numbered notes through `xtask release prepare`, retaining
-      imported change references and contributor attribution. Choose the actual
-      published comparison baseline first; do not invent a `v0.1.0` release.
-- [ ] Run focused release consistency checks, required hosted CI and artifact
-      verification, then present the publication decision with explicit evidence gaps.
+## Artifact targets
 
-The GitHub release list inspected on October 10 still has `v0.0.3a27` as its most
-recent published entry. `main`'s rc.2 preparation is not a published release.
-The release-note comparison baseline, channel and publication date remain to be
-finalized. Preparation does not create tags or publish packages.
+The existing Release CD matrix targets Linux x86-64 and ARM64 at manylinux 2.28,
+Windows x86-64, and macOS Intel and Apple Silicon with an 11.0 minimum. It builds
+five native CLI archives, one shared Python source distribution and 15 wheels.
+Thirty installed-wheel checks cover CPython 3.12–3.15 plus free-threaded 3.14
+and 3.15 across those five platforms. These are configured targets; completion
+must be verified for the chosen release source.
 
-The local spike proves a useful integration. A release needs a stable contract,
-practical examples and failure-path evidence for the supported environments.
+Rust publication uses the existing package dependency order. The private browser
+components are included in SDK sources and require no separate fork crate
+publication. Independently versioned `yosoi-contracts-derive` 0.1.1 still needs
+the ordinary registry preflight.
 
-## Recorded evidence
+## Evidence already recorded
 
-The October 5 handoff reports, and the saved logs confirm:
+The integrated SDK source has local Linux x86-64 development-artifact proof:
 
-- 18 browser safety tests passed in the hardened Yosoi Docker environment.
-- 2 integrated browser/fresh-process replay tests passed.
-- Focused Flow, Archive, View and existing SDK checks passed.
-- The facade compiled without the browser feature.
+- Normal CPython 3.14.3 installed consumer suite: 307 passed, eight skipped.
+- Free-threaded CPython 3.14.7 installed consumer suite: 308 passed, seven skipped.
+- Three installed-wheel browser runs: 13 tests each, covering normal headless,
+  free-threaded headless and mixed managed-headless/borrowed-headful invocation.
+- Regular Chrome Stable 155.0.8059.39 with source, wheel, native extension and
+  JUnit hashes recorded in the reports.
+- Nine Rust/Python semantic suites: 1,030 comparisons with no structural drift
+  or missing supported SDK mappings. Individual behavioral coverage of the
+  broader compiler inventory remains a separate audit.
 
-Those are controlled Rust results. They do not establish Python wheel readiness,
-real-site reliability, performance, all-platform support or production readiness.
-They have not been rerun for this review site.
+The later rebuilt free-threaded wheel passed 308 consumer tests with 18 skips
+and nine live scenarios, including six confirmed Qscrape orders. Two framework
+rendering probes remained expected failures. An earlier unknown navigation
+remains recorded; later successful runs do not relabel it. Live regression
+evidence applies to `05995a17`, separately from the integrated-source suites above.
 
-## Proposed core scope
+See [Python compatibility status](../python/compatibility.md) for the evidence
+boundaries. These results do not establish release-profile artifacts, the full
+platform matrix, registry installation or complete Chrome/CDP certification.
+October 5 spike results remain historical evidence, not certification of the
+current integrated source.
 
-Sessions and tab ownership; Work leases; browser Request reuse; typed actions;
-sequential Flows and assertions; explicitly permitted JavaScript; bounded
-operation receipts and honest failures. Python should expose that same model.
+## Remaining release gates
 
-Archive and Views need an explicit release decision. Firefox/BiDi is out of
-current scope. Remote attachment, distributed placement, isolated JS worlds and
-continuous network/AX streams are not implemented release capabilities.
+The October 11 preparation audit passed Rust formatting but failed the focused
+all-feature core-library strict Clippy check with 456 denied diagnostics,
+including import/style findings and unchecked indexing, casts and arithmetic.
+The required workspace/all-target gate therefore remains blocked. This is a
+subset of source CI, not a completed test or artifact run; fix the findings
+without lowering the gate before broader validation.
 
-## Before landing
+- [x] Integrate the accepted browser and Python SDKs with the private runtime in default.
+- [x] Record installed Python consumer/browser proof on the integrated SDK source.
+- [x] Synchronize local `0.2.0` metadata and citation date through existing tooling.
+- [ ] Review the final shipping matrix and explicitly state bounded Archive/View scope.
+- [ ] Pass strict source CI for the exact chosen source: Rust format/lint/build,
+      tests and doctests; Python installed-wheel and semantic gates; public docs.
+      Green `v0.1.2` main CI does not verify the local 0.2.0 source.
+- [ ] Complete applicable current Stable Chrome/CDP certification and controlled
+      negative cases on the final source. Keep live-site results distinct.
+- [ ] Build release-profile native and Python artifacts and pass the existing
+      platform/interpreter installation matrix, including locked sdist rebuilds.
+- [ ] Verify crate metadata, `yosoi-contracts-derive` prerequisite and artifact contents.
+- [ ] Choose final beta `0.2.0` or a numbered candidate `0.2.0-rc.N`, and the
+      actual release date. Synchronize any change through `bump-version`.
+- [ ] Import authentic GitHub notes against `v0.1.2` from the chosen source ref,
+      review attribution and finalize canonical notes under `releases/`.
+- [ ] Pass `xtask release check` and present the publication decision with exact
+      source identity, artifact hashes, hosted outcomes and remaining gaps.
 
-1. Resolve the decisions in this guide and write the final supported contract.
-2. Complete the serious implementation pass: foreground coordination, terminal
-   and cleanup evidence, required subscriptions, memory budgets and provenance.
-3. Build and test the Python API against the same ownership and outcome rules.
-4. Exercise a real stateful workflow, dynamic page, multi-tab workflow and
-   JavaScript Flow. Pair live examples with controlled negative cases.
-5. Verify cancellation, browser failure, contention, watcher lag and large
-   captures. Verify Archive corruption and fresh-process replay if included.
-6. Recheck existing Request behavior and the current Stable Chrome baseline.
-7. Build the supported packages and install the Python wheel in a clean consumer
-   environment. Run the published examples with those installed artifacts.
-8. Finalize docs, version metadata, release notes and required CI before the
-   release decision. Run one expensive validation command at a time.
+Use the existing version, notes, CI and Release CD tooling. Run one expensive
+local validation at a time with one worker. Keep required gates intact and
+report skipped checks explicitly.
 
-## Decision to review
-
-Is this the right 0.2.0 scope? Tell me yes, no or needs discussion for each topic in chat, with a
-short note explaining changes. The guide
-does not automatically authorize implementation, landing or publishing.
-
-**Recommendation:** settle the public contract first, then implement and test
-against it. Your review should determine the next pass rather than simply bless
-the current spike.
+Preparation does not authorize tagging or publication. Candidates also publish
+Python packages, images and docs when publication is enabled; selecting a
+candidate does not make publication a local-only action.

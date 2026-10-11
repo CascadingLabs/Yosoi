@@ -1,69 +1,59 @@
 ---
 title: 'The same model in Python'
-description: '0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.'
+description: 'The implemented Python beta SDK, shared ownership model and current evidence.'
 order: 7
 ---
 
 # The same model in Python
 
-This page proposes the Python API for review. These examples are not claims of
-a verified Python implementation. Existing Python spike edits are parked.
+The Python browser SDK is implemented for the 0.2.0 beta. CAS-574 is complete,
+including installed-wheel consumer and controlled browser checks on the
+integrated Rust/Python source. The original proposed helpers on this review
+page are superseded by [Python browser workflows](../python/browser-workflows.md).
 
-## A task with automatic ownership
+## Automatic ownership
+
+Construct a reusable Flow from application-supplied action targets and Contract
+plans, then invoke it with optional policy binding:
 
 ```python
-import yosoi as ys
+outcome = await recipe.invoke()
+outcome.require_completed()
 
-steps = ys.flow([
-    ys.navigate(url),
-    ys.click("#advance"),
-    ys.enter_text("#query", "hello"),
-    ys.wait_until(ys.visible("#status.ready"), timeout_ms=5_000),
-    ys.assert_that(ys.count_at_least(".row", 12)),
-    ys.screenshot(),
-])
-
-outcome = await steps.bind(browser_policy).invoke()
+outcome = await recipe.bind(policy).invoke()
+outcome.require_completed()
 ```
 
-Python uses `invoke(lease=None)`: call `await steps.invoke()` for automatic
-ownership or `await steps.invoke(lease)` to borrow an existing lease.
-`bind(policy)` selects an explicit policy in these proposed examples.
-
-The runner owns acquisition and cleanup. The outcome still needs inspection;
-returning a value should not disguise a failed or unknown browser action.
+Yosoi acquires and cleans up resources owned by the managed invocation. The
+default continues after recoverable failures, retaining their receipts; choose
+`on_failure=ys.policy.Stop(scope="invocation")` when later actions depend on
+earlier success. `require_completed()` rejects failed or incomplete outcomes.
 
 ## Explicit Session and Work
 
 ```python
-async with ys.session(allow_arbitrary_js=True) as session:
-    async with session.work() as work:
-        await work.navigate(url)
+import yosoi as ys
 
-        steps = ys.flow([
-            ys.click("#advance"),
-            ys.evaluate("40 + 2"),
-            ys.screenshot(),
-        ])
-        outcome = await steps.invoke(work)
+async with ys.session(policy=policy) as session:
+    async with session.work() as work:
+        outcome = await recipe.invoke(work)
+        outcome.require_completed()
 ```
 
-The context managers release Work and close the Session, including on errors.
-The contract must retain cleanup failures and propagate Python cancellation to
-Rust without silently releasing a tab while an action may still be running.
+Invocation borrows Work. Its caller retains Session ownership and permission
+control; context managers release resources they own. Cleanup failures remain
+visible alongside operation errors. Python task cancellation signals Rust and
+does not roll back dispatched effects.
 
-## What needs proof
+## Beta limits and evidence
 
-- Installing an actual built wheel and running these workflows.
-- Cancelling a Python task while waiting for a lease and after dispatch.
-- Exceptions during an async context, including combined operation/cleanup errors.
-- Watcher use and shutdown without blocking the Python event loop.
-- Consistent receipts and Archive references across Rust and Python.
+The Python bridge exposes the initial Session tab and one borrowed Work lease.
+Explicit tab creation, Watcher streams, remote attachment and Rust Archive/View
+APIs remain outside this Python surface. Local assertion predicates are
+synchronous and must stay short and pure; cancellation cannot forcibly stop a
+running Python function.
 
-## Decision to review
-
-Do async context managers feel right for explicit Sessions and Work? Should
-simple Flow construction use these flat helpers or namespaces matching Rust?
-
-**Recommendation:** preserve the same ownership model with Python-native async
-cleanup. Final names should follow review of everyday examples.
+The [compatibility page](../python/compatibility.md) records installed-wheel
+results and source identity. Local Linux/Chrome checks do not certify the
+entire interpreter/platform matrix. The [release checklist](release.md) tracks
+remaining source CI, artifacts, notes and the publication decision.

@@ -14,10 +14,35 @@ not evidence that this candidate built or passed on each target.
 ## Current local candidate evidence
 
 The evidence below was collected in the default Yosoi workspace on 2026-10-11.
-These results record pre-integration snapshots. Integrations with newer main
-require their own source-pinned wheel, install, and runtime reports.
+The latest integration with main `46f9625a` has its own source-pinned wheel,
+install and runtime reports. Earlier snapshots remain below as history.
 The local development wheels use the `manylinux_2_39_x86_64` platform tag.
 Each result applies only to its named source snapshot.
+
+The verified integrated SDK source is
+`5453ee65c417776bd7a72e3334c8017c199ff664`. Wheels built from its locked source
+archive passed 307 consumer tests with eight skips on normal CPython 3.14.3 and
+308 with seven skips on free-threaded CPython 3.14.7. Three installed-wheel
+browser runs passed 13 tests each: normal headless, free-threaded headless and
+mixed managed-headless/borrowed-headful invocation. All used regular Chrome
+Stable 155.0.8059.39. Source, wheel, installed extension and JUnit hashes are
+retained in the reports. Nine semantic suites passed 1,030 comparisons on a
+fresh compiler inventory for that source.
+
+These are local Linux x86-64 development-artifact results. Release-profile
+artifacts, full hosted interpreter/platform coverage and Chrome/CDP certification
+remain separate gates in the [release checklist](../browser-automation-review/release.md).
+
+### Earlier candidate evidence
+
+Before the earlier candidates below, the later live-test source
+`05995a173b988c152dc10758ab85c6c6de4ecdf1` added bounded navigation diagnostics
+and opt-in live stress coverage. Its rebuilt free-threaded CPython 3.14.7 wheel
+passed 308 consumer tests with 18 skips and nine live scenarios on regular
+Chrome Stable 155.0.8059.39, including six confirmed Qscrape orders. Two rendering
+probes remained expected failures; an earlier unknown navigation remains
+recorded. These results are separate from the integrated-source loopback suites
+and do not establish full framework coverage or certification.
 
 | Source snapshot                                                                                                                 | Interpreter and wheel                   | Result                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -37,8 +62,8 @@ hashes as well as the JUnit hash. The earlier headful run used the same Chrome
 version and image. These are local loopback-fixture regression runs; they do
 not certify the full CDP baseline.
 
-The refreshed 1f172 wheel and reports were produced in the default workspace.
-An integration revision requires its own installed-artifact run. The
+The refreshed 1f172 wheel and reports were produced in the default workspace;
+the integrated-source runs above supersede that pre-integration checkpoint. The
 scoped SDK gate passed with no missing mappings and all nine required semantic
 suites passing. The broader compiler inventory is a separate audit; this does
 not establish individual behavioral evidence for every mapped declaration.
