@@ -1,5 +1,6 @@
 [package]
 name = "yosoi-cli"
+description = "Command-line interface for the Yosoi SDK."
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true

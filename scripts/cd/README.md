@@ -8,6 +8,18 @@ it runs formatting, lint, and synthetic artifact tests without compiling Rust.
 
 ## Release sequence
 
+For an already verified final release blocked only by missing Rust package
+descriptions, manual `complete_verified_run` selects the existing CD run.
+With `publish=false` it checks the original source CI, all native/wheel builds,
+all 30 artifact installs, all 30 PyPI installs, and existing Python file hashes.
+It rejects SDK input changes and manifest changes beyond adding missing
+descriptions. The workflow must run from main and its packaging revision must
+pass main CI. `publish=true` then verifies and publishes the corrected Rust
+archives, publishes the original smoke-tested images and release assets, and
+calls the existing docs workflow with the original bundle and tagged source.
+`RUST-PUBLICATION.json` records both source revisions and every Rust checksum.
+Release tags and existing Python files are never replaced by this path.
+
 Numbered release candidates use Cargo version `0.MINOR.PATCH-rc.N`, tag
 `v0.MINOR.PATCH-rc.N`, and Python package version `0.MINOR.PATCHrcN` (PEP 440).
 Use `cargo xtask bump-version VERSION --date-released YYYY-MM-DD -y` for the

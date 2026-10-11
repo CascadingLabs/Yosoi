@@ -14,6 +14,10 @@ on:
         description: Publish after all release checks pass
         type: boolean
         default: false
+      complete_verified_run:
+        description: Existing verified final CD run to complete after Rust description-only corrections; blank for ordinary CD
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -39,6 +43,7 @@ defaults:
 
 jobs:
   identity:
+    if: inputs.complete_verified_run == '' || inputs.complete_verified_run == null
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
@@ -787,6 +792,124 @@ jobs:
     with:
       source_commit: ${{ needs.identity.outputs.source_commit }}
       version: ${{ needs.identity.outputs.version }}
+      bundle_artifact: release-docs
+    secrets:
+      DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
+
+  complete-verified:
+    if: github.event_name == 'workflow_dispatch' && inputs.complete_verified_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      actions: read
+      packages: write
+    outputs:
+      source_commit: ${{ steps.proof.outputs.source_commit }}
+      version: ${{ steps.proof.outputs.version }}
+    steps:
+      - name: Restrict completion to main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          cache-key: release-crate-packaging
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Require successful main CI for the packaging revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uv run --locked --project scripts/releases python scripts/cd/ci.py --repository "$GITHUB_REPOSITORY" --source "$GITHUB_SHA"
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          run-id: ${{ inputs.complete_verified_run }}
+          github-token: ${{ github.token }}
+          name: verified-python-distributions
+          path: dist
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          run-id: ${{ inputs.complete_verified_run }}
+          github-token: ${{ github.token }}
+          name: release-identity
+      - name: Validate every original gate, Python hash, and SDK source input
+        id: proof
+        env:
+          VERIFIED_RUN: ${{ inputs.complete_verified_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: uv run --locked --project scripts/releases python scripts/cd/complete_release.py check --tag "$RELEASE_TAG" --run "$VERIFIED_RUN"
+      - name: Publish verified Rust packages and record their packaging source
+        if: inputs.publish
+        env:
+          VERIFIED_RUN: ${{ inputs.complete_verified_run }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/publish.py crates --tag "$RELEASE_TAG"
+          uv run --locked --project scripts/releases python scripts/cd/complete_release.py receipts --tag "$RELEASE_TAG" --run "$VERIFIED_RUN"
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        if: inputs.publish
+        with:
+          run-id: ${{ inputs.complete_verified_run }}
+          github-token: ${{ github.token }}
+          pattern: release-container-*
+          path: containers
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        if: inputs.publish
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        if: inputs.publish
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish original smoke-tested Chromium images
+        if: inputs.publish
+        env:
+          VERSION: ${{ steps.proof.outputs.version }}
+        run: uv run --locked --project scripts/releases python scripts/cd/containers.py publish --directory containers --version "$VERSION" --repository ghcr.io/cascadinglabs/chromium-cdp
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        if: inputs.publish
+        with:
+          run-id: ${{ inputs.complete_verified_run }}
+          github-token: ${{ github.token }}
+          pattern: release-cli-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        if: inputs.publish
+        with:
+          run-id: ${{ inputs.complete_verified_run }}
+          github-token: ${{ github.token }}
+          name: release-docs
+          path: dist
+      - name: Publish original release assets with explicit Rust provenance
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp release-plan.json dist/
+          uv run --locked --project scripts/releases python scripts/cd/release.py checksums --tag "$RELEASE_TAG" > dist/SHA256SUMS
+          uv run --locked --project scripts/releases python scripts/cd/publish.py github --tag "$RELEASE_TAG" --finalize
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: inputs.publish
+        with:
+          name: release-docs
+          path: |
+            dist/yosoi-docs-v*.tar.gz
+          if-no-files-found: error
+
+  complete-docs:
+    needs: complete-verified
+    if: ${{ !cancelled() && inputs.publish && needs.complete-verified.result == 'success' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/docs-publish.yml
+    with:
+      source_commit: ${{ needs.complete-verified.outputs.source_commit }}
+      version: ${{ needs.complete-verified.outputs.version }}
       bundle_artifact: release-docs
     secrets:
       DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}

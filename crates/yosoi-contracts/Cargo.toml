@@ -1,5 +1,6 @@
 [package]
 name = "yosoi-contracts"
+description = "Typed extraction contracts for the Yosoi SDK."
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
