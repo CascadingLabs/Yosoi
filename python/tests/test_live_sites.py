@@ -139,6 +139,37 @@ def _ten_quotes(record: Any) -> bool:
     )
 
 
+@pytest.mark.parametrize("framework", ["react", "vue", "svelte", "solid"])
+def test_live_framework_render_diagnostics(framework: str) -> None:
+    async def run() -> None:
+        async with ys.session(settings=_javascript_settings()) as session:
+            async with session.work() as lease:
+                outcome = await _flow(
+                    [
+                        ys.navigate(SHOP),
+                        ys.wait_until(
+                            ys.exists('[data-slot="product-grid"][data-active-fw]'),
+                            15_000,
+                        ),
+                        _select_framework(framework),
+                        ys.wait_until(
+                            ys.count_at_least(f"{ACTIVE} article[data-sku]", 1), 15_000
+                        ),
+                    ]
+                ).invoke(lease)
+                _record(f"framework-{framework}", outcome)
+                # This probe retains unsupported live rendering as a failed
+                # observation. It never converts it into a successful checkout.
+                if outcome.terminal != "completed":
+                    assert outcome.terminal in ("failed", "unknown")
+                    assert outcome.steps
+                    assert any(step.failure for step in outcome.steps)
+                    return
+                outcome.require_completed()
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize(
     ("name", "url", "selector"),
     [

@@ -39,6 +39,14 @@ impl BrowserControlError {
     pub fn execution_message(&self) -> String {
         let message = match self {
             Self::Provider(provider::VoidCrawlError::JsEvalError(message)) => message.clone(),
+            Self::Provider(error @ provider::VoidCrawlError::NavigationFailed(reason)) => {
+                format!(
+                    "{} [{}; {}]",
+                    error.safe_message(),
+                    error.code(),
+                    navigation_failure_kind(reason)
+                )
+            }
             Self::Provider(error) => format!("{} [{}]", error.safe_message(), error.code()),
             _ => self.to_string(),
         };
@@ -59,6 +67,41 @@ impl BrowserControlError {
                         | provider::VoidCrawlError::RendererCrashed
                 )
         )
+    }
+}
+
+/// Classify only fixed provider messages; arbitrary diagnostics may contain URLs or secrets.
+fn navigation_failure_kind(reason: &str) -> &'static str {
+    match reason {
+        "Request timed out." => "provider_timeout",
+        "Received no response from the chromium instance." => "provider_no_response",
+        "The CDP session owning the requested frame detached." => "provider_session_detached",
+        "net::ERR_ABORTED" => "network_aborted",
+        "net::ERR_CONNECTION_RESET" => "network_connection_reset",
+        "net::ERR_TIMED_OUT" => "network_timeout",
+        "net::ERR_NAME_NOT_RESOLVED" => "network_name_not_resolved",
+        "net::ERR_CONNECTION_CLOSED" => "network_connection_closed",
+        _ => "provider_navigation_failure",
+    }
+}
+
+#[cfg(test)]
+mod navigation_diagnostic_tests {
+    use super::{BrowserControlError, provider};
+
+    #[test]
+    fn reports_network_abort_without_exposing_arbitrary_provider_text() {
+        let aborted = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
+            "net::ERR_ABORTED".to_owned(),
+        ));
+        assert!(aborted.execution_message().contains("network_aborted"));
+        let private = BrowserControlError::Provider(provider::VoidCrawlError::NavigationFailed(
+            "https://example.test/?access_token=private-token".to_owned(),
+        ));
+        let message = private.execution_message();
+        assert!(message.contains("provider_navigation_failure"));
+        assert!(!message.contains("private-token"));
+        assert!(!message.contains("example.test"));
     }
 }
 
