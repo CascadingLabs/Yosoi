@@ -182,11 +182,7 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
                         ),
                         lease,
                     )
-                    response = (
-                        await ys.PageRequest(target=ys.WebTarget(url))
-                        .with_work(lease)
-                        .send()
-                    )
+                    response = await ys.request.new(url).with_work(lease).send()
                     _record(f"books-response-{iteration}", response)
                     assert response.termination == "completed"
                     assert response.documents
@@ -239,7 +235,9 @@ def test_live_javascript_snapshots_permissions_and_exports(tmp_path: Path) -> No
                 assert denied.steps[0].receipt.status == "rejected"
                 await _invoke(
                     "javascript-owner-recovery",
-                    _flow([ys.assert_(ys.count_at_least("article.product_pod", 20))]),
+                    _flow(
+                        [ys.assert_that(ys.count_at_least("article.product_pod", 20))]
+                    ),
                     lease,
                 )
 
