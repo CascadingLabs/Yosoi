@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::View",
+  "publicPath": "yosoi::view::View",
+  "kind": "struct",
+  "title": "yosoi::view::View",
+  "signature": "pub struct View",
+  "docs": "One bounded page of deterministic DOM element references from an observation.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 143,
+    "lineEnd": 150,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L143-L150"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::View"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::View::capture_token",
+      "publicPath": "yosoi::view::View::capture_token",
+      "title": "yosoi::view::View::capture_token",
+      "kind": "function",
+      "signature": "pub const fn capture_token(&self) -> &yosoi::view::ViewCaptureToken",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 177,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L177-L179"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::clone",
+      "publicPath": "yosoi::view::View::clone",
+      "title": "yosoi::view::View::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::View",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::View::continue_from",
+      "publicPath": "yosoi::view::View::continue_from",
+      "title": "yosoi::view::View::continue_from",
+      "kind": "function",
+      "signature": "pub fn continue_from(observation: &yosoi::automation_record::Observation, cursor: &yosoi::view::ViewCursor) -> Result<Self, yosoi::view::ViewError>",
+      "docs": "Builds the next page after validating the cursor against its source capture.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 163,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L163-L171"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::deserialize",
+      "publicPath": "yosoi::view::View::deserialize",
+      "title": "yosoi::view::View::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::View::eq",
+      "publicPath": "yosoi::view::View::eq",
+      "title": "yosoi::view::View::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::View) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::View::fmt",
+      "publicPath": "yosoi::view::View::fmt",
+      "title": "yosoi::view::View::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::View::from_observation",
+      "publicPath": "yosoi::view::View::from_observation",
+      "title": "yosoi::view::View::from_observation",
+      "kind": "function",
+      "signature": "pub fn from_observation(observation: &yosoi::automation_record::Observation, page_size: usize) -> Result<Self, yosoi::view::ViewError>",
+      "docs": "Builds the first offline DOM page for captured HTML evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 154,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L154-L160"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::next_cursor",
+      "publicPath": "yosoi::view::View::next_cursor",
+      "title": "yosoi::view::View::next_cursor",
+      "kind": "function",
+      "signature": "pub const fn next_cursor(&self) -> Option<&yosoi::view::ViewCursor>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 193,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L193-L195"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::page_size",
+      "publicPath": "yosoi::view::View::page_size",
+      "title": "yosoi::view::View::page_size",
+      "kind": "function",
+      "signature": "pub const fn page_size(&self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 189,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L189-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::rows",
+      "publicPath": "yosoi::view::View::rows",
+      "title": "yosoi::view::View::rows",
+      "kind": "function",
+      "signature": "pub fn rows(&self) -> &[yosoi::view::DomElementRow]",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 181,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L181-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::serialize",
+      "publicPath": "yosoi::view::View::serialize",
+      "title": "yosoi::view::View::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::view::View::source",
+      "publicPath": "yosoi::view::View::source",
+      "title": "yosoi::view::View::source",
+      "kind": "function",
+      "signature": "pub const fn source(&self) -> &yosoi::view::ViewSource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 173,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L173-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::total_rows",
+      "publicPath": "yosoi::view::View::total_rows",
+      "title": "yosoi::view::View::total_rows",
+      "kind": "function",
+      "signature": "pub const fn total_rows(&self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 185,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L185-L187"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::verify_condition",
+      "publicPath": "yosoi::view::View::verify_condition",
+      "title": "yosoi::view::View::verify_condition",
+      "kind": "function",
+      "signature": "pub fn verify_condition(&self, observation: &yosoi::automation_record::Observation, condition: &yosoi::flow::Condition) -> Result<bool, yosoi::view::ViewError>",
+      "docs": "Verifies a supported assertion against the same immutable observation.\n\nExists and CountAtLeast use only the captured HTML and Yosoi's CSS\nlocator. Visible requires live layout state and returns an explicit\nunsupported error for this offline view.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 202,
+        "lineEnd": 221,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L202-L221"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "acaafd595594c652804490bc5b25031ca8fe710455f3f35c5bdc5227d8995d0c",
+  "slug": "yosoi/view/struct/view",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "acaafd595594c652804490bc5b25031ca8fe710455f3f35c5bdc5227d8995d0c"
+}

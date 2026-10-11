@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::FlowPolicy",
+  "publicPath": "yosoi::FlowPolicy",
+  "kind": "struct",
+  "title": "yosoi::FlowPolicy",
+  "signature": "pub struct FlowPolicy",
+  "docs": "Fallback behavior for failed and locally cancelled Flow steps.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+    "lineStart": 33,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L33-L40"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 30,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/lib.rs#L30-L30"
+  },
+  "aliases": [
+    "yosoi::flow::FlowPolicy",
+    "yosoi::policy::FlowPolicy",
+    "yosoi::prelude::FlowPolicy",
+    "yosoi::prelude::flow::FlowPolicy",
+    "yosoi::prelude::policy::FlowPolicy"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::FlowPolicy::clone",
+      "publicPath": "yosoi::FlowPolicy::clone",
+      "title": "yosoi::FlowPolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::FlowPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::default",
+      "publicPath": "yosoi::FlowPolicy::default",
+      "title": "yosoi::FlowPolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::FlowPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::deserialize",
+      "publicPath": "yosoi::FlowPolicy::deserialize",
+      "title": "yosoi::FlowPolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::eq",
+      "publicPath": "yosoi::FlowPolicy::eq",
+      "title": "yosoi::FlowPolicy::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::FlowPolicy) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::fmt",
+      "publicPath": "yosoi::FlowPolicy::fmt",
+      "title": "yosoi::FlowPolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::is_default",
+      "publicPath": "yosoi::FlowPolicy::is_default",
+      "title": "yosoi::FlowPolicy::is_default",
+      "kind": "function",
+      "signature": "pub const fn is_default(&self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 43,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L43-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::FlowPolicy::on_cancellation",
+      "publicPath": "yosoi::FlowPolicy::on_cancellation",
+      "title": "yosoi::FlowPolicy::on_cancellation",
+      "kind": "struct_field",
+      "signature": "pub on_cancellation: yosoi::Continuation",
+      "docs": "Behavior when a step-local cancellation token is cancelled.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L39-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::FlowPolicy::on_failure",
+      "publicPath": "yosoi::FlowPolicy::on_failure",
+      "title": "yosoi::FlowPolicy::on_failure",
+      "kind": "struct_field",
+      "signature": "pub on_failure: yosoi::Continuation",
+      "docs": "Behavior when an action or assertion fails.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L36-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::FlowPolicy::serialize",
+      "publicPath": "yosoi::FlowPolicy::serialize",
+      "title": "yosoi::FlowPolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0b77e6dfcc608c251303307ecd2fe32a9ada8b5796b049716211bd78bd8670c1",
+  "slug": "yosoi/struct/flowpolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0b77e6dfcc608c251303307ecd2fe32a9ada8b5796b049716211bd78bd8670c1"
+}

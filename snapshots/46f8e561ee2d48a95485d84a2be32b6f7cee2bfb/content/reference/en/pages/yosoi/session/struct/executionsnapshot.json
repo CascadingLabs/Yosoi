@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::ExecutionSnapshot",
+  "publicPath": "yosoi::session::ExecutionSnapshot",
+  "kind": "struct",
+  "title": "yosoi::session::ExecutionSnapshot",
+  "signature": "pub struct ExecutionSnapshot",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 40,
+    "lineEnd": 48,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L40-L48"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 30,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L30-L30"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionSnapshot"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::active",
+      "publicPath": "yosoi::session::ExecutionSnapshot::active",
+      "title": "yosoi::session::ExecutionSnapshot::active",
+      "kind": "struct_field",
+      "signature": "pub active: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::admitted",
+      "publicPath": "yosoi::session::ExecutionSnapshot::admitted",
+      "title": "yosoi::session::ExecutionSnapshot::admitted",
+      "kind": "struct_field",
+      "signature": "pub admitted: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L47-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::capacity",
+      "publicPath": "yosoi::session::ExecutionSnapshot::capacity",
+      "title": "yosoi::session::ExecutionSnapshot::capacity",
+      "kind": "struct_field",
+      "signature": "pub capacity: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L41-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::clone",
+      "publicPath": "yosoi::session::ExecutionSnapshot::clone",
+      "title": "yosoi::session::ExecutionSnapshot::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::eq",
+      "publicPath": "yosoi::session::ExecutionSnapshot::eq",
+      "title": "yosoi::session::ExecutionSnapshot::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::ExecutionSnapshot) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::fmt",
+      "publicPath": "yosoi::session::ExecutionSnapshot::fmt",
+      "title": "yosoi::session::ExecutionSnapshot::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::parked",
+      "publicPath": "yosoi::session::ExecutionSnapshot::parked",
+      "title": "yosoi::session::ExecutionSnapshot::parked",
+      "kind": "struct_field",
+      "signature": "pub parked: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L44-L44"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::peak_active",
+      "publicPath": "yosoi::session::ExecutionSnapshot::peak_active",
+      "title": "yosoi::session::ExecutionSnapshot::peak_active",
+      "kind": "struct_field",
+      "signature": "pub peak_active: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::queued",
+      "publicPath": "yosoi::session::ExecutionSnapshot::queued",
+      "title": "yosoi::session::ExecutionSnapshot::queued",
+      "kind": "struct_field",
+      "signature": "pub queued: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::waiting",
+      "publicPath": "yosoi::session::ExecutionSnapshot::waiting",
+      "title": "yosoi::session::ExecutionSnapshot::waiting",
+      "kind": "struct_field",
+      "signature": "pub waiting: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L45-L45"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/executionsnapshot",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

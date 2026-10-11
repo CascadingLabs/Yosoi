@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Tab",
+  "publicPath": "yosoi::session::Tab",
+  "kind": "struct",
+  "title": "yosoi::session::Tab",
+  "signature": "pub struct Tab",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 817,
+    "lineEnd": 821,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L817-L821"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::Tab"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Tab::close",
+      "publicPath": "yosoi::session::Tab::close",
+      "title": "yosoi::session::Tab::close",
+      "kind": "function",
+      "signature": "pub async fn close(&self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "Closes only this tab and revokes any held control; other tabs remain usable.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 829,
+        "lineEnd": 838,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L829-L838"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Tab::fmt",
+      "publicPath": "yosoi::session::Tab::fmt",
+      "title": "yosoi::session::Tab::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 823,
+        "lineEnd": 825,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L823-L825"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Tab::work",
+      "publicPath": "yosoi::session::Tab::work",
+      "title": "yosoi::session::Tab::work",
+      "kind": "function",
+      "signature": "pub async fn work(&self) -> Result<yosoi::session::Work, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 839,
+        "lineEnd": 848,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L839-L848"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/tab",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

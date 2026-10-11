@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::Check",
+  "publicPath": "yosoi::assertions::Check",
+  "kind": "struct",
+  "title": "yosoi::assertions::Check",
+  "signature": "pub struct Check<'a, C>",
+  "docs": "A pure comparison. Captures may borrow when evaluated as a local group.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 30,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L30-L33"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::Check::fmt",
+      "publicPath": "yosoi::assertions::Check::fmt",
+      "title": "yosoi::assertions::Check::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 35,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L35-L39"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::Check::named",
+      "publicPath": "yosoi::assertions::Check::named",
+      "title": "yosoi::assertions::Check::named",
+      "kind": "function",
+      "signature": "pub fn named(self, name: impl Into<String>) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L48-L51"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2b02e48220a7262e863f08fe6e0825e1b46448e6bcb7f535618d6853a366e38f",
+  "slug": "yosoi/assertions/struct/check",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2b02e48220a7262e863f08fe6e0825e1b46448e6bcb7f535618d6853a366e38f"
+}

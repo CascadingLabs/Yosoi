@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::LocalAssertion",
+  "publicPath": "yosoi::assertions::LocalAssertion",
+  "kind": "struct",
+  "title": "yosoi::assertions::LocalAssertion",
+  "signature": "pub struct LocalAssertion",
+  "docs": "A local executable group plus a portable description. Closure code is never serialized.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 248,
+    "lineEnd": 251,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L248-L251"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::clone",
+      "publicPath": "yosoi::assertions::LocalAssertion::clone",
+      "title": "yosoi::assertions::LocalAssertion::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::LocalAssertion",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 247,
+        "lineEnd": 247,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L247-L247"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::descriptor_id",
+      "publicPath": "yosoi::assertions::LocalAssertion::descriptor_id",
+      "title": "yosoi::assertions::LocalAssertion::descriptor_id",
+      "kind": "function",
+      "signature": "pub fn descriptor_id(&self) -> &str",
+      "docs": "Returns the Rust-generated descriptor identity used to rebind an external evaluator.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 331,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L331-L333"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::deserialize",
+      "publicPath": "yosoi::assertions::LocalAssertion::deserialize",
+      "title": "yosoi::assertions::LocalAssertion::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, <D as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 272,
+        "lineEnd": 278,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L272-L278"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::eq",
+      "publicPath": "yosoi::assertions::LocalAssertion::eq",
+      "title": "yosoi::assertions::LocalAssertion::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 261,
+        "lineEnd": 263,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L261-L263"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::fmt",
+      "publicPath": "yosoi::assertions::LocalAssertion::fmt",
+      "title": "yosoi::assertions::LocalAssertion::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 253,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L253-L258"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::is_bound",
+      "publicPath": "yosoi::assertions::LocalAssertion::is_bound",
+      "title": "yosoi::assertions::LocalAssertion::is_bound",
+      "kind": "function",
+      "signature": "pub fn is_bound(&self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 358,
+        "lineEnd": 360,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L358-L360"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::new_external_descriptor",
+      "publicPath": "yosoi::assertions::LocalAssertion::new_external_descriptor",
+      "title": "yosoi::assertions::LocalAssertion::new_external_descriptor",
+      "kind": "function",
+      "signature": "pub fn new_external_descriptor(contract_type: String, plan: yosoi::locators::Plan, names: Vec<Option<String>>) -> Result<Self, yosoi::assertions::AssertionError>",
+      "docs": "Creates a portable descriptor for an evaluator supplied by another language runtime.\nThe generated identity is owned by Rust and the executable callback is never serialized.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 306,
+        "lineEnd": 328,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L306-L328"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::rebind",
+      "publicPath": "yosoi::assertions::LocalAssertion::rebind",
+      "title": "yosoi::assertions::LocalAssertion::rebind",
+      "kind": "function",
+      "signature": "pub fn rebind<C: yosoi::contracts::ValidateContract + 'static>(&mut self, checks: impl IntoIterator<Item = yosoi::assertions::Check<'static, C>>) -> Result<(), yosoi::assertions::AssertionError>",
+      "docs": "Rebind exactly the saved contract, Plan and check names/positions.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 421,
+        "lineEnd": 433,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L421-L433"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::rebind_external",
+      "publicPath": "yosoi::assertions::LocalAssertion::rebind_external",
+      "title": "yosoi::assertions::LocalAssertion::rebind_external",
+      "kind": "function",
+      "signature": "pub fn rebind_external(&mut self, evaluator: impl Fn(&str, &str) -> Result<yosoi::assertions::AssertionReport, yosoi::assertions::AssertionError> + Send + Sync + 'static)",
+      "docs": "Binds an external evaluator to this exact saved plan, Contract type and check list.\nThe callback receives the canonical located observation and the active Policy as JSON.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 337,
+        "lineEnd": 356,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L337-L356"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::LocalAssertion::serialize",
+      "publicPath": "yosoi::assertions::LocalAssertion::serialize",
+      "title": "yosoi::assertions::LocalAssertion::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S: Serializer>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 267,
+        "lineEnd": 269,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/assertions.rs#L267-L269"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "39560a8b9df0570fa032b037bc306c7a55e74b34346339e37c0722cd4eedfad9",
+  "slug": "yosoi/assertions/struct/localassertion",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "39560a8b9df0570fa032b037bc306c7a55e74b34346339e37c0722cd4eedfad9"
+}

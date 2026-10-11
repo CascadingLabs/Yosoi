@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::ActionKind",
+  "publicPath": "yosoi::session::ActionKind",
+  "kind": "enum",
+  "title": "yosoi::session::ActionKind",
+  "signature": "pub enum ActionKind",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 63,
+    "lineEnd": 71,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L63-L71"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::ActionKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::ActionKind::Assert",
+      "publicPath": "yosoi::session::ActionKind::Assert",
+      "title": "yosoi::session::ActionKind::Assert",
+      "kind": "variant",
+      "signature": "Assert",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::Click",
+      "publicPath": "yosoi::session::ActionKind::Click",
+      "title": "yosoi::session::ActionKind::Click",
+      "kind": "variant",
+      "signature": "Click",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::EnterText",
+      "publicPath": "yosoi::session::ActionKind::EnterText",
+      "title": "yosoi::session::ActionKind::EnterText",
+      "kind": "variant",
+      "signature": "EnterText",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::Evaluate",
+      "publicPath": "yosoi::session::ActionKind::Evaluate",
+      "title": "yosoi::session::ActionKind::Evaluate",
+      "kind": "variant",
+      "signature": "Evaluate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::Navigate",
+      "publicPath": "yosoi::session::ActionKind::Navigate",
+      "title": "yosoi::session::ActionKind::Navigate",
+      "kind": "variant",
+      "signature": "Navigate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L64-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::Screenshot",
+      "publicPath": "yosoi::session::ActionKind::Screenshot",
+      "title": "yosoi::session::ActionKind::Screenshot",
+      "kind": "variant",
+      "signature": "Screenshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L67-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ActionKind::Wait",
+      "publicPath": "yosoi::session::ActionKind::Wait",
+      "title": "yosoi::session::ActionKind::Wait",
+      "kind": "variant",
+      "signature": "Wait",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ActionKind::clone",
+      "publicPath": "yosoi::session::ActionKind::clone",
+      "title": "yosoi::session::ActionKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ActionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ActionKind::deserialize",
+      "publicPath": "yosoi::session::ActionKind::deserialize",
+      "title": "yosoi::session::ActionKind::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::session::ActionKind::eq",
+      "publicPath": "yosoi::session::ActionKind::eq",
+      "title": "yosoi::session::ActionKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::ActionKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::ActionKind::fmt",
+      "publicPath": "yosoi::session::ActionKind::fmt",
+      "title": "yosoi::session::ActionKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::ActionKind::serialize",
+      "publicPath": "yosoi::session::ActionKind::serialize",
+      "title": "yosoi::session::ActionKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/enum/actionkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

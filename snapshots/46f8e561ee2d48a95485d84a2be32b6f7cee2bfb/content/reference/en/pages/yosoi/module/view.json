@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::view",
+  "publicPath": "yosoi::view",
+  "kind": "module",
+  "title": "yosoi::view",
+  "signature": "pub mod view",
+  "docs": "Bounded offline views over captured browser observations.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 1,
+    "lineEnd": 582,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L1-L582"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "16c7a985f81fafc68d31a19700f114c6bcb55c9948b3c12f3447a149ee68d673",
+  "slug": "yosoi/module/view",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "16c7a985f81fafc68d31a19700f114c6bcb55c9948b3c12f3447a149ee68d673"
+}

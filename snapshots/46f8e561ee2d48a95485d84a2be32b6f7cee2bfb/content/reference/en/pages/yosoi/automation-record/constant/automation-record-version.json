@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::AUTOMATION_RECORD_VERSION",
+  "publicPath": "yosoi::automation_record::AUTOMATION_RECORD_VERSION",
+  "kind": "constant",
+  "title": "yosoi::automation_record::AUTOMATION_RECORD_VERSION",
+  "signature": "pub const AUTOMATION_RECORD_VERSION: u32 = 1;",
+  "docs": "Current logical schema version for an [`AutomationRecord`].",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L28-L28"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "4315175f819d1b9ecb521532bdfb811f07bc2b25c7b3aba1feae775e34a3a4dd",
+  "slug": "yosoi/automation-record/constant/automation-record-version",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4315175f819d1b9ecb521532bdfb811f07bc2b25c7b3aba1feae775e34a3a4dd"
+}

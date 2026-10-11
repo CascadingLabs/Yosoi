@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::FlowOutcome",
+  "publicPath": "yosoi::flow::FlowOutcome",
+  "kind": "struct",
+  "title": "yosoi::flow::FlowOutcome",
+  "signature": "pub struct FlowOutcome",
+  "docs": "The flow definition and every operation result retained before termination.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 712,
+    "lineEnd": 739,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L712-L739"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowOutcome"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::cleanup",
+      "publicPath": "yosoi::flow::FlowOutcome::cleanup",
+      "title": "yosoi::flow::FlowOutcome::cleanup",
+      "kind": "struct_field",
+      "signature": "pub cleanup: Vec<yosoi::automation_record::OperationReceipt>",
+      "docs": "Managed release and close evidence, retained after execution starts.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 733,
+        "lineEnd": 733,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L733-L733"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowOutcome::clone",
+      "publicPath": "yosoi::flow::FlowOutcome::clone",
+      "title": "yosoi::flow::FlowOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 710,
+        "lineEnd": 710,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L710-L710"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::continuation_defaults",
+      "publicPath": "yosoi::flow::FlowOutcome::continuation_defaults",
+      "title": "yosoi::flow::FlowOutcome::continuation_defaults",
+      "kind": "struct_field",
+      "signature": "pub continuation_defaults: yosoi::FlowPolicy",
+      "docs": "Global fallback policies used for this invocation.\nLegacy outcomes use Continue for both events.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 724,
+        "lineEnd": 724,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L724-L724"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowOutcome::deserialize",
+      "publicPath": "yosoi::flow::FlowOutcome::deserialize",
+      "title": "yosoi::flow::FlowOutcome::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 710,
+        "lineEnd": 710,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L710-L710"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::failure_capture",
+      "publicPath": "yosoi::flow::FlowOutcome::failure_capture",
+      "title": "yosoi::flow::FlowOutcome::failure_capture",
+      "kind": "struct_field",
+      "signature": "pub failure_capture: Option<yosoi::automation_record::OperationReceipt>",
+      "docs": "Optional screenshot result captured after a failed or unknown step.\nA rejected or unknown receipt records a capture error without replacing\nthe original terminal status or step receipts.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 738,
+        "lineEnd": 738,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L738-L738"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::flow",
+      "publicPath": "yosoi::flow::FlowOutcome::flow",
+      "title": "yosoi::flow::FlowOutcome::flow",
+      "kind": "struct_field",
+      "signature": "pub flow: yosoi::flow::Flow",
+      "docs": "Flow definition that was executed.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 716,
+        "lineEnd": 716,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L716-L716"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowOutcome::fmt",
+      "publicPath": "yosoi::flow::FlowOutcome::fmt",
+      "title": "yosoi::flow::FlowOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 710,
+        "lineEnd": 710,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L710-L710"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowOutcome::require_completed",
+      "publicPath": "yosoi::flow::FlowOutcome::require_completed",
+      "title": "yosoi::flow::FlowOutcome::require_completed",
+      "kind": "function",
+      "signature": "pub fn require_completed(&self) -> Result<(), yosoi::flow::FlowCompletionError>",
+      "docs": "Requires actual completion while leaving this outcome/evidence available.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 801,
+        "lineEnd": 821,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L801-L821"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowOutcome::serialize",
+      "publicPath": "yosoi::flow::FlowOutcome::serialize",
+      "title": "yosoi::flow::FlowOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 742,
+        "lineEnd": 792,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L742-L792"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::skipped_steps",
+      "publicPath": "yosoi::flow::FlowOutcome::skipped_steps",
+      "title": "yosoi::flow::FlowOutcome::skipped_steps",
+      "kind": "struct_field",
+      "signature": "pub skipped_steps: Vec<yosoi::flow::SkippedStep>",
+      "docs": "Leaves omitted by a scoped stop, each with its trigger path and reason.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 730,
+        "lineEnd": 730,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L730-L730"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::steps",
+      "publicPath": "yosoi::flow::FlowOutcome::steps",
+      "title": "yosoi::flow::FlowOutcome::steps",
+      "kind": "struct_field",
+      "signature": "pub steps: Vec<yosoi::flow::StepOutcome>",
+      "docs": "Completed and terminal step records in execution order.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 718,
+        "lineEnd": 718,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L718-L718"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::stop_reason",
+      "publicPath": "yosoi::flow::FlowOutcome::stop_reason",
+      "title": "yosoi::flow::FlowOutcome::stop_reason",
+      "kind": "struct_field",
+      "signature": "pub stop_reason: Option<yosoi::flow::FlowStopReason>",
+      "docs": "Reason execution stopped, when a hard stop or authored Stop policy applied.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 727,
+        "lineEnd": 727,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L727-L727"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::terminal",
+      "publicPath": "yosoi::flow::FlowOutcome::terminal",
+      "title": "yosoi::flow::FlowOutcome::terminal",
+      "kind": "struct_field",
+      "signature": "pub terminal: yosoi::flow::FlowTermination",
+      "docs": "Whether execution completed or stopped early.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 720,
+        "lineEnd": 720,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L720-L720"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowOutcome::version",
+      "publicPath": "yosoi::flow::FlowOutcome::version",
+      "title": "yosoi::flow::FlowOutcome::version",
+      "kind": "struct_field",
+      "signature": "pub version: u32",
+      "docs": "Flow outcome schema version. Version 3 records continuation and skipped paths.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 714,
+        "lineEnd": 714,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/flow/model.rs#L714-L714"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c95c007c1f3c8b3a6a85e3d7177171be461b9bf97c128374a5030c184983ef0c",
+  "slug": "yosoi/flow/struct/flowoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c95c007c1f3c8b3a6a85e3d7177171be461b9bf97c128374a5030c184983ef0c"
+}

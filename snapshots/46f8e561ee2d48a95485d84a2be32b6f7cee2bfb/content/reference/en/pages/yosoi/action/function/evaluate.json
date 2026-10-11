@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::evaluate",
+  "publicPath": "yosoi::action::evaluate",
+  "kind": "function",
+  "title": "yosoi::action::evaluate",
+  "signature": "pub fn evaluate(source: impl Into<String>) -> yosoi::flow::Step",
+  "docs": "Creates a policy-approved script evaluation step.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 84,
+    "lineEnd": 88,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action.rs#L84-L88"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::evaluate"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "25045edb2fb3715e16f02c34bcc4605aa4ce66307fc39bfeb130dd6012921024",
+  "slug": "yosoi/action/function/evaluate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "25045edb2fb3715e16f02c34bcc4605aa4ce66307fc39bfeb130dd6012921024"
+}

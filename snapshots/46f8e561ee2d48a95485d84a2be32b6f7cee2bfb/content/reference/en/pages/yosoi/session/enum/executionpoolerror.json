@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::ExecutionPoolError",
+  "publicPath": "yosoi::session::ExecutionPoolError",
+  "kind": "enum",
+  "title": "yosoi::session::ExecutionPoolError",
+  "signature": "pub enum ExecutionPoolError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 11,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L11-L18"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 30,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L30-L30"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionPoolError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::Closed",
+      "publicPath": "yosoi::session::ExecutionPoolError::Closed",
+      "title": "yosoi::session::ExecutionPoolError::Closed",
+      "kind": "variant",
+      "signature": "Closed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::InvalidLimits",
+      "publicPath": "yosoi::session::ExecutionPoolError::InvalidLimits",
+      "title": "yosoi::session::ExecutionPoolError::InvalidLimits",
+      "kind": "variant",
+      "signature": "InvalidLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::QueueFull",
+      "publicPath": "yosoi::session::ExecutionPoolError::QueueFull",
+      "title": "yosoi::session::ExecutionPoolError::QueueFull",
+      "kind": "variant",
+      "signature": "QueueFull",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::clone",
+      "publicPath": "yosoi::session::ExecutionPoolError::clone",
+      "title": "yosoi::session::ExecutionPoolError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionPoolError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::eq",
+      "publicPath": "yosoi::session::ExecutionPoolError::eq",
+      "title": "yosoi::session::ExecutionPoolError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::ExecutionPoolError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::fmt",
+      "publicPath": "yosoi::session::ExecutionPoolError::fmt",
+      "title": "yosoi::session::ExecutionPoolError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::fmt",
+      "publicPath": "yosoi::session::ExecutionPoolError::fmt",
+      "title": "yosoi::session::ExecutionPoolError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/enum/executionpoolerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

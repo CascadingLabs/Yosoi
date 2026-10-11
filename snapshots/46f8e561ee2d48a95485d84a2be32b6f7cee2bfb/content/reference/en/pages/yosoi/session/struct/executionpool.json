@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::ExecutionPool",
+  "publicPath": "yosoi::session::ExecutionPool",
+  "kind": "struct",
+  "title": "yosoi::session::ExecutionPool",
+  "signature": "pub struct ExecutionPool",
+  "docs": "Clone/share this pool across Sessions to bound work across browser processes.\nIt lends execution slots, never tab or browser ownership. Admission is FIFO.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 23,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L23-L25"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 30,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L30-L30"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionPool"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::ExecutionPool::clone",
+      "publicPath": "yosoi::session::ExecutionPool::clone",
+      "title": "yosoi::session::ExecutionPool::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionPool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::fmt",
+      "publicPath": "yosoi::session::ExecutionPool::fmt",
+      "title": "yosoi::session::ExecutionPool::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::new",
+      "publicPath": "yosoi::session::ExecutionPool::new",
+      "title": "yosoi::session::ExecutionPool::new",
+      "kind": "function",
+      "signature": "pub fn new(concurrency: u32, queue_capacity: u32) -> Result<Self, yosoi::session::ExecutionPoolError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 51,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L51-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::snapshot",
+      "publicPath": "yosoi::session::ExecutionPool::snapshot",
+      "title": "yosoi::session::ExecutionPool::snapshot",
+      "kind": "function",
+      "signature": "pub fn snapshot(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 75,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L75-L85"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::subscribe",
+      "publicPath": "yosoi::session::ExecutionPool::subscribe",
+      "title": "yosoi::session::ExecutionPool::subscribe",
+      "kind": "function",
+      "signature": "pub fn subscribe(&self) -> broadcast::Receiver<yosoi::session::ExecutionSnapshot>",
+      "docs": "Bounded telemetry; slow observers receive Tokio's explicit lag error.\nObserving capacity does not acquire a worker or a tab lease.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 142,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/engine/execution.rs#L142-L144"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ee939359cc6ffd62e3683b033b91a0b6edc7736c0fb545d06378e586ef8be64f",
+  "slug": "yosoi/session/struct/executionpool",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ee939359cc6ffd62e3683b033b91a0b6edc7736c0fb545d06378e586ef8be64f"
+}

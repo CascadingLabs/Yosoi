@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::expect::count_at_least",
+  "publicPath": "yosoi::expect::count_at_least",
+  "kind": "function",
+  "title": "yosoi::expect::count_at_least",
+  "signature": "pub fn count_at_least(selector: impl Into<String>, count: u64) -> yosoi::expect::Expectation",
+  "docs": "Constructs a typed DOM condition with a minimum matching element count.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 254,
+    "lineEnd": 260,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/expect.rs#L254-L260"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::count_at_least"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "1112fdb8eda308606a1900577e51330026c8307040e14fb0ffd15e0de9fab291",
+  "slug": "yosoi/expect/function/count-at-least",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1112fdb8eda308606a1900577e51330026c8307040e14fb0ffd15e0de9fab291"
+}
