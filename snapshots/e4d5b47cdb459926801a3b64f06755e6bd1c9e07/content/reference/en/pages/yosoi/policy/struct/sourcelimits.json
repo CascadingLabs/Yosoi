@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::SourceLimits",
+  "publicPath": "yosoi::policy::SourceLimits",
+  "kind": "struct",
+  "title": "yosoi::policy::SourceLimits",
+  "signature": "pub struct SourceLimits",
+  "docs": "Positive limits for independent source-response byte domains.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/request.rs",
+    "lineStart": 13,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L13-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::SourceLimits"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::SourceLimits::clone",
+      "publicPath": "yosoi::policy::SourceLimits::clone",
+      "title": "yosoi::policy::SourceLimits::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> SourceLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::policy::SourceLimits::content_coded_bytes",
+      "publicPath": "yosoi::policy::SourceLimits::content_coded_bytes",
+      "title": "yosoi::policy::SourceLimits::content_coded_bytes",
+      "kind": "struct_field",
+      "signature": "pub content_coded_bytes: super::AddressableByteLimit",
+      "docs": "Maximum admitted content-coded response bytes.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::SourceLimits::default",
+      "publicPath": "yosoi::policy::SourceLimits::default",
+      "title": "yosoi::policy::SourceLimits::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 23,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L23-L29"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::SourceLimits::deserialize",
+      "publicPath": "yosoi::policy::SourceLimits::deserialize",
+      "title": "yosoi::policy::SourceLimits::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::SourceLimits::eq",
+      "publicPath": "yosoi::policy::SourceLimits::eq",
+      "title": "yosoi::policy::SourceLimits::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &SourceLimits) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::SourceLimits::fmt",
+      "publicPath": "yosoi::policy::SourceLimits::fmt",
+      "title": "yosoi::policy::SourceLimits::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::SourceLimits::representation_bytes",
+      "publicPath": "yosoi::policy::SourceLimits::representation_bytes",
+      "title": "yosoi::policy::SourceLimits::representation_bytes",
+      "kind": "struct_field",
+      "signature": "pub representation_bytes: super::AddressableByteLimit",
+      "docs": "Maximum retained decoded representation bytes.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::SourceLimits::serialize",
+      "publicPath": "yosoi::policy::SourceLimits::serialize",
+      "title": "yosoi::policy::SourceLimits::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::SourceLimits::unicode_utf8_bytes",
+      "publicPath": "yosoi::policy::SourceLimits::unicode_utf8_bytes",
+      "title": "yosoi::policy::SourceLimits::unicode_utf8_bytes",
+      "kind": "struct_field",
+      "signature": "pub unicode_utf8_bytes: super::AddressableByteLimit",
+      "docs": "Maximum derived Unicode view size, measured in UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/request.rs#L19-L19"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "11eecfd3919cc1a8f316646ae502f5581b991523f8654e5e394f02809f5aaa6a",
+  "slug": "yosoi/policy/struct/sourcelimits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "11eecfd3919cc1a8f316646ae502f5581b991523f8654e5e394f02809f5aaa6a"
+}

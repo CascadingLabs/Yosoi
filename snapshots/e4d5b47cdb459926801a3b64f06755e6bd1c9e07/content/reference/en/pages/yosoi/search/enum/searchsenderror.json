@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchSendError",
+  "publicPath": "yosoi::search::SearchSendError",
+  "kind": "enum",
+  "title": "yosoi::search::SearchSendError",
+  "signature": "pub enum SearchSendError",
+  "docs": "A structural or setup failure before any provider Requests begin.",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/preparation.rs",
+    "lineStart": 16,
+    "lineEnd": 23,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L16-L23"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/search.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::SearchSendError",
+    "yosoi::prelude::search::SearchSendError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchSendError::Execution",
+      "publicPath": "yosoi::search::SearchSendError::Execution",
+      "title": "yosoi::search::SearchSendError::Execution",
+      "kind": "variant",
+      "signature": "Execution(super::SearchExecutionSetupError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchSendError::NoProviderConfigured",
+      "publicPath": "yosoi::search::SearchSendError::NoProviderConfigured",
+      "title": "yosoi::search::SearchSendError::NoProviderConfigured",
+      "kind": "variant",
+      "signature": "NoProviderConfigured",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchSendError::Policy",
+      "publicPath": "yosoi::search::SearchSendError::Policy",
+      "title": "yosoi::search::SearchSendError::Policy",
+      "kind": "variant",
+      "signature": "Policy(yosoi_policy::PolicyError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchSendError::fmt",
+      "publicPath": "yosoi::search::SearchSendError::fmt",
+      "title": "yosoi::search::SearchSendError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchSendError::fmt",
+      "publicPath": "yosoi::search::SearchSendError::fmt",
+      "title": "yosoi::search::SearchSendError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::search::SearchSendError::from",
+      "publicPath": "yosoi::search::SearchSendError::from",
+      "title": "yosoi::search::SearchSendError::from",
+      "kind": "function",
+      "signature": "fn from(source: SearchExecutionSetupError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::search::SearchSendError::source",
+      "publicPath": "yosoi::search::SearchSendError::source",
+      "title": "yosoi::search::SearchSendError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/preparation.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "826695f15d7aa3dee706f6758bac6bae8b1e3f36fed866244eabb0634728db4a",
+  "slug": "yosoi/search/enum/searchsenderror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "826695f15d7aa3dee706f6758bac6bae8b1e3f36fed866244eabb0634728db4a"
+}

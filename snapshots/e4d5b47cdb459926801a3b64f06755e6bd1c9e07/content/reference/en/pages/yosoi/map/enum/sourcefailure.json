@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::SourceFailure",
+  "publicPath": "yosoi::map::SourceFailure",
+  "kind": "enum",
+  "title": "yosoi::map::SourceFailure",
+  "signature": "pub enum SourceFailure",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 49,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L49-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/map.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SourceFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::SourceFailure::HttpStatus",
+      "publicPath": "yosoi::map::SourceFailure::HttpStatus",
+      "title": "yosoi::map::SourceFailure::HttpStatus",
+      "kind": "variant",
+      "signature": "HttpStatus(u16)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::IncompleteDocument",
+      "publicPath": "yosoi::map::SourceFailure::IncompleteDocument",
+      "title": "yosoi::map::SourceFailure::IncompleteDocument",
+      "kind": "variant",
+      "signature": "IncompleteDocument",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::Parse",
+      "publicPath": "yosoi::map::SourceFailure::Parse",
+      "title": "yosoi::map::SourceFailure::Parse",
+      "kind": "variant",
+      "signature": "Parse",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::RateLimited",
+      "publicPath": "yosoi::map::SourceFailure::RateLimited",
+      "title": "yosoi::map::SourceFailure::RateLimited",
+      "kind": "variant",
+      "signature": "RateLimited",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L58-L58"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::RedirectLimit",
+      "publicPath": "yosoi::map::SourceFailure::RedirectLimit",
+      "title": "yosoi::map::SourceFailure::RedirectLimit",
+      "kind": "variant",
+      "signature": "RedirectLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::RedirectRejected",
+      "publicPath": "yosoi::map::SourceFailure::RedirectRejected",
+      "title": "yosoi::map::SourceFailure::RedirectRejected",
+      "kind": "variant",
+      "signature": "RedirectRejected",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L54-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::RequestDeadline",
+      "publicPath": "yosoi::map::SourceFailure::RequestDeadline",
+      "title": "yosoi::map::SourceFailure::RequestDeadline",
+      "kind": "variant",
+      "signature": "RequestDeadline",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::RetentionLimit",
+      "publicPath": "yosoi::map::SourceFailure::RetentionLimit",
+      "title": "yosoi::map::SourceFailure::RetentionLimit",
+      "kind": "variant",
+      "signature": "RetentionLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L56-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::Transport",
+      "publicPath": "yosoi::map::SourceFailure::Transport",
+      "title": "yosoi::map::SourceFailure::Transport",
+      "kind": "variant",
+      "signature": "Transport",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L50-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceFailure::UnexpectedSitemapContent",
+      "publicPath": "yosoi::map::SourceFailure::UnexpectedSitemapContent",
+      "title": "yosoi::map::SourceFailure::UnexpectedSitemapContent",
+      "kind": "variant",
+      "signature": "UnexpectedSitemapContent",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::SourceFailure::clone",
+      "publicPath": "yosoi::map::SourceFailure::clone",
+      "title": "yosoi::map::SourceFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> SourceFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SourceFailure::eq",
+      "publicPath": "yosoi::map::SourceFailure::eq",
+      "title": "yosoi::map::SourceFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &SourceFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::SourceFailure::fmt",
+      "publicPath": "yosoi::map::SourceFailure::fmt",
+      "title": "yosoi::map::SourceFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::SourceFailure::serialize",
+      "publicPath": "yosoi::map::SourceFailure::serialize",
+      "title": "yosoi::map::SourceFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/sourcefailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

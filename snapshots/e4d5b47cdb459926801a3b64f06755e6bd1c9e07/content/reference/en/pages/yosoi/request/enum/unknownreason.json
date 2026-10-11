@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::UnknownReason",
+  "publicPath": "yosoi::request::UnknownReason",
+  "kind": "enum",
+  "title": "yosoi::request::UnknownReason",
+  "signature": "pub enum UnknownReason",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-web-capture/src/source.rs",
+    "lineStart": 90,
+    "lineEnd": 93,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L90-L93"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/request.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::request::UnknownReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::UnknownReason::Empty",
+      "publicPath": "yosoi::request::UnknownReason::Empty",
+      "title": "yosoi::request::UnknownReason::Empty",
+      "kind": "variant",
+      "signature": "Empty",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L91-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnknownReason::NoStrongSignature",
+      "publicPath": "yosoi::request::UnknownReason::NoStrongSignature",
+      "title": "yosoi::request::UnknownReason::NoStrongSignature",
+      "kind": "variant",
+      "signature": "NoStrongSignature",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L92-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::UnknownReason::clone",
+      "publicPath": "yosoi::request::UnknownReason::clone",
+      "title": "yosoi::request::UnknownReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> UnknownReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::UnknownReason::deserialize",
+      "publicPath": "yosoi::request::UnknownReason::deserialize",
+      "title": "yosoi::request::UnknownReason::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::request::UnknownReason::eq",
+      "publicPath": "yosoi::request::UnknownReason::eq",
+      "title": "yosoi::request::UnknownReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &UnknownReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::UnknownReason::fmt",
+      "publicPath": "yosoi::request::UnknownReason::fmt",
+      "title": "yosoi::request::UnknownReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::UnknownReason::serialize",
+      "publicPath": "yosoi::request::UnknownReason::serialize",
+      "title": "yosoi::request::UnknownReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-web-capture/src/source.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/request/enum/unknownreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

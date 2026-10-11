@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchTermination",
+  "publicPath": "yosoi::search::SearchTermination",
+  "kind": "enum",
+  "title": "yosoi::search::SearchTermination",
+  "signature": "pub enum SearchTermination",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/outcome.rs",
+    "lineStart": 227,
+    "lineEnd": 231,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L227-L231"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/search.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchTermination"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchTermination::Cancelled",
+      "publicPath": "yosoi::search::SearchTermination::Cancelled",
+      "title": "yosoi::search::SearchTermination::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L229-L229"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchTermination::Completed",
+      "publicPath": "yosoi::search::SearchTermination::Completed",
+      "title": "yosoi::search::SearchTermination::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L228-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchTermination::DeadlineReached",
+      "publicPath": "yosoi::search::SearchTermination::DeadlineReached",
+      "title": "yosoi::search::SearchTermination::DeadlineReached",
+      "kind": "variant",
+      "signature": "DeadlineReached",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 230,
+        "lineEnd": 230,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L230-L230"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::clone",
+      "publicPath": "yosoi::search::SearchTermination::clone",
+      "title": "yosoi::search::SearchTermination::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> SearchTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::eq",
+      "publicPath": "yosoi::search::SearchTermination::eq",
+      "title": "yosoi::search::SearchTermination::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &SearchTermination) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::fmt",
+      "publicPath": "yosoi::search::SearchTermination::fmt",
+      "title": "yosoi::search::SearchTermination::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::serialize",
+      "publicPath": "yosoi::search::SearchTermination::serialize",
+      "title": "yosoi::search::SearchTermination::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-engine/src/search/outcome.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/search/enum/searchtermination",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
