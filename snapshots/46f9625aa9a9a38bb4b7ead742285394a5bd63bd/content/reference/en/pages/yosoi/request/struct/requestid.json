@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::RequestId",
+  "publicPath": "yosoi::request::RequestId",
+  "kind": "struct",
+  "title": "yosoi::request::RequestId",
+  "signature": "pub struct RequestId",
+  "docs": "Logical identity for one prepared page request.\n\nThis remains distinct from [`CaptureId`], which identifies each separate\nacquisition attempt belonging to the request.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/request.rs",
+    "lineStart": 203,
+    "lineEnd": 203,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L203-L203"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request.rs#L19-L19"
+  },
+  "aliases": [
+    "yosoi::prelude::request::RequestId"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::RequestId::activity_id",
+      "publicPath": "yosoi::request::RequestId::activity_id",
+      "title": "yosoi::request::RequestId::activity_id",
+      "kind": "function",
+      "signature": "pub const fn activity_id(self) -> yosoi::request::ActivityId",
+      "docs": "Returns this request's general activity identity for durable records.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 211,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L211-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::RequestId::clone",
+      "publicPath": "yosoi::request::RequestId::clone",
+      "title": "yosoi::request::RequestId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::RequestId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::cmp",
+      "publicPath": "yosoi::request::RequestId::cmp",
+      "title": "yosoi::request::RequestId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::request::RequestId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::eq",
+      "publicPath": "yosoi::request::RequestId::eq",
+      "title": "yosoi::request::RequestId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::RequestId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::fmt",
+      "publicPath": "yosoi::request::RequestId::fmt",
+      "title": "yosoi::request::RequestId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::fmt",
+      "publicPath": "yosoi::request::RequestId::fmt",
+      "title": "yosoi::request::RequestId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 217,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L217-L219"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::hash",
+      "publicPath": "yosoi::request::RequestId::hash",
+      "title": "yosoi::request::RequestId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::request::RequestId::partial_cmp",
+      "publicPath": "yosoi::request::RequestId::partial_cmp",
+      "title": "yosoi::request::RequestId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::request::RequestId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/request.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/request.rs#L202-L202"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "387e926c679d138d508bc2c10b367462c21d3ae639493c387e886695d437c8a0",
+  "slug": "yosoi/request/struct/requestid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "387e926c679d138d508bc2c10b367462c21d3ae639493c387e886695d437c8a0"
+}

@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::CoordinateError",
+  "publicPath": "yosoi::locators::CoordinateError",
+  "kind": "enum",
+  "title": "yosoi::locators::CoordinateError",
+  "signature": "pub enum CoordinateError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+    "lineStart": 5,
+    "lineEnd": 24,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L5-L24"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::CoordinateError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::CoordinateError::EmptyExpandedLocalName",
+      "publicPath": "yosoi::locators::CoordinateError::EmptyExpandedLocalName",
+      "title": "yosoi::locators::CoordinateError::EmptyExpandedLocalName",
+      "kind": "variant",
+      "signature": "EmptyExpandedLocalName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::EmptyExpandedNamePath",
+      "publicPath": "yosoi::locators::CoordinateError::EmptyExpandedNamePath",
+      "title": "yosoi::locators::CoordinateError::EmptyExpandedNamePath",
+      "kind": "variant",
+      "signature": "EmptyExpandedNamePath",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::EmptyIdentity",
+      "publicPath": "yosoi::locators::CoordinateError::EmptyIdentity",
+      "title": "yosoi::locators::CoordinateError::EmptyIdentity",
+      "kind": "variant",
+      "signature": "EmptyIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::InvalidJsonPointerEscape",
+      "publicPath": "yosoi::locators::CoordinateError::InvalidJsonPointerEscape",
+      "title": "yosoi::locators::CoordinateError::InvalidJsonPointerEscape",
+      "kind": "variant",
+      "signature": "InvalidJsonPointerEscape",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::InvalidJsonPointerSyntax",
+      "publicPath": "yosoi::locators::CoordinateError::InvalidJsonPointerSyntax",
+      "title": "yosoi::locators::CoordinateError::InvalidJsonPointerSyntax",
+      "kind": "variant",
+      "signature": "InvalidJsonPointerSyntax",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::InvalidTreeChildPath",
+      "publicPath": "yosoi::locators::CoordinateError::InvalidTreeChildPath",
+      "title": "yosoi::locators::CoordinateError::InvalidTreeChildPath",
+      "kind": "variant",
+      "signature": "InvalidTreeChildPath",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::ReversedRange",
+      "publicPath": "yosoi::locators::CoordinateError::ReversedRange",
+      "title": "yosoi::locators::CoordinateError::ReversedRange",
+      "kind": "variant",
+      "signature": "ReversedRange",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L7-L7"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::ZeroDomNodeId",
+      "publicPath": "yosoi::locators::CoordinateError::ZeroDomNodeId",
+      "title": "yosoi::locators::CoordinateError::ZeroDomNodeId",
+      "kind": "variant",
+      "signature": "ZeroDomNodeId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L11-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::CoordinateError::ZeroExpandedSiblingIndex",
+      "publicPath": "yosoi::locators::CoordinateError::ZeroExpandedSiblingIndex",
+      "title": "yosoi::locators::CoordinateError::ZeroExpandedSiblingIndex",
+      "kind": "variant",
+      "signature": "ZeroExpandedSiblingIndex",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::CoordinateError::clone",
+      "publicPath": "yosoi::locators::CoordinateError::clone",
+      "title": "yosoi::locators::CoordinateError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::CoordinateError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::CoordinateError::eq",
+      "publicPath": "yosoi::locators::CoordinateError::eq",
+      "title": "yosoi::locators::CoordinateError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::CoordinateError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::CoordinateError::fmt",
+      "publicPath": "yosoi::locators::CoordinateError::fmt",
+      "title": "yosoi::locators::CoordinateError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::CoordinateError::fmt",
+      "publicPath": "yosoi::locators::CoordinateError::fmt",
+      "title": "yosoi::locators::CoordinateError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/enum/coordinateerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

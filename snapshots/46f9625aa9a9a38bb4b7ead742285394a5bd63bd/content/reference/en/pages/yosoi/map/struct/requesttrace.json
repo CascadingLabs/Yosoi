@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::RequestTrace",
+  "publicPath": "yosoi::map::RequestTrace",
+  "kind": "struct",
+  "title": "yosoi::map::RequestTrace",
+  "signature": "pub struct RequestTrace",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+    "lineStart": 120,
+    "lineEnd": 124,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L120-L124"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::RequestTrace"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::map::RequestTrace::charged_response_bytes",
+      "publicPath": "yosoi::map::RequestTrace::charged_response_bytes",
+      "title": "yosoi::map::RequestTrace::charged_response_bytes",
+      "kind": "struct_field",
+      "signature": "pub charged_response_bytes: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L123-L123"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::RequestTrace::clone",
+      "publicPath": "yosoi::map::RequestTrace::clone",
+      "title": "yosoi::map::RequestTrace::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::RequestTrace",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::RequestTrace::fmt",
+      "publicPath": "yosoi::map::RequestTrace::fmt",
+      "title": "yosoi::map::RequestTrace::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::RequestTrace::serialize",
+      "publicPath": "yosoi::map::RequestTrace::serialize",
+      "title": "yosoi::map::RequestTrace::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::RequestTrace::status",
+      "publicPath": "yosoi::map::RequestTrace::status",
+      "title": "yosoi::map::RequestTrace::status",
+      "kind": "struct_field",
+      "signature": "pub status: Option<u16>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L122-L122"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::RequestTrace::target",
+      "publicPath": "yosoi::map::RequestTrace::target",
+      "title": "yosoi::map::RequestTrace::target",
+      "kind": "struct_field",
+      "signature": "pub target: url::Url",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/map/mod.rs",
+        "lineStart": 121,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/map/mod.rs#L121-L121"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/requesttrace",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

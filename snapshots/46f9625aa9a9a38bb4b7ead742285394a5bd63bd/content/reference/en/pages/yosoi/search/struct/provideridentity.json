@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::ProviderIdentity",
+  "publicPath": "yosoi::search::ProviderIdentity",
+  "kind": "struct",
+  "title": "yosoi::search::ProviderIdentity",
+  "signature": "pub struct ProviderIdentity",
+  "docs": "Exact answering provider and adapter identity, when an adapter actually ran.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 29,
+    "lineEnd": 34,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L29-L34"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/search.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::search::ProviderIdentity"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::search::ProviderIdentity::adapter_version",
+      "publicPath": "yosoi::search::ProviderIdentity::adapter_version",
+      "title": "yosoi::search::ProviderIdentity::adapter_version",
+      "kind": "struct_field",
+      "signature": "pub adapter_version: Option<&'static str>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::ProviderIdentity::clone",
+      "publicPath": "yosoi::search::ProviderIdentity::clone",
+      "title": "yosoi::search::ProviderIdentity::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::ProviderIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::search::ProviderIdentity::endpoint",
+      "publicPath": "yosoi::search::ProviderIdentity::endpoint",
+      "title": "yosoi::search::ProviderIdentity::endpoint",
+      "kind": "struct_field",
+      "signature": "pub endpoint: Option<&'static str>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::ProviderIdentity::eq",
+      "publicPath": "yosoi::search::ProviderIdentity::eq",
+      "title": "yosoi::search::ProviderIdentity::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::ProviderIdentity) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::ProviderIdentity::fmt",
+      "publicPath": "yosoi::search::ProviderIdentity::fmt",
+      "title": "yosoi::search::ProviderIdentity::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::search::ProviderIdentity::parser_version",
+      "publicPath": "yosoi::search::ProviderIdentity::parser_version",
+      "title": "yosoi::search::ProviderIdentity::parser_version",
+      "kind": "struct_field",
+      "signature": "pub parser_version: Option<&'static str>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::ProviderIdentity::provider",
+      "publicPath": "yosoi::search::ProviderIdentity::provider",
+      "title": "yosoi::search::ProviderIdentity::provider",
+      "kind": "struct_field",
+      "signature": "pub provider: yosoi::policy::search::Provider",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L30-L30"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5c3829badfbe5dd238758e2433321dcf964edddd693ccb09059093adb87ae9fd",
+  "slug": "yosoi/search/struct/provideridentity",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5c3829badfbe5dd238758e2433321dcf964edddd693ccb09059093adb87ae9fd"
+}

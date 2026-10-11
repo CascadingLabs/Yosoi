@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::DocumentId",
+  "publicPath": "yosoi::DocumentId",
+  "kind": "struct",
+  "title": "yosoi::DocumentId",
+  "signature": "pub struct DocumentId",
+  "docs": "Stable caller-provided identity for an immutable document.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/document.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L20-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 18,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/lib.rs#L18-L18"
+  },
+  "aliases": [
+    "yosoi::documents::DocumentId",
+    "yosoi::prelude::DocumentId",
+    "yosoi::prelude::documents::DocumentId"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::DocumentId::Error",
+      "publicPath": "yosoi::DocumentId::Error",
+      "title": "yosoi::DocumentId::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = yosoi::documents::DocumentError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L55-L55"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::DocumentId::as_str",
+      "publicPath": "yosoi::DocumentId::as_str",
+      "title": "yosoi::DocumentId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 32,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L32-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::DocumentId::clone",
+      "publicPath": "yosoi::DocumentId::clone",
+      "title": "yosoi::DocumentId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::DocumentId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::DocumentId::cmp",
+      "publicPath": "yosoi::DocumentId::cmp",
+      "title": "yosoi::DocumentId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::DocumentId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::DocumentId::deserialize",
+      "publicPath": "yosoi::DocumentId::deserialize",
+      "title": "yosoi::DocumentId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 44,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L44-L51"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::DocumentId::eq",
+      "publicPath": "yosoi::DocumentId::eq",
+      "title": "yosoi::DocumentId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::DocumentId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::DocumentId::fmt",
+      "publicPath": "yosoi::DocumentId::fmt",
+      "title": "yosoi::DocumentId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::DocumentId::fmt",
+      "publicPath": "yosoi::DocumentId::fmt",
+      "title": "yosoi::DocumentId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 38,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L38-L40"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::DocumentId::hash",
+      "publicPath": "yosoi::DocumentId::hash",
+      "title": "yosoi::DocumentId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::DocumentId::partial_cmp",
+      "publicPath": "yosoi::DocumentId::partial_cmp",
+      "title": "yosoi::DocumentId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::DocumentId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::DocumentId::serialize",
+      "publicPath": "yosoi::DocumentId::serialize",
+      "title": "yosoi::DocumentId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::DocumentId::try_from",
+      "publicPath": "yosoi::DocumentId::try_from",
+      "title": "yosoi::DocumentId::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: String) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 57,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L57-L59"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::DocumentId::try_new",
+      "publicPath": "yosoi::DocumentId::try_new",
+      "title": "yosoi::DocumentId::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(value: impl Into<String>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 23,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/document.rs#L23-L30"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2a3d975bb5c4a69cafb872387437674059b9cd432259d1925342bdcc2bcc0b9a",
+  "slug": "yosoi/struct/documentid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2a3d975bb5c4a69cafb872387437674059b9cd432259d1925342bdcc2bcc0b9a"
+}

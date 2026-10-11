@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::CaptureId",
+  "publicPath": "yosoi::request::CaptureId",
+  "kind": "struct",
+  "title": "yosoi::request::CaptureId",
+  "signature": "pub struct CaptureId",
+  "docs": "Random activity identity whose activity is known to be a capture.\n\nThis newtype preserves capture-specific APIs without making capture the root\nof the general provenance model.",
+  "source": {
+    "file": "crates/yosoi/src/internal/types/identity.rs",
+    "lineStart": 88,
+    "lineEnd": 88,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L88-L88"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request.rs#L19-L19"
+  },
+  "aliases": [
+    "yosoi::prelude::request::CaptureId"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::request::CaptureId::Err",
+      "publicPath": "yosoi::request::CaptureId::Err",
+      "title": "yosoi::request::CaptureId::Err",
+      "kind": "assoc_type",
+      "signature": "type Err = OccurrenceIdParseError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::activity_id",
+      "publicPath": "yosoi::request::CaptureId::activity_id",
+      "title": "yosoi::request::CaptureId::activity_id",
+      "kind": "function",
+      "signature": "pub const fn activity_id(self) -> yosoi::request::ActivityId",
+      "docs": "Returns this capture's general activity identity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 97,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L97-L99"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::as_bytes",
+      "publicPath": "yosoi::request::CaptureId::as_bytes",
+      "title": "yosoi::request::CaptureId::as_bytes",
+      "kind": "function",
+      "signature": "pub const fn as_bytes(&self) -> &[u8; 16]",
+      "docs": "Returns the UUID bytes in network byte order.",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 102,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L102-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::clone",
+      "publicPath": "yosoi::request::CaptureId::clone",
+      "title": "yosoi::request::CaptureId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::CaptureId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::cmp",
+      "publicPath": "yosoi::request::CaptureId::cmp",
+      "title": "yosoi::request::CaptureId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::request::CaptureId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::deserialize",
+      "publicPath": "yosoi::request::CaptureId::deserialize",
+      "title": "yosoi::request::CaptureId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 137,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L137-L142"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::eq",
+      "publicPath": "yosoi::request::CaptureId::eq",
+      "title": "yosoi::request::CaptureId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::CaptureId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::fmt",
+      "publicPath": "yosoi::request::CaptureId::fmt",
+      "title": "yosoi::request::CaptureId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::fmt",
+      "publicPath": "yosoi::request::CaptureId::fmt",
+      "title": "yosoi::request::CaptureId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 108,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L108-L110"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::from_str",
+      "publicPath": "yosoi::request::CaptureId::from_str",
+      "title": "yosoi::request::CaptureId::from_str",
+      "kind": "function",
+      "signature": "fn from_str(value: &str) -> Result<Self, <Self as >::Err>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L116-L118"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::hash",
+      "publicPath": "yosoi::request::CaptureId::hash",
+      "title": "yosoi::request::CaptureId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::partial_cmp",
+      "publicPath": "yosoi::request::CaptureId::partial_cmp",
+      "title": "yosoi::request::CaptureId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::request::CaptureId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L87-L87"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::random",
+      "publicPath": "yosoi::request::CaptureId::random",
+      "title": "yosoi::request::CaptureId::random",
+      "kind": "function",
+      "signature": "pub fn random() -> Self",
+      "docs": "Generates a random UUID v4 capture identity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 92,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L92-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::CaptureId::serialize",
+      "publicPath": "yosoi::request::CaptureId::serialize",
+      "title": "yosoi::request::CaptureId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/types/identity.rs",
+        "lineStart": 128,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/types/identity.rs#L128-L133"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "483603d544d11f9036bb7e433a6b392fc9483e602953996d75a3db17b146e720",
+  "slug": "yosoi/request/struct/captureid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "483603d544d11f9036bb7e433a6b392fc9483e602953996d75a3db17b146e720"
+}

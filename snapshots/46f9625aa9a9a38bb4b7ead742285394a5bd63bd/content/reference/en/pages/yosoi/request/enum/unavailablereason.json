@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::UnavailableReason",
+  "publicPath": "yosoi::request::UnavailableReason",
+  "kind": "enum",
+  "title": "yosoi::request::UnavailableReason",
+  "signature": "pub enum UnavailableReason",
+  "docs": "Bounded reasons required capture payloads are unavailable.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+    "lineStart": 44,
+    "lineEnd": 69,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L44-L69"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::request::UnavailableReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::UnavailableReason::BrowserDecodedSourceNotRetained",
+      "publicPath": "yosoi::request::UnavailableReason::BrowserDecodedSourceNotRetained",
+      "title": "yosoi::request::UnavailableReason::BrowserDecodedSourceNotRetained",
+      "kind": "variant",
+      "signature": "BrowserDecodedSourceNotRetained",
+      "docs": "The browser response source has no retained decoded view in this capture.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::CaptureArtifactFailed",
+      "publicPath": "yosoi::request::UnavailableReason::CaptureArtifactFailed",
+      "title": "yosoi::request::UnavailableReason::CaptureArtifactFailed",
+      "kind": "variant",
+      "signature": "CaptureArtifactFailed { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The requested browser artifact capture failed.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 62,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L62-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::CaptureArtifactNotRetained",
+      "publicPath": "yosoi::request::UnavailableReason::CaptureArtifactNotRetained",
+      "title": "yosoi::request::UnavailableReason::CaptureArtifactNotRetained",
+      "kind": "variant",
+      "signature": "CaptureArtifactNotRetained { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The requested browser artifact was intentionally not retained.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 54,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L54-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::CaptureArtifactPayloadUnavailable",
+      "publicPath": "yosoi::request::UnavailableReason::CaptureArtifactPayloadUnavailable",
+      "title": "yosoi::request::UnavailableReason::CaptureArtifactPayloadUnavailable",
+      "kind": "variant",
+      "signature": "CaptureArtifactPayloadUnavailable { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The requested browser artifact payload is absent from the consumed bundle.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 58,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L58-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::CaptureArtifactUnavailable",
+      "publicPath": "yosoi::request::UnavailableReason::CaptureArtifactUnavailable",
+      "title": "yosoi::request::UnavailableReason::CaptureArtifactUnavailable",
+      "kind": "variant",
+      "signature": "CaptureArtifactUnavailable { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The requested browser artifact was unavailable from the provider.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 66,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L66-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::DecodedSourceNotRetained",
+      "publicPath": "yosoi::request::UnavailableReason::DecodedSourceNotRetained",
+      "title": "yosoi::request::UnavailableReason::DecodedSourceNotRetained",
+      "kind": "variant",
+      "signature": "DecodedSourceNotRetained",
+      "docs": "The policy did not retain the decoded UTF-8 artifact.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 48,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L48-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::DecodedSourcePayloadUnavailable",
+      "publicPath": "yosoi::request::UnavailableReason::DecodedSourcePayloadUnavailable",
+      "title": "yosoi::request::UnavailableReason::DecodedSourcePayloadUnavailable",
+      "kind": "variant",
+      "signature": "DecodedSourcePayloadUnavailable",
+      "docs": "The finalized capture has no bytes for its decoded-source reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L50-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnavailableReason::SourceArtifactUnavailable",
+      "publicPath": "yosoi::request::UnavailableReason::SourceArtifactUnavailable",
+      "title": "yosoi::request::UnavailableReason::SourceArtifactUnavailable",
+      "kind": "variant",
+      "signature": "SourceArtifactUnavailable",
+      "docs": "No usable source artifact was retained in the capture bundle.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::UnavailableReason::clone",
+      "publicPath": "yosoi::request::UnavailableReason::clone",
+      "title": "yosoi::request::UnavailableReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::UnavailableReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L42-L42"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::UnavailableReason::eq",
+      "publicPath": "yosoi::request::UnavailableReason::eq",
+      "title": "yosoi::request::UnavailableReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::UnavailableReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L42-L42"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::UnavailableReason::fmt",
+      "publicPath": "yosoi::request::UnavailableReason::fmt",
+      "title": "yosoi::request::UnavailableReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L42-L42"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::UnavailableReason::serialize",
+      "publicPath": "yosoi::request::UnavailableReason::serialize",
+      "title": "yosoi::request::UnavailableReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L42-L42"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "91722f6f6be63fef912c22ac06aed142398d20435592d0a13a32acd0b1597714",
+  "slug": "yosoi/request/enum/unavailablereason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "91722f6f6be63fef912c22ac06aed142398d20435592d0a13a32acd0b1597714"
+}

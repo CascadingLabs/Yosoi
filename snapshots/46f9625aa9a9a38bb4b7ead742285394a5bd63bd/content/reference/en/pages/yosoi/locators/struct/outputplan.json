@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::OutputPlan",
+  "publicPath": "yosoi::locators::OutputPlan",
+  "kind": "struct",
+  "title": "yosoi::locators::OutputPlan",
+  "signature": "pub struct OutputPlan",
+  "docs": "An authored output before compatibility compilation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+    "lineStart": 176,
+    "lineEnd": 180,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L176-L180"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::OutputPlan"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::OutputPlan::clone",
+      "publicPath": "yosoi::locators::OutputPlan::clone",
+      "title": "yosoi::locators::OutputPlan::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::OutputPlan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::OutputPlan::deserialize",
+      "publicPath": "yosoi::locators::OutputPlan::deserialize",
+      "title": "yosoi::locators::OutputPlan::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::OutputPlan::eq",
+      "publicPath": "yosoi::locators::OutputPlan::eq",
+      "title": "yosoi::locators::OutputPlan::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::OutputPlan) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::OutputPlan::fmt",
+      "publicPath": "yosoi::locators::OutputPlan::fmt",
+      "title": "yosoi::locators::OutputPlan::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::OutputPlan::serialize",
+      "publicPath": "yosoi::locators::OutputPlan::serialize",
+      "title": "yosoi::locators::OutputPlan::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "6fd177fe0c4b52a2b7b65fb5957e056693cd74230ba80bd75f96ec0e1ec06166",
+  "slug": "yosoi/locators/struct/outputplan",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6fd177fe0c4b52a2b7b65fb5957e056693cd74230ba80bd75f96ec0e1ec06166"
+}

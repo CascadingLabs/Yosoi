@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::JsonQuerySyntaxError",
+  "publicPath": "yosoi::locators::JsonQuerySyntaxError",
+  "kind": "enum",
+  "title": "yosoi::locators::JsonQuerySyntaxError",
+  "signature": "pub enum JsonQuerySyntaxError",
+  "docs": "Syntax errors in the deliberately small JSON query language.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/json/types.rs",
+    "lineStart": 10,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L10-L19"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::JsonQuerySyntaxError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::JsonQuerySyntaxError::InvalidPathSyntax",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::InvalidPathSyntax",
+      "title": "yosoi::locators::JsonQuerySyntaxError::InvalidPathSyntax",
+      "kind": "variant",
+      "signature": "InvalidPathSyntax",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::JsonQuerySyntaxError::InvalidPointerEscape",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::InvalidPointerEscape",
+      "title": "yosoi::locators::JsonQuerySyntaxError::InvalidPointerEscape",
+      "kind": "variant",
+      "signature": "InvalidPointerEscape",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::JsonQuerySyntaxError::InvalidPointerSyntax",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::InvalidPointerSyntax",
+      "title": "yosoi::locators::JsonQuerySyntaxError::InvalidPointerSyntax",
+      "kind": "variant",
+      "signature": "InvalidPointerSyntax",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::JsonQuerySyntaxError::UnsupportedPathFeature",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::UnsupportedPathFeature",
+      "title": "yosoi::locators::JsonQuerySyntaxError::UnsupportedPathFeature",
+      "kind": "variant",
+      "signature": "UnsupportedPathFeature",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::JsonQuerySyntaxError::clone",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::clone",
+      "title": "yosoi::locators::JsonQuerySyntaxError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::JsonQuerySyntaxError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L9-L9"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::JsonQuerySyntaxError::eq",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::eq",
+      "title": "yosoi::locators::JsonQuerySyntaxError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::JsonQuerySyntaxError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L9-L9"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::JsonQuerySyntaxError::fmt",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::fmt",
+      "title": "yosoi::locators::JsonQuerySyntaxError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L9-L9"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::JsonQuerySyntaxError::fmt",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError::fmt",
+      "title": "yosoi::locators::JsonQuerySyntaxError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/json/types.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/json/types.rs#L9-L9"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d6e13944f255f248216451f2d404a3458bd43df66b24907902c86a3b81c52c2b",
+  "slug": "yosoi/locators/enum/jsonquerysyntaxerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d6e13944f255f248216451f2d404a3458bd43df66b24907902c86a3b81c52c2b"
+}

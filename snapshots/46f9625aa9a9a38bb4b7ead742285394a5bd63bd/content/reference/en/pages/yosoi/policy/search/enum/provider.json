@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::search::Provider",
+  "publicPath": "yosoi::policy::search::Provider",
+  "kind": "enum",
+  "title": "yosoi::policy::search::Provider",
+  "signature": "pub enum Provider",
+  "docs": "A supported Search provider.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+    "lineStart": 16,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L16-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 21,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/policy.rs#L21-L21"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::search::Provider"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::search::Provider::Bing",
+      "publicPath": "yosoi::policy::search::Provider::Bing",
+      "title": "yosoi::policy::search::Provider::Bing",
+      "kind": "variant",
+      "signature": "Bing",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::search::Provider::Brave",
+      "publicPath": "yosoi::policy::search::Provider::Brave",
+      "title": "yosoi::policy::search::Provider::Brave",
+      "kind": "variant",
+      "signature": "Brave",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::search::Provider::DuckDuckGo",
+      "publicPath": "yosoi::policy::search::Provider::DuckDuckGo",
+      "title": "yosoi::policy::search::Provider::DuckDuckGo",
+      "kind": "variant",
+      "signature": "DuckDuckGo",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::clone",
+      "publicPath": "yosoi::policy::search::Provider::clone",
+      "title": "yosoi::policy::search::Provider::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::search::Provider",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::defaults_status",
+      "publicPath": "yosoi::policy::search::Provider::defaults_status",
+      "title": "yosoi::policy::search::Provider::defaults_status",
+      "kind": "function",
+      "signature": "pub fn defaults_status(self) -> yosoi::policy::ProviderDefaultsStatus",
+      "docs": "Returns the versioned local profile's current certification state.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 24,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L24-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::deserialize",
+      "publicPath": "yosoi::policy::search::Provider::deserialize",
+      "title": "yosoi::policy::search::Provider::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::eq",
+      "publicPath": "yosoi::policy::search::Provider::eq",
+      "title": "yosoi::policy::search::Provider::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::search::Provider) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::fmt",
+      "publicPath": "yosoi::policy::search::Provider::fmt",
+      "title": "yosoi::policy::search::Provider::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::hash",
+      "publicPath": "yosoi::policy::search::Provider::hash",
+      "title": "yosoi::policy::search::Provider::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::search::Provider::serialize",
+      "publicPath": "yosoi::policy::search::Provider::serialize",
+      "title": "yosoi::policy::search::Provider::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/provider.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "23d5725997230448ca4d5f28fe8414165801cb42b9fca9ddd3610b79400c82ef",
+  "slug": "yosoi/policy/search/enum/provider",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "23d5725997230448ca4d5f28fe8414165801cb42b9fca9ddd3610b79400c82ef"
+}

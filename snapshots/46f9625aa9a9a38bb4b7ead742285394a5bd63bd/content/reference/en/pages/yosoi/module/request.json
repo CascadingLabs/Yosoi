@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::request",
+  "publicPath": "yosoi::request",
+  "kind": "module",
+  "title": "yosoi::request",
+  "signature": "pub mod request",
+  "docs": "Author page requests, apply a policy, and inspect their results.",
+  "source": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 1,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request.rs#L1-L25"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::request"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "7fd6f9065911ae861a6d74470118225dc10449e5a9d7d0d06bb3da3d963b947e",
+  "slug": "yosoi/module/request",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7fd6f9065911ae861a6d74470118225dc10449e5a9d7d0d06bb3da3d963b947e"
+}

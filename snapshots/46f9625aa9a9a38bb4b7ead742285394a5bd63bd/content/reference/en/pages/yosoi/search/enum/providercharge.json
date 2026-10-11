@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::ProviderCharge",
+  "publicPath": "yosoi::search::ProviderCharge",
+  "kind": "enum",
+  "title": "yosoi::search::ProviderCharge",
+  "signature": "pub enum ProviderCharge",
+  "docs": "Provider-reported monetary charge. Public-page scraping currently reports\nUnknown rather than inventing a zero cost.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 81,
+    "lineEnd": 84,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L81-L84"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/search.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::search::ProviderCharge"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::ProviderCharge::Known",
+      "publicPath": "yosoi::search::ProviderCharge::Known",
+      "title": "yosoi::search::ProviderCharge::Known",
+      "kind": "variant",
+      "signature": "Known { currency: String, amount: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L83-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::ProviderCharge::Unknown",
+      "publicPath": "yosoi::search::ProviderCharge::Unknown",
+      "title": "yosoi::search::ProviderCharge::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L82-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::ProviderCharge::clone",
+      "publicPath": "yosoi::search::ProviderCharge::clone",
+      "title": "yosoi::search::ProviderCharge::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::ProviderCharge",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::ProviderCharge::eq",
+      "publicPath": "yosoi::search::ProviderCharge::eq",
+      "title": "yosoi::search::ProviderCharge::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::ProviderCharge) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::ProviderCharge::fmt",
+      "publicPath": "yosoi::search::ProviderCharge::fmt",
+      "title": "yosoi::search::ProviderCharge::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::ProviderCharge::serialize",
+      "publicPath": "yosoi::search::ProviderCharge::serialize",
+      "title": "yosoi::search::ProviderCharge::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/engine/search/outcome.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4d52dbec6e1382cc2d925be48fec7b65e1fe2bbd61cddb036a6039d924eb4b09",
+  "slug": "yosoi/search/enum/providercharge",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4d52dbec6e1382cc2d925be48fec7b65e1fe2bbd61cddb036a6039d924eb4b09"
+}
