@@ -1,6 +1,6 @@
 [package]
 name = "yosoi-web-capture-fuzz"
-version = "0.1.1"
+version = "0.1.2"
 publish = false
 edition = "2024"
 
@@ -8,7 +8,7 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-yosoi-dev-support = { version = "=0.1.1", path = "../benchmarks/support" }
+yosoi-dev-support = { version = "=0.1.2", path = "../benchmarks/support" }
 chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 libfuzzer-sys = "=0.4.13"
 

@@ -35,7 +35,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use chromiumoxide::cdp::browser_protocol::network::{Cookie, CookieSourceScheme};
+use super::vendor::chromiumoxide::cdp::browser_protocol::network::{Cookie, CookieSourceScheme};
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -451,7 +451,7 @@ pub fn fork_scoped(
     reason = "test harness"
 )]
 mod tests {
-    use chromiumoxide::cdp::browser_protocol::network::{
+    use super::super::vendor::chromiumoxide::cdp::browser_protocol::network::{
         CookiePartitionKey, CookiePriority, CookieSameSite,
     };
 

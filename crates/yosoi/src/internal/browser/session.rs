@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     browser::{Browser, BrowserConfig, BrowserConfigBuilder, CdpMode},
     cdp::browser_protocol::{
@@ -513,7 +513,7 @@ impl Drop for PendingBrowserContext {
     }
 }
 
-/// A live browser session wrapping `chromiumoxide::Browser`.
+/// A live browser session wrapping `crate::internal::browser::vendor::chromiumoxide::Browser`.
 ///
 /// Use [`BrowserSessionBuilder`] or the convenience constructors to create one.
 pub struct BrowserSession {
@@ -900,15 +900,11 @@ impl BrowserSession {
         })?
     }
 
-    fn wrap_page(&self, page: chromiumoxide::Page) -> Page {
+    fn wrap_page(&self, page: CdpPage) -> Page {
         self.wrap_page_with_binding(page, self.state_binding)
     }
 
-    fn wrap_page_with_binding(
-        &self,
-        page: chromiumoxide::Page,
-        state_binding: BrowserStateBinding,
-    ) -> Page {
+    fn wrap_page_with_binding(&self, page: CdpPage, state_binding: BrowserStateBinding) -> Page {
         Page::new(
             page,
             Arc::clone(&self.capture_lock),

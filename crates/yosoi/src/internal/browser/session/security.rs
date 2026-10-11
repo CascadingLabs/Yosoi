@@ -2,7 +2,9 @@
 #[cfg(test)]
 use crate::internal::browser as void_crawl_core;
 
-use chromiumoxide::{Browser, cdp::browser_protocol::system_info::GetInfoParams};
+use crate::internal::browser::vendor::chromiumoxide::{
+    Browser, cdp::browser_protocol::system_info::GetInfoParams,
+};
 use rustls::crypto::ring::default_provider as ring_crypto_provider;
 use serde_json::Value;
 use std::{path::Path, sync::Once};

@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use chromiumoxide::error::CdpError;
+use crate::internal::browser::vendor::chromiumoxide::error::CdpError;
 use serde::Serialize;
 use thiserror::Error;
 

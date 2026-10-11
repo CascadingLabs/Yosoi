@@ -10,11 +10,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::accessibility::AxNode;
 use crate::internal::types::{
     BrowserAccessibilityCaptureMode, BrowserAccessibilityIgnoredNodes, BrowserAccessibilitySchema,
     BrowserFrameId, ByteCount, ByteLimit, ByteLimitError,
 };
-use chromiumoxide::cdp::browser_protocol::accessibility::AxNode;
 use serde::Serialize;
 
 use crate::internal::browser::{

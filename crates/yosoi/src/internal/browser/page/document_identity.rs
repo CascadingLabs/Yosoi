@@ -1,5 +1,7 @@
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::{
+    Frame, FrameId, FrameTree, GetFrameTreeParams,
+};
 use crate::internal::types::BrowserFrameId;
-use chromiumoxide::cdp::browser_protocol::page::{Frame, FrameId, FrameTree, GetFrameTreeParams};
 
 use super::Page;
 use crate::internal::browser::{

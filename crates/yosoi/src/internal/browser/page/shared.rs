@@ -1,5 +1,5 @@
-use chromiumoxide::listeners::EventListenerConfig;
-use chromiumoxide::listeners::EventOverflowPolicy;
+use crate::internal::browser::vendor::chromiumoxide::listeners::EventListenerConfig;
+use crate::internal::browser::vendor::chromiumoxide::listeners::EventOverflowPolicy;
 use std::num::NonZeroUsize;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;

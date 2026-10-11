@@ -10,7 +10,7 @@
 
 use std::time::{Duration, Instant};
 
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     CdpMode,
     cmd::CommandChain,
     handler::{frame::FrameManager, network::NetworkManager},

@@ -149,13 +149,6 @@ def wheel_builds(abis: list[dict]) -> list[dict]:
     return result
 
 
-# Only these reviewed browser forks may publish from vendor paths.
-REGISTRY_FORKS = {
-    "vendor/chromiumoxide": "yosoi-chromiumoxide",
-    "vendor/chromiumoxide_cdp": "yosoi-chromiumoxide-cdp",
-}
-
-
 def registry_manifests(root: Path) -> dict:
     workspace = read_toml(root / "Cargo.toml")["workspace"]
     manifests = {}
@@ -164,12 +157,6 @@ def registry_manifests(root: Path) -> dict:
         document = read_toml(path)
         if "package" in document:
             manifests[document["package"]["name"]] = (path, document)
-    for directory, name in REGISTRY_FORKS.items():
-        path = root / directory / "Cargo.toml"
-        if path.is_file():
-            document = read_toml(path)
-            if document["package"]["name"] == name:
-                manifests[name] = (path, document)
     return manifests
 
 
@@ -213,10 +200,7 @@ def publication_plan(root: Path) -> dict:
     roots = sorted(
         name
         for name, (path, doc) in manifests.items()
-        if (
-            path.parent.parent == root / "crates"
-            or REGISTRY_FORKS.get(path.parent.relative_to(root).as_posix()) == name
-        )
+        if (path.parent.parent == root / "crates")
         and doc["package"].get("publish") is not False
     )
     ordered, visiting, visited, blockers = [], set(), set(), set()

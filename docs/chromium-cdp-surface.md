@@ -3,7 +3,7 @@
 Protocol inventory status date: 2026-09-15. API boundary update: 2026-09-24
 (CAS-382). This is the CAS-373 source inventory for the exact
 Chrome 153.0.8010.36 / Chromium `r1681091` PDL checked into
-`vendor/chromiumoxide_cdp/pdl`. It describes repository-internal traffic, not
+`crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/pdl`. It describes repository-internal traffic, not
 every definition generated into `chromiumoxide_cdp`.
 
 ## Scope and status vocabulary
@@ -204,7 +204,7 @@ performance, or compatibility claim is made for the new recording commands.
 
 | Surface | M153 status | Yosoi consequence | Evidence |
 | --- | --- | --- | --- |
-| `Network.InterceptionId` | removed -> `Fetch.RequestId` newly required | The M145-era generated identity is absent from the exact M153 PDL. Chromiumoxide now stores Fetch request ids, correlates them to `Network.RequestId`, and uses the Fetch id for authentication cleanup and continuation. Do not recreate a fake Network type. | Absence from all 54 M153 PDL inputs; `vendor/chromiumoxide/src/handler/network.rs` and `handler/http.rs`; Fetch cleanup regression. |
+| `Network.InterceptionId` | removed -> `Fetch.RequestId` newly required | The M145-era generated identity is absent from the exact M153 PDL. Chromiumoxide now stores Fetch request ids, correlates them to `Network.RequestId`, and uses the Fetch id for authentication cleanup and continuation. Do not recreate a fake Network type. | Absence from all 54 M153 PDL inputs; `crates/yosoi/src/internal/browser/vendor/chromiumoxide/src/handler/network.rs` and `handler/http.rs`; Fetch cleanup regression. |
 | `TargetInfo.parentId` | newly present stable field | The generated target shape accepts the M153 tab/iframe parent topology. | `chromiumoxide_cdp::m153::target_info_accepts_m153_parent_and_embedder_metadata`. |
 | `TargetInfo.embedderData` | newly present experimental field | The generated target shape accepts M153 tab embedder metadata; Yosoi stores but does not interpret it. | Same M153 contract test. |
 | `Page.startScreenRecording` / `Page.stopScreenRecording` | newly present experimental commands; not used | No change to Yosoi recording; adoption requires a separate typed implementation and measurement against the screencast path. | Exact `Page.pdl`; no production symbol reference. |
@@ -270,7 +270,7 @@ The inventory was produced by:
    domain PDLs, and `js_protocol.pdl` rather than inferring status from Rust
    names;
 2. searching every production Rust file under `crates/voidcrawl/src` and
-   `vendor/chromiumoxide/src` for generated command/event types, generic
+   `crates/yosoi/src/internal/browser/vendor/chromiumoxide/src` for generated command/event types, generic
    `execute` call sites, controller initialization chains, `CdpEvent` matches,
    and typed event listeners;
 3. following VoidCrawl calls through Chromiumoxide helpers (notably
@@ -279,8 +279,8 @@ The inventory was produced by:
 4. checking each required lifecycle family against focused repository tests.
 
 The exact PDL/input and generated-output drift gate remains
-`vendor/chromiumoxide_cdp/scripts/verify-generated.sh`; the M153 shape contracts
-remain in `vendor/chromiumoxide_cdp/tests/m153.rs`. A second parser/verifier was
+`crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/scripts/verify-generated.sh`; the M153 shape contracts
+remain in `crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/tests/m153.rs`. A second parser/verifier was
 not added because it would duplicate the PDL generator's naming rules. The
 public API no longer returns a raw page or CDP target handle.
 

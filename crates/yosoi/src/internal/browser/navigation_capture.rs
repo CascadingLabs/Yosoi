@@ -18,11 +18,7 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-use crate::internal::types::{
-    BrowserResourceId, BrowserResourceOutcome, ByteCount, ByteLimit, ByteLimitError,
-};
-use base64::engine::general_purpose::STANDARD as BASE64;
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     cdp::browser_protocol::network::{
         EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
@@ -30,6 +26,10 @@ use chromiumoxide::{
     },
     listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy, EventStream},
 };
+use crate::internal::types::{
+    BrowserResourceId, BrowserResourceOutcome, ByteCount, ByteLimit, ByteLimitError,
+};
+use base64::engine::general_purpose::STANDARD as BASE64;
 use futures::StreamExt;
 use serde::Serialize;
 use tokio::{

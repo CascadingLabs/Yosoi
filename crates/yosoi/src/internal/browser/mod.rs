@@ -32,10 +32,18 @@ pub mod scanner;
 pub mod selector;
 pub mod session;
 pub mod stealth;
+mod vendor;
 pub mod viewport;
 pub mod visual_snapshot;
 
 // Re-export CDP types used by Yosoi's browser acquisition adapter.
+pub use crate::internal::browser::vendor::chromiumoxide::{
+    CdpMode,
+    cdp::browser_protocol::{
+        input::{DispatchKeyEventType, DispatchMouseEventType, MouseButton},
+        network::{Cookie, CookieParam, DeleteCookiesParams},
+    },
+};
 pub use active_navigation::{
     ActiveNavigation, ActiveNavigationOptions, NavigationFailureReason, NavigationProgress,
     NavigationProgressAccounting, NavigationProgressKind, NavigationReport, NavigationTermination,
@@ -53,13 +61,6 @@ pub use captcha::{
 pub use challenge::{
     AttachCoordinates, ChallengeSnapshot, ChallengeStatus, DomCaptchaSnapshot, ResolutionOutcome,
     ResolutionRequest, ResolverType, captcha_is_active,
-};
-pub use chromiumoxide::{
-    CdpMode,
-    cdp::browser_protocol::{
-        input::{DispatchKeyEventType, DispatchMouseEventType, MouseButton},
-        network::{Cookie, CookieParam, DeleteCookiesParams},
-    },
 };
 pub use context_isolation::{
     BrowserStateBinding, ContextCleanupReport, ContextDisposalState, IsolatedBrowserContext,

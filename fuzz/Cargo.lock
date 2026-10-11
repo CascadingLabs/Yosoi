@@ -1767,7 +1767,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-dev-support"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-compression",
  "base64",
@@ -1800,7 +1800,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture-fuzz"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "libfuzzer-sys",

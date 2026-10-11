@@ -26,11 +26,7 @@ use std::{
     time::Duration,
 };
 
-use crate::internal::browser::{
-    BrowserSession, BrowserStateBinding, ContextDisposalState, NavigationCaptureOptions,
-    NavigationCaptureReport, Page, ResponseBodyState,
-};
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     browser::{Browser, CdpMode},
     cdp::browser_protocol::target::{
         EventTargetCreated, EventTargetDestroyed, GetBrowserContextsParams,
@@ -38,6 +34,10 @@ use chromiumoxide::{
     },
     handler::HandlerConfig,
     listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy},
+};
+use crate::internal::browser::{
+    BrowserSession, BrowserStateBinding, ContextDisposalState, NavigationCaptureOptions,
+    NavigationCaptureReport, Page, ResponseBodyState,
 };
 use futures::StreamExt;
 use tokio::{

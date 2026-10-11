@@ -1,11 +1,11 @@
 use super::Page;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
-use chromiumoxide::cdp::browser_protocol::network::Cookie;
-use chromiumoxide::cdp::browser_protocol::network::CookieParam;
-use chromiumoxide::cdp::browser_protocol::network::DeleteCookiesParams;
-use chromiumoxide::cdp::browser_protocol::network::Headers;
-use chromiumoxide::cdp::browser_protocol::network::SetExtraHttpHeadersParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::Cookie;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::CookieParam;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::DeleteCookiesParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::Headers;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::SetExtraHttpHeadersParams;
 use std::collections::HashMap;
 
 impl Page {

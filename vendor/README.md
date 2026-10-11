@@ -1,20 +1,19 @@
-# Vendored browser dependencies
+# Vendored browser sources
 
-These two directories work together:
-
-- **`chromiumoxide`** controls the browser: connections, pages, navigation, and
-  events. We keep a local fork for the browser-control fixes Yosoi needs.
-- **`chromiumoxide_cdp`** defines the messages exchanged with Chrome through its
-  DevTools Protocol. We keep generated Rust bindings for our selected Chrome
-  version.
-
-Keeping them separate lets us update protocol definitions independently of
-browser-control fixes. Yosoi uses both through its internal VoidCrawl engine:
+The Chromiumoxide controller and generated Chrome DevTools Protocol bindings
+are private Rust modules included in the published `yosoi` crate's optional
+`browser` feature:
 
 ```text
-Yosoi → VoidCrawl → chromiumoxide → chromiumoxide_cdp
+Yosoi SDK → private browser adapter → Chromiumoxide module → CDP module
 ```
 
-See each directory's [controller vendoring notes](chromiumoxide/VENDORING.md)
-and [protocol vendoring notes](chromiumoxide_cdp/VENDORING.md) for provenance
-and maintenance details.
+Their source, fixtures, license notices, and maintenance records live under
+[`crates/yosoi/src/internal/browser/vendor/`](../crates/yosoi/src/internal/browser/vendor/).
+The controller's upstream base and local patch queue are in its
+[`VENDORING.md`](../crates/yosoi/src/internal/browser/vendor/chromiumoxide/VENDORING.md).
+The generated schema's provenance and regeneration procedure are in its
+[`VENDORING.md`](../crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/VENDORING.md).
+
+The source directories have no independent Cargo manifests or public Rust
+facades. Applications use the `yosoi` SDK API.

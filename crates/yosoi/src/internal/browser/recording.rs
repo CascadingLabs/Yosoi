@@ -136,9 +136,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-use crate::internal::types::ByteCount;
-use base64::{Engine, engine::general_purpose::STANDARD as B64};
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     cdp::browser_protocol::page::{
         EventScreencastFrame, ScreencastFrameAckParams, StartScreencastFormat,
@@ -146,6 +144,8 @@ use chromiumoxide::{
     },
     listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy},
 };
+use crate::internal::types::ByteCount;
+use base64::{Engine, engine::general_purpose::STANDARD as B64};
 use futures::{Stream, StreamExt};
 use image::{
     DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage, codecs::jpeg::JpegEncoder,
@@ -815,7 +815,7 @@ pub struct RecordingHandle {
     mask_stop_tx: Option<oneshot::Sender<()>>,
     /// The CDP handle for the recorded tab, kept so `stop` can halt the
     /// screencast without needing the wrapping [`Page`] first. Cheap to
-    /// clone: `chromiumoxide::Page` is an `Arc` internally.
+    /// clone: `crate::internal::browser::vendor::chromiumoxide::Page` is an `Arc` internally.
     cdp: CdpPage,
     /// Shared with the collector so the hard deadline can release the
     /// browser-wide capture lock even when the caller never calls `stop`.

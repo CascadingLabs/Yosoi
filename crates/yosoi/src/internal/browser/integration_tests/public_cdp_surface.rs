@@ -17,7 +17,12 @@ fn collect_rust_sources(root: &Path, sources: &mut Vec<String>) {
             .expect("source directory entry must be readable")
             .path();
         if path.is_dir() {
-            if path.file_name().and_then(|name| name.to_str()) == Some("integration_tests") {
+            // Upstream controller exports live behind the private vendor module.
+            // Scan the SDK wrappers, where a raw handle could escape to callers.
+            if matches!(
+                path.file_name().and_then(|name| name.to_str()),
+                Some("integration_tests" | "vendor")
+            ) {
                 continue;
             }
             collect_rust_sources(&path, sources);
