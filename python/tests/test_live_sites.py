@@ -205,6 +205,47 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
     asyncio.run(run())
 
 
+def test_live_javascript_snapshots_permissions_and_exports(tmp_path: Path) -> None:
+    script = tmp_path / "count.js"
+    script.write_text("document.querySelectorAll('article.product_pod').length")
+    module = tmp_path / "identity.mjs"
+    module.write_text("export const host = location.hostname;")
+    recipe = _flow(
+        [
+            ys.navigate(BOOKS),
+            ys.evaluate_file(str(script)),
+            ys.run_module_with_export(str(module), "host"),
+        ]
+    )
+    script.write_text("-1")
+    module.write_text("export const host = 'changed-after-snapshot';")
+
+    async def run() -> None:
+        outcome = await _invoke("live-javascript-snapshots", recipe.allow_javascript())
+        assert outcome.steps[1].receipt.result == 20
+        assert outcome.steps[2].receipt.result == "books.toscrape.com"
+        async with ys.session(settings=_settings()) as session:
+            async with session.work() as lease:
+                await _invoke(
+                    "javascript-owner-navigation", _flow([ys.navigate(BOOKS)]), lease
+                )
+                denied = (
+                    await _flow([ys.evaluate("location.hostname")])
+                    .allow_javascript()
+                    .invoke(lease)
+                )
+                _record("javascript-borrowed-denied", denied)
+                assert denied.terminal == "failed"
+                assert denied.steps[0].receipt.status == "rejected"
+                await _invoke(
+                    "javascript-owner-recovery",
+                    _flow([ys.assert_(ys.count_at_least("article.product_pod", 20))]),
+                    lease,
+                )
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize(
     ("sku", "quantity", "total"),
     [
