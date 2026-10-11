@@ -54,7 +54,7 @@ uuid = { version = "1", features = ["v4"] }
 which = "8"
 windows-registry = "0.6"
 yosoi = { version = "=0.2.0", path = "crates/yosoi" }
-yosoi-contracts-derive = { version = "=0.1.1", path = "crates/yosoi-contracts-derive" }
+yosoi-contracts-derive = { version = "=0.1.2", path = "crates/yosoi-contracts-derive" }
 
 base64 = "0.22"
 async-tungstenite = { version = "0.32", features = ["tokio-runtime"] }
