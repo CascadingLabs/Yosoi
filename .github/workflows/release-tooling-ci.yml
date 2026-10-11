@@ -3,6 +3,9 @@ name: Release tooling CI
 on:
   pull_request:
     paths:
+      - 'Cargo.toml'
+      - 'crates/*/Cargo.toml'
+      - 'pyproject.toml'
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
       - '.github/workflows/chromium-images.yml'
@@ -17,6 +20,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'Cargo.toml'
+      - 'crates/*/Cargo.toml'
+      - 'pyproject.toml'
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
       - '.github/workflows/chromium-images.yml'

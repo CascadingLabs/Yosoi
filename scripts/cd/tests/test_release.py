@@ -655,7 +655,7 @@ fi
         self.assertNotIn("yosoi-chromiumoxide", manifests)
         self.assertNotIn("yosoi-chromiumoxide-cdp", manifests)
         derive = manifests["yosoi-contracts-derive"][1]
-        self.assertEqual(release.package_version(root, derive), "0.1.1")
+        self.assertEqual(release.package_version(root, derive), "0.1.2")
 
         workspace = release.read_toml(root / "Cargo.toml")["workspace"]
         owned_forks = {"yosoi-chromiumoxide", "yosoi-chromiumoxide-cdp"}
