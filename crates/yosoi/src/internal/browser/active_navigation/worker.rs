@@ -9,7 +9,8 @@ use std::{
     time::Duration,
 };
 
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
+    Page as CdpPage,
     cdp::browser_protocol::page::{
         EventFrameNavigated, EventFrameStoppedLoading, EventLifecycleEvent,
         EventNavigatedWithinDocument, FrameId, NavigateReturns, StopLoadingParams,
@@ -41,7 +42,7 @@ pub(super) struct NavigationStreams {
 }
 
 pub(super) struct NavigationWorker {
-    pub(super) page: chromiumoxide::Page,
+    pub(super) page: CdpPage,
     pub(super) identity: Arc<DocumentIdentityState>,
     pub(super) state: Arc<NavigationState>,
     pub(super) page_closed: Arc<AtomicBool>,

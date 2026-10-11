@@ -16,7 +16,7 @@ use std::{
     },
 };
 
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Browser, CdpMode,
     cdp::browser_protocol::{
         browser::BrowserContextId,

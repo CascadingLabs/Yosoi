@@ -61,15 +61,21 @@ class IdentityTests(unittest.TestCase):
         self.assertIn(build_command, workflow)
         self.assertNotIn("-p yosoi-cli", workflow)
 
-    def test_browser_stack_evidence_separates_sdk_component_and_forks(self):
+    def test_browser_stack_evidence_points_to_internal_modules(self):
         workflow = (
             DIRECTORY.parents[1] / ".github/workflows/rust-ci-test.yml"
         ).read_text()
         self.assertIn("crates/yosoi/Cargo.toml", workflow)
         self.assertIn("VOID_CRAWL_PACKAGE_NAME", workflow)
         self.assertIn("VOID_CRAWL_VERSION", workflow)
-        self.assertIn("vendor/chromiumoxide/Cargo.toml", workflow)
-        self.assertIn("vendor/chromiumoxide_cdp/Cargo.toml", workflow)
+        self.assertIn(
+            "crates/yosoi/src/internal/browser/vendor/chromiumoxide/VENDORING.md",
+            workflow,
+        )
+        self.assertIn(
+            "crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/VENDORING.md",
+            workflow,
+        )
         self.assertNotIn("crates/voidcrawl/Cargo.toml", workflow)
 
     def test_interpreter_resolution_installs_first_and_propagates_failures(self):
@@ -630,7 +636,7 @@ fi
             ]
             self.assertEqual(len(matching), 1)
 
-    def test_consolidated_release_plan_excludes_private_runtime_crates(self):
+    def test_release_plan_publishes_only_sdk_and_independent_derive(self):
         root = DIRECTORY.parents[1]
         version = release.read_toml(root / "Cargo.toml")["workspace"]["package"][
             "version"
@@ -642,11 +648,48 @@ fi
             {
                 "yosoi",
                 "yosoi-contracts-derive",
-                "yosoi-chromiumoxide",
-                "yosoi-chromiumoxide-cdp",
             },
         )
         self.assertEqual(planned["publication"]["blockers"], [])
+        manifests = release.registry_manifests(root)
+        self.assertNotIn("yosoi-chromiumoxide", manifests)
+        self.assertNotIn("yosoi-chromiumoxide-cdp", manifests)
+        derive = manifests["yosoi-contracts-derive"][1]
+        self.assertEqual(release.package_version(root, derive), "0.1.1")
+
+        workspace = release.read_toml(root / "Cargo.toml")["workspace"]
+        owned_forks = {"yosoi-chromiumoxide", "yosoi-chromiumoxide-cdp"}
+        for name in crates:
+            document = manifests[name][1]
+            groups = [
+                document.get("dependencies", {}),
+                document.get("build-dependencies", {}),
+                document.get("dev-dependencies", {}),
+            ]
+            for target in document.get("target", {}).values():
+                groups.extend(
+                    [
+                        target.get("dependencies", {}),
+                        target.get("build-dependencies", {}),
+                        target.get("dev-dependencies", {}),
+                    ]
+                )
+            for group in groups:
+                for alias, specification in group.items():
+                    if isinstance(specification, dict) and specification.get(
+                        "workspace"
+                    ):
+                        specification = workspace["dependencies"][alias]
+                    dependency_name = (
+                        specification.get("package", alias)
+                        if isinstance(specification, dict)
+                        else alias
+                    )
+                    self.assertNotIn(
+                        dependency_name,
+                        owned_forks,
+                        f"{name} still depends on a separately published browser fork",
+                    )
 
     def test_python_ci_uses_shared_matrix_without_losing_interpreters(self):
         import json
@@ -708,6 +751,10 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                 )
             (path / "Cargo.toml").write_text(body)
 
+    def historical_fork_manifests(self, root):
+        path = root / "vendor/chromiumoxide/Cargo.toml"
+        return {"yosoi-chromiumoxide": (path, release.read_toml(path))}
+
     def test_dependencies_are_published_first(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -735,17 +782,10 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
             with self.assertRaisesRegex(ValueError, "Cyclic"):
                 release.publication_plan(root)
 
-    def test_reviewed_browser_forks_publish_in_order_with_independent_versions(self):
+    def test_non_workspace_browser_components_are_not_registry_packages(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
-            application = root / "crates/application/Cargo.toml"
-            application.write_text(
-                application.read_text()
-                + 'controller = { package = "yosoi-chromiumoxide", '
-                'version = "=0.9.1-yosoi.1", '
-                'path = "../../vendor/chromiumoxide" }\n'
-            )
             for path, name, version in (
                 ("vendor/chromiumoxide", "yosoi-chromiumoxide", "0.9.1-yosoi.1"),
                 (
@@ -757,35 +797,15 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                 folder = root / path
                 folder.mkdir(parents=True)
                 text = f'[package]\nname = "{name}"\nversion = "{version}"\n'
-                if name == "yosoi-chromiumoxide":
-                    text += (
-                        "[dependencies]\nschema = { "
-                        'package = "yosoi-chromiumoxide-cdp", '
-                        'version = "=0.10.0-yosoi.m153.1", '
-                        'path = "../chromiumoxide_cdp" }\n'
-                    )
                 (folder / "Cargo.toml").write_text(text)
             publication = release.publication_plan(root)
-            self.assertEqual(publication["blockers"], [])
-            order = publication["crates"]
-            self.assertLess(
-                order.index("yosoi-chromiumoxide-cdp"),
-                order.index("yosoi-chromiumoxide"),
+            self.assertEqual(
+                publication,
+                {"crates": ["substrate", "application"], "blockers": []},
             )
-            self.assertLess(
-                order.index("yosoi-chromiumoxide"), order.index("application")
-            )
-            manifest, document = release.registry_manifests(root)["yosoi-chromiumoxide"]
-            self.assertEqual(release.package_version(root, document), "0.9.1-yosoi.1")
-            document["package"]["name"] = "chromiumoxide"
-            manifest.write_text(
-                '[package]\nname = "chromiumoxide"\nversion = "0.9.1"\n'
-            )
-            self.assertIn(
-                "application depends on vendored chromiumoxide; "
-                "approve its registry distribution first",
-                release.publication_plan(root)["blockers"],
-            )
+            manifests = release.registry_manifests(root)
+            self.assertNotIn("yosoi-chromiumoxide", manifests)
+            self.assertNotIn("yosoi-chromiumoxide-cdp", manifests)
 
     def test_crate_publisher_uses_fork_version_and_manifest_in_shared_target(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -829,6 +849,11 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                             "blockers": [],
                         },
                     },
+                ),
+                patch.object(
+                    publish,
+                    "registry_manifests",
+                    return_value=self.historical_fork_manifests(root),
                 ),
                 patch.object(publish, "run", side_effect=command),
                 patch.object(publish, "json_url", side_effect=registry),
@@ -878,6 +903,11 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                             "blockers": [],
                         },
                     },
+                ),
+                patch.object(
+                    publish,
+                    "registry_manifests",
+                    return_value=self.historical_fork_manifests(root),
                 ),
                 patch.object(publish, "run", side_effect=command),
                 patch.object(publish, "json_url", side_effect=registry),
@@ -931,6 +961,11 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                         },
                     },
                 ),
+                patch.object(
+                    publish,
+                    "registry_manifests",
+                    return_value=self.historical_fork_manifests(root),
+                ),
                 patch.object(publish, "run", side_effect=command),
                 patch.object(
                     publish,
@@ -981,6 +1016,11 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
                             "blockers": [],
                         },
                     },
+                ),
+                patch.object(
+                    publish,
+                    "registry_manifests",
+                    return_value=self.historical_fork_manifests(root),
                 ),
                 patch.object(publish, "run", side_effect=command),
                 patch.object(

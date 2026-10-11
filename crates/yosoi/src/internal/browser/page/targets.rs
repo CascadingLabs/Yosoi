@@ -7,9 +7,9 @@ use crate::internal::browser::selector::BrowserTarget;
 use crate::internal::browser::selector::BrowserTargetKind;
 use crate::internal::browser::selector::RawRect;
 use crate::internal::browser::selector::TargetResolution;
-use chromiumoxide::cdp::browser_protocol::dom::GetBoxModelParams;
-use chromiumoxide::cdp::browser_protocol::dom::ResolveNodeParams;
-use chromiumoxide::cdp::js_protocol::runtime::CallFunctionOnParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::dom::GetBoxModelParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::dom::ResolveNodeParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::CallFunctionOnParams;
 use serde_json::Value;
 
 impl Page {

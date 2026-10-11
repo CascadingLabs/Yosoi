@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     cdp::browser_protocol::page::NavigateParams,
     listeners::{EventListenerConfig, EventOverflowPolicy},
 };

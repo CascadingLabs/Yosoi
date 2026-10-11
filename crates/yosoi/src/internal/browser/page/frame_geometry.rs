@@ -2,11 +2,11 @@ use super::Page;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
 use crate::internal::browser::selector::RawRect;
-use chromiumoxide::cdp::browser_protocol::dom::GetBoxModelParams;
-use chromiumoxide::cdp::browser_protocol::dom::GetFrameOwnerParams;
-use chromiumoxide::cdp::browser_protocol::page::FrameId;
-use chromiumoxide::cdp::browser_protocol::page::GetLayoutMetricsParams;
-use chromiumoxide::cdp::browser_protocol::target::SessionId;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::dom::GetBoxModelParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::dom::GetFrameOwnerParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::FrameId;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::GetLayoutMetricsParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::target::SessionId;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct BoxQuad {

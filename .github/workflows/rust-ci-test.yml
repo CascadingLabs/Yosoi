@@ -113,11 +113,11 @@ jobs:
             sed -n '/^\[package\]/,/^\[/{/^name = /p; /^version = /p;}' crates/yosoi/Cargo.toml
             echo "Embedded browser component identity:"
             sed -n '/^pub const VOID_CRAWL_PACKAGE_NAME:/p; /^pub const VOID_CRAWL_VERSION:/p' crates/yosoi/src/internal/browser/mod.rs
-            for manifest in vendor/chromiumoxide/Cargo.toml vendor/chromiumoxide_cdp/Cargo.toml; do
-              echo "$manifest"
-              sed -n '/^name = /p; /^version = /p' "$manifest"
+            for provenance in crates/yosoi/src/internal/browser/vendor/chromiumoxide/VENDORING.md crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/VENDORING.md; do
+              echo "$provenance"
+              cat "$provenance"
+              sha256sum "$provenance"
             done
-            sha256sum vendor/chromiumoxide_cdp/VENDORING.md
           } | tee ci-evidence/browser-identity.txt
       - name: Run default-feature unit and integration tests
         if: matrix.configuration == 'default'

@@ -10,11 +10,11 @@ use crate::internal::browser::document_snapshot::accessibility;
 use crate::internal::browser::document_snapshot::unavailable_accessibility;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
-use chromiumoxide::cdp::browser_protocol::accessibility::AxNode;
-use chromiumoxide::cdp::browser_protocol::accessibility::GetFullAxTreeParams;
-use chromiumoxide::cdp::browser_protocol::accessibility::QueryAxTreeParams;
-use chromiumoxide::cdp::browser_protocol::dom::GetDocumentParams;
-use chromiumoxide::cdp::browser_protocol::page::FrameId;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::accessibility::AxNode;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::accessibility::GetFullAxTreeParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::accessibility::QueryAxTreeParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::dom::GetDocumentParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::FrameId;
 use serde_json::Value;
 
 impl Page {

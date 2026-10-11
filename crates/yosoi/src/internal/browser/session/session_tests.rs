@@ -6,7 +6,7 @@ use super::{
     stderr_mentions_debug_port_collision,
 };
 use crate::internal::browser::environment::{EnvironmentObservation, EnvironmentUnavailableReason};
-use chromiumoxide::error::BrowserStderr;
+use crate::internal::browser::vendor::chromiumoxide::error::BrowserStderr;
 
 #[test]
 fn launch_mode_observation_does_not_guess_for_attached_browsers() {

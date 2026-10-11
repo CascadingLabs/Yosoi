@@ -128,7 +128,7 @@ normal browsing, with its sandbox enabled.
 - The first CAS-373 candidate keeps that controller base and its local patch
   queue while replacing only the generated bindings with the exact
   Chrome 153.0.8010.36 / `r1681091` protocol snapshot. Its source and generated
-  digests are recorded in `vendor/chromiumoxide_cdp/VENDORING.md`.
+  digests are recorded in `crates/yosoi/src/internal/browser/vendor/chromiumoxide_cdp/VENDORING.md`.
 - Upstream pull request 305 offers an unmerged M148-era CDP refresh. It is a
   candidate to inherit if the Yosoi surface reproduces the reported decode
   failure; it is not a current-Stable schema.

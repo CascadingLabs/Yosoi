@@ -17,9 +17,7 @@ use std::{
     time::Duration,
 };
 
-use crate::internal::types::{ByteCount, ByteLimit};
-use base64::{engine::general_purpose::STANDARD as BASE64, read::DecoderReader};
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     cdp::browser_protocol::network::{
         EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
@@ -27,6 +25,8 @@ use chromiumoxide::{
     },
     listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy, EventStream},
 };
+use crate::internal::types::{ByteCount, ByteLimit};
+use base64::{engine::general_purpose::STANDARD as BASE64, read::DecoderReader};
 use futures::StreamExt;
 use globset::{Glob, GlobMatcher};
 use tokio::{sync::oneshot, task::JoinHandle, time};

@@ -18,8 +18,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use crate::internal::types::{ByteCount, ByteLimit, ByteLimitError};
-use chromiumoxide::{
+use crate::internal::browser::vendor::chromiumoxide::{
     Page as CdpPage,
     cdp::{
         IntoEventKind,
@@ -31,6 +30,7 @@ use chromiumoxide::{
     },
     listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy, EventStream},
 };
+use crate::internal::types::{ByteCount, ByteLimit, ByteLimitError};
 use futures::StreamExt;
 use serde::Serialize;
 use tokio::{

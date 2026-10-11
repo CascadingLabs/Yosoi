@@ -1,5 +1,8 @@
 use crate::internal::types as yosoi_types;
 
+use crate::internal::browser::vendor::chromiumoxide::{
+    CdpMode, Page as CdpPage, cdp::browser_protocol::browser::BrowserContextId,
+};
 use crate::internal::browser::{
     active_navigation::NavigationState,
     context_isolation::BrowserStateBinding,
@@ -7,7 +10,6 @@ use crate::internal::browser::{
     interrupt::InterruptRegistry,
     viewport::Viewport,
 };
-use chromiumoxide::{CdpMode, Page as CdpPage, cdp::browser_protocol::browser::BrowserContextId};
 use std::time::Duration;
 use std::{
     fmt,
@@ -91,7 +93,7 @@ impl fmt::Debug for ProviderBrowserContextIdentity {
     }
 }
 
-/// Thin wrapper over `chromiumoxide::Page` exposing a clean async API.
+/// Thin wrapper over `crate::internal::browser::vendor::chromiumoxide::Page` exposing a clean async API.
 #[derive(Debug)]
 pub struct Page {
     inner: CdpPage,

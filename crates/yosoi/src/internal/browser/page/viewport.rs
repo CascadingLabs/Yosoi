@@ -2,11 +2,11 @@ use super::Page;
 use super::identity::{client_hints_for_ua, mobile_ua_platform_and_metadata};
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::ClearDeviceMetricsOverrideParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetDeviceMetricsOverrideParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetTouchEmulationEnabledParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetUserAgentOverrideParams;
 use crate::internal::browser::viewport::Viewport;
-use chromiumoxide::cdp::browser_protocol::emulation::ClearDeviceMetricsOverrideParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetDeviceMetricsOverrideParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetTouchEmulationEnabledParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetUserAgentOverrideParams;
 
 impl Page {
     // ── Viewport / device emulation ──────────────────────────────────────

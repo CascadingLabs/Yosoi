@@ -32,7 +32,7 @@ PyPI before publishing GitHub assets,
 Chromium images, and the matching docs bundle. Rust registry uploads run only
 for final beta tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
 registry prerequisites and successful registry uploads remain mandatory for it.
-A passing RC build alone does not clear the browser registry blocker.
+
 Standalone main/manual docs runs defer RC publication; only Release CD's verified
 `release-docs` bundle with explicit source and version can publish candidate docs.
 
@@ -148,18 +148,11 @@ not the immutable source tag or any verification/publication gates. See
   allowing only Cargo's generated VCS commit marker to differ before skipping
   the upload.
   `yosoi-contracts-derive` keeps its own version and is bumped only when its
-  source needs a new registry release. The embedded browser component retains
-  the stable identity `yosoi-browser-core`; its separate controller packages
-  are `yosoi-chromiumoxide` and `yosoi-chromiumoxide-cdp`. Existing Rust import
-  names remain available through explicit library names and dependency aliases.
-  Browser launch behavior and the checked-in CDP schema are unchanged;
-  packaging does not certify a new browser/controller tuple.
-- The two vendored browser forks are explicitly allowlisted by path and package
-  name. Other vendored dependencies still block publication. Forks retain
-  independent versions, licenses, and upstream attribution; the publisher uses
-  each manifest's version and a shared target directory, publishing dependencies
-  before their consumers. Chromiumoxide stays outside the SDK workspace, so
-  this packaging change does not add upstream browser tests to ordinary CI.
+  source needs a new registry release. Chromiumoxide and its checked-in CDP
+  bindings ship as internal modules in the `yosoi` package; neither fork is
+  uploaded as a separate crate. Their source provenance and upstream licenses
+  remain with the vendored modules. Packaging does not certify a new browser
+  and controller tuple.
 - The Python stack's hosted checks must pass before release; its local fixes
   do not establish a passing hosted wheel matrix.
 - After the GitHub SDK release succeeds, `docs-publish.yml` publishes the exact
@@ -196,9 +189,9 @@ uv run --locked --project scripts/releases python -m unittest discover -s script
 uv run --locked --project scripts/releases python scripts/cd/release.py publication-ready --tag v0.1.0
 ```
 
-The second command currently fails with the named browser dependency blocker.
-The complete hosted build/install/test matrix runs during release CD, never as
-an additional full matrix on every PR.
+The second command checks the current registry prerequisites without compiling
+Rust or contacting registries. The complete hosted build/install/test matrix
+runs during release CD, never as an additional full matrix on every PR.
 
 
 ## Reusing compiled test binaries

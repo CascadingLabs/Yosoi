@@ -88,7 +88,7 @@ mod download_tests {
 mod tests {
     use std::collections::HashSet;
 
-    use chromiumoxide::cdp::browser_protocol::browser::BrowserContextId;
+    use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::BrowserContextId;
     use serde_json::json;
 
     use super::super::ProviderBrowserContextIdentity;

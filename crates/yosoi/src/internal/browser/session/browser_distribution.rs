@@ -4,7 +4,9 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chromiumoxide::detection::{DetectionOptions, default_executable};
+use crate::internal::browser::vendor::chromiumoxide::detection::{
+    DetectionOptions, default_executable,
+};
 use tokio::{process::Command, time};
 
 use crate::internal::browser::error::{Result, VoidCrawlError};

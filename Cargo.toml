@@ -7,11 +7,9 @@ members = [
     "crates/yosoi-python",
     "crates/yosoi-contracts-derive",
     "crates/yosoi-contracts-derive/tests/renamed-dependency",
-    "vendor/chromiumoxide_cdp",
     "xtask",
 ]
 resolver = "2"
-exclude = ["vendor/chromiumoxide"]
 
 [workspace.metadata.yosoi-release]
 independent-version-packages = ["yosoi-contracts-derive"]
@@ -21,10 +19,10 @@ edition = "2024"
 license = "Apache-2.0"
 # Also supplies Clippy's MSRV; rust-toolchain.toml pins the development compiler.
 rust-version = "1.99"
-version = "0.1.1"
+version = "0.1.2"
 
 [workspace.dependencies]
-yosoi-dev-support = { version = "=0.1.1", path = "benchmarks/support" }
+yosoi-dev-support = { version = "=0.1.2", path = "benchmarks/support" }
 anyhow = "1"
 async-compression = { version = "0.4", default-features = false, features = ["tokio", "gzip", "brotli", "zlib"] }
 bytes = "1"
@@ -46,22 +44,30 @@ sha2 = "0.10"
 tempfile = "3"
 simdutf8 = "=0.1.5"
 thiserror = "2"
+tracing = "0.1"
 tokio = { version = "1.48", default-features = false, features = ["macros", "rt", "time"] }
 tokio-util = { version = "0.7.17", default-features = false, features = ["io", "rt"] }
 tokio-rustls = { version = "=0.26.4", default-features = false, features = ["ring"] }
 url = { version = "2.5.8", default-features = false, features = ["std"] }
 wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
-yosoi = { version = "=0.1.1", path = "crates/yosoi" }
+which = "8"
+windows-registry = "0.6"
+yosoi = { version = "=0.1.2", path = "crates/yosoi" }
 yosoi-contracts-derive = { version = "=0.1.1", path = "crates/yosoi-contracts-derive" }
 
 base64 = "0.22"
-chromiumoxide = { package = "yosoi-chromiumoxide", version = "=0.9.1-yosoi.1", path = "vendor/chromiumoxide", default-features = false }
+async-tungstenite = { version = "0.32", features = ["tokio-runtime"] }
+chromiumoxide_pdl = "0.9"
+chromiumoxide_types = "0.9"
 clap_complete = "4.6.11"
 criterion = { version = "=0.7.0", default-features = false }
 divan = "=0.1.21"
+dunce = "1"
 flate2 = "=1.1.10"
+fnv = "1"
 futures = "0.3"
+futures-timer = "3"
 globset = "0.4"
 gungraun = "=0.19.4"
 html5ever = "=0.39.0"
@@ -71,6 +77,7 @@ markup5ever_rcdom = "=0.39.0"
 notify = "8"
 proc-macro-crate = "3.5.0"
 proc-macro2 = "1"
+pin-project-lite = "0.2"
 publicsuffix = "=2.3.0"
 quote = "1"
 reqwest = { version = "0.13", default-features = false }

@@ -4,14 +4,14 @@ use super::Page;
 use crate::internal::browser::environment::RenderingPreferences;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
-use chromiumoxide::cdp::browser_protocol::browser::PermissionDescriptor;
-use chromiumoxide::cdp::browser_protocol::browser::PermissionSetting;
-use chromiumoxide::cdp::browser_protocol::browser::SetPermissionParams;
-use chromiumoxide::cdp::browser_protocol::emulation::MediaFeature;
-use chromiumoxide::cdp::browser_protocol::emulation::SetEmulatedMediaParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetGeolocationOverrideParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetLocaleOverrideParams;
-use chromiumoxide::cdp::browser_protocol::emulation::SetTimezoneOverrideParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::PermissionDescriptor;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::PermissionSetting;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::SetPermissionParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::MediaFeature;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetEmulatedMediaParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetGeolocationOverrideParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetLocaleOverrideParams;
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::emulation::SetTimezoneOverrideParams;
 
 impl Page {
     // ── Emulation ───────────────────────────────────────────────────────

@@ -27,7 +27,9 @@
 #[cfg(feature = "browser")]
 use crate::internal::browser as void_crawl_core;
 
-use chromiumoxide::{CdpMode, cdp::browser_protocol::browser::GetVersionReturns};
+use crate::internal::browser::vendor::chromiumoxide::{
+    CdpMode, cdp::browser_protocol::browser::GetVersionReturns,
+};
 use serde::Serialize;
 use serde_json::Value;
 

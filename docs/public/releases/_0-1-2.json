@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Remove post-publication PyPI install matrix by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/153\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.1...v0.1.2\n",
+  "generated_source_sha256": "c74a979ac4213bfb780bcfafd3560fa2bd51b6546f44e1168111bcab73d53c14",
+  "github_notes_file": "yosoi-012-github-notes.md",
+  "previous": "0.1.1",
+  "schema": 1,
+  "version": "0.1.2"
+}
