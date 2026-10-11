@@ -335,13 +335,18 @@ def test_live_simulated_checkout_and_failure_stop(
                     assert len(failed.steps) == 1 and failed.skipped_steps
                     token = ys.CancellationToken()
                     token.cancel()
-                    cancelled = await _flow([ys.navigate(BOOKS)]).invoke(
-                        lease, cancellation=token
-                    )
-                    _record(f"{label}-cancelled", cancelled)
-                    assert cancelled.terminal == "cancelled"
-                    assert not any(
-                        step.receipt.status == "observed" for step in cancelled.steps
+                    with pytest.raises(
+                        ys.BrowserError, match="cancelled before dispatch"
+                    ) as cancelled:
+                        await _flow([ys.navigate(BOOKS)]).invoke(
+                            lease, cancellation=token
+                        )
+                    _record(
+                        f"{label}-cancelled",
+                        {
+                            "status": "not_started",
+                            "error": str(cancelled.value),
+                        },
                     )
                     await _invoke(
                         f"{label}-recovery",
