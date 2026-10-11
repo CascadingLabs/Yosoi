@@ -39,4 +39,3 @@ Each policy uses an owned browser with the same tab/worker limits. Startup is se
 Memory is sampled every 100 ms plus a final sample. Cgroup usage includes SDK, browser, cache and kernel charges; Chrome PSS and SDK RSS use different accounting and must not be subtracted from it. Shared file charges can reside outside a container. These measurements do not establish a universal memory increase or decrease. Three repeats and fixed policy order are preliminary evidence, not a statistically controlled performance ranking.
 
 Admission here includes navigation/setup and controller queues: it is the server-observed request timestamp minus the application submission timestamp, not a pure semaphore timing. A constrained upstream or browser HTTP/1 connection pool can limit throughput even when controller slots are available. Foreground input and screenshot capture remain serialized by the browser surface lock.
-
