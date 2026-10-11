@@ -184,6 +184,29 @@ def package_version(root: Path, document: dict) -> str:
     return version
 
 
+def validate_registry_metadata(root: Path) -> None:
+    workspace = read_toml(root / "Cargo.toml")["workspace"]["package"]
+    manifests = registry_manifests(root)
+    for name in publication_plan(root)["crates"]:
+        _, document = manifests[name]
+        package = document["package"]
+        fields = {}
+        for field in ("description", "license", "license-file"):
+            value = package.get(field)
+            if isinstance(value, dict) and value.get("workspace"):
+                value = workspace.get(field)
+            fields[field] = value
+        if (
+            not isinstance(fields["description"], str)
+            or not fields["description"].strip()
+        ):
+            raise ValueError(
+                f"{name} is missing required crates.io description metadata"
+            )
+        if not fields["license"] and not fields["license-file"]:
+            raise ValueError(f"{name} is missing required crates.io license metadata")
+
+
 def publication_plan(root: Path) -> dict:
     workspace = read_toml(root / "Cargo.toml")["workspace"]
     manifests = registry_manifests(root)
@@ -464,6 +487,7 @@ def main() -> None:
                 "Registry publication blocked:\n"
                 + "\n".join(release["publication"]["blockers"])
             )
+        validate_registry_metadata(Path.cwd())
     elif args.command == "verify":
         verify_wheels(args.directory, release)
     elif args.command == "pypi-pending":

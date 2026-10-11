@@ -1,5 +1,6 @@
 [package]
 name = "yosoi-web-capture"
+description = "Web capture adapters and browser integration for Yosoi."
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
