@@ -97,3 +97,22 @@ Publishing and release-catalog promotion remain a separate reviewed rollout.
 Locale overlays key prose to semantic item IDs and original docs digests.
 Signatures, examples and source spans stay compiler-derived. Missing prose
 falls back explicitly to English; stale overlays fail. Translation-overlay validation is covered by `reference.test.mjs`.
+
+## Source documentation
+
+Public SDK comments are required in source, including re-exported definitions,
+enum variants and their fields, and Contract derive expansions. The model retains
+variant fields beneath their enclosing variant without changing top-level item
+identities. Artifact verification checks their commit-pinned source links.
+
+The Python extractor reads public declarations, Google docstrings, Attributes
+field explanations, and adjacent alias docstrings without importing the native
+SDK. Local assignment aliases resolve to defining source prose and canonical
+links, with cycle detection. Missing source prose remains missing in output.
+
+Run `uv run --no-sync ruff check python/yosoi` and the source extraction tests
+from the repository root. Preview Python pages with
+`uv run --no-sync python scripts/docs/python_reference.py --package python/yosoi --out .generated/python-reference-review --source FULL_COMMIT`.
+Inspect actual generated methods and field prose; lint alone cannot establish
+useful explanations. Frontend preparation and published-bundle integration are
+separate from this extractor's source-preservation contract.

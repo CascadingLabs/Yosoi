@@ -154,7 +154,10 @@ pub enum JavaScriptSourceOrigin {
     /// A source authored directly in the Flow.
     Inline,
     /// A source captured from a local file.
-    File { path: PathBuf },
+    File {
+        /// Construction-time local source path retained as provenance, not a live execution-time read.
+        path: PathBuf,
+    },
 }
 
 impl JavaScriptSourceOrigin {
@@ -172,20 +175,28 @@ pub enum JavaScriptSourceError {
     /// The source file could not be opened or read.
     #[error("could not read JavaScript source {path}: {source}")]
     Io {
+        /// Local path whose bounded read failed.
         path: PathBuf,
+        /// Underlying I/O failure retained for explicit caller inspection.
         #[source]
         source: io::Error,
     },
     /// The bounded reader observed more than the configured number of bytes.
     #[error("JavaScript source {path:?} exceeds {maximum} UTF-8 bytes")]
     TooLarge {
+        /// Source file path when captured from disk, absent for inline text.
         path: Option<PathBuf>,
+        /// Bytes observed at the bound, not necessarily the file's complete length.
         actual: usize,
+        /// Maximum permitted captured UTF-8 source bytes.
         maximum: usize,
     },
     /// The captured bytes are not valid UTF-8.
     #[error("JavaScript source {path} is not valid UTF-8")]
-    InvalidUtf8 { path: PathBuf },
+    InvalidUtf8 {
+        /// Source file whose captured bytes could not be interpreted as UTF-8.
+        path: PathBuf,
+    },
     /// The source contains no non-whitespace text.
     #[error("JavaScript source is empty")]
     Empty,
@@ -193,16 +204,29 @@ pub enum JavaScriptSourceError {
     #[error(
         "JavaScript source limit {maximum} exceeds the SDK maximum of {MAX_JAVASCRIPT_SOURCE_BYTES} bytes"
     )]
-    InvalidLimit { maximum: usize },
+    InvalidLimit {
+        /// Caller-supplied byte cap exceeding the supported SDK maximum.
+        maximum: usize,
+    },
     /// The stored byte length does not match the source text.
     #[error("JavaScript snapshot declares {declared} bytes but contains {actual}")]
-    ByteLengthMismatch { declared: usize, actual: usize },
+    ByteLengthMismatch {
+        /// Byte count recorded in snapshot provenance.
+        declared: usize,
+        /// Actual UTF-8 bytes in the retained source text.
+        actual: usize,
+    },
     /// The stored digest does not match the source text.
     #[error("JavaScript snapshot SHA-256 does not match its source")]
     DigestMismatch,
     /// The source exceeded a bound before an allocation could be made safely.
     #[error("could not reserve {requested} bytes for JavaScript source {path}")]
-    AllocationFailed { path: PathBuf, requested: usize },
+    AllocationFailed {
+        /// Local source path whose bounded capture could not reserve memory.
+        path: PathBuf,
+        /// Additional source bytes whose allocation failed.
+        requested: usize,
+    },
 }
 
 pub(super) fn read_bounded(

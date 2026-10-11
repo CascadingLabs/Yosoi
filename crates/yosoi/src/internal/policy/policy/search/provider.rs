@@ -14,8 +14,11 @@ pub const PROVIDER_DEFAULTS_REGISTRY_VERSION: u16 = 4;
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Provider {
+    /// Brave search route; selected defaults retain separate certification metadata.
     Brave,
+    /// Bing search route; adapter and parser support determine actual availability.
     Bing,
+    /// DuckDuckGo search route; provider selection is not a successful-result claim.
     DuckDuckGo,
 }
 
@@ -77,12 +80,22 @@ impl ProviderDefaultsVersion {
 #[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ProviderDefaultsStatus {
     /// No certified Current profile is available in this registry revision.
-    Unavailable { registry_version: u16 },
+    Unavailable {
+        /// Registry revision that could not supply certified Current defaults.
+        registry_version: u16,
+    },
     /// A versioned local profile is available while certification remains open.
-    Preview { version: ProviderDefaultsVersion },
+    Preview {
+        /// Local profile revision whose certification remains open.
+        version: ProviderDefaultsVersion,
+    },
     /// A certified Current profile is available at this provider version.
-    Certified { version: ProviderDefaultsVersion },
+    Certified {
+        /// Certified Current profile revision retained in the effective route.
+        version: ProviderDefaultsVersion,
+    },
     /// The route was pinned explicitly and does not use provider defaults.
+    /// Retain a complete explicitly authored child-request profile.
     Exact,
 }
 
@@ -90,7 +103,9 @@ pub enum ProviderDefaultsStatus {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProfileSelectionKind {
+    /// Resolve package registry defaults when the complete policy is prepared.
     Current,
+    /// Provider request sections were authored explicitly and are not replaced by registry defaults.
     Exact,
 }
 

@@ -30,12 +30,14 @@ pub struct RuntimeContract {
 }
 
 impl RuntimeContract {
+    /// Owns a validated runtime schema for supported string and USD-money fields. Returns RuntimeContractError for unsupported scalar types; no evidence is acquired.
     pub fn new(schema: ContractSchema) -> Result<Self, RuntimeContractError> {
         Ok(Self {
             inner: internal_contract_validation::RuntimeContract::new(schema)?,
         })
     }
 
+    /// Borrows the portable runtime schema owned by this Contract.
     pub const fn schema(&self) -> &ContractSchema {
         self.inner.schema()
     }

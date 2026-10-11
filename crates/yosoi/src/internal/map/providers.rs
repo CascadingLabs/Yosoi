@@ -18,9 +18,13 @@ const HACKERTARGET_RESULT_LIMIT: usize = 50;
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicProvider {
+    /// Certificate-transparency names reported by the anonymous crt.sh index.
     CrtSh,
+    /// Hostname and address rows reported by HackerTarget's anonymous hostsearch endpoint.
     HackerTarget,
+    /// Subdomain names reported by Subdomain Center's anonymous endpoint.
     SubdomainCenter,
+    /// Historical URL names reported by the Wayback Archive CDX index.
     WaybackArchive,
 }
 

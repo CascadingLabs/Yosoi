@@ -11,6 +11,11 @@ pub struct ExpandedNamePathSegment {
 }
 
 impl ExpandedNamePathSegment {
+    /// Owns an XML expanded-name segment and its one-based same-name sibling index.
+    ///
+    /// `namespace_uri` distinguishes names by URI rather than source-prefix
+    /// spelling. Returns [`CoordinateError`] for an empty local name or zero
+    /// sibling index; it does not resolve the name against a source tree.
     pub fn try_new(
         namespace_uri: Option<String>,
         local_name: impl Into<String>,
@@ -30,14 +35,17 @@ impl ExpandedNamePathSegment {
         })
     }
 
+    /// Borrows the namespace URI, or `None` for an unqualified element name.
     pub fn namespace_uri(&self) -> Option<&str> {
         self.namespace_uri.as_deref()
     }
 
+    /// Borrows the retained nonempty local name independently of XML prefix spelling.
     pub fn local_name(&self) -> &str {
         &self.local_name
     }
 
+    /// Returns the one-based index among siblings with the same expanded name.
     pub const fn same_name_sibling_index(&self) -> u32 {
         self.same_name_sibling_index
     }
@@ -79,6 +87,10 @@ pub struct TreeCoordinate {
 }
 
 impl TreeCoordinate {
+    /// Owns a nonempty one-based child path with optional exact source-byte evidence.
+    ///
+    /// Returns [`CoordinateError::InvalidTreeChildPath`] for an empty path or
+    /// any zero index. It does not verify tree membership or byte bounds.
     pub fn try_new(
         child_path: Vec<u32>,
         source_bytes: Option<ByteRange>,
@@ -91,6 +103,11 @@ impl TreeCoordinate {
         })
     }
 
+    /// Owns child-path and XML expanded-name evidence for the same source-tree location.
+    ///
+    /// Returns [`CoordinateError`] for an invalid child path or empty expanded-name
+    /// path. Correspondence between the paths and source bytes is the caller's
+    /// responsibility; this constructor does not inspect document contents.
     pub fn with_expanded_name_path(
         child_path: Vec<u32>,
         source_bytes: Option<ByteRange>,
@@ -107,12 +124,15 @@ impl TreeCoordinate {
         })
     }
 
+    /// Borrows the nonempty one-based sequence of child indices.
     pub fn child_path(&self) -> &[u32] {
         &self.child_path
     }
+    /// Returns exact source-payload byte evidence, absent when unavailable.
     pub const fn source_bytes(&self) -> Option<ByteRange> {
         self.source_bytes
     }
+    /// Borrows optional namespace-qualified XML path evidence without resolving it.
     pub fn expanded_name_path(&self) -> Option<&[ExpandedNamePathSegment]> {
         self.expanded_name_path.as_deref()
     }

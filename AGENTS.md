@@ -60,3 +60,40 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 >
 > Human-readable explanation.
 ```
+
+# Public API documentation
+
+- Write meaningful Rust `///` comments for every publicly reachable SDK item,
+  including definitions re-exported from private modules, enum variants, fields,
+  associated functions, and methods. Private implementation details and vendored
+  code are outside this requirement. Keep `#![deny(missing_docs)]` enabled in
+  the SDK and Contract derive crate, and document generated public items in
+  the derive expansion. Exceptions must narrowly identify generated or
+  third-party code and explain their provenance.
+- Document public Python modules, classes, functions, constructors, and methods
+  with Google-style docstrings. Explain model fields in `Attributes:` sections
+  or Pydantic `Field(description=...)`; Ruff cannot check field explanations.
+  Keep Ruff D enforcement with the Google convention enabled for
+  `python/yosoi`. Describe public value/type aliases with adjacent source
+  docstrings, and preserve defining prose when aliases re-export an API.
+- Explain behavior and relevant inputs, outputs, errors, ownership, cancellation,
+  completeness, and limitations. Do not substitute the symbol's name for an
+  explanation. Completed operations can still contain unsuccessful attempts;
+  cancellation documentation must match what execution observes and preserves.
+- Keep descriptions in source and retain them through reference generation.
+  Never invent frontend descriptions to hide missing source documentation.
+- Required checks: `CARGO_BUILD_JOBS=1 cargo check -p yosoi --lib --all-features`,
+  `uv run --no-sync ruff check python/yosoi`, and
+  `node --test scripts/docs/reference/reference.test.mjs`, and
+  `uv run --no-sync python -m unittest discover -s scripts/docs/tests -p test_python_reference.py`.
+  Changes to Contract derive expansion also require
+  `CARGO_BUILD_JOBS=1 cargo check -p yosoi-contracts-renamed-dependency-fixture --lib`.
+  Audit model field descriptions separately from Ruff. Regenerate references
+  from the working source and
+  inspect representative enum variants and Python methods in actual output.
+  Report absent generators and remaining gaps explicitly; lint success alone
+  does not establish useful prose or reference coverage.
+- Review locally through the existing CascadingLabsFE pipeline with
+  `YOSOI_REPO_ROOT` set to this Yosoi workspace's absolute path. Verify the
+  server's working directory, selected source, and served HTML. Local previews,
+  hosted CI, and deployed documentation are separate evidence.

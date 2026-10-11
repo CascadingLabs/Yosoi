@@ -18,18 +18,26 @@ use super::{SearchPage, SearchRequestId};
 /// Content-free details of the acquisition chosen for one provider.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SearchProfileFacts {
+    /// Selected acquisition route, absent when no route could be resolved.
     pub acquisition: Option<AcquisitionKind>,
+    /// Certification state of the provider defaults used for route selection.
     pub defaults_status: ProviderDefaultsStatus,
+    /// Version of package-owned defaults, absent for routes without such defaults.
     pub defaults_version: Option<ProviderDefaultsVersion>,
+    /// Identity of the resolved Requests policy, absent if no Request was prepared.
     pub effective_request_policy: Option<EffectivePolicyIdentity>,
 }
 
 /// Exact answering provider and adapter identity, when an adapter actually ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ProviderIdentity {
+    /// Provider occupying this authored policy slot.
     pub provider: Provider,
+    /// Adapter endpoint label, absent if an adapter did not run.
     pub endpoint: Option<&'static str>,
+    /// Adapter implementation version, absent if an adapter did not run.
     pub adapter_version: Option<&'static str>,
+    /// Response parser version, absent if an adapter did not run.
     pub parser_version: Option<&'static str>,
 }
 
@@ -37,18 +45,31 @@ pub struct ProviderIdentity {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchAttemptDiagnostic {
+    /// No executor context was available for the selected acquisition.
     MissingExecutionContext,
+    /// Authored policy could not be resolved into an executable request.
     PolicyResolutionFailed,
+    /// Direct HTTP acquisition failed at the transport boundary.
     DirectHttpTransport,
+    /// The HTTP response body could not be acquired successfully.
     DirectHttpBodyFailed,
+    /// HTTP acquisition could not finalize its capture artifacts.
     DirectHttpFinalizationFailed,
+    /// Browser acquisition observed caller cancellation.
     BrowserCancelled,
+    /// Browser acquisition observed cancellation and then failed cleanup.
     BrowserCancelledCleanupFailed,
+    /// Browser resource cleanup failed after acquisition.
     BrowserCleanupFailed,
+    /// Browser acquisition failed without a more specific failure classification.
     BrowserCaptureFailed,
+    /// Browser acquisition failed with the supplied typed failure reason.
     BrowserFailure(BrowserFailureReason),
+    /// Browser acquisition could not finalize its capture artifacts.
     BrowserFinalizationFailed,
+    /// The selected browser acquisition requires a feature absent from this build.
     BrowserFeatureDisabled,
+    /// Acquired content could not be projected into the requested document outputs.
     ProjectionFailed,
 }
 
@@ -57,20 +78,29 @@ pub enum SearchAttemptDiagnostic {
 pub struct RequestAttemptSummary {
     /// Parent Request for this acquisition, including a recovery Request.
     pub request_id: RequestId,
+    /// Identity allocated to this acquisition's capture.
     pub capture_id: CaptureId,
+    /// Acquisition mechanism selected by the resolved policy.
     pub acquisition: AcquisitionKind,
+    /// Observed HTTP status, absent if no status was recorded.
     pub http_status: Option<u16>,
     /// Exact retained source artifact bytes when a completed Request recorded them.
     pub source_bytes: Option<u64>,
+    /// Bounded underlying failure classification, absent when none was recorded.
     pub diagnostic: Option<SearchAttemptDiagnostic>,
+    /// Whether the acquisition finished, failed, or never started.
     pub terminal: RequestAttemptTerminal,
 }
 
+/// Execution state of an acquisition, independent of provider parsing success.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RequestAttemptTerminal {
+    /// Acquisition completed; the provider response may still be unusable.
     Completed,
+    /// Acquisition started and returned a typed failure.
     Failed,
+    /// Acquisition was skipped before starting, for example after cancellation.
     NotStarted,
 }
 
@@ -79,31 +109,52 @@ pub enum RequestAttemptTerminal {
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "status", content = "value", rename_all = "snake_case")]
 pub enum ProviderCharge {
+    /// No monetary charge was reported; this is not evidence of zero cost.
     Unknown,
-    Known { currency: String, amount: String },
+    /// The provider reported a monetary amount without conversion or estimation.
+    Known {
+        /// Provider-reported currency identifier.
+        currency: String,
+        /// Provider-reported amount kept as text to avoid floating-point rounding.
+        amount: String,
+    },
 }
 
+/// Provider-level reason that a started search did not yield usable results.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchFailure {
+    /// The provider reported throttling or a rate-limit response.
     RateLimited,
+    /// The response was classified as an access challenge rather than search results.
     Challenge,
+    /// The provider or required acquisition adapter was unavailable.
     ProviderUnavailable,
+    /// Acquired content could not be interpreted as a valid provider response.
     MalformedResponse,
     /// Organic rows did not match a distinctive requested query term.
     QueryMismatch,
+    /// Acquisition failed before usable provider content could be parsed.
     TransportFailure,
+    /// A parser or shared output resource budget prevented a usable result.
     BudgetExhausted,
 }
 
+/// Reason an authored provider slot did not start a search Request.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchUnavailableReason {
+    /// Package-owned defaults have not been certified for this provider route.
     DefaultUncertified,
+    /// No supported adapter is available for the selected provider.
     AdapterUnavailable,
+    /// The requested provider capability is unsupported by the selected adapter.
     UnsupportedCapability,
+    /// Request preparation or adapter setup failed before execution began.
     RequestSetupFailed,
+    /// Caller cancellation was observed before the slot started.
     Cancelled,
+    /// The shared search deadline expired before the slot started.
     DeadlineReached,
 }
 
@@ -111,10 +162,15 @@ pub enum SearchUnavailableReason {
 #[derive(Clone, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "status", content = "value", rename_all = "snake_case")]
 pub enum ProviderOutcome {
+    /// Usable normalized results; inspect page coverage for extraction limitations.
     Results(SearchPage),
+    /// The provider response contained no accepted results.
     Empty,
+    /// Started provider work ended without a usable response for the supplied reason.
     Failed(SearchFailure),
+    /// Started provider work observed caller cancellation.
     Cancelled,
+    /// No provider Request started; the reason explains why the slot was retained.
     NotStarted(SearchUnavailableReason),
 }
 
@@ -174,34 +230,44 @@ impl ProviderResult {
         }
     }
 
+    /// Returns the provider selected for this authored policy slot.
     pub const fn provider(&self) -> Provider {
         self.identity.provider
     }
 
+    /// Returns the recorded provider and adapter identities without response content.
     pub const fn identity(&self) -> ProviderIdentity {
         self.identity
     }
 
+    /// Returns route-selection and effective-policy facts for this slot.
     pub const fn profile(&self) -> SearchProfileFacts {
         self.profile
     }
 
+    /// Returns the underlying Request identity, or `None` if no Request started.
     pub const fn request_id(&self) -> Option<RequestId> {
         self.request_id
     }
 
+    /// Borrows the shorter query used for off-query recovery, when attempted.
+    ///
+    /// This may contain user query content and should not be logged as a diagnostic.
     pub fn recovery_query(&self) -> Option<&str> {
         self.recovery_query.as_deref()
     }
 
+    /// Borrows underlying acquisition summaries, including recovery Request attempts.
     pub fn attempts(&self) -> &[RequestAttemptSummary] {
         &self.attempts
     }
 
+    /// Borrows the terminal provider interpretation; acquisition success alone is insufficient.
     pub const fn outcome(&self) -> &ProviderOutcome {
         &self.outcome
     }
 
+    /// Borrows reported monetary charge facts; unknown charges are not zero charges.
     pub const fn charge(&self) -> &ProviderCharge {
         &self.charge
     }
@@ -222,11 +288,16 @@ impl fmt::Debug for ProviderResult {
     }
 }
 
+/// Scheduler termination for the whole search, independent of provider success.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchTermination {
+    /// Scheduling ended without observing cancellation or exhausting its deadline.
+    /// Individual providers can still have failures or incomplete results.
     Completed,
+    /// Scheduling observed caller cancellation; retained provider outcomes remain available.
     Cancelled,
+    /// Scheduling stopped at the shared deadline; not all providers necessarily ran.
     DeadlineReached,
 }
 
@@ -239,18 +310,25 @@ pub struct SearchResponse {
 }
 
 impl SearchResponse {
+    /// Returns the identity assigned to this cross-provider search.
     pub const fn request_id(&self) -> SearchRequestId {
         self.request_id
     }
 
+    /// Returns the resolved search policy identity used for this execution.
     pub const fn policy_identity(&self) -> EffectivePolicyIdentity {
         self.policy_identity
     }
 
+    /// Borrows one result per selected provider in authored policy order.
+    ///
+    /// Slots that failed or never started remain present; completion order does
+    /// not reorder the collection.
     pub fn providers(&self) -> &[ProviderResult] {
         &self.providers
     }
 
+    /// Returns the scheduler's stopping condition, not a claim of provider success.
     pub const fn termination(&self) -> SearchTermination {
         self.termination
     }

@@ -12,8 +12,11 @@ use crate::{
 /// The user-visible state of one acquisition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AttemptState {
+    /// Acquisition finished; inspect document outcomes and status before claiming successful or complete evidence.
     Completed,
+    /// Acquisition returned the supplied bounded failure classification.
     Failed(AttemptFailureKind),
+    /// Authored acquisition was retained as an unstarted slot with its explicit reason.
     NotStarted(NotStartedReason),
 }
 
@@ -104,12 +107,18 @@ impl<'response> AttemptDocument<'response> {
 /// Materialization state. Partial and unavailable results remain explicit.
 #[derive(Clone, Copy, Debug)]
 pub enum DocumentOutcome<'response> {
+    /// Requested representation materialized and is borrowed from the owning response.
     Produced(DocumentRef<'response>),
+    /// Requested evidence is incomplete, retaining a usable document only when available.
     Partial {
+        /// Borrowed usable partial document, absent when no document could be retained.
         document: Option<DocumentRef<'response>>,
+        /// Borrowed bounded explanations limiting this representation completeness.
         reasons: &'response [PartialReason],
     },
+    /// Required acquisition evidence was unavailable for the requested representation.
     Unavailable(UnavailableReason),
+    /// Available evidence cannot support the requested document projection.
     Unprojectable(UnprojectableReason),
 }
 impl<'response> DocumentOutcome<'response> {

@@ -26,18 +26,23 @@ impl SearchPage {
         }
     }
 
+    /// Borrows accepted organic results in provider order; ranks can contain gaps.
     pub fn hits(&self) -> &[SearchHit] {
         &self.hits
     }
 
+    /// Borrows supported rich placements, which never consume an organic rank.
+    /// An empty slice does not imply absence when coverage is not collected or partial.
     pub fn features(&self) -> &[SearchFeature] {
         &self.features
     }
 
+    /// Returns independent organic and rich-feature extraction coverage claims.
     pub const fn coverage(&self) -> SearchCoverage {
         self.coverage
     }
 
+    /// Borrows nonfatal extraction issues; configured budgets can bound their count.
     pub fn issues(&self) -> &[SearchIssue] {
         &self.issues
     }

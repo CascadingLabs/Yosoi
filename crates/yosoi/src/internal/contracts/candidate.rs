@@ -53,6 +53,7 @@ impl CandidateInput {
 /// Owned field evidence for one runtime-described Contract candidate.
 pub type RuntimeCandidate = CandidateInput;
 
+/// Owned ordered findings for one field before conversion to the declared type `T`.
 pub struct CandidateField<T> {
     id: FieldId,
     findings: Vec<Finding>,
@@ -97,21 +98,27 @@ impl<T> CandidateField<T> {
             value_type: PhantomData,
         }
     }
+    /// Borrows the authored field identity associated with these findings.
     pub const fn id(&self) -> &FieldId {
         &self.id
     }
+    /// Iterates borrowed projection values in evidence order without converting them to `T`.
     pub fn values(&self) -> impl ExactSizeIterator<Item = &ProjectedValue> {
         self.findings.iter().map(Finding::value)
     }
+    /// Borrows original findings, including coordinates and evidence completeness.
     pub fn evidence(&self) -> &[Finding] {
         &self.findings
     }
+    /// Returns whether no findings are retained, without asserting complete document absence.
     pub const fn is_absent(&self) -> bool {
         self.findings.is_empty()
     }
+    /// Returns whether the finding collection is empty; inspect terminal and completeness states separately.
     pub const fn is_empty(&self) -> bool {
         self.findings.is_empty()
     }
+    /// Returns retained finding count, not an accepted or converted value count.
     pub const fn len(&self) -> usize {
         self.findings.len()
     }
@@ -124,10 +131,16 @@ pub trait CandidateView: Clone {
     fn value_count(&self) -> Option<u64>;
 }
 
+/// Typed record schema linking authored meaning to generated candidate evidence.
+///
+/// Implemented by the public Contract derive. Schema declaration does not
+/// locate evidence or validate values; extraction and validation are explicit phases.
 pub trait Contract: Sized {
+    /// Owned generated candidate shape holding field findings and grouping provenance.
     type Candidate: CandidateView;
     #[doc(hidden)]
     type Extracted;
+    /// Borrows stable portable metadata, returning a schema error for invalid declarations.
     fn schema() -> Result<&'static ContractSchema, ContractSchemaError>;
     #[doc(hidden)]
     fn candidate_from(input: &CandidateInput) -> Self::Candidate;

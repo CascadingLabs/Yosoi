@@ -22,12 +22,19 @@ pub enum DirectHttpRedirectTargetPolicy {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DirectHttpRedirectErrorKind {
+    /// Redirect response lacks the required Location header.
     MissingLocation,
+    /// Location text cannot be parsed or resolved into a supported destination.
     MalformedLocation,
+    /// Redirect URL embeds credentials that admission refuses.
     CredentialsNotAllowed,
+    /// Redirect destination uses a scheme outside supported HTTP(S).
     UnsupportedScheme,
+    /// The resolved destination violates the authored redirect target policy.
     TargetRefused,
+    /// Traversal encountered a resource already visited in this redirect chain.
     Loop,
+    /// Another redirect transition would exceed the authored positive hop bound.
     HopLimit,
 }
 

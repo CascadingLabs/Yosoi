@@ -64,6 +64,7 @@ pub fn expand_field(
             )?
         },
         candidate_field: quote! {
+            #[doc = #field_description]
             #field_visibility #field_name: #yosoi::CandidateField<#value_type>
         },
         candidate_initializer: quote! {

@@ -116,10 +116,14 @@ impl RetainedCapture {
     }
 }
 
+/// Charged acquisition facts, separate from retained capture contents.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct RequestTrace {
+    /// Requested normalized URL; its path and query can contain user-sensitive data.
     pub target: Url,
+    /// Observed HTTP status, absent when no status was recorded.
     pub status: Option<u16>,
+    /// Response bytes charged to the operation budget for this acquisition attempt.
     pub charged_response_bytes: u64,
 }
 

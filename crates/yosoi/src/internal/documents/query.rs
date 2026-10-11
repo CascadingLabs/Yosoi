@@ -29,11 +29,14 @@ use namespace::{
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AccessibilityStateName {
+    /// Whether an accessibility node is expanded in the retained snapshot.
     Expanded,
+    /// Whether an accessibility node is focused in the retained snapshot.
     Focused,
 }
 
 impl AccessibilityStateName {
+    /// Returns the portable lowercase state field name without evaluating browser state.
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Expanded => "expanded",
@@ -50,23 +53,38 @@ impl AccessibilityStateName {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum QueryAtom {
+    /// Authored CSS expression selecting source-tree nodes.
     Css(String),
+    /// Authored supported XPath expression selecting source-tree nodes.
     XPath(String),
+    /// Literal substring match against tree descendant text, distinct from decoded-text ranges.
     TreeTextContains(String),
+    /// JSON Pointer selecting a native JSON value; the empty pointer denotes the root.
     JsonPointer(String),
+    /// Authored supported JSONPath expression selecting native JSON values.
     JsonPath(String),
+    /// Role match against immutable accessibility-node evidence.
     AccessibilityRole(String),
+    /// Accessible-name match, not source-tree descendant text.
     AccessibleName(String),
+    /// Text match against immutable accessibility-node evidence.
     AccessibilityText(String),
+    /// Boolean match against one supported accessibility snapshot state.
     AccessibilityState {
+        /// Expanded or focused state to inspect.
         name: AccessibilityStateName,
+        /// Required boolean value, without mutating browser state.
         value: bool,
     },
+    /// Literal match yielding decoded-text ranges rather than tree nodes.
     TextLiteral(String),
+    /// Supported regular expression yielding decoded-text ranges and capture evidence.
     TextRegex(String),
 }
 
 impl QueryAtom {
+    /// Borrows authored expression text, or the state name for a boolean state query.
+    /// The boolean operand remains separate in `AccessibilityState`.
     pub fn expression(&self) -> &str {
         match self {
             Self::Css(value)
@@ -88,9 +106,13 @@ impl QueryAtom {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryResultShape {
+    /// HTML/XML tree nodes before text, attribute, or node projection.
     TreeNodes,
+    /// Native JSON values before a supported JSON projection.
     JsonValues,
+    /// Immutable accessibility nodes before name, text, or node projection.
     AccessibilityNodes,
+    /// Decoded-text ranges before matched-text or named-capture projection.
     TextRanges,
 }
 
@@ -103,10 +125,12 @@ pub struct NamespaceBinding {
 }
 
 impl NamespaceBinding {
+    /// Borrows the authored query prefix; an empty prefix is a default CSS namespace binding.
     pub fn prefix(&self) -> &str {
         &self.prefix
     }
 
+    /// Borrows the namespace URI used for expanded-name matching, not source prefix spelling.
     pub fn namespace_uri(&self) -> &str {
         &self.namespace_uri
     }
@@ -126,6 +150,9 @@ pub struct QuerySpec {
 }
 
 impl QuerySpec {
+    /// Owns an atom and declared result shape without checking their compatibility.
+    /// Plan compilation validates atom, shape, namespaces, and projections
+    /// together before execution; construction does not search any document.
     pub const fn new(atom: QueryAtom, result_shape: QueryResultShape) -> Self {
         Self {
             atom,
@@ -134,14 +161,18 @@ impl QuerySpec {
         }
     }
 
+    /// Borrows the closed query operation and authored operand.
     pub const fn atom(&self) -> &QueryAtom {
         &self.atom
     }
 
+    /// Returns the declared native result capability, not match count or completeness.
     pub const fn result_shape(&self) -> QueryResultShape {
         self.result_shape
     }
 
+    /// Borrows explicit query-local XML bindings. Builders sort by prefix;
+    /// imported plan compilation rejects noncanonical order before execution.
     pub fn namespace_bindings(&self) -> &[NamespaceBinding] {
         &self.namespace_bindings
     }
@@ -200,6 +231,9 @@ impl QuerySpec {
         Ok(())
     }
 
+    /// Accounts UTF-8 expression and namespace metadata bytes for locator resource budgets.
+    /// Boolean state operands include their portable spelling. Returns
+    /// [`QueryError::LengthOverflow`] if a size or sum cannot fit u64 accounting.
     pub fn query_bytes(&self) -> Result<u64, QueryError> {
         let bytes = match &self.atom {
             QueryAtom::AccessibilityState { name, value } => {
@@ -298,6 +332,7 @@ impl QuerySpec {
         Ok(())
     }
 
+    /// Consumes query intent into an authored repeated-region root with nonblank lineage identity. Returns QueryError for invalid identity; no document is searched.
     pub fn each_as_region(self, id: impl Into<String>) -> Result<RegionPlan, QueryError> {
         RegionPlan::try_new(id, self)
     }

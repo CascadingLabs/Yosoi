@@ -7,6 +7,7 @@ use crate::internal::policy::PolicyError;
 pub struct CountLimit(u64);
 
 impl CountLimit {
+    /// Returns the positive retained count without converting it to platform address width.
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -51,6 +52,7 @@ impl<'de> Deserialize<'de> for CountLimit {
 pub struct StepLimit(u32);
 
 impl StepLimit {
+    /// Returns the positive retained query/depth step bound.
     pub const fn get(self) -> u32 {
         self.0
     }

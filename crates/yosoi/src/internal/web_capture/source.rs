@@ -89,8 +89,11 @@ pub enum DeclarationDisagreement {
 }
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
+/// Retained source cannot be assigned a supported format with sufficient classification evidence.
 pub enum UnknownReason {
+    /// No source bytes are available to classify.
     Empty,
+    /// Available source evidence has no sufficiently strong supported format signature.
     NoStrongSignature,
 }
 

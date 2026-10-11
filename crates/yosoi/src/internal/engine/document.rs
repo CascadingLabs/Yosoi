@@ -15,8 +15,13 @@ use crate::internal::engine::resource_policy::{document_tuning, resource_budget_
 /// A facade parsing error, including invalid operation-owned resource policy.
 #[derive(Debug, Error)]
 pub enum ParseError {
+    /// Caller parsing policy includes an unusable mandatory resource budget.
     #[error("document policy has an invalid {limit:?} limit")]
-    InvalidResourcePolicy { limit: ResourceLimit },
+    InvalidResourcePolicy {
+        /// Resource whose configured parse/locate bound was rejected.
+        limit: ResourceLimit,
+    },
+    /// Payload parsing or supported representation checks failed in the document engine.
     #[error(transparent)]
     Document(#[from] EngineDocumentParseError),
 }

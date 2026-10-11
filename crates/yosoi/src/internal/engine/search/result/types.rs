@@ -9,10 +9,15 @@ use crate::internal::web_capture::{RequestedWebTarget, WebUrlParseError};
 pub struct SearchResultUrl(RequestedWebTarget);
 
 impl SearchResultUrl {
+    /// Parses an absolute HTTP(S) destination without fetching it.
+    ///
+    /// Returns [`WebUrlParseError`] for invalid URLs, unsupported schemes, or
+    /// embedded credentials. Validation does not establish destination trust.
     pub fn parse(value: &str) -> Result<Self, WebUrlParseError> {
         RequestedWebTarget::parse(value).map(Self)
     }
 
+    /// Borrows the validated URL text for as long as this value is retained.
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
@@ -38,12 +43,17 @@ impl fmt::Debug for SearchResultUrl {
 /// Optional metadata shown by the provider; it is not fetched from the target.
 #[derive(Clone, Default, Eq, PartialEq, serde::Serialize)]
 pub struct SearchHitMetadata {
+    /// Provider-displayed title, absent when the parser found no title.
     pub title: Option<String>,
+    /// Provider-displayed excerpt; it is not verified destination content.
     pub snippet: Option<String>,
+    /// Human-readable address shown by the provider, distinct from the destination URL.
     pub display_url: Option<String>,
+    /// Provider-displayed publisher label, without independent identity verification.
     pub publisher: Option<String>,
     /// Provider-reported display date, not a verified publication date.
     pub published_at: Option<String>,
+    /// Validated thumbnail destination, if supplied; the image has not been fetched.
     pub thumbnail_url: Option<SearchResultUrl>,
 }
 
@@ -92,30 +102,37 @@ impl SearchHit {
         }
     }
 
+    /// Borrows the validated destination for an explicit later Request.
     pub const fn url(&self) -> &SearchResultUrl {
         &self.url
     }
 
+    /// Returns the one-based organic row rank; rejected or duplicate rows can leave gaps.
     pub const fn organic_rank(&self) -> NonZeroU16 {
         self.organic_rank
     }
 
+    /// Returns the one-based provider-page placement, which also counts rich features.
     pub const fn placement_index(&self) -> NonZeroU16 {
         self.placement_index
     }
 
+    /// Borrows the provider-displayed title, or `None` if unavailable.
     pub fn title(&self) -> Option<&str> {
         self.metadata.title.as_deref()
     }
 
+    /// Borrows the provider-displayed excerpt without fetching the destination.
     pub fn snippet(&self) -> Option<&str> {
         self.metadata.snippet.as_deref()
     }
 
+    /// Borrows the displayed address, which need not equal the validated destination.
     pub fn display_url(&self) -> Option<&str> {
         self.metadata.display_url.as_deref()
     }
 
+    /// Borrows the provider-reported publisher label, if present.
     pub fn publisher(&self) -> Option<&str> {
         self.metadata.publisher.as_deref()
     }
@@ -125,10 +142,12 @@ impl SearchHit {
         self.metadata.published_at.as_deref()
     }
 
+    /// Borrows the validated thumbnail URL; no image fetch is implied.
     pub const fn thumbnail_url(&self) -> Option<&SearchResultUrl> {
         self.metadata.thumbnail_url.as_ref()
     }
 
+    /// Borrows all optional provider-displayed metadata for this hit.
     pub const fn metadata(&self) -> &SearchHitMetadata {
         &self.metadata
     }
@@ -157,7 +176,10 @@ impl fmt::Debug for SearchHit {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WebCoverage {
+    /// Extraction completed within the supported response and configured limits.
+    /// This is not a claim that the provider searched every possible web page.
     Complete,
+    /// Some organic result evidence was omitted, limited, or obtained through query recovery.
     Partial,
 }
 
@@ -165,11 +187,15 @@ pub enum WebCoverage {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FeatureCoverage {
+    /// Rich-feature extraction was not attempted; an empty feature list proves no absence.
     NotCollected,
+    /// Supported rich-feature extraction completed, possibly finding no features.
     Collected,
+    /// Rich-feature extraction was attempted but some feature evidence is incomplete.
     Partial,
 }
 
+/// Independent completeness claims for organic hits and supported rich features.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct SearchCoverage {
     web: WebCoverage,
@@ -177,14 +203,17 @@ pub struct SearchCoverage {
 }
 
 impl SearchCoverage {
+    /// Combines extraction coverage facts without changing or verifying either claim.
     pub const fn new(web: WebCoverage, rich_features: FeatureCoverage) -> Self {
         Self { web, rich_features }
     }
 
+    /// Returns organic-result extraction coverage for the acquired provider page.
     pub const fn web(self) -> WebCoverage {
         self.web
     }
 
+    /// Returns whether supported rich features were collected completely, partially, or not at all.
     pub const fn rich_features(self) -> FeatureCoverage {
         self.rich_features
     }
@@ -194,23 +223,38 @@ impl SearchCoverage {
 #[derive(Clone, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SearchFeature {
+    /// A placement identified by the provider as sponsored content.
     Sponsored {
+        /// One-based position among provider-page placements, not an organic rank.
         placement_index: NonZeroU16,
+        /// Validated HTTP(S) destination; no destination fetch has occurred.
         destination: SearchResultUrl,
+        /// Provider-displayed sponsorship label, when available.
         label: Option<String>,
     },
+    /// A provider-displayed answer and its reported citation destinations.
     Answer {
+        /// One-based position among provider-page placements.
         placement_index: NonZeroU16,
+        /// Answer text shown by the provider, without factual verification.
         text: String,
+        /// Validated citation destinations; their contents have not been fetched.
         citations: Vec<SearchResultUrl>,
     },
+    /// A provider-displayed group of image results.
     ImageGallery {
+        /// One-based position of the gallery among provider-page placements.
         placement_index: NonZeroU16,
+        /// Image and source-page destinations extracted from the gallery.
         images: Vec<ImageResult>,
     },
+    /// A provider-displayed collection of local places and an optional map destination.
     LocalPack {
+        /// One-based position of the local pack among provider-page placements.
         placement_index: NonZeroU16,
+        /// Provider-reported places, without independent business verification.
         places: Vec<LocalPlace>,
+        /// Validated map destination, if supplied by the provider.
         map_url: Option<SearchResultUrl>,
     },
 }
@@ -254,9 +298,12 @@ impl fmt::Debug for SearchFeature {
     }
 }
 
+/// An image destination paired with the provider-reported page hosting it.
 #[derive(Clone, Eq, PartialEq, serde::Serialize)]
 pub struct ImageResult {
+    /// Validated image destination; no image bytes are acquired by this value.
     pub image_url: SearchResultUrl,
+    /// Validated source-page destination reported by the provider.
     pub source_page_url: SearchResultUrl,
 }
 
@@ -266,9 +313,12 @@ impl fmt::Debug for ImageResult {
     }
 }
 
+/// A local-place label and destination extracted from a provider's local pack.
 #[derive(Clone, Eq, PartialEq, serde::Serialize)]
 pub struct LocalPlace {
+    /// Provider-displayed place name, without independent identity verification.
     pub name: String,
+    /// Validated destination for the place; it has not been fetched.
     pub place_url: SearchResultUrl,
 }
 
@@ -278,21 +328,30 @@ impl fmt::Debug for LocalPlace {
     }
 }
 
+/// Nonfatal extraction issue explaining rejected evidence or reduced coverage.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchIssueKind {
+    /// A row's destination failed absolute HTTP(S) URL validation.
     InvalidDestination,
+    /// A destination already present in the extracted results was omitted.
     DuplicateDestination,
+    /// A recognized result row lacked data required to construct a result.
     MissingRequiredField,
+    /// A candidate row did not match a supported provider result layout.
     UnrecognizedResultRow,
+    /// A configured output budget limited retained results or features.
     OutputLimit,
     /// Bing supplied off-query rows for the original query; these hits came
     /// from one shorter, disclosed content-term query.
     QueryRelaxed,
 }
 
+/// Bounded structural evidence of an extraction issue, without response excerpts.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct SearchIssue {
+    /// One-based affected placement, or `None` for an issue spanning the response.
     pub placement_index: Option<NonZeroU16>,
+    /// Classification explaining which evidence was rejected or limited.
     pub kind: SearchIssueKind,
 }

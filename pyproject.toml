@@ -41,7 +41,15 @@ target-version = "py312"
 src = ["python"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "UP", "B", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Source docstrings are required for the public package. Test fixtures, examples,
+# and repository tooling have separate authoring contracts.
+"!python/yosoi/**" = ["D"]
 
 [tool.ty.environment]
 extra-paths = ["python"]

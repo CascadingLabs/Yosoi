@@ -43,16 +43,32 @@ from .scalars import RUST_DOMAIN_VALIDATED, ContractId, FieldId
 
 T = TypeVar("T", bound="Contract")
 Cardinality = Literal["exactly_one", "zero_or_one", "many"]
+"""Required accepted field count: exactly one, zero or one, or an ordered collection
+including empty. Rust validation enforces these distinctions after extraction.
+"""
 
 
 class ContractValue(Protocol):
-    """Identity-only protocol for Rust Contract scalar type IDs."""
+    """Identity-only protocol for the Rust Contract scalar vocabulary.
+
+    Attributes:
+        TYPE_ID: Stable scalar identifier included in schema identity. This protocol
+            alone does not register a runtime converter.
+    """
 
     TYPE_ID: ClassVar[str]
 
 
 class Money(NativeAuthoringModel):
-    """A validated USD amount, stored in integer minor units."""
+    """USD monetary scalar represented by integer minor units.
+
+    Attributes:
+        TYPE_ID: Rust scalar identifier money.usd.
+        minor_units: Nonnegative cents within Rust's signed 64-bit representation.
+            Python construction rejects negative values; text conversion can report a
+            semantic negative-money issue before a record is accepted.
+        currency: Discriminator fixed to usd; no exchange-rate conversion occurs.
+    """
 
     TYPE_ID: ClassVar[str] = _native.contract_value_type_id(True)
 
@@ -65,6 +81,7 @@ class Money(NativeAuthoringModel):
         return self
 
     def __str__(self) -> str:
+        """Return the Rust USD amount representation without currency conversion."""
         return _native.validate_money(self.model_dump_json())
 
 
@@ -116,6 +133,16 @@ def Field(
 
 
 class FieldSchema(ImmutableModel):
+    """Rust-validated field meaning, cardinality, and type metadata.
+
+    Attributes:
+        id: Authored identifier matching locator output evidence.
+        description: Nonblank business meaning; it does not discover a locator.
+        cardinality: exactly_one, zero_or_one, or many constrains validation, not
+            extraction.
+        value_type: Nonblank conversion identifier; runtime Contracts support string and
+            money.usd.
+    """
     id: FieldId
     description: str
     cardinality: Cardinality
@@ -128,6 +155,17 @@ class FieldSchema(ImmutableModel):
 
 
 class ContractSchema(ImmutableModel):
+    """Portable record meaning, scope, and ordered field declarations.
+
+    Attributes:
+        version: Supported portable format version, currently 1.
+        id: Authored record identity, distinct from a document or execution ID.
+        description: Nonblank record meaning, excluded from semantic hashing.
+        scope: page groups compatible findings into one record; repeated groups by
+            parent-region lineage.
+        fields: Nonempty ordered fields with unique IDs. Order, IDs, cardinalities, and
+            type IDs contribute to identity; descriptions do not.
+    """
     version: Literal[1] = 1
     id: ContractId
     description: str
@@ -140,15 +178,38 @@ class ContractSchema(ImmutableModel):
         return self
 
     def identity(self) -> ContractIdentity:
+        """Return the Rust-computed semantic schema identity.
+
+        Includes version, Contract ID, scope, and ordered field IDs, cardinalities,
+        and type IDs. Record and field descriptions are excluded from hashing.
+
+        Raises:
+            ContractError: Schema validation or portable hash accounting fails.
+        """
         return ContractIdentity(
             _native.contract_schema_identity(self.model_dump_json())
         )
 
 
 Limit = Annotated[int, PydanticField(ge=0, le=2**64 - 1, strict=True)]
+"""Strict nonnegative u64 extraction or validation counter. Zero is a finite budget,
+not an implicit unlimited setting.
+"""
 
 
 class ExtractionLimits(ImmutableModel):
+    """Nonnegative u64 budgets for candidate assembly.
+
+    Attributes:
+        max_scanned_regions: Maximum repeated-region lineage entries examined.
+        max_scanned_findings: Maximum locator findings examined for field matching.
+        max_matching_findings: Maximum findings matching authored Contract fields.
+        max_candidates: Maximum candidate records assembled.
+        max_values_per_field: Maximum findings retained per field within a candidate.
+        max_retained_evidence: Maximum finding evidence references retained across
+            candidates.
+        max_diagnostics: Maximum nonfatal grouping diagnostics retained.
+    """
     max_scanned_regions: Limit
     max_scanned_findings: Limit
     max_matching_findings: Limit
@@ -159,10 +220,30 @@ class ExtractionLimits(ImmutableModel):
 
     @classmethod
     def uniform(cls, maximum: int) -> Self:
+        """Assign the same unsigned limit to every extraction resource.
+
+        Args:
+            maximum: Strict nonnegative integer fitting u64.
+
+        Returns:
+            Independent resource fields with the supplied maximum.
+
+        Raises:
+            pydantic.ValidationError: The maximum is not a strict u64 value.
+        """
         return cls.model_validate({name: maximum for name in cls.model_fields})
 
 
 class ValidationLimits(ImmutableModel):
+    """Rust-owned default budgets for conversion and validation accounting.
+
+    Attributes:
+        max_fields: Maximum schema fields requiring validation.
+        max_records: Maximum candidate records requiring validation.
+        max_conversions: Maximum charged field conversions.
+        max_issues: Maximum retained field rejection issues.
+        max_retained_provenance: Maximum retained finding evidence references.
+    """
     max_fields: Limit = PydanticField(
         default_factory=lambda: _validation_default("max_fields")
     )
@@ -185,6 +266,17 @@ def _validation_default(name: str) -> int:
 
 
 class TerminalFailure(ImmutableModel):
+    """Structured phase rejection facts, distinct from field issues.
+
+    Attributes:
+        kind: Classification selecting the applicable rejection details.
+        code: Structural plan or parser identifier when present.
+        document: Affected class for an unsupported document combination.
+        limit: Extraction or validation resource boundary when present.
+        maximum: Configured maximum in units of the named resource.
+        observed: Recorded or attempted consumption in the same units.
+        message: Failure explanation supplied by the native binding, when present.
+    """
     kind: str
     code: str | None = None
     document: str | None = None
@@ -195,33 +287,60 @@ class TerminalFailure(ImmutableModel):
 
 
 class CandidateField(ImmutableModel):
-    """Ordered projected values and their original Rust finding evidence."""
+    """Ordered projection values and original findings before conversion.
+
+    Attributes:
+        field_id: Authored identity of this candidate field.
+        evidence: Retained findings, coordinates, and completeness. Empty evidence alone
+            does not establish complete absence.
+    """
 
     field_id: FieldId
     evidence: tuple[Finding, ...] = PydanticField(default=(), repr=False)
 
     @property
     def values(self) -> tuple[ProjectedValue, ...]:
+        """Return projection wrappers in evidence order without typed conversion."""
         return tuple(item.projected for item in self.evidence)
 
     @property
     def is_absent(self) -> bool:
+        """Return whether no findings are retained, without an absence claim."""
         return not self.evidence
 
     @property
     def is_empty(self) -> bool:
+        """Return whether evidence is empty, independently of completeness."""
         return not self.evidence
 
     def __len__(self) -> int:
+        """Return finding count, not accepted or converted value count."""
         return len(self.evidence)
 
 
 class Candidate(ImmutableModel):
+    """Grouping metadata for generated typed candidate records.
+
+    Attributes:
+        document_id: Document supplying candidate findings.
+        region: Repeated-region lineage, or None for page grouping. Generated subclasses
+            add named CandidateField members.
+    """
     document_id: str
     region: RegionLineage | None = None
 
 
 class FieldIssueKind(ImmutableModel):
+    """Cardinality, completeness, conversion, or semantic field rejection.
+
+    Attributes:
+        kind: Selects missing_required, excess_candidates, incomplete_evidence,
+            unsupported_projected_value, conversion_failed, or
+            semantic_validation_failed.
+        observed: Finding count for excess_candidates, when applicable.
+        code: negative_money when converted money violates supported nonnegative
+            semantics.
+    """
     kind: Literal[
         "missing_required",
         "excess_candidates",
@@ -235,36 +354,81 @@ class FieldIssueKind(ImmutableModel):
 
 
 class FieldIssue(ImmutableModel):
+    """Rejected Contract field with supporting source-derived evidence.
+
+    Attributes:
+        field: Authored identifier of the rejected field.
+        kind: Typed field rejection explanation, separate from operation budgets.
+        evidence: Findings supporting the issue; they can contain user or source
+            content.
+    """
     field: FieldId
     kind: FieldIssueKind
     evidence: tuple[Finding, ...] = PydanticField(repr=False)
 
 
 class ExtractionDiagnostic(ImmutableModel):
+    """Nonfatal finding-lineage mismatch during candidate grouping.
+
+    Attributes:
+        kind: Discriminator fixed to incompatible_lineage.
+        output: Locator output whose evidence could not join a compatible group.
+    """
     kind: Literal["incompatible_lineage"]
     output: str
 
 
 class ValidatedRecord[T: "Contract"](ImmutableModel):
+    """Accepted typed value with original candidate evidence retained.
+
+    Attributes:
+        value: Record accepted by Rust cardinality, conversion, and semantics.
+        candidate: Original grouped findings and provenance.
+    """
     value: SerializeAsAny[T] = PydanticField(repr=False)
     candidate: SerializeAsAny[Candidate] = PydanticField(repr=False)
 
 
 class RecordIssue(ImmutableModel):
+    """Rejected candidate record with retained field issues.
+
+    Attributes:
+        candidate: Original grouped evidence for the rejected record.
+        fields: Field rejection reasons and supporting findings.
+    """
     candidate: SerializeAsAny[Candidate]
     fields: tuple[FieldIssue, ...]
 
 
 class ContractIssues(_native.ContractError):
-    """Rust's structured rejection of an all-records requirement."""
+    """Structured rejection of a request for all accepted record values.
+
+    Attributes:
+        detail: Copied top-level Rust rejection mapping. Nested values are not
+            recursively frozen; the original outcome remains available.
+    """
 
     def __init__(self, detail: Mapping[str, Any]) -> None:
+        """Copy top-level Rust rejection details and encode an exception message.
+
+        Args:
+            detail: Rejection counts or terminal classification supplied by Rust.
+
+        Nested values are not frozen; the original outcome retains its evidence.
+        """
         self.detail = dict(detail)
         super().__init__(json.dumps(self.detail))
 
 
 class Contract(ImmutableModel):
-    """A typed record definition; annotations determine Rust cardinalities."""
+    """Typed record definition with Rust-owned cardinality and validation.
+
+    Attributes:
+        root: Optional repeated-region query; None selects page grouping.
+        contract_id: Optional schema ID; the class name is used when omitted.
+        contract_description: Optional meaning; class docstring or name supplies the
+            default. Fields require Field and nonblank descriptions.
+    """
 
     root: ClassVar[Query | None] = None
     contract_id: ClassVar[str | None] = None
@@ -273,6 +437,7 @@ class Contract(ImmutableModel):
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        """Initialize independent synchronization for each Contract subclass."""
         super().__pydantic_init_subclass__(**kwargs)
         cls._definition_lock = RLock()
 
@@ -289,14 +454,35 @@ class Contract(ImmutableModel):
 
     @classmethod
     def contract_schema(cls) -> ContractSchema:
+        """Return this class's validated schema without document I/O.
+
+        Raises:
+            ContractError: Fields, scalar annotations, aliases, or processing hooks
+                cannot be represented by the supported Rust vocabulary.
+        """
         return cls._definition().schema
 
     @classmethod
     def identity(cls) -> ContractIdentity:
+        """Return Rust's semantic identity for this typed schema.
+
+        Descriptions do not affect identity. Version, Contract ID, scope, and ordered
+        field IDs, cardinalities, and scalar type IDs do.
+
+        Raises:
+            ContractError: The class cannot form a supported portable schema.
+        """
         return ContractIdentity(cls._definition().handle.identity())
 
     @classmethod
     def plan(cls) -> Plan:
+        """Return the explicit locator plan pinned by all fields.
+
+        Natural-language descriptions do not discover selectors automatically.
+
+        Raises:
+            ContractError: Fields lack pinned locators or the declaration is invalid.
+        """
         definition = cls._definition()
         if definition.plan is None:
             raise _native.ContractError("contract fields have no pinned locators")
@@ -306,6 +492,19 @@ class Contract(ImmutableModel):
     def extract(
         cls: type[T], located: LocateOutcome, *, limits: ExtractionLimits | None = None
     ) -> Extracted[T]:
+        """Group located evidence without converting or validating values.
+
+        Args:
+            located: Locator outcome retaining completeness and failure distinctions.
+            limits: Explicit assembly budgets, or None for Rust defaults.
+
+        Returns:
+            Read-only candidates, diagnostics, or a terminal state. Call validate
+            explicitly before treating candidate evidence as accepted records.
+
+        Raises:
+            ContractError: Declaration or native input setup cannot be represented.
+        """
         handle = cls._definition().handle.extract(
             located.model_dump_json(exclude_none=True),
             None if limits is None else limits.model_dump_json(),
@@ -544,7 +743,19 @@ class _ReadOnlyView:
 
 
 class Extracted[T: "Contract"](_ReadOnlyView):
-    """Rust extraction outcome awaiting explicit validation."""
+    """Read-only candidate assembly outcome awaiting explicit validation.
+
+    Attributes:
+        contract: Typed record definition used for extraction.
+        status: candidates, no_match, indeterminate, locate_failed, or rejected retains
+            the phase distinction.
+        document_id: Examined document identity when available.
+        failure: Typed terminal location or extraction rejection when present.
+        completeness: Partial or unknown coverage for indeterminate outcomes.
+        reason_code: Structural explanation of indeterminate coverage.
+        candidates: Grouped raw evidence, not accepted typed records.
+        diagnostics: Nonfatal extraction issues such as incompatible lineage.
+    """
 
     __slots__ = (
         "contract",
@@ -559,6 +770,14 @@ class Extracted[T: "Contract"](_ReadOnlyView):
     )
 
     def __init__(self, contract: type[T], handle: _native.Extracted) -> None:
+        """Retain a native extraction handle and read-only evidence.
+
+        Args:
+            contract: Typed definition used to interpret field identities.
+            handle: Native extraction outcome from the Rust pipeline.
+
+        Construction does not validate candidate values or acquire documents.
+        """
         self.contract = contract
         self._handle = handle
         wire = json.loads(handle.to_json())
@@ -599,20 +818,45 @@ class Extracted[T: "Contract"](_ReadOnlyView):
         self._seal()
 
     def validate(self, *, limits: ValidationLimits | None = None) -> ContractOutcome[T]:
+        """Convert and validate evidence with explicit or default budgets.
+
+        Args:
+            limits: Validation budgets, or None for Rust defaults.
+
+        Returns:
+            Accepted records, rejected candidates, or terminal states. Incomplete
+            evidence is never converted into an empty successful result.
+        """
         return ContractOutcome(
             self.contract,
             self._handle.validate(None if limits is None else limits.model_dump_json()),
         )
 
     def model_dump(self) -> dict[str, Any]:
+        """Return a new native wire-data dictionary without validating again."""
         return json.loads(self._handle.to_json())
 
     def model_dump_json(self) -> str:
+        """Return native wire JSON with evidence and terminal states preserved."""
         return self._handle.to_json()
 
 
 class ContractOutcome[T: "Contract"](_ReadOnlyView):
-    """Rust validation outcome, retaining successful and rejected candidates."""
+    """Read-only evaluation retaining accepted and rejected candidates.
+
+    Attributes:
+        contract: Typed record definition used for validation.
+        status: evaluated, no_match, indeterminate, locate_failed, extraction_rejected,
+            or validation_rejected retains the phase distinction.
+        document_id: Evidence document identity when available.
+        failure: Typed phase or operation-budget rejection when present.
+        completeness: Partial or unknown coverage for indeterminate outcomes.
+        reason_code: Structural explanation of indeterminate coverage.
+        records: Accepted typed values and original candidate evidence.
+        issues: Rejected candidates with field-specific reasons and findings.
+        extraction_diagnostics: Nonfatal grouping issues preventing an all-accepted
+            claim.
+    """
 
     __slots__ = (
         "contract",
@@ -628,6 +872,15 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
     )
 
     def __init__(self, contract: type[T], handle: _native.ContractOutcome) -> None:
+        """Retain a native evaluation handle and read-only typed results.
+
+        Args:
+            contract: Definition used to interpret converted values.
+            handle: Native validation outcome from the Rust pipeline.
+
+        Rust results are reconstructed without Python validators or defaults changing
+        accepted records. Construction does not acquire documents.
+        """
         self.contract = contract
         self._handle = handle
         wire = json.loads(handle.to_json())
@@ -681,6 +934,16 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
         self._seal()
 
     def require_all(self) -> list[T]:
+        """Return values only when no record or extraction issue remains.
+
+        Returns:
+            A new typed list, empty for complete no-match. The original outcome
+            remains available for inspection of evidence and rejected records.
+
+        Raises:
+            ContractIssues: Issues, indeterminate evidence, or failed phases prevent
+                an all-accepted result.
+        """
         result = json.loads(self._handle.require_all())
         if "error" in result:
             raise ContractIssues(result["error"])
@@ -693,9 +956,11 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
         )
 
     def model_dump(self) -> dict[str, Any]:
+        """Return a new native wire-data dictionary without validating again."""
         return json.loads(self._handle.to_json())
 
     def model_dump_json(self) -> str:
+        """Return native wire JSON with evidence and terminal states preserved."""
         return self._handle.to_json()
 
 

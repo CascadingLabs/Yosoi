@@ -21,7 +21,9 @@ WebArtifactFamily = Literal[
     "visual",
     "runtime_diagnostics",
 ]
+"""Captured evidence family; availability and completeness are reported separately."""
 UnknownReason = Literal["empty", "no_strong_signature"]
+"""Why retained source bytes did not yield a strong format classification."""
 DecodingErrorCode = Literal[
     "not_classified",
     "invalid_charset",
@@ -32,6 +34,7 @@ DecodingErrorCode = Literal[
     "invalid_sequence",
     "artifact_metadata",
 ]
+"""Typed decoding failure or unsupported encoding; no successful text is implied."""
 BrowserFailureReason = Literal[
     "launch",
     "connection",
@@ -46,6 +49,7 @@ BrowserFailureReason = Literal[
     "renderer_crashed",
     "unsupported_configuration",
 ]
+"""Typed browser failure category retained alongside operation diagnostics."""
 DirectHttpRedirectErrorKind = Literal[
     "missing_location",
     "malformed_location",
@@ -55,6 +59,7 @@ DirectHttpRedirectErrorKind = Literal[
     "loop",
     "hop_limit",
 ]
+"""Redirect rejection reason; rejected targets are not followed successfully."""
 
 
 class _PartialReasonUnit(ImmutableModel):
@@ -83,6 +88,7 @@ class _BrowserArtifactTruncated(ImmutableModel):
 type PartialReason = Annotated[
     _PartialReasonUnit | _BrowserArtifactTruncated, Field(discriminator="kind")
 ]
+"""Why a retained representation is partial rather than complete evidence."""
 
 
 class _UnavailableReasonUnit(ImmutableModel):
@@ -108,6 +114,7 @@ type UnavailableReason = Annotated[
     _UnavailableReasonUnit | _UnavailableArtifactReason,
     Field(discriminator="kind"),
 ]
+"""Why requested evidence or its payload is unavailable to projection."""
 
 
 class _UnprojectableReasonUnit(ImmutableModel):
@@ -145,12 +152,14 @@ type UnprojectableReason = Annotated[
     | _CaptureArtifactUnprojectable,
     Field(discriminator="kind"),
 ]
+"""Why retained source cannot produce the requested document representation."""
 
 
 type ProjectionReason = Annotated[
     PartialReason | UnavailableReason | UnprojectableReason,
     Field(discriminator="kind"),
 ]
+"""Typed partial, unavailable, or unprojectable representation explanation."""
 
 
 class _DirectHttpTransportUnit(ImmutableModel):
@@ -176,6 +185,7 @@ class _DirectHttpRedirect(ImmutableModel):
 type TransportDiagnostic = Annotated[
     _DirectHttpTransportUnit | _DirectHttpRedirect, Field(discriminator="kind")
 ]
+"""Direct HTTP transport failure or typed redirect rejection details."""
 
 
 class _RequestDiagnosticUnit(ImmutableModel):
@@ -208,7 +218,9 @@ type Diagnostic = Annotated[
     _RequestDiagnosticUnit | _DirectHttpTransportDiagnostic | _BrowserFailureDiagnostic,
     Field(discriminator="kind"),
 ]
+"""Request phase failure, transport detail, or browser failure tagged by kind."""
 type AttemptDiagnostic = Diagnostic
+"""Request-attempt diagnostic retaining the original phase or failure detail."""
 
 
 AttemptFailureKind = Literal[
@@ -217,7 +229,9 @@ AttemptFailureKind = Literal[
     "capture_execution",
     "projection",
 ]
+"""Phase that prevented an acquisition attempt from producing its result."""
 NotStartedReason = Literal["cancelled"]
+"""Observed cancellation explaining why a later acquisition never started."""
 
 
 class _SearchBrowserFailure(ImmutableModel):
@@ -241,3 +255,4 @@ type SearchAttemptDiagnostic = (
     ]
     | _SearchBrowserFailure
 )
+"""Search-attempt phase diagnostic or structured browser failure category."""

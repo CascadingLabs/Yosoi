@@ -72,7 +72,9 @@ pub enum DirectHttpRedirects {
     Disabled,
     /// Follow no more than the configured positive number of transitions.
     Follow {
+        /// Positive maximum automatic redirect transitions within this acquisition.
         max_hops: RedirectHopLimit,
+        /// HTTP(S) scheme/origin admission rule applied to every redirect destination.
         targets: DirectHttpRedirectTargets,
     },
 }
