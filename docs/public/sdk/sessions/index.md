@@ -49,7 +49,7 @@ pseudo code
 
 kinda rust, kinda python
 
-```rs/py
+```text
 
 import ys
 

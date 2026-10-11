@@ -41,7 +41,8 @@ on `uv run --locked` to keep prepare, check, body, and history fully offline.
 The release page in `docs/public/releases/` is the canonical publication
 source. The xtask release wrapper additionally checks workspace and citation
 metadata; this Python `check` validates the notes page and imported source only.
-`history` includes finalized pages only and updates an existing index only when
+`history` includes finalized non-RC pages only, newest version first. Candidate
+notes remain available at their existing URLs without a TTL. It updates an existing index only when
 its generated-content checksum proves the file has no manual edits.
 
 The complete GitHub body, including contributor credits, PR links, and compare

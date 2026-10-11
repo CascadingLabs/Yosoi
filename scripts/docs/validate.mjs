@@ -13,6 +13,7 @@ import {
   readPublicNavigation,
   rewriteMarkdownLinks,
   validateDocHeadings,
+  preparePythonReference,
 } from './content.mjs';
 
 export const publicRoot = fileURLToPath(new URL('../../docs/public/', import.meta.url));
@@ -22,6 +23,8 @@ export async function validatePublicDocs(root = publicRoot) {
   const stage = await mkdtemp(path.join(work, 'snapshot-'));
   try {
     await copyPublicTree(root, stage);
+    if (path.resolve(root) === path.resolve(publicRoot))
+      preparePythonReference(path.resolve(root, '../..'), stage, 'main');
     const manifest = generatePreview({
       root: stage,
       version: '0.0.0-preview',

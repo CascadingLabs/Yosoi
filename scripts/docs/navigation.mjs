@@ -51,6 +51,20 @@ export function parseNavigationMetadata(source, { parse, printParseErrorCode }) 
 }
 
 export function directoryNavigation(pages, directory, title) {
+  if (directory === 'releases') {
+    const releases = pages
+      .filter((page) => page.version && !page.version.includes('-'))
+      .sort((a, b) => {
+        const aa = a.version.split('.').map(Number);
+        const bb = b.version.split('.').map(Number);
+        return bb[0] - aa[0] || bb[1] - aa[1] || bb[2] - aa[2];
+      });
+    // Candidate pages remain published; only the public navigation omits them.
+    pages = [
+      ...pages.filter((page) => !page.version),
+      ...releases.map((page, order) => ({ ...page, order })),
+    ];
+  }
   const root = { title, route: directory, order: 0, children: [] };
   for (const page of pages) {
     const segments =
@@ -85,6 +99,26 @@ export function directoryNavigation(pages, directory, title) {
   };
   sort(root);
   return root;
+}
+
+export function referenceGroups(items) {
+  const categories = [
+    ['Modules', (item) => !item.kind || item.kind === 'module'],
+    ['Types', (item) => ['struct', 'enum', 'trait', 'type_alias', 'union'].includes(item.kind)],
+    ['Functions', (item) => item.kind === 'function'],
+    ['Macros', (item) => item.kind === 'proc_macro'],
+    ['Constants', (item) => ['constant', 'static'].includes(item.kind)],
+    ['Exports', (item) => item.kind === 'reexport'],
+  ];
+  return categories.flatMap(([title, matches]) => {
+    const children = items
+      .filter(matches)
+      .sort(
+        (a, b) =>
+          compare(a.title.toLowerCase(), b.title.toLowerCase()) || compare(a.route, b.route),
+      );
+    return children.length ? [{ title, children }] : [];
+  });
 }
 
 // Public Rust paths own display namespaces; route paths keep their existing item-kind segments.
@@ -140,10 +174,14 @@ export function referenceNavigation(pages, title = 'Reference') {
     } else parent.children.push({ ...pageNode(page), kind });
   }
   const sort = (node) => {
-    node.children.sort(
-      (a, b) => compare(a.title.toLowerCase(), b.title.toLowerCase()) || compare(a.route, b.route),
-    );
     node.children.forEach(sort);
+    node.children = referenceGroups(node.children).map(({ title, children }, order) => ({
+      title,
+      route: `${node.route}/_${title.toLowerCase()}`,
+      order,
+      collapsed: true,
+      children,
+    }));
   };
   sort(root);
   return root;
@@ -173,19 +211,36 @@ export function resolveNavigation(pages, metadata) {
   const labels = new Set();
   for (const [index, section] of metadata.sections.entries()) {
     if (!object(section)) fail(`section ${index + 1} must be an object`);
-    keys(section, ['title', 'pages', 'directory', 'generated', 'order', 'collapsed']);
+    keys(section, ['title', 'pages', 'directory', 'generated', 'sections', 'order', 'collapsed']);
     const title = text(section.title, 'section title');
     if (labels.has(title)) fail(`duplicate section title: ${title}`);
     labels.add(title);
     if (
-      ['pages', 'directory', 'generated'].filter((key) => section[key] !== undefined).length !== 1
+      ['pages', 'directory', 'generated', 'sections'].filter((key) => section[key] !== undefined)
+        .length !== 1
     )
-      fail(`${title} must select exactly one of pages, directory, or generated`);
+      fail(`${title} must select exactly one of pages, directory, generated, or sections`);
     if (section.collapsed !== undefined && typeof section.collapsed !== 'boolean')
       fail(`${title}: collapsed must be boolean`);
     const collapsed = section.collapsed ?? metadata.collapsed ?? true;
     let node;
-    if (section.pages !== undefined) {
+    if (section.sections !== undefined) {
+      if (section.order !== undefined) fail(`${title}: order is only valid for directory sections`);
+      const children = resolveNavigation(pages, {
+        schemaVersion: 1,
+        collapsed,
+        sections: section.sections,
+      }).children;
+      const byId = new Map(pages.map((page) => [page.id, page]));
+      const claimChildren = (nodes) => {
+        for (const child of nodes) {
+          if (child.id) claim(byId.get(child.id));
+          claimChildren(child.children);
+        }
+      };
+      claimChildren(children);
+      node = { title, route: '', order: index, children };
+    } else if (section.pages !== undefined) {
       if (section.order !== undefined) fail(`${title}: order is only valid for directory sections`);
       if (!Array.isArray(section.pages) || !section.pages.length)
         fail(`${title}: pages must be a nonempty array`);

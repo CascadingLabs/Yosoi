@@ -1,5 +1,16 @@
 # Rust SDK reference tooling
 
+The public site presents separate Rust and Python API reference sections. Rust
+navigation groups modules and their items by kind; symbol URLs retain their
+compiler-derived identities. Python reference pages are prepared by
+`../python_reference.py` from public source declarations, without importing the
+extension. UV supplies Python 3.15 using its shared cache; no SDK installation or
+Rust compilation is needed for this step. Published bundles contain the generated
+Python Markdown alongside the Rust artifact, with source links pinned to the
+selected commit. Local preparation reads the selected working tree. The docs
+validator checks generated Python pages, links, and navigation, and fixture tests
+cover signatures, export accounting, and commit-pinned bundle generation.
+
 Only workspace library crates named `yosoi` or with a reserved `*-sdk` package
 name and `[package.metadata.yosoi] sdk = true` enter discovery. The private
 implementation modules under `crates/yosoi/src/internal` are not separate SDK

@@ -100,7 +100,10 @@
     },
     {
       "title": "Reference",
-      "generated": "rust-api",
+      "sections": [
+        { "title": "Rust", "generated": "rust-api" },
+        { "title": "Python", "directory": "python-api" },
+      ],
     },
   ],
 }

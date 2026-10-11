@@ -42,6 +42,16 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 - Run `cargo xtask release check VERSION` after synchronizing versions and the citation date. It verifies finalized notes, imported attribution, and the existing release metadata consistency contract. `body VERSION` exports validated Markdown; `history` refreshes the docs index from finalized entries and excludes drafts.
 - These commands do not tag, publish, build release binaries, upload to registries, or manage nightly artifacts. Only the explicitly requested `fetch` command accesses GitHub, read-only, with an explicit comparison range.
 
+# Documentation
+
+## Local documentation review
+
+- Author public documentation in this Yosoi workspace's `docs/public`; follow `docs/public/AGENTS.md`. CascadingLabsFE renders it through the existing Astro/Starlight pipeline.
+- Run the docs server from the active CascadingLabsFE workspace, with `YOSOI_REPO_ROOT` set to the absolute path of the Yosoi workspace being reviewed: `YOSOI_REPO_ROOT=/absolute/path/to/Yosoi bun scripts/docs/dev.mjs --port 4321`. Keep the requested port and stop only its existing docs watcher/server before replacing it. Do not replace unrelated local servers.
+- The watcher prepares Markdown and navigation from that source workspace and restarts Astro after successful preparation. Verify the server's working directory, selected source, and the actual HTML at `http://127.0.0.1:4321/yosoi/`; a running process alone is not proof that the current changes are served.
+- Reuse a verified API artifact from the intended source commit for Markdown-only changes. Never silently select an older `docs-sources.local.json` override, compile Rust for a prose edit, or hand-edit `.generated` output. If no matching artifact is available, report the gap before choosing a broader regeneration.
+- Production builds consume immutable published Yosoi bundles; local working-tree previews are separate evidence and are not deployed changes.
+
 # Linear
 
 `Backlog` → `Todo` → `Shaping` → `Ready for Worker` → `Agent Working` → `In Review` → `Agent Verification` → `Final Boss` → `Ready to land` → `Done`
