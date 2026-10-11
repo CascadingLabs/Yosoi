@@ -238,9 +238,21 @@ impl SessionError {
     }
 }
 
+#[cfg(any(feature = "browser", test))]
+fn observation_capture_error(error: SessionError) -> SessionError {
+    // Cancellation before DOM dispatch is still cancellation. Uncertain browser
+    // effects also retain their classification instead of becoming a known rejection.
+    if error.is_cancelled() || error.is_unknown() {
+        error
+    } else {
+        SessionError::EvidenceUnavailable
+    }
+}
+
 pub fn new_operation_id() -> String {
     internal_engine::ActivityId::random().to_string()
 }
+
 pub fn new() -> SessionBuilder {
     SessionBuilder {
         policy: Policy::default(),
@@ -1100,7 +1112,7 @@ impl Work {
                 let (html, epoch) = self
                     .call(self.control.dom(self.observation_limit()))
                     .await
-                    .map_err(|_| SessionError::EvidenceUnavailable)?;
+                    .map_err(observation_capture_error)?;
                 (Some(html), epoch)
             } else {
                 (None, self.call(self.control.document_epoch()).await?)
@@ -1600,4 +1612,41 @@ fn condition_expression(condition: &Condition) -> Result<String, SessionError> {
             "Array.from(document.querySelectorAll({selector})).some(e => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden')"
         ),
     })
+}
+
+#[cfg(test)]
+mod observation_capture_tests {
+    use super::{SessionError, observation_capture_error};
+
+    #[test]
+    fn cancellation_before_dom_dispatch_remains_cancelled() {
+        assert!(matches!(
+            observation_capture_error(SessionError::Cancelled),
+            SessionError::Cancelled
+        ));
+        assert!(matches!(
+            observation_capture_error(SessionError::Closed),
+            SessionError::Closed
+        ));
+    }
+
+    #[test]
+    fn uncertain_dom_dispatch_keeps_its_original_error() {
+        assert!(matches!(
+            observation_capture_error(SessionError::TimeoutAfterDispatch),
+            SessionError::TimeoutAfterDispatch
+        ));
+        assert!(matches!(
+            observation_capture_error(SessionError::Execution("capture interrupted".into())),
+            SessionError::Execution(message) if message == "capture interrupted"
+        ));
+    }
+
+    #[test]
+    fn other_capture_failures_remain_evidence_unavailable() {
+        assert!(matches!(
+            observation_capture_error(SessionError::InvalidInput),
+            SessionError::EvidenceUnavailable
+        ));
+    }
 }
