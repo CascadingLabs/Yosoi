@@ -3,7 +3,22 @@
 Audited on 2026-10-11 from default parent `517abee18e66c575615e4c8e36ddb74ca4d22e9c`.
 This is a source-readiness audit, not a release approval. Documentation changes in this preparation do not change SDK behavior.
 
-## Confirmed blocker
+## Repair checkpoint
+
+PR: https://github.com/CascadingLabs/Yosoi/pull/155, base `main`.
+Code repair source: `835aadf5a6dfe8bde292413349f9dd6be3e2b41a`.
+
+- The complete local strict workspace/all-target/all-feature Clippy gate passed with no diagnostics. Focused regressions passed 78 tests; no test declarations were removed and one RFC 6901 escape test was added.
+- Hosted Rust CI passed every job on that repair head, including default tests, all-feature coverage partitions, doctests, lint/build and coverage aggregation.
+- That head still failed docs formatting in `python/installation.md` and Python setup because a checkout-local `.venv` symlink was mistakenly committed. The local correction deletes the link and makes the ignore rule cover symlinks as well as directories. Environment contents were never committed. Final-head docs and Python CI remain to be verified.
+- No-browser compilation passed separately; two existing dead-code warnings remain after the unused scoped-token import correction.
+- Safety fixes use iterators and checked conversions. Assertion descriptors and partial error outcomes use boxes without changing the descriptor wire format or partial-outcome accessor.
+- Flow traversal, action dispatch and terminal-boundary classification were split into named helpers. The continuation oracle and longer example stages were split without dropping verification steps. Private non-waiting lock acquisition is synchronous; the public async release contract is preserved.
+- Narrow documented lint expectations preserve intentional resource scopes and regression assertions. Shared fixture dead-code allowances cover capabilities used by different consumers. Production panic/indexing/arithmetic checks and every workflow gate remain enabled.
+- Authentic generated notes were fetched from GitHub using `/usr/bin/gh`, comparing `v0.1.2` to the repair source. The canonical note and provenance sidecar are prepared with the existing release helper. GitHub supplied the full-changelog link and no individual change/contributor entries; none were fabricated.
+- Release profile/platform artifacts, registry prerequisite byte verification and full Chrome/CDP certification remain separate release gates. No merging, tagging, publication or deployment has occurred.
+
+## Historical baseline blocker
 
 `cargo fmt --all -- --check` passed. The focused core check failed:
 
@@ -90,4 +105,4 @@ Raw evidence: `.local/cas562/core-clippy.jsonl` and `.local/cas562/core-clippy.l
 
 Use the existing release checklist in `docs/public/browser-automation-review/release.md`. Finalize bounded Archive/View wording, choose candidate or final beta/date, import authentic GitHub comparison notes against `v0.1.2`, verify metadata and registry prerequisites, and run release-profile artifact/install and platform gates. No fabricated changelog provenance or publication follows from this audit.
 
-No full local suite or all-target build was run: the focused lint failure already establishes the next blocker. Hosted 0.2.0 CI and Release CD are unverified.
+The original audit did not run a full suite or all-target build. The repair checkpoint above supersedes its lint status. Final-head hosted CI and publication-time Release CD remain to be verified.

@@ -92,17 +92,23 @@ current integrated source.
 
 ## Remaining release gates
 
-The October 11 preparation audit passed Rust formatting but failed the focused
-all-feature core-library strict Clippy check with 456 denied diagnostics,
-including import/style findings and unchecked indexing, casts and arithmetic.
-The required workspace/all-target gate therefore remains blocked. This is a
-subset of source CI, not a completed test or artifact run; fix the findings
-without lowering the gate before broader validation.
+The initial October 11 audit found 456 denied core Clippy diagnostics. The
+repair now passes the complete local workspace/all-target/all-feature strict
+lint gate and 78 focused model, assertion, Archive and View regressions. The
+no-browser configuration compiles separately. No test declarations were
+removed; the JSON Pointer regression is new.
+
+[PR #155](https://github.com/CascadingLabs/Yosoi/pull/155) carries the repair.
+Hosted Rust format/lint/build, both default and coverage partitions, doctests
+and coverage aggregation passed on `835aadf5`. That head's docs formatting and
+Python setup failed; their corrections require a fresh final-head run. Local
+success and an earlier green Python matrix do not transfer to that final head.
 
 - [x] Integrate the accepted browser and Python SDKs with the private runtime in default.
 - [x] Record installed Python consumer/browser proof on the integrated SDK source.
 - [x] Synchronize local `0.2.0` metadata and citation date through existing tooling.
-- [ ] Review the final shipping matrix and explicitly state bounded Archive/View scope.
+- [x] State the beta shipping matrix: existing bounded Rust Archive records and Views
+      are included; stronger durability/replay guarantees and Python facades remain deferred.
 - [ ] Pass strict source CI for the exact chosen source: Rust format/lint/build,
       tests and doctests; Python installed-wheel and semantic gates; public docs.
       Green `v0.1.2` main CI does not verify the local 0.2.0 source.
@@ -111,10 +117,10 @@ without lowering the gate before broader validation.
 - [ ] Build release-profile native and Python artifacts and pass the existing
       platform/interpreter installation matrix, including locked sdist rebuilds.
 - [ ] Verify crate metadata, `yosoi-contracts-derive` prerequisite and artifact contents.
-- [ ] Choose final beta `0.2.0` or a numbered candidate `0.2.0-rc.N`, and the
-      actual release date. Synchronize any change through `bump-version`.
-- [ ] Import authentic GitHub notes against `v0.1.2` from the chosen source ref,
-      review attribution and finalize canonical notes under `releases/`.
+- [x] Prepare final beta `0.2.0` notes with the current `2026-10-11` metadata date.
+      Synchronize the date through `bump-version` if the publication decision changes it.
+- [x] Import authentic GitHub notes against `v0.1.2` from the reviewed repair ref
+      and finalize [canonical 0.2.0 notes](../releases/0-2-0.md), preserving provenance.
 - [ ] Pass `xtask release check` and present the publication decision with exact
       source identity, artifact hashes, hosted outcomes and remaining gaps.
 

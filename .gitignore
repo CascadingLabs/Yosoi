@@ -3,7 +3,7 @@ target/
 /.generated/
 __pycache__/
 *.pyc
-.venv/
+.venv
 dist/
 .pytest_cache/
 .ruff_cache/
@@ -60,4 +60,4 @@ completions/
 /scripts/docs/.vite/
 
 # Pinned local release-note tooling environment
-/scripts/releases/.venv/
+/scripts/releases/.venv

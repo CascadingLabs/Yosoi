@@ -9,11 +9,11 @@ order: 1
 The package requires Python `>=3.12,<3.16` and Pydantic `>=2.14,<3`. Choose
 the wheel that matches both your Python ABI and platform:
 
-| Interpreter | Release wheel selected by the installation checks |
-| --- | --- |
-| CPython 3.12–3.15 | `cp312-abi3` |
-| Free-threaded CPython 3.14 | `cp314-cp314t` |
-| Free-threaded CPython 3.15 | `cp315-abi3.abi3t` |
+| Interpreter                | Release wheel selected by the installation checks |
+| -------------------------- | ------------------------------------------------- |
+| CPython 3.12–3.15          | `cp312-abi3`                                      |
+| Free-threaded CPython 3.14 | `cp314-cp314t`                                    |
+| Free-threaded CPython 3.15 | `cp315-abi3.abi3t`                                |
 
 The free-threaded ABI has its own extension wheel. The version range alone does
 not promise an artifact for every operating system, architecture, or Linux

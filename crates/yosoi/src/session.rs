@@ -1394,6 +1394,7 @@ impl Work {
         }
         let wait_duration = Duration::from_millis(milliseconds);
         // Intentional Flow delay, never a readiness heuristic.
+        #[cfg(feature = "browser")]
         let scoped = SCOPED_CANCELLATION
             .try_with(Clone::clone)
             .unwrap_or_default();
