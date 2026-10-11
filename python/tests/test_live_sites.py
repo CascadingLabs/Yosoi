@@ -1,0 +1,332 @@
+"""Opt-in, bounded installed-SDK stress tests against public live sites.
+
+Selectors here bind specific test sites, not reusable public recipes. No live
+accounts or real purchases are used. Qscrape's checkout is a local simulation.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import time
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+import yosoi as ys
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("YOSOI_LIVE_SITE_TESTS") != "1",
+    reason="requires explicit live-site opt-in and regular sandboxed Chrome",
+)
+
+BOOKS = "https://books.toscrape.com/"
+QUOTES = "https://quotes.toscrape.com/js-delayed/"
+SHOP = "https://qscrape.dev/l2/eshop/"
+ACTIVE = '[data-slot="product-grid"] [data-fw]:not([hidden])'
+CART_ROOT = ", ".join(
+    f"[data-slot='product-grid'][data-active-fw='{framework}'] "
+    f"[data-fw='{framework}'] [data-component='eshop-cart']"
+    for framework in ("react", "vue", "svelte", "solid")
+)
+
+
+class Book(ys.Contract):
+    root = ys.css("article.product_pod")
+    title: str = ys.Field("The book title", locator=ys.css("h3 a").attribute("title"))
+    price: str = ys.Field("The displayed GBP price", locator=ys.css(".price_color"))
+
+
+class Quote(ys.Contract):
+    root = ys.css(".quote")
+    text: str = ys.Field("The quotation", locator=ys.css(".text"))
+    author: str = ys.Field("The quoted author", locator=ys.css(".author"))
+
+
+class Cart(ys.Contract):
+    root = ys.css(CART_ROOT)
+    total: str = ys.Field(
+        "The simulated GS total",
+        locator=ys.css("[data-cart-total]").attribute("data-cart-total"),
+    )
+    skus: list[str] = ys.Field(
+        "Product identities", locator=ys.css("[data-sku]").attribute("data-sku")
+    )
+    quantity: str = ys.Field(
+        "Cart quantity", locator=ys.css("[data-qty]").attribute("data-qty")
+    )
+
+
+def _iterations() -> int:
+    count = int(os.environ.get("YOSOI_LIVE_ITERATIONS", "3"))
+    if not 1 <= count <= 10:
+        raise ValueError("live iterations must be in 1..10")
+    return count
+
+
+def _settings() -> ys.SessionPolicy:
+    mode = os.environ.get("YOSOI_YIELD_MODE", "headless")
+    if mode == "headless":
+        return ys.SessionPolicy(mode="headless", execution_concurrency=1)
+    if mode == "headful":
+        return ys.SessionPolicy(mode="headful", execution_concurrency=1)
+    raise ValueError("invalid browser mode")
+
+
+def _flow(steps: list[Any]) -> ys.Flow:
+    return ys.flow(steps, timeout_ms=60_000, on_failure=ys.Stop(scope="invocation"))
+
+
+def _record(name: str, value: Any) -> None:
+    directory = Path(
+        os.environ.get("YOSOI_BROWSER_OUTPUT_DIR", ".generated/live-sites")
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    if hasattr(value, "model_dump"):
+        value = value.model_dump(mode="json")
+    (directory / f"{name}.json").write_text(
+        json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+
+async def _invoke(name: str, recipe: ys.Flow, lease: ys.Work | None = None) -> Any:
+    started = time.perf_counter()
+    try:
+        outcome = await recipe.invoke(lease)
+    except BaseException as error:
+        _record(name, {"error_type": type(error).__name__, "error": str(error)})
+        raise
+    _record(name, outcome)
+    _record(f"{name}-timing", {"elapsed_seconds": time.perf_counter() - started})
+    outcome.require_completed()
+    return outcome
+
+
+def _assertion(contract: Any, name: str, predicate: Any) -> Any:
+    return ys.assert_all(
+        contract, plan=contract.plan(), checks=[ys.check(name, predicate)]
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "url", "selector"),
+    [
+        ("books", BOOKS, "article.product_pod h3 a"),
+        ("quotes", "https://quotes.toscrape.com/", ".quote .author"),
+        ("wikipedia", "https://www.wikipedia.org/", "#searchInput"),
+    ],
+)
+def test_live_managed_ownership(name: str, url: str, selector: str) -> None:
+    async def run() -> None:
+        outcome = await _invoke(
+            f"managed-{name}",
+            _flow([ys.navigate(url), ys.wait_until(ys.visible(selector), 15_000)]),
+        )
+        assert outcome.cleanup
+        assert all(receipt.status == "observed" for receipt in outcome.cleanup)
+
+    asyncio.run(run())
+
+
+def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
+    async def run() -> None:
+        async with ys.session(settings=_settings()) as session:
+            async with session.work() as lease:
+                for iteration in range(_iterations()):
+                    await _invoke(
+                        f"quotes-{iteration}",
+                        _flow(
+                            [
+                                ys.navigate(QUOTES),
+                                ys.timed(
+                                    ys.until(ys.count_at_least(".quote", 10)), 20_000
+                                ),
+                                _assertion(
+                                    Quote,
+                                    "rendered-quote",
+                                    lambda quote: bool(
+                                        quote.text.strip() and quote.author.strip()
+                                    ),
+                                ),
+                                ys.click(".next a"),
+                                ys.timed(
+                                    ys.until(ys.count_at_least(".quote", 10)), 20_000
+                                ),
+                                _assertion(
+                                    Quote,
+                                    "second-page-quote",
+                                    lambda quote: bool(
+                                        quote.text.strip() and quote.author.strip()
+                                    ),
+                                ),
+                            ]
+                        ),
+                        lease,
+                    )
+                    url = f"{BOOKS}catalogue/page-{iteration + 1}.html"
+                    await _invoke(
+                        f"books-{iteration}",
+                        _flow(
+                            [
+                                ys.navigate(url),
+                                ys.wait_until(
+                                    ys.count_at_least("article.product_pod", 20), 15_000
+                                ),
+                            ]
+                        ),
+                        lease,
+                    )
+                    response = (
+                        await ys.PageRequest(target=ys.WebTarget(url))
+                        .with_work(lease)
+                        .send()
+                    )
+                    _record(f"books-response-{iteration}", response)
+                    assert response.termination == "completed"
+                    assert response.documents
+                    books = (
+                        ys.extract(response.documents[0], Book).validate().require_all()
+                    )
+                    assert len(books) == 20
+                    assert all(
+                        book.title.strip() and book.price.startswith("£")
+                        for book in books
+                    )
+                    assert not lease.closed
+            assert not session.closed
+        assert session.closed
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("sku", "quantity", "total"),
+    [
+        ("VM-MIN-001", 2, "29.00"),
+        ("VM-MIN-003", 3, "19.50"),
+    ],
+)
+def test_live_simulated_checkout_and_failure_stop(
+    sku: str, quantity: int, total: str
+) -> None:
+    async def run() -> None:
+        for iteration in range(_iterations()):
+            label = f"shop-{sku}-{iteration}"
+            detail = (
+                f'{ACTIVE} [data-component="eshop-product-detail"][data-sku="{sku}"]'
+            )
+            cart = f'{ACTIVE} [data-component="eshop-cart"]'
+            row = f'{cart} [data-sku="{sku}"]'
+            checkout = f'{ACTIVE} [data-component="eshop-checkout"]'
+            async with ys.session(settings=_settings()) as session:
+                async with session.work() as lease:
+                    steps = [
+                        ys.navigate(SHOP),
+                        ys.wait_until(
+                            ys.visible(f'{ACTIVE} article[data-sku="{sku}"]'), 15_000
+                        ),
+                        ys.click(f'{ACTIVE} article[data-sku="{sku}"]'),
+                        ys.wait_until(
+                            ys.visible(f'{detail} [data-in-stock="true"] + button'),
+                            15_000,
+                        ),
+                        ys.click(f'{detail} [data-in-stock="true"] + button'),
+                        ys.wait_until(ys.visible(f'{row} [data-qty="1"]'), 15_000),
+                    ]
+                    steps.extend(
+                        ys.click(f"{row} [data-qty] + button")
+                        for _ in range(1, quantity)
+                    )
+                    steps.append(
+                        _assertion(
+                            Cart,
+                            "correct-cart",
+                            lambda record: (
+                                record.total == total
+                                and record.quantity == str(quantity)
+                                and record.skus == [sku]
+                            ),
+                        )
+                    )
+                    await _invoke(f"{label}-cart", _flow(steps), lease)
+                    failed = await _flow(
+                        [
+                            _assertion(
+                                Cart,
+                                "wrong-total",
+                                lambda record: record.total == "0.00",
+                            ),
+                            ys.click(f"{cart} > button:last-of-type"),
+                        ]
+                    ).invoke(lease)
+                    _record(f"{label}-negative", failed)
+                    assert failed.terminal == "failed"
+                    assert len(failed.steps) == 1 and failed.skipped_steps
+                    token = ys.CancellationToken()
+                    token.cancel()
+                    cancelled = await _flow([ys.navigate(BOOKS)]).invoke(
+                        lease, cancellation=token
+                    )
+                    _record(f"{label}-cancelled", cancelled)
+                    assert cancelled.terminal == "cancelled"
+                    assert not any(
+                        step.receipt.status == "observed" for step in cancelled.steps
+                    )
+                    await _invoke(
+                        f"{label}-recovery",
+                        _flow(
+                            [
+                                _assertion(
+                                    Cart,
+                                    "unchanged-cart",
+                                    lambda record: record.total == total,
+                                ),
+                                ys.click(f"{cart} > button:last-of-type"),
+                                ys.wait_until(
+                                    ys.visible(
+                                        f'{checkout} [data-checkout-total="{total}"]'
+                                    ),
+                                    15_000,
+                                ),
+                            ]
+                        ),
+                        lease,
+                    )
+                    fields = {
+                        "First name": "SDK",
+                        "Last name": "Live Test",
+                        "Email": "sdk-live-test@example.com",
+                        "Address": "12 Test Lane",
+                        "City": "Test City",
+                        "Province": "Test Province",
+                        "Post code": "TEST-001",
+                        "Card number": "4111 1111 1111 1111",
+                        "Expiry": "12 / 30",
+                        "CVV": "123",
+                    }
+                    await _invoke(
+                        f"{label}-confirmed",
+                        _flow(
+                            [
+                                *(
+                                    ys.enter_text(
+                                        f'{checkout} input[data-label="{key}"]', value
+                                    )
+                                    for key, value in fields.items()
+                                ),
+                                ys.click(f"{checkout} div button"),
+                                ys.wait_until(
+                                    ys.visible(
+                                        f'{ACTIVE} [data-component="eshop-confirm"] [data-order-id^="VM-312-"]'
+                                    ),
+                                    15_000,
+                                ),
+                            ]
+                        ),
+                        lease,
+                    )
+                    assert not lease.closed
+
+    asyncio.run(run())

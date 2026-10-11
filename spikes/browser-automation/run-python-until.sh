@@ -110,6 +110,8 @@ docker run --rm --init --network bridge --read-only --cap-drop ALL \
   --mount "type=bind,src=$task_output_arg,dst=/evidence" \
   --env CHROME_NO_SANDBOX=0 --env YOSOI_BROWSER_TESTS=1 \
   --env YOSOI_EXPECT_INSTALLED=1 \
+  --env "YOSOI_LIVE_SITE_TESTS=${YOSOI_LIVE_SITE_TESTS:-0}" \
+  --env "YOSOI_LIVE_ITERATIONS=${YOSOI_LIVE_ITERATIONS:-3}" \
   --env "YOSOI_PYTHON_TEST_FILES=${YOSOI_PYTHON_TEST_FILES:-python/tests/test_until_browser.py}" \
   --env "YOSOI_YIELD_MODE=$task_mode" \
   --env YOSOI_BROWSER_OUTPUT_DIR=/evidence \
