@@ -103,7 +103,9 @@ jobs:
           if-no-files-found: error
 
   source-ci:
-    needs: identity
+    # Artifact completion avoids querying before GitHub indexes main push CI.
+    # Verification and publication still require successful exact-source CI.
+    needs: [identity, rust, wheels]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:

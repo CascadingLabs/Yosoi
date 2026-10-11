@@ -54,8 +54,10 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    builds its wheels, tests installed wheels outside the source tree, builds
    and tests native Rust artifacts, and generates matching public docs and
    compiler-backed API reference. Matrix completeness is a hard gate.
-   It also requires successful main Rust and Python CI for the exact tagged
-   source commit, awaiting existing runs when needed. Tags do not launch a
+   After the native and wheel builds finish, it requires successful main Rust
+   and Python CI for the exact tagged source commit, awaiting existing runs
+   when needed. This avoids querying before GitHub indexes an immediate merge
+   followed by a tag push. Tags do not launch a
    second identical CI suite; a newer failed run cannot reuse an older success.
 4. Final releases check registry prerequisites before any upload. Crates publish
    in dependency order while verified Python distributions publish independently
