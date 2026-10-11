@@ -75,6 +75,27 @@ def _settings() -> ys.SessionPolicy:
     raise ValueError("invalid browser mode")
 
 
+def _javascript_settings() -> ys.SessionPolicy:
+    base = _settings()
+    return base.model_copy(
+        update={
+            "allow_arbitrary_js": True,
+            "allowed_actions": (*base.allowed_actions, "evaluate"),
+        }
+    )
+
+
+def _select_framework(framework: str) -> Any:
+    # Explicit diagnostic selection; never silently retry a shuffled failure.
+    selected = json.dumps(framework)
+    return ys.evaluate(
+        "(() => { const grid=document.querySelector('[data-slot=\"product-grid\"]');"
+        f"const fw={selected}; grid.setAttribute('data-active-fw',fw);"
+        "for(const node of grid.querySelectorAll('[data-fw]'))"
+        "{node.hidden=node.dataset.fw!==fw;} return {selectedFramework:fw}; })()"
+    )
+
+
 def _flow(steps: list[Any]) -> ys.Flow:
     return ys.flow(steps, timeout_ms=60_000, on_failure=ys.Stop(scope="invocation"))
 
@@ -194,7 +215,7 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
                         book.title.strip() and book.price.startswith("£")
                         for book in books
                     )
-                    assert not lease.closed
+                    assert not lease.released
             assert not session.closed
         assert session.closed
 
@@ -245,14 +266,14 @@ def test_live_javascript_snapshots_permissions_and_exports(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize(
-    ("sku", "quantity", "total"),
+    ("framework", "sku", "quantity", "total"),
     [
-        ("VM-MIN-001", 2, "29.00"),
-        ("VM-MIN-003", 3, "19.50"),
+        ("react", "VM-MIN-001", 2, "29.00"),
+        ("solid", "VM-MIN-003", 3, "19.50"),
     ],
 )
 def test_live_simulated_checkout_and_failure_stop(
-    sku: str, quantity: int, total: str
+    framework: str, sku: str, quantity: int, total: str
 ) -> None:
     async def run() -> None:
         for iteration in range(_iterations()):
@@ -263,10 +284,15 @@ def test_live_simulated_checkout_and_failure_stop(
             cart = f'{ACTIVE} [data-component="eshop-cart"]'
             row = f'{cart} [data-sku="{sku}"]'
             checkout = f'{ACTIVE} [data-component="eshop-checkout"]'
-            async with ys.session(settings=_settings()) as session:
+            async with ys.session(settings=_javascript_settings()) as session:
                 async with session.work() as lease:
                     steps = [
                         ys.navigate(SHOP),
+                        ys.wait_until(
+                            ys.exists('[data-slot="product-grid"][data-active-fw]'),
+                            15_000,
+                        ),
+                        _select_framework(framework),
                         ys.wait_until(
                             ys.visible(f'{ACTIVE} article[data-sku="{sku}"]'), 15_000
                         ),
@@ -371,6 +397,6 @@ def test_live_simulated_checkout_and_failure_stop(
                         ),
                         lease,
                     )
-                    assert not lease.closed
+                    assert not lease.released
 
     asyncio.run(run())
