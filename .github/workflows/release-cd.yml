@@ -651,62 +651,12 @@ jobs:
         with:
           packages-dir: pending
 
-  installed:
-    needs: [identity, pypi]
-    # Candidate Rust publication is skipped upstream of pypi. Override the
-    # implicit success() check while requiring both direct prerequisites.
-    if: >-
-      always() && !cancelled() && needs.identity.result == 'success' && needs.pypi.result == 'success'
-    name: Published install (${{ matrix.platform }}, ${{ matrix.python }})
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      max-parallel: 10
-      matrix: ${{ fromJSON(needs.identity.outputs.wheel_tests) }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ needs.identity.outputs.source_commit }}
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        with:
-          version: '0.13.0'
-          python-version: ${{ matrix.python }}
-      - name: Resolve the managed interpreter path
-        env:
-          SELECTED_PYTHON: ${{ matrix.python }}
-        run: |
-          uv python install "$SELECTED_PYTHON"
-          release_interpreter=$(uv python find --managed-python "$SELECTED_PYTHON")
-          echo "RELEASE_PYTHON=$release_interpreter" >> "$GITHUB_ENV"
-      - name: Test a clean binary-only installation from PyPI
-        env:
-          VERSION: ${{ needs.identity.outputs.python_version }}
-          EXPECTED_PYTHON: ${{ matrix.python }}
-        run: |
-          uv venv --python "$RELEASE_PYTHON" .venv
-          uv pip install --python .venv --index-url https://pypi.org/simple --no-cache --only-binary=:all: "yosoi==$VERSION" 'pytest==9.1.1'
-          cd "$RUNNER_TEMP"
-          uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/python/tests" -q
-          uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python - <<'PY'
-          import importlib.metadata, os, sys, sysconfig
-          import yosoi._native
-          if importlib.metadata.version('yosoi') != os.environ['VERSION']:
-              raise RuntimeError('Installed PyPI version differs from the release')
-          expected_free = os.environ['EXPECTED_PYTHON'].endswith('t')
-          if bool(sysconfig.get_config_var('Py_GIL_DISABLED')) != expected_free:
-              raise RuntimeError('Installed interpreter differs from the threading matrix')
-          if expected_free and sys._is_gil_enabled():
-              raise RuntimeError('Importing the published wheel enabled the GIL')
-          PY
-
   container_publish:
-    needs: [identity, verify, installed, crates]
+    needs: [identity, verify, pypi, crates]
     if: >-
       always() && !cancelled() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
-      needs.installed.result == 'success' &&
+      needs.pypi.result == 'success' &&
       (needs.identity.outputs.candidate == 'true' || needs.crates.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -739,12 +689,12 @@ jobs:
           uv run --locked --project scripts/releases python scripts/cd/containers.py publish --directory containers --version "$VERSION" --repository ghcr.io/cascadinglabs/chromium-cdp
 
   github:
-    needs: [identity, verify, installed, container_publish]
+    needs: [identity, verify, pypi, container_publish]
     if: >-
       always() && !cancelled() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
       needs.container_publish.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
-      needs.installed.result == 'success'
+      needs.pypi.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:

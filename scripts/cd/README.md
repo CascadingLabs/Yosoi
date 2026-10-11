@@ -28,10 +28,10 @@ Numbered release candidates use Cargo version `0.MINOR.PATCH-rc.N`, tag
 Use `cargo xtask bump-version VERSION --date-released YYYY-MM-DD -y` for the
 RC, prepare and finalize its canonical preview notes, merge onto main, and
 tag that exact commit. Candidates publish the verified Python distributions to
-PyPI and run all 30 clean registry-install jobs before publishing GitHub assets,
+PyPI before publishing GitHub assets,
 Chromium images, and the matching docs bundle. Rust registry uploads run only
 for final beta tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
-registry prerequisites and clean published installs remain mandatory for it.
+registry prerequisites and successful registry uploads remain mandatory for it.
 A passing RC build alone does not clear the browser registry blocker.
 Standalone main/manual docs runs defer RC publication; only Release CD's verified
 `release-docs` bundle with explicit source and version can publish candidate docs.
@@ -59,10 +59,10 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    second identical CI suite; a newer failed run cannot reuse an older success.
 4. Final releases check registry prerequisites before any upload. Crates publish
    in dependency order while verified Python distributions publish independently
-   through PyPI Trusted Publishing. Candidates publish only to PyPI. Clean
-   binary-only installations from PyPI are tested on every platform/interpreter.
-   Final GitHub/container/docs publication also requires successful Rust
-   publication; candidates require all Python registry-install jobs. Failed or
+   through PyPI Trusted Publishing. Candidates publish only to PyPI. The 30
+   installed-artifact tests run before upload; no post-publication install
+   matrix is run against PyPI. Final GitHub/container/docs publication requires
+   successful PyPI and Rust uploads; candidates require successful PyPI upload. Failed or
    cancelled required jobs cannot finalize a release. Registry publication is
    not atomic: one registry may finish before the other fails; retries verify
    existing bytes before proceeding.
@@ -72,8 +72,7 @@ The archive retains its source payload and uses canonical ownership/timestamps.
 Hosted Linux/Windows and Intel macOS builds use two Cargo workers; Apple Silicon
 uses one. Rayon and local workstation checks remain at one worker. Independent hosted runners
 build wheel batches on five platforms and five native artifacts concurrently;
-clean published
-installation checks run up to ten at a time. Cargo caches include workspace
+installed-artifact checks run up to ten at a time. Cargo caches include workspace
 crates and separate CLI, wheel target, release identity, reference,
 and crate packaging. Pinned `sccache` caches compiler results in ordinary Rust
 CI and native release builds as well as Maturin wheel builds. Content-keyed

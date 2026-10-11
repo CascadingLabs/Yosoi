@@ -79,7 +79,7 @@ class IdentityTests(unittest.TestCase):
         sections = workflow.split(
             "      - name: Resolve the managed interpreter path\n"
         )[1:]
-        self.assertEqual(len(sections), 2)
+        self.assertEqual(len(sections), 1)
         for section in sections:
             script = textwrap.dedent(
                 section.split("\n      - ", 1)[0].split("        run: |\n", 1)[1]
@@ -197,7 +197,7 @@ fi
         for (
             candidate,
             verify,
-            installed,
+            pypi,
             event,
             publish_requested,
             github_expected,
@@ -214,7 +214,7 @@ fi
             with self.subTest(
                 candidate=candidate,
                 verify=verify,
-                installed=installed,
+                pypi=pypi,
                 event=event,
                 publish=publish_requested,
             ):
@@ -225,7 +225,7 @@ fi
                             outputs=SimpleNamespace(candidate=str(candidate).lower()),
                         ),
                         verify=SimpleNamespace(result=verify),
-                        installed=SimpleNamespace(result=installed),
+                        pypi=SimpleNamespace(result=pypi),
                         container_publish=SimpleNamespace(result="success"),
                     ),
                     github=SimpleNamespace(event_name=event),
@@ -267,7 +267,7 @@ fi
                     for gate in (
                         "identity",
                         "verify",
-                        "installed",
+                        "pypi",
                         "publication_ready",
                         "crates",
                     ):
@@ -284,7 +284,7 @@ fi
                                     for name in (
                                         "identity",
                                         "verify",
-                                        "installed",
+                                        "pypi",
                                         "publication_ready",
                                         "crates",
                                     )
@@ -318,7 +318,7 @@ fi
                                         or states["publication_ready"] == "success"
                                     ),
                                     "container_publish": common
-                                    and states["installed"] == "success"
+                                    and states["pypi"] == "success"
                                     and (candidate or states["crates"] == "success"),
                                 }
                                 for job, condition in conditions.items():
@@ -336,39 +336,13 @@ fi
                                         expected[job],
                                     )
 
-    def test_registry_install_gate_overrides_skipped_ancestors_but_requires_pypi(self):
+    def test_post_publication_install_matrix_is_removed(self):
         workflow = (
             DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
         ).read_text()
-        section = workflow.split("\n  installed:\n", 1)[1].split("    name:", 1)[0]
-        condition = " ".join(section.split("    if: >-\n", 1)[1].split())
-        self.assertIn("always()", condition)
-        self.assertIn("!cancelled()", condition)
-        for identity in ("success", "failure", "skipped", "cancelled"):
-            for pypi in ("success", "failure", "skipped", "cancelled"):
-                for cancelled in (False, True):
-                    with self.subTest(
-                        identity=identity, pypi=pypi, cancelled=cancelled
-                    ):
-                        # The Rust-only ancestors are intentionally skipped for RCs.
-                        context = dict(
-                            needs=SimpleNamespace(
-                                identity=SimpleNamespace(result=identity),
-                                pypi=SimpleNamespace(result=pypi),
-                                crates=SimpleNamespace(result="skipped"),
-                            ),
-                        )
-                        expression = (
-                            condition.replace("always()", "True")
-                            .replace("!cancelled()", str(not cancelled))
-                            .replace("&&", " and ")
-                        )
-                        self.assertEqual(
-                            eval(expression, {"__builtins__": {}}, context),
-                            not cancelled
-                            and identity == "success"
-                            and pypi == "success",
-                        )
+        self.assertNotIn("\n  installed:\n", workflow)
+        self.assertNotIn("Published install (", workflow)
+        self.assertIn("Test the installed wheel outside the source tree", workflow)
 
     def test_docs_version_guard_accepts_rc_and_rejects_invalid_versions(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
