@@ -40,9 +40,9 @@ class Book(ys.Contract):
 
 
 class Quote(ys.Contract):
-    root = ys.css(".quote")
-    text: str = ys.Field("The quotation", locator=ys.css(".text"))
-    author: str = ys.Field("The quoted author", locator=ys.css(".author"))
+    root = ys.css("body")
+    texts: list[str] = ys.Field("Rendered quotations", locator=ys.css(".quote .text"))
+    authors: list[str] = ys.Field("Quoted authors", locator=ys.css(".quote .author"))
 
 
 class Cart(ys.Contract):
@@ -110,6 +110,14 @@ def _assertion(contract: Any, name: str, predicate: Any) -> Any:
     )
 
 
+def _ten_quotes(record: Any) -> bool:
+    return (
+        len(record.texts) == len(record.authors) == 10
+        and all(text.strip() for text in record.texts)
+        and all(author.strip() for author in record.authors)
+    )
+
+
 @pytest.mark.parametrize(
     ("name", "url", "selector"),
     [
@@ -146,9 +154,7 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
                                 _assertion(
                                     Quote,
                                     "rendered-quote",
-                                    lambda quote: bool(
-                                        quote.text.strip() and quote.author.strip()
-                                    ),
+                                    _ten_quotes,
                                 ),
                                 ys.click(".next a"),
                                 ys.timed(
@@ -157,9 +163,7 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
                                 _assertion(
                                     Quote,
                                     "second-page-quote",
-                                    lambda quote: bool(
-                                        quote.text.strip() and quote.author.strip()
-                                    ),
+                                    _ten_quotes,
                                 ),
                             ]
                         ),
@@ -319,7 +323,8 @@ def test_live_simulated_checkout_and_failure_stop(
                                 ys.click(f"{checkout} div button"),
                                 ys.wait_until(
                                     ys.visible(
-                                        f'{ACTIVE} [data-component="eshop-confirm"] [data-order-id^="VM-312-"]'
+                                        f'{ACTIVE} [data-component="eshop-confirm"] '
+                                        '[data-order-id^="VM-312-"]'
                                     ),
                                     15_000,
                                 ),
