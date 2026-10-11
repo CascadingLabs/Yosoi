@@ -44,9 +44,12 @@ escape hatch. `cargo xtask file-lines` separately reports all larger Rust files,
 suggests splitting cohesive code behind a small module facade. The complete `cargo xtask check` gate
 includes both checks.
 
-Architecture tests also make two dependency boundaries executable: the retired
-`yosoi-web-capture-voidcrawl` adapter cannot return to the workspace, and the default Direct HTTP
-dependency graph cannot contain `void_crawl_core` or `chromiumoxide`.
+Architecture tests enforce the private implementation boundary and key module
+dependency directions inside `crates/yosoi/src/internal`. A normal SDK build
+without the `browser` feature must also exclude the vendored Chromiumoxide
+controller. The publish-false `yosoi-dev-support` adapter can compile internal
+modules for local benchmarks and fuzz targets; the shipped SDK does not depend
+on that adapter or expose its module tree.
 
 Declarative macros are appropriate only for repetitive syntax that ordinary functions or derives
 cannot express clearly. Procedural macros require explicit maintainer approval. Macro definitions

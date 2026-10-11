@@ -11,7 +11,7 @@ with one worker:
 
 ```sh
 install_root="$(mktemp -d)"
-CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi-cli \
+CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi --features cli --bin yosoi \
   --root "$install_root" --debug --offline --locked
 "$install_root/bin/yosoi" --version
 "$install_root/bin/yosoi" --help
@@ -21,17 +21,18 @@ For a release-profile local artifact, omit `--debug`:
 
 ```sh
 release_root="$(mktemp -d)"
-CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi-cli \
+CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi --features cli --bin yosoi \
   --root "$release_root" --offline --locked
 "$release_root/bin/yosoi" --version
 ```
 
 Omit `--offline` if the dependencies are not already cached locally.
 
-The `--debug` installation path was exercised locally on Linux x86_64 with
-CLI version 0.1.0. It wrote the binary under the isolated root and reported
-`yosoi 0.1.0`. A separate one-worker release-profile install also succeeded
-from the locked source. Its installed binary completed a localhost
+The recorded `--debug` installation used the separate CLI package at version
+0.1.0. It wrote the binary under an isolated root and reported `yosoi 0.1.0`.
+That evidence predates the 0.1.1 consolidation into the `yosoi` package and
+does not verify the current build. A separate one-worker release-profile
+install also succeeded from the locked 0.1.0 source. Its binary completed a localhost
 Request-to-Locate typed pipeline, finding source HTML with both processes
 returning zero. Hosted CI artifacts and other platforms require separate
 certification. An initial locked install warned
@@ -91,9 +92,9 @@ certification remain outstanding. The host's older Chromium 152.0.7977.82 is
 only a rollback comparison, not release browser evidence. No Chrome for Testing
 distribution is supported.
 
-The repository dependency gate passes after replacing the CLI's `directories`
+The repository dependency gate passed after replacing the CLI's `directories`
 dependency with direct platform config paths; that removed a transitive
 MPL-2.0 license rejected by project policy. The repository-wide production
-source-size gate still fails on twelve existing files outside `yosoi-cli`.
-Those failures are separate from the focused CLI package checks and must be
-resolved before claiming the complete repository release gate is green.
+source-size gate failed on twelve existing files outside the CLI package at
+that time. Those historical failures are separate from the focused CLI checks
+and do not report the current consolidated workspace gate.

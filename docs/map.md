@@ -13,10 +13,10 @@ unfinished work when a bound or cancellation stops exploration. Results
 describe what this bounded run observed; `Exhausted` does not mean that every
 URL on a site was found.
 
-The public operation lives in `yosoi`; `yosoi-map` contains URL and host
-admission, source parsers, and pure result helpers. Map uses the existing
-Requests and Documents paths. It does not start a browser, persist to Archive,
-or create a durable crawl job.
+The public operation lives in `yosoi`; URL and host admission, source parsers,
+and pure result helpers remain private under `crates/yosoi/src/internal/map`.
+Map uses the existing Requests and Documents paths. It does not start a browser,
+persist to Archive, or create a durable crawl job.
 
 ## Use the public operation
 
@@ -108,7 +108,7 @@ That response is evidence of an HTTP observation, not a content or service
 quality check.
 
 The PSL snapshot is vendored at
-[`crates/yosoi-map/data/public_suffix_list.dat`](../crates/yosoi-map/data/public_suffix_list.dat).
+[`crates/yosoi/src/internal/map/data/public_suffix_list.dat`](../crates/yosoi/src/internal/map/data/public_suffix_list.dat).
 It includes ICANN and PRIVATE sections and records upstream VERSION
 `2026-10-01_23-02-52_UTC`, commit
 `6cd82aff889e3d64e5e03bc5c1f43da1934a960a`, and SHA-256

@@ -6,14 +6,14 @@ pub use crate::contracts::{
     ExtractionDiagnostic, FieldId, FieldSchema, RecordIssue, RecordScope, ValidatedRecord,
 };
 pub use crate::documents::{Document, DocumentId};
-pub use crate::locators::{LocateOutcome, PinnedLocator, PinnedOutputLocator, Plan, RegionLineage};
-pub use yosoi_engine::{
+pub use crate::internal::engine::{
     ArchivedContract, ExtractorOutput, FieldIssueDraft, ValidationBudget, ValidationLimits,
     compile_contract_plan, extract_contract, extract_contract_with_limit, read_many, read_optional,
     read_required,
 };
+pub use crate::locators::{LocateOutcome, PinnedLocator, PinnedOutputLocator, Plan, RegionLineage};
 pub mod __private {
-    pub use yosoi_engine::__private::{
+    pub use crate::internal::engine::__private::{
         PortableCandidateField, PortableContractDecodeError, PortableContractField,
         PortableContractFieldShape, PortableContractScalar, PortableValidatedContractRecord,
     };

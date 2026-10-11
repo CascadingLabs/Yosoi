@@ -1,8 +1,8 @@
 //! Find candidate URLs and inspect each provider's bounded, typed outcome.
 
+use crate::internal::engine::search as implementation;
 use crate::policy::Policy;
 use crate::request::CancellationToken;
-use yosoi_engine::search as implementation;
 
 pub use implementation::{
     FeatureCoverage, ImageResult, LocalPlace, ProviderCharge, ProviderIdentity, ProviderOutcome,

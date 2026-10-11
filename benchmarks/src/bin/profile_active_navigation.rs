@@ -13,11 +13,11 @@ use std::{
 use anyhow::{Context, Result, bail};
 use futures_util::future::join_all;
 use serde::Serialize;
-use void_crawl_core::{
-    ActiveNavigationOptions, BrowserSession, MeasuredCount, MeasurementUnavailableReason,
-    NavigationProgressAccounting, NavigationTermination, Page,
-};
 use yosoi_benchmarks::browser_support::{ArtifactSet, LoopbackFixture};
+use yosoi_dev_support::internal::browser::{
+    ActiveNavigationOptions, BrowserSession, MeasuredCount, MeasurementUnavailableReason,
+    NavigationProgressAccounting, NavigationTermination, Page, VoidCrawlError,
+};
 
 const NAVIGATION_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -320,7 +320,7 @@ async fn direct_batch(pages: &[Page], target: &str) -> Result<Vec<AttemptOutcome
     let outcomes = join_all(pages.iter().map(|page| async move {
         let started = Instant::now();
         page.navigate(target).await?;
-        Ok::<_, void_crawl_core::VoidCrawlError>(AttemptOutcome {
+        Ok::<_, VoidCrawlError>(AttemptOutcome {
             elapsed_micros: started.elapsed().as_micros(),
             terminal: "navigation_completed",
             loss_accounting: LossAccountingRecord::NotObserved,

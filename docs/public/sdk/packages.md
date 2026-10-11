@@ -6,9 +6,10 @@ order: 1
 
 # Packages and capabilities
 
-Yosoi has one public Rust SDK, a Python package, and a CLI. The Rust SDK owns
-processing and domain validation. Python uses Pydantic for authoring and
-inspecting values, then delegates operations to the same Rust SDK. Python
+Yosoi has one public Rust SDK package, a Python package, and an optional CLI
+binary. The Rust SDK owns processing and domain validation. Python uses
+Pydantic for authoring and inspecting values, then delegates operations to the
+same Rust SDK. Python
 Contracts are now bound to Rust; item-level parity is tracked separately, and
 the package does not claim complete verified parity.
 
@@ -16,11 +17,11 @@ the package does not claim complete verified parity.
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | `yosoi`            | Integrating Yosoi into a Rust application                                                |
 | `yosoi` for Python | Integrating documents, locators, Contracts, Policy, Requests, Map, or Search from Python |
-| `yosoi-cli`        | Running Yosoi from a terminal or shell pipeline                                          |
+| `yosoi` with `cli` | Running Yosoi from a terminal or shell pipeline                                          |
 
-The CLI and Python bindings consume the public Rust SDK. Implementation crates
-divide ownership of documents, policy, contracts, acquisition, and discovery.
-Applications do not need to import those crates to use the SDK. The
+The CLI and Python bindings use the Rust SDK package. Its private modules own
+documents, policy, contracts, acquisition, and discovery; applications do not
+need to import implementation modules to use the SDK. The
 [Python Contracts guide](../python/contracts.md) covers the supported
 Pydantic annotations and Rust outcome model. The
 [machine-readable parity report](../python/parity.md) distinguishes a

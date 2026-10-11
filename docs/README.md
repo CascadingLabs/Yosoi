@@ -8,8 +8,9 @@ revisions, not the current checkout.
 ## Yosoi Map
 
 The public bounded discovery API, scopes, sources, limits, and persisted Policy
-compatibility boundary are documented in [Yosoi Map](map.md). The pure shared
-admission/parser helpers are described in [`yosoi-map`](../crates/yosoi-map/README.md).
+compatibility boundary are documented in [Yosoi Map](map.md). The private
+admission and parser implementation lives under
+[`crates/yosoi/src/internal/map`](../crates/yosoi/src/internal/map/mod.rs).
 
 ## Yosoi Search
 

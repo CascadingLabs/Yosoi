@@ -1,6 +1,6 @@
 //! Describe named outputs and inspect the evidence found in a document.
 
-pub use yosoi_documents::{
+pub use crate::internal::documents::{
     AccessibilityCoordinate, AccessibilityStateName, ByteRange, Completeness, CoordinateError,
     DecodedTextCoordinate, DomCoordinate, DomNodeId, ExpandedNamePathSegment, Finding,
     IncompleteEvidence, JsonCoordinate, JsonQuerySyntaxError, LocateFailure, LocateOutcome,
@@ -13,5 +13,5 @@ pub use yosoi_documents::{
 
 /// Constructors for static locators attached to Contract fields and roots.
 pub mod locator {
-    pub use yosoi_documents::locator::{css, text_literal};
+    pub use crate::internal::documents::locator::{css, text_literal};
 }

@@ -2,11 +2,11 @@ use crate::capture_stages_support::*;
 use criterion::{BenchmarkId, Criterion, Throughput};
 use std::{collections::BTreeMap, hint::black_box};
 use tokio_util::sync::CancellationToken;
-use yosoi_types::{
+use yosoi_dev_support::internal::direct_http::*;
+use yosoi_dev_support::internal::types::{
     ActivityId, ArtifactAvailability, ArtifactId, ArtifactRecord, ArtifactRef, Producer,
     ProducerId, ProducerVersion, Provenance,
 };
-use yosoi_web_capture_direct_http::*;
 
 fn identities(
     body: &RetainedSource,
@@ -31,7 +31,7 @@ fn identities(
         ArtifactAvailability::Truncated
     };
     let reason = (availability == ArtifactAvailability::Truncated).then(|| {
-        yosoi_types::ReasonCode::new("benchmark.source-truncated")
+        yosoi_dev_support::internal::types::ReasonCode::new("benchmark.source-truncated")
             .unwrap_or_else(|e| panic!("reason: {e}"))
     });
     let producer = Producer::new(
@@ -39,10 +39,13 @@ fn identities(
             .unwrap_or_else(|e| panic!("producer: {e}")),
         ProducerVersion::new("1.0.0").unwrap_or_else(|e| panic!("version: {e}")),
     );
-    let schema = yosoi_types::Schema::new(
-        yosoi_types::SchemaId::new("com.cascadinglabs.yosoi.benchmark.source")
-            .unwrap_or_else(|e| panic!("schema: {e}")),
-        yosoi_types::SchemaVersion::try_from(1).unwrap_or_else(|e| panic!("schema version: {e}")),
+    let schema = yosoi_dev_support::internal::types::Schema::new(
+        yosoi_dev_support::internal::types::SchemaId::new(
+            "com.cascadinglabs.yosoi.benchmark.source",
+        )
+        .unwrap_or_else(|e| panic!("schema: {e}")),
+        yosoi_dev_support::internal::types::SchemaVersion::try_from(1)
+            .unwrap_or_else(|e| panic!("schema version: {e}")),
     );
     let provenance = Provenance::new(
         activity,

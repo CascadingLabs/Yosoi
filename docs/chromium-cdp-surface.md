@@ -8,12 +8,14 @@ every definition generated into `chromiumoxide_cdp`.
 
 ## Scope and status vocabulary
 
-The inventory includes commands constructed by `void_crawl_core`, commands
-issued automatically by the vendored Chromiumoxide controller on a VoidCrawl
-path, and events explicitly consumed or subscribed by either layer. A
-conditional path still counts: for example, authentication, full-CDP mode,
-screenshots, downloads, and recording are part of the surface even when a
-particular capture does not use them.
+Since the 0.1.1 runtime consolidation, the controller integration is a private
+module at `crates/yosoi/src/internal/browser`; `yosoi-browser-core` remains its
+historical component identity. The inventory includes commands constructed by
+that module, commands issued automatically by the vendored Chromiumoxide
+controller on a VoidCrawl path, and events explicitly consumed or subscribed
+by either layer. A conditional path still counts: for example, authentication,
+full-CDP mode, screenshots, downloads, and recording are part of the surface
+even when a particular capture does not use them.
 
 It excludes Chromiumoxide convenience methods that have no VoidCrawl caller.
 Those references are listed separately so they cannot be mistaken for browser

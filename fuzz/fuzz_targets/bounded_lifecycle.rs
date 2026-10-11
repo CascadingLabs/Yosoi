@@ -2,10 +2,10 @@
 
 use chrono::{DateTime, Utc};
 use libfuzzer_sys::fuzz_target;
-use yosoi_types::CaptureId;
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::types::{CaptureDeadline, CaptureId};
+use yosoi_dev_support::internal::web_capture::{
     BoundedAcquisitionLifecycle, ByteCount, ByteLimit, CaptureOffset, LifecycleEvent,
-    MaximumElapsed, ObservationLimits, ObservationPolicy, SettlementPolicy,
+    ObservationLimits, ObservationPolicy, SettlementPolicy,
 };
 
 fuzz_target!(|data: &[u8]| {
@@ -16,9 +16,9 @@ fuzz_target!(|data: &[u8]| {
         .unwrap_or_else(|| panic!("fixed timestamp is invalid"));
     let policy = ObservationPolicy::new(
         ObservationLimits::new(
-            MaximumElapsed::try_from(1_000).unwrap_or_else(|error| panic!("limit: {error}")),
+            CaptureDeadline::try_from(1_000).unwrap_or_else(|error| panic!("limit: {error}")),
             None,
-            Some(ByteLimit::try_from(4_096).unwrap_or_else(|error| panic!("limit: {error}"))),
+            Some(ByteLimit::try_from(4_096_u64).unwrap_or_else(|error| panic!("limit: {error}"))),
         ),
         SettlementPolicy::Disabled,
     );

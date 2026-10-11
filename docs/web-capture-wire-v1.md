@@ -42,10 +42,10 @@ The versioned document envelope is:
 
 The complete review fixtures are authoritative examples:
 
-- `crates/yosoi-web-capture/tests/fixtures/web-capture/minimal-v1.json`
-- `crates/yosoi-web-capture/tests/fixtures/web-capture/complete-v1.json`
-- `crates/yosoi-web-capture/tests/fixtures/web-capture/partial-v1.json`
-- `crates/yosoi-web-capture/tests/fixtures/web-capture/invalid-v1.json`
+- `crates/yosoi/src/internal/web_capture/integration_tests/fixtures/web-capture/minimal-v1.json`
+- `crates/yosoi/src/internal/web_capture/integration_tests/fixtures/web-capture/complete-v1.json`
+- `crates/yosoi/src/internal/web_capture/integration_tests/fixtures/web-capture/partial-v1.json`
+- `crates/yosoi/src/internal/web_capture/integration_tests/fixtures/web-capture/invalid-v1.json`
 
 Together with the closed Rust types and their `deny_unknown_fields` wire
 projections, these fixtures are the v1 reviewable schema artifact. Payload

@@ -1,8 +1,12 @@
 //! Describe typed records and inspect extraction and validation outcomes.
 
+use crate::internal::contract_validation as yosoi_contract_validation;
+use crate::internal::documents as yosoi_documents;
+use crate::internal::engine as yosoi_engine;
+
 use serde::Serialize;
 
-pub use yosoi_engine::{
+pub use crate::internal::engine::{
     CandidateField, CandidateInput, CandidateView, Cardinality, Contract, ContractId,
     ContractIdentity, ContractLocatorError, ContractOutcome, ContractSchema, ContractSchemaError,
     ContractValue, Currency, Extracted, ExtractionDiagnostic, ExtractionFailure, ExtractionLimit,
@@ -10,12 +14,12 @@ pub use yosoi_engine::{
     RecordScope, ValidatedRecord, ValidationCode, ValidationFailure, ValidationLimits,
 };
 
-pub use yosoi_contract_validation::archived::ContractOutcome as ArchivedContractOutcome;
-pub use yosoi_contract_validation::{
+pub use crate::internal::contract_validation::archived::ContractOutcome as ArchivedContractOutcome;
+pub use crate::internal::contract_validation::{
     RuntimeContractArchiveError, RuntimeContractError, RuntimeContractOutcome, RuntimeExtracted,
     RuntimeFieldValue, RuntimeRecordIssue, RuntimeValidatedRecord, RuntimeValue,
 };
-pub use yosoi_contracts::RuntimeCandidate;
+pub use crate::internal::contracts::RuntimeCandidate;
 
 /// Runtime-authored Contract adapter with the same default Policy-derived
 /// extraction limits as a derive-backed Contract.

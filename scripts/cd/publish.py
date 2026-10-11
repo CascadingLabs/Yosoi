@@ -3,17 +3,89 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import io
 import os
 import subprocess
 import sys
+import tarfile
 import tempfile
-from pathlib import Path
+import urllib.request
+from pathlib import Path, PurePosixPath
 
 from release import json_url, package_version, plan, registry_manifests, sha256
 
 
 def run(*args: str) -> None:
     subprocess.run(args, check=True)
+
+
+def download_registry_crate(name: str, version: str) -> bytes:
+    url = f"https://static.crates.io/crates/{name}/{name}-{version}.crate"
+    request = urllib.request.Request(url, headers={"User-Agent": "Yosoi-release-CD"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read()
+
+
+def crate_archive_contents(archive_bytes: bytes) -> dict[str, tuple[str, bytes | str]]:
+    contents = {}
+    try:
+        with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as archive:
+            for member in archive.getmembers():
+                path = PurePosixPath(member.name)
+                if path.is_absolute() or ".." in path.parts:
+                    raise ValueError(f"unsafe path in crate archive: {member.name}")
+                if len(path.parts) == 2 and path.name == ".cargo_vcs_info.json":
+                    continue
+                name = path.as_posix()
+                if name in contents:
+                    raise ValueError(f"duplicate path in crate archive: {name}")
+                if member.isfile():
+                    stream = archive.extractfile(member)
+                    if stream is None:
+                        raise ValueError(
+                            f"missing file contents in crate archive: {name}"
+                        )
+                    with stream:
+                        contents[name] = ("file", stream.read())
+                elif member.isdir():
+                    contents[name] = ("directory", "")
+                elif member.issym():
+                    contents[name] = ("symlink", member.linkname)
+                elif member.islnk():
+                    contents[name] = ("hardlink", member.linkname)
+                else:
+                    raise ValueError(f"unsupported entry in crate archive: {name}")
+    except (OSError, tarfile.TarError, EOFError) as error:
+        raise ValueError(f"invalid crate archive: {error}") from error
+    return contents
+
+
+def verify_existing_crate(
+    name: str, version: str, local_archive: Path, registry_version: dict
+) -> str:
+    checksum = registry_version.get("checksum")
+    if (
+        not isinstance(checksum, str)
+        or len(checksum) != 64
+        or any(character not in "0123456789abcdef" for character in checksum.lower())
+    ):
+        raise ValueError(f"crates.io omitted the checksum for {name} {version}")
+    checksum = checksum.lower()
+    local_bytes = local_archive.read_bytes()
+    if hashlib.sha256(local_bytes).hexdigest() == checksum:
+        return checksum
+
+    published_bytes = download_registry_crate(name, version)
+    published_checksum = hashlib.sha256(published_bytes).hexdigest()
+    if published_checksum != checksum:
+        raise ValueError(f"crates.io archive checksum mismatch for {name} {version}")
+    if crate_archive_contents(local_bytes) != crate_archive_contents(published_bytes):
+        raise ValueError(
+            f"{name} {version} source contents differ from its published crate; "
+            "use a new version"
+        )
+    return published_checksum
 
 
 def publish_crates(tag: str) -> None:
@@ -43,13 +115,11 @@ def publish_crates(tag: str) -> None:
         file = target / "package" / f"{name}-{version}.crate"
         previous = json_url(f"https://crates.io/api/v1/crates/{name}/{version}")
         if previous:
-            if previous["version"]["checksum"] != sha256(file):
-                raise ValueError(
-                    f"{name} already has different release bytes; use a new version"
-                )
-            if previous["version"].get("yanked"):
+            registry_version = previous.get("version", {})
+            if registry_version.get("yanked"):
                 raise ValueError(f"{name} release is yanked")
-            print(f"Verified existing {file.name}")
+            checksum = verify_existing_crate(name, version, file, registry_version)
+            print(f"Verified existing {file.name} sha256={checksum}")
         else:
             run(
                 "cargo",
@@ -63,6 +133,7 @@ def publish_crates(tag: str) -> None:
             published = json_url(f"https://crates.io/api/v1/crates/{name}/{version}")
             if not published or published["version"]["checksum"] != sha256(file):
                 raise ValueError(f"Registry did not confirm {file.name}")
+            print(f"Published {file.name} sha256={published['version']['checksum']}")
 
 
 def publish_github(tag: str, directory: Path, finalize: bool) -> None:

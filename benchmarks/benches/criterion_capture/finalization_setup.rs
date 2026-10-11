@@ -1,9 +1,9 @@
 use crate::capture_stages_support::{schema, started_at};
-use yosoi_types::{
+use yosoi_dev_support::internal::direct_http::*;
+use yosoi_dev_support::internal::types::{
     ArtifactAvailability, ArtifactId, ArtifactRecord, CaptureId, Producer, ProducerId,
     ProducerVersion, Provenance, ReasonCode, Sha256Digest,
 };
-use yosoi_web_capture_direct_http::*;
 
 const TARGET: &str = "https://benchmark.invalid/source";
 const TERMINAL_MICROS: u64 = 1_000_000;
@@ -101,11 +101,11 @@ fn metadata(
     capture_id: CaptureId,
     artifact_id: u32,
     payload: &[u8],
-    schema_value: yosoi_types::Schema,
+    schema_value: yosoi_dev_support::internal::types::Schema,
     availability: ArtifactAvailability,
     reason: Option<ReasonCode>,
     extent: ArtifactByteExtent,
-    derived_from: Vec<yosoi_types::ArtifactRef>,
+    derived_from: Vec<yosoi_dev_support::internal::types::ArtifactRef>,
     media_type: &str,
 ) -> WebArtifactMetadata {
     let provenance = Provenance::new(

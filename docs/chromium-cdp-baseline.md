@@ -41,7 +41,7 @@ of them the "CDP version."
 
 | Layer | Current repository/runtime identity | What it controls |
 | --- | --- | --- |
-| VoidCrawl controller integration | `void_crawl_core` in this repository | Yosoi-facing browser primitives, bounds, cleanup, and effective instrumentation policy |
+| VoidCrawl controller integration | Private module `crates/yosoi/src/internal/browser` | Yosoi-facing browser primitives, bounds, cleanup, and effective instrumentation policy; the controller component identity remains `yosoi-browser-core` |
 | Chromiumoxide controller | vendored `chromiumoxide` 0.9.1, based on upstream commit `a7e2bb835b9643410f9e3dc044f0d947e96cbfa4` | CDP transport, target/session routing, page lifecycle, and event delivery |
 | Generated CDP bindings | vendored `chromiumoxide_cdp` `0.10.0-yosoi.m153.1`, generated from Chrome 153.0.8010.36 at schema revision `r1681091` | The Rust command, event, enum, and payload shapes known at compile time; the local 0.10 version records the intentional M145-to-M153 public schema break |
 | Chromium executable | certified regular Google Chrome Stable 153.0.8010.36; Chromium 152.0.7977.82 is the rollback comparison | The browser engine, security fixes, renderer behavior, web platform, and externally visible browser fingerprint |

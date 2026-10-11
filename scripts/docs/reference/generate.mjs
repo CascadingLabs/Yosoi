@@ -255,7 +255,10 @@ export function generateReference(options) {
 			if (options.offline) args.push('--offline');
 			if (packageName === sdk.name) {
 				if (features.length) args.push('--features', features.join(','));
-				args.push('--', '-Z', 'unstable-options', '--output-format', 'json');
+				// Public conversions may accept types defined in private modules.
+				// Include their compiler records; buildReference still walks only
+				// the public facade and filters hidden/private declarations.
+				args.push('--', '-Z', 'unstable-options', '--output-format', 'json', '--document-private-items');
 				run('cargo', args, checkout, { CARGO_TARGET_DIR: targetDir });
 			} else if (procMacros.has(crate)) {
 				const macroPackage = metadata.packages.find((pkg) => pkg.name === packageName && pkg.targets.some((item) => item.name === crate && item.kind.includes('proc-macro')));

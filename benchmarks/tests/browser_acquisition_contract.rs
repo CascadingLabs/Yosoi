@@ -2,12 +2,12 @@
 
 #![allow(clippy::panic, reason = "characterization fixtures fail loudly")]
 
-use yosoi_types::ReasonCode;
-use yosoi_web_capture::{
-    AcquiredPayloadOutcome, ArtifactStagingOutcome, BrowserArtifactMapping, BrowserByteLayer,
-    BrowserProviderStop, BrowserStagingFamily, BrowserTerminalCandidate, BrowserTerminalKind,
-    BrowserTerminalSignal, ByteCount, CaptureDeadline, CaptureOffset, LossExtent, MeasuredCount,
-    StagingState, WebArtifactFamily, resolve_browser_terminal,
+use yosoi_dev_support::internal::types::ReasonCode;
+use yosoi_dev_support::internal::web_capture::{
+    AcquiredPayloadOutcome, ArtifactStagingOutcome, BrowserArtifactMapping, BrowserByteDomain,
+    BrowserByteLayer, BrowserProviderStop, BrowserStagingFamily, BrowserTerminalCandidate,
+    BrowserTerminalKind, BrowserTerminalSignal, ByteCount, CaptureDeadline, CaptureOffset,
+    LossExtent, MeasuredCount, StagingState, WebArtifactFamily, resolve_browser_terminal,
 };
 
 fn reason(name: &'static str) -> ReasonCode {
@@ -106,7 +106,7 @@ fn simultaneous_browser_terminal_precedence_is_closed_and_stable() {
         },
         BrowserTerminalSignal::EventLimitReached,
         BrowserTerminalSignal::ByteLimitReached {
-            domain: yosoi_web_capture::BrowserByteDomain::CdpDecodedBody,
+            domain: BrowserByteDomain::CdpDecodedBody,
         },
         BrowserTerminalSignal::QuietSettled,
         BrowserTerminalSignal::ControllerCompleted,
@@ -126,7 +126,7 @@ fn simultaneous_browser_terminal_precedence_is_closed_and_stable() {
         },
         BrowserTerminalKind::EventLimitReached,
         BrowserTerminalKind::ByteLimitReached {
-            domain: yosoi_web_capture::BrowserByteDomain::CdpDecodedBody,
+            domain: BrowserByteDomain::CdpDecodedBody,
         },
         BrowserTerminalKind::QuietSettled,
         BrowserTerminalKind::ControllerCompleted,

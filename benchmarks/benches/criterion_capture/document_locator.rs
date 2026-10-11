@@ -1,6 +1,6 @@
 use criterion::{Criterion, Throughput};
 use std::{fs, hint::black_box, path::PathBuf};
-use yosoi_documents::{
+use yosoi_dev_support::internal::documents::{
     Document, DocumentProfile, EvaluationLimits, evaluate_json, json_path, json_pointer,
     json_value, parse_json_document, plan,
 };

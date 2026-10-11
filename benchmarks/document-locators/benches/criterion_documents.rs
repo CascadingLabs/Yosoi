@@ -11,7 +11,7 @@
 use std::{env, fs, hint::black_box, path::PathBuf};
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use yosoi_documents::{Document, Plan, ResourceBudget, output, regex};
+use yosoi_dev_support::internal::documents::{Document, Plan, ResourceBudget, output, regex};
 
 const ADVANCED_FIXTURE_DIR: &str = "YOSOI_DOCUMENT_LOCATOR_ADVANCED_DIR";
 const ADVANCED_TEXT_RELATIVE_PATH: &str = "derived/whatwg-html-standard.txt";

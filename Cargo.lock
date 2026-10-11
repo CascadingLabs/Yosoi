@@ -3500,7 +3500,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3537,41 +3537,58 @@ dependencies = [
 
 [[package]]
 name = "yosoi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "serde",
- "serde_json",
- "tokio",
- "yosoi-contract-validation",
- "yosoi-contracts",
- "yosoi-documents",
- "yosoi-engine",
- "yosoi-policy",
-]
-
-[[package]]
-name = "yosoi-archive"
-version = "0.1.0"
-dependencies = [
+ "anstream",
+ "anyhow",
+ "async-compression",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "encoding_rs",
+ "flate2",
+ "futures",
+ "futures-util",
+ "globset",
+ "html5ever",
+ "image",
+ "infer",
  "libc",
+ "markup5ever_rcdom",
+ "memchr",
+ "notify",
+ "proptest",
+ "publicsuffix",
+ "rayon",
+ "regex",
+ "reqwest",
+ "roxmltree",
  "rustix",
+ "rustls",
+ "schemars",
  "serde",
  "serde_json",
+ "sha2",
+ "simdutf8",
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-rustls",
+ "tokio-util",
+ "toml",
+ "unicode-width",
+ "url",
  "uuid",
- "yosoi-contract-validation",
- "yosoi-contracts",
- "yosoi-documents",
- "yosoi-policy",
- "yosoi-types",
- "yosoi-web-capture",
+ "wreq",
+ "yosoi-chromiumoxide",
+ "yosoi-contracts-derive",
 ]
 
 [[package]]
 name = "yosoi-benchmarks"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3588,36 +3605,7 @@ dependencies = [
  "tokio-util",
  "url",
  "wreq",
- "yosoi-browser-core",
- "yosoi-documents",
- "yosoi-types",
- "yosoi-web-capture",
- "yosoi-web-capture-direct-http",
-]
-
-[[package]]
-name = "yosoi-browser-core"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "flate2",
- "futures",
- "globset",
- "image",
- "infer",
- "memchr",
- "notify",
- "reqwest",
- "rustls",
- "schemars",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "uuid",
- "yosoi-chromiumoxide",
- "yosoi-types",
+ "yosoi-dev-support",
 ]
 
 [[package]]
@@ -3655,52 +3643,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "yosoi-cli"
-version = "0.1.0"
-dependencies = [
- "anstream",
- "anyhow",
- "clap",
- "clap_complete",
- "rustix",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "toml",
- "unicode-width",
- "yosoi",
-]
-
-[[package]]
-name = "yosoi-contract-validation"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "toml",
- "yosoi-contracts",
- "yosoi-documents",
- "yosoi-extractor",
-]
-
-[[package]]
-name = "yosoi-contracts"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sha2",
- "thiserror",
- "toml",
- "yosoi-documents",
-]
-
-[[package]]
 name = "yosoi-contracts-derive"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3710,106 +3654,73 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-renamed-dependency-fixture"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "yosoi",
 ]
 
 [[package]]
-name = "yosoi-document-locator-benchmarks"
-version = "0.1.0"
+name = "yosoi-dev-support"
+version = "0.1.1"
 dependencies = [
- "criterion",
- "divan",
- "serde_json",
- "yosoi-documents",
-]
-
-[[package]]
-name = "yosoi-documents"
-version = "0.1.0"
-dependencies = [
+ "anstream",
+ "anyhow",
+ "async-compression",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "encoding_rs",
+ "flate2",
+ "futures",
+ "futures-util",
+ "globset",
  "html5ever",
+ "image",
+ "infer",
+ "libc",
+ "markup5ever_rcdom",
  "memchr",
+ "notify",
+ "publicsuffix",
  "rayon",
  "regex",
+ "reqwest",
  "roxmltree",
+ "rustix",
+ "rustls",
+ "schemars",
  "serde",
  "serde_json",
  "sha2",
  "simdutf8",
- "thiserror",
-]
-
-[[package]]
-name = "yosoi-engine"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "chrono",
- "html5ever",
- "markup5ever_rcdom",
- "serde",
- "serde_json",
- "sha2",
  "tempfile",
  "thiserror",
  "tokio",
- "tokio-rustls",
  "tokio-util",
+ "unicode-width",
  "url",
- "yosoi-archive",
- "yosoi-contract-validation",
- "yosoi-contracts",
+ "uuid",
+ "wreq",
+ "yosoi",
+ "yosoi-chromiumoxide",
  "yosoi-contracts-derive",
- "yosoi-documents",
- "yosoi-extractor",
- "yosoi-map",
- "yosoi-policy",
- "yosoi-types",
- "yosoi-web-capture",
- "yosoi-web-capture-direct-http",
 ]
 
 [[package]]
-name = "yosoi-extractor"
-version = "0.1.0"
+name = "yosoi-document-locator-benchmarks"
+version = "0.1.1"
 dependencies = [
- "serde",
- "thiserror",
- "toml",
- "yosoi-contracts",
- "yosoi-documents",
-]
-
-[[package]]
-name = "yosoi-map"
-version = "0.1.0"
-dependencies = [
- "flate2",
- "publicsuffix",
- "roxmltree",
- "serde",
+ "criterion",
+ "divan",
  "serde_json",
- "thiserror",
- "url",
- "yosoi-policy",
-]
-
-[[package]]
-name = "yosoi-policy"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sha2",
- "thiserror",
- "yosoi-types",
+ "yosoi-dev-support",
 ]
 
 [[package]]
 name = "yosoi-python"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "pyo3",
  "pyo3-async-runtimes",
@@ -3817,60 +3728,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "yosoi",
-]
-
-[[package]]
-name = "yosoi-types"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "proptest",
- "serde",
- "serde_json",
- "sha2",
- "thiserror",
- "uuid",
-]
-
-[[package]]
-name = "yosoi-web-capture"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "encoding_rs",
- "proptest",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util",
- "url",
- "yosoi-browser-core",
- "yosoi-types",
-]
-
-[[package]]
-name = "yosoi-web-capture-direct-http"
-version = "0.1.0"
-dependencies = [
- "async-compression",
- "bytes",
- "chrono",
- "futures-util",
- "proptest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-rustls",
- "tokio-util",
- "url",
- "wreq",
- "yosoi-types",
- "yosoi-web-capture",
 ]
 
 [[package]]

@@ -3,7 +3,7 @@ use criterion::{BenchmarkId, Criterion, Throughput};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, hint::black_box, time::Duration};
 use tokio_util::sync::CancellationToken;
-use yosoi_web_capture_direct_http::*;
+use yosoi_dev_support::internal::direct_http::*;
 
 pub fn raw_full_and_redirects(c: &mut Criterion) {
     let direct_fixture = fixture("medium-html");

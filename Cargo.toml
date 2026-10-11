@@ -1,38 +1,30 @@
 [workspace]
 members = [
     "benchmarks",
+    "benchmarks/support",
     "benchmarks/document-locators",
-    "crates/voidcrawl",
-    "crates/yosoi-engine",
     "crates/yosoi",
     "crates/yosoi-python",
-    "crates/yosoi-archive",
-    "crates/yosoi-cli",
-    "crates/yosoi-contracts",
     "crates/yosoi-contracts-derive",
     "crates/yosoi-contracts-derive/tests/renamed-dependency",
-    "crates/yosoi-contract-validation",
-    "crates/yosoi-documents",
-    "crates/yosoi-extractor",
-    "crates/yosoi-map",
-    "crates/yosoi-policy",
-    "crates/yosoi-types",
-    "crates/yosoi-web-capture",
-    "crates/yosoi-web-capture-direct-http",
     "vendor/chromiumoxide_cdp",
     "xtask",
 ]
 resolver = "2"
 exclude = ["vendor/chromiumoxide"]
 
+[workspace.metadata.yosoi-release]
+independent-version-packages = ["yosoi-contracts-derive"]
+
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"
 # Also supplies Clippy's MSRV; rust-toolchain.toml pins the development compiler.
 rust-version = "1.99"
-version = "0.1.0"
+version = "0.1.1"
 
 [workspace.dependencies]
+yosoi-dev-support = { version = "=0.1.1", path = "benchmarks/support" }
 anyhow = "1"
 async-compression = { version = "0.4", default-features = false, features = ["tokio", "gzip", "brotli", "zlib"] }
 bytes = "1"
@@ -60,20 +52,8 @@ tokio-rustls = { version = "=0.26.4", default-features = false, features = ["rin
 url = { version = "2.5.8", default-features = false, features = ["std"] }
 wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
-void_crawl_core = { package = "yosoi-browser-core", version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
-yosoi = { version = "=0.1.0", path = "crates/yosoi" }
-yosoi-engine = { version = "=0.1.0", path = "crates/yosoi-engine" }
-yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
-yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }
-yosoi-contract-validation = { version = "=0.1.0", path = "crates/yosoi-contract-validation" }
-yosoi-archive = { version = "=0.1.0", path = "crates/yosoi-archive" }
-yosoi-documents = { version = "=0.1.0", path = "crates/yosoi-documents" }
-yosoi-extractor = { version = "=0.1.0", path = "crates/yosoi-extractor" }
-yosoi-map = { version = "=0.1.0", path = "crates/yosoi-map" }
-yosoi-policy = { version = "=0.1.0", path = "crates/yosoi-policy" }
-yosoi-types = { version = "=0.1.0", path = "crates/yosoi-types" }
-yosoi-web-capture = { version = "=0.1.0", path = "crates/yosoi-web-capture", default-features = false }
-yosoi-web-capture-direct-http = { version = "=0.1.0", path = "crates/yosoi-web-capture-direct-http", default-features = false }
+yosoi = { version = "=0.1.1", path = "crates/yosoi" }
+yosoi-contracts-derive = { version = "=0.1.1", path = "crates/yosoi-contracts-derive" }
 
 base64 = "0.22"
 chromiumoxide = { package = "yosoi-chromiumoxide", version = "=0.9.1-yosoi.1", path = "vendor/chromiumoxide", default-features = false }

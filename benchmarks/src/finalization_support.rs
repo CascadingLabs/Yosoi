@@ -1,11 +1,11 @@
 //! Synthetic provider-neutral finalization inputs used by tests and benchmarks.
 
 use chrono::{DateTime, TimeDelta, Utc};
-use yosoi_types::{
+use yosoi_dev_support::internal::types::{
     ArtifactAvailability, ArtifactId, ArtifactRecord, CaptureId, Producer, ProducerId,
     ProducerVersion, Provenance, ReasonCode, Sha256Digest,
 };
-use yosoi_web_capture::*;
+use yosoi_dev_support::internal::web_capture::*;
 
 const TARGET: &str = "https://finalization.invalid/source";
 const TERMINAL_MICROS: u64 = 1_000;

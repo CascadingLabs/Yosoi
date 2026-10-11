@@ -18,11 +18,11 @@ use tokio::{
     time::{Instant as TokioInstant, timeout_at},
 };
 use tokio_util::sync::CancellationToken;
-use yosoi_types::{
+use yosoi_dev_support::internal::types::{
     CaptureId, OperationId, Producer, ProducerId, ProducerVersion, ReasonCode, Schema, SchemaId,
     SchemaVersion,
 };
-use yosoi_web_capture::*;
+use yosoi_dev_support::internal::web_capture::*;
 
 const MINIMAL_FIXTURE: &[u8] = include_bytes!("../fixtures/browser-capture/minimal.html");
 const FULL_FIXTURE: &[u8] = include_bytes!("../fixtures/browser-capture/full.html");
@@ -454,29 +454,34 @@ pub fn execution_limits(
     .context("construct browser execution limits")
 }
 
-pub fn warm_manager(mode: BrowserRunMode) -> Result<yosoi_web_capture::BrowserExecutionManager> {
-    Ok(yosoi_web_capture::BrowserExecutionManager::new(
-        execution_limits(
-            NonZeroU32::MIN,
-            NonZeroU32::MIN,
-            NonZeroU32::MIN,
-            NonZeroU32::MIN,
-            NonZeroU32::new(4).context("nonzero warm queue depth")?,
-            NonZeroU32::new(1_000).context("nonzero warm recycle threshold")?,
-        )?,
-        yosoi_web_capture::BrowserExecutionManagerConfig {
-            headful: mode.headful(),
-            minimal_cdp: false,
-        },
-    ))
+pub fn warm_manager(
+    mode: BrowserRunMode,
+) -> Result<yosoi_dev_support::internal::web_capture::BrowserExecutionManager> {
+    Ok(
+        yosoi_dev_support::internal::web_capture::BrowserExecutionManager::new(
+            execution_limits(
+                NonZeroU32::MIN,
+                NonZeroU32::MIN,
+                NonZeroU32::MIN,
+                NonZeroU32::MIN,
+                NonZeroU32::new(4).context("nonzero warm queue depth")?,
+                NonZeroU32::new(1_000).context("nonzero warm recycle threshold")?,
+            )?,
+            yosoi_dev_support::internal::web_capture::BrowserExecutionManagerConfig {
+                headful: mode.headful(),
+                minimal_cdp: false,
+            },
+        ),
+    )
 }
 
 pub async fn capture_to_staged_facts(
     spec: &ResolvedBrowserCaptureSpec,
 ) -> Result<CapturedBrowserAttempt> {
-    let result = yosoi_web_capture::capture_attempt(spec, &CancellationToken::new())
-        .await
-        .context("VoidCrawl loopback capture")?;
+    let result =
+        yosoi_dev_support::internal::web_capture::capture_attempt(spec, &CancellationToken::new())
+            .await
+            .context("VoidCrawl loopback capture")?;
     if !result.is_ready() {
         bail!(
             "browser benchmark capture stopped at {:?}",
@@ -491,13 +496,16 @@ pub async fn capture_to_staged_facts(
 }
 
 pub async fn capture_to_staged_facts_managed(
-    manager: &yosoi_web_capture::BrowserExecutionManager,
+    manager: &yosoi_dev_support::internal::web_capture::BrowserExecutionManager,
     spec: &ResolvedBrowserCaptureSpec,
 ) -> Result<CapturedBrowserAttempt> {
-    let result =
-        yosoi_web_capture::capture_attempt_managed(manager, spec, &CancellationToken::new())
-            .await
-            .context("managed VoidCrawl loopback capture")?;
+    let result = yosoi_dev_support::internal::web_capture::capture_attempt_managed(
+        manager,
+        spec,
+        &CancellationToken::new(),
+    )
+    .await
+    .context("managed VoidCrawl loopback capture")?;
     if !result.is_ready() || result.execution().is_none() {
         bail!("managed browser benchmark did not produce ready execution facts");
     }

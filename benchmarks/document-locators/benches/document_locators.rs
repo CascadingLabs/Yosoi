@@ -6,7 +6,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::{env, fs, hint::black_box, path::PathBuf};
-use yosoi_documents::{
+use yosoi_dev_support::internal::documents::{
     Document, DocumentEpoch, Plan, RENDERED_DOM_SCHEMA_V1, ResourceBudget, css, output,
 };
 

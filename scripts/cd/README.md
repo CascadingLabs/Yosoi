@@ -10,6 +10,9 @@ it runs formatting, lint, and synthetic artifact tests without compiling Rust.
 
 For an already verified final release blocked only by missing Rust package
 descriptions, manual `complete_verified_run` selects the existing CD run.
+This recovery path requires that PyPI publication and all published-install
+checks already succeeded, as in the original 0.1.0 run. A later run stopped by
+metadata preflight before those jobs must use a corrected new release tag.
 With `publish=false` it checks the original source CI, all native/wheel builds,
 all 30 artifact installs, all 30 PyPI installs, and existing Python file hashes.
 It rejects SDK input changes and manifest changes beyond adding missing
@@ -139,13 +142,19 @@ not the immutable source tag or any verification/publication gates. See
   `release-cd.yml`, environment `pypi`. The GitHub environment already exists;
   its existence does not prove the PyPI publisher is configured. No PyPI API
   token is required. OIDC is limited to the PyPI publication job.
-- Users add the `yosoi` crate; Cargo resolves its supporting packages. The
-  browser chain publishes as `yosoi-browser-core`, `yosoi-chromiumoxide`, and
-  `yosoi-chromiumoxide-cdp`. Existing Rust import names remain available through
-  explicit library names and dependency aliases. Controller snapshot metadata
-  identifies the browser core's new package name. Browser launch behavior and
-  the checked-in CDP schema are unchanged; packaging does not certify a new
-  browser/controller tuple.
+- Users add the `yosoi` crate; first-party runtime modules ship inside that
+  package. Release CD uploads separately versioned support crates only when
+  their exact package version is absent from crates.io. For an existing version,
+  it verifies the crates.io checksum and compares archived package contents,
+  allowing only Cargo's generated VCS commit marker to differ before skipping
+  the upload.
+  `yosoi-contracts-derive` keeps its own version and is bumped only when its
+  source needs a new registry release. The embedded browser component retains
+  the stable identity `yosoi-browser-core`; its separate controller packages
+  are `yosoi-chromiumoxide` and `yosoi-chromiumoxide-cdp`. Existing Rust import
+  names remain available through explicit library names and dependency aliases.
+  Browser launch behavior and the checked-in CDP schema are unchanged;
+  packaging does not certify a new browser/controller tuple.
 - The two vendored browser forks are explicitly allowlisted by path and package
   name. Other vendored dependencies still block publication. Forks retain
   independent versions, licenses, and upstream attribution; the publisher uses

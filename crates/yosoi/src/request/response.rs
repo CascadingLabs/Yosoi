@@ -1,3 +1,5 @@
+use crate::internal::engine as yosoi_engine;
+
 use super::{Attempt, RequestId, ResponseTermination};
 use crate::policy::PolicySnapshot;
 

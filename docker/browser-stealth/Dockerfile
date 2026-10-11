@@ -8,9 +8,7 @@ WORKDIR /build/YosoiOxide
 COPY YosoiOxide/ /build/YosoiOxide/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/YosoiOxide/target \
-    find crates/voidcrawl/src crates/yosoi-types/src \
-      crates/yosoi-web-capture/src crates/yosoi-web-capture-direct-http/src \
-      benchmarks/src vendor/chromiumoxide/src vendor/chromiumoxide_cdp/src \
+    find crates/yosoi/src benchmarks/src vendor/chromiumoxide/src vendor/chromiumoxide_cdp/src \
       -type f -name '*.rs' -exec touch {} + \
     && CARGO_BUILD_JOBS=1 cargo build --release --locked \
       -p yosoi-benchmarks --bin profile_browser_stealth \

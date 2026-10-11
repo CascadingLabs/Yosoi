@@ -11,13 +11,13 @@ import sys
 import tomllib
 from pathlib import Path
 
+from publish import verify_existing_crate
 from release import (
     json_url,
     package_version,
     plan,
     pypi_pending,
     registry_manifests,
-    sha256,
     validate_registry_metadata,
     verify_wheels,
 )
@@ -151,11 +151,12 @@ def receipts(root: Path, proof: dict) -> dict:
         version = package_version(root, manifests[name][1])
         archive = root / "target/package" / f"{name}-{version}.crate"
         response = json_url(f"https://crates.io/api/v1/crates/{name}/{version}")
-        checksum = sha256(archive)
-        if not response or response["version"]["checksum"] != checksum:
+        if not response:
             raise ValueError(f"Registry did not confirm the corrected {name}")
-        if response["version"].get("yanked"):
+        registry_version = response.get("version", {})
+        if registry_version.get("yanked"):
             raise ValueError(f"Corrected {name} is yanked")
+        checksum = verify_existing_crate(name, version, archive, registry_version)
         packages.append({"name": name, "version": version, "sha256": checksum})
     return proof | {"packages": packages}
 

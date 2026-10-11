@@ -8,7 +8,7 @@ WORKDIR /build/YosoiOxide
 COPY YosoiOxide/ /build/YosoiOxide/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/YosoiOxide/target \
-    find vendor/chromiumoxide crates/voidcrawl benchmarks -type f -name '*.rs' -exec touch {} + \
+    find vendor/chromiumoxide crates/yosoi/src benchmarks -type f -name '*.rs' -exec touch {} + \
     && CARGO_BUILD_JOBS=1 cargo build --release --locked -p yosoi-benchmarks \
       --bin profile_browser --bin profile_oopif \
     && mkdir -p /out \

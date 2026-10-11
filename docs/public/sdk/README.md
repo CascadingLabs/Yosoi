@@ -15,19 +15,19 @@ Paths below are relative to the repository root. Follow re-exports to their impl
 | Pages or claims                        | Authoritative source                                                                                                          |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | SDK surface and features               | `crates/yosoi/src/lib.rs`, `src/prelude.rs`, and `crates/yosoi/Cargo.toml`                                            |
-| Requests and responses                 | `crates/yosoi/src/request/`, `crates/yosoi-engine/src/request/execution/standard.rs`                                             |
-| Document ownership and constructors    | `crates/yosoi/src/documents.rs`, `crates/yosoi-documents/src/document_profile.rs`                                         |
-| Locator authoring and outcomes         | `crates/yosoi-documents/src/plan_authoring.rs`, `plan_compatibility.rs`, `query_builders.rs`, `query_output.rs`, `outcome.rs` |
-| XML namespace behavior                 | `crates/yosoi-documents/src/query.rs`                                                                                         |
-| JSONPath subset                        | `crates/yosoi-documents/src/json/query.rs`                                                                                    |
-| Accessibility matching and states      | `crates/yosoi-documents/src/accessibility/evaluate.rs`, `crates/yosoi-documents/src/query.rs`                                 |
-| Contract derive and static locators    | `crates/yosoi-contracts-derive/src/lib.rs`, `support.rs`, `crates/yosoi-documents/src/locator_declaration.rs`                 |
-| Contract outcomes and Money            | `crates/yosoi-contract-validation/src/outcome.rs`, `value.rs`, `validation.rs`                                                |
-| Extraction limits                      | `crates/yosoi-engine/src/lib.rs`, `crates/yosoi-extractor/src/lib.rs`                                                                |
-| Policy fields, defaults, serialization | `crates/yosoi-policy/src/policy/`, `policy_value.rs`, `policy_serde.rs`, `snapshot.rs`                                        |
-| Map authoring and outcomes             | `crates/yosoi/src/map.rs`, `crates/yosoi-map/src/lib.rs`                                                                  |
-| Map discovery, retention, and robots   | `crates/yosoi-engine/src/map/`, `crates/yosoi-policy/src/policy/map.rs`                                                              |
-| Browser projection and timing          | `crates/yosoi-engine/src/projection/browser.rs`, `crates/yosoi-engine/src/request/execution/standard.rs`                                    |
+| Requests and responses                 | `crates/yosoi/src/request/`, `crates/yosoi/src/internal/engine/request/execution/standard.rs`                                 |
+| Document ownership and constructors    | `crates/yosoi/src/documents.rs`, `crates/yosoi/src/internal/documents/document.rs`                                           |
+| Locator authoring and outcomes         | `crates/yosoi/src/internal/documents/plan_authoring.rs`, `plan_compatibility.rs`, `query_builders.rs`, `query_output.rs`, `outcome.rs` |
+| XML namespace behavior                 | `crates/yosoi/src/internal/documents/query.rs`                                                                               |
+| JSONPath subset                        | `crates/yosoi/src/internal/documents/json/query.rs`                                                                          |
+| Accessibility matching and states      | `crates/yosoi/src/internal/documents/accessibility/evaluate.rs`, `query.rs`                                                  |
+| Contract derive and static locators    | `crates/yosoi-contracts-derive/src/lib.rs`, `support.rs`, `crates/yosoi/src/internal/documents/locator_declaration.rs`        |
+| Contract outcomes and Money            | `crates/yosoi/src/internal/contract_validation/outcome.rs`, `value.rs`, `validation.rs`                                       |
+| Extraction limits                      | `crates/yosoi/src/internal/engine/mod.rs`, `crates/yosoi/src/internal/extractor/mod.rs`                                      |
+| Policy fields, defaults, serialization | `crates/yosoi/src/internal/policy/policy/`, `policy_value.rs`, `policy_serde.rs`, `snapshot.rs`                              |
+| Map authoring and outcomes             | `crates/yosoi/src/map.rs`, `crates/yosoi/src/internal/map/mod.rs`                                                            |
+| Map discovery, retention, and robots   | `crates/yosoi/src/internal/engine/map/`, `crates/yosoi/src/internal/policy/policy/map.rs`                                   |
+| Browser projection and timing          | `crates/yosoi/src/internal/engine/projection/browser.rs`, `crates/yosoi/src/internal/engine/request/execution/standard.rs`   |
 | Browser distribution requirements      | `docs/chromium-cdp-baseline.md`                                                                                               |
 
 ## Editorial references

@@ -1,6 +1,6 @@
 [package]
 name = "yosoi-benchmarks"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -8,6 +8,7 @@ publish = false
 autobenches = false
 
 [dependencies]
+yosoi-dev-support = { workspace = true, features = ["browser"] }
 anyhow.workspace = true
 chrono.workspace = true
 futures-util.workspace = true
@@ -18,10 +19,6 @@ tokio = { workspace = true, features = ["io-util", "net"] }
 tokio-util.workspace = true
 url.workspace = true
 wreq.workspace = true
-void_crawl_core.workspace = true
-yosoi-types.workspace = true
-yosoi-web-capture = { workspace = true, features = ["browser"] }
-yosoi-web-capture-direct-http.workspace = true
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["cargo_bench_support", "plotters"] }
@@ -29,7 +26,6 @@ divan.workspace = true
 gungraun.workspace = true
 proptest.workspace = true
 tempfile.workspace = true
-yosoi-documents.workspace = true
 
 [[bench]]
 name = "allocation_capture"
@@ -53,3 +49,7 @@ harness = false
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "map_discovery"
+harness = false

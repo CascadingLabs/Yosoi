@@ -2,7 +2,7 @@ use crate::capture_stages_support::{bytes, manifest};
 use criterion::{BenchmarkId, Criterion, Throughput};
 use sha2::{Digest, Sha256};
 use std::{fs, hint::black_box, path::PathBuf};
-use yosoi_web_capture_direct_http::WebCaptureWire;
+use yosoi_dev_support::internal::direct_http::WebCaptureWire;
 
 pub fn sha256(c: &mut Criterion) {
     let mut group = c.benchmark_group("sha256_only");

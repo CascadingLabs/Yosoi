@@ -42,14 +42,14 @@ Allocation count, allocated bytes, live heap, peak heap, peak process RSS, and p
 
 Use [cargo-bloat](https://github.com/RazrFalcon/cargo-bloat) to explain contributions to a linked executable's size by crate or function. Its symbol attribution is diagnostic and approximate; record the actual artifact size separately.
 
-The workspace includes the production `yosoi` CLI in `yosoi-cli`.
+The optional production `yosoi` CLI binary is enabled by the `cli` feature.
 `cargo-bloat` is not installed by `scripts/bootstrap.sh` or enforced in CI.
 Pin and install it before collecting binary-size evidence. For example:
 
 ```bash
-cargo bloat --release -p yosoi-cli --bin yosoi --crates
-cargo bloat --release -p yosoi-cli --bin yosoi -n 20
-cargo bloat --release -p yosoi-cli --bin yosoi --crates --message-format json
+cargo bloat --release -p yosoi --features cli --bin yosoi --crates
+cargo bloat --release -p yosoi --features cli --bin yosoi -n 20
+cargo bloat --release -p yosoi --features cli --bin yosoi --crates --message-format json
 ```
 
 Binary-size comparisons must use the same target triple, Rust version, Cargo profile, features, linker, and linker flags.

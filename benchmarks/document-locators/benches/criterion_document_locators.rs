@@ -8,7 +8,7 @@
 use std::{error::Error, hint::black_box};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use yosoi_documents::{
+use yosoi_dev_support::internal::documents::{
     AccessibilityStateName, Document, DocumentEpoch, OutputPlan, Plan, ResourceBudget,
     accessibility_state, accessibility_text, accessible_name, css, output, role,
 };

@@ -37,6 +37,7 @@ pub struct ContractAttributes {
     pub id: LitStr,
     pub description: LitStr,
     pub root: Option<Expr>,
+    pub crate_path: Option<syn::Path>,
 }
 
 pub fn contract_attributes(
@@ -46,6 +47,7 @@ pub fn contract_attributes(
     let mut id = None;
     let mut description = None;
     let mut root = None;
+    let mut crate_path = None;
     for attribute in attributes {
         if !attribute.path().is_ident("ys") {
             continue;
@@ -72,6 +74,14 @@ pub fn contract_attributes(
                 root = Some(meta.value()?.parse::<Expr>()?);
                 return Ok(());
             }
+            if meta.path.is_ident("crate") {
+                if crate_path.is_some() {
+                    return Err(meta.error("Contract crate path is declared more than once"));
+                }
+                let path = meta.value()?.parse::<LitStr>()?;
+                crate_path = Some(path.parse()?);
+                return Ok(());
+            }
             if meta.path.is_ident("page") || meta.path.is_ident("repeated") {
                 return Err(meta.error(
                     "page/repeated flags are removed; a root locator implies repeated and no root implies page",
@@ -92,6 +102,7 @@ pub fn contract_attributes(
             "Contract requires a non-empty description",
         )?,
         root,
+        crate_path,
     })
 }
 
@@ -272,27 +283,97 @@ fn standard_wrapper_inner<'a>(field_type: &'a Type, wrapper: &str) -> Option<&'a
     Some(inner)
 }
 
-pub fn yosoi_path() -> syn::Result<proc_macro2::TokenStream> {
-    for package in ["yosoi", "yosoi-engine"] {
-        let resolved = match crate_name(package) {
-            Ok(FoundCrate::Itself) => {
-                let name = package.replace('-', "_");
-                syn::Ident::new(&name, proc_macro2::Span::call_site())
-            }
-            Ok(FoundCrate::Name(name)) => {
-                let name = name.replace('-', "_");
-                syn::Ident::new(&name, proc_macro2::Span::call_site())
-            }
-            Err(_) => continue,
-        };
-        return if package == "yosoi" {
-            Ok(quote!(::#resolved::__macro))
-        } else {
-            Ok(quote!(::#resolved))
-        };
+pub fn yosoi_path(override_path: Option<&syn::Path>) -> syn::Result<proc_macro2::TokenStream> {
+    if let Some(path) = override_path {
+        return Ok(quote!(#path));
     }
-    Err(syn::Error::new(
-        proc_macro2::Span::call_site(),
-        "Contract derive requires the yosoi package (or the internal yosoi-engine crate)",
-    ))
+
+    let resolved = match crate_name("yosoi") {
+        Ok(FoundCrate::Itself) => syn::Ident::new("yosoi", proc_macro2::Span::call_site()),
+        Ok(FoundCrate::Name(name)) => {
+            let name = name.replace('-', "_");
+            syn::Ident::new(&name, proc_macro2::Span::call_site())
+        }
+        Err(_) => {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Contract derive requires the yosoi package",
+            ));
+        }
+    };
+    Ok(quote!(::#resolved::__macro))
+}
+
+#[cfg(test)]
+#[allow(clippy::panic_in_result_fn, reason = "assertions report test failures")]
+mod tests {
+    use super::{contract_attributes, yosoi_path};
+    use quote::ToTokens as _;
+    use syn::{Attribute, parse_quote};
+
+    #[test]
+    fn contract_crate_override_is_used_as_the_expansion_path() -> syn::Result<()> {
+        let attribute: Attribute = parse_quote!(#[ys(
+            id = "internal_contract",
+            description = "An internal contract",
+            crate = "crate::internal::engine"
+        )]);
+        let attributes = contract_attributes(&[attribute], proc_macro2::Span::call_site())?;
+        let path = attributes.crate_path.ok_or_else(|| {
+            syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "expected a crate path override",
+            )
+        })?;
+
+        assert_eq!(
+            yosoi_path(Some(&path))?.into_token_stream().to_string(),
+            "crate :: internal :: engine"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn contract_crate_override_must_be_unique() -> syn::Result<()> {
+        let attribute: Attribute = parse_quote!(#[ys(
+            id = "internal_contract",
+            description = "An internal contract",
+            crate = "crate::internal::engine",
+            crate = "crate::internal::browser"
+        )]);
+        let error = contract_attributes(&[attribute], proc_macro2::Span::call_site())
+            .err()
+            .ok_or_else(|| {
+                syn::Error::new(
+                    proc_macro2::Span::call_site(),
+                    "expected duplicate crate path to be rejected",
+                )
+            })?;
+
+        assert_eq!(
+            error.to_string(),
+            "Contract crate path is declared more than once"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn contract_crate_override_must_be_a_rust_path() -> syn::Result<()> {
+        let attribute: Attribute = parse_quote!(#[ys(
+            id = "internal_contract",
+            description = "An internal contract",
+            crate = "crate::internal::engine; compile_error!()"
+        )]);
+        let error = contract_attributes(&[attribute], proc_macro2::Span::call_site())
+            .err()
+            .ok_or_else(|| {
+                syn::Error::new(
+                    proc_macro2::Span::call_site(),
+                    "expected a non-path expression to be rejected",
+                )
+            })?;
+
+        assert_ne!(error.to_string(), "");
+        Ok(())
+    }
 }

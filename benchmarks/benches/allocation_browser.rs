@@ -3,8 +3,8 @@
 //! maximum live allocator bytes on the synchronous benchmark thread; it makes no timing claim.
 
 use divan::{AllocProfiler, Bencher, black_box};
-use yosoi_types::Sha256Digest;
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::types::Sha256Digest;
+use yosoi_dev_support::internal::web_capture::{
     BrowserAccessibilityCaptureMode, BrowserAccessibilityEvidence,
     BrowserAccessibilityIgnoredNodes, BrowserAccessibilitySchema, BrowserBudgetScope,
     BrowserByteAccounting, BrowserDocumentEpoch, BrowserDocumentScope, BrowserExtraInfoEvidence,

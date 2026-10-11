@@ -109,7 +109,11 @@ jobs:
             google-chrome-stable --version
             sha256sum /opt/google/chrome/chrome
             sha256sum "$RUNNER_TEMP/google-chrome-stable.deb"
-            for manifest in crates/voidcrawl/Cargo.toml vendor/chromiumoxide/Cargo.toml vendor/chromiumoxide_cdp/Cargo.toml; do
+            echo "SDK package:"
+            sed -n '/^\[package\]/,/^\[/{/^name = /p; /^version = /p;}' crates/yosoi/Cargo.toml
+            echo "Embedded browser component identity:"
+            sed -n '/^pub const VOID_CRAWL_PACKAGE_NAME:/p; /^pub const VOID_CRAWL_VERSION:/p' crates/yosoi/src/internal/browser/mod.rs
+            for manifest in vendor/chromiumoxide/Cargo.toml vendor/chromiumoxide_cdp/Cargo.toml; do
               echo "$manifest"
               sed -n '/^name = /p; /^version = /p' "$manifest"
             done
@@ -121,10 +125,11 @@ jobs:
       - name: Run default-feature doctests
         if: matrix.configuration == 'default' && matrix.partition == 1
         run: xvfb-run -a cargo test --locked --workspace --doc -- --test-threads=1
-      - name: Clear cached coverage profiles
+      - name: Clear cached coverage artifacts
         if: matrix.configuration == 'coverage-all-features'
-        # Clear previous measurements while retaining fingerprinted binaries.
-        run: cargo llvm-cov clean --profraw-only
+        # --no-report preserves old build artifacts unless the workspace is cleaned first.
+        # Remove current workspace objects and profiles while keeping dependency caches.
+        run: cargo llvm-cov clean --workspace
       - name: Run all-feature tests with LLVM coverage
         if: matrix.configuration == 'coverage-all-features'
         run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --partition hash:${{ matrix.partition }}/2 --test-threads 1 --no-fail-fast --no-report

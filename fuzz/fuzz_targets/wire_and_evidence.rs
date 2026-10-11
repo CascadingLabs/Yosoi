@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use yosoi_web_capture::{SourceRepresentationEvidence, WebCaptureWire};
+use yosoi_dev_support::internal::web_capture::{SourceRepresentationEvidence, WebCaptureWire};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(capture) = WebCaptureWire::from_json(data) {

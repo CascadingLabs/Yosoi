@@ -13,8 +13,8 @@ use std::{
     },
     thread::{self, JoinHandle},
 };
-use yosoi_types::{CaptureId, Schema, SchemaId, SchemaVersion};
-use yosoi_web_capture_direct_http::*;
+use yosoi_dev_support::internal::direct_http::*;
+use yosoi_dev_support::internal::types::{CaptureId, Schema, SchemaId, SchemaVersion};
 
 #[derive(Debug, Deserialize)]
 pub struct Manifest {

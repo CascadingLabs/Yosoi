@@ -34,7 +34,7 @@ class CompletionTests(unittest.TestCase):
 
     def test_only_missing_descriptions_can_be_added(self):
         before = {
-            "package": {"name": "yosoi-documents", "version": "0.1.0"},
+            "package": {"name": "test-support", "version": "0.1.0"},
             "dependencies": {"serde": "1"},
             "features": {"default": []},
         }
@@ -135,27 +135,70 @@ class CompletionTests(unittest.TestCase):
                 '[workspace.package]\nlicense="Apache-2.0"\n'
             )
             document = {
-                "package": {"name": "yosoi-documents", "license": {"workspace": True}}
+                "package": {"name": "test-support", "license": {"workspace": True}}
             }
             with (
                 patch.object(
                     release,
                     "registry_manifests",
-                    return_value={"yosoi-documents": (root / "Cargo.toml", document)},
+                    return_value={"test-support": (root / "Cargo.toml", document)},
                 ),
                 patch.object(
                     release,
                     "publication_plan",
-                    return_value={"crates": ["yosoi-documents"]},
+                    return_value={"crates": ["test-support"]},
                 ),
             ):
                 with self.assertRaisesRegex(ValueError, "description"):
                     release.validate_registry_metadata(root)
-                document["package"]["description"] = "Typed Yosoi documents."
+                document["package"]["description"] = "Release metadata fixture."
                 release.validate_registry_metadata(root)
                 (root / "Cargo.toml").write_text("[workspace.package]\n")
                 with self.assertRaisesRegex(ValueError, "license"):
                     release.validate_registry_metadata(root)
+
+    def test_rust_receipt_records_the_registry_checksum_for_reused_crates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            name = "yosoi-chromiumoxide"
+            version = "0.9.1-yosoi.1"
+            registry_checksum = "a" * 64
+            proof = {"tag": "v0.1.1", "verified_run": 1}
+            package = {"package": {"name": name, "version": version}}
+            with (
+                patch.object(
+                    complete_release,
+                    "plan",
+                    return_value={"publication": {"crates": [name]}},
+                ),
+                patch.object(
+                    complete_release,
+                    "registry_manifests",
+                    return_value={name: (root / "Cargo.toml", package)},
+                ),
+                patch.object(
+                    complete_release,
+                    "json_url",
+                    return_value={"version": {"checksum": registry_checksum}},
+                ),
+                patch.object(
+                    complete_release,
+                    "verify_existing_crate",
+                    return_value=registry_checksum,
+                ) as verify,
+            ):
+                receipt = complete_release.receipts(root, proof)
+
+            self.assertEqual(
+                receipt["packages"],
+                [{"name": name, "version": version, "sha256": registry_checksum}],
+            )
+            verify.assert_called_once_with(
+                name,
+                version,
+                root / "target/package" / f"{name}-{version}.crate",
+                {"checksum": registry_checksum},
+            )
 
 
 if __name__ == "__main__":

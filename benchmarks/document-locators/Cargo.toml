@@ -1,6 +1,6 @@
 [package]
 name = "yosoi-document-locator-benchmarks"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -8,10 +8,10 @@ publish = false
 autobenches = false
 
 [dev-dependencies]
+yosoi-dev-support = { workspace = true }
 criterion = { workspace = true, features = ["cargo_bench_support", "plotters"] }
 divan.workspace = true
 serde_json.workspace = true
-yosoi-documents.workspace = true
 
 [[bench]]
 name = "criterion_documents"

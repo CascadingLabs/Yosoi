@@ -161,6 +161,15 @@ export function buildReference(docs, context) {
 		if (doc.index[id]) return { doc, item: doc.index[id] };
 		return canonical.get(doc.paths[id]?.path.join('::')) || null;
 	}
+	function importSource(doc, use) {
+		const definition = doc.paths[use.id]?.path;
+		if (!definition || definition[0] === doc.index[doc.root].name) return use.source;
+		// A third-party definition path can include private modules. Prefer
+		// the compiler's actual upstream import spelling where available.
+		const imports = Object.values(doc.index).filter(publicItem).map(item => item.inner.use).filter(candidate => candidate && candidate.id === use.id && candidate.source.startsWith(`${definition[0]}::`)).map(candidate => candidate.source);
+		imports.sort((a, b) => a.length - b.length || a.localeCompare(b));
+		return imports[0] || use.source;
+	}
 	// rustdoc may name a foreign item by a public alias rather than its defining path.
 	let changed = true;
 	while (changed) {
@@ -182,6 +191,24 @@ export function buildReference(docs, context) {
 		for (const doc of docs) aliases(doc, doc.index[doc.root], doc.index[doc.root].name);
 	}
 	const entries = new Map();
+	const signatures = [];
+	const memberTraits = new Map();
+	const receiverImpls = new Map();
+	const itemKey = (doc, id) => `${doc.index[doc.root].name}:${id}`;
+	// A local rustdoc index can list a conversion on its input type, omit it
+	// from the receiver's impl list, or contain both. Attach methods by the
+	// compiler's receiver identity rather than the per-type navigation list.
+	for (const doc of docs) for (const [id, item] of Object.entries(doc.index)) {
+		const receiver = item.inner.impl?.for?.resolved_path?.id;
+		if (receiver === undefined) continue;
+		const key = itemKey(doc, receiver);
+		if (!receiverImpls.has(key)) receiverImpls.set(key, []);
+		receiverImpls.get(key).push(id);
+	}
+	function recordSignature(record, item, doc) {
+		signatures.push({ record, item, doc });
+		return record;
+	}
 	function put(doc, item, publicPath, reexport = null) {
 		if (hidden(item)) return;
 		const key = `${doc.index[doc.root].name}:${item.id}`;
@@ -194,22 +221,27 @@ export function buildReference(docs, context) {
 		const slug = `${publicPath.split('::').slice(0, -1).map(slugPart).join('/')}/${kind.replaceAll('_', '-')}/${slugPart(name)}`;
 		const page = { schemaVersion: 1, id: `${kind}:${publicPath}`, publicPath, kind, title: publicPath, signature: signature({ ...item, name }), docs: item.docs || '', source, reexportSource, aliases: [], members: [], examples: examplesFromDocs(item.docs || '', source, context), docsDigest: sha256(item.docs || '') };
 		entries.set(key, page);
+		recordSignature(page, { ...item, name }, doc);
 		const inner = item.inner[kind];
 		const memberIds = kind === 'enum' ? inner.variants : kind === 'trait' ? inner.items : inner?.kind?.plain?.fields || inner?.kind?.tuple?.filter(id => id !== null) || inner?.fields || [];
 		for (const id of memberIds || []) {
 			const member = doc.index[id];
 			if (!member || hidden(member) || (kind !== 'enum' && kind !== 'trait' && member.visibility !== 'public')) continue;
-			page.members.push(memberRecord(member, `${publicPath}::${member.name}`, context, doc.index));
+			page.members.push(memberRecord(member, `${publicPath}::${member.name}`, context, doc));
 		}
-		for (const implId of inner.impls || []) {
+		for (const implId of new Set([...(inner.impls || []), ...(receiverImpls.get(key) || [])].map(String))) {
 			const impl = doc.index[implId]?.inner.impl;
 			if (!impl || impl.is_synthetic || impl.blanket_impl) continue;
+			if (impl.for?.resolved_path && String(impl.for.resolved_path.id) !== String(item.id)) continue;
+			const trait = impl.trait && resolve(doc, impl.trait.id);
+			if (trait && !publicItem(trait.item)) continue;
 			for (const id of impl.items || []) {
 				const member = doc.index[id];
 				if (!member || hidden(member) || (!impl.trait && member.visibility !== 'public')) continue;
 				if (impl.trait && !member.docs && !member.span) continue;
-				const record = memberRecord(member, `${publicPath}::${member.name}`, context, doc.index);
+				const record = memberRecord(member, `${publicPath}::${member.name}`, context, doc);
 				if (impl.trait) record.trait = impl.trait.path;
+				if (trait) memberTraits.set(record, itemKey(trait.doc, trait.item.id));
 				page.members.push(record);
 			}
 		}
@@ -235,17 +267,36 @@ export function buildReference(docs, context) {
 					else put(target.doc, target.item, targetPath, child);
 				} else {
 					const name = use.name;
-					put(doc, { ...child, name, docs: child.docs || '', inner: { reexport: { source: use.source } } }, `${publicPath}::${name}`);
+					const source = importSource(doc, use);
+					put(doc, { ...child, name, docs: child.docs || '', inner: { reexport: { source } } }, `${publicPath}::${name}`);
 				}
 			} else if (child.inner.module) walk(doc, child, `${publicPath}::${child.name}`, next);
 			else put(doc, child, `${publicPath}::${child.name}`);
 		}
 	}
-	function memberRecord(member, publicPath, ctx, index) {
+	function memberRecord(member, publicPath, ctx, doc) {
 		const source = sourceLink(member.span, ctx);
-		return { id: `${kindOf(member)}:${publicPath}`, publicPath, title: publicPath, kind: kindOf(member), signature: signature(member, index), docs: member.docs || '', source, examples: examplesFromDocs(member.docs || '', source, ctx) };
+		return recordSignature({ id: `${kindOf(member)}:${publicPath}`, publicPath, title: publicPath, kind: kindOf(member), signature: signature(member, doc.index), docs: member.docs || '', source, examples: examplesFromDocs(member.docs || '', source, ctx) }, member, doc);
 	}
 	walk(facade, facade.index[facade.root], context.crate);
+	for (const page of entries.values()) page.members = page.members.filter(member => !memberTraits.has(member) || entries.has(memberTraits.get(member)));
+	// Public signatures name reachable types through their preferred facade
+	// export. Rustdoc's source spelling (including crate/super and dependency
+	// aliases) otherwise leaks implementation layout into the API contract.
+	function publicTypes(value, doc) {
+		if (Array.isArray(value)) return value.map(child => publicTypes(child, doc));
+		if (!value || typeof value !== 'object') return value;
+		const result = Object.fromEntries(Object.entries(value).map(([key, child]) => [key, publicTypes(child, doc)]));
+		if (typeof value.path === 'string' && value.id !== undefined) {
+			const target = resolve(doc, value.id);
+			const page = target && entries.get(itemKey(target.doc, target.item.id));
+			if (page) result.path = page.publicPath;
+		}
+		return result;
+	}
+	const publicIndices = new Map();
+	for (const doc of docs) publicIndices.set(doc, publicTypes(doc.index, doc));
+	for (const { record, item, doc } of signatures) record.signature = signature(publicTypes(item, doc), publicIndices.get(doc));
 	const pages = Object.fromEntries([...entries.values()].sort((a, b) => a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0).map((page) => [page.slug, page]));
 	const root = facade.index[facade.root];
 	pages.index = { schemaVersion: 1, id: `module:${context.crate}`, publicPath: context.crate, title: `${context.crate} Rust API`, kind: 'module', signature: `pub crate ${context.crate}`, docs: root.docs || '', docsDigest: sha256(root.docs || ''), source: sourceLink(root.span, context), aliases: [], members: Object.values(pages).map(page => ({ id: page.id, publicPath: page.publicPath, title: page.title, kind: page.kind, signature: page.signature, docs: '', source: page.source, examples: [] })), examples: examplesFromDocs(root.docs || '', sourceLink(root.span, context), context) };

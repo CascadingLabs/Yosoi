@@ -17,7 +17,9 @@ use tokio::{
     task::JoinHandle,
     time::timeout,
 };
-use void_crawl_core::{AccessibilitySnapshotOptions, BrowserSession, CdpMode, Page, SnapshotState};
+use yosoi_dev_support::internal::browser::{
+    AccessibilitySnapshotOptions, BrowserSession, CdpMode, Page, SnapshotState,
+};
 
 const REQUEST_LIMIT: usize = 8 * 1024;
 

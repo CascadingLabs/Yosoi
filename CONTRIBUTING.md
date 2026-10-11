@@ -57,7 +57,7 @@ Workspace crates should inherit these dependencies with `anyhow.workspace = true
 
 ## Crate boundaries
 
-`yosoi-types` owns dependency-light shared wire and domain vocabulary. It must remain independent of capture implementations, browsers, providers, storage, and SDK bindings. Capture behavior belongs in `yosoi-web-capture`, which may depend on `yosoi-types`; dependencies must never point in the reverse direction. Keep this direction explicit in crate manifests, and do not add a shared abstraction before a current consumer needs it.
+`crates/yosoi/src/internal/types` owns dependency-light shared wire and domain vocabulary. It must remain independent of capture implementations, browser providers, storage, and SDK bindings. `internal::web_capture` may depend on `internal::types`, and `internal::direct_http` may depend on `internal::web_capture`; keep that direction explicit in module imports and architecture tests. Do not add a shared abstraction before a current consumer needs it.
 
 ## Pull requests
 

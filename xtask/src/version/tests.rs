@@ -57,6 +57,80 @@ fn bump_updates_prereleases_renames_targets_and_lockfiles_without_touching_vendo
 }
 
 #[test]
+fn bump_preserves_independently_versioned_packages_and_exact_requirements() -> Result<()> {
+    let temporary = tempfile::tempdir()?;
+    let root = temporary.path();
+    fs::create_dir_all(root.join("crates/runtime"))?;
+    fs::create_dir_all(root.join("crates/derive"))?;
+    fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/runtime\", \"crates/derive\"]\n[workspace.package]\nversion = \"0.1.0\"\n[workspace.metadata.yosoi-release]\nindependent-version-packages = [\"macro-derive\"]\n[workspace.dependencies]\nruntime = { path = \"crates/runtime\", version = \"=0.1.0\" }\nderive = { package = \"macro-derive\", path = \"crates/derive\", version = \"=0.1.0\" }\n",
+    )?;
+    fs::write(
+        root.join("crates/runtime/Cargo.toml"),
+        "[package]\nname = \"runtime\"\nversion.workspace = true\n[dependencies]\nderive.workspace = true\n",
+    )?;
+    fs::write(
+        root.join("crates/derive/Cargo.toml"),
+        "[package]\nname = \"macro-derive\"\nversion = \"0.1.0\"\n",
+    )?;
+    fs::write(
+        root.join("Cargo.lock"),
+        "version = 4\n[[package]]\nname = \"runtime\"\nversion = \"0.1.0\"\n[[package]]\nname = \"macro-derive\"\nversion = \"0.1.0\"\n",
+    )?;
+    fs::write(root.join("CITATION.cff"), "version: \"0.1.0\"\n")?;
+
+    apply(&plan(root, "0.1.1", None)?)?;
+
+    let root_manifest = fs::read_to_string(root.join("Cargo.toml"))?;
+    assert!(root_manifest.contains("version = \"0.1.1\""));
+    assert!(root_manifest.contains("version = \"=0.1.1\""));
+    assert!(root_manifest.contains("version = \"=0.1.0\""));
+    assert!(
+        fs::read_to_string(root.join("crates/runtime/Cargo.toml"))?
+            .contains("version.workspace = true")
+    );
+    assert!(
+        fs::read_to_string(root.join("crates/derive/Cargo.toml"))?.contains("version = \"0.1.0\"")
+    );
+    let lock = fs::read_to_string(root.join("Cargo.lock"))?;
+    assert!(lock.contains("name = \"runtime\"\nversion = \"0.1.1\""));
+    assert!(lock.contains("name = \"macro-derive\"\nversion = \"0.1.0\""));
+    assert!(plan(root, "0.1.1", None)?.is_empty());
+    Ok(())
+}
+
+#[test]
+fn bump_rejects_nonexact_independent_dependency_requirements() -> Result<()> {
+    let temporary = tempfile::tempdir()?;
+    let root = temporary.path();
+    fs::create_dir_all(root.join("crates/runtime"))?;
+    fs::create_dir_all(root.join("crates/derive"))?;
+    fs::write(
+        root.join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/runtime\", \"crates/derive\"]\n[workspace.package]\nversion = \"0.1.0\"\n[workspace.metadata.yosoi-release]\nindependent-version-packages = [\"macro-derive\"]\n[workspace.dependencies]\nderive = { package = \"macro-derive\", path = \"crates/derive\", version = \"0.1\" }\n",
+    )?;
+    fs::write(
+        root.join("crates/runtime/Cargo.toml"),
+        "[package]\nname = \"runtime\"\nversion.workspace = true\n[dependencies]\nderive.workspace = true\n",
+    )?;
+    fs::write(
+        root.join("crates/derive/Cargo.toml"),
+        "[package]\nname = \"macro-derive\"\nversion = \"0.1.0\"\n",
+    )?;
+    fs::write(root.join("CITATION.cff"), "version: \"0.1.0\"\n")?;
+
+    let error = plan(root, "0.1.1", None).expect_err("broad requirement must be rejected");
+    assert!(
+        error
+            .to_string()
+            .contains("exact independent version =0.1.0")
+    );
+    assert!(!fs::read_to_string(root.join("Cargo.toml"))?.contains("version = \"0.1.1\""));
+    Ok(())
+}
+
+#[test]
 fn invalid_metadata_and_concurrent_edits_leave_files_untouched() -> Result<()> {
     let temporary = tempfile::tempdir()?;
     let root = temporary.path();

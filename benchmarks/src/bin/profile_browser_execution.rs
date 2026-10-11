@@ -6,7 +6,7 @@ use std::{env, num::NonZeroU32, time::Instant};
 use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use yosoi_benchmarks::browser_support::{self, ArtifactSet, BrowserRunMode, LoopbackFixture};
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::web_capture::{
     BrowserExecutionManager, BrowserExecutionManagerConfig, capture_attempt_managed,
 };
 

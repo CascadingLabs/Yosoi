@@ -169,6 +169,17 @@ fn benchmark_check() -> Result<()> {
         ],
     )?;
     run_cargo(
+        "Map discovery benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "map_discovery",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
         "allocation benchmark compilation",
         &[
             "bench",
@@ -297,29 +308,13 @@ fn fmt() -> Result<()> {
             "--package",
             "yosoi",
             "--package",
-            "yosoi-engine",
-            "--package",
-            "yosoi-archive",
-            "--package",
-            "yosoi-contracts",
+            "yosoi-python",
             "--package",
             "yosoi-contracts-derive",
             "--package",
             "yosoi-contracts-renamed-dependency-fixture",
             "--package",
-            "yosoi-contract-validation",
-            "--package",
-            "yosoi-extractor",
-            "--package",
-            "yosoi-types",
-            "--package",
-            "yosoi-documents",
-            "--package",
-            "yosoi-web-capture",
-            "--package",
-            "yosoi-web-capture-direct-http",
-            "--package",
-            "yosoi-browser-core",
+            "yosoi-dev-support",
             "--package",
             "yosoi-benchmarks",
             "--package",
@@ -354,8 +349,15 @@ fn test() -> Result<()> {
     )?;
     run_cargo("yosoi doctests", &["test", "--package", "yosoi", "--doc"])?;
     run_cargo(
-        "yosoi-engine doctests",
-        &["test", "--package", "yosoi-engine", "--doc"],
+        "yosoi-dev-support doctests",
+        &[
+            "test",
+            "--package",
+            "yosoi-dev-support",
+            "--doc",
+            "--features",
+            "browser",
+        ],
     )
 }
 
@@ -474,6 +476,10 @@ fn is_production_source(relative: &Path) -> bool {
         && relative
             .components()
             .any(|component| component.as_os_str() == "src")
+        && !relative
+            .components()
+            .any(|component| component.as_os_str() == "integration_tests")
+        && file_name != "integration_tests.rs"
         && file_name != "tests.rs"
         && !file_name.ends_with("_tests.rs")
 }
@@ -604,6 +610,12 @@ mod tests {
         )));
         assert!(!is_production_source(Path::new(
             "crates/example/tests/large.rs"
+        )));
+        assert!(!is_production_source(Path::new(
+            "crates/yosoi/src/internal/documents/integration_tests/xml.rs"
+        )));
+        assert!(!is_production_source(Path::new(
+            "crates/yosoi/src/internal/documents/integration_tests.rs"
         )));
     }
 }

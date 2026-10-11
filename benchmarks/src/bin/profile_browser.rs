@@ -16,8 +16,8 @@ use tokio_util::sync::CancellationToken;
 use yosoi_benchmarks::browser_support::{
     self, ArtifactSet, BrowserRunMode, LoopbackFixture, LoopbackResponseMode,
 };
-use yosoi_web_capture::capture_attempt;
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::web_capture::capture_attempt;
+use yosoi_dev_support::internal::web_capture::{
     BrowserFinalizationInput, Observation, VoidCrawlAdapterError, finalize_browser_capture,
 };
 
