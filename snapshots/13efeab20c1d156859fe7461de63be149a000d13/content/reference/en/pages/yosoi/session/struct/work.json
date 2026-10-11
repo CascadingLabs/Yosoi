@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Work",
+  "publicPath": "yosoi::session::Work",
+  "kind": "struct",
+  "title": "yosoi::session::Work",
+  "signature": "pub struct Work",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 887,
+    "lineEnd": 893,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L887-L893"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Work",
+    "yosoi::prelude::session::Work"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Work::assert_all",
+      "publicPath": "yosoi::session::Work::assert_all",
+      "title": "yosoi::session::Work::assert_all",
+      "kind": "function",
+      "signature": "pub async fn assert_all(&self, assertion: &yosoi::assertions::LocalAssertion) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Captures once, validates one Contract record, and checks it immediately.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1213,
+        "lineEnd": 1293,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1213-L1293"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::assert_condition",
+      "publicPath": "yosoi::session::Work::assert_condition",
+      "title": "yosoi::session::Work::assert_condition",
+      "kind": "function",
+      "signature": "pub async fn assert_condition(&self, condition: &yosoi::flow::Condition) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1420,
+        "lineEnd": 1460,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1420-L1460"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::click",
+      "publicPath": "yosoi::session::Work::click",
+      "title": "yosoi::session::Work::click",
+      "kind": "function",
+      "signature": "pub async fn click(&self, selector: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1196,
+        "lineEnd": 1211,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1196-L1211"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::enter_text",
+      "publicPath": "yosoi::session::Work::enter_text",
+      "title": "yosoi::session::Work::enter_text",
+      "kind": "function",
+      "signature": "pub async fn enter_text(&self, selector: &str, text: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1323,
+        "lineEnd": 1343,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1323-L1343"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate",
+      "publicPath": "yosoi::session::Work::evaluate",
+      "title": "yosoi::session::Work::evaluate",
+      "kind": "function",
+      "signature": "pub async fn evaluate(&self, source: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 10,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L10-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_file",
+      "publicPath": "yosoi::session::Work::evaluate_file",
+      "title": "yosoi::session::Work::evaluate_file",
+      "kind": "function",
+      "signature": "pub async fn evaluate_file(&self, snapshot: &yosoi::action::JavaScriptSourceSnapshot) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 24,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L24-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_file_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_file_targeted",
+      "title": "yosoi::session::Work::evaluate_file_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_file_targeted(&self, target: &yosoi::session::JsTarget, snapshot: &yosoi::action::JavaScriptSourceSnapshot) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 32,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L32-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_module",
+      "publicPath": "yosoi::session::Work::evaluate_module",
+      "title": "yosoi::session::Work::evaluate_module",
+      "kind": "function",
+      "signature": "pub async fn evaluate_module(&self, bundle: &yosoi::action::JavaScriptModuleBundle) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 47,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L47-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_module_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_module_targeted",
+      "title": "yosoi::session::Work::evaluate_module_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_module_targeted(&self, target: &yosoi::session::JsTarget, bundle: &yosoi::action::JavaScriptModuleBundle) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 55,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L55-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_targeted",
+      "title": "yosoi::session::Work::evaluate_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_targeted(&self, target: &yosoi::session::JsTarget, source: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 15,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/evaluation.rs#L15-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::fmt",
+      "publicPath": "yosoi::session::Work::fmt",
+      "title": "yosoi::session::Work::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 909,
+        "lineEnd": 913,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L909-L913"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Work::navigate",
+      "publicPath": "yosoi::session::Work::navigate",
+      "title": "yosoi::session::Work::navigate",
+      "kind": "function",
+      "signature": "pub async fn navigate(&self, url: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1177,
+        "lineEnd": 1195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1177-L1195"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::observe",
+      "publicPath": "yosoi::session::Work::observe",
+      "title": "yosoi::session::Work::observe",
+      "kind": "function",
+      "signature": "pub async fn observe(&self) -> Result<yosoi::automation_record::Observation, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1099,
+        "lineEnd": 1102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1099-L1102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::release",
+      "publicPath": "yosoi::session::Work::release",
+      "title": "yosoi::session::Work::release",
+      "kind": "function",
+      "signature": "pub async fn release(self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1521,
+        "lineEnd": 1524,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1521-L1524"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::screenshot",
+      "publicPath": "yosoi::session::Work::screenshot",
+      "title": "yosoi::session::Work::screenshot",
+      "kind": "function",
+      "signature": "pub async fn screenshot(&self) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1344,
+        "lineEnd": 1384,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1344-L1384"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::until",
+      "publicPath": "yosoi::session::Work::until",
+      "title": "yosoi::session::Work::until",
+      "kind": "function",
+      "signature": "pub async fn until(&self, trigger: Option<&yosoi::flow::Step>, expectation: &yosoi::expect::Expectation) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Installs observation before an optional trigger, then parks until confirmed.",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 207,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session/until.rs#L207-L224"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::wait",
+      "publicPath": "yosoi::session::Work::wait",
+      "title": "yosoi::session::Work::wait",
+      "kind": "function",
+      "signature": "pub async fn wait(&self, milliseconds: u64) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1385,
+        "lineEnd": 1419,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1385-L1419"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::wait_until",
+      "publicPath": "yosoi::session::Work::wait_until",
+      "title": "yosoi::session::Work::wait_until",
+      "kind": "function",
+      "signature": "pub async fn wait_until(&self, condition: &yosoi::flow::Condition, timeout_ms: u64) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1465,
+        "lineEnd": 1515,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L1465-L1515"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/work",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

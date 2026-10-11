@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::assert",
+  "publicPath": "yosoi::action::assert",
+  "kind": "function",
+  "title": "yosoi::action::assert",
+  "signature": "pub const fn assert(condition: yosoi::flow::Condition) -> yosoi::action::AssertionBuilder",
+  "docs": "Builds a typed condition assertion that can run once or wait through `.until()`.\n\nConvert it into [`Step`] for one immediate check, or call `.until()` to wait\nfor the condition without a separate trigger action.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 71,
+    "lineEnd": 73,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action.rs#L71-L73"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::assert"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "4959ea5924a87de2f1e509bc024bc912ddeec9b5fa5991a4e97a5f78cfb36511",
+  "slug": "yosoi/action/function/assert",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4959ea5924a87de2f1e509bc024bc912ddeec9b5fa5991a4e97a5f78cfb36511"
+}

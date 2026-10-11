@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::wait",
+  "publicPath": "yosoi::action::wait",
+  "kind": "function",
+  "title": "yosoi::action::wait",
+  "signature": "pub const fn wait(milliseconds: u64) -> yosoi::flow::Step",
+  "docs": "Creates an explicit delay step, measured in milliseconds.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 58,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action.rs#L58-L60"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::wait"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "8cf7e19e0855da0266cd225250b722e8a89305e927314ac93c51fd1805d78d27",
+  "slug": "yosoi/action/function/wait",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8cf7e19e0855da0266cd225250b722e8a89305e927314ac93c51fd1805d78d27"
+}

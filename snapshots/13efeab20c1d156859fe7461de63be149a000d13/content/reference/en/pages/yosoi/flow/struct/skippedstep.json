@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::SkippedStep",
+  "publicPath": "yosoi::flow::SkippedStep",
+  "kind": "struct",
+  "title": "yosoi::flow::SkippedStep",
+  "signature": "pub struct SkippedStep",
+  "docs": "One leaf omitted after a scoped or invocation stop.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 700,
+    "lineEnd": 707,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L700-L707"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::SkippedStep"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::flow::SkippedStep::cause",
+      "publicPath": "yosoi::flow::SkippedStep::cause",
+      "title": "yosoi::flow::SkippedStep::cause",
+      "kind": "struct_field",
+      "signature": "pub cause: yosoi::flow::FlowStopCause",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::SkippedStep::clone",
+      "publicPath": "yosoi::flow::SkippedStep::clone",
+      "title": "yosoi::flow::SkippedStep::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::SkippedStep",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::SkippedStep::deserialize",
+      "publicPath": "yosoi::flow::SkippedStep::deserialize",
+      "title": "yosoi::flow::SkippedStep::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::SkippedStep::eq",
+      "publicPath": "yosoi::flow::SkippedStep::eq",
+      "title": "yosoi::flow::SkippedStep::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::SkippedStep) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::flow::SkippedStep::flow_path",
+      "publicPath": "yosoi::flow::SkippedStep::flow_path",
+      "title": "yosoi::flow::SkippedStep::flow_path",
+      "kind": "struct_field",
+      "signature": "pub flow_path: Vec<u64>",
+      "docs": "Nested Flow indexes followed by the omitted leaf's local step index.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 702,
+        "lineEnd": 702,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L702-L702"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::SkippedStep::fmt",
+      "publicPath": "yosoi::flow::SkippedStep::fmt",
+      "title": "yosoi::flow::SkippedStep::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::flow::SkippedStep::scope",
+      "publicPath": "yosoi::flow::SkippedStep::scope",
+      "title": "yosoi::flow::SkippedStep::scope",
+      "kind": "struct_field",
+      "signature": "pub scope: yosoi::StopScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 706,
+        "lineEnd": 706,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L706-L706"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::SkippedStep::serialize",
+      "publicPath": "yosoi::flow::SkippedStep::serialize",
+      "title": "yosoi::flow::SkippedStep::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::flow::SkippedStep::stopped_by",
+      "publicPath": "yosoi::flow::SkippedStep::stopped_by",
+      "title": "yosoi::flow::SkippedStep::stopped_by",
+      "kind": "struct_field",
+      "signature": "pub stopped_by: Vec<u64>",
+      "docs": "Path of the action that stopped the selected scope.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 704,
+        "lineEnd": 704,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L704-L704"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c2541abe10bd4e74f6096f99a6b5117e2cf6dbe7e05866a65600820239f42f7b",
+  "slug": "yosoi/flow/struct/skippedstep",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c2541abe10bd4e74f6096f99a6b5117e2cf6dbe7e05866a65600820239f42f7b"
+}

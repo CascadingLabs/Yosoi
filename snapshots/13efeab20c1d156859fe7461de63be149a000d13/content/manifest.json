@@ -1,0 +1,662 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0",
+  "source": {
+    "repository": "CascadingLabs/Yosoi",
+    "commit": "13efeab20c1d156859fe7461de63be149a000d13",
+    "root": "docs/public"
+  },
+  "pages": {
+    "/": {
+      "file": "index.md",
+      "title": "Yosoi",
+      "description": "Discover, fetch, and work with web documents.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "44f5a4b24b37505225878b032df973a2063a9d2712f0ab233eb835118aca7f7a"
+    },
+    "/browser-automation-review": {
+      "file": "browser-automation-review/index.md",
+      "title": "One browser engine. Two ways to use it.",
+      "description": "0.2.0 concept review of the Rust browser spike, typed Python models, and evidence scope.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "d109f08e90eebffcbd72f514ee8b36c61d3d54dcbb58caf089c517055e8e74ca"
+    },
+    "/browser-automation-review/archive": {
+      "file": "browser-automation-review/archive.md",
+      "title": "Keep evidence after the browser closes",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 6,
+      "format": "markdown",
+      "sha256": "7c1be1b2dcae5365995be2fb2b1466eb5f191233b1c59b94827f662b2b32a714"
+    },
+    "/browser-automation-review/continuation": {
+      "file": "browser-automation-review/continuation.md",
+      "title": "Continue or stop: scoped failure and cancellation",
+      "description": "Independent continuation overrides for Policies, Flows, actions and assertions.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "9a4f00bc6d32152e7fa89bfc6e482763e2371f2dee957c98d833538e67526f91"
+    },
+    "/browser-automation-review/first-flow": {
+      "file": "browser-automation-review/first-flow.md",
+      "title": "A complete task in one Flow",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "5b1c86a6a29ee2e54fc4fa16442135e8eac6510f6eafcb13a11bb30c4d65e10a"
+    },
+    "/browser-automation-review/javascript": {
+      "file": "browser-automation-review/javascript.md",
+      "title": "JavaScript is an action with extra permission",
+      "description": "Explicit JavaScript permission, construction-time file snapshots, and local ES module actions.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "c13b14f887187970c0c7e7583ca99da4a6f5682210e3b26682e60a17d6c8cf3e"
+    },
+    "/browser-automation-review/lease-model": {
+      "file": "browser-automation-review/lease-model.md",
+      "title": "Lease data model: a real release workflow",
+      "description": "Researched workflow, proposed timeout data and a source-grounded implementation plan.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "8659392bc0bc3a5c76fa403cee6b230c1b2e3e57025193b33108302ffd659eee"
+    },
+    "/browser-automation-review/leases": {
+      "file": "browser-automation-review/leases.md",
+      "title": "A Session stays alive. Work holds the tab.",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "cb3a856d651e635e0c67785a11d7273d329ba8a8f3cebc13d40e9f87631e5d94"
+    },
+    "/browser-automation-review/outcomes": {
+      "file": "browser-automation-review/outcomes.md",
+      "title": "Say what happened, including uncertainty",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 8,
+      "format": "markdown",
+      "sha256": "7c44f4e0baec7eebd8be371c881f99dbba06858e14bbf5f6b492e8a797d92294"
+    },
+    "/browser-automation-review/python": {
+      "file": "browser-automation-review/python.md",
+      "title": "The same model in Python",
+      "description": "The implemented Python beta SDK, shared ownership model and current evidence.",
+      "order": 7,
+      "format": "markdown",
+      "sha256": "3cf0879e48b6403898028b598f76ac8ced8f82b8761577472f475e6398e42e8e"
+    },
+    "/browser-automation-review/refinement": {
+      "file": "browser-automation-review/refinement.md",
+      "title": "Refinement notebook: decisions and open work",
+      "description": "The continuing record of Andrew’s browser automation ideas, decisions and next-pass work.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "cbc4b9e2701277f88990fc8aea63e832cd6db5465334798847469c6c7992dad5"
+    },
+    "/browser-automation-review/release": {
+      "file": "browser-automation-review/release.md",
+      "title": "What earns a 0.2.0 release",
+      "description": "The current 0.2.0 beta scope, artifact targets and remaining release gates.",
+      "order": 9,
+      "format": "markdown",
+      "sha256": "5d0c621f097c7ff15c449b0100f414c9cbbff644eb1b8a3457f3f44ef21d5f77"
+    },
+    "/browser-automation-review/scheduling": {
+      "file": "browser-automation-review/scheduling.md",
+      "title": "Several async tasks, several tabs",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "cc8ac43f9f755b5c95d409f074d23ca8aeec64d2eda026dac9fc75ce113f16cd"
+    },
+    "/browser-automation-review/timeout-scopes": {
+      "file": "browser-automation-review/timeout-scopes.md",
+      "title": "Timeouts: nearest scope wins",
+      "description": "The approved millisecond timeout inheritance contract for CAS-568.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "b9015563a09712d674d114e0a0363f1dc3b387a703f5ac96d946df22be7e340f"
+    },
+    "/browser-automation-review/until": {
+      "file": "browser-automation-review/until.md",
+      "title": "Wait for browser evidence with Until",
+      "description": "Run one trigger, then wait for bounded DOM, accessibility or response evidence.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "83ab295f1219d0d7604506c394efc150e7988c8a00ca2bddb76e7df2ae0f5959"
+    },
+    "/browser-automation-review/watchers": {
+      "file": "browser-automation-review/watchers.md",
+      "title": "Observe without taking control",
+      "description": "0.2.0 concept review. Rust examples describe the local spike; Python examples are proposals.",
+      "order": 5,
+      "format": "markdown",
+      "sha256": "c487bdd21fe616a661e6263d69590faa525a20523dbce6092f181f8474f214b6"
+    },
+    "/browser-automation-review/workspace-plan": {
+      "file": "browser-automation-review/workspace-plan.md",
+      "title": "Workspace plan: decisions, code and proof",
+      "description": "A concrete implementation sequence for every item in the refinement project.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "c989d42c7dd15fa3878325ab14e938909ff89dfcce5131bb6bcb3ccaa1c6ed99"
+    },
+    "/cli": {
+      "file": "cli/index.md",
+      "title": "CLI",
+      "description": "Use Yosoi from your terminal.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "d3d260788015c759c4e4b61e7f9185c41eb6e0b972ee2aa3e3741817555c3338"
+    },
+    "/cli/map": {
+      "file": "cli/map.md",
+      "title": "Map",
+      "description": "Discover pages and inspect a site inventory.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "390682c71cfd51a70e0f0ddb11a5d98d8702f52f94850cb5407958372c003ddd"
+    },
+    "/cli/search": {
+      "file": "cli/search.md",
+      "title": "Search",
+      "description": "Find candidate URLs across search providers.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "c6cf31b9025da10768d65ecf9764e5be048dd9938dcbe0729df498fa15cab610"
+    },
+    "/concepts": {
+      "file": "concepts/index.md",
+      "title": "How Yosoi fits together",
+      "description": "Follow data from discovery through acquisition, location, and validation.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "a6f34f9444d9d8a0482bf691c14935db2f2fc61846d736527afaf3db2300d5aa"
+    },
+    "/cookbook": {
+      "file": "cookbook/index.md",
+      "title": "Cookbook",
+      "description": "Small recipes that combine Yosoi tools.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "68645bbec2e43b5ed1031cf207c916ef8944862d28269c55c9b08c5cca705f14"
+    },
+    "/cookbook/discover-and-fetch": {
+      "file": "cookbook/discover-and-fetch.md",
+      "title": "Discover and fetch",
+      "description": "Discover candidate pages, fetch a few, or reuse retained Map responses.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "3b14e4bdcaae0008f47c22f5d963f0301d8267792e9944115e50ef9d70c2f626"
+    },
+    "/cookbook/extract-structured-data": {
+      "file": "cookbook/extract-structured-data.md",
+      "title": "Extract structured data",
+      "description": "Fetch a page and validate its heading as a Rust record.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "f4d4b3a5e5fee2806c4d66c8563fae6090b50d829298ed778075f8e788cebd3b"
+    },
+    "/cookbook/qscrape-checkout": {
+      "file": "cookbook/qscrape-checkout.md",
+      "title": "A modular checkout with Flows",
+      "description": "A live Qscrape example for the 0.2.0 Rust browser spike: reusable recipes, shared state, assertions, and simulated checkout.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "91bb8310fc1828b4c802dc1defbe5f27add5ad7b7c575e359f2867a96439df54"
+    },
+    "/cookbook/save-and-reuse": {
+      "file": "cookbook/save-and-reuse.md",
+      "title": "Save and reuse a document",
+      "description": "Store a document's identity, profile, and bytes, then locate it again locally.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "5e2a34b857677ad5a711c1c7dc10f177c7020d0231cc71339404c101805c7859"
+    },
+    "/guides/locating": {
+      "file": "guides/locating.md",
+      "title": "Choose a locator",
+      "description": "Pick the document representation and query that match your task.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "f45a9e3dd2e9e330409a1dded2dd3fe6284bc703f8991d56611f69845bca295f"
+    },
+    "/python": {
+      "file": "python/index.md",
+      "title": "Python SDK",
+      "description": "Author documents, locators, and typed Contracts with Pydantic and run them in Rust.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "37ac7567b46938fe0e699d261bfd6306da4413228db5a6e500ec9cafc3c25479"
+    },
+    "/python/browser-workflows": {
+      "file": "python/browser-workflows.md",
+      "title": "Python browser workflows",
+      "description": "Compose typed Flows with managed or borrowed browser ownership.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "d82c425aa78babfaaa24ca97ad415f7136a77c0c3bdc4327032d9fcfb184643f"
+    },
+    "/python/compatibility": {
+      "file": "python/compatibility.md",
+      "title": "Python compatibility status",
+      "description": "Declared interpreter targets and the exact local wheel and browser evidence currently available.",
+      "order": 6,
+      "format": "markdown",
+      "sha256": "24bfc6ba81f709291b9faea139cae1b3a86e6b573844ebc890f5bc2982844c02"
+    },
+    "/python/contracts": {
+      "file": "python/contracts.md",
+      "title": "Python Contracts",
+      "description": "Declare typed Pydantic records and let Rust extract, convert, and validate them.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "ef5557b91feaac5908378f73c87c997b605bbb35499a62f6f2b15e30fb772673"
+    },
+    "/python/documents-and-locators": {
+      "file": "python/documents-and-locators.md",
+      "title": "Python documents and locators",
+      "description": "Build immutable documents, compile locator plans in Rust, and inspect evidence.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "41daabfe67e12cc7e67db1e4b336eb0e2a928fde33fa5577fe753c582485e751"
+    },
+    "/python/errors-and-limits": {
+      "file": "python/errors-and-limits.md",
+      "title": "Python errors and limits",
+      "description": "Distinguish authoring exceptions from Rust operation outcomes and their budgets.",
+      "order": 5,
+      "format": "markdown",
+      "sha256": "ed5eef70e7ee47304c9957f67d5c32e8c3871af4f95febe2e81f02456db110ef"
+    },
+    "/python/installation": {
+      "file": "python/installation.md",
+      "title": "Install the Python SDK",
+      "description": "Choose a compatible Yosoi wheel and interpreter ABI.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "4d017375e4aa50f569b9e4857d6e9ef5ff65d9c36a8b7e883e1a9e2256271afc"
+    },
+    "/python/parity": {
+      "file": "python/parity.md",
+      "title": "Rust and Python parity",
+      "description": "Read the machine-readable surface inventory and conformance status without overstating coverage.",
+      "order": 7,
+      "format": "markdown",
+      "sha256": "eeeef45b21c84d951ee7d581130a3005df9e4dee0c1307800119056156e00dd3"
+    },
+    "/python/workflows": {
+      "file": "python/workflows.md",
+      "title": "Python workflows",
+      "description": "Bind Rust-defaulted Policy and run async Requests, Map, and Search.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "98e3cf1ae4018213c096956fd74b4ee67ec53f8e3b54ec6c43fb58ea65f17431"
+    },
+    "/quickstart": {
+      "file": "quickstart.md",
+      "title": "Install and quickstart",
+      "description": "Install Yosoi and make your first request.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "d9935aa64b2f446de18e661b805f3a4335132da432dc04da5b429e48352115fb"
+    },
+    "/releases": {
+      "file": "releases/index.md",
+      "title": "Release notes",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "b75ed8efccaa954df5bab617a0a12b87834f3c86d25afe2c11006c5fd9599e3a"
+    },
+    "/releases/0-1-0": {
+      "file": "releases/0-1-0.md",
+      "title": "Yosoi 0.1.0 release notes",
+      "description": "Release notes for Yosoi 0.1.0.",
+      "version": "0.1.0",
+      "date": "2026-10-10",
+      "channel": "recommended",
+      "previous": "0.1.0-rc.8",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "13b46689ea76cf3268fd61e9d16d1fa31ca860394025e2aafab76484222d1e56"
+    },
+    "/releases/0-1-0-rc-1": {
+      "file": "releases/0-1-0-rc-1.md",
+      "title": "Yosoi 0.1.0-rc.1 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.1.",
+      "version": "0.1.0-rc.1",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "50c80c584dba4ad147b79918247a89decbe27840afea29b8e4c3034eea8f620b"
+    },
+    "/releases/0-1-0-rc-2": {
+      "file": "releases/0-1-0-rc-2.md",
+      "title": "Yosoi 0.1.0-rc.2 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.2.",
+      "version": "0.1.0-rc.2",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.1",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "39ad2cd208a6065ecccf5c2b22bdb34f1f5e6f0dcf047180e6842aa671586e01"
+    },
+    "/releases/0-1-0-rc-3": {
+      "file": "releases/0-1-0-rc-3.md",
+      "title": "Yosoi 0.1.0-rc.3 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.3.",
+      "version": "0.1.0-rc.3",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.2",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "17611f1ed2bc385ba0cd90d4bb31a794d6ce50fedd48b7ff497d376b2aa249ae"
+    },
+    "/releases/0-1-0-rc-4": {
+      "file": "releases/0-1-0-rc-4.md",
+      "title": "Yosoi 0.1.0-rc.4 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.4.",
+      "version": "0.1.0-rc.4",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.3",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "8076d149f31fb367ca79e2b24c53c15904c6bc64fc5a50ab46548a4e20a2fbe8"
+    },
+    "/releases/0-1-0-rc-5": {
+      "file": "releases/0-1-0-rc-5.md",
+      "title": "Yosoi 0.1.0-rc.5 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.5.",
+      "version": "0.1.0-rc.5",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.4",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "d701ba88f679bc59dc250168024cb03c675771e5fca9c2b242368d8b1e2d54bc"
+    },
+    "/releases/0-1-0-rc-6": {
+      "file": "releases/0-1-0-rc-6.md",
+      "title": "Yosoi 0.1.0-rc.6 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.6.",
+      "version": "0.1.0-rc.6",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.5",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "aaa0e7608f0c9ec6a45415cdb70fffc73f39387a68b2b3f8cb2a3dc065bf6941"
+    },
+    "/releases/0-1-0-rc-7": {
+      "file": "releases/0-1-0-rc-7.md",
+      "title": "Yosoi 0.1.0-rc.7 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.7.",
+      "version": "0.1.0-rc.7",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.6",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "a02c7b38bc566285568e90ba8d41308ca093970597fe48035b1fdfe6df807fd5"
+    },
+    "/releases/0-1-0-rc-8": {
+      "file": "releases/0-1-0-rc-8.md",
+      "title": "Yosoi 0.1.0-rc.8 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.8.",
+      "version": "0.1.0-rc.8",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.7",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "bff2ea0831a7c1b8fe573416fbb5c87b6a9e4b0a5581e5f478ec2545a51a6701"
+    },
+    "/releases/0-1-1": {
+      "file": "releases/0-1-1.md",
+      "title": "Yosoi 0.1.1 release notes",
+      "description": "One modular runtime crate, an optional CLI, and unchanged Rust and Python SDK calls.",
+      "version": "0.1.1",
+      "date": "2026-10-11",
+      "channel": "recommended",
+      "previous": "0.1.0",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "8a2f5dcc7d73142c28f82a9d06a7e71147f846f3ca139b0959e0046bed4ac38b"
+    },
+    "/releases/0-1-2": {
+      "file": "releases/0-1-2.md",
+      "title": "Yosoi 0.1.2 release notes",
+      "description": "Release notes for Yosoi 0.1.2.",
+      "version": "0.1.2",
+      "date": "2026-10-11",
+      "channel": "recommended",
+      "previous": "0.1.1",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "ab7fcf7945d6dce89eaac36f6a53b109e4fbfc2bef45da4e402a7ee21ecc01ea"
+    },
+    "/releases/0-2-0": {
+      "file": "releases/0-2-0.md",
+      "title": "Yosoi 0.2.0 release notes",
+      "description": "Release notes for Yosoi 0.2.0.",
+      "version": "0.2.0",
+      "date": "2026-10-11",
+      "channel": "preview",
+      "previous": "0.1.2",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "147496dc3e0aa7423d00335f1fdd2622694fee9030c290b9d4063ca2c3c27deb"
+    },
+    "/sdk": {
+      "file": "sdk/index.md",
+      "title": "Rust SDK",
+      "description": "Fetch pages, select evidence, and turn it into typed Rust records.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "dbb37a65fea229c77482b5312fe590fe932a2828ad0ff826a2743dbbde7b8fd4"
+    },
+    "/sdk/accessibility": {
+      "file": "sdk/accessibility.md",
+      "title": "Accessibility",
+      "description": "Query roles, names, text, and states in a captured accessibility tree.",
+      "order": 11,
+      "format": "markdown",
+      "sha256": "876ede60094c379b6a52d66a5951d64235f8f22d39063577dea9a5002e256cf1"
+    },
+    "/sdk/archive": {
+      "file": "sdk/archive.md",
+      "title": "Archive availability",
+      "description": "Preserve document data today and understand the SDK's current archive boundary.",
+      "order": 19,
+      "format": "markdown",
+      "sha256": "48923b81fe70fd386d62eb02cbc131d63014dff5fed0011878439a72a66473a6"
+    },
+    "/sdk/assertions": {
+      "file": "sdk/assertions.md",
+      "title": "Immediate Rust assertions",
+      "description": "Check one validated Contract observation with ordinary Rust predicates.",
+      "order": 14,
+      "format": "markdown",
+      "sha256": "69009ce99068b2dbafec6724148bc220cdaa9f74e7fa78ddf23b5a404e051551"
+    },
+    "/sdk/browser": {
+      "file": "sdk/browser.md",
+      "title": "Browser",
+      "description": "Acquire response, rendered-DOM, and accessibility documents with Chrome or Chromium.",
+      "order": 15,
+      "format": "markdown",
+      "sha256": "3df7ac78ef61e0569fd0c9f8b600d0efd4ce1cf77258003cf31e1c69cf0d13d0"
+    },
+    "/sdk/contracts": {
+      "file": "sdk/contracts.md",
+      "title": "Contracts",
+      "description": "Turn located evidence into typed records with a derived Contract.",
+      "order": 12,
+      "format": "markdown",
+      "sha256": "e7d2c4d3433b2e40f018aaa494584f1b1a6c7d105d22cd321ebdbd351f88169c"
+    },
+    "/sdk/documents": {
+      "file": "sdk/documents.md",
+      "title": "Documents",
+      "description": "Create immutable documents from bytes and reuse their parsed representation.",
+      "order": 5,
+      "format": "markdown",
+      "sha256": "0503be1a9d08060138e196afc115a8507c70c8caba8fcf05c17b05b36f51edaf"
+    },
+    "/sdk/errors": {
+      "file": "sdk/errors.md",
+      "title": "Errors and troubleshooting",
+      "description": "Find the stage that failed and keep absence separate from incomplete evidence.",
+      "order": 17,
+      "format": "markdown",
+      "sha256": "d621a167f7bfdeb7a177a830daa3804b226d3cbb92fc291c7d64ec53c105f9d3"
+    },
+    "/sdk/html": {
+      "file": "sdk/html.md",
+      "title": "HTML and CSS",
+      "description": "Select elements, attributes, and text from HTML or rendered DOM.",
+      "order": 7,
+      "format": "markdown",
+      "sha256": "ffd9afb61fd5bf4224a8a64bad174d948046306892555490edb2edc8194346ab"
+    },
+    "/sdk/installation": {
+      "file": "sdk/installation.md",
+      "title": "Installation",
+      "description": "Add the Rust SDK to a local application and run your first request.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "acb315a5802f8d81434712e6e30768ffa10a861818ce3f5034e940c9ef43a00f"
+    },
+    "/sdk/json": {
+      "file": "sdk/json.md",
+      "title": "JSON",
+      "description": "Select JSON values with JSON Pointer and a small JSONPath subset.",
+      "order": 9,
+      "format": "markdown",
+      "sha256": "f23acb64d429a7d3ae99f00565d02c1b2e6f1b60b205b448568fa8c0917aaec1"
+    },
+    "/sdk/limits": {
+      "file": "sdk/limits.md",
+      "title": "Limits",
+      "description": "Choose explicit bounds for acquisition, parsing, location, and discovery.",
+      "order": 16,
+      "format": "markdown",
+      "sha256": "89cce8ca76aedc04449b0b2ccaf43c940bf5567c40d6b826c96d49bb5b7762e2"
+    },
+    "/sdk/locators": {
+      "file": "sdk/locators.md",
+      "title": "Locators",
+      "description": "Describe named outputs and inspect the evidence behind each match.",
+      "order": 6,
+      "format": "markdown",
+      "sha256": "2b9a79db5334bbbea238c64cd2887cd833af6d7a5791a15dc780fdf2f5b740c2"
+    },
+    "/sdk/map": {
+      "file": "sdk/map.md",
+      "title": "Map",
+      "description": "Discover a bounded inventory of URLs and inspect how each one was found.",
+      "order": 14,
+      "format": "markdown",
+      "sha256": "9b1bdae4a2c0291ba204407e8a31437a3987ea35bec2e4466039092f8653ebaf"
+    },
+    "/sdk/packages": {
+      "file": "sdk/packages.md",
+      "title": "Packages and capabilities",
+      "description": "Choose the Rust SDK, Python SDK, or CLI without importing implementation crates.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "a255e81ac48e5a3373a5dc8f15cf26806848cab4a8d0c89946691840ee9f911d"
+    },
+    "/sdk/policy": {
+      "file": "sdk/policy.md",
+      "title": "Policy",
+      "description": "Configure acquisition, parsing, discovery, and resource limits with ordinary Rust values.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "4c53ef6e37303e64b8ccb1645590d77daa6388ab0129374b83afe9fdd2c18d77"
+    },
+    "/sdk/python": {
+      "file": "sdk/python.md",
+      "title": "Python SDK",
+      "description": "Author documents, locators, Contracts, and operations with Pydantic while Rust owns processing.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "12ca5906cf858939439d0cf1dc75dabeb4c4d5c8df0f0bf44d3e426c0467e49c"
+    },
+    "/sdk/requests": {
+      "file": "sdk/requests.md",
+      "title": "Requests",
+      "description": "Fetch a URL with a shared Policy and inspect each acquisition.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "5fd0c769b4bae8f2fd0ba92cd1cb1180c86c701a36910da5710fa75ab0c77b48"
+    },
+    "/sdk/responses": {
+      "file": "sdk/responses.md",
+      "title": "Responses",
+      "description": "Distinguish acquisition failures, partial documents, and usable evidence.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "c783ad1a1ff80db1f967678986358eb3fbd4851b6cb9a3fc3e22d25acd18723f"
+    },
+    "/sdk/search": {
+      "file": "sdk/search.md",
+      "title": "Search",
+      "description": "Find candidate URLs through provider-backed search.",
+      "order": 18,
+      "format": "markdown",
+      "sha256": "7795eca6538d4ea55b574e673b20a5f75e7188c852f36d230fdb25449068835f"
+    },
+    "/sdk/sessions": {
+      "file": "sdk/sessions/index.md",
+      "title": "Exiting releases owned resources; first/second retain captured data.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "d901510783eb64eded2c8a7364f9117a2c6705658c59954cd8ca9efad62bb750"
+    },
+    "/sdk/text": {
+      "file": "sdk/text.md",
+      "title": "Text and regex",
+      "description": "Find literal text and named captures in decoded UTF-8 documents.",
+      "order": 10,
+      "format": "markdown",
+      "sha256": "71682faefb41c0fa2af0bee49bf8380242afa514ab8d43bf9a94c3925803381e"
+    },
+    "/sdk/validation": {
+      "file": "sdk/validation.md",
+      "title": "Validation",
+      "description": "Inspect valid records, rejected fields, and the evidence behind them.",
+      "order": 13,
+      "format": "markdown",
+      "sha256": "7fac41fa3865663dfbe007e80b318a368f3ffad3902d42829a7cf9c651fc9a8d"
+    },
+    "/sdk/xml": {
+      "file": "sdk/xml.md",
+      "title": "XML",
+      "description": "Query XML with explicit namespace bindings.",
+      "order": 8,
+      "format": "markdown",
+      "sha256": "f5959cb4751818abdff4f91f595f366af1c6335c718d06ae46a64a9e7220c73a"
+    }
+  },
+  "assets": {
+    "assets/demo.svg": {
+      "sha256": "64b4bd50c3a986a47a134dbd07b94bfb984c4b144b63526e88f8b967fabf5168"
+    },
+    "assets/media/logo-dark.svg": {
+      "sha256": "4e3ab57b675264f888e19b1592cc62ffac00b2831944d68aef2e3cfb7053baec"
+    },
+    "assets/media/logo-light.svg": {
+      "sha256": "42b8dbf1ad88bcbc646c47f1af7bf633ee9801294fc18cb89e52525e80f0d16d"
+    },
+    "assets/python-sdk-parity.json": {
+      "sha256": "3b7ba32e31e2f9c295434a86867a38aa72dfdf73eb9bd9401e96d083caf79347"
+    }
+  }
+}

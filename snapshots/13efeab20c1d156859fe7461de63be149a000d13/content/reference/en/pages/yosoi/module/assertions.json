@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::assertions",
+  "publicPath": "yosoi::assertions",
+  "kind": "module",
+  "title": "yosoi::assertions",
+  "signature": "pub mod assertions",
+  "docs": "Immediate, local Rust predicates over one validated Contract observation.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 1,
+    "lineEnd": 590,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L1-L590"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "ba8fa18c1c9ee507afb3eac65a1b970471762861e903157709097496b6ef33f6",
+  "slug": "yosoi/module/assertions",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ba8fa18c1c9ee507afb3eac65a1b970471762861e903157709097496b6ef33f6"
+}

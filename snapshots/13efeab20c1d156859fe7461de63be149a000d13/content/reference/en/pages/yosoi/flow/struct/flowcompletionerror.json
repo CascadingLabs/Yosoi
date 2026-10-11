@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::FlowCompletionError",
+  "publicPath": "yosoi::flow::FlowCompletionError",
+  "kind": "struct",
+  "title": "yosoi::flow::FlowCompletionError",
+  "signature": "pub struct FlowCompletionError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 825,
+    "lineEnd": 827,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L825-L827"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowCompletionError"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::clone",
+      "publicPath": "yosoi::flow::FlowCompletionError::clone",
+      "title": "yosoi::flow::FlowCompletionError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowCompletionError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 824,
+        "lineEnd": 824,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L824-L824"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::eq",
+      "publicPath": "yosoi::flow::FlowCompletionError::eq",
+      "title": "yosoi::flow::FlowCompletionError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowCompletionError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 824,
+        "lineEnd": 824,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L824-L824"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::fmt",
+      "publicPath": "yosoi::flow::FlowCompletionError::fmt",
+      "title": "yosoi::flow::FlowCompletionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 824,
+        "lineEnd": 824,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L824-L824"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::fmt",
+      "publicPath": "yosoi::flow::FlowCompletionError::fmt",
+      "title": "yosoi::flow::FlowCompletionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 829,
+        "lineEnd": 831,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L829-L831"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowCompletionError::terminal",
+      "publicPath": "yosoi::flow::FlowCompletionError::terminal",
+      "title": "yosoi::flow::FlowCompletionError::terminal",
+      "kind": "struct_field",
+      "signature": "pub terminal: yosoi::flow::FlowTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 826,
+        "lineEnd": 826,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L826-L826"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/flow/struct/flowcompletionerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

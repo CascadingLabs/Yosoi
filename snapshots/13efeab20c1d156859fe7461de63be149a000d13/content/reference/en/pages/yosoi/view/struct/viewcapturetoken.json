@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::ViewCaptureToken",
+  "publicPath": "yosoi::view::ViewCaptureToken",
+  "kind": "struct",
+  "title": "yosoi::view::ViewCaptureToken",
+  "signature": "pub struct ViewCaptureToken",
+  "docs": "Source binding carried by a View and every continuation cursor.\n\nThe observation ID is the primary source identity. `fingerprint` is only a\nsmall advisory check that a caller has not reused that identity for changed\nHTML; it is neither an integrity digest nor a substitute for provenance.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 101,
+    "lineEnd": 104,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L101-L104"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::ViewCaptureToken"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::advisory_fingerprint",
+      "publicPath": "yosoi::view::ViewCaptureToken::advisory_fingerprint",
+      "title": "yosoi::view::ViewCaptureToken::advisory_fingerprint",
+      "kind": "function",
+      "signature": "pub const fn advisory_fingerprint(&self) -> u64",
+      "docs": "Returns an advisory, non-cryptographic HTML fingerprint.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 112,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L112-L114"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::clone",
+      "publicPath": "yosoi::view::ViewCaptureToken::clone",
+      "title": "yosoi::view::ViewCaptureToken::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::ViewCaptureToken",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::deserialize",
+      "publicPath": "yosoi::view::ViewCaptureToken::deserialize",
+      "title": "yosoi::view::ViewCaptureToken::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::eq",
+      "publicPath": "yosoi::view::ViewCaptureToken::eq",
+      "title": "yosoi::view::ViewCaptureToken::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::ViewCaptureToken) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::fmt",
+      "publicPath": "yosoi::view::ViewCaptureToken::fmt",
+      "title": "yosoi::view::ViewCaptureToken::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::serialize",
+      "publicPath": "yosoi::view::ViewCaptureToken::serialize",
+      "title": "yosoi::view::ViewCaptureToken::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::view::ViewCaptureToken::source",
+      "publicPath": "yosoi::view::ViewCaptureToken::source",
+      "title": "yosoi::view::ViewCaptureToken::source",
+      "kind": "function",
+      "signature": "pub const fn source(&self) -> &yosoi::view::ViewSource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 107,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/view.rs#L107-L109"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "8afa08a8d8ebd5385d3aa46b5c449a6480b19930966651016912d66c401627af",
+  "slug": "yosoi/view/struct/viewcapturetoken",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8afa08a8d8ebd5385d3aa46b5c449a6480b19930966651016912d66c401627af"
+}

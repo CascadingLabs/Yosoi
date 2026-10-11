@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::AssertionGroup",
+  "publicPath": "yosoi::assertions::AssertionGroup",
+  "kind": "struct",
+  "title": "yosoi::assertions::AssertionGroup",
+  "signature": "pub struct AssertionGroup<'a, C>",
+  "docs": "Group evaluation is synchronous after asynchronous capture; no retry is implied.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 55,
+    "lineEnd": 58,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L55-L58"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::evaluate",
+      "publicPath": "yosoi::assertions::AssertionGroup::evaluate",
+      "title": "yosoi::assertions::AssertionGroup::evaluate",
+      "kind": "function",
+      "signature": "pub fn evaluate(&self, document: &yosoi::Document) -> Result<yosoi::assertions::AssertionReport, yosoi::assertions::AssertionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 74,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L74-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "publicPath": "yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "title": "yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "kind": "function",
+      "signature": "pub fn evaluate_with_policy(&self, document: &yosoi::Document, policy: &yosoi::Policy) -> Result<yosoi::assertions::AssertionReport, yosoi::assertions::AssertionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 77,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L77-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::fmt",
+      "publicPath": "yosoi::assertions::AssertionGroup::fmt",
+      "title": "yosoi::assertions::AssertionGroup::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 60,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L60-L65"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::new",
+      "publicPath": "yosoi::assertions::AssertionGroup::new",
+      "title": "yosoi::assertions::AssertionGroup::new",
+      "kind": "function",
+      "signature": "pub fn new(plan: yosoi::locators::Plan, checks: impl IntoIterator<Item = yosoi::assertions::Check<'a, C>>) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 68,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L68-L73"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c753c6bcbfee29f94dfe998e06a21c7b584695da44c17c1483c58e397ea69bfb",
+  "slug": "yosoi/assertions/struct/assertiongroup",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c753c6bcbfee29f94dfe998e06a21c7b584695da44c17c1483c58e397ea69bfb"
+}
