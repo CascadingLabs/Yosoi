@@ -1,6 +1,7 @@
-use crate::internal::types as yosoi_types;
-
+use super::ObservationWatch;
 use super::Page;
+use crate::internal::browser::DocumentEpoch;
+use crate::internal::browser::DocumentScope;
 use crate::internal::browser::environment::EnvironmentObservation;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
@@ -28,7 +29,159 @@ pub(super) fn runtime_seed() -> u64 {
         })
 }
 
+fn same_input_scope(expected: &DocumentScope, current: &DocumentScope) -> bool {
+    expected.frame_id == current.frame_id
+        && expected.epoch == current.epoch
+        && expected.frame == current.frame
+}
+
 impl Page {
+    async fn prepare_native_input_surface(&self) -> Result<()> {
+        if matches!(
+            &self.browser_mode,
+            EnvironmentObservation::Known {
+                value: crate::internal::types::BrowserMode::Headful
+            }
+        ) {
+            // A new headful tab can put this leased page in the background.
+            // Native pointer input needs its visible surface, while activating
+            // an already visible headful page can stall the compositor.
+            let visibility = self.evaluate_js("document.visibilityState").await?;
+            if visibility.as_str() == Some("hidden") {
+                let original_scope = self.document_scope().await?;
+                self.inner
+                    .bring_to_front()
+                    .await
+                    .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+                let visible = self.evaluate_js("document.visibilityState").await?;
+                let current_scope = self.document_scope().await?;
+                if current_scope.frame_id != original_scope.frame_id
+                    || current_scope.epoch != original_scope.epoch
+                    || current_scope.frame != original_scope.frame
+                {
+                    return Err(VoidCrawlError::NavigationStateUncertain);
+                }
+                if visible.as_str() != Some("visible") {
+                    return Err(VoidCrawlError::PageError(
+                        "headful native input surface did not become visible".into(),
+                    ));
+                }
+            } else if visibility.as_str() != Some("visible") {
+                return Err(VoidCrawlError::PageError(
+                    "headful native input surface is unavailable".into(),
+                ));
+            }
+        } else {
+            self.inner
+                .activate()
+                .await
+                .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        }
+        Ok(())
+    }
+
+    async fn ensure_expected_scope(&self, expected: Option<&ObservationWatch>) -> Result<()> {
+        let Some(watch) = expected else {
+            return Ok(());
+        };
+        if !watch.belongs_to_page(self) {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        let expected = watch.start_scope();
+        if !matches!(expected.epoch, DocumentEpoch::Known(_)) {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        let current = self
+            .document_scope()
+            .await
+            .map_err(|_| VoidCrawlError::NavigationStateUncertain)?;
+        if !matches!(current.epoch, DocumentEpoch::Known(_))
+            || !same_input_scope(expected, &current)
+        {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        Ok(())
+    }
+
+    async fn click_element_with_scope(
+        &self,
+        selector: &str,
+        expected: Option<&ObservationWatch>,
+    ) -> Result<()> {
+        self.ensure_active().await?;
+        // Native input and screenshots share the browser's foreground surface.
+        let _input_guard = self.capture_lock.lock().await;
+        self.ensure_expected_scope(expected).await?;
+        let element_result = self.inner.find_element(selector).await;
+        self.ensure_expected_scope(expected).await?;
+        let element =
+            element_result.map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()))?;
+        let surface_result = self.prepare_native_input_surface().await;
+        self.ensure_expected_scope(expected).await?;
+        surface_result?;
+        element
+            .click()
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        Ok(())
+    }
+
+    async fn type_into_with_scope(
+        &self,
+        selector: &str,
+        text: &str,
+        expected: Option<&ObservationWatch>,
+    ) -> Result<()> {
+        self.ensure_active().await?;
+        let _input_guard = self.capture_lock.lock().await;
+        self.ensure_expected_scope(expected).await?;
+        let element_result = self.inner.find_element(selector).await;
+        self.ensure_expected_scope(expected).await?;
+        let element =
+            element_result.map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()))?;
+        let surface_result = self.prepare_native_input_surface().await;
+        self.ensure_expected_scope(expected).await?;
+        surface_result?;
+
+        let original_scope = match expected {
+            Some(watch) => watch.start_scope().clone(),
+            None => self.document_scope().await?,
+        };
+        let focus_result = element.focus().await;
+        let focused = if focus_result.is_ok() {
+            element
+                .call_js_fn(
+                    "function() { return this.isConnected && this.ownerDocument.activeElement === this; }",
+                    false,
+                )
+                .await
+                .map(|response| {
+                    response.result.value.and_then(|value| value.as_bool()) == Some(true)
+                })
+        } else {
+            Ok(false)
+        };
+        let current_scope = self
+            .document_scope()
+            .await
+            .map_err(|_| VoidCrawlError::NavigationStateUncertain)?;
+        if !same_input_scope(&original_scope, &current_scope) {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        focus_result.map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        if !focused.map_err(|error| VoidCrawlError::PageError(error.to_string()))? {
+            return Err(VoidCrawlError::InvalidInput {
+                operation: "type_into",
+                reason: "target_lost_before_typing",
+            });
+        }
+        element
+            .type_str(text)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        Ok(())
+    }
+
     // ── Humanized pointer input (CAS-147) ───────────────────────────────
 
     /// Move the virtual cursor to `(x, y)` via CDP `Input.dispatchMouseEvent`.
@@ -97,7 +250,7 @@ impl Page {
         if !matches!(
             &self.browser_mode,
             EnvironmentObservation::Known {
-                value: yosoi_types::BrowserMode::Headful
+                value: crate::internal::types::BrowserMode::Headful
             }
         ) {
             self.inner
@@ -200,35 +353,35 @@ impl Page {
 
     /// Click on the first element matching `selector`.
     pub async fn click_element(&self, selector: &str) -> Result<()> {
-        self.ensure_active().await?;
-        let el = self
-            .inner
-            .find_element(selector)
-            .await
-            .map_err(|e| VoidCrawlError::ElementNotFound(e.to_string()))?;
-        el.click()
-            .await
-            .map_err(|e| VoidCrawlError::PageError(e.to_string()))?;
-        Ok(())
+        self.click_element_with_scope(selector, None).await
+    }
+
+    /// Click an element only while the supplied page watch remains active and
+    /// its original document scope still matches.
+    pub async fn click_element_in_scope(
+        &self,
+        selector: &str,
+        watch: &ObservationWatch,
+    ) -> Result<()> {
+        self.click_element_with_scope(selector, Some(watch)).await
     }
 
     /// Type text into the first element matching `selector`.
     ///
     /// Focuses the element first so that key events are directed to it.
     pub async fn type_into(&self, selector: &str, text: &str) -> Result<()> {
-        self.ensure_active().await?;
-        let el = self
-            .inner
-            .find_element(selector)
-            .await
-            .map_err(|e| VoidCrawlError::ElementNotFound(e.to_string()))?;
-        el.focus()
-            .await
-            .map_err(|e| VoidCrawlError::PageError(e.to_string()))?;
-        el.type_str(text)
-            .await
-            .map_err(|e| VoidCrawlError::PageError(e.to_string()))?;
-        Ok(())
+        self.type_into_with_scope(selector, text, None).await
+    }
+
+    /// Type into an element only while the supplied page watch remains active
+    /// and its original document scope still matches.
+    pub async fn type_into_in_scope(
+        &self,
+        selector: &str,
+        text: &str,
+        watch: &ObservationWatch,
+    ) -> Result<()> {
+        self.type_into_with_scope(selector, text, Some(watch)).await
     }
 
     // ── CDP Input ───────────────────────────────────────────────────────

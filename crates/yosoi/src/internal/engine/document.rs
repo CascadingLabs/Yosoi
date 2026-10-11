@@ -19,6 +19,17 @@ pub enum ParseError {
     Document(#[from] EngineDocumentParseError),
 }
 
+/// Failure normalizing a complete, identity-bound browser HTML observation.
+#[derive(Debug, Error)]
+pub enum ObservedDomError {
+    #[error(transparent)]
+    Policy(#[from] crate::internal::documents::ResourceBudgetError),
+    #[error(transparent)]
+    Normalize(
+        #[from] crate::internal::engine::browser_document::dom::RenderedDomNormalizationError,
+    ),
+}
+
 /// An immutable document with an explicit representation.
 ///
 /// Bytes move into the document. DOM and accessibility-tree documents require
@@ -41,6 +52,22 @@ impl fmt::Debug for Document {
 }
 
 impl Document {
+    /// Uses the same canonical normalization as browser Request capture.
+    pub fn observed_dom(
+        id: impl Into<String>,
+        epoch: u64,
+        html: Vec<u8>,
+        policy: &Policy,
+    ) -> Result<Self, ObservedDomError> {
+        Ok(
+            crate::internal::engine::browser_document::dom::normalize_rendered_dom(
+                id,
+                epoch,
+                html,
+                resource_budget_for_policy(policy)?,
+            )?,
+        )
+    }
     /// Creates an immutable source HTML document.
     pub fn html(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
         EngineDocument::html(id, bytes).map(Self::from_inner)

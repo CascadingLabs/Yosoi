@@ -39,6 +39,9 @@ Pydantic validators or defaults to change a Rust-validated record.
 
 ## Pages
 
+For managed recipes, borrowed browser leases, typed assertions and explicit
+JavaScript permission, see [Python browser workflows](browser-workflows.md).
+
 | I want to…                                             | Read                                                                     |
 | ------------------------------------------------------ | ------------------------------------------------------------------------ |
 | Install the Python package for a supported interpreter | [Installation](installation.md)                                          |

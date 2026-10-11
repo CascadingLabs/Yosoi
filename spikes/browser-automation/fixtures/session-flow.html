@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Yosoi local browser fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Local fixture</h1>
+      <button id="advance" onclick="const status=document.querySelector('#status');status.className='ready';status.textContent='ready';document.body.dataset.changed='yes'">Advance</button>
+      <p id="status">idle</p>
+      <label>Query <input id="query" type="text"></label>
+      <ul>
+        <li class="row">Fixture row 01</li>
+        <li class="row">Fixture row 02</li>
+        <li class="row">Fixture row 03</li>
+        <li class="row">Fixture row 04</li>
+        <li class="row">Fixture row 05</li>
+        <li class="row">Fixture row 06</li>
+        <li class="row">Fixture row 07</li>
+        <li class="row">Fixture row 08</li>
+        <li class="row">Fixture row 09</li>
+        <li class="row">Fixture row 10</li>
+        <li class="row">Fixture row 11</li>
+        <li class="row">Fixture row 12</li>
+      </ul>
+    </main>
+    <script>
+      if (new URLSearchParams(window.location.search).get("variant") === "drift") {
+        const rows = document.querySelectorAll(".row");
+        for (let index = 4; index < rows.length; index += 1) rows[index].remove();
+      }
+    </script>
+  </body>
+</html>

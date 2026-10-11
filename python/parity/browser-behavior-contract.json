@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "yosoi-python-browser-behavior-contract",
+  "sdkVersion": "0.2.0",
+  "testModule": "python/tests/test_browser_beta.py",
+  "browser": {
+    "distribution": "Google Chrome Stable",
+    "admittedStableMajorVersion": 155,
+    "versionPattern": "Google Chrome <major>.<minor>.<build>.<patch>"
+  },
+  "modeProfiles": {
+    "headless": {
+      "managedSession": "headless",
+      "borrowedSession": "headless",
+      "browserFree": "mode-independent"
+    },
+    "headful": {
+      "managedSession": "headless",
+      "borrowedSession": "headful",
+      "browserFree": "mode-independent"
+    }
+  },
+  "stories": [
+    {
+      "id": "installed-wheel-provenance",
+      "testCases": ["test_installed_wheel_is_used_when_requested"],
+      "description": "Python and native imports match the selected installed wheel."
+    },
+    {
+      "id": "bounded-milliseconds-and-default-permissions",
+      "testCases": ["test_public_models_keep_defaults_and_positive_millisecond_bounds"],
+      "description": "Positive bounded millisecond timeouts serialize as Rust durations, and JavaScript stays opt-in."
+    },
+    {
+      "id": "construction-time-source-snapshots-and-export-selection",
+      "testCases": [
+        "test_javascript_file_and_module_sources_are_snapshotted_at_construction",
+        "test_managed_and_borrowed_flows_scope_cleanup_and_javascript_permission"
+      ],
+      "description": "File and local module graphs are captured when authored, and the selected module export is evaluated."
+    },
+    {
+      "id": "typed-assertions-bind-before-acquisition",
+      "testCases": ["test_typed_assertion_requires_local_predicates_before_browser_acquisition"],
+      "description": "Typed Contract assertions require explicit local predicates before a browser is acquired."
+    },
+    {
+      "id": "strict-completion-requires-observed-evidence",
+      "testCases": ["test_require_completed_rejects_uncertain_or_inconsistent_evidence"],
+      "description": "require_completed accepts only completed outcomes without stop, skip, failure, cancellation, or uncertain cleanup and step receipts."
+    },
+    {
+      "id": "bound-flow-javascript-configuration-is-immutable",
+      "testCases": ["test_bound_flow_javascript_configuration_is_immutable"],
+      "description": "BoundFlow JavaScript opt-in returns a new bound recipe and does not mutate the original Flow or policy."
+    },
+    {
+      "id": "retained-session-request-policy-and-work-reuse",
+      "testCases": ["test_page_requests_reuse_session_work_and_keep_cancellation_scoped"],
+      "description": "PageRequest can use retained Session or Work browser ownership, bind an explicit browser policy, return a typed current-document Cart, reject DirectHttp fallback, and preserve ownership after pre-dispatch cancellation."
+    },
+    {
+      "id": "managed-borrowed-cleanup-permission-and-predicate-outcomes",
+      "testCases": ["test_managed_and_borrowed_flows_scope_cleanup_and_javascript_permission"],
+      "description": "Managed and borrowed Flow invocation preserve ownership, enforce JavaScript permission, and stop after false or raising predicates."
+    },
+    {
+      "id": "until-scope-cancellation-and-later-step-fencing",
+      "testCases": ["test_cancellation_preserves_until_scope_and_stops_later_dispatch"],
+      "description": "Cancellation preserves the scoped Until receipt and prevents a later action from dispatching."
+    },
+    {
+      "id": "predicate-cancellation-event-loop-responsiveness-and-lease-reuse",
+      "testCases": ["test_predicate_cancellation_keeps_event_loop_responsive_and_work_reusable"],
+      "description": "Cancellation returns while a local predicate remains blocked, keeps the asyncio loop responsive, and leaves the borrowed Work reusable after the predicate releases."
+    },
+    {
+      "id": "acquisition-and-pre-dispatch-cancellation",
+      "testCases": ["test_cancelled_session_acquisition_and_pre_dispatch_leave_no_effects"],
+      "description": "Cancellation before acquisition or dispatch creates no loopback business effect."
+    }
+  ]
+}

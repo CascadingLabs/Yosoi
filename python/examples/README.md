@@ -32,6 +32,15 @@ rejection message returned by Rust. `local` starts a loopback HTTP server and ex
 Requests and Map plus explicit cancellation before I/O. These commands need no public website. Fresh installed-wheel verification for the new Contract
 example is pending.
 
+`browser_beta.py` is an application integration template rather than a
+self-contained browser fixture. It expects the caller to provide typed site
+actions and Until expectations, a Plan for its Contract, and browser settings.
+The example uses no embedded selectors. It shows both managed invocation and
+borrowed Session/Work ownership through the flat `import yosoi as ys` API. Its
+order check explicitly stops the invocation on failure or cancellation so a
+later order action cannot run after a failed assertion; this leaves the Rust
+`Continue` defaults unchanged for other flows.
+
 For requests to public sites or search providers:
 
 ~~~sh

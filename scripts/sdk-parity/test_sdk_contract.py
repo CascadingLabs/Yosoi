@@ -141,6 +141,47 @@ def evidence_documents(*, stale_suite: str | None = None) -> list[dict[str, Any]
 
 
 class SdkContractTests(unittest.TestCase):
+    def test_existing_sdk_modules_and_request_reuse_cannot_be_exempted(self) -> None:
+        for namespace in sdk_contract.NAMESPACES:
+            item = rust_item(f"yosoi::{namespace}", "module", "module")
+            self.assertEqual(sdk_contract._expected_classification(item), "sdk")
+        for name in ("in_session", "with_work"):
+            item = rust_item(f"yosoi::request::PageRequest::{name}", "function", "fn")
+            self.assertEqual(sdk_contract._expected_classification(item), "sdk")
+        item = rust_item("yosoi::unreviewed_runtime", "module", "module")
+        self.assertEqual(sdk_contract._expected_classification(item), "sdk")
+
+    def test_deferred_beta_facades_remain_visible_with_explicit_boundaries(
+        self,
+    ) -> None:
+        report, _, _, _ = make_inputs()
+        for path, kind in (("yosoi::Archive", "struct"), ("yosoi::view", "module")):
+            report["coverage"]["items"].append(
+                {**rust_item(path, kind, path), "status": "missing"}
+            )
+        contract = sdk_contract.build_contract(report)
+        sdk_contract._validate_contract(contract)
+        deferred = [
+            item
+            for item in contract["declarations"]
+            if item["classification"] == "deferred-beta-surface"
+        ]
+        self.assertEqual(len(deferred), 2)
+        self.assertTrue(all(item["baselineStatus"] == "missing" for item in deferred))
+        self.assertEqual(
+            {item["deferredSurface"]["issue"] for item in deferred},
+            {"CAS-566", "CAS-567"},
+        )
+        deferred[0]["deferredSurface"]["issue"] = "made-up-exemption"
+        with self.assertRaisesRegex(ValueError, "beta boundary"):
+            sdk_contract._validate_contract(contract)
+
+    def test_implemented_request_api_cannot_be_relabelled_as_deferred(self) -> None:
+        contract = copy.deepcopy(self.contract)
+        contract["declarations"][0]["classification"] = "deferred-beta-surface"
+        with self.assertRaisesRegex(ValueError, "invalid classification"):
+            sdk_contract._validate_contract(contract)
+
     def test_new_root_namespace_cannot_escape_scope_review(self) -> None:
         report, rust, python, ledger = make_inputs()
         contract = sdk_contract.build_contract(report)

@@ -109,3 +109,6 @@ The derive also generates a candidate companion, such as `ProductCandidate`. Bef
 `extract_with_limit(&located, maximum)` applies one bound to scanned regions and findings, matching findings, candidate records, per-field values, retained evidence, and diagnostics. It rejects excess work rather than returning the first `maximum` records. Extraction and validation have separate defaults; changing a locator limit does not automatically raise those later budgets.
 
 Continue with [Validation](validation.md) to handle mixed valid and invalid records.
+
+Use [Immediate Rust assertions](assertions.md) to check an existing Contract
+observation inside a Flow with anonymous predicates.

@@ -17,6 +17,12 @@ pub struct NativeRequest {
     inner: Arc<request::PageRequest>,
 }
 
+impl NativeRequest {
+    pub(crate) fn clone_request(&self) -> request::PageRequest {
+        self.inner.as_ref().clone()
+    }
+}
+
 #[pymethods]
 impl NativeRequest {
     #[new]

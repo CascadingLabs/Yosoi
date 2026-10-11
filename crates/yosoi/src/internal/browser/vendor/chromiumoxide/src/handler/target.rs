@@ -739,6 +739,12 @@ impl Target {
                             });
                             let _ = tx.send(context);
                         }
+                        TargetMessage::GetExecutionContextUnique(ctx) => {
+                            let context = self
+                                .frame_manager
+                                .frame_execution_context_unique_for_session(&ctx.frame_id);
+                            let _ = ctx.tx.send(context);
+                        }
                         TargetMessage::GetFrameSession { frame_id, tx } => {
                             let session_id =
                                 self.frame_manager.session_for_frame(&frame_id).cloned();
@@ -1041,6 +1047,12 @@ pub struct GetExecutionContext {
     pub tx: Sender<Option<(ExecutionContextId, SessionId)>>,
 }
 
+#[derive(Debug)]
+pub struct GetExecutionContextUnique {
+    pub frame_id: FrameId,
+    pub tx: Sender<Option<(String, SessionId)>>,
+}
+
 impl GetExecutionContext {
     pub fn new(tx: Sender<Option<(ExecutionContextId, SessionId)>>) -> Self {
         Self {
@@ -1116,6 +1128,8 @@ pub enum TargetMessage {
     AddEventListener(EventListenerRequest),
     /// Get the `ExecutionContext` if available
     GetExecutionContext(GetExecutionContext),
+    /// Get the main-world `ExecutionContext` unique id and owning session.
+    GetExecutionContextUnique(GetExecutionContextUnique),
     /// Return the session currently responsible for a frame.
     GetFrameSession {
         frame_id: FrameId,

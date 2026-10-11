@@ -59,12 +59,14 @@ pub async fn read_policy_record(
                 .policy
                 .validate_effective_snapshot(&record.effective_policy)
                 .map_err(ArchiveError::InvalidPolicy)?;
-            let computed = if map_robots_authored {
-                record.effective_policy.effective_identity()
-            } else {
-                record
+            let computed = match record.effective_identity.version() {
+                7 => record.effective_policy.effective_identity(),
+                6 => record.effective_policy.archived_v6_identity(),
+                5 => record.effective_policy.archived_v5_identity(),
+                4 if !map_robots_authored => record
                     .effective_policy
-                    .archived_v4_search_pre_robots_identity()
+                    .archived_v4_search_pre_robots_identity(),
+                _ => Err(PolicyError::ArchivedIdentityMismatch),
             }
             .map_err(ArchiveError::InvalidPolicy)?;
             let expected = EffectivePolicyIdentityRecord::from_identity(computed);

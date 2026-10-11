@@ -1,5 +1,3 @@
-use crate::internal::engine as yosoi_engine;
-
 use super::{CancellationToken, RequestId, Response, WebTarget};
 use crate::internal::engine::request as implementation;
 use crate::policy::Policy;
@@ -15,9 +13,41 @@ pub fn new(target: impl Into<WebTarget>) -> PageRequest {
 /// A user-authored page request. Execution machinery remains private.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PageRequest {
-    inner: yosoi_engine::PageRequest,
+    inner: crate::internal::engine::PageRequest,
 }
 impl PageRequest {
+    /// Acquire managed control from an explicitly retained Session.
+    pub fn in_session<'session>(
+        &self,
+        session: &'session crate::session::Session,
+    ) -> crate::session::SessionRequest<'session> {
+        crate::session::SessionRequest::new(self.clone(), session)
+    }
+
+    /// Reuse caller-held control without reacquiring its tab mutex.
+    pub fn with_work<'work>(
+        &self,
+        work: &'work crate::session::Work,
+    ) -> crate::session::SessionRequest<'work> {
+        crate::session::SessionRequest::on_work(self.clone(), work)
+    }
+
+    #[cfg(feature = "browser")]
+    pub(crate) async fn send_on_browser_control(
+        &self,
+        policy: &Policy,
+        control: &crate::internal::web_capture::RuntimeBrowserControl,
+        cancellation: &CancellationToken,
+    ) -> Result<Response, RequestSendError> {
+        self.inner
+            .clone()
+            .bind(policy)
+            .send_on_browser_control(control, cancellation)
+            .await
+            .map(Response::from_internal)
+            .map_err(RequestSendError)
+    }
+
     /// Returns the request identity.
     pub const fn id(&self) -> RequestId {
         self.inner.id()
@@ -28,8 +58,10 @@ impl PageRequest {
     }
     /// Associates this request with a borrowed policy.
     pub fn bind(self, policy: &Policy) -> BoundPageRequest<'_> {
+        let request = self.clone();
         BoundPageRequest {
             inner: self.inner.bind(policy),
+            request,
         }
     }
     /// Validates the target and policy without contacting a provider.
@@ -63,9 +95,23 @@ impl PageRequest {
 /// A request bound to a borrowed SDK policy.
 #[derive(Debug)]
 pub struct BoundPageRequest<'policy> {
-    inner: yosoi_engine::BoundPageRequest<'policy>,
+    inner: crate::internal::engine::BoundPageRequest<'policy>,
+    request: PageRequest,
 }
 impl BoundPageRequest<'_> {
+    pub fn in_session<'session>(
+        &self,
+        session: &'session crate::session::Session,
+    ) -> crate::session::SessionRequest<'session> {
+        crate::session::SessionRequest::new(self.request.clone(), session).bind(self.inner.policy())
+    }
+    pub fn with_work<'work>(
+        &self,
+        work: &'work crate::session::Work,
+    ) -> crate::session::SessionRequest<'work> {
+        crate::session::SessionRequest::on_work(self.request.clone(), work)
+            .bind(self.inner.policy())
+    }
     /// Returns the request identity.
     pub const fn id(&self) -> RequestId {
         self.inner.id()
@@ -108,7 +154,7 @@ impl BoundPageRequest<'_> {
 
 /// A request's target or policy could not be prepared.
 #[derive(Debug)]
-pub struct RequestPreparationError(yosoi_engine::RequestPreparationError);
+pub struct RequestPreparationError(crate::internal::engine::RequestPreparationError);
 impl fmt::Display for RequestPreparationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -118,7 +164,7 @@ impl Error for RequestPreparationError {}
 
 /// The standard request execution could not be initialized.
 #[derive(Debug)]
-pub struct RequestSendError(yosoi_engine::RequestSendError);
+pub struct RequestSendError(crate::internal::engine::RequestSendError);
 impl fmt::Display for RequestSendError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)

@@ -9,14 +9,13 @@ use futures::{Future, FutureExt, Stream, future};
 
 use crate::internal::browser::vendor::chromiumoxide_cdp::cdp::browser_protocol::dom::{
     BackendNodeId, DescribeNodeParams, GetBoxModelParams, GetContentQuadsParams, Node, NodeId,
-    ResolveNodeParams,
+    ResolveNodeParams, ScrollIntoViewIfNeededParams,
 };
 use crate::internal::browser::vendor::chromiumoxide_cdp::cdp::browser_protocol::page::{
     CaptureScreenshotFormat, CaptureScreenshotParams, Viewport,
 };
 use crate::internal::browser::vendor::chromiumoxide_cdp::cdp::js_protocol::runtime::{
     CallFunctionOnReturns, GetPropertiesParams, PropertyDescriptor, RemoteObjectId,
-    RemoteObjectType,
 };
 
 use crate::internal::browser::vendor::chromiumoxide::error::{CdpError, Result};
@@ -226,41 +225,17 @@ impl Element {
 
     /// Scrolls the element into view.
     ///
-    /// Fails if the element's node is not a HTML element or is detached from
-    /// the document
+    /// Fails if the element cannot be scrolled into view or is detached from
+    /// the document.
     pub async fn scroll_into_view(&self) -> Result<&Self> {
-        let resp = self
-            .call_js_fn(
-                "async function() {
-                if (!this.isConnected)
-                    return 'Node is detached from document';
-                if (this.nodeType !== Node.ELEMENT_NODE)
-                    return 'Node is not of type HTMLElement';
-
-                const visibleRatio = await new Promise(resolve => {
-                    const observer = new IntersectionObserver(entries => {
-                        resolve(entries[0].intersectionRatio);
-                        observer.disconnect();
-                    });
-                    observer.observe(this);
-                });
-
-                if (visibleRatio !== 1.0)
-                    this.scrollIntoView({
-                        block: 'center',
-                        inline: 'center',
-                        behavior: 'instant'
-                    });
-                return false;
-            }",
-                true,
+        self.tab
+            .execute(
+                ScrollIntoViewIfNeededParams::builder()
+                    .object_id(self.remote_object_id.clone())
+                    .build(),
             )
-            .await?;
-
-        if resp.result.r#type == RemoteObjectType::String {
-            let error_text = resp.result.value.unwrap().as_str().unwrap().to_string();
-            return Err(CdpError::ScrollingFailed(error_text));
-        }
+            .await
+            .map_err(|error| CdpError::ScrollingFailed(error.to_string()))?;
         Ok(self)
     }
 

@@ -134,10 +134,12 @@ pub(in super::super) async fn create_additional_tab(
             state.tabs.insert(
                 id,
                 TabEntry {
+                    control: None,
                     page: Some(page),
                     open: true,
                     closing: false,
                     navigation_gate: Arc::new(Mutex::new(())),
+                    control_waiters: Arc::new(tokio::sync::Semaphore::new(32)),
                     navigation_closing: CancellationToken::new(),
                 },
             );

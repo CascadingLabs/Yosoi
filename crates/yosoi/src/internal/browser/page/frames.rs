@@ -1,8 +1,11 @@
 use super::EXECUTION_CONTEXT_WAIT;
 use super::FRAME_NAVIGATION_WAIT;
+use super::ObservationWatch;
 use super::Page;
 use super::shared::event_listener_config;
 use super::validation::event_overflow;
+use crate::internal::browser::DocumentEpoch;
+use crate::internal::browser::DocumentScope;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::EventFrameNavigated;
@@ -14,6 +17,7 @@ use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::
 use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::EventExecutionContextCreated;
 use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::ExecutionContextId;
 use crate::internal::browser::vendor::chromiumoxide::error::CdpError as ChromiumoxideError;
+use crate::internal::browser::vendor::chromiumoxide::js::{Evaluation, EvaluationResult};
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventDelivery;
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventOverflowPolicy;
 use futures::StreamExt;
@@ -78,6 +82,106 @@ impl Page {
         })?
     }
 
+    async fn observation_frame(&self, watch: &ObservationWatch) -> Result<FrameId> {
+        if !watch.belongs_to_page(self) {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        let expected = watch.start_scope();
+        if !matches!(expected.epoch, DocumentEpoch::Known(_)) {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        let current = self
+            .document_scope()
+            .await
+            .map_err(|_| VoidCrawlError::NavigationStateUncertain)?;
+        if !matches!(current.epoch, DocumentEpoch::Known(_))
+            || !same_observation_scope(expected, &current)
+        {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        Ok(FrameId::new(watch.frame_id().to_owned()))
+    }
+
+    /// Evaluate an expression in the main-world context anchored by `watch`.
+    ///
+    /// The globally unique context ID prevents a navigation or renderer swap
+    /// from redirecting this evaluation to a replacement execution context.
+    pub async fn evaluate_js_in_observation_scope(
+        &self,
+        expression: &str,
+        watch: &ObservationWatch,
+    ) -> Result<Value> {
+        self.ensure_active().await?;
+        let frame_id = self.observation_frame(watch).await?;
+        let (_numeric_context_id, context_session) = match self
+            .frame_execution_context_with_runtime(frame_id.clone(), "Until observation scope")
+            .await
+        {
+            Ok(context) => context,
+            Err(VoidCrawlError::FrameNotFound(_)) => {
+                return Err(VoidCrawlError::NavigationStateUncertain);
+            }
+            Err(error) => return Err(error),
+        };
+        let Some((unique_context_id, unique_session)) = self
+            .inner
+            .frame_execution_context_unique_with_session(frame_id.clone())
+            .await
+            .map_err(|error| VoidCrawlError::JsEvalError(error.to_string()))?
+        else {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        };
+        if unique_context_id.is_empty() || unique_session != context_session {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
+        self.observation_frame(watch).await?;
+
+        let result = match Evaluation::from(expression) {
+            Evaluation::Expression(mut params) => {
+                params.context_id = None;
+                params.unique_context_id = Some(unique_context_id);
+                params.return_by_value = Some(true);
+                params.await_promise = Some(true);
+                match self
+                    .inner
+                    .evaluate_expression_in_frame(frame_id, context_session, params)
+                    .await
+                {
+                    Ok(result) => result,
+                    Err(ChromiumoxideError::NotFound | ChromiumoxideError::SessionDetached) => {
+                        return Err(VoidCrawlError::NavigationStateUncertain);
+                    }
+                    Err(error) => return Err(super::document::script_error(error)),
+                }
+            }
+            Evaluation::Function(mut params) => {
+                params.execution_context_id = None;
+                params.object_id = None;
+                params.unique_context_id = Some(unique_context_id);
+                params.return_by_value = Some(true);
+                params.await_promise = Some(true);
+                let response = match self
+                    .inner
+                    .execute_in_frame_session(frame_id, context_session, params)
+                    .await
+                {
+                    Ok(response) => response.result,
+                    Err(ChromiumoxideError::NotFound | ChromiumoxideError::SessionDetached) => {
+                        return Err(VoidCrawlError::NavigationStateUncertain);
+                    }
+                    Err(error) => return Err(super::document::script_error(error)),
+                };
+                if let Some(exception) = response.exception_details {
+                    return Err(super::document::script_error(
+                        ChromiumoxideError::JavascriptException(Box::new(exception)),
+                    ));
+                }
+                EvaluationResult::new(response.result)
+            }
+        };
+        super::document::json_evaluation(result)
+    }
+
     /// Evaluate a JS expression **inside a specific frame's** execution
     /// context and return the result as a JSON value.
     ///
@@ -124,8 +228,8 @@ impl Page {
             .inner
             .evaluate_expression_in_frame(frame_id, session_id, params)
             .await
-            .map_err(|e| VoidCrawlError::JsEvalError(e.to_string()))?;
-        Ok(result.value().cloned().unwrap_or(Value::Null))
+            .map_err(super::document::script_error)?;
+        super::document::json_evaluation(result)
     }
 
     /// Navigate a uniquely matched frame through the flat CDP session that
@@ -272,4 +376,10 @@ impl Page {
         }
         Ok(urls)
     }
+}
+
+fn same_observation_scope(expected: &DocumentScope, current: &DocumentScope) -> bool {
+    expected.frame_id == current.frame_id
+        && expected.epoch == current.epoch
+        && expected.frame == current.frame
 }

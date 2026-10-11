@@ -31,10 +31,13 @@ pub(in crate::internal::engine) mod browser_document;
 mod capture;
 mod contract_locator;
 mod document;
+pub mod execution;
 pub mod map;
 pub mod projection;
 pub mod request;
 pub mod search;
+#[cfg(feature = "browser")]
+pub mod session;
 pub use map::{MapError, MapOutcome, MapRequest, RetainedCapture};
 mod resolution;
 #[path = "policy.rs"]
@@ -79,7 +82,7 @@ pub use capture::{
 pub use contract_locator::ContractLocatorError;
 #[doc(hidden)]
 pub use contract_locator::compile_contract_plan;
-pub use document::{BoundDocument, Document, ParseError, ParsedDocument};
+pub use document::{BoundDocument, Document, ObservedDomError, ParseError, ParsedDocument};
 pub use projection::{
     DocumentOutcome, PartialReason, ProjectedAttempt, ProjectionError, UnavailableReason,
     UnprojectableReason, project_attempt,
@@ -107,8 +110,8 @@ pub mod archived {
 }
 pub use crate::internal::contract_validation::{
     ArchivedContract, ContractIssues, ContractOutcome, Currency, Extracted, FieldIssue,
-    FieldIssueKind, Money, RecordIssue, RuntimeValueIssue, ValidatedRecord, ValidationCode,
-    ValidationFailure,
+    FieldIssueKind, Money, RecordIssue, RuntimeValueIssue, ValidateContract, ValidatedRecord,
+    ValidationCode, ValidationFailure,
 };
 
 /// Implementation details used by Yosoi derive macros.

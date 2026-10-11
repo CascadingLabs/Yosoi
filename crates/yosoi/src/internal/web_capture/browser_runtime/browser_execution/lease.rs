@@ -106,6 +106,8 @@ pub(super) struct ReleaseCompletion {
 }
 
 pub(super) struct TabEntry {
+    pub(super) control_waiters: Arc<tokio::sync::Semaphore>,
+    pub(super) control: Option<Weak<super::control::ControlAuthority>>,
     pub(super) page: Option<Arc<provider::Page>>,
     pub(super) open: bool,
     pub(super) closing: bool,

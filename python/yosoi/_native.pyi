@@ -1,5 +1,5 @@
 import builtins
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 
 __version__: str
 
@@ -119,6 +119,78 @@ def validate_money(value: str) -> str: ...
 
 browser_enabled: bool
 
+class BrowserError(YosoiError):
+    rust_variant: str | None
+    outcome_json: str | None
+    outcome_encoding_error: str | None
+    cleanup_error: str | None
+
+class BrowserSession:
+    @property
+    def closed(self) -> bool: ...
+    def work(
+        self, cancellation: CancellationToken | None = None
+    ) -> Awaitable[BrowserWork]: ...
+    def send_request(
+        self,
+        request: PageRequest,
+        policy_json: str | None = None,
+        cancellation: CancellationToken | None = None,
+    ) -> Awaitable[Response]: ...
+    def close(self) -> Awaitable[None]: ...
+
+class BrowserWork:
+    @property
+    def released(self) -> bool: ...
+    def invoke_flow(
+        self,
+        flow_json: str,
+        policy_json: str | None = None,
+        cancellation: CancellationToken | None = None,
+        assertions: dict[str, Callable[[str, str], str]] | None = None,
+    ) -> Awaitable[str]: ...
+    def send_request(
+        self,
+        request: PageRequest,
+        policy_json: str | None = None,
+        cancellation: CancellationToken | None = None,
+    ) -> Awaitable[Response]: ...
+    def run_flow(
+        self,
+        flow_json: str,
+        policy_json: str | None = None,
+        cancellation: CancellationToken | None = None,
+    ) -> Awaitable[str]: ...
+    def release(self) -> Awaitable[None]: ...
+
+def invoke_flow(
+    flow_json: str,
+    policy_json: str | None = None,
+    cancellation: CancellationToken | None = None,
+    allow_javascript: bool = False,
+    assertions: dict[str, Callable[[str, str], str]] | None = None,
+) -> Awaitable[str]: ...
+def create_assertion(
+    contract_type: str,
+    plan_json: str,
+    names: list[str | None],
+) -> str: ...
+def snapshot_evaluate_file(path: str) -> str: ...
+def snapshot_module(path: str, export_name: str | None = None) -> str: ...
+def browser_action(
+    url: str,
+    flow_json: str,
+    policy_json: str | None = None,
+    cancellation: CancellationToken | None = None,
+) -> Awaitable[str]: ...
+def acquire_browser_session(
+    policy_json: str | None = None,
+    session_policy_json: str | None = None,
+    cancellation: CancellationToken | None = None,
+) -> Awaitable[BrowserSession]: ...
+def default_session_policy() -> str: ...
+def validate_session_policy(value: str) -> str: ...
+def validate_flow(value: str) -> str: ...
 def public_providers() -> str: ...
 def public_provider_endpoint(provider: str, domain: str) -> str: ...
 def search_result_url(value: str) -> str: ...

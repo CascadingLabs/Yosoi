@@ -3,7 +3,8 @@
 pub use crate::contracts::{
     CandidateField, CandidateInput, CandidateView, Cardinality, Contract, ContractLocatorError,
     ContractOutcome, ContractSchema, ContractSchemaError, ContractValue, Extracted,
-    ExtractionDiagnostic, FieldId, FieldSchema, RecordIssue, RecordScope, ValidatedRecord,
+    ExtractionDiagnostic, FieldId, FieldSchema, RecordIssue, RecordScope, ValidateContract,
+    ValidatedRecord,
 };
 pub use crate::documents::{Document, DocumentId};
 pub use crate::internal::engine::{

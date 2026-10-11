@@ -1,5 +1,3 @@
-use crate::internal::types as yosoi_types;
-
 use crate::internal::browser::vendor::chromiumoxide::{
     CdpMode, Page as CdpPage, cdp::browser_protocol::browser::BrowserContextId,
 };
@@ -21,6 +19,7 @@ const FRAME_NAVIGATION_WAIT: Duration = Duration::from_secs(10);
 
 mod accessibility;
 mod accessibility_frame;
+mod condition_wait;
 mod document;
 mod download_types;
 mod downloads;
@@ -33,9 +32,11 @@ mod input;
 mod instrumentation;
 mod lifecycle;
 mod navigation;
+pub use condition_wait::ConditionWait;
 mod navigation_capture;
 mod navigation_response;
 mod network;
+mod observation_watch;
 mod screenshot;
 mod screenshot_types;
 mod shared;
@@ -53,6 +54,10 @@ pub(in crate::internal::browser) use document_identity::{
 };
 pub use download_types::{DownloadCapture, DownloadOutcome};
 pub use navigation_response::{ENDPOINT_SANITIZER_VERSION, PageResponse, safe_endpoint};
+pub use observation_watch::{
+    AccessibilityChangeKind, CompletedResponseCandidate, ObservationChange,
+    ObservationResponseBody, ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
+};
 pub use screenshot_types::{Bbox, ScreenshotOptions, ScreenshotOutput};
 
 /// Per-tab CDP instrumentation state.
@@ -97,7 +102,7 @@ impl fmt::Debug for ProviderBrowserContextIdentity {
 #[derive(Debug)]
 pub struct Page {
     inner: CdpPage,
-    browser_mode: EnvironmentObservation<yosoi_types::BrowserMode>,
+    browser_mode: EnvironmentObservation<crate::internal::types::BrowserMode>,
     cdp_mode: CdpMode,
     attached_browser: bool,
     state_binding: BrowserStateBinding,

@@ -1,5 +1,6 @@
 mod count;
 mod documents;
+mod flow;
 mod limits;
 mod locators;
 mod map;
@@ -33,3 +34,4 @@ pub use tuning::{Tuning, TuningMode};
 pub use crate::internal::types::{BrowserMode, CaptureDeadline, CaptureDeadlineError};
 pub use count::{CountLimit, StepLimit};
 pub use documents::Documents;
+pub use flow::{Continuation, FlowPolicy, StopScope};

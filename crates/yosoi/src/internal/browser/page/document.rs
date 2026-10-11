@@ -1,11 +1,44 @@
-use crate::internal::types as yosoi_types;
-
 use super::Page;
 use crate::internal::browser::document_snapshot::RenderedDomSnapshot;
 use crate::internal::browser::document_snapshot::rendered_dom;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
+use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::{
+    RemoteObjectSubtype, RemoteObjectType,
+};
+use crate::internal::browser::vendor::chromiumoxide::error::CdpError;
+use crate::internal::browser::vendor::chromiumoxide::js::EvaluationResult;
 use serde_json::Value;
+
+pub(super) fn script_error(error: CdpError) -> VoidCrawlError {
+    let message = match error {
+        CdpError::Timeout => {
+            return VoidCrawlError::Timeout("JavaScript evaluation deadline elapsed".into());
+        }
+        CdpError::JavascriptException(details) => details
+            .exception
+            .as_ref()
+            .and_then(|object| object.description.clone())
+            .unwrap_or(details.text),
+        other => other.to_string(),
+    };
+    VoidCrawlError::JsEvalError(message.chars().take(4096).collect())
+}
+
+pub(super) fn json_evaluation(result: EvaluationResult) -> Result<Value> {
+    if let Some(value) = result.value() {
+        return Ok(value.clone());
+    }
+    let object = result.object();
+    if object.r#type == RemoteObjectType::Undefined
+        || object.subtype == Some(RemoteObjectSubtype::Null)
+    {
+        return Ok(Value::Null);
+    }
+    Err(VoidCrawlError::JsEvalError(
+        "JavaScript result is not representable as JSON".into(),
+    ))
+}
 
 /// Classify the in-page selector-wait status without inspecting provider error
 /// text. A rejected promise/CDP failure is handled separately as `JsEvalError`.
@@ -136,6 +169,11 @@ const DOCUMENT_SNAPSHOT_JS: &str = r#"
 "#;
 
 impl Page {
+    /// Read bounded document identity without retaining a DOM representation.
+    pub async fn document_scope(&self) -> Result<crate::internal::browser::DocumentScope> {
+        self.top_level_document_scope().await
+    }
+
     // ── Content ─────────────────────────────────────────────────────────
 
     /// Return the full HTML of the page (outer HTML of `<html>`).
@@ -188,7 +226,7 @@ impl Page {
     /// Capture the current rendered DOM using a validated browser byte limit.
     pub async fn rendered_dom_snapshot_with_limit(
         &self,
-        max_bytes: yosoi_types::ByteLimit,
+        max_bytes: crate::internal::types::ByteLimit,
     ) -> Result<RenderedDomSnapshot> {
         let max_bytes = max_bytes
             .as_usize()
@@ -238,9 +276,7 @@ impl Page {
             .inner
             .evaluate(expression)
             .await
-            .map_err(|e| VoidCrawlError::JsEvalError(e.to_string()))?;
-        // `into_value()` fails when the JS expression returns null/undefined
-        // (the RemoteObject has no `value` field).  Fall back to Value::Null.
-        Ok(result.value().cloned().unwrap_or(Value::Null))
+            .map_err(script_error)?;
+        json_evaluation(result)
     }
 }

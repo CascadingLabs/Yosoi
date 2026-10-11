@@ -38,6 +38,69 @@ mod tests;
 
 const CLEANUP_GRACE: Duration = Duration::from_secs(5);
 
+/// Executes existing capture under borrowed tab control; lifetime stays with the Session.
+pub async fn capture_attempt_on_control(
+    control: &super::RuntimeBrowserControl,
+    spec: &yosoi::ResolvedBrowserCaptureSpec,
+    cancellation: &CancellationToken,
+) -> Result<yosoi::BrowserAdapterResult, VoidCrawlAdapterError> {
+    capture_attempt_on_control_started(
+        control,
+        spec,
+        cancellation,
+        Instant::now(),
+        SystemTime::now().into(),
+    )
+    .await
+}
+
+/// Preserve the original acquisition clock when an ephemeral Session is created.
+pub async fn capture_attempt_on_control_started(
+    control: &super::RuntimeBrowserControl,
+    spec: &yosoi::ResolvedBrowserCaptureSpec,
+    cancellation: &CancellationToken,
+    started: Instant,
+    started_at: chrono::DateTime<chrono::Utc>,
+) -> Result<yosoi::BrowserAdapterResult, VoidCrawlAdapterError> {
+    control
+        .check_authority()
+        .map_err(|_| VoidCrawlAdapterError::CancelledBeforeStaging)?;
+    config::validate(spec)?;
+    let maximum = spec.observation().limits().maximum_elapsed();
+    let lifecycle = yosoi::BoundedAcquisitionLifecycle::start(
+        spec.request().capture_id(),
+        spec.observation().clone(),
+        started_at,
+    );
+    let boundary = yosoi::AttemptBoundary::new(
+        started,
+        yosoi::CaptureDuration::from_microseconds(maximum.as_microseconds()),
+    )
+    .map_err(|_| VoidCrawlAdapterError::InvalidResolvedSpec)?;
+    let deadline = TokioInstant::from_std(boundary.deadline());
+    if TokioInstant::now() >= deadline {
+        return Err(VoidCrawlAdapterError::DeadlineBeforeStaging);
+    }
+    let operation = run_owned_attempt(
+        spec,
+        cancellation,
+        control.page(),
+        boundary,
+        deadline,
+        cleanup_deadline(deadline),
+    )
+    .await;
+    finish_attempt(
+        spec,
+        cancellation,
+        lifecycle,
+        boundary,
+        operation,
+        yosoi::CleanupState::Complete,
+        "borrowed-session-collectors",
+    )
+}
+
 fn headful_display_configured(
     x11_display: Option<&OsStr>,
     wayland_display: Option<&OsStr>,

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Browser SDK cart fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Order review</h1>
+      <section data-cart>
+        <p>SKU: <span data-field="sku">SKU-74</span></p>
+        <p>Quantity: <span data-field="quantity">2</span></p>
+        <p>Total: <span data-field="total">$24.00</span></p>
+      </section>
+      <button id="record-later" type="button">Record later action</button>
+      <button id="start-background" type="button">Start background job</button>
+    </main>
+    <script>
+      document.querySelector("#record-later").addEventListener("click", () => {
+        fetch("/api/later", { method: "POST" }).then(() => {
+          const confirmation = document.createElement("p");
+          confirmation.id = "later-confirmation";
+          confirmation.textContent = "Later action recorded";
+          document.body.appendChild(confirmation);
+        });
+      });
+      document.querySelector("#start-background").addEventListener("click", () => {
+        fetch("/api/background", { method: "POST" });
+      });
+    </script>
+  </body>
+</html>

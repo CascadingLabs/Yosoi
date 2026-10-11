@@ -8,6 +8,7 @@ mod create;
 pub(super) use create::create_additional_tab;
 
 pub(super) struct NavigationTabParts {
+    pub(super) control_waiters: Arc<tokio::sync::Semaphore>,
     pub(super) page: Arc<provider::Page>,
     pub(super) gate: Arc<Mutex<()>>,
     pub(super) closing: CancellationToken,
@@ -81,6 +82,9 @@ impl RuntimeBrowserTabLease {
             }
             entry.closing = true;
             entry.navigation_closing.cancel();
+            if let Some(control) = entry.control.as_ref().and_then(Weak::upgrade) {
+                control.revoke();
+            }
             let page = entry
                 .page
                 .as_ref()
@@ -197,6 +201,7 @@ impl RuntimeBrowserTabLease {
             .map(Arc::clone)
             .ok_or(BrowserExecutionManagerError::InternalInvariant)?;
         let parts = NavigationTabParts {
+            control_waiters: Arc::clone(&entry.control_waiters),
             page,
             gate: Arc::clone(&entry.navigation_gate),
             closing: entry.navigation_closing.clone(),

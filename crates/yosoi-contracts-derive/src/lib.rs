@@ -311,6 +311,12 @@ fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
             }
         }
 
+        impl #yosoi::ValidateContract for #type_name {
+            fn validate_contract(located: &#yosoi::LocateOutcome) -> #yosoi::ContractOutcome<Self> {
+                Self::extract(located).validate()
+            }
+        }
+
         impl #type_name {
             const __YS_ROOT_LOCATOR: Option<#yosoi::PinnedLocator> = #root_locator;
 

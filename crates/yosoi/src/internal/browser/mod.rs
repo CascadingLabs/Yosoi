@@ -99,8 +99,10 @@ pub use observation::{
     QuietSettlementProof, QuietWaitError, RuntimeDiagnostic, RuntimeDiagnosticKind,
 };
 pub use page::{
-    Bbox, DownloadCapture, DownloadOutcome, Page, PageResponse, ScreenshotOptions,
-    ScreenshotOutput, TabInstrumentationState,
+    AccessibilityChangeKind, Bbox, CompletedResponseCandidate, DownloadCapture, DownloadOutcome,
+    ObservationChange, ObservationResponseBody, ObservationResponseFilter, ObservationWatch,
+    ObservationWatchOptions, Page, PageResponse, ScreenshotOptions, ScreenshotOutput,
+    TabInstrumentationState,
 };
 pub use profile_context::ManagedProfileContext;
 pub use recording::{

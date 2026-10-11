@@ -25,6 +25,56 @@ NAMESPACES = (
 )
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
+# Explicit beta boundaries, retained in the inventory and report rather than
+# masquerading as implemented Python mappings. Other APIs cannot opt out.
+DEFERRED_BETA_ROOTS = {
+    "yosoi::Archive": {
+        "issue": "CAS-566",
+        "rationale": (
+            "The Rust Archive facade is outside the Python 0.2.0 surface; Flow "
+            "receipts remain inspectable. Archive exposure and stronger "
+            "guarantees belong to later release work."
+        ),
+    },
+    "yosoi::view": {
+        "issue": "CAS-567",
+        "rationale": (
+            "The Rust View facade is outside the Python 0.2.0 surface; structured "
+            "Flow outcomes remain inspectable. Dedicated View APIs belong to "
+            "later release work."
+        ),
+    },
+}
+
+
+BROWSER_NAMESPACE_ROOTS = {
+    "yosoi::" + name
+    for name in (
+        "action",
+        "assertions",
+        "automation_record",
+        "expect",
+        "flow",
+        "session",
+        "timing",
+    )
+}
+
+
+def _browser_namespace_mechanic(item: dict[str, Any]) -> bool:
+    return (
+        item.get("kind") == "module" and item.get("rustPath") in BROWSER_NAMESPACE_ROOTS
+    )
+
+
+def _deferred_beta_surface(item: dict[str, Any]) -> dict[str, str] | None:
+    path = item.get("rustPath") or ""
+    for root, boundary in DEFERRED_BETA_ROOTS.items():
+        if path == root or path.startswith(root + "::"):
+            return {"root": root, **boundary}
+    return None
+
+
 # These are compiler-generated or language-level mechanics whose behavior is
 # covered as a Rust capability, rather than a Python name-for-name API.
 STANDARD_TRAIT_MECHANICS: dict[str, tuple[str, str]] = {
@@ -290,6 +340,36 @@ def _is_in_scope(item: dict[str, Any], root_names: set[str] | None = None) -> bo
 
 
 def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
+    if _deferred_beta_surface(item) is not None:
+        return None
+    if _browser_namespace_mechanic(item):
+        return {
+            "rationale": (
+                "A Rust root module organizes names; Python exposes the supported "
+                "operations through its root helpers and named modules. Module "
+                "organization itself adds no runtime capability."
+            ),
+            "equivalentCapability": (
+                "Supported browser operations are checked separately by "
+                "installed-wheel browser behavior evidence; the seven existing Python "
+                "SDK namespaces retain their semantic comparison suites."
+            ),
+        }
+    if item.get("rustPath") in {
+        "yosoi::contracts::ValidateContract",
+        "yosoi::contracts::ValidateContract::validate_contract",
+    }:
+        return {
+            "rationale": (
+                "ValidateContract is the Rust type-level adapter generated for a "
+                "Contract, rather than a separate processing engine."
+            ),
+            "equivalentCapability": (
+                "Python Contract.extract(...).validate() and typed assertion "
+                "callbacks use the same Rust extraction and validation pipeline, "
+                "verified by Contract and browser workflows."
+            ),
+        }
     trait = item.get("trait")
     if item.get("surface") == "member" and trait in STANDARD_TRAIT_MECHANICS:
         rationale, capability = STANDARD_TRAIT_MECHANICS[trait]
@@ -321,6 +401,15 @@ def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
 
 
 def _expected_classification(declaration: dict[str, Any]) -> str:
+    if _deferred_beta_surface(declaration) is not None:
+        return "deferred-beta-surface"
+    if _browser_namespace_mechanic(declaration):
+        return "namespace-mechanic"
+    if declaration.get("rustPath") in {
+        "yosoi::contracts::ValidateContract",
+        "yosoi::contracts::ValidateContract::validate_contract",
+    }:
+        return "contract-mechanic"
     if declaration.get("rustPath") == "yosoi::prelude":
         return "prelude-mechanic"
     if declaration.get("kind") == "proc_macro":
@@ -439,16 +528,7 @@ def build_contract(inventory_report: dict[str, Any]) -> dict[str, Any]:
             and candidate.get("symbolKey") == item.get("symbolKey")
         )
         mechanic = _mechanic(item)
-        classification = "sdk"
-        if mechanic is not None:
-            classification = (
-                "trait-mechanic"
-                if item.get("surface") == "member"
-                and item.get("trait") in STANDARD_TRAIT_MECHANICS
-                else "prelude-mechanic"
-                if item.get("rustPath") == "yosoi::prelude"
-                else "proc-macro-mechanic"
-            )
+        classification = _expected_classification(item)
         mapping = raw_item.get("mapping") or {}
         py_item = raw_item.get("python") or {}
         python_target = mapping.get("pythonTarget") or py_item.get("target")
@@ -499,6 +579,9 @@ def build_contract(inventory_report: dict[str, Any]) -> dict[str, Any]:
         }
         if mechanic is not None:
             declaration["mechanic"] = mechanic
+        deferred = _deferred_beta_surface(item)
+        if deferred is not None:
+            declaration["deferredSurface"] = deferred
         declarations.append(declaration)
     declarations.sort(key=lambda item: item["id"])
     if len({item["id"] for item in declarations}) != len(declarations):
@@ -583,6 +666,9 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
         "trait-mechanic",
         "proc-macro-mechanic",
         "prelude-mechanic",
+        "namespace-mechanic",
+        "contract-mechanic",
+        "deferred-beta-surface",
     }
     root_names = _root_names(declarations)
     for declaration in declarations:
@@ -687,7 +773,14 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
             or not SHA256_RE.fullmatch(mapping_digest)
         ):
             raise ValueError(f"invalid ledger mapping digest for {declaration['id']}")
-        if declaration["classification"] != "sdk":
+        if declaration["classification"] == "deferred-beta-surface":
+            if declaration.get("deferredSurface") != _deferred_beta_surface(
+                declaration
+            ):
+                raise ValueError(
+                    f"beta boundary differs from reviewed scope: {declaration['id']}"
+                )
+        elif declaration["classification"] != "sdk":
             mechanic = declaration.get("mechanic")
             if not isinstance(mechanic, dict) or not all(
                 isinstance(mechanic.get(name), str) and mechanic[name].strip()
@@ -1182,8 +1275,13 @@ def evaluate_contract(
         "mappedButUnverified": len(mapped_unverified),
         "individuallyVerified": len(verified_items),
         "rustMechanics": sum(
-            1 for item in contract["declarations"] if item["classification"] != "sdk"
+            1
+            for item in contract["declarations"]
+            if item["classification"] not in {"sdk", "deferred-beta-surface"}
         ),
+        "deferredBetaSurfaces": mechanism_counts.get("deferred-beta-surface", 0),
+        "namespaceMechanics": mechanism_counts.get("namespace-mechanic", 0),
+        "contractMechanics": mechanism_counts.get("contract-mechanic", 0),
         "traitMechanics": mechanism_counts.get("trait-mechanic", 0),
         "preludeMechanics": mechanism_counts.get("prelude-mechanic", 0),
         "procMacroMechanics": mechanism_counts.get("proc-macro-mechanic", 0),

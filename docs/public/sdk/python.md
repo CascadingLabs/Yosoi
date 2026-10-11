@@ -20,6 +20,11 @@ Start with the [Python SDK overview](../python/index.md), then follow the
 [workflows](../python/workflows.md), and
 [errors and limits](../python/errors-and-limits.md).
 
+The 0.2.0 browser surface adds managed and borrowed Flow invocation, typed
+assertions, scoped Until, local JavaScript snapshots and structured outcomes.
+See [Python browser workflows](../python/browser-workflows.md) for ownership,
+permissions and cancellation.
+
 ```python
 import yosoi as ys
 

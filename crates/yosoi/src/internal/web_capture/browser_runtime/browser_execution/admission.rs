@@ -271,10 +271,12 @@ impl BrowserExecutionManager {
         tabs.insert(
             tab_id,
             TabEntry {
+                control: None,
                 page: Some(initial_page),
                 open: true,
                 closing: false,
                 navigation_gate: Arc::new(Mutex::new(())),
+                control_waiters: Arc::new(tokio::sync::Semaphore::new(32)),
                 navigation_closing: CancellationToken::new(),
             },
         );
