@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::expect::ResponseExpectation",
+  "publicPath": "yosoi::expect::ResponseExpectation",
+  "kind": "struct",
+  "title": "yosoi::expect::ResponseExpectation",
+  "signature": "pub struct ResponseExpectation",
+  "docs": "Builder for a response expectation.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 93,
+    "lineEnd": 98,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L93-L98"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::ResponseExpectation",
+    "yosoi::prelude::expect::ResponseExpectation"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::clone",
+      "publicPath": "yosoi::expect::ResponseExpectation::clone",
+      "title": "yosoi::expect::ResponseExpectation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::expect::ResponseExpectation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L92-L92"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::eq",
+      "publicPath": "yosoi::expect::ResponseExpectation::eq",
+      "title": "yosoi::expect::ResponseExpectation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::expect::ResponseExpectation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L92-L92"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::fmt",
+      "publicPath": "yosoi::expect::ResponseExpectation::fmt",
+      "title": "yosoi::expect::ResponseExpectation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L92-L92"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::json",
+      "publicPath": "yosoi::expect::ResponseExpectation::json",
+      "title": "yosoi::expect::ResponseExpectation::json",
+      "kind": "function",
+      "signature": "pub fn json(self, pointer: impl Into<String>, value: impl Into<Value>) -> Self",
+      "docs": "Requires one JSON Pointer in the response body to equal `value`.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 114,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L114-L122"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::method",
+      "publicPath": "yosoi::expect::ResponseExpectation::method",
+      "title": "yosoi::expect::ResponseExpectation::method",
+      "kind": "function",
+      "signature": "pub fn method(self, method: impl Into<String>) -> Self",
+      "docs": "Requires this exact HTTP method, in addition to the full URL.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 102,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L102-L105"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::status",
+      "publicPath": "yosoi::expect::ResponseExpectation::status",
+      "title": "yosoi::expect::ResponseExpectation::status",
+      "kind": "function",
+      "signature": "pub const fn status(self, status: u16) -> Self",
+      "docs": "Requires this status code, in addition to the full URL.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 108,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L108-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::expect::ResponseExpectation::until",
+      "publicPath": "yosoi::expect::ResponseExpectation::until",
+      "title": "yosoi::expect::ResponseExpectation::until",
+      "kind": "function",
+      "signature": "pub fn until(self) -> yosoi::flow::Step",
+      "docs": "Waits for this response expectation without a trigger action.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 125,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L125-L127"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c01e7a7ea883419eb11c6521c6176776546d3f53647992cf3b692dca584b8b13",
+  "slug": "yosoi/expect/struct/responseexpectation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c01e7a7ea883419eb11c6521c6176776546d3f53647992cf3b692dca584b8b13"
+}

@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::AccessibilityCoordinate",
+  "publicPath": "yosoi::locators::AccessibilityCoordinate",
+  "kind": "struct",
+  "title": "yosoi::locators::AccessibilityCoordinate",
+  "signature": "pub struct AccessibilityCoordinate",
+  "docs": "Native coordinate for a node in one immutable accessibility-tree epoch.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+    "lineStart": 116,
+    "lineEnd": 119,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L116-L119"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/locators.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::AccessibilityCoordinate"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::clone",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::clone",
+      "title": "yosoi::locators::AccessibilityCoordinate::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::AccessibilityCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::deserialize",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::deserialize",
+      "title": "yosoi::locators::AccessibilityCoordinate::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 154,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L154-L167"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::document_epoch",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::document_epoch",
+      "title": "yosoi::locators::AccessibilityCoordinate::document_epoch",
+      "kind": "function",
+      "signature": "pub const fn document_epoch(&self) -> yosoi::documents::DocumentEpoch",
+      "docs": "Returns the immutable accessibility snapshot epoch that scopes this node.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 143,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L143-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::eq",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::eq",
+      "title": "yosoi::locators::AccessibilityCoordinate::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::AccessibilityCoordinate) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::fmt",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::fmt",
+      "title": "yosoi::locators::AccessibilityCoordinate::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::hash",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::hash",
+      "title": "yosoi::locators::AccessibilityCoordinate::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::node_id",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::node_id",
+      "title": "yosoi::locators::AccessibilityCoordinate::node_id",
+      "kind": "function",
+      "signature": "pub fn node_id(&self) -> &str",
+      "docs": "Borrows the retained node identity without resolving it against a tree.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 148,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L148-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::serialize",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::serialize",
+      "title": "yosoi::locators::AccessibilityCoordinate::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityCoordinate::try_new",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate::try_new",
+      "title": "yosoi::locators::AccessibilityCoordinate::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(document_epoch: yosoi::documents::DocumentEpoch, node_id: impl Into<String>) -> Result<Self, yosoi::locators::CoordinateError>",
+      "docs": "Owns an accessibility node identity within a supplied immutable epoch.\n\nReturns [`CoordinateError::EmptyIdentity`] for blank `node_id`. The\noriginal spelling is retained; no tree membership or epoch correspondence\nis verified against live accessibility evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 127,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L127-L140"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2344a0b055d4b4d52ec8eca30d2b9bdc38762876d9d8e3b89636e2579c9d4fe7",
+  "slug": "yosoi/locators/struct/accessibilitycoordinate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2344a0b055d4b4d52ec8eca30d2b9bdc38762876d9d8e3b89636e2579c9d4fe7"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::timing::milliseconds",
+  "publicPath": "yosoi::timing::milliseconds",
+  "kind": "function",
+  "title": "yosoi::timing::milliseconds",
+  "signature": "pub fn milliseconds(value: u32) -> u64",
+  "docs": "Returns the supplied millisecond value for use with `.timeout(...)`.",
+  "source": {
+    "file": "crates/yosoi/src/timing.rs",
+    "lineStart": 16,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/timing.rs#L16-L18"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "60aee0c88c7996ff23915a005ef5e56fe0c77e465c21292c0cd52811fb576ba1",
+  "slug": "yosoi/timing/function/milliseconds",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "60aee0c88c7996ff23915a005ef5e56fe0c77e465c21292c0cd52811fb576ba1"
+}

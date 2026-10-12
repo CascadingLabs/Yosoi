@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::session::new",
+  "publicPath": "yosoi::session::new",
+  "kind": "function",
+  "title": "yosoi::session::new",
+  "signature": "pub fn new() -> yosoi::session::SessionBuilder",
+  "docs": "Creates a Session builder with package defaults; browser acquisition is explicit.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 323,
+    "lineEnd": 330,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/session.rs#L323-L330"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::new"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "cfbccd7e23d181399143df4ca29e4953606e474550e92ccc4d6887bc8fcce982",
+  "slug": "yosoi/session/function/new",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "cfbccd7e23d181399143df4ca29e4953606e474550e92ccc4d6887bc8fcce982"
+}

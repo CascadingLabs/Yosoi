@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::contracts::ValidateContract",
+  "publicPath": "yosoi::contracts::ValidateContract",
+  "kind": "trait",
+  "title": "yosoi::contracts::ValidateContract",
+  "signature": "pub trait ValidateContract",
+  "docs": "Generic access to a Contract's existing extraction and validation path.\nDeriving `Contract` supplies this adapter; no new field conversion is implied.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/mod.rs",
+    "lineStart": 54,
+    "lineEnd": 59,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contract_validation/mod.rs#L54-L59"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/contracts.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ValidateContract"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::ValidateContract::validate_contract",
+      "publicPath": "yosoi::contracts::ValidateContract::validate_contract",
+      "title": "yosoi::contracts::ValidateContract::validate_contract",
+      "kind": "function",
+      "signature": "fn validate_contract(located: &yosoi::LocateOutcome) -> yosoi::contracts::ContractOutcome<Self>",
+      "docs": "Extracts and validates located evidence using this typed Contract's existing implementation.\nReturns accepted/rejected records or preserved terminal evidence states,\nwithout acquiring documents or treating incomplete absence as success.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/mod.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contract_validation/mod.rs#L58-L58"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c81d2a629429203753ce305980b2d72cf63ef4a36adb789e268ae60650dc1a81",
+  "slug": "yosoi/contracts/trait/validatecontract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c81d2a629429203753ce305980b2d72cf63ef4a36adb789e268ae60650dc1a81"
+}

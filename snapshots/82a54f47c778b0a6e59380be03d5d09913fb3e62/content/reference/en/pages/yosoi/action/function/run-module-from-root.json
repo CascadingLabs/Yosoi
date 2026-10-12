@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::run_module_from_root",
+  "publicPath": "yosoi::action::run_module_from_root",
+  "kind": "function",
+  "title": "yosoi::action::run_module_from_root",
+  "signature": "pub fn run_module_from_root(root: impl AsRef<std::path::Path>, entry: impl AsRef<std::path::Path>) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptModuleError>",
+  "docs": "Snapshots an entry module and its local import graph under an explicit\nfilesystem root.\n\nRelative imports may reach sibling directories inside\n`root`; symlinks and paths that escape the root are rejected.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 137,
+    "lineEnd": 148,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action.rs#L137-L148"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::run_module_from_root"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "779b7c5c6d7c62ae2ecedd8d4670f05cc1a88776dd804a7e77694eb096a98be1",
+  "slug": "yosoi/action/function/run-module-from-root",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "779b7c5c6d7c62ae2ecedd8d4670f05cc1a88776dd804a7e77694eb096a98be1"
+}
