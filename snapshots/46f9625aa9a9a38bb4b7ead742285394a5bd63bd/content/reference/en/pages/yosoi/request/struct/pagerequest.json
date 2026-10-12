@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::PageRequest",
+  "publicPath": "yosoi::request::PageRequest",
+  "kind": "struct",
+  "title": "yosoi::request::PageRequest",
+  "signature": "pub struct PageRequest",
+  "docs": "A user-authored page request. Execution machinery remains private.",
+  "source": {
+    "file": "crates/yosoi/src/request/authoring.rs",
+    "lineStart": 17,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L17-L19"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "aliases": [
+    "yosoi::prelude::PageRequest",
+    "yosoi::prelude::request::PageRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::PageRequest::bind",
+      "publicPath": "yosoi::request::PageRequest::bind",
+      "title": "yosoi::request::PageRequest::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> yosoi::request::BoundPageRequest<'_>",
+      "docs": "Associates this request with a borrowed policy.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 30,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L30-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::clone",
+      "publicPath": "yosoi::request::PageRequest::clone",
+      "title": "yosoi::request::PageRequest::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::PageRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L16-L16"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::eq",
+      "publicPath": "yosoi::request::PageRequest::eq",
+      "title": "yosoi::request::PageRequest::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::PageRequest) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L16-L16"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::fmt",
+      "publicPath": "yosoi::request::PageRequest::fmt",
+      "title": "yosoi::request::PageRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L16-L16"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::id",
+      "publicPath": "yosoi::request::PageRequest::id",
+      "title": "yosoi::request::PageRequest::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> yosoi::request::RequestId",
+      "docs": "Returns the request identity.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 22,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L22-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::send",
+      "publicPath": "yosoi::request::PageRequest::send",
+      "title": "yosoi::request::PageRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(&self) -> Result<yosoi::request::Response, yosoi::request::RequestSendError>",
+      "docs": "Executes through the package's standard adapters and default policy.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 43,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L43-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::send_cancellable",
+      "publicPath": "yosoi::request::PageRequest::send_cancellable",
+      "title": "yosoi::request::PageRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(&self, cancellation: &CancellationToken) -> Result<yosoi::request::Response, yosoi::request::RequestSendError>",
+      "docs": "Executes with caller-controlled cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 51,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L51-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::target",
+      "publicPath": "yosoi::request::PageRequest::target",
+      "title": "yosoi::request::PageRequest::target",
+      "kind": "function",
+      "signature": "pub const fn target(&self) -> &yosoi::request::WebTarget",
+      "docs": "Returns the target as authored before canonicalization.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 26,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L26-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PageRequest::validate",
+      "publicPath": "yosoi::request::PageRequest::validate",
+      "title": "yosoi::request::PageRequest::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::request::RequestPreparationError>",
+      "docs": "Validates the target and policy without contacting a provider.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 36,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/request/authoring.rs#L36-L41"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7546565e7dde4d43fcde16b8e89a09290e4df4bc2e0f07d9a839a0ca21bdb448",
+  "slug": "yosoi/request/struct/pagerequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7546565e7dde4d43fcde16b8e89a09290e4df4bc2e0f07d9a839a0ca21bdb448"
+}

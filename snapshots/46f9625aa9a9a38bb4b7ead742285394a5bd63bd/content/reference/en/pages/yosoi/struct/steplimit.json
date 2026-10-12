@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::StepLimit",
+  "publicPath": "yosoi::StepLimit",
+  "kind": "struct",
+  "title": "yosoi::StepLimit",
+  "signature": "pub struct StepLimit",
+  "docs": "Positive fixed-width step, depth, or region count.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+    "lineStart": 51,
+    "lineEnd": 51,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L51-L51"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/lib.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::policy::StepLimit",
+    "yosoi::prelude::policy::StepLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::StepLimit::Error",
+      "publicPath": "yosoi::StepLimit::Error",
+      "title": "yosoi::StepLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = yosoi::PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::StepLimit::clone",
+      "publicPath": "yosoi::StepLimit::clone",
+      "title": "yosoi::StepLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::StepLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::StepLimit::cmp",
+      "publicPath": "yosoi::StepLimit::cmp",
+      "title": "yosoi::StepLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::StepLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::StepLimit::deserialize",
+      "publicPath": "yosoi::StepLimit::deserialize",
+      "title": "yosoi::StepLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 85,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L85-L90"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::StepLimit::eq",
+      "publicPath": "yosoi::StepLimit::eq",
+      "title": "yosoi::StepLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::StepLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::StepLimit::fmt",
+      "publicPath": "yosoi::StepLimit::fmt",
+      "title": "yosoi::StepLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::StepLimit::get",
+      "publicPath": "yosoi::StepLimit::get",
+      "title": "yosoi::StepLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 54,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L54-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::StepLimit::hash",
+      "publicPath": "yosoi::StepLimit::hash",
+      "title": "yosoi::StepLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::StepLimit::partial_cmp",
+      "publicPath": "yosoi::StepLimit::partial_cmp",
+      "title": "yosoi::StepLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::StepLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::StepLimit::serialize",
+      "publicPath": "yosoi::StepLimit::serialize",
+      "title": "yosoi::StepLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 76,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L76-L81"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::StepLimit::try_from",
+      "publicPath": "yosoi::StepLimit::try_from",
+      "title": "yosoi::StepLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u32) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/count.rs",
+        "lineStart": 66,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/count.rs#L66-L72"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f0e531aa98e7f245a9e6a7ed88523cbe2f9d8894b7b69027e43f9c18d379f6c1",
+  "slug": "yosoi/struct/steplimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f0e531aa98e7f245a9e6a7ed88523cbe2f9d8894b7b69027e43f9c18d379f6c1"
+}

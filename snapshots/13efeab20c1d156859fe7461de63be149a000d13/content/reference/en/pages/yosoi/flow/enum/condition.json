@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::Condition",
+  "publicPath": "yosoi::flow::Condition",
+  "kind": "enum",
+  "title": "yosoi::flow::Condition",
+  "signature": "pub enum Condition",
+  "docs": "A typed condition evaluated against the current tab state.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 604,
+    "lineEnd": 611,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L604-L611"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Condition",
+    "yosoi::prelude::flow::Condition"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::Condition::CountAtLeast",
+      "publicPath": "yosoi::flow::Condition::CountAtLeast",
+      "title": "yosoi::flow::Condition::CountAtLeast",
+      "kind": "variant",
+      "signature": "CountAtLeast { selector: String, count: u64 }",
+      "docs": "The number of matching elements meets or exceeds `count`.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 610,
+        "lineEnd": 610,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L610-L610"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::Condition::Exists",
+      "publicPath": "yosoi::flow::Condition::Exists",
+      "title": "yosoi::flow::Condition::Exists",
+      "kind": "variant",
+      "signature": "Exists { selector: String }",
+      "docs": "At least one element matches the selector.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 606,
+        "lineEnd": 606,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L606-L606"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::Condition::Visible",
+      "publicPath": "yosoi::flow::Condition::Visible",
+      "title": "yosoi::flow::Condition::Visible",
+      "kind": "variant",
+      "signature": "Visible { selector: String }",
+      "docs": "At least one matching element is visible.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 608,
+        "lineEnd": 608,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L608-L608"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Condition::clone",
+      "publicPath": "yosoi::flow::Condition::clone",
+      "title": "yosoi::flow::Condition::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::Condition",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 602,
+        "lineEnd": 602,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L602-L602"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::deserialize",
+      "publicPath": "yosoi::flow::Condition::deserialize",
+      "title": "yosoi::flow::Condition::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 602,
+        "lineEnd": 602,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L602-L602"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::eq",
+      "publicPath": "yosoi::flow::Condition::eq",
+      "title": "yosoi::flow::Condition::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::Condition) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 602,
+        "lineEnd": 602,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L602-L602"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::fmt",
+      "publicPath": "yosoi::flow::Condition::fmt",
+      "title": "yosoi::flow::Condition::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 602,
+        "lineEnd": 602,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L602-L602"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::serialize",
+      "publicPath": "yosoi::flow::Condition::serialize",
+      "title": "yosoi::flow::Condition::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 602,
+        "lineEnd": 602,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/flow/model.rs#L602-L602"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4b9f0a5d34be5424af3d3439d84d4918f35e7bd1d7dedfaab314bcd2f598201e",
+  "slug": "yosoi/flow/enum/condition",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4b9f0a5d34be5424af3d3439d84d4918f35e7bd1d7dedfaab314bcd2f598201e"
+}

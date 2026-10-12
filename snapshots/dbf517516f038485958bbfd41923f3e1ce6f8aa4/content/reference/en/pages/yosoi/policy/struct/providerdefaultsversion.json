@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::ProviderDefaultsVersion",
+  "publicPath": "yosoi::policy::ProviderDefaultsVersion",
+  "kind": "struct",
+  "title": "yosoi::policy::ProviderDefaultsVersion",
+  "signature": "pub struct ProviderDefaultsVersion",
+  "docs": "A version identifier for one certified provider Requests profile.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+    "lineStart": 59,
+    "lineEnd": 59,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L59-L59"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/policy.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::policy::search::ProviderDefaultsVersion",
+    "yosoi::prelude::policy::ProviderDefaultsVersion",
+    "yosoi::prelude::policy::search::ProviderDefaultsVersion"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::clone",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::clone",
+      "title": "yosoi::policy::ProviderDefaultsVersion::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ProviderDefaultsVersion",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::deserialize",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::deserialize",
+      "title": "yosoi::policy::ProviderDefaultsVersion::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::eq",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::eq",
+      "title": "yosoi::policy::ProviderDefaultsVersion::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ProviderDefaultsVersion) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::fmt",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::fmt",
+      "title": "yosoi::policy::ProviderDefaultsVersion::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::get",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::get",
+      "title": "yosoi::policy::ProviderDefaultsVersion::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u16",
+      "docs": "Returns the positive version number.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 70,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L70-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::hash",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::hash",
+      "title": "yosoi::policy::ProviderDefaultsVersion::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::serialize",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::serialize",
+      "title": "yosoi::policy::ProviderDefaultsVersion::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderDefaultsVersion::try_new",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion::try_new",
+      "title": "yosoi::policy::ProviderDefaultsVersion::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(version: u16) -> Result<Self, PolicyError>",
+      "docs": "Creates a positive provider-default version.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 63,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/search/provider.rs#L63-L67"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "6fbddf529629d5e2f0af6b729451a04ad53829cebfa55e5c5d4f461330049803",
+  "slug": "yosoi/policy/struct/providerdefaultsversion",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6fbddf529629d5e2f0af6b729451a04ad53829cebfa55e5c5d4f461330049803"
+}

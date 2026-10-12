@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::JavaScriptSourceSnapshot",
+  "publicPath": "yosoi::action::JavaScriptSourceSnapshot",
+  "kind": "struct",
+  "title": "yosoi::action::JavaScriptSourceSnapshot",
+  "signature": "pub struct JavaScriptSourceSnapshot",
+  "docs": "Exact UTF-8 source captured when the file action is constructed.",
+  "source": {
+    "file": "crates/yosoi/src/action/source.rs",
+    "lineStart": 17,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L17-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptSourceSnapshot"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::byte_len",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::byte_len",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::byte_len",
+      "kind": "function",
+      "signature": "pub const fn byte_len(&self) -> usize",
+      "docs": "Returns the captured source length in UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 94,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L94-L96"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::clone",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::clone",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::JavaScriptSourceSnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::deserialize",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::deserialize",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 23,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L23-L43"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::eq",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::eq",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::action::JavaScriptSourceSnapshot) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::fmt",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::provenance",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::provenance",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::provenance",
+      "kind": "function",
+      "signature": "pub const fn provenance(&self) -> &yosoi::action::JavaScriptSourceProvenance",
+      "docs": "Returns where this snapshot came from and its content identity.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 89,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L89-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::serialize",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::serialize",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::source",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::source",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::source",
+      "kind": "function",
+      "signature": "pub fn source(&self) -> &str",
+      "docs": "Returns the exact captured source text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 84,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L84-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceSnapshot::validate",
+      "publicPath": "yosoi::action::JavaScriptSourceSnapshot::validate",
+      "title": "yosoi::action::JavaScriptSourceSnapshot::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self, maximum_bytes: usize) -> Result<(), yosoi::action::JavaScriptSourceError>",
+      "docs": "Rechecks the serialized snapshot before it can be dispatched.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 99,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/action/source.rs#L99-L121"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fc11254372f8c8f2bd74509c0f32bc4f699ffee15b5f9e9f42d53fe1b51044e4",
+  "slug": "yosoi/action/struct/javascriptsourcesnapshot",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fc11254372f8c8f2bd74509c0f32bc4f699ffee15b5f9e9f42d53fe1b51044e4"
+}

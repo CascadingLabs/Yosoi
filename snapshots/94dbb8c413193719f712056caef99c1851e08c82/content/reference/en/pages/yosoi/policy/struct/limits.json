@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Limits",
+  "publicPath": "yosoi::policy::Limits",
+  "kind": "struct",
+  "title": "yosoi::policy::Limits",
+  "signature": "pub struct Limits",
+  "docs": "Positive count, byte, concurrency, and elapsed-time bounds for Map.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+    "lineStart": 39,
+    "lineEnd": 77,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L39-L77"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/policy.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Limits"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Limits::clone",
+      "publicPath": "yosoi::policy::Limits::clone",
+      "title": "yosoi::policy::Limits::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Limits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L37-L37"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Limits::default",
+      "publicPath": "yosoi::policy::Limits::default",
+      "title": "yosoi::policy::Limits::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 89,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L89-L110"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Limits::deserialize",
+      "publicPath": "yosoi::policy::Limits::deserialize",
+      "title": "yosoi::policy::Limits::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 114,
+        "lineEnd": 165,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L114-L165"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Limits::eq",
+      "publicPath": "yosoi::policy::Limits::eq",
+      "title": "yosoi::policy::Limits::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Limits) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L37-L37"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Limits::fmt",
+      "publicPath": "yosoi::policy::Limits::fmt",
+      "title": "yosoi::policy::Limits::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L37-L37"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_concurrency",
+      "publicPath": "yosoi::policy::Limits::max_concurrency",
+      "title": "yosoi::policy::Limits::max_concurrency",
+      "kind": "struct_field",
+      "signature": "pub max_concurrency: Budget",
+      "docs": "Maximum number of concurrent requests.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_hostname_bytes",
+      "publicPath": "yosoi::policy::Limits::max_hostname_bytes",
+      "title": "yosoi::policy::Limits::max_hostname_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_hostname_bytes: Budget",
+      "docs": "Maximum UTF-8 byte length of one hostname.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 76,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L76-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_hosts",
+      "publicPath": "yosoi::policy::Limits::max_hosts",
+      "title": "yosoi::policy::Limits::max_hosts",
+      "kind": "struct_field",
+      "signature": "pub max_hosts: Budget",
+      "docs": "Maximum distinct hosts admitted to the inventory.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_inventory_bytes",
+      "publicPath": "yosoi::policy::Limits::max_inventory_bytes",
+      "title": "yosoi::policy::Limits::max_inventory_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_inventory_bytes: Budget",
+      "docs": "Maximum aggregate bytes in the serialized inventory.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_link_depth",
+      "publicPath": "yosoi::policy::Limits::max_link_depth",
+      "title": "yosoi::policy::Limits::max_link_depth",
+      "kind": "struct_field",
+      "signature": "pub max_link_depth: u16",
+      "docs": "Maximum number of link-following levels below the seed page.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L41-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_observations",
+      "publicPath": "yosoi::policy::Limits::max_observations",
+      "title": "yosoi::policy::Limits::max_observations",
+      "kind": "struct_field",
+      "signature": "pub max_observations: Budget",
+      "docs": "Maximum recorded provenance observations.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_parser_entries",
+      "publicPath": "yosoi::policy::Limits::max_parser_entries",
+      "title": "yosoi::policy::Limits::max_parser_entries",
+      "kind": "struct_field",
+      "signature": "pub max_parser_entries: Budget",
+      "docs": "Maximum entries accepted by one parsed discovery document.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 74,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L74-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_pending",
+      "publicPath": "yosoi::policy::Limits::max_pending",
+      "title": "yosoi::policy::Limits::max_pending",
+      "kind": "struct_field",
+      "signature": "pub max_pending: Budget",
+      "docs": "Maximum queued URLs waiting for inspection.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_relationships",
+      "publicPath": "yosoi::policy::Limits::max_relationships",
+      "title": "yosoi::policy::Limits::max_relationships",
+      "kind": "struct_field",
+      "signature": "pub max_relationships: Budget",
+      "docs": "Maximum recorded URL relationships.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L47-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_requests",
+      "publicPath": "yosoi::policy::Limits::max_requests",
+      "title": "yosoi::policy::Limits::max_requests",
+      "kind": "struct_field",
+      "signature": "pub max_requests: Budget",
+      "docs": "Maximum outgoing acquisition requests.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_response_bytes",
+      "publicPath": "yosoi::policy::Limits::max_response_bytes",
+      "title": "yosoi::policy::Limits::max_response_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_response_bytes: Budget",
+      "docs": "Maximum bytes admitted from one response.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_retained_document_bytes",
+      "publicPath": "yosoi::policy::Limits::max_retained_document_bytes",
+      "title": "yosoi::policy::Limits::max_retained_document_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_retained_document_bytes: Budget",
+      "docs": "Maximum response document bytes retained for later use.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_sitemap_depth",
+      "publicPath": "yosoi::policy::Limits::max_sitemap_depth",
+      "title": "yosoi::policy::Limits::max_sitemap_depth",
+      "kind": "struct_field",
+      "signature": "pub max_sitemap_depth: u16",
+      "docs": "Maximum nested sitemap index depth.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_sitemaps",
+      "publicPath": "yosoi::policy::Limits::max_sitemaps",
+      "title": "yosoi::policy::Limits::max_sitemaps",
+      "kind": "struct_field",
+      "signature": "pub max_sitemaps: Budget",
+      "docs": "Maximum sitemap documents inspected.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_total_response_bytes",
+      "publicPath": "yosoi::policy::Limits::max_total_response_bytes",
+      "title": "yosoi::policy::Limits::max_total_response_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_total_response_bytes: Budget",
+      "docs": "Maximum response bytes admitted across the operation.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L61-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_url_bytes",
+      "publicPath": "yosoi::policy::Limits::max_url_bytes",
+      "title": "yosoi::policy::Limits::max_url_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_url_bytes: Budget",
+      "docs": "Maximum UTF-8 byte length of one normalized URL.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::max_urls",
+      "publicPath": "yosoi::policy::Limits::max_urls",
+      "title": "yosoi::policy::Limits::max_urls",
+      "kind": "struct_field",
+      "signature": "pub max_urls: Budget",
+      "docs": "Maximum distinct URLs admitted to the inventory.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Limits::maximum_elapsed",
+      "publicPath": "yosoi::policy::Limits::maximum_elapsed",
+      "title": "yosoi::policy::Limits::maximum_elapsed",
+      "kind": "struct_field",
+      "signature": "pub maximum_elapsed: std::time::Duration",
+      "docs": "Maximum total elapsed time for the Map operation.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Limits::serialize",
+      "publicPath": "yosoi::policy::Limits::serialize",
+      "title": "yosoi::policy::Limits::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map/limits.rs#L37-L37"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7ff708a04a2a5994ae82a0fe43e8f2310b4581d6f8ab9b717f1a8a953f01a30f",
+  "slug": "yosoi/policy/struct/limits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7ff708a04a2a5994ae82a0fe43e8f2310b4581d6f8ab9b717f1a8a953f01a30f"
+}

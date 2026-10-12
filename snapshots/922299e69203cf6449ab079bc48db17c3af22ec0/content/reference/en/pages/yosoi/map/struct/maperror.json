@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::MapError",
+  "publicPath": "yosoi::map::MapError",
+  "kind": "struct",
+  "title": "yosoi::map::MapError",
+  "signature": "pub struct MapError",
+  "docs": "Discovery could not be initialized or its policy was invalid.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 156,
+    "lineEnd": 156,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/map.rs#L156-L156"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::MapError",
+    "yosoi::prelude::map::MapError"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::MapError::fmt",
+      "publicPath": "yosoi::map::MapError::fmt",
+      "title": "yosoi::map::MapError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/map.rs#L155-L155"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::MapError::fmt",
+      "publicPath": "yosoi::map::MapError::fmt",
+      "title": "yosoi::map::MapError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 158,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/map.rs#L158-L160"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e17748fdf63d3214176b3f6ba15ccc2597c2845cb18c7d38f212d94f6a35189a",
+  "slug": "yosoi/map/struct/maperror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e17748fdf63d3214176b3f6ba15ccc2597c2845cb18c7d38f212d94f6a35189a"
+}

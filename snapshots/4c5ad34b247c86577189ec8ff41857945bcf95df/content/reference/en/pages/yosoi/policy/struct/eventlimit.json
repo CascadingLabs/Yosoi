@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::EventLimit",
+  "publicPath": "yosoi::policy::EventLimit",
+  "kind": "struct",
+  "title": "yosoi::policy::EventLimit",
+  "signature": "pub struct EventLimit",
+  "docs": "Positive event limit addressable by the navigation capture implementation.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/limits.rs",
+    "lineStart": 89,
+    "lineEnd": 89,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L89-L89"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::EventLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::EventLimit::Error",
+      "publicPath": "yosoi::policy::EventLimit::Error",
+      "title": "yosoi::policy::EventLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 104,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L104-L104"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::as_usize",
+      "publicPath": "yosoi::policy::EventLimit::as_usize",
+      "title": "yosoi::policy::EventLimit::as_usize",
+      "kind": "function",
+      "signature": "pub fn as_usize(self) -> Result<usize, PolicyError>",
+      "docs": "Converts to the platform-sized event count used by capture providers.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 98,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L98-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::clone",
+      "publicPath": "yosoi::policy::EventLimit::clone",
+      "title": "yosoi::policy::EventLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> EventLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::cmp",
+      "publicPath": "yosoi::policy::EventLimit::cmp",
+      "title": "yosoi::policy::EventLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &EventLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::default",
+      "publicPath": "yosoi::policy::EventLimit::default",
+      "title": "yosoi::policy::EventLimit::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L116-L118"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::deserialize",
+      "publicPath": "yosoi::policy::EventLimit::deserialize",
+      "title": "yosoi::policy::EventLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 131,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L131-L137"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::eq",
+      "publicPath": "yosoi::policy::EventLimit::eq",
+      "title": "yosoi::policy::EventLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &EventLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::fmt",
+      "publicPath": "yosoi::policy::EventLimit::fmt",
+      "title": "yosoi::policy::EventLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::get",
+      "publicPath": "yosoi::policy::EventLimit::get",
+      "title": "yosoi::policy::EventLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u64",
+      "docs": "Returns the exact event limit.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 93,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L93-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::hash",
+      "publicPath": "yosoi::policy::EventLimit::hash",
+      "title": "yosoi::policy::EventLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::partial_cmp",
+      "publicPath": "yosoi::policy::EventLimit::partial_cmp",
+      "title": "yosoi::policy::EventLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &EventLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::serialize",
+      "publicPath": "yosoi::policy::EventLimit::serialize",
+      "title": "yosoi::policy::EventLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 122,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L122-L127"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::EventLimit::try_from",
+      "publicPath": "yosoi::policy::EventLimit::try_from",
+      "title": "yosoi::policy::EventLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u64) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 106,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/limits.rs#L106-L112"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f794a959aeca29d66319334195a6dda62d58109546aefe25d68acc7ce0a571d0",
+  "slug": "yosoi/policy/struct/eventlimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f794a959aeca29d66319334195a6dda62d58109546aefe25d68acc7ce0a571d0"
+}

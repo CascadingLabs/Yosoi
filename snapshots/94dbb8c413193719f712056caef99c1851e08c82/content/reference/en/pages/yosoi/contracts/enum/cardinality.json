@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::Cardinality",
+  "publicPath": "yosoi::contracts::Cardinality",
+  "kind": "enum",
+  "title": "yosoi::contracts::Cardinality",
+  "signature": "pub enum Cardinality",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/schema.rs",
+    "lineStart": 19,
+    "lineEnd": 23,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L19-L23"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/contracts.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::Cardinality"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::Cardinality::ExactlyOne",
+      "publicPath": "yosoi::contracts::Cardinality::ExactlyOne",
+      "title": "yosoi::contracts::Cardinality::ExactlyOne",
+      "kind": "variant",
+      "signature": "ExactlyOne",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::Cardinality::Many",
+      "publicPath": "yosoi::contracts::Cardinality::Many",
+      "title": "yosoi::contracts::Cardinality::Many",
+      "kind": "variant",
+      "signature": "Many",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::Cardinality::ZeroOrOne",
+      "publicPath": "yosoi::contracts::Cardinality::ZeroOrOne",
+      "title": "yosoi::contracts::Cardinality::ZeroOrOne",
+      "kind": "variant",
+      "signature": "ZeroOrOne",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::Cardinality::clone",
+      "publicPath": "yosoi::contracts::Cardinality::clone",
+      "title": "yosoi::contracts::Cardinality::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Cardinality",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::Cardinality::deserialize",
+      "publicPath": "yosoi::contracts::Cardinality::deserialize",
+      "title": "yosoi::contracts::Cardinality::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::Cardinality::eq",
+      "publicPath": "yosoi::contracts::Cardinality::eq",
+      "title": "yosoi::contracts::Cardinality::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Cardinality) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::Cardinality::fmt",
+      "publicPath": "yosoi::contracts::Cardinality::fmt",
+      "title": "yosoi::contracts::Cardinality::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::Cardinality::serialize",
+      "publicPath": "yosoi::contracts::Cardinality::serialize",
+      "title": "yosoi::contracts::Cardinality::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/schema.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/cardinality",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

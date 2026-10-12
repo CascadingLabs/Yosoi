@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::search::EffectiveSearch",
+  "publicPath": "yosoi::policy::search::EffectiveSearch",
+  "kind": "struct",
+  "title": "yosoi::policy::search::EffectiveSearch",
+  "signature": "pub struct EffectiveSearch",
+  "docs": "Resolved Search policy with stable ordered provider slots and hard bounds.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+    "lineStart": 19,
+    "lineEnd": 34,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L19-L34"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 21,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/policy.rs#L21-L21"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::search::EffectiveSearch"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::clone",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::clone",
+      "title": "yosoi::policy::search::EffectiveSearch::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::search::EffectiveSearch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::deserialize",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::deserialize",
+      "title": "yosoi::policy::search::EffectiveSearch::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::eq",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::eq",
+      "title": "yosoi::policy::search::EffectiveSearch::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::search::EffectiveSearch) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::fmt",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::fmt",
+      "title": "yosoi::policy::search::EffectiveSearch::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "title": "yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "kind": "struct_field",
+      "signature": "pub max_browser_in_flight: std::num::NonZeroUsize",
+      "docs": "Maximum concurrently running browser provider Requests.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "title": "yosoi::policy::search::EffectiveSearch::max_browser_in_flight",
+      "kind": "function",
+      "signature": "pub const fn max_browser_in_flight(&self) -> NonZeroUsize",
+      "docs": "Returns the browser provider concurrency limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 48,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L48-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "title": "yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "kind": "struct_field",
+      "signature": "pub max_in_flight: std::num::NonZeroUsize",
+      "docs": "Maximum concurrently running provider Requests.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "title": "yosoi::policy::search::EffectiveSearch::max_in_flight",
+      "kind": "function",
+      "signature": "pub const fn max_in_flight(&self) -> NonZeroUsize",
+      "docs": "Returns the provider concurrency limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 43,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L43-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "title": "yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "kind": "struct_field",
+      "signature": "pub max_results_per_provider: std::num::NonZeroU16",
+      "docs": "Maximum retained hits from each provider.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "title": "yosoi::policy::search::EffectiveSearch::max_results_per_provider",
+      "kind": "function",
+      "signature": "pub const fn max_results_per_provider(&self) -> NonZeroU16",
+      "docs": "Returns the per-provider hit limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 53,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L53-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "title": "yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_retained_content_bytes: yosoi::policy::AddressableByteLimit",
+      "docs": "Maximum retained URL and provider text bytes across Search results.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "title": "yosoi::policy::search::EffectiveSearch::max_retained_content_bytes",
+      "kind": "function",
+      "signature": "pub const fn max_retained_content_bytes(&self) -> yosoi::policy::AddressableByteLimit",
+      "docs": "Returns the retained-output byte limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 63,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L63-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::max_total_results",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_total_results",
+      "title": "yosoi::policy::search::EffectiveSearch::max_total_results",
+      "kind": "struct_field",
+      "signature": "pub max_total_results: std::num::NonZeroU32",
+      "docs": "Maximum retained hits across every provider.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::max_total_results",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::max_total_results",
+      "title": "yosoi::policy::search::EffectiveSearch::max_total_results",
+      "kind": "function",
+      "signature": "pub const fn max_total_results(&self) -> NonZeroU32",
+      "docs": "Returns the total hit limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 58,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L58-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "title": "yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "kind": "struct_field",
+      "signature": "pub maximum_elapsed: yosoi::policy::MaximumElapsed",
+      "docs": "Absolute elapsed-time bound shared by the Search operation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "title": "yosoi::policy::search::EffectiveSearch::maximum_elapsed",
+      "kind": "function",
+      "signature": "pub const fn maximum_elapsed(&self) -> yosoi::policy::MaximumElapsed",
+      "docs": "Returns the whole-Search elapsed-time limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 68,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L68-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveSearch::providers",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::providers",
+      "title": "yosoi::policy::search::EffectiveSearch::providers",
+      "kind": "struct_field",
+      "signature": "pub providers: Vec<yosoi::policy::search::EffectiveProviderRoute>",
+      "docs": "Resolved routes in policy order; unavailable Current routes remain present.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::providers",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::providers",
+      "title": "yosoi::policy::search::EffectiveSearch::providers",
+      "kind": "function",
+      "signature": "pub fn providers(&self) -> &[yosoi::policy::search::EffectiveProviderRoute]",
+      "docs": "Returns effective routes in authored provider order.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 38,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L38-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveSearch::serialize",
+      "publicPath": "yosoi::policy::search::EffectiveSearch::serialize",
+      "title": "yosoi::policy::search::EffectiveSearch::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/search/effective.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ba75b673a80951f39ea7d11c97ae2c72765f9b8e1c155b33f22af758c8b9c2c0",
+  "slug": "yosoi/policy/search/struct/effectivesearch",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ba75b673a80951f39ea7d11c97ae2c72765f9b8e1c155b33f22af758c8b9c2c0"
+}

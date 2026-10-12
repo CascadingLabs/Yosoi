@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::QueryResultShape",
+  "publicPath": "yosoi::locators::QueryResultShape",
+  "kind": "enum",
+  "title": "yosoi::locators::QueryResultShape",
+  "signature": "pub enum QueryResultShape",
+  "docs": "The representation-native shape produced before projection.",
+  "source": {
+    "file": "crates/yosoi-documents/src/query.rs",
+    "lineStart": 90,
+    "lineEnd": 95,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L90-L95"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::QueryResultShape"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::QueryResultShape::AccessibilityNodes",
+      "publicPath": "yosoi::locators::QueryResultShape::AccessibilityNodes",
+      "title": "yosoi::locators::QueryResultShape::AccessibilityNodes",
+      "kind": "variant",
+      "signature": "AccessibilityNodes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L93-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryResultShape::JsonValues",
+      "publicPath": "yosoi::locators::QueryResultShape::JsonValues",
+      "title": "yosoi::locators::QueryResultShape::JsonValues",
+      "kind": "variant",
+      "signature": "JsonValues",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L92-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryResultShape::TextRanges",
+      "publicPath": "yosoi::locators::QueryResultShape::TextRanges",
+      "title": "yosoi::locators::QueryResultShape::TextRanges",
+      "kind": "variant",
+      "signature": "TextRanges",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 94,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L94-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryResultShape::TreeNodes",
+      "publicPath": "yosoi::locators::QueryResultShape::TreeNodes",
+      "title": "yosoi::locators::QueryResultShape::TreeNodes",
+      "kind": "variant",
+      "signature": "TreeNodes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L91-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::clone",
+      "publicPath": "yosoi::locators::QueryResultShape::clone",
+      "title": "yosoi::locators::QueryResultShape::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> QueryResultShape",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::deserialize",
+      "publicPath": "yosoi::locators::QueryResultShape::deserialize",
+      "title": "yosoi::locators::QueryResultShape::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::eq",
+      "publicPath": "yosoi::locators::QueryResultShape::eq",
+      "title": "yosoi::locators::QueryResultShape::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &QueryResultShape) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::fmt",
+      "publicPath": "yosoi::locators::QueryResultShape::fmt",
+      "title": "yosoi::locators::QueryResultShape::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::hash",
+      "publicPath": "yosoi::locators::QueryResultShape::hash",
+      "title": "yosoi::locators::QueryResultShape::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::QueryResultShape::serialize",
+      "publicPath": "yosoi::locators::QueryResultShape::serialize",
+      "title": "yosoi::locators::QueryResultShape::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "29aa8263e79b7de9a950512a6e9bf8c31887542ef73f08e2855db857c851e4d4",
+  "slug": "yosoi/locators/enum/queryresultshape",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "29aa8263e79b7de9a950512a6e9bf8c31887542ef73f08e2855db857c851e4d4"
+}

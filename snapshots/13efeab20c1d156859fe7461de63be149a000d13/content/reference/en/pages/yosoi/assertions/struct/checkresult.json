@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::CheckResult",
+  "publicPath": "yosoi::assertions::CheckResult",
+  "kind": "struct",
+  "title": "yosoi::assertions::CheckResult",
+  "signature": "pub struct CheckResult",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 160,
+    "lineEnd": 165,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L160-L165"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::CheckResult::clone",
+      "publicPath": "yosoi::assertions::CheckResult::clone",
+      "title": "yosoi::assertions::CheckResult::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::CheckResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::deserialize",
+      "publicPath": "yosoi::assertions::CheckResult::deserialize",
+      "title": "yosoi::assertions::CheckResult::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::eq",
+      "publicPath": "yosoi::assertions::CheckResult::eq",
+      "title": "yosoi::assertions::CheckResult::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::assertions::CheckResult) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::error",
+      "publicPath": "yosoi::assertions::CheckResult::error",
+      "title": "yosoi::assertions::CheckResult::error",
+      "kind": "struct_field",
+      "signature": "pub error: Option<yosoi::assertions::CheckError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 164,
+        "lineEnd": 164,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L164-L164"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::fmt",
+      "publicPath": "yosoi::assertions::CheckResult::fmt",
+      "title": "yosoi::assertions::CheckResult::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::index",
+      "publicPath": "yosoi::assertions::CheckResult::index",
+      "title": "yosoi::assertions::CheckResult::index",
+      "kind": "struct_field",
+      "signature": "pub index: usize",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 161,
+        "lineEnd": 161,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L161-L161"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::name",
+      "publicPath": "yosoi::assertions::CheckResult::name",
+      "title": "yosoi::assertions::CheckResult::name",
+      "kind": "struct_field",
+      "signature": "pub name: Option<String>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L162-L162"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::passed",
+      "publicPath": "yosoi::assertions::CheckResult::passed",
+      "title": "yosoi::assertions::CheckResult::passed",
+      "kind": "struct_field",
+      "signature": "pub passed: Option<bool>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 163,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L163-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::serialize",
+      "publicPath": "yosoi::assertions::CheckResult::serialize",
+      "title": "yosoi::assertions::CheckResult::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/assertions/struct/checkresult",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

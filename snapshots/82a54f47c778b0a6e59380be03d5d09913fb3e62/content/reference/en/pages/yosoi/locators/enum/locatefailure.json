@@ -1,0 +1,304 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::LocateFailure",
+  "publicPath": "yosoi::locators::LocateFailure",
+  "kind": "enum",
+  "title": "yosoi::locators::LocateFailure",
+  "signature": "pub enum LocateFailure",
+  "docs": "Typed terminal failures. Error codes are bounded structural identifiers,\nnever excerpts from hostile document payloads.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 383,
+    "lineEnd": 413,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L383-L413"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/locators.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::LocateFailure",
+    "yosoi::prelude::locators::LocateFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::LocateFailure::InvalidPlan",
+      "publicPath": "yosoi::locators::LocateFailure::InvalidPlan",
+      "title": "yosoi::locators::LocateFailure::InvalidPlan",
+      "kind": "variant",
+      "signature": "InvalidPlan { code: String }",
+      "docs": "The authored locate plan could not be accepted for execution.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 385,
+        "lineEnd": 388,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L385-L388"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::InvalidPlan::code",
+          "publicPath": "yosoi::locators::LocateFailure::InvalidPlan::code",
+          "title": "yosoi::locators::LocateFailure::InvalidPlan::code",
+          "kind": "struct_field",
+          "signature": "code: String",
+          "docs": "Bounded structural error identifier, without hostile document text.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 387,
+            "lineEnd": 387,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L387-L387"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "publicPath": "yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "title": "yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "kind": "variant",
+      "signature": "InvalidResourcePolicy { limit: yosoi::locators::ResourceLimit }",
+      "docs": "A configured budget cannot be used for locator execution.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 409,
+        "lineEnd": 412,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L409-L412"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::InvalidResourcePolicy::limit",
+          "publicPath": "yosoi::locators::LocateFailure::InvalidResourcePolicy::limit",
+          "title": "yosoi::locators::LocateFailure::InvalidResourcePolicy::limit",
+          "kind": "struct_field",
+          "signature": "limit: yosoi::locators::ResourceLimit",
+          "docs": "Resource whose configured policy was rejected.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 411,
+            "lineEnd": 411,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L411-L411"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::LimitExhausted",
+      "publicPath": "yosoi::locators::LocateFailure::LimitExhausted",
+      "title": "yosoi::locators::LocateFailure::LimitExhausted",
+      "kind": "variant",
+      "signature": "LimitExhausted { limit: yosoi::locators::ResourceLimit, maximum: u64, observed: u64 }",
+      "docs": "Execution exceeded a configured resource budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 400,
+        "lineEnd": 407,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L400-L407"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::LimitExhausted::limit",
+          "publicPath": "yosoi::locators::LocateFailure::LimitExhausted::limit",
+          "title": "yosoi::locators::LocateFailure::LimitExhausted::limit",
+          "kind": "struct_field",
+          "signature": "limit: yosoi::locators::ResourceLimit",
+          "docs": "Resource whose configured maximum was exhausted.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 402,
+            "lineEnd": 402,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L402-L402"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::LimitExhausted::maximum",
+          "publicPath": "yosoi::locators::LocateFailure::LimitExhausted::maximum",
+          "title": "yosoi::locators::LocateFailure::LimitExhausted::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Configured maximum in the units of the named resource.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 404,
+            "lineEnd": 404,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L404-L404"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::LimitExhausted::observed",
+          "publicPath": "yosoi::locators::LocateFailure::LimitExhausted::observed",
+          "title": "yosoi::locators::LocateFailure::LimitExhausted::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Recorded consumption or attempted consumption in those same units.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 406,
+            "lineEnd": 406,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L406-L406"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::ParseFailed",
+      "publicPath": "yosoi::locators::LocateFailure::ParseFailed",
+      "title": "yosoi::locators::LocateFailure::ParseFailed",
+      "kind": "variant",
+      "signature": "ParseFailed { code: String }",
+      "docs": "Document parsing failed before usable locator evidence could be produced.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 390,
+        "lineEnd": 393,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L390-L393"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::ParseFailed::code",
+          "publicPath": "yosoi::locators::LocateFailure::ParseFailed::code",
+          "title": "yosoi::locators::LocateFailure::ParseFailed::code",
+          "kind": "struct_field",
+          "signature": "code: String",
+          "docs": "Bounded parser error identifier, without document excerpts.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 392,
+            "lineEnd": 392,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L392-L392"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::UnsupportedCombination",
+      "publicPath": "yosoi::locators::LocateFailure::UnsupportedCombination",
+      "title": "yosoi::locators::LocateFailure::UnsupportedCombination",
+      "kind": "variant",
+      "signature": "UnsupportedCombination { document: yosoi::documents::DocumentClass }",
+      "docs": "The plan requires capabilities unavailable for the supplied document class.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 395,
+        "lineEnd": 398,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L395-L398"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::LocateFailure::UnsupportedCombination::document",
+          "publicPath": "yosoi::locators::LocateFailure::UnsupportedCombination::document",
+          "title": "yosoi::locators::LocateFailure::UnsupportedCombination::document",
+          "kind": "struct_field",
+          "signature": "document: yosoi::documents::DocumentClass",
+          "docs": "Class of the document for which the combination is unsupported.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 397,
+            "lineEnd": 397,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L397-L397"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::clone",
+      "publicPath": "yosoi::locators::LocateFailure::clone",
+      "title": "yosoi::locators::LocateFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::LocateFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 381,
+        "lineEnd": 381,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L381-L381"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::deserialize",
+      "publicPath": "yosoi::locators::LocateFailure::deserialize",
+      "title": "yosoi::locators::LocateFailure::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 381,
+        "lineEnd": 381,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L381-L381"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::eq",
+      "publicPath": "yosoi::locators::LocateFailure::eq",
+      "title": "yosoi::locators::LocateFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::LocateFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 381,
+        "lineEnd": 381,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L381-L381"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::fmt",
+      "publicPath": "yosoi::locators::LocateFailure::fmt",
+      "title": "yosoi::locators::LocateFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 381,
+        "lineEnd": 381,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L381-L381"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::serialize",
+      "publicPath": "yosoi::locators::LocateFailure::serialize",
+      "title": "yosoi::locators::LocateFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 381,
+        "lineEnd": 381,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L381-L381"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a41cfaf0ddaf8dabb4356b43b3575014c45c44ee76025549b6fb1ecac3e3fda8",
+  "slug": "yosoi/locators/enum/locatefailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a41cfaf0ddaf8dabb4356b43b3575014c45c44ee76025549b6fb1ecac3e3fda8"
+}

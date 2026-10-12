@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::HostEntry",
+  "publicPath": "yosoi::map::HostEntry",
+  "kind": "struct",
+  "title": "yosoi::map::HostEntry",
+  "signature": "pub struct HostEntry",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 96,
+    "lineEnd": 100,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L96-L100"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/map.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::map::HostEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::HostEntry::clone",
+      "publicPath": "yosoi::map::HostEntry::clone",
+      "title": "yosoi::map::HostEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> HostEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L95-L95"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::HostEntry::fmt",
+      "publicPath": "yosoi::map::HostEntry::fmt",
+      "title": "yosoi::map::HostEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L95-L95"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::host",
+      "publicPath": "yosoi::map::HostEntry::host",
+      "title": "yosoi::map::HostEntry::host",
+      "kind": "struct_field",
+      "signature": "pub host: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::observations",
+      "publicPath": "yosoi::map::HostEntry::observations",
+      "title": "yosoi::map::HostEntry::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: Vec<Observation>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L98-L98"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::HostEntry::serialize",
+      "publicPath": "yosoi::map::HostEntry::serialize",
+      "title": "yosoi::map::HostEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L95-L95"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::verification",
+      "publicPath": "yosoi::map::HostEntry::verification",
+      "title": "yosoi::map::HostEntry::verification",
+      "kind": "struct_field",
+      "signature": "pub verification: HostVerification",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L99-L99"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/hostentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

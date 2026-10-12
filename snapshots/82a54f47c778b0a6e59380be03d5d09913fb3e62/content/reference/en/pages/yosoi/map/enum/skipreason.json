@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::SkipReason",
+  "publicPath": "yosoi::map::SkipReason",
+  "kind": "enum",
+  "title": "yosoi::map::SkipReason",
+  "signature": "pub enum SkipReason",
+  "docs": "Policy or budget reason an inventoried page was not explored.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 54,
+    "lineEnd": 63,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L54-L63"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SkipReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::SkipReason::Budget",
+      "publicPath": "yosoi::map::SkipReason::Budget",
+      "title": "yosoi::map::SkipReason::Budget",
+      "kind": "variant",
+      "signature": "Budget",
+      "docs": "A resource budget prevented further exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L62-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SkipReason::Depth",
+      "publicPath": "yosoi::map::SkipReason::Depth",
+      "title": "yosoi::map::SkipReason::Depth",
+      "kind": "variant",
+      "signature": "Depth",
+      "docs": "The known link depth exceeds the declared exploration boundary.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L56-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SkipReason::NonHtml",
+      "publicPath": "yosoi::map::SkipReason::NonHtml",
+      "title": "yosoi::map::SkipReason::NonHtml",
+      "kind": "variant",
+      "signature": "NonHtml",
+      "docs": "Acquired content is not an HTML page suitable for link exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SkipReason::Robots",
+      "publicPath": "yosoi::map::SkipReason::Robots",
+      "title": "yosoi::map::SkipReason::Robots",
+      "kind": "variant",
+      "signature": "Robots",
+      "docs": "Applicable robots rules disallow exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L58-L58"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::SkipReason::clone",
+      "publicPath": "yosoi::map::SkipReason::clone",
+      "title": "yosoi::map::SkipReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::SkipReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SkipReason::eq",
+      "publicPath": "yosoi::map::SkipReason::eq",
+      "title": "yosoi::map::SkipReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::SkipReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::SkipReason::fmt",
+      "publicPath": "yosoi::map::SkipReason::fmt",
+      "title": "yosoi::map::SkipReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::SkipReason::serialize",
+      "publicPath": "yosoi::map::SkipReason::serialize",
+      "title": "yosoi::map::SkipReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/map/mod.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "93698165b9c68f2e4effb25cd6692ff0eb53b22a417f6fc32750474c37af63f6",
+  "slug": "yosoi/map/enum/skipreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "93698165b9c68f2e4effb25cd6692ff0eb53b22a417f6fc32750474c37af63f6"
+}

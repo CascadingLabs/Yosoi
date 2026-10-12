@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::documents::ParsedDocument",
+  "publicPath": "yosoi::documents::ParsedDocument",
+  "kind": "struct",
+  "title": "yosoi::documents::ParsedDocument",
+  "signature": "pub struct ParsedDocument<'document>",
+  "docs": "A reusable parsed representation with its original policy budget.",
+  "source": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 107,
+    "lineEnd": 109,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/documents.rs#L107-L109"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::ParsedDocument",
+    "yosoi::prelude::documents::ParsedDocument"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::documents::ParsedDocument::fmt",
+      "publicPath": "yosoi::documents::ParsedDocument::fmt",
+      "title": "yosoi::documents::ParsedDocument::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/documents.rs#L106-L106"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::ParsedDocument::locate",
+      "publicPath": "yosoi::documents::ParsedDocument::locate",
+      "title": "yosoi::documents::ParsedDocument::locate",
+      "kind": "function",
+      "signature": "pub fn locate(&self, plan: &Plan) -> LocateOutcome",
+      "docs": "Evaluates a locator plan on the retained representation.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 112,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/documents.rs#L112-L114"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0e7cbb4edda897d8c7ff6964083146b89ab872556df241b6cdbea099fbf69ce0",
+  "slug": "yosoi/documents/struct/parseddocument",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0e7cbb4edda897d8c7ff6964083146b89ab872556df241b6cdbea099fbf69ce0"
+}

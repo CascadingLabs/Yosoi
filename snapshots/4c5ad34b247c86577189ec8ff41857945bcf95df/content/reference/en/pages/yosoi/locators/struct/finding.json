@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::Finding",
+  "publicPath": "yosoi::locators::Finding",
+  "kind": "struct",
+  "title": "yosoi::locators::Finding",
+  "signature": "pub struct Finding",
+  "docs": "One deterministic, ordered locator finding.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome.rs",
+    "lineStart": 101,
+    "lineEnd": 109,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L101-L109"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::Finding"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::Finding::clone",
+      "publicPath": "yosoi::locators::Finding::clone",
+      "title": "yosoi::locators::Finding::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Finding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::completeness",
+      "publicPath": "yosoi::locators::Finding::completeness",
+      "title": "yosoi::locators::Finding::completeness",
+      "kind": "function",
+      "signature": "pub const fn completeness(&self) -> &Completeness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 163,
+        "lineEnd": 165,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L163-L165"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::coordinate",
+      "publicPath": "yosoi::locators::Finding::coordinate",
+      "title": "yosoi::locators::Finding::coordinate",
+      "kind": "function",
+      "signature": "pub const fn coordinate(&self) -> &NativeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 157,
+        "lineEnd": 159,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L157-L159"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::deserialize",
+      "publicPath": "yosoi::locators::Finding::deserialize",
+      "title": "yosoi::locators::Finding::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 172,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L172-L199"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::document_id",
+      "publicPath": "yosoi::locators::Finding::document_id",
+      "title": "yosoi::locators::Finding::document_id",
+      "kind": "function",
+      "signature": "pub const fn document_id(&self) -> &DocumentId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 148,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L148-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::eq",
+      "publicPath": "yosoi::locators::Finding::eq",
+      "title": "yosoi::locators::Finding::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Finding) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::fmt",
+      "publicPath": "yosoi::locators::Finding::fmt",
+      "title": "yosoi::locators::Finding::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::order",
+      "publicPath": "yosoi::locators::Finding::order",
+      "title": "yosoi::locators::Finding::order",
+      "kind": "function",
+      "signature": "pub const fn order(&self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 154,
+        "lineEnd": 156,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L154-L156"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::output_id",
+      "publicPath": "yosoi::locators::Finding::output_id",
+      "title": "yosoi::locators::Finding::output_id",
+      "kind": "function",
+      "signature": "pub const fn output_id(&self) -> &OutputId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 151,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L151-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::parent_region",
+      "publicPath": "yosoi::locators::Finding::parent_region",
+      "title": "yosoi::locators::Finding::parent_region",
+      "kind": "function",
+      "signature": "pub const fn parent_region(&self) -> Option<&RegionLineage>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 166,
+        "lineEnd": 168,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L166-L168"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::serialize",
+      "publicPath": "yosoi::locators::Finding::serialize",
+      "title": "yosoi::locators::Finding::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L99-L99"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::try_new",
+      "publicPath": "yosoi::locators::Finding::try_new",
+      "title": "yosoi::locators::Finding::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(document_id: DocumentId, output_id: OutputId, order: u64, coordinate: NativeCoordinate, value: ProjectedValue, completeness: Completeness, parent_region: Option<RegionLineage>) -> Result<Self, FindingError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 120,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L120-L146"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::value",
+      "publicPath": "yosoi::locators::Finding::value",
+      "title": "yosoi::locators::Finding::value",
+      "kind": "function",
+      "signature": "pub const fn value(&self) -> &ProjectedValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 160,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome.rs#L160-L162"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b275cbd9cb33273331a6bd717e2f079479bdc6cb929667919a9560154cd8bdf7",
+  "slug": "yosoi/locators/struct/finding",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b275cbd9cb33273331a6bd717e2f079479bdc6cb929667919a9560154cd8bdf7"
+}

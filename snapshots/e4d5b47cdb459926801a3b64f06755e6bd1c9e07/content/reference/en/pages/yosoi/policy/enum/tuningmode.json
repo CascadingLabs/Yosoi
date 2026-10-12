@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::TuningMode",
+  "publicPath": "yosoi::policy::TuningMode",
+  "kind": "enum",
+  "title": "yosoi::policy::TuningMode",
+  "signature": "pub enum TuningMode",
+  "docs": "Public tuning modes. More modes require measured execution behavior.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/tuning.rs",
+    "lineStart": 29,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L29-L33"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 15,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/policy.rs#L15-L15"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::TuningMode"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::TuningMode::Default",
+      "publicPath": "yosoi::policy::TuningMode::Default",
+      "title": "yosoi::policy::TuningMode::Default",
+      "kind": "variant",
+      "signature": "Default",
+      "docs": "Keep the installed package's current execution choices.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::clone",
+      "publicPath": "yosoi::policy::TuningMode::clone",
+      "title": "yosoi::policy::TuningMode::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> TuningMode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::default",
+      "publicPath": "yosoi::policy::TuningMode::default",
+      "title": "yosoi::policy::TuningMode::default",
+      "kind": "function",
+      "signature": "fn default() -> TuningMode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::deserialize",
+      "publicPath": "yosoi::policy::TuningMode::deserialize",
+      "title": "yosoi::policy::TuningMode::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::eq",
+      "publicPath": "yosoi::policy::TuningMode::eq",
+      "title": "yosoi::policy::TuningMode::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &TuningMode) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::fmt",
+      "publicPath": "yosoi::policy::TuningMode::fmt",
+      "title": "yosoi::policy::TuningMode::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::hash",
+      "publicPath": "yosoi::policy::TuningMode::hash",
+      "title": "yosoi::policy::TuningMode::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::TuningMode::serialize",
+      "publicPath": "yosoi::policy::TuningMode::serialize",
+      "title": "yosoi::policy::TuningMode::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/tuning.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "61c7fb2d1979aea996a2e0b64006d0403fa3468d804777d37cb4477b7871f49f",
+  "slug": "yosoi/policy/enum/tuningmode",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "61c7fb2d1979aea996a2e0b64006d0403fa3468d804777d37cb4477b7871f49f"
+}

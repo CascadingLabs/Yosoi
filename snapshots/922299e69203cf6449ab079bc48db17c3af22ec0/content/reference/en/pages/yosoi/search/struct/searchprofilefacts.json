@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::SearchProfileFacts",
+  "publicPath": "yosoi::search::SearchProfileFacts",
+  "kind": "struct",
+  "title": "yosoi::search::SearchProfileFacts",
+  "signature": "pub struct SearchProfileFacts",
+  "docs": "Content-free details of the acquisition chosen for one provider.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 20,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L20-L25"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/search.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchProfileFacts"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::search::SearchProfileFacts::acquisition",
+      "publicPath": "yosoi::search::SearchProfileFacts::acquisition",
+      "title": "yosoi::search::SearchProfileFacts::acquisition",
+      "kind": "struct_field",
+      "signature": "pub acquisition: Option<yosoi::policy::AcquisitionKind>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchProfileFacts::clone",
+      "publicPath": "yosoi::search::SearchProfileFacts::clone",
+      "title": "yosoi::search::SearchProfileFacts::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchProfileFacts",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L19-L19"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchProfileFacts::defaults_status",
+      "publicPath": "yosoi::search::SearchProfileFacts::defaults_status",
+      "title": "yosoi::search::SearchProfileFacts::defaults_status",
+      "kind": "struct_field",
+      "signature": "pub defaults_status: yosoi::policy::ProviderDefaultsStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchProfileFacts::defaults_version",
+      "publicPath": "yosoi::search::SearchProfileFacts::defaults_version",
+      "title": "yosoi::search::SearchProfileFacts::defaults_version",
+      "kind": "struct_field",
+      "signature": "pub defaults_version: Option<yosoi::policy::ProviderDefaultsVersion>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchProfileFacts::effective_request_policy",
+      "publicPath": "yosoi::search::SearchProfileFacts::effective_request_policy",
+      "title": "yosoi::search::SearchProfileFacts::effective_request_policy",
+      "kind": "struct_field",
+      "signature": "pub effective_request_policy: Option<yosoi::EffectivePolicyIdentity>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchProfileFacts::eq",
+      "publicPath": "yosoi::search::SearchProfileFacts::eq",
+      "title": "yosoi::search::SearchProfileFacts::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchProfileFacts) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L19-L19"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchProfileFacts::fmt",
+      "publicPath": "yosoi::search::SearchProfileFacts::fmt",
+      "title": "yosoi::search::SearchProfileFacts::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/outcome.rs#L19-L19"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "248d0a2a36b85a715844bb12689d6b8ca90a6598b30c9cfe85250434c515156b",
+  "slug": "yosoi/search/struct/searchprofilefacts",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "248d0a2a36b85a715844bb12689d6b8ca90a6598b30c9cfe85250434c515156b"
+}

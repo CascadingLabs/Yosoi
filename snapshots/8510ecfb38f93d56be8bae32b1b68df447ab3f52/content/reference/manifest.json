@@ -1,0 +1,3392 @@
+{
+  "schemaVersion": 1,
+  "kind": "rust-api-reference",
+  "version": "0.1.0",
+  "source": {
+    "repository": "CascadingLabs/Yosoi",
+    "commit": "8510ecfb38f93d56be8bae32b1b68df447ab3f52"
+  },
+  "sdk": {
+    "crate": "yosoi",
+    "package": "yosoi",
+    "version": "0.1.0",
+    "manifest": {
+      "file": "crates/yosoi/Cargo.toml",
+      "lineStart": 3,
+      "lineEnd": 3,
+      "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/Cargo.toml#L3-L3"
+    }
+  },
+  "build": {
+    "rustdocVersion": "rustdoc 1.100.0-nightly (f248f4038 2026-09-05)",
+    "compilerCommit": "f248f4038796913873f11ca65b1b901e311c8dae",
+    "toolchain": "nightly-2026-09-06",
+    "formatVersion": 61,
+    "target": "x86_64-unknown-linux-gnu",
+    "features": [],
+    "generatorDigest": "62013ffa8a97f4ab68b394c341e9ca78711aa8b9fc66a3424f21d89b74f9d923"
+  },
+  "locales": [
+    "en"
+  ],
+  "pages": {
+    "index": {
+      "file": "pages/index.json",
+      "title": "yosoi Rust API",
+      "publicPath": "yosoi",
+      "kind": "module",
+      "aliases": [],
+      "sha256": "7bd139f2e59a39925c39d9898cf4071f0928a9b56a8ea700b004c5ea47a85a6b",
+      "localeHashes": {
+        "en": "7bd139f2e59a39925c39d9898cf4071f0928a9b56a8ea700b004c5ea47a85a6b"
+      }
+    },
+    "yosoi/contracts/enum/cardinality": {
+      "file": "pages/yosoi/contracts/enum/cardinality.json",
+      "title": "yosoi::contracts::Cardinality",
+      "publicPath": "yosoi::contracts::Cardinality",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::Cardinality"
+      ],
+      "sha256": "ec8ea81d62150cf740b183432be7b8f683a34509440a13e981f519755ea51dbf",
+      "localeHashes": {
+        "en": "ec8ea81d62150cf740b183432be7b8f683a34509440a13e981f519755ea51dbf"
+      }
+    },
+    "yosoi/contracts/enum/contractlocatorerror": {
+      "file": "pages/yosoi/contracts/enum/contractlocatorerror.json",
+      "title": "yosoi::contracts::ContractLocatorError",
+      "publicPath": "yosoi::contracts::ContractLocatorError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::ContractLocatorError",
+        "yosoi::prelude::contracts::ContractLocatorError"
+      ],
+      "sha256": "707e7ee5d4c9bdfe27c7687c6dcfc757cf1801e305c7e46d345ce730218045bc",
+      "localeHashes": {
+        "en": "707e7ee5d4c9bdfe27c7687c6dcfc757cf1801e305c7e46d345ce730218045bc"
+      }
+    },
+    "yosoi/contracts/enum/contractoutcome": {
+      "file": "pages/yosoi/contracts/enum/contractoutcome.json",
+      "title": "yosoi::contracts::ContractOutcome",
+      "publicPath": "yosoi::contracts::ContractOutcome",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractOutcome"
+      ],
+      "sha256": "2f1a126dfee539752ee1ba92a2bc889c5797740d8fd683b6155df55f11ebf112",
+      "localeHashes": {
+        "en": "2f1a126dfee539752ee1ba92a2bc889c5797740d8fd683b6155df55f11ebf112"
+      }
+    },
+    "yosoi/contracts/enum/contractschemaerror": {
+      "file": "pages/yosoi/contracts/enum/contractschemaerror.json",
+      "title": "yosoi::contracts::ContractSchemaError",
+      "publicPath": "yosoi::contracts::ContractSchemaError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractSchemaError"
+      ],
+      "sha256": "0568c9193096c8a9fb8415557b6c4c2b9ed904e0b5184e2b4b2a5a0985e512ff",
+      "localeHashes": {
+        "en": "0568c9193096c8a9fb8415557b6c4c2b9ed904e0b5184e2b4b2a5a0985e512ff"
+      }
+    },
+    "yosoi/contracts/enum/currency": {
+      "file": "pages/yosoi/contracts/enum/currency.json",
+      "title": "yosoi::contracts::Currency",
+      "publicPath": "yosoi::contracts::Currency",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::Currency",
+        "yosoi::prelude::contracts::Currency"
+      ],
+      "sha256": "0c226806eec4babae29af7986537be5a1b0905232eb979687544c967ba49b0dc",
+      "localeHashes": {
+        "en": "0c226806eec4babae29af7986537be5a1b0905232eb979687544c967ba49b0dc"
+      }
+    },
+    "yosoi/contracts/enum/extractiondiagnostic": {
+      "file": "pages/yosoi/contracts/enum/extractiondiagnostic.json",
+      "title": "yosoi::contracts::ExtractionDiagnostic",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ExtractionDiagnostic"
+      ],
+      "sha256": "a33872cd4098a26d3aeed11509258e523ffa59c1963bac44b86221df94539aef",
+      "localeHashes": {
+        "en": "a33872cd4098a26d3aeed11509258e523ffa59c1963bac44b86221df94539aef"
+      }
+    },
+    "yosoi/contracts/enum/extractionfailure": {
+      "file": "pages/yosoi/contracts/enum/extractionfailure.json",
+      "title": "yosoi::contracts::ExtractionFailure",
+      "publicPath": "yosoi::contracts::ExtractionFailure",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ExtractionFailure"
+      ],
+      "sha256": "59fa76445475e13afb6024b7fba64155b9a462bdf36879cd3b7048d81929a876",
+      "localeHashes": {
+        "en": "59fa76445475e13afb6024b7fba64155b9a462bdf36879cd3b7048d81929a876"
+      }
+    },
+    "yosoi/contracts/enum/extractionlimit": {
+      "file": "pages/yosoi/contracts/enum/extractionlimit.json",
+      "title": "yosoi::contracts::ExtractionLimit",
+      "publicPath": "yosoi::contracts::ExtractionLimit",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ExtractionLimit"
+      ],
+      "sha256": "cde7b54615aa591564ba37bd752c2026d90999e2da9ca87a8fc3cc4a4fbadea9",
+      "localeHashes": {
+        "en": "cde7b54615aa591564ba37bd752c2026d90999e2da9ca87a8fc3cc4a4fbadea9"
+      }
+    },
+    "yosoi/contracts/enum/fieldissuekind": {
+      "file": "pages/yosoi/contracts/enum/fieldissuekind.json",
+      "title": "yosoi::contracts::FieldIssueKind",
+      "publicPath": "yosoi::contracts::FieldIssueKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::FieldIssueKind"
+      ],
+      "sha256": "36b83af2679cda32b4a98d773346d1ad1c0898c4eea53ca1e557b29921e2f728",
+      "localeHashes": {
+        "en": "36b83af2679cda32b4a98d773346d1ad1c0898c4eea53ca1e557b29921e2f728"
+      }
+    },
+    "yosoi/contracts/enum/recordscope": {
+      "file": "pages/yosoi/contracts/enum/recordscope.json",
+      "title": "yosoi::contracts::RecordScope",
+      "publicPath": "yosoi::contracts::RecordScope",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::RecordScope"
+      ],
+      "sha256": "c66de48224e8534c66d909608053a3853142db5b7ec9e95b0b79bee938c2d8a4",
+      "localeHashes": {
+        "en": "c66de48224e8534c66d909608053a3853142db5b7ec9e95b0b79bee938c2d8a4"
+      }
+    },
+    "yosoi/contracts/enum/runtimecontracterror": {
+      "file": "pages/yosoi/contracts/enum/runtimecontracterror.json",
+      "title": "yosoi::contracts::RuntimeContractError",
+      "publicPath": "yosoi::contracts::RuntimeContractError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeContractError"
+      ],
+      "sha256": "3bbe7796977a3c04a9bf313c8f5d3f45e748129dbf82d8afa42dd23d9baa7a79",
+      "localeHashes": {
+        "en": "3bbe7796977a3c04a9bf313c8f5d3f45e748129dbf82d8afa42dd23d9baa7a79"
+      }
+    },
+    "yosoi/contracts/enum/runtimecontractoutcome": {
+      "file": "pages/yosoi/contracts/enum/runtimecontractoutcome.json",
+      "title": "yosoi::contracts::RuntimeContractOutcome",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeContractOutcome"
+      ],
+      "sha256": "5ca36e136fd3df5905209f203d0bb0092096234da924add92963c577214ea6b7",
+      "localeHashes": {
+        "en": "5ca36e136fd3df5905209f203d0bb0092096234da924add92963c577214ea6b7"
+      }
+    },
+    "yosoi/contracts/enum/runtimefieldvalue": {
+      "file": "pages/yosoi/contracts/enum/runtimefieldvalue.json",
+      "title": "yosoi::contracts::RuntimeFieldValue",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeFieldValue"
+      ],
+      "sha256": "f446f58b44dbde70a883523be09586f21cb4a89420a3759b4e04b09a88b8b129",
+      "localeHashes": {
+        "en": "f446f58b44dbde70a883523be09586f21cb4a89420a3759b4e04b09a88b8b129"
+      }
+    },
+    "yosoi/contracts/enum/runtimevalue": {
+      "file": "pages/yosoi/contracts/enum/runtimevalue.json",
+      "title": "yosoi::contracts::RuntimeValue",
+      "publicPath": "yosoi::contracts::RuntimeValue",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeValue"
+      ],
+      "sha256": "dfc691b30fa688f8a48bd0ce0ec0c928a0e0a5754efc5e097eb8d06b812e40e9",
+      "localeHashes": {
+        "en": "dfc691b30fa688f8a48bd0ce0ec0c928a0e0a5754efc5e097eb8d06b812e40e9"
+      }
+    },
+    "yosoi/contracts/enum/validationcode": {
+      "file": "pages/yosoi/contracts/enum/validationcode.json",
+      "title": "yosoi::contracts::ValidationCode",
+      "publicPath": "yosoi::contracts::ValidationCode",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ValidationCode"
+      ],
+      "sha256": "65367a3316a38c6c486d4d570acb6c226f697000f8951ddf887febb1d1eed067",
+      "localeHashes": {
+        "en": "65367a3316a38c6c486d4d570acb6c226f697000f8951ddf887febb1d1eed067"
+      }
+    },
+    "yosoi/contracts/enum/validationfailure": {
+      "file": "pages/yosoi/contracts/enum/validationfailure.json",
+      "title": "yosoi::contracts::ValidationFailure",
+      "publicPath": "yosoi::contracts::ValidationFailure",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::contracts::ValidationFailure"
+      ],
+      "sha256": "a29ca1ae1b3c9a3634d628f640fc0f670db4d02eb50fbda498d69cba62aa98cd",
+      "localeHashes": {
+        "en": "a29ca1ae1b3c9a3634d628f640fc0f670db4d02eb50fbda498d69cba62aa98cd"
+      }
+    },
+    "yosoi/contracts/proc-macro/contract": {
+      "file": "pages/yosoi/contracts/proc-macro/contract.json",
+      "title": "yosoi::contracts::Contract",
+      "publicPath": "yosoi::contracts::Contract",
+      "kind": "proc_macro",
+      "aliases": [
+        "yosoi::prelude::Contract",
+        "yosoi::prelude::contracts::Contract"
+      ],
+      "sha256": "ab307aa7c6a97ac9dc56aaab56f9ad9f2ae526d1f405505a24d47e7eda225e40",
+      "localeHashes": {
+        "en": "ab307aa7c6a97ac9dc56aaab56f9ad9f2ae526d1f405505a24d47e7eda225e40"
+      }
+    },
+    "yosoi/contracts/reexport/archivedcontractoutcome": {
+      "file": "pages/yosoi/contracts/reexport/archivedcontractoutcome.json",
+      "title": "yosoi::contracts::ArchivedContractOutcome",
+      "publicPath": "yosoi::contracts::ArchivedContractOutcome",
+      "kind": "reexport",
+      "aliases": [
+        "yosoi::prelude::contracts::ArchivedContractOutcome"
+      ],
+      "sha256": "067cdb53ac84710e2f6899ad11bc7a37e8a32d5a1b0f278b06a8b0da7c4b99c7",
+      "localeHashes": {
+        "en": "067cdb53ac84710e2f6899ad11bc7a37e8a32d5a1b0f278b06a8b0da7c4b99c7"
+      }
+    },
+    "yosoi/contracts/reexport/runtimecontractarchiveerror": {
+      "file": "pages/yosoi/contracts/reexport/runtimecontractarchiveerror.json",
+      "title": "yosoi::contracts::RuntimeContractArchiveError",
+      "publicPath": "yosoi::contracts::RuntimeContractArchiveError",
+      "kind": "reexport",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeContractArchiveError"
+      ],
+      "sha256": "ed7178e36c5efe20e9feaab1fbe96a826b00c183ac73499eca58ddad2c8154fc",
+      "localeHashes": {
+        "en": "ed7178e36c5efe20e9feaab1fbe96a826b00c183ac73499eca58ddad2c8154fc"
+      }
+    },
+    "yosoi/contracts/struct/candidatefield": {
+      "file": "pages/yosoi/contracts/struct/candidatefield.json",
+      "title": "yosoi::contracts::CandidateField",
+      "publicPath": "yosoi::contracts::CandidateField",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::CandidateField"
+      ],
+      "sha256": "a4539fa5991a6608ad27e6bdb0f75b7f00bb5e3bfe14874b9bdbc4eeec3c06a8",
+      "localeHashes": {
+        "en": "a4539fa5991a6608ad27e6bdb0f75b7f00bb5e3bfe14874b9bdbc4eeec3c06a8"
+      }
+    },
+    "yosoi/contracts/struct/contractid": {
+      "file": "pages/yosoi/contracts/struct/contractid.json",
+      "title": "yosoi::contracts::ContractId",
+      "publicPath": "yosoi::contracts::ContractId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractId"
+      ],
+      "sha256": "ff1b80d45ee1167e9254e1ef1a76974980ea0b38c7434d80c3d35965adae35b5",
+      "localeHashes": {
+        "en": "ff1b80d45ee1167e9254e1ef1a76974980ea0b38c7434d80c3d35965adae35b5"
+      }
+    },
+    "yosoi/contracts/struct/contractidentity": {
+      "file": "pages/yosoi/contracts/struct/contractidentity.json",
+      "title": "yosoi::contracts::ContractIdentity",
+      "publicPath": "yosoi::contracts::ContractIdentity",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractIdentity"
+      ],
+      "sha256": "f982ef22505e92974270c804b3991c6088e8e4c2c2260c935a54e87a9165c105",
+      "localeHashes": {
+        "en": "f982ef22505e92974270c804b3991c6088e8e4c2c2260c935a54e87a9165c105"
+      }
+    },
+    "yosoi/contracts/struct/contractschema": {
+      "file": "pages/yosoi/contracts/struct/contractschema.json",
+      "title": "yosoi::contracts::ContractSchema",
+      "publicPath": "yosoi::contracts::ContractSchema",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractSchema"
+      ],
+      "sha256": "76cca97f1341fa37c4ea459a743784026cd57bfa70a8a5a451f04f70d74a28c9",
+      "localeHashes": {
+        "en": "76cca97f1341fa37c4ea459a743784026cd57bfa70a8a5a451f04f70d74a28c9"
+      }
+    },
+    "yosoi/contracts/struct/fieldid": {
+      "file": "pages/yosoi/contracts/struct/fieldid.json",
+      "title": "yosoi::contracts::FieldId",
+      "publicPath": "yosoi::contracts::FieldId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::FieldId"
+      ],
+      "sha256": "e9ccd9ad191c21dcb4967380088ba735176c7b258a3067f85c45fee1ebb50b41",
+      "localeHashes": {
+        "en": "e9ccd9ad191c21dcb4967380088ba735176c7b258a3067f85c45fee1ebb50b41"
+      }
+    },
+    "yosoi/contracts/struct/fieldissue": {
+      "file": "pages/yosoi/contracts/struct/fieldissue.json",
+      "title": "yosoi::contracts::FieldIssue",
+      "publicPath": "yosoi::contracts::FieldIssue",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::FieldIssue"
+      ],
+      "sha256": "aef362b06cc75417aea8e52f25104435354e731612fbcb9eccebe4e4b1c1c117",
+      "localeHashes": {
+        "en": "aef362b06cc75417aea8e52f25104435354e731612fbcb9eccebe4e4b1c1c117"
+      }
+    },
+    "yosoi/contracts/struct/fieldschema": {
+      "file": "pages/yosoi/contracts/struct/fieldschema.json",
+      "title": "yosoi::contracts::FieldSchema",
+      "publicPath": "yosoi::contracts::FieldSchema",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::FieldSchema"
+      ],
+      "sha256": "b7b70835b36a15cbe1cefa8209fa03ef2da83d2060c6893300d6bdd371c1bdde",
+      "localeHashes": {
+        "en": "b7b70835b36a15cbe1cefa8209fa03ef2da83d2060c6893300d6bdd371c1bdde"
+      }
+    },
+    "yosoi/contracts/struct/money": {
+      "file": "pages/yosoi/contracts/struct/money.json",
+      "title": "yosoi::contracts::Money",
+      "publicPath": "yosoi::contracts::Money",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::Money",
+        "yosoi::prelude::contracts::Money"
+      ],
+      "sha256": "0dd2ef007b2ba96d5960ec7b61563be0f9c6d947200e50bc7c5f58433a9c57db",
+      "localeHashes": {
+        "en": "0dd2ef007b2ba96d5960ec7b61563be0f9c6d947200e50bc7c5f58433a9c57db"
+      }
+    },
+    "yosoi/contracts/struct/recordissue": {
+      "file": "pages/yosoi/contracts/struct/recordissue.json",
+      "title": "yosoi::contracts::RecordIssue",
+      "publicPath": "yosoi::contracts::RecordIssue",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::RecordIssue"
+      ],
+      "sha256": "e212e8be7380ba16a19ddbc88b4c333d9491cb487d67ac93504b8fc0176c5810",
+      "localeHashes": {
+        "en": "e212e8be7380ba16a19ddbc88b4c333d9491cb487d67ac93504b8fc0176c5810"
+      }
+    },
+    "yosoi/contracts/struct/runtimecontract": {
+      "file": "pages/yosoi/contracts/struct/runtimecontract.json",
+      "title": "yosoi::contracts::RuntimeContract",
+      "publicPath": "yosoi::contracts::RuntimeContract",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeContract"
+      ],
+      "sha256": "db5912b62fd7f7e6f14636427b30b968f4a6d5b8827331e40571b50530d0fee0",
+      "localeHashes": {
+        "en": "db5912b62fd7f7e6f14636427b30b968f4a6d5b8827331e40571b50530d0fee0"
+      }
+    },
+    "yosoi/contracts/struct/runtimeextracted": {
+      "file": "pages/yosoi/contracts/struct/runtimeextracted.json",
+      "title": "yosoi::contracts::RuntimeExtracted",
+      "publicPath": "yosoi::contracts::RuntimeExtracted",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeExtracted"
+      ],
+      "sha256": "dd2433e2f650f5cca8f2fdc7389590fb0b9227d2d15006c2e4713aaa65d7d6d8",
+      "localeHashes": {
+        "en": "dd2433e2f650f5cca8f2fdc7389590fb0b9227d2d15006c2e4713aaa65d7d6d8"
+      }
+    },
+    "yosoi/contracts/struct/runtimerecordissue": {
+      "file": "pages/yosoi/contracts/struct/runtimerecordissue.json",
+      "title": "yosoi::contracts::RuntimeRecordIssue",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeRecordIssue"
+      ],
+      "sha256": "6626c0473f11e4cd35d5e1c7b59e0764d234779068fd9d4ee01c573c9fa6852b",
+      "localeHashes": {
+        "en": "6626c0473f11e4cd35d5e1c7b59e0764d234779068fd9d4ee01c573c9fa6852b"
+      }
+    },
+    "yosoi/contracts/struct/runtimevalidatedrecord": {
+      "file": "pages/yosoi/contracts/struct/runtimevalidatedrecord.json",
+      "title": "yosoi::contracts::RuntimeValidatedRecord",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeValidatedRecord"
+      ],
+      "sha256": "c2a69b4f25b98fba760354beb05032ab5cc9ab7d40efff9f11386a2dbd94a233",
+      "localeHashes": {
+        "en": "c2a69b4f25b98fba760354beb05032ab5cc9ab7d40efff9f11386a2dbd94a233"
+      }
+    },
+    "yosoi/contracts/struct/validatedrecord": {
+      "file": "pages/yosoi/contracts/struct/validatedrecord.json",
+      "title": "yosoi::contracts::ValidatedRecord",
+      "publicPath": "yosoi::contracts::ValidatedRecord",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::contracts::ValidatedRecord"
+      ],
+      "sha256": "f63cab0d0489b40959ebf5bb995b48d18fc18d55e511f4292fa365f84530b371",
+      "localeHashes": {
+        "en": "f63cab0d0489b40959ebf5bb995b48d18fc18d55e511f4292fa365f84530b371"
+      }
+    },
+    "yosoi/contracts/trait/contract": {
+      "file": "pages/yosoi/contracts/trait/contract.json",
+      "title": "yosoi::contracts::Contract",
+      "publicPath": "yosoi::contracts::Contract",
+      "kind": "trait",
+      "aliases": [
+        "yosoi::prelude::Contract",
+        "yosoi::prelude::contracts::Contract"
+      ],
+      "sha256": "acf87c4b77def125d0eac9a6800abc1bcea0114bad767684195d33ed9e2fc5c2",
+      "localeHashes": {
+        "en": "acf87c4b77def125d0eac9a6800abc1bcea0114bad767684195d33ed9e2fc5c2"
+      }
+    },
+    "yosoi/contracts/trait/contractvalue": {
+      "file": "pages/yosoi/contracts/trait/contractvalue.json",
+      "title": "yosoi::contracts::ContractValue",
+      "publicPath": "yosoi::contracts::ContractValue",
+      "kind": "trait",
+      "aliases": [
+        "yosoi::prelude::contracts::ContractValue"
+      ],
+      "sha256": "239e32b8aac103272c984d90814e198394bf15c01576f8d041f7e8904f992b3e",
+      "localeHashes": {
+        "en": "239e32b8aac103272c984d90814e198394bf15c01576f8d041f7e8904f992b3e"
+      }
+    },
+    "yosoi/contracts/type-alias/extracted": {
+      "file": "pages/yosoi/contracts/type-alias/extracted.json",
+      "title": "yosoi::contracts::Extracted",
+      "publicPath": "yosoi::contracts::Extracted",
+      "kind": "type_alias",
+      "aliases": [
+        "yosoi::prelude::Extracted",
+        "yosoi::prelude::contracts::Extracted"
+      ],
+      "sha256": "a6a163308c7cdb6401b4e5fec037a2520814c4df9bfc9fbdfc267a3fafc0c094",
+      "localeHashes": {
+        "en": "a6a163308c7cdb6401b4e5fec037a2520814c4df9bfc9fbdfc267a3fafc0c094"
+      }
+    },
+    "yosoi/contracts/type-alias/runtimecandidate": {
+      "file": "pages/yosoi/contracts/type-alias/runtimecandidate.json",
+      "title": "yosoi::contracts::RuntimeCandidate",
+      "publicPath": "yosoi::contracts::RuntimeCandidate",
+      "kind": "type_alias",
+      "aliases": [
+        "yosoi::prelude::contracts::RuntimeCandidate"
+      ],
+      "sha256": "83e28116269eab30e3c912e36ed72f171bb3d20683f05588113a738562837f13",
+      "localeHashes": {
+        "en": "83e28116269eab30e3c912e36ed72f171bb3d20683f05588113a738562837f13"
+      }
+    },
+    "yosoi/documents/enum/accessibilitycompleteness": {
+      "file": "pages/yosoi/documents/enum/accessibilitycompleteness.json",
+      "title": "yosoi::documents::AccessibilityCompleteness",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::documents::AccessibilityCompleteness"
+      ],
+      "sha256": "3be68a5f3c8153a870ef0baf45a6a73d84ec5c36676eee2b139f79aa67c2b44e",
+      "localeHashes": {
+        "en": "3be68a5f3c8153a870ef0baf45a6a73d84ec5c36676eee2b139f79aa67c2b44e"
+      }
+    },
+    "yosoi/documents/enum/documentclass": {
+      "file": "pages/yosoi/documents/enum/documentclass.json",
+      "title": "yosoi::documents::DocumentClass",
+      "publicPath": "yosoi::documents::DocumentClass",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::documents::DocumentClass"
+      ],
+      "sha256": "292657e602f6f2a47bbbd2af4573a4134a6f848215cba8c257c9f55f6d1cda6b",
+      "localeHashes": {
+        "en": "292657e602f6f2a47bbbd2af4573a4134a6f848215cba8c257c9f55f6d1cda6b"
+      }
+    },
+    "yosoi/documents/enum/documenterror": {
+      "file": "pages/yosoi/documents/enum/documenterror.json",
+      "title": "yosoi::documents::DocumentError",
+      "publicPath": "yosoi::documents::DocumentError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::DocumentError",
+        "yosoi::prelude::documents::DocumentError"
+      ],
+      "sha256": "17038099b1874a6d0c38ffaae4465900badb697f5a08f4b8323e294306737652",
+      "localeHashes": {
+        "en": "17038099b1874a6d0c38ffaae4465900badb697f5a08f4b8323e294306737652"
+      }
+    },
+    "yosoi/documents/enum/documentrepresentation": {
+      "file": "pages/yosoi/documents/enum/documentrepresentation.json",
+      "title": "yosoi::documents::DocumentRepresentation",
+      "publicPath": "yosoi::documents::DocumentRepresentation",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::documents::DocumentRepresentation"
+      ],
+      "sha256": "eff92098b47936320b96aa24ff55a7f3646871323c6fa26dfd425ca546ecd23b",
+      "localeHashes": {
+        "en": "eff92098b47936320b96aa24ff55a7f3646871323c6fa26dfd425ca546ecd23b"
+      }
+    },
+    "yosoi/documents/enum/documentschemaprofile": {
+      "file": "pages/yosoi/documents/enum/documentschemaprofile.json",
+      "title": "yosoi::documents::DocumentSchemaProfile",
+      "publicPath": "yosoi::documents::DocumentSchemaProfile",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::documents::DocumentSchemaProfile"
+      ],
+      "sha256": "de1eb8e5b25e4c015caa2fc901c6bb8dd53a1e629f654fb0d6a845b4c30176df",
+      "localeHashes": {
+        "en": "de1eb8e5b25e4c015caa2fc901c6bb8dd53a1e629f654fb0d6a845b4c30176df"
+      }
+    },
+    "yosoi/documents/enum/parseerror": {
+      "file": "pages/yosoi/documents/enum/parseerror.json",
+      "title": "yosoi::documents::ParseError",
+      "publicPath": "yosoi::documents::ParseError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::ParseError",
+        "yosoi::prelude::documents::ParseError"
+      ],
+      "sha256": "4eab3a48a2eaeec11764a95f2c4901b5c46449bf8a3f33f9ccc23f7042201b65",
+      "localeHashes": {
+        "en": "4eab3a48a2eaeec11764a95f2c4901b5c46449bf8a3f33f9ccc23f7042201b65"
+      }
+    },
+    "yosoi/documents/enum/sourceformat": {
+      "file": "pages/yosoi/documents/enum/sourceformat.json",
+      "title": "yosoi::documents::SourceFormat",
+      "publicPath": "yosoi::documents::SourceFormat",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::documents::SourceFormat"
+      ],
+      "sha256": "75779b8dff4a3dbe1ae9ce8bf8aa54667dda7853fb44274a466ddfc0169ac0c8",
+      "localeHashes": {
+        "en": "75779b8dff4a3dbe1ae9ce8bf8aa54667dda7853fb44274a466ddfc0169ac0c8"
+      }
+    },
+    "yosoi/documents/struct/bounddocument": {
+      "file": "pages/yosoi/documents/struct/bounddocument.json",
+      "title": "yosoi::documents::BoundDocument",
+      "publicPath": "yosoi::documents::BoundDocument",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::documents::BoundDocument"
+      ],
+      "sha256": "b5958d4ff9e1ab71c678b546d33ffe89042d5d4960ba84f60ca8ea87441b6082",
+      "localeHashes": {
+        "en": "b5958d4ff9e1ab71c678b546d33ffe89042d5d4960ba84f60ca8ea87441b6082"
+      }
+    },
+    "yosoi/documents/struct/documentepoch": {
+      "file": "pages/yosoi/documents/struct/documentepoch.json",
+      "title": "yosoi::documents::DocumentEpoch",
+      "publicPath": "yosoi::documents::DocumentEpoch",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::DocumentEpoch",
+        "yosoi::prelude::documents::DocumentEpoch"
+      ],
+      "sha256": "b425d37140075ea3ad0765f09f6d64858547d73a9238c426a572adf2ff4cb134",
+      "localeHashes": {
+        "en": "b425d37140075ea3ad0765f09f6d64858547d73a9238c426a572adf2ff4cb134"
+      }
+    },
+    "yosoi/documents/struct/documentref": {
+      "file": "pages/yosoi/documents/struct/documentref.json",
+      "title": "yosoi::documents::DocumentRef",
+      "publicPath": "yosoi::documents::DocumentRef",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::documents::DocumentRef"
+      ],
+      "sha256": "bdc86267f60c352ce3009b3f1d325c841926943759cc890e13a67869f5528620",
+      "localeHashes": {
+        "en": "bdc86267f60c352ce3009b3f1d325c841926943759cc890e13a67869f5528620"
+      }
+    },
+    "yosoi/documents/struct/parseddocument": {
+      "file": "pages/yosoi/documents/struct/parseddocument.json",
+      "title": "yosoi::documents::ParsedDocument",
+      "publicPath": "yosoi::documents::ParsedDocument",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::ParsedDocument",
+        "yosoi::prelude::documents::ParsedDocument"
+      ],
+      "sha256": "fb4fde64881b1e25c2192a5b5811b1cea27c603cc68b2b02d05947c77cdbbfcc",
+      "localeHashes": {
+        "en": "fb4fde64881b1e25c2192a5b5811b1cea27c603cc68b2b02d05947c77cdbbfcc"
+      }
+    },
+    "yosoi/enum/locateoutcome": {
+      "file": "pages/yosoi/enum/locateoutcome.json",
+      "title": "yosoi::LocateOutcome",
+      "publicPath": "yosoi::LocateOutcome",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::locators::LocateOutcome",
+        "yosoi::prelude::LocateOutcome",
+        "yosoi::prelude::locators::LocateOutcome"
+      ],
+      "sha256": "51bf78f2a318536f0bd4efaca3f0245061859d80e649c8f0cb21248b895a97fb",
+      "localeHashes": {
+        "en": "51bf78f2a318536f0bd4efaca3f0245061859d80e649c8f0cb21248b895a97fb"
+      }
+    },
+    "yosoi/enum/policyerror": {
+      "file": "pages/yosoi/enum/policyerror.json",
+      "title": "yosoi::PolicyError",
+      "publicPath": "yosoi::PolicyError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::policy::PolicyError",
+        "yosoi::prelude::PolicyError",
+        "yosoi::prelude::policy::PolicyError"
+      ],
+      "sha256": "7e5330659a0da4d36727eb0d6157b5250104fa0fb105fbf60b07866fc3dcb725",
+      "localeHashes": {
+        "en": "7e5330659a0da4d36727eb0d6157b5250104fa0fb105fbf60b07866fc3dcb725"
+      }
+    },
+    "yosoi/enum/responsetermination": {
+      "file": "pages/yosoi/enum/responsetermination.json",
+      "title": "yosoi::ResponseTermination",
+      "publicPath": "yosoi::ResponseTermination",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::request::ResponseTermination",
+        "yosoi::prelude::request::ResponseTermination"
+      ],
+      "sha256": "902ee2a080e15e976cf90c476e254a3e7b858c82ff5794f952db6f2eeb87e78f",
+      "localeHashes": {
+        "en": "902ee2a080e15e976cf90c476e254a3e7b858c82ff5794f952db6f2eeb87e78f"
+      }
+    },
+    "yosoi/locators/enum/accessibilitystatename": {
+      "file": "pages/yosoi/locators/enum/accessibilitystatename.json",
+      "title": "yosoi::locators::AccessibilityStateName",
+      "publicPath": "yosoi::locators::AccessibilityStateName",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::AccessibilityStateName"
+      ],
+      "sha256": "1be7881cb25244dbf8a03a9882b9b462581c037defe59a672dbef8dba2c5733c",
+      "localeHashes": {
+        "en": "1be7881cb25244dbf8a03a9882b9b462581c037defe59a672dbef8dba2c5733c"
+      }
+    },
+    "yosoi/locators/enum/completeness": {
+      "file": "pages/yosoi/locators/enum/completeness.json",
+      "title": "yosoi::locators::Completeness",
+      "publicPath": "yosoi::locators::Completeness",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::Completeness"
+      ],
+      "sha256": "95533bfc4fddf3533922362c7de83b1fd20607e877f0c4f0401a952f692b6303",
+      "localeHashes": {
+        "en": "95533bfc4fddf3533922362c7de83b1fd20607e877f0c4f0401a952f692b6303"
+      }
+    },
+    "yosoi/locators/enum/coordinateerror": {
+      "file": "pages/yosoi/locators/enum/coordinateerror.json",
+      "title": "yosoi::locators::CoordinateError",
+      "publicPath": "yosoi::locators::CoordinateError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::CoordinateError"
+      ],
+      "sha256": "f777597ef0416167e7fce5f91215b2ad87b2abdfcbe7866f6e6bb8941466d33d",
+      "localeHashes": {
+        "en": "f777597ef0416167e7fce5f91215b2ad87b2abdfcbe7866f6e6bb8941466d33d"
+      }
+    },
+    "yosoi/locators/enum/incompleteevidence": {
+      "file": "pages/yosoi/locators/enum/incompleteevidence.json",
+      "title": "yosoi::locators::IncompleteEvidence",
+      "publicPath": "yosoi::locators::IncompleteEvidence",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::IncompleteEvidence",
+        "yosoi::prelude::locators::IncompleteEvidence"
+      ],
+      "sha256": "d5108ab91c007965ee0a64ee79b7d81c9bad048a47072a26c3f38c5c4a658a52",
+      "localeHashes": {
+        "en": "d5108ab91c007965ee0a64ee79b7d81c9bad048a47072a26c3f38c5c4a658a52"
+      }
+    },
+    "yosoi/locators/enum/jsonquerysyntaxerror": {
+      "file": "pages/yosoi/locators/enum/jsonquerysyntaxerror.json",
+      "title": "yosoi::locators::JsonQuerySyntaxError",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::JsonQuerySyntaxError"
+      ],
+      "sha256": "3abbfb31fad9f93fee1d0053a6d53823f2fbbcad7b5cb2ab7e708b90c3692136",
+      "localeHashes": {
+        "en": "3abbfb31fad9f93fee1d0053a6d53823f2fbbcad7b5cb2ab7e708b90c3692136"
+      }
+    },
+    "yosoi/locators/enum/locatefailure": {
+      "file": "pages/yosoi/locators/enum/locatefailure.json",
+      "title": "yosoi::locators::LocateFailure",
+      "publicPath": "yosoi::locators::LocateFailure",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::LocateFailure",
+        "yosoi::prelude::locators::LocateFailure"
+      ],
+      "sha256": "083b9590aecbb4d035a7d732f68b3a1d6a7eb8c5f0a202d96909fde436cdae1e",
+      "localeHashes": {
+        "en": "083b9590aecbb4d035a7d732f68b3a1d6a7eb8c5f0a202d96909fde436cdae1e"
+      }
+    },
+    "yosoi/locators/enum/nativecoordinate": {
+      "file": "pages/yosoi/locators/enum/nativecoordinate.json",
+      "title": "yosoi::locators::NativeCoordinate",
+      "publicPath": "yosoi::locators::NativeCoordinate",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::NativeCoordinate"
+      ],
+      "sha256": "96a1f0324ff4a8cfc4d5dd46adb5740548fd98262a08dc54ed37872f32cbb88d",
+      "localeHashes": {
+        "en": "96a1f0324ff4a8cfc4d5dd46adb5740548fd98262a08dc54ed37872f32cbb88d"
+      }
+    },
+    "yosoi/locators/enum/planerror": {
+      "file": "pages/yosoi/locators/enum/planerror.json",
+      "title": "yosoi::locators::PlanError",
+      "publicPath": "yosoi::locators::PlanError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::PlanError",
+        "yosoi::prelude::locators::PlanError"
+      ],
+      "sha256": "c9fbfae458f791234793d27c5917a332016a6f8233ab27f1fbd55a9eee213304",
+      "localeHashes": {
+        "en": "c9fbfae458f791234793d27c5917a332016a6f8233ab27f1fbd55a9eee213304"
+      }
+    },
+    "yosoi/locators/enum/projectedvalue": {
+      "file": "pages/yosoi/locators/enum/projectedvalue.json",
+      "title": "yosoi::locators::ProjectedValue",
+      "publicPath": "yosoi::locators::ProjectedValue",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::ProjectedValue"
+      ],
+      "sha256": "b3c47df8bc69a735d395c31aba053747735b2352aff3672151fb97dfe9dc32af",
+      "localeHashes": {
+        "en": "b3c47df8bc69a735d395c31aba053747735b2352aff3672151fb97dfe9dc32af"
+      }
+    },
+    "yosoi/locators/enum/queryatom": {
+      "file": "pages/yosoi/locators/enum/queryatom.json",
+      "title": "yosoi::locators::QueryAtom",
+      "publicPath": "yosoi::locators::QueryAtom",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::QueryAtom"
+      ],
+      "sha256": "9a54e307ded8d9a9d8c8f29782b59623c4f3e21bb9cc51936ec70e9bd1410c80",
+      "localeHashes": {
+        "en": "9a54e307ded8d9a9d8c8f29782b59623c4f3e21bb9cc51936ec70e9bd1410c80"
+      }
+    },
+    "yosoi/locators/enum/queryerror": {
+      "file": "pages/yosoi/locators/enum/queryerror.json",
+      "title": "yosoi::locators::QueryError",
+      "publicPath": "yosoi::locators::QueryError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::QueryError",
+        "yosoi::prelude::locators::QueryError"
+      ],
+      "sha256": "8f1be9034e064e55f9a9a9429a71133d4a014bbe26a72f068f03742d50f05ebe",
+      "localeHashes": {
+        "en": "8f1be9034e064e55f9a9a9429a71133d4a014bbe26a72f068f03742d50f05ebe"
+      }
+    },
+    "yosoi/locators/enum/queryresultshape": {
+      "file": "pages/yosoi/locators/enum/queryresultshape.json",
+      "title": "yosoi::locators::QueryResultShape",
+      "publicPath": "yosoi::locators::QueryResultShape",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::QueryResultShape"
+      ],
+      "sha256": "1bbef8fbd8936e6896170131a334ce34f97ccbeb83161457bac92eceb4cfcda1",
+      "localeHashes": {
+        "en": "1bbef8fbd8936e6896170131a334ce34f97ccbeb83161457bac92eceb4cfcda1"
+      }
+    },
+    "yosoi/locators/enum/resourcelimit": {
+      "file": "pages/yosoi/locators/enum/resourcelimit.json",
+      "title": "yosoi::locators::ResourceLimit",
+      "publicPath": "yosoi::locators::ResourceLimit",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::locators::ResourceLimit"
+      ],
+      "sha256": "e8a8a75d866a346a8e79c88b8e6f8b2add2fbbeb528b1b741207ee004aa0d757",
+      "localeHashes": {
+        "en": "e8a8a75d866a346a8e79c88b8e6f8b2add2fbbeb528b1b741207ee004aa0d757"
+      }
+    },
+    "yosoi/locators/function/accessibility-state": {
+      "file": "pages/yosoi/locators/function/accessibility-state.json",
+      "title": "yosoi::locators::accessibility_state",
+      "publicPath": "yosoi::locators::accessibility_state",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::accessibility_state",
+        "yosoi::prelude::locators::accessibility_state"
+      ],
+      "sha256": "f5fbc03146103bb0f536cfc740afeeba6f3f02c765e172811ff8986b3ff7e920",
+      "localeHashes": {
+        "en": "f5fbc03146103bb0f536cfc740afeeba6f3f02c765e172811ff8986b3ff7e920"
+      }
+    },
+    "yosoi/locators/function/accessibility-text": {
+      "file": "pages/yosoi/locators/function/accessibility-text.json",
+      "title": "yosoi::locators::accessibility_text",
+      "publicPath": "yosoi::locators::accessibility_text",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::accessibility_text",
+        "yosoi::prelude::locators::accessibility_text"
+      ],
+      "sha256": "e8ebf83a4ba4afb17b4c0326829fa0b13962c087d3a0bfc31eed21d51c3939cc",
+      "localeHashes": {
+        "en": "e8ebf83a4ba4afb17b4c0326829fa0b13962c087d3a0bfc31eed21d51c3939cc"
+      }
+    },
+    "yosoi/locators/function/accessible-name": {
+      "file": "pages/yosoi/locators/function/accessible-name.json",
+      "title": "yosoi::locators::accessible_name",
+      "publicPath": "yosoi::locators::accessible_name",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::accessible_name",
+        "yosoi::prelude::locators::accessible_name"
+      ],
+      "sha256": "92492e1dea02e9430e2f4274a0ed4f23bfa9ba44c48b996bf5b85362081f5d65",
+      "localeHashes": {
+        "en": "92492e1dea02e9430e2f4274a0ed4f23bfa9ba44c48b996bf5b85362081f5d65"
+      }
+    },
+    "yosoi/locators/function/css": {
+      "file": "pages/yosoi/locators/function/css.json",
+      "title": "yosoi::locators::css",
+      "publicPath": "yosoi::locators::css",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::css",
+        "yosoi::prelude::locators::css"
+      ],
+      "sha256": "9706482fff598ba88c725caa115e839a20a0dd5602bde3101e3c9e479fa51a51",
+      "localeHashes": {
+        "en": "9706482fff598ba88c725caa115e839a20a0dd5602bde3101e3c9e479fa51a51"
+      }
+    },
+    "yosoi/locators/function/json-path": {
+      "file": "pages/yosoi/locators/function/json-path.json",
+      "title": "yosoi::locators::json_path",
+      "publicPath": "yosoi::locators::json_path",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::json_path",
+        "yosoi::prelude::locators::json_path"
+      ],
+      "sha256": "6c13404270cfffa387d1e44102f46a6452a86824cd94d16eb75479f095343c17",
+      "localeHashes": {
+        "en": "6c13404270cfffa387d1e44102f46a6452a86824cd94d16eb75479f095343c17"
+      }
+    },
+    "yosoi/locators/function/json-pointer": {
+      "file": "pages/yosoi/locators/function/json-pointer.json",
+      "title": "yosoi::locators::json_pointer",
+      "publicPath": "yosoi::locators::json_pointer",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::json_pointer",
+        "yosoi::prelude::locators::json_pointer"
+      ],
+      "sha256": "6d028c3a9def4edd24a5f21a505714685dcc277965202d5ee56a7bccc89aac51",
+      "localeHashes": {
+        "en": "6d028c3a9def4edd24a5f21a505714685dcc277965202d5ee56a7bccc89aac51"
+      }
+    },
+    "yosoi/locators/function/output": {
+      "file": "pages/yosoi/locators/function/output.json",
+      "title": "yosoi::locators::output",
+      "publicPath": "yosoi::locators::output",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::output",
+        "yosoi::prelude::locators::output"
+      ],
+      "sha256": "805a2c293d05e063a61d0ebce971b5bcbab6062bf1d873da30d71d6c2dd81672",
+      "localeHashes": {
+        "en": "805a2c293d05e063a61d0ebce971b5bcbab6062bf1d873da30d71d6c2dd81672"
+      }
+    },
+    "yosoi/locators/function/regex": {
+      "file": "pages/yosoi/locators/function/regex.json",
+      "title": "yosoi::locators::regex",
+      "publicPath": "yosoi::locators::regex",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::regex",
+        "yosoi::prelude::locators::regex"
+      ],
+      "sha256": "96b46e6b999f0b6b1db2c55b85634744aa14b8810d64d1129d12e35e1cdeb84a",
+      "localeHashes": {
+        "en": "96b46e6b999f0b6b1db2c55b85634744aa14b8810d64d1129d12e35e1cdeb84a"
+      }
+    },
+    "yosoi/locators/function/role": {
+      "file": "pages/yosoi/locators/function/role.json",
+      "title": "yosoi::locators::role",
+      "publicPath": "yosoi::locators::role",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::role",
+        "yosoi::prelude::locators::role"
+      ],
+      "sha256": "ca976ce31bf48b007a50c4e8deb8b8599e9d8eff536f15524509a475aa15568d",
+      "localeHashes": {
+        "en": "ca976ce31bf48b007a50c4e8deb8b8599e9d8eff536f15524509a475aa15568d"
+      }
+    },
+    "yosoi/locators/function/text-literal": {
+      "file": "pages/yosoi/locators/function/text-literal.json",
+      "title": "yosoi::locators::text_literal",
+      "publicPath": "yosoi::locators::text_literal",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::text_literal",
+        "yosoi::prelude::locators::text_literal"
+      ],
+      "sha256": "79259ed80b0b56143573e8878acf928a4f823c3b5394f7466a6034ad6e5bb82e",
+      "localeHashes": {
+        "en": "79259ed80b0b56143573e8878acf928a4f823c3b5394f7466a6034ad6e5bb82e"
+      }
+    },
+    "yosoi/locators/function/tree-text-contains": {
+      "file": "pages/yosoi/locators/function/tree-text-contains.json",
+      "title": "yosoi::locators::tree_text_contains",
+      "publicPath": "yosoi::locators::tree_text_contains",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::tree_text_contains",
+        "yosoi::prelude::locators::tree_text_contains"
+      ],
+      "sha256": "ed78f3fed5e5f96f5cd3d2af17c1192fa6e2f616f50d0916e310325b75ea159b",
+      "localeHashes": {
+        "en": "ed78f3fed5e5f96f5cd3d2af17c1192fa6e2f616f50d0916e310325b75ea159b"
+      }
+    },
+    "yosoi/locators/function/xpath": {
+      "file": "pages/yosoi/locators/function/xpath.json",
+      "title": "yosoi::locators::xpath",
+      "publicPath": "yosoi::locators::xpath",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::xpath",
+        "yosoi::prelude::locators::xpath"
+      ],
+      "sha256": "5aa0fb67319bfa676c0bb0612b615e2d2a8032df25ad42973014146dcfe3867f",
+      "localeHashes": {
+        "en": "5aa0fb67319bfa676c0bb0612b615e2d2a8032df25ad42973014146dcfe3867f"
+      }
+    },
+    "yosoi/locators/locator/function/css": {
+      "file": "pages/yosoi/locators/locator/function/css.json",
+      "title": "yosoi::locators::locator::css",
+      "publicPath": "yosoi::locators::locator::css",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::locator::css",
+        "yosoi::prelude::locators::locator::css"
+      ],
+      "sha256": "e8f89325743bf304d3946a37e3736cacd26e6f99d59b2db15824e84d2fcf34e6",
+      "localeHashes": {
+        "en": "e8f89325743bf304d3946a37e3736cacd26e6f99d59b2db15824e84d2fcf34e6"
+      }
+    },
+    "yosoi/locators/locator/function/text-literal": {
+      "file": "pages/yosoi/locators/locator/function/text-literal.json",
+      "title": "yosoi::locators::locator::text_literal",
+      "publicPath": "yosoi::locators::locator::text_literal",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::locator::text_literal",
+        "yosoi::prelude::locators::locator::text_literal"
+      ],
+      "sha256": "d0f3cf0799b542b6766c6d334f7e86fc58da999078ed4ae727a2a022d100c676",
+      "localeHashes": {
+        "en": "d0f3cf0799b542b6766c6d334f7e86fc58da999078ed4ae727a2a022d100c676"
+      }
+    },
+    "yosoi/locators/module/locator": {
+      "file": "pages/yosoi/locators/module/locator.json",
+      "title": "yosoi::locators::locator",
+      "publicPath": "yosoi::locators::locator",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::locator",
+        "yosoi::prelude::locators::locator"
+      ],
+      "sha256": "149ab0c50ebcb08151dea0d20ea8db086075102d3917b722d6dc036b08389a09",
+      "localeHashes": {
+        "en": "149ab0c50ebcb08151dea0d20ea8db086075102d3917b722d6dc036b08389a09"
+      }
+    },
+    "yosoi/locators/struct/accessibilitycoordinate": {
+      "file": "pages/yosoi/locators/struct/accessibilitycoordinate.json",
+      "title": "yosoi::locators::AccessibilityCoordinate",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::AccessibilityCoordinate"
+      ],
+      "sha256": "cc5150d1e8df890bd6a2a69329b874fc1aea09108d9d1c6926fc0b3ad41b91c6",
+      "localeHashes": {
+        "en": "cc5150d1e8df890bd6a2a69329b874fc1aea09108d9d1c6926fc0b3ad41b91c6"
+      }
+    },
+    "yosoi/locators/struct/byterange": {
+      "file": "pages/yosoi/locators/struct/byterange.json",
+      "title": "yosoi::locators::ByteRange",
+      "publicPath": "yosoi::locators::ByteRange",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::ByteRange"
+      ],
+      "sha256": "0eec7ad440121b171a8c44dd728a12fac8dfacad76303e25a0b0247cdeac7b1f",
+      "localeHashes": {
+        "en": "0eec7ad440121b171a8c44dd728a12fac8dfacad76303e25a0b0247cdeac7b1f"
+      }
+    },
+    "yosoi/locators/struct/decodedtextcoordinate": {
+      "file": "pages/yosoi/locators/struct/decodedtextcoordinate.json",
+      "title": "yosoi::locators::DecodedTextCoordinate",
+      "publicPath": "yosoi::locators::DecodedTextCoordinate",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::DecodedTextCoordinate"
+      ],
+      "sha256": "d460f397ba74f7814dc214d66d1119889e092f6c17993a6e935757f7931acc88",
+      "localeHashes": {
+        "en": "d460f397ba74f7814dc214d66d1119889e092f6c17993a6e935757f7931acc88"
+      }
+    },
+    "yosoi/locators/struct/domcoordinate": {
+      "file": "pages/yosoi/locators/struct/domcoordinate.json",
+      "title": "yosoi::locators::DomCoordinate",
+      "publicPath": "yosoi::locators::DomCoordinate",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::DomCoordinate"
+      ],
+      "sha256": "92dc49454e4ad0f88f32fd13061de50498e48dfcb9563b1b80648293760f8aa8",
+      "localeHashes": {
+        "en": "92dc49454e4ad0f88f32fd13061de50498e48dfcb9563b1b80648293760f8aa8"
+      }
+    },
+    "yosoi/locators/struct/domnodeid": {
+      "file": "pages/yosoi/locators/struct/domnodeid.json",
+      "title": "yosoi::locators::DomNodeId",
+      "publicPath": "yosoi::locators::DomNodeId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::DomNodeId"
+      ],
+      "sha256": "b0786bcd265cf5d55e44fecb913dad99f7eb2de607c80029b84444057dc1da78",
+      "localeHashes": {
+        "en": "b0786bcd265cf5d55e44fecb913dad99f7eb2de607c80029b84444057dc1da78"
+      }
+    },
+    "yosoi/locators/struct/expandednamepathsegment": {
+      "file": "pages/yosoi/locators/struct/expandednamepathsegment.json",
+      "title": "yosoi::locators::ExpandedNamePathSegment",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::ExpandedNamePathSegment"
+      ],
+      "sha256": "a89af29b7a41d375bfdb0bdd4b1e54ddf24f963c568fc6e9a9a6966f1fe99188",
+      "localeHashes": {
+        "en": "a89af29b7a41d375bfdb0bdd4b1e54ddf24f963c568fc6e9a9a6966f1fe99188"
+      }
+    },
+    "yosoi/locators/struct/finding": {
+      "file": "pages/yosoi/locators/struct/finding.json",
+      "title": "yosoi::locators::Finding",
+      "publicPath": "yosoi::locators::Finding",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::Finding"
+      ],
+      "sha256": "5e860146e58f7e9fb00e550ea34d5692d8fcd9ec3ec7a2e7051eb5c6c04a450a",
+      "localeHashes": {
+        "en": "5e860146e58f7e9fb00e550ea34d5692d8fcd9ec3ec7a2e7051eb5c6c04a450a"
+      }
+    },
+    "yosoi/locators/struct/jsoncoordinate": {
+      "file": "pages/yosoi/locators/struct/jsoncoordinate.json",
+      "title": "yosoi::locators::JsonCoordinate",
+      "publicPath": "yosoi::locators::JsonCoordinate",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::JsonCoordinate"
+      ],
+      "sha256": "4dfe4f0c23f49d7e443efaecbcef047aeaccd5ccba4fa86cd625ea22c8561155",
+      "localeHashes": {
+        "en": "4dfe4f0c23f49d7e443efaecbcef047aeaccd5ccba4fa86cd625ea22c8561155"
+      }
+    },
+    "yosoi/locators/struct/locateresult": {
+      "file": "pages/yosoi/locators/struct/locateresult.json",
+      "title": "yosoi::locators::LocateResult",
+      "publicPath": "yosoi::locators::LocateResult",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::LocateResult"
+      ],
+      "sha256": "e0b0b2ae73ad1f6d3e21390a6ff1050dd2d75201fd9f261c8657c39b928acb6a",
+      "localeHashes": {
+        "en": "e0b0b2ae73ad1f6d3e21390a6ff1050dd2d75201fd9f261c8657c39b928acb6a"
+      }
+    },
+    "yosoi/locators/struct/namedoutput": {
+      "file": "pages/yosoi/locators/struct/namedoutput.json",
+      "title": "yosoi::locators::NamedOutput",
+      "publicPath": "yosoi::locators::NamedOutput",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::NamedOutput"
+      ],
+      "sha256": "94e4404153fd9bcc26ceb4d74d2ff5815d938a74985154c5147ec3a6f985387b",
+      "localeHashes": {
+        "en": "94e4404153fd9bcc26ceb4d74d2ff5815d938a74985154c5147ec3a6f985387b"
+      }
+    },
+    "yosoi/locators/struct/namespacebinding": {
+      "file": "pages/yosoi/locators/struct/namespacebinding.json",
+      "title": "yosoi::locators::NamespaceBinding",
+      "publicPath": "yosoi::locators::NamespaceBinding",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::NamespaceBinding"
+      ],
+      "sha256": "a64c7c8ff75f08300100f92659f0fcb5fa0f2d23ca07375fb81f10f678b91636",
+      "localeHashes": {
+        "en": "a64c7c8ff75f08300100f92659f0fcb5fa0f2d23ca07375fb81f10f678b91636"
+      }
+    },
+    "yosoi/locators/struct/nodereference": {
+      "file": "pages/yosoi/locators/struct/nodereference.json",
+      "title": "yosoi::locators::NodeReference",
+      "publicPath": "yosoi::locators::NodeReference",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::NodeReference"
+      ],
+      "sha256": "eb86d575fd40c8875857bb850f26e468916aa4631539ac0d595a76a9c713b951",
+      "localeHashes": {
+        "en": "eb86d575fd40c8875857bb850f26e468916aa4631539ac0d595a76a9c713b951"
+      }
+    },
+    "yosoi/locators/struct/outputid": {
+      "file": "pages/yosoi/locators/struct/outputid.json",
+      "title": "yosoi::locators::OutputId",
+      "publicPath": "yosoi::locators::OutputId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::OutputId"
+      ],
+      "sha256": "78dc4e64d6101c384a5ecd5499a435b3c9531306d6b10934ad74aa1be2e1604a",
+      "localeHashes": {
+        "en": "78dc4e64d6101c384a5ecd5499a435b3c9531306d6b10934ad74aa1be2e1604a"
+      }
+    },
+    "yosoi/locators/struct/outputplan": {
+      "file": "pages/yosoi/locators/struct/outputplan.json",
+      "title": "yosoi::locators::OutputPlan",
+      "publicPath": "yosoi::locators::OutputPlan",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::OutputPlan"
+      ],
+      "sha256": "97b745d4c2fd6fc2fd2102f983a9568a1eda69f51d43eeb5e43bf0cbb79f5007",
+      "localeHashes": {
+        "en": "97b745d4c2fd6fc2fd2102f983a9568a1eda69f51d43eeb5e43bf0cbb79f5007"
+      }
+    },
+    "yosoi/locators/struct/pinnedlocator": {
+      "file": "pages/yosoi/locators/struct/pinnedlocator.json",
+      "title": "yosoi::locators::PinnedLocator",
+      "publicPath": "yosoi::locators::PinnedLocator",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::PinnedLocator",
+        "yosoi::prelude::locators::PinnedLocator"
+      ],
+      "sha256": "4e9b2b78e790a824e2b3e4fb7d40bf15470efa1f8e9ff056c0762690140c0db4",
+      "localeHashes": {
+        "en": "4e9b2b78e790a824e2b3e4fb7d40bf15470efa1f8e9ff056c0762690140c0db4"
+      }
+    },
+    "yosoi/locators/struct/pinnedoutputlocator": {
+      "file": "pages/yosoi/locators/struct/pinnedoutputlocator.json",
+      "title": "yosoi::locators::PinnedOutputLocator",
+      "publicPath": "yosoi::locators::PinnedOutputLocator",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::PinnedOutputLocator",
+        "yosoi::prelude::locators::PinnedOutputLocator"
+      ],
+      "sha256": "d9f7a397c6a2e16611068edb7eca48beca0598a8870f8a8c137287195f7a784b",
+      "localeHashes": {
+        "en": "d9f7a397c6a2e16611068edb7eca48beca0598a8870f8a8c137287195f7a784b"
+      }
+    },
+    "yosoi/locators/struct/plan": {
+      "file": "pages/yosoi/locators/struct/plan.json",
+      "title": "yosoi::locators::Plan",
+      "publicPath": "yosoi::locators::Plan",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::Plan",
+        "yosoi::prelude::locators::Plan"
+      ],
+      "sha256": "830889fb2c612c31b9bebec2b69443ffeb44de105d5e92388eea7d28dcf63b04",
+      "localeHashes": {
+        "en": "830889fb2c612c31b9bebec2b69443ffeb44de105d5e92388eea7d28dcf63b04"
+      }
+    },
+    "yosoi/locators/struct/queryspec": {
+      "file": "pages/yosoi/locators/struct/queryspec.json",
+      "title": "yosoi::locators::QuerySpec",
+      "publicPath": "yosoi::locators::QuerySpec",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::QuerySpec"
+      ],
+      "sha256": "e5878d02cbb2140f227dd094b52c792127aa5b42d7f3629a040eae7af4af266d",
+      "localeHashes": {
+        "en": "e5878d02cbb2140f227dd094b52c792127aa5b42d7f3629a040eae7af4af266d"
+      }
+    },
+    "yosoi/locators/struct/regionid": {
+      "file": "pages/yosoi/locators/struct/regionid.json",
+      "title": "yosoi::locators::RegionId",
+      "publicPath": "yosoi::locators::RegionId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::RegionId"
+      ],
+      "sha256": "c3f911ea05a695a2479bd7e1fc81ad249fbac77684a979b18c29ea21042cb807",
+      "localeHashes": {
+        "en": "c3f911ea05a695a2479bd7e1fc81ad249fbac77684a979b18c29ea21042cb807"
+      }
+    },
+    "yosoi/locators/struct/regionlineage": {
+      "file": "pages/yosoi/locators/struct/regionlineage.json",
+      "title": "yosoi::locators::RegionLineage",
+      "publicPath": "yosoi::locators::RegionLineage",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::RegionLineage"
+      ],
+      "sha256": "30d75703044416a30e5d5c5a2d3314999094129f22c10e2fc31b3551594d687f",
+      "localeHashes": {
+        "en": "30d75703044416a30e5d5c5a2d3314999094129f22c10e2fc31b3551594d687f"
+      }
+    },
+    "yosoi/locators/struct/regionplan": {
+      "file": "pages/yosoi/locators/struct/regionplan.json",
+      "title": "yosoi::locators::RegionPlan",
+      "publicPath": "yosoi::locators::RegionPlan",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::RegionPlan"
+      ],
+      "sha256": "d6ec209f07dae36c747c57f5f4930e9d81f0f4ff4e565ca453d80cf89ef0e781",
+      "localeHashes": {
+        "en": "d6ec209f07dae36c747c57f5f4930e9d81f0f4ff4e565ca453d80cf89ef0e781"
+      }
+    },
+    "yosoi/locators/struct/textrange": {
+      "file": "pages/yosoi/locators/struct/textrange.json",
+      "title": "yosoi::locators::TextRange",
+      "publicPath": "yosoi::locators::TextRange",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::TextRange"
+      ],
+      "sha256": "8770e7ed2b832b676544aafffeb5527c2c9ef16d1f4bad8bdc6f26bd125eba1a",
+      "localeHashes": {
+        "en": "8770e7ed2b832b676544aafffeb5527c2c9ef16d1f4bad8bdc6f26bd125eba1a"
+      }
+    },
+    "yosoi/locators/struct/treecoordinate": {
+      "file": "pages/yosoi/locators/struct/treecoordinate.json",
+      "title": "yosoi::locators::TreeCoordinate",
+      "publicPath": "yosoi::locators::TreeCoordinate",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::locators::TreeCoordinate"
+      ],
+      "sha256": "08b1e565776224f7959ee5a35087cd688d5fb39db85552eebe89c579792922b4",
+      "localeHashes": {
+        "en": "08b1e565776224f7959ee5a35087cd688d5fb39db85552eebe89c579792922b4"
+      }
+    },
+    "yosoi/map/enum/discoverysource": {
+      "file": "pages/yosoi/map/enum/discoverysource.json",
+      "title": "yosoi::map::DiscoverySource",
+      "publicPath": "yosoi::map::DiscoverySource",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::DiscoverySource"
+      ],
+      "sha256": "519a60d893ee5217b09c5f6252ccb7820917514445927772e4872db759c78a6b",
+      "localeHashes": {
+        "en": "519a60d893ee5217b09c5f6252ccb7820917514445927772e4872db759c78a6b"
+      }
+    },
+    "yosoi/map/enum/exploration": {
+      "file": "pages/yosoi/map/enum/exploration.json",
+      "title": "yosoi::map::Exploration",
+      "publicPath": "yosoi::map::Exploration",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::Exploration"
+      ],
+      "sha256": "f992b186bfbf010365da9064479658cedabbe9ea82d02e22fa7d84bb95785142",
+      "localeHashes": {
+        "en": "f992b186bfbf010365da9064479658cedabbe9ea82d02e22fa7d84bb95785142"
+      }
+    },
+    "yosoi/map/enum/hostverification": {
+      "file": "pages/yosoi/map/enum/hostverification.json",
+      "title": "yosoi::map::HostVerification",
+      "publicPath": "yosoi::map::HostVerification",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::HostVerification"
+      ],
+      "sha256": "6a14410f7001f8db736a1bbef68098446d3f67ea642bc7385063bed7be4a17fc",
+      "localeHashes": {
+        "en": "6a14410f7001f8db736a1bbef68098446d3f67ea642bc7385063bed7be4a17fc"
+      }
+    },
+    "yosoi/map/enum/limitreached": {
+      "file": "pages/yosoi/map/enum/limitreached.json",
+      "title": "yosoi::map::LimitReached",
+      "publicPath": "yosoi::map::LimitReached",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::LimitReached"
+      ],
+      "sha256": "c29013061539896563a7e573e97608e013e4192221898336658b25dbae680e3f",
+      "localeHashes": {
+        "en": "c29013061539896563a7e573e97608e013e4192221898336658b25dbae680e3f"
+      }
+    },
+    "yosoi/map/enum/maptermination": {
+      "file": "pages/yosoi/map/enum/maptermination.json",
+      "title": "yosoi::map::MapTermination",
+      "publicPath": "yosoi::map::MapTermination",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::MapTermination"
+      ],
+      "sha256": "9e795a19de69a0b69d1e0059857c31c7973c0311c1cd7ad81b9cc2597b74699d",
+      "localeHashes": {
+        "en": "9e795a19de69a0b69d1e0059857c31c7973c0311c1cd7ad81b9cc2597b74699d"
+      }
+    },
+    "yosoi/map/enum/omissionreason": {
+      "file": "pages/yosoi/map/enum/omissionreason.json",
+      "title": "yosoi::map::OmissionReason",
+      "publicPath": "yosoi::map::OmissionReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::OmissionReason"
+      ],
+      "sha256": "900238affb37190ed59af1135795b582d4631838717491f73ebd1caf16a81291",
+      "localeHashes": {
+        "en": "900238affb37190ed59af1135795b582d4631838717491f73ebd1caf16a81291"
+      }
+    },
+    "yosoi/map/enum/pendingreason": {
+      "file": "pages/yosoi/map/enum/pendingreason.json",
+      "title": "yosoi::map::PendingReason",
+      "publicPath": "yosoi::map::PendingReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::PendingReason"
+      ],
+      "sha256": "022c4d1d5b9857642a68b89400d076135ef95db4aa06f17a8ede98c7b2b8882d",
+      "localeHashes": {
+        "en": "022c4d1d5b9857642a68b89400d076135ef95db4aa06f17a8ede98c7b2b8882d"
+      }
+    },
+    "yosoi/map/enum/publicprovider": {
+      "file": "pages/yosoi/map/enum/publicprovider.json",
+      "title": "yosoi::map::PublicProvider",
+      "publicPath": "yosoi::map::PublicProvider",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::PublicProvider"
+      ],
+      "sha256": "50765fdf5f12580391802c324daab3581979799be3cc649d3d4c7409d45421ec",
+      "localeHashes": {
+        "en": "50765fdf5f12580391802c324daab3581979799be3cc649d3d4c7409d45421ec"
+      }
+    },
+    "yosoi/map/enum/rejection": {
+      "file": "pages/yosoi/map/enum/rejection.json",
+      "title": "yosoi::map::Rejection",
+      "publicPath": "yosoi::map::Rejection",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::Rejection"
+      ],
+      "sha256": "911ba31d43b1966e4669cffd37bf62933485f14758632740c3051c28d2de3dc5",
+      "localeHashes": {
+        "en": "911ba31d43b1966e4669cffd37bf62933485f14758632740c3051c28d2de3dc5"
+      }
+    },
+    "yosoi/map/enum/relationshipkind": {
+      "file": "pages/yosoi/map/enum/relationshipkind.json",
+      "title": "yosoi::map::RelationshipKind",
+      "publicPath": "yosoi::map::RelationshipKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::RelationshipKind"
+      ],
+      "sha256": "07697298679e0d81e47e37e97f606a91d78620c4bbf6128fcd9c37bb0e7c133d",
+      "localeHashes": {
+        "en": "07697298679e0d81e47e37e97f606a91d78620c4bbf6128fcd9c37bb0e7c133d"
+      }
+    },
+    "yosoi/map/enum/skipreason": {
+      "file": "pages/yosoi/map/enum/skipreason.json",
+      "title": "yosoi::map::SkipReason",
+      "publicPath": "yosoi::map::SkipReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::SkipReason"
+      ],
+      "sha256": "443c463c1f6172e67d5a24f9405826eea410e9ae064604753b2b60fa5fd6618b",
+      "localeHashes": {
+        "en": "443c463c1f6172e67d5a24f9405826eea410e9ae064604753b2b60fa5fd6618b"
+      }
+    },
+    "yosoi/map/enum/sourcefailure": {
+      "file": "pages/yosoi/map/enum/sourcefailure.json",
+      "title": "yosoi::map::SourceFailure",
+      "publicPath": "yosoi::map::SourceFailure",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::SourceFailure"
+      ],
+      "sha256": "a6c4ce8e9c6be8e6c855ae379083bc61f98e165c79d29d21de9f78e6cf3595c5",
+      "localeHashes": {
+        "en": "a6c4ce8e9c6be8e6c855ae379083bc61f98e165c79d29d21de9f78e6cf3595c5"
+      }
+    },
+    "yosoi/map/enum/sourceskipreason": {
+      "file": "pages/yosoi/map/enum/sourceskipreason.json",
+      "title": "yosoi::map::SourceSkipReason",
+      "publicPath": "yosoi::map::SourceSkipReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::SourceSkipReason"
+      ],
+      "sha256": "c62c425fa8f3028fdcec5e53ef5d2cbfa41ac8b50e71f2e37e29a6415aea89ad",
+      "localeHashes": {
+        "en": "c62c425fa8f3028fdcec5e53ef5d2cbfa41ac8b50e71f2e37e29a6415aea89ad"
+      }
+    },
+    "yosoi/map/enum/sourcestatus": {
+      "file": "pages/yosoi/map/enum/sourcestatus.json",
+      "title": "yosoi::map::SourceStatus",
+      "publicPath": "yosoi::map::SourceStatus",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::SourceStatus"
+      ],
+      "sha256": "1b43d138834ff0b1bf36c51337f2b43fc573daa410b6626a8c51367958d7635b",
+      "localeHashes": {
+        "en": "1b43d138834ff0b1bf36c51337f2b43fc573daa410b6626a8c51367958d7635b"
+      }
+    },
+    "yosoi/map/enum/supportdocumentkind": {
+      "file": "pages/yosoi/map/enum/supportdocumentkind.json",
+      "title": "yosoi::map::SupportDocumentKind",
+      "publicPath": "yosoi::map::SupportDocumentKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::map::SupportDocumentKind"
+      ],
+      "sha256": "463fde90d8fc85a316240b7ebea929fc9e8b36428ab541468689b8d56bc595ce",
+      "localeHashes": {
+        "en": "463fde90d8fc85a316240b7ebea929fc9e8b36428ab541468689b8d56bc595ce"
+      }
+    },
+    "yosoi/map/function/new": {
+      "file": "pages/yosoi/map/function/new.json",
+      "title": "yosoi::map::new",
+      "publicPath": "yosoi::map::new",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::map::new"
+      ],
+      "sha256": "19375c624792ffe9da19dd0d1a3a8b58ed99b0f44b6e01be7c2eb918033b1028",
+      "localeHashes": {
+        "en": "19375c624792ffe9da19dd0d1a3a8b58ed99b0f44b6e01be7c2eb918033b1028"
+      }
+    },
+    "yosoi/map/struct/frontierentry": {
+      "file": "pages/yosoi/map/struct/frontierentry.json",
+      "title": "yosoi::map::FrontierEntry",
+      "publicPath": "yosoi::map::FrontierEntry",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::FrontierEntry"
+      ],
+      "sha256": "c4b1a1b30251e1010a58c0eaa08278e46cb50a6b1a9d443d46cacc7f72c4f42e",
+      "localeHashes": {
+        "en": "c4b1a1b30251e1010a58c0eaa08278e46cb50a6b1a9d443d46cacc7f72c4f42e"
+      }
+    },
+    "yosoi/map/struct/hostentry": {
+      "file": "pages/yosoi/map/struct/hostentry.json",
+      "title": "yosoi::map::HostEntry",
+      "publicPath": "yosoi::map::HostEntry",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::HostEntry"
+      ],
+      "sha256": "78b9e39b33056dc772437f201b52e1acd3545bf748ff78bc62057b8070ad0b10",
+      "localeHashes": {
+        "en": "78b9e39b33056dc772437f201b52e1acd3545bf748ff78bc62057b8070ad0b10"
+      }
+    },
+    "yosoi/map/struct/maperror": {
+      "file": "pages/yosoi/map/struct/maperror.json",
+      "title": "yosoi::map::MapError",
+      "publicPath": "yosoi::map::MapError",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::MapError",
+        "yosoi::prelude::map::MapError"
+      ],
+      "sha256": "da0208a5a2a91431161ed02c14f919684d79950b4cbd2edbb2c36e94e501103e",
+      "localeHashes": {
+        "en": "da0208a5a2a91431161ed02c14f919684d79950b4cbd2edbb2c36e94e501103e"
+      }
+    },
+    "yosoi/map/struct/mapoutcome": {
+      "file": "pages/yosoi/map/struct/mapoutcome.json",
+      "title": "yosoi::map::MapOutcome",
+      "publicPath": "yosoi::map::MapOutcome",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::MapOutcome",
+        "yosoi::prelude::map::MapOutcome"
+      ],
+      "sha256": "56455e9e72a051cdd9108b9679affb961ff322805d2abc8477f048b4a4a634f9",
+      "localeHashes": {
+        "en": "56455e9e72a051cdd9108b9679affb961ff322805d2abc8477f048b4a4a634f9"
+      }
+    },
+    "yosoi/map/struct/maprequest": {
+      "file": "pages/yosoi/map/struct/maprequest.json",
+      "title": "yosoi::map::MapRequest",
+      "publicPath": "yosoi::map::MapRequest",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::MapRequest",
+        "yosoi::prelude::map::MapRequest"
+      ],
+      "sha256": "a84be83df892d52931acb5238100520db7e10f5bcf5f3ed45b4902fbf851d939",
+      "localeHashes": {
+        "en": "a84be83df892d52931acb5238100520db7e10f5bcf5f3ed45b4902fbf851d939"
+      }
+    },
+    "yosoi/map/struct/observation": {
+      "file": "pages/yosoi/map/struct/observation.json",
+      "title": "yosoi::map::Observation",
+      "publicPath": "yosoi::map::Observation",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::Observation"
+      ],
+      "sha256": "fb0eaa35d01fddc64ebd938b3820fbde93584fc5287eea14aa3fb57bf4f1254f",
+      "localeHashes": {
+        "en": "fb0eaa35d01fddc64ebd938b3820fbde93584fc5287eea14aa3fb57bf4f1254f"
+      }
+    },
+    "yosoi/map/struct/omission": {
+      "file": "pages/yosoi/map/struct/omission.json",
+      "title": "yosoi::map::Omission",
+      "publicPath": "yosoi::map::Omission",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::Omission"
+      ],
+      "sha256": "4ece6adc6d19e651b30bb6280ce47c2d1d1148c3f8d0b038611998e2d25d87a7",
+      "localeHashes": {
+        "en": "4ece6adc6d19e651b30bb6280ce47c2d1d1148c3f8d0b038611998e2d25d87a7"
+      }
+    },
+    "yosoi/map/struct/pageentry": {
+      "file": "pages/yosoi/map/struct/pageentry.json",
+      "title": "yosoi::map::PageEntry",
+      "publicPath": "yosoi::map::PageEntry",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::PageEntry"
+      ],
+      "sha256": "a6569eef2ea0c23fb6f974fa81c887a2ac5fd6a5b1e6d7cd76b55701ef064e65",
+      "localeHashes": {
+        "en": "a6569eef2ea0c23fb6f974fa81c887a2ac5fd6a5b1e6d7cd76b55701ef064e65"
+      }
+    },
+    "yosoi/map/struct/relationship": {
+      "file": "pages/yosoi/map/struct/relationship.json",
+      "title": "yosoi::map::Relationship",
+      "publicPath": "yosoi::map::Relationship",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::Relationship"
+      ],
+      "sha256": "302fc43d60e3fe2389b054b118aee5f0a35599e326e6700682ac30eae64cc98d",
+      "localeHashes": {
+        "en": "302fc43d60e3fe2389b054b118aee5f0a35599e326e6700682ac30eae64cc98d"
+      }
+    },
+    "yosoi/map/struct/requesttrace": {
+      "file": "pages/yosoi/map/struct/requesttrace.json",
+      "title": "yosoi::map::RequestTrace",
+      "publicPath": "yosoi::map::RequestTrace",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::RequestTrace"
+      ],
+      "sha256": "30f6862e166bd5602fefe073343885ba024ee48b1195e779dfb48f80d56bed86",
+      "localeHashes": {
+        "en": "30f6862e166bd5602fefe073343885ba024ee48b1195e779dfb48f80d56bed86"
+      }
+    },
+    "yosoi/map/struct/retainedcapture": {
+      "file": "pages/yosoi/map/struct/retainedcapture.json",
+      "title": "yosoi::map::RetainedCapture",
+      "publicPath": "yosoi::map::RetainedCapture",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::RetainedCapture"
+      ],
+      "sha256": "f4e12062869ca87a62b206ccce7ab428455cd8375947f035dc74b92f9f733000",
+      "localeHashes": {
+        "en": "f4e12062869ca87a62b206ccce7ab428455cd8375947f035dc74b92f9f733000"
+      }
+    },
+    "yosoi/map/struct/sourceoutcome": {
+      "file": "pages/yosoi/map/struct/sourceoutcome.json",
+      "title": "yosoi::map::SourceOutcome",
+      "publicPath": "yosoi::map::SourceOutcome",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::SourceOutcome"
+      ],
+      "sha256": "7915e55e6af83c37440add4011a8e0bdb0c009f9019e510be5f776bc2ef51656",
+      "localeHashes": {
+        "en": "7915e55e6af83c37440add4011a8e0bdb0c009f9019e510be5f776bc2ef51656"
+      }
+    },
+    "yosoi/map/struct/summary": {
+      "file": "pages/yosoi/map/struct/summary.json",
+      "title": "yosoi::map::Summary",
+      "publicPath": "yosoi::map::Summary",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::Summary"
+      ],
+      "sha256": "0c70a5560a70622cdb11709a92b39c30660c3a24ef57cc6d7e6b1b377a9a6a47",
+      "localeHashes": {
+        "en": "0c70a5560a70622cdb11709a92b39c30660c3a24ef57cc6d7e6b1b377a9a6a47"
+      }
+    },
+    "yosoi/map/struct/supportdocument": {
+      "file": "pages/yosoi/map/struct/supportdocument.json",
+      "title": "yosoi::map::SupportDocument",
+      "publicPath": "yosoi::map::SupportDocument",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::SupportDocument"
+      ],
+      "sha256": "ee5245cd24ff00368acba12e5ecfac805a522d76b0f5d8628f5a36c7d87de52a",
+      "localeHashes": {
+        "en": "ee5245cd24ff00368acba12e5ecfac805a522d76b0f5d8628f5a36c7d87de52a"
+      }
+    },
+    "yosoi/map/struct/treeentry": {
+      "file": "pages/yosoi/map/struct/treeentry.json",
+      "title": "yosoi::map::TreeEntry",
+      "publicPath": "yosoi::map::TreeEntry",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::TreeEntry"
+      ],
+      "sha256": "302d759685466e6398963983f6a7c9ba07107d6fe01819707897099468b499cf",
+      "localeHashes": {
+        "en": "302d759685466e6398963983f6a7c9ba07107d6fe01819707897099468b499cf"
+      }
+    },
+    "yosoi/map/struct/wildcardentry": {
+      "file": "pages/yosoi/map/struct/wildcardentry.json",
+      "title": "yosoi::map::WildcardEntry",
+      "publicPath": "yosoi::map::WildcardEntry",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::map::WildcardEntry"
+      ],
+      "sha256": "3c4addd16cd201b4192689cb15ded47ca49d13d5d28c267cae3610a13f5368b9",
+      "localeHashes": {
+        "en": "3c4addd16cd201b4192689cb15ded47ca49d13d5d28c267cae3610a13f5368b9"
+      }
+    },
+    "yosoi/module/contracts": {
+      "file": "pages/yosoi/module/contracts.json",
+      "title": "yosoi::contracts",
+      "publicPath": "yosoi::contracts",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::contracts"
+      ],
+      "sha256": "d57831ef5ae5caf72aae2ce14ef385029a149be2d3fbab15f1c5f087a2a02f6c",
+      "localeHashes": {
+        "en": "d57831ef5ae5caf72aae2ce14ef385029a149be2d3fbab15f1c5f087a2a02f6c"
+      }
+    },
+    "yosoi/module/documents": {
+      "file": "pages/yosoi/module/documents.json",
+      "title": "yosoi::documents",
+      "publicPath": "yosoi::documents",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::documents"
+      ],
+      "sha256": "b351ceaf12638527999e5227b65518415205934a8c3133dff2a1cc4aaa29ab52",
+      "localeHashes": {
+        "en": "b351ceaf12638527999e5227b65518415205934a8c3133dff2a1cc4aaa29ab52"
+      }
+    },
+    "yosoi/module/locators": {
+      "file": "pages/yosoi/module/locators.json",
+      "title": "yosoi::locators",
+      "publicPath": "yosoi::locators",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::locators"
+      ],
+      "sha256": "a0e0a1959e01d0e2e9236cc0844da9728cfef2b3e1ebd9f64b246d6473394ba7",
+      "localeHashes": {
+        "en": "a0e0a1959e01d0e2e9236cc0844da9728cfef2b3e1ebd9f64b246d6473394ba7"
+      }
+    },
+    "yosoi/module/map": {
+      "file": "pages/yosoi/module/map.json",
+      "title": "yosoi::map",
+      "publicPath": "yosoi::map",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::map"
+      ],
+      "sha256": "3b67b1cf4af656cba60dd9d5fc7ef2a1ea5e91aa5c8e88addcbc5b8573b75b9c",
+      "localeHashes": {
+        "en": "3b67b1cf4af656cba60dd9d5fc7ef2a1ea5e91aa5c8e88addcbc5b8573b75b9c"
+      }
+    },
+    "yosoi/module/policy": {
+      "file": "pages/yosoi/module/policy.json",
+      "title": "yosoi::policy",
+      "publicPath": "yosoi::policy",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::policy"
+      ],
+      "sha256": "293845bbf632323b411380f8f46f84363f8759e05b95bb10c9c02ac9a31da443",
+      "localeHashes": {
+        "en": "293845bbf632323b411380f8f46f84363f8759e05b95bb10c9c02ac9a31da443"
+      }
+    },
+    "yosoi/module/prelude": {
+      "file": "pages/yosoi/module/prelude.json",
+      "title": "yosoi::prelude",
+      "publicPath": "yosoi::prelude",
+      "kind": "module",
+      "aliases": [],
+      "sha256": "dae9aeadce0ed674ec587177d790d666dd9d5dfcb21e09b179d6b986655b8f12",
+      "localeHashes": {
+        "en": "dae9aeadce0ed674ec587177d790d666dd9d5dfcb21e09b179d6b986655b8f12"
+      }
+    },
+    "yosoi/module/request": {
+      "file": "pages/yosoi/module/request.json",
+      "title": "yosoi::request",
+      "publicPath": "yosoi::request",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::request"
+      ],
+      "sha256": "3305e0c93a90868585b285380532b9f2f21f2270db0b6d7c168e48022a76ccbc",
+      "localeHashes": {
+        "en": "3305e0c93a90868585b285380532b9f2f21f2270db0b6d7c168e48022a76ccbc"
+      }
+    },
+    "yosoi/module/search": {
+      "file": "pages/yosoi/module/search.json",
+      "title": "yosoi::search",
+      "publicPath": "yosoi::search",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::search"
+      ],
+      "sha256": "d1a77949c6942103e89a59fb6cc87d40ab5bce8f9bc008f44ec6fc8cb5c559e8",
+      "localeHashes": {
+        "en": "d1a77949c6942103e89a59fb6cc87d40ab5bce8f9bc008f44ec6fc8cb5c559e8"
+      }
+    },
+    "yosoi/policy/enum/acquisition": {
+      "file": "pages/yosoi/policy/enum/acquisition.json",
+      "title": "yosoi::policy::Acquisition",
+      "publicPath": "yosoi::policy::Acquisition",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::Acquisition"
+      ],
+      "sha256": "387f0a245de83f0429f6affb9fa1d2fe1cdf4e609e3ef1d89170e0518f49f382",
+      "localeHashes": {
+        "en": "387f0a245de83f0429f6affb9fa1d2fe1cdf4e609e3ef1d89170e0518f49f382"
+      }
+    },
+    "yosoi/policy/enum/acquisitionkind": {
+      "file": "pages/yosoi/policy/enum/acquisitionkind.json",
+      "title": "yosoi::policy::AcquisitionKind",
+      "publicPath": "yosoi::policy::AcquisitionKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::AcquisitionKind"
+      ],
+      "sha256": "671087e6f49b9cb25b0453a2e7d47e5ae225ad22ba80a316b889774f45fd707e",
+      "localeHashes": {
+        "en": "671087e6f49b9cb25b0453a2e7d47e5ae225ad22ba80a316b889774f45fd707e"
+      }
+    },
+    "yosoi/policy/enum/browsermode": {
+      "file": "pages/yosoi/policy/enum/browsermode.json",
+      "title": "yosoi::policy::BrowserMode",
+      "publicPath": "yosoi::policy::BrowserMode",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::BrowserMode"
+      ],
+      "sha256": "46fd9e378464a5eb1b67822377c55ff70e565af6b382509508e414faf5912f34",
+      "localeHashes": {
+        "en": "46fd9e378464a5eb1b67822377c55ff70e565af6b382509508e414faf5912f34"
+      }
+    },
+    "yosoi/policy/enum/directhttpredirects": {
+      "file": "pages/yosoi/policy/enum/directhttpredirects.json",
+      "title": "yosoi::policy::DirectHttpRedirects",
+      "publicPath": "yosoi::policy::DirectHttpRedirects",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::DirectHttpRedirects"
+      ],
+      "sha256": "aff15e7296c2fddaf1ae5395c965fb765216b18201efbd8401faf42cf55555e5",
+      "localeHashes": {
+        "en": "aff15e7296c2fddaf1ae5395c965fb765216b18201efbd8401faf42cf55555e5"
+      }
+    },
+    "yosoi/policy/enum/directhttpredirecttargets": {
+      "file": "pages/yosoi/policy/enum/directhttpredirecttargets.json",
+      "title": "yosoi::policy::DirectHttpRedirectTargets",
+      "publicPath": "yosoi::policy::DirectHttpRedirectTargets",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::DirectHttpRedirectTargets"
+      ],
+      "sha256": "692f12c0d25f1aefd3e404eef48265f83aa0563cebcb42ccba2a171b206b289f",
+      "localeHashes": {
+        "en": "692f12c0d25f1aefd3e404eef48265f83aa0563cebcb42ccba2a171b206b289f"
+      }
+    },
+    "yosoi/policy/enum/discoverydocuments": {
+      "file": "pages/yosoi/policy/enum/discoverydocuments.json",
+      "title": "yosoi::policy::DiscoveryDocuments",
+      "publicPath": "yosoi::policy::DiscoveryDocuments",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::DiscoveryDocuments"
+      ],
+      "sha256": "c15c627b1437ae1a9b91ab4528ef35e7595022c492f0ee3d13517c42716342bb",
+      "localeHashes": {
+        "en": "c15c627b1437ae1a9b91ab4528ef35e7595022c492f0ee3d13517c42716342bb"
+      }
+    },
+    "yosoi/policy/enum/documentrequest": {
+      "file": "pages/yosoi/policy/enum/documentrequest.json",
+      "title": "yosoi::policy::DocumentRequest",
+      "publicPath": "yosoi::policy::DocumentRequest",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::DocumentRequest"
+      ],
+      "sha256": "765297dbce75ba102006b6d7ed35c34dd4df9b8af32c21875b23aa95bb8f0ccf",
+      "localeHashes": {
+        "en": "765297dbce75ba102006b6d7ed35c34dd4df9b8af32c21875b23aa95bb8f0ccf"
+      }
+    },
+    "yosoi/policy/enum/documentselectionkind": {
+      "file": "pages/yosoi/policy/enum/documentselectionkind.json",
+      "title": "yosoi::policy::DocumentSelectionKind",
+      "publicPath": "yosoi::policy::DocumentSelectionKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::DocumentSelectionKind"
+      ],
+      "sha256": "3ac6d2b5b4853da40c4da0e897dbe4460c40580655114e23c4301757765a297d",
+      "localeHashes": {
+        "en": "3ac6d2b5b4853da40c4da0e897dbe4460c40580655114e23c4301757765a297d"
+      }
+    },
+    "yosoi/policy/enum/hostscope": {
+      "file": "pages/yosoi/policy/enum/hostscope.json",
+      "title": "yosoi::policy::HostScope",
+      "publicPath": "yosoi::policy::HostScope",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::HostScope"
+      ],
+      "sha256": "055ae9bcd83ab553873f2bc32b7286184eb0f9f08680e8fb9a067ab858147f80",
+      "localeHashes": {
+        "en": "055ae9bcd83ab553873f2bc32b7286184eb0f9f08680e8fb9a067ab858147f80"
+      }
+    },
+    "yosoi/policy/enum/pagediscovery": {
+      "file": "pages/yosoi/policy/enum/pagediscovery.json",
+      "title": "yosoi::policy::PageDiscovery",
+      "publicPath": "yosoi::policy::PageDiscovery",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::PageDiscovery"
+      ],
+      "sha256": "c9821686cd27820bd76ca785fbf23ec941cd8e5f0934de6fdd225c84c2e6807b",
+      "localeHashes": {
+        "en": "c9821686cd27820bd76ca785fbf23ec941cd8e5f0934de6fdd225c84c2e6807b"
+      }
+    },
+    "yosoi/policy/enum/pathscope": {
+      "file": "pages/yosoi/policy/enum/pathscope.json",
+      "title": "yosoi::policy::PathScope",
+      "publicPath": "yosoi::policy::PathScope",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::PathScope"
+      ],
+      "sha256": "61051e6a0bfdc68f41988e570e24bc5d9e716577842a9ffcf13d8c7f407102f2",
+      "localeHashes": {
+        "en": "61051e6a0bfdc68f41988e570e24bc5d9e716577842a9ffcf13d8c7f407102f2"
+      }
+    },
+    "yosoi/policy/enum/profileselection": {
+      "file": "pages/yosoi/policy/enum/profileselection.json",
+      "title": "yosoi::policy::ProfileSelection",
+      "publicPath": "yosoi::policy::ProfileSelection",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::policy::search::ProfileSelection",
+        "yosoi::prelude::policy::ProfileSelection",
+        "yosoi::prelude::policy::search::ProfileSelection"
+      ],
+      "sha256": "82744d148dddb2350fd4650659fa7b27373c931fd6f35bca16d9531d61ce90bb",
+      "localeHashes": {
+        "en": "82744d148dddb2350fd4650659fa7b27373c931fd6f35bca16d9531d61ce90bb"
+      }
+    },
+    "yosoi/policy/enum/providerdefaultsstatus": {
+      "file": "pages/yosoi/policy/enum/providerdefaultsstatus.json",
+      "title": "yosoi::policy::ProviderDefaultsStatus",
+      "publicPath": "yosoi::policy::ProviderDefaultsStatus",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::policy::search::ProviderDefaultsStatus",
+        "yosoi::prelude::policy::ProviderDefaultsStatus",
+        "yosoi::prelude::policy::search::ProviderDefaultsStatus"
+      ],
+      "sha256": "bc62744a328a0c2b4eb741b81b0e87f6042ea860112d20d6eeb61ebcea11fbb0",
+      "localeHashes": {
+        "en": "bc62744a328a0c2b4eb741b81b0e87f6042ea860112d20d6eeb61ebcea11fbb0"
+      }
+    },
+    "yosoi/policy/enum/robots": {
+      "file": "pages/yosoi/policy/enum/robots.json",
+      "title": "yosoi::policy::Robots",
+      "publicPath": "yosoi::policy::Robots",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::Robots"
+      ],
+      "sha256": "eecc3c843a7ac70b06f667c74a418aa3519ddd0889911c7a1310377d98dbe44e",
+      "localeHashes": {
+        "en": "eecc3c843a7ac70b06f667c74a418aa3519ddd0889911c7a1310377d98dbe44e"
+      }
+    },
+    "yosoi/policy/enum/subdomains": {
+      "file": "pages/yosoi/policy/enum/subdomains.json",
+      "title": "yosoi::policy::Subdomains",
+      "publicPath": "yosoi::policy::Subdomains",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::Subdomains"
+      ],
+      "sha256": "1cb48a31de701c326ca02129b00be14432552b2924ef466b5673500e3b581617",
+      "localeHashes": {
+        "en": "1cb48a31de701c326ca02129b00be14432552b2924ef466b5673500e3b581617"
+      }
+    },
+    "yosoi/policy/enum/tuningmode": {
+      "file": "pages/yosoi/policy/enum/tuningmode.json",
+      "title": "yosoi::policy::TuningMode",
+      "publicPath": "yosoi::policy::TuningMode",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::TuningMode"
+      ],
+      "sha256": "800b980873189a80a58534ab9eaf1f05bda3b718a1a5cf94446e291ce02c7f66",
+      "localeHashes": {
+        "en": "800b980873189a80a58534ab9eaf1f05bda3b718a1a5cf94446e291ce02c7f66"
+      }
+    },
+    "yosoi/policy/module/search": {
+      "file": "pages/yosoi/policy/module/search.json",
+      "title": "yosoi::policy::search",
+      "publicPath": "yosoi::policy::search",
+      "kind": "module",
+      "aliases": [
+        "yosoi::prelude::policy::search"
+      ],
+      "sha256": "b852a77c435555877c2729062f2ab0ce880aa3607063a3ed76453edee3962d8b",
+      "localeHashes": {
+        "en": "b852a77c435555877c2729062f2ab0ce880aa3607063a3ed76453edee3962d8b"
+      }
+    },
+    "yosoi/policy/search/enum/profileselectionkind": {
+      "file": "pages/yosoi/policy/search/enum/profileselectionkind.json",
+      "title": "yosoi::policy::search::ProfileSelectionKind",
+      "publicPath": "yosoi::policy::search::ProfileSelectionKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::search::ProfileSelectionKind"
+      ],
+      "sha256": "de01130b03107423212c0cecc1d76f7285963cdce093b12d53731d1724cfdd6c",
+      "localeHashes": {
+        "en": "de01130b03107423212c0cecc1d76f7285963cdce093b12d53731d1724cfdd6c"
+      }
+    },
+    "yosoi/policy/search/enum/provider": {
+      "file": "pages/yosoi/policy/search/enum/provider.json",
+      "title": "yosoi::policy::search::Provider",
+      "publicPath": "yosoi::policy::search::Provider",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::policy::search::Provider"
+      ],
+      "sha256": "3c6c4e37bd4299288d795401e003b4dea11052d08385433a2350fce9080e2f30",
+      "localeHashes": {
+        "en": "3c6c4e37bd4299288d795401e003b4dea11052d08385433a2350fce9080e2f30"
+      }
+    },
+    "yosoi/policy/search/struct/effectiveproviderroute": {
+      "file": "pages/yosoi/policy/search/struct/effectiveproviderroute.json",
+      "title": "yosoi::policy::search::EffectiveProviderRoute",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::search::EffectiveProviderRoute"
+      ],
+      "sha256": "77c1ddabd6b7eb1aac2cfdfffbae31c6c2594da0123520357de10e8ac069c48a",
+      "localeHashes": {
+        "en": "77c1ddabd6b7eb1aac2cfdfffbae31c6c2594da0123520357de10e8ac069c48a"
+      }
+    },
+    "yosoi/policy/search/struct/effectivesearch": {
+      "file": "pages/yosoi/policy/search/struct/effectivesearch.json",
+      "title": "yosoi::policy::search::EffectiveSearch",
+      "publicPath": "yosoi::policy::search::EffectiveSearch",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::search::EffectiveSearch"
+      ],
+      "sha256": "193690914f95c84f59908a541b2a9b89a9497ad703c4efa3bc36b6a64fb8ce78",
+      "localeHashes": {
+        "en": "193690914f95c84f59908a541b2a9b89a9497ad703c4efa3bc36b6a64fb8ce78"
+      }
+    },
+    "yosoi/policy/search/struct/search": {
+      "file": "pages/yosoi/policy/search/struct/search.json",
+      "title": "yosoi::policy::search::Search",
+      "publicPath": "yosoi::policy::search::Search",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::search::Search"
+      ],
+      "sha256": "d85a6cc6654f878bf1ff6acdfa4ca0b57a4830052db9b198d38724bc2f3c180d",
+      "localeHashes": {
+        "en": "d85a6cc6654f878bf1ff6acdfa4ca0b57a4830052db9b198d38724bc2f3c180d"
+      }
+    },
+    "yosoi/policy/struct/accessibilitynodelimit": {
+      "file": "pages/yosoi/policy/struct/accessibilitynodelimit.json",
+      "title": "yosoi::policy::AccessibilityNodeLimit",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::AccessibilityNodeLimit"
+      ],
+      "sha256": "65d3e6fad4877db1a06ea413226c5a5996a4f43304817ab537ab452bb1874369",
+      "localeHashes": {
+        "en": "65d3e6fad4877db1a06ea413226c5a5996a4f43304817ab537ab452bb1874369"
+      }
+    },
+    "yosoi/policy/struct/addressablebytelimit": {
+      "file": "pages/yosoi/policy/struct/addressablebytelimit.json",
+      "title": "yosoi::policy::AddressableByteLimit",
+      "publicPath": "yosoi::policy::AddressableByteLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::AddressableByteLimit"
+      ],
+      "sha256": "57217819f0dde3fa2e8528d47f380877c3ded3f29fdb6881fd430b11495abd2f",
+      "localeHashes": {
+        "en": "57217819f0dde3fa2e8528d47f380877c3ded3f29fdb6881fd430b11495abd2f"
+      }
+    },
+    "yosoi/policy/struct/browserlimits": {
+      "file": "pages/yosoi/policy/struct/browserlimits.json",
+      "title": "yosoi::policy::BrowserLimits",
+      "publicPath": "yosoi::policy::BrowserLimits",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::BrowserLimits"
+      ],
+      "sha256": "ea043b9f6c600f90ab36c5f7eafff6f2154d6ea3e73a0f1a3cd23fa85f058a35",
+      "localeHashes": {
+        "en": "ea043b9f6c600f90ab36c5f7eafff6f2154d6ea3e73a0f1a3cd23fa85f058a35"
+      }
+    },
+    "yosoi/policy/struct/budget": {
+      "file": "pages/yosoi/policy/struct/budget.json",
+      "title": "yosoi::policy::Budget",
+      "publicPath": "yosoi::policy::Budget",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Budget"
+      ],
+      "sha256": "3d299356cdb50cc458dbbdff16642c55f3ec179999f4edc6175a2b61d7027d92",
+      "localeHashes": {
+        "en": "3d299356cdb50cc458dbbdff16642c55f3ec179999f4edc6175a2b61d7027d92"
+      }
+    },
+    "yosoi/policy/struct/documents": {
+      "file": "pages/yosoi/policy/struct/documents.json",
+      "title": "yosoi::policy::Documents",
+      "publicPath": "yosoi::policy::Documents",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Documents"
+      ],
+      "sha256": "9a2afe2a405adce42f33f149d08e8bf7231e4aba8ac6148de9f5fa94c23197d0",
+      "localeHashes": {
+        "en": "9a2afe2a405adce42f33f149d08e8bf7231e4aba8ac6148de9f5fa94c23197d0"
+      }
+    },
+    "yosoi/policy/struct/eventlimit": {
+      "file": "pages/yosoi/policy/struct/eventlimit.json",
+      "title": "yosoi::policy::EventLimit",
+      "publicPath": "yosoi::policy::EventLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::EventLimit"
+      ],
+      "sha256": "bc16c0e75fe3283d96e30674d6ffbc13a6fe5e40a7b9c045875aef4970a00841",
+      "localeHashes": {
+        "en": "bc16c0e75fe3283d96e30674d6ffbc13a6fe5e40a7b9c045875aef4970a00841"
+      }
+    },
+    "yosoi/policy/struct/filters": {
+      "file": "pages/yosoi/policy/struct/filters.json",
+      "title": "yosoi::policy::Filters",
+      "publicPath": "yosoi::policy::Filters",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Filters"
+      ],
+      "sha256": "e78824e82f38e0379044e4c026b2ae0e9b964f614f5fbf0961651a4b5f320780",
+      "localeHashes": {
+        "en": "e78824e82f38e0379044e4c026b2ae0e9b964f614f5fbf0961651a4b5f320780"
+      }
+    },
+    "yosoi/policy/struct/limits": {
+      "file": "pages/yosoi/policy/struct/limits.json",
+      "title": "yosoi::policy::Limits",
+      "publicPath": "yosoi::policy::Limits",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Limits"
+      ],
+      "sha256": "a9f8b6a8cedfe24eb98d080d8f42bc970a59a25b9e399e8a9aa00bb71f00b8c3",
+      "localeHashes": {
+        "en": "a9f8b6a8cedfe24eb98d080d8f42bc970a59a25b9e399e8a9aa00bb71f00b8c3"
+      }
+    },
+    "yosoi/policy/struct/locators": {
+      "file": "pages/yosoi/policy/struct/locators.json",
+      "title": "yosoi::policy::Locators",
+      "publicPath": "yosoi::policy::Locators",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Locators"
+      ],
+      "sha256": "b13ccc542c03b3e8141787e1dfa18c2f8cae68892571239c5fb1f290f09002ab",
+      "localeHashes": {
+        "en": "b13ccc542c03b3e8141787e1dfa18c2f8cae68892571239c5fb1f290f09002ab"
+      }
+    },
+    "yosoi/policy/struct/map": {
+      "file": "pages/yosoi/policy/struct/map.json",
+      "title": "yosoi::policy::Map",
+      "publicPath": "yosoi::policy::Map",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Map"
+      ],
+      "sha256": "4daa9f79a08bc7f377f210ff29f7a7b46758d5d03c0d960a74e8e5e88e8365f0",
+      "localeHashes": {
+        "en": "4daa9f79a08bc7f377f210ff29f7a7b46758d5d03c0d960a74e8e5e88e8365f0"
+      }
+    },
+    "yosoi/policy/struct/maximumelapsed": {
+      "file": "pages/yosoi/policy/struct/maximumelapsed.json",
+      "title": "yosoi::policy::MaximumElapsed",
+      "publicPath": "yosoi::policy::MaximumElapsed",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::MaximumElapsed"
+      ],
+      "sha256": "13afdc27e5e5b81fd1d967104bfdbf5e5264396809861ca51bef38ddc887111e",
+      "localeHashes": {
+        "en": "13afdc27e5e5b81fd1d967104bfdbf5e5264396809861ca51bef38ddc887111e"
+      }
+    },
+    "yosoi/policy/struct/page": {
+      "file": "pages/yosoi/policy/struct/page.json",
+      "title": "yosoi::policy::Page",
+      "publicPath": "yosoi::policy::Page",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Page"
+      ],
+      "sha256": "3ff51ab2639e4ad699954b4e995dff1c760498389bbd589c99e59f0e25014b76",
+      "localeHashes": {
+        "en": "3ff51ab2639e4ad699954b4e995dff1c760498389bbd589c99e59f0e25014b76"
+      }
+    },
+    "yosoi/policy/struct/policysnapshot": {
+      "file": "pages/yosoi/policy/struct/policysnapshot.json",
+      "title": "yosoi::policy::PolicySnapshot",
+      "publicPath": "yosoi::policy::PolicySnapshot",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::PolicySnapshot"
+      ],
+      "sha256": "87f7babecbb6104b702dcf71301bcaad98e540b7e9ae31098dab0d61c94f16a5",
+      "localeHashes": {
+        "en": "87f7babecbb6104b702dcf71301bcaad98e540b7e9ae31098dab0d61c94f16a5"
+      }
+    },
+    "yosoi/policy/struct/providerdefaultsversion": {
+      "file": "pages/yosoi/policy/struct/providerdefaultsversion.json",
+      "title": "yosoi::policy::ProviderDefaultsVersion",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::search::ProviderDefaultsVersion",
+        "yosoi::prelude::policy::ProviderDefaultsVersion",
+        "yosoi::prelude::policy::search::ProviderDefaultsVersion"
+      ],
+      "sha256": "0ea4432e09101d701cf770170fda3983b2a0e401b917f24ab75ad18134d9cf70",
+      "localeHashes": {
+        "en": "0ea4432e09101d701cf770170fda3983b2a0e401b917f24ab75ad18134d9cf70"
+      }
+    },
+    "yosoi/policy/struct/providerrequestprofile": {
+      "file": "pages/yosoi/policy/struct/providerrequestprofile.json",
+      "title": "yosoi::policy::ProviderRequestProfile",
+      "publicPath": "yosoi::policy::ProviderRequestProfile",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::search::ProviderRequestProfile",
+        "yosoi::prelude::policy::ProviderRequestProfile",
+        "yosoi::prelude::policy::search::ProviderRequestProfile"
+      ],
+      "sha256": "84a050a366397f251a13eb84c19fee50591a11be9686853f5ae389f23eba7064",
+      "localeHashes": {
+        "en": "84a050a366397f251a13eb84c19fee50591a11be9686853f5ae389f23eba7064"
+      }
+    },
+    "yosoi/policy/struct/providerselection": {
+      "file": "pages/yosoi/policy/struct/providerselection.json",
+      "title": "yosoi::policy::ProviderSelection",
+      "publicPath": "yosoi::policy::ProviderSelection",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::search::ProviderSelection",
+        "yosoi::prelude::policy::ProviderSelection",
+        "yosoi::prelude::policy::search::ProviderSelection"
+      ],
+      "sha256": "b9f3226403bb124daee312aeb35199545ab47067484f98a153941da0b522b840",
+      "localeHashes": {
+        "en": "b9f3226403bb124daee312aeb35199545ab47067484f98a153941da0b522b840"
+      }
+    },
+    "yosoi/policy/struct/redirecthoplimit": {
+      "file": "pages/yosoi/policy/struct/redirecthoplimit.json",
+      "title": "yosoi::policy::RedirectHopLimit",
+      "publicPath": "yosoi::policy::RedirectHopLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::RedirectHopLimit"
+      ],
+      "sha256": "6f5b5e47dd88e3a0fd9f42652479f88f6ffd788897699b3a1b10c2b6e14a11bd",
+      "localeHashes": {
+        "en": "6f5b5e47dd88e3a0fd9f42652479f88f6ffd788897699b3a1b10c2b6e14a11bd"
+      }
+    },
+    "yosoi/policy/struct/request": {
+      "file": "pages/yosoi/policy/struct/request.json",
+      "title": "yosoi::policy::Request",
+      "publicPath": "yosoi::policy::Request",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Request"
+      ],
+      "sha256": "4a61eca116f30511ef95086e1c73ab96c0146cb2fe3892845df223b88bb250c2",
+      "localeHashes": {
+        "en": "4a61eca116f30511ef95086e1c73ab96c0146cb2fe3892845df223b88bb250c2"
+      }
+    },
+    "yosoi/policy/struct/resourcelimit": {
+      "file": "pages/yosoi/policy/struct/resourcelimit.json",
+      "title": "yosoi::policy::ResourceLimit",
+      "publicPath": "yosoi::policy::ResourceLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::ResourceLimit"
+      ],
+      "sha256": "c760994fe0ce560e5a9d79de5392ef46200eb29a6b84befc5afc3fa759e014ca",
+      "localeHashes": {
+        "en": "c760994fe0ce560e5a9d79de5392ef46200eb29a6b84befc5afc3fa759e014ca"
+      }
+    },
+    "yosoi/policy/struct/scope": {
+      "file": "pages/yosoi/policy/struct/scope.json",
+      "title": "yosoi::policy::Scope",
+      "publicPath": "yosoi::policy::Scope",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Scope"
+      ],
+      "sha256": "e562409130b57bcef87d5c97989964e4d16ec112f4bb1b3119e843665cc126f9",
+      "localeHashes": {
+        "en": "e562409130b57bcef87d5c97989964e4d16ec112f4bb1b3119e843665cc126f9"
+      }
+    },
+    "yosoi/policy/struct/sourcelimits": {
+      "file": "pages/yosoi/policy/struct/sourcelimits.json",
+      "title": "yosoi::policy::SourceLimits",
+      "publicPath": "yosoi::policy::SourceLimits",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::SourceLimits"
+      ],
+      "sha256": "20b0db417d9b54b7df917407ca86ac715c59db4c0c4ddaa7eefce00c0d3257b6",
+      "localeHashes": {
+        "en": "20b0db417d9b54b7df917407ca86ac715c59db4c0c4ddaa7eefce00c0d3257b6"
+      }
+    },
+    "yosoi/policy/struct/tuning": {
+      "file": "pages/yosoi/policy/struct/tuning.json",
+      "title": "yosoi::policy::Tuning",
+      "publicPath": "yosoi::policy::Tuning",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::policy::Tuning"
+      ],
+      "sha256": "f6f1c2ae7ba41099cb236db15b6d3dabe61af3272aaa42cd31191ca4167093a3",
+      "localeHashes": {
+        "en": "f6f1c2ae7ba41099cb236db15b6d3dabe61af3272aaa42cd31191ca4167093a3"
+      }
+    },
+    "yosoi/reexport/cancellationtoken": {
+      "file": "pages/yosoi/reexport/cancellationtoken.json",
+      "title": "yosoi::CancellationToken",
+      "publicPath": "yosoi::CancellationToken",
+      "kind": "reexport",
+      "aliases": [],
+      "sha256": "66bd5d32bda82a5d1cb220063265b46b0f1e960494d3c613018e61c94e235a36",
+      "localeHashes": {
+        "en": "66bd5d32bda82a5d1cb220063265b46b0f1e960494d3c613018e61c94e235a36"
+      }
+    },
+    "yosoi/request/enum/attemptdiagnostic": {
+      "file": "pages/yosoi/request/enum/attemptdiagnostic.json",
+      "title": "yosoi::request::AttemptDiagnostic",
+      "publicPath": "yosoi::request::AttemptDiagnostic",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::AttemptDiagnostic"
+      ],
+      "sha256": "b4ce4a30a79b124a604a4e02effbdaf206c3876f169c2108b2a7691c7773a0fe",
+      "localeHashes": {
+        "en": "b4ce4a30a79b124a604a4e02effbdaf206c3876f169c2108b2a7691c7773a0fe"
+      }
+    },
+    "yosoi/request/enum/attemptfailurekind": {
+      "file": "pages/yosoi/request/enum/attemptfailurekind.json",
+      "title": "yosoi::request::AttemptFailureKind",
+      "publicPath": "yosoi::request::AttemptFailureKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::AttemptFailureKind"
+      ],
+      "sha256": "96d20d0efcff9516de10da94e2414146f03f239b24dfcd6f3fdeaf2114b47ce1",
+      "localeHashes": {
+        "en": "96d20d0efcff9516de10da94e2414146f03f239b24dfcd6f3fdeaf2114b47ce1"
+      }
+    },
+    "yosoi/request/enum/attemptstate": {
+      "file": "pages/yosoi/request/enum/attemptstate.json",
+      "title": "yosoi::request::AttemptState",
+      "publicPath": "yosoi::request::AttemptState",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::AttemptState"
+      ],
+      "sha256": "ae05872c4e17c742bf3443a64a8d9aff855d835c4481b5a4881299c7394ff4da",
+      "localeHashes": {
+        "en": "ae05872c4e17c742bf3443a64a8d9aff855d835c4481b5a4881299c7394ff4da"
+      }
+    },
+    "yosoi/request/enum/browserfailurereason": {
+      "file": "pages/yosoi/request/enum/browserfailurereason.json",
+      "title": "yosoi::request::BrowserFailureReason",
+      "publicPath": "yosoi::request::BrowserFailureReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::BrowserFailureReason"
+      ],
+      "sha256": "067c6c57921f272108bca0d475bfd8b8e759bb43e3ff704e15fcc29a5271b1a4",
+      "localeHashes": {
+        "en": "067c6c57921f272108bca0d475bfd8b8e759bb43e3ff704e15fcc29a5271b1a4"
+      }
+    },
+    "yosoi/request/enum/decodingerrorcode": {
+      "file": "pages/yosoi/request/enum/decodingerrorcode.json",
+      "title": "yosoi::request::DecodingErrorCode",
+      "publicPath": "yosoi::request::DecodingErrorCode",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::DecodingErrorCode"
+      ],
+      "sha256": "df046a8dbf9152ba82568d0d0e4b20ec5c6159259c423285fdb5eac7f549b913",
+      "localeHashes": {
+        "en": "df046a8dbf9152ba82568d0d0e4b20ec5c6159259c423285fdb5eac7f549b913"
+      }
+    },
+    "yosoi/request/enum/directhttpredirecterrorkind": {
+      "file": "pages/yosoi/request/enum/directhttpredirecterrorkind.json",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::DirectHttpRedirectErrorKind"
+      ],
+      "sha256": "4200d8c6ac59c6169707674f1eb54c1166c3bbbdada5fb22a2948962497e8506",
+      "localeHashes": {
+        "en": "4200d8c6ac59c6169707674f1eb54c1166c3bbbdada5fb22a2948962497e8506"
+      }
+    },
+    "yosoi/request/enum/directhttptransporterrorkind": {
+      "file": "pages/yosoi/request/enum/directhttptransporterrorkind.json",
+      "title": "yosoi::request::DirectHttpTransportErrorKind",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::DirectHttpTransportErrorKind"
+      ],
+      "sha256": "7a86938c6eca2dbe7ccfbe2e11e678650c28df6dcf250b43ae754b1c2add68ca",
+      "localeHashes": {
+        "en": "7a86938c6eca2dbe7ccfbe2e11e678650c28df6dcf250b43ae754b1c2add68ca"
+      }
+    },
+    "yosoi/request/enum/documentoutcome": {
+      "file": "pages/yosoi/request/enum/documentoutcome.json",
+      "title": "yosoi::request::DocumentOutcome",
+      "publicPath": "yosoi::request::DocumentOutcome",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::DocumentOutcome"
+      ],
+      "sha256": "4241a408c60ea270f7265ae70cfa6cec3b5a95fbac32be63cb8f682ffb968765",
+      "localeHashes": {
+        "en": "4241a408c60ea270f7265ae70cfa6cec3b5a95fbac32be63cb8f682ffb968765"
+      }
+    },
+    "yosoi/request/enum/notstartedreason": {
+      "file": "pages/yosoi/request/enum/notstartedreason.json",
+      "title": "yosoi::request::NotStartedReason",
+      "publicPath": "yosoi::request::NotStartedReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::NotStartedReason"
+      ],
+      "sha256": "fb5c9e02377915cfc42f21b4eb64b63b6e301d8d7d614a878d0b04aa7cb5b0fb",
+      "localeHashes": {
+        "en": "fb5c9e02377915cfc42f21b4eb64b63b6e301d8d7d614a878d0b04aa7cb5b0fb"
+      }
+    },
+    "yosoi/request/enum/partialreason": {
+      "file": "pages/yosoi/request/enum/partialreason.json",
+      "title": "yosoi::request::PartialReason",
+      "publicPath": "yosoi::request::PartialReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::PartialReason"
+      ],
+      "sha256": "23028084c32b3de003ca0fbc555597070f88fd48084714b3ad7a3e5899582a17",
+      "localeHashes": {
+        "en": "23028084c32b3de003ca0fbc555597070f88fd48084714b3ad7a3e5899582a17"
+      }
+    },
+    "yosoi/request/enum/unavailablereason": {
+      "file": "pages/yosoi/request/enum/unavailablereason.json",
+      "title": "yosoi::request::UnavailableReason",
+      "publicPath": "yosoi::request::UnavailableReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::UnavailableReason"
+      ],
+      "sha256": "36690f94bd0ba8633dac06b0f237e9c13e96c378e7ff679651242c2934aa1e81",
+      "localeHashes": {
+        "en": "36690f94bd0ba8633dac06b0f237e9c13e96c378e7ff679651242c2934aa1e81"
+      }
+    },
+    "yosoi/request/enum/unknownreason": {
+      "file": "pages/yosoi/request/enum/unknownreason.json",
+      "title": "yosoi::request::UnknownReason",
+      "publicPath": "yosoi::request::UnknownReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::UnknownReason"
+      ],
+      "sha256": "5d2cba750af2769b1b3d94a11cf9a567a3ae971c7f7381373567f8333ef08d05",
+      "localeHashes": {
+        "en": "5d2cba750af2769b1b3d94a11cf9a567a3ae971c7f7381373567f8333ef08d05"
+      }
+    },
+    "yosoi/request/enum/unprojectablereason": {
+      "file": "pages/yosoi/request/enum/unprojectablereason.json",
+      "title": "yosoi::request::UnprojectableReason",
+      "publicPath": "yosoi::request::UnprojectableReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::UnprojectableReason"
+      ],
+      "sha256": "1c2ea8e6cbeb2a88e82493bdcce9fbd9c865806d134220155070290f48b347f3",
+      "localeHashes": {
+        "en": "1c2ea8e6cbeb2a88e82493bdcce9fbd9c865806d134220155070290f48b347f3"
+      }
+    },
+    "yosoi/request/enum/webartifactfamily": {
+      "file": "pages/yosoi/request/enum/webartifactfamily.json",
+      "title": "yosoi::request::WebArtifactFamily",
+      "publicPath": "yosoi::request::WebArtifactFamily",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::request::WebArtifactFamily"
+      ],
+      "sha256": "2fe32d1c7f965d23cbf6f526dd3faeccae4fc8084130e06467d9eeffa7521bc0",
+      "localeHashes": {
+        "en": "2fe32d1c7f965d23cbf6f526dd3faeccae4fc8084130e06467d9eeffa7521bc0"
+      }
+    },
+    "yosoi/request/function/new": {
+      "file": "pages/yosoi/request/function/new.json",
+      "title": "yosoi::request::new",
+      "publicPath": "yosoi::request::new",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::request::new"
+      ],
+      "sha256": "80666f0734195fa92841997e458ec72ca3d8e430dbff3b6baf7ab08ca3b189e6",
+      "localeHashes": {
+        "en": "80666f0734195fa92841997e458ec72ca3d8e430dbff3b6baf7ab08ca3b189e6"
+      }
+    },
+    "yosoi/request/reexport/cancellationtoken": {
+      "file": "pages/yosoi/request/reexport/cancellationtoken.json",
+      "title": "yosoi::request::CancellationToken",
+      "publicPath": "yosoi::request::CancellationToken",
+      "kind": "reexport",
+      "aliases": [
+        "yosoi::prelude::request::CancellationToken"
+      ],
+      "sha256": "a6743acd85c7943c73d2f0d52810142497ddc164c68992614a859cb2c31e77b9",
+      "localeHashes": {
+        "en": "a6743acd85c7943c73d2f0d52810142497ddc164c68992614a859cb2c31e77b9"
+      }
+    },
+    "yosoi/request/struct/activityid": {
+      "file": "pages/yosoi/request/struct/activityid.json",
+      "title": "yosoi::request::ActivityId",
+      "publicPath": "yosoi::request::ActivityId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::ActivityId"
+      ],
+      "sha256": "67b3082e6df435995d5d7eb6054f7d4a2a5e0b302e9d01cec99bee1aadba58b5",
+      "localeHashes": {
+        "en": "67b3082e6df435995d5d7eb6054f7d4a2a5e0b302e9d01cec99bee1aadba58b5"
+      }
+    },
+    "yosoi/request/struct/attempt": {
+      "file": "pages/yosoi/request/struct/attempt.json",
+      "title": "yosoi::request::Attempt",
+      "publicPath": "yosoi::request::Attempt",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::Attempt"
+      ],
+      "sha256": "8db328991a91c648b7b4c372be757aacb3bf29c837416431b67a53bbb5e97be6",
+      "localeHashes": {
+        "en": "8db328991a91c648b7b4c372be757aacb3bf29c837416431b67a53bbb5e97be6"
+      }
+    },
+    "yosoi/request/struct/attemptdocument": {
+      "file": "pages/yosoi/request/struct/attemptdocument.json",
+      "title": "yosoi::request::AttemptDocument",
+      "publicPath": "yosoi::request::AttemptDocument",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::AttemptDocument"
+      ],
+      "sha256": "b3ebed931f0ff981d767a3a8d19df38f62326aa538ff33094a492854e15c7fc1",
+      "localeHashes": {
+        "en": "b3ebed931f0ff981d767a3a8d19df38f62326aa538ff33094a492854e15c7fc1"
+      }
+    },
+    "yosoi/request/struct/boundpagerequest": {
+      "file": "pages/yosoi/request/struct/boundpagerequest.json",
+      "title": "yosoi::request::BoundPageRequest",
+      "publicPath": "yosoi::request::BoundPageRequest",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::BoundPageRequest"
+      ],
+      "sha256": "1ac07bf722949da1f2f52860c22b4244bf2b328f08dda9faf6c62ff31329708f",
+      "localeHashes": {
+        "en": "1ac07bf722949da1f2f52860c22b4244bf2b328f08dda9faf6c62ff31329708f"
+      }
+    },
+    "yosoi/request/struct/captureid": {
+      "file": "pages/yosoi/request/struct/captureid.json",
+      "title": "yosoi::request::CaptureId",
+      "publicPath": "yosoi::request::CaptureId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::CaptureId"
+      ],
+      "sha256": "121a27698c0fe4890b98b578e8443dea89eda387a18bf04642c16b7f12e45b69",
+      "localeHashes": {
+        "en": "121a27698c0fe4890b98b578e8443dea89eda387a18bf04642c16b7f12e45b69"
+      }
+    },
+    "yosoi/request/struct/pagerequest": {
+      "file": "pages/yosoi/request/struct/pagerequest.json",
+      "title": "yosoi::request::PageRequest",
+      "publicPath": "yosoi::request::PageRequest",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::PageRequest",
+        "yosoi::prelude::request::PageRequest"
+      ],
+      "sha256": "5ea0fda1360d7fa90929e718d3bc49a85ff7df3c49076174f09b7e228146db2a",
+      "localeHashes": {
+        "en": "5ea0fda1360d7fa90929e718d3bc49a85ff7df3c49076174f09b7e228146db2a"
+      }
+    },
+    "yosoi/request/struct/requestid": {
+      "file": "pages/yosoi/request/struct/requestid.json",
+      "title": "yosoi::request::RequestId",
+      "publicPath": "yosoi::request::RequestId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::RequestId"
+      ],
+      "sha256": "4b6494f0eacedbfa0ac57f2b7ab80e35f323486263b8f35a74259c37c015cdd9",
+      "localeHashes": {
+        "en": "4b6494f0eacedbfa0ac57f2b7ab80e35f323486263b8f35a74259c37c015cdd9"
+      }
+    },
+    "yosoi/request/struct/requestpreparationerror": {
+      "file": "pages/yosoi/request/struct/requestpreparationerror.json",
+      "title": "yosoi::request::RequestPreparationError",
+      "publicPath": "yosoi::request::RequestPreparationError",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::RequestPreparationError"
+      ],
+      "sha256": "511efcbb2f75e3d8d0d70c60e16fb7715c548143e4dbb38ae8c909650beeb3b7",
+      "localeHashes": {
+        "en": "511efcbb2f75e3d8d0d70c60e16fb7715c548143e4dbb38ae8c909650beeb3b7"
+      }
+    },
+    "yosoi/request/struct/requestsenderror": {
+      "file": "pages/yosoi/request/struct/requestsenderror.json",
+      "title": "yosoi::request::RequestSendError",
+      "publicPath": "yosoi::request::RequestSendError",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::RequestSendError",
+        "yosoi::prelude::request::RequestSendError"
+      ],
+      "sha256": "e65dbafc03f6293f2746431b6ab6e6338450338d26ff070bde1bbaa1931042ca",
+      "localeHashes": {
+        "en": "e65dbafc03f6293f2746431b6ab6e6338450338d26ff070bde1bbaa1931042ca"
+      }
+    },
+    "yosoi/request/struct/response": {
+      "file": "pages/yosoi/request/struct/response.json",
+      "title": "yosoi::request::Response",
+      "publicPath": "yosoi::request::Response",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::Response",
+        "yosoi::prelude::request::Response"
+      ],
+      "sha256": "319511acc816fde59ffaab1721eb3242d80a1ca44cbf017a181c92095688bca9",
+      "localeHashes": {
+        "en": "319511acc816fde59ffaab1721eb3242d80a1ca44cbf017a181c92095688bca9"
+      }
+    },
+    "yosoi/request/struct/responseref": {
+      "file": "pages/yosoi/request/struct/responseref.json",
+      "title": "yosoi::request::ResponseRef",
+      "publicPath": "yosoi::request::ResponseRef",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::request::ResponseRef"
+      ],
+      "sha256": "72f41085da1a6946d3dcad3675c7f6c08d53c32d63114e706c3cfc7215f3b87f",
+      "localeHashes": {
+        "en": "72f41085da1a6946d3dcad3675c7f6c08d53c32d63114e706c3cfc7215f3b87f"
+      }
+    },
+    "yosoi/request/struct/webtarget": {
+      "file": "pages/yosoi/request/struct/webtarget.json",
+      "title": "yosoi::request::WebTarget",
+      "publicPath": "yosoi::request::WebTarget",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::WebTarget",
+        "yosoi::prelude::request::WebTarget"
+      ],
+      "sha256": "d95a3d5c38f7e7da28a0520402183f0ed5cdd8f21f0558b8b0bc11dedd50283c",
+      "localeHashes": {
+        "en": "d95a3d5c38f7e7da28a0520402183f0ed5cdd8f21f0558b8b0bc11dedd50283c"
+      }
+    },
+    "yosoi/search/enum/featurecoverage": {
+      "file": "pages/yosoi/search/enum/featurecoverage.json",
+      "title": "yosoi::search::FeatureCoverage",
+      "publicPath": "yosoi::search::FeatureCoverage",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::FeatureCoverage"
+      ],
+      "sha256": "6949ef791924d9e7189501086c50a2e6c1c8f49f8f1af5a91491aec703f4d319",
+      "localeHashes": {
+        "en": "6949ef791924d9e7189501086c50a2e6c1c8f49f8f1af5a91491aec703f4d319"
+      }
+    },
+    "yosoi/search/enum/providercharge": {
+      "file": "pages/yosoi/search/enum/providercharge.json",
+      "title": "yosoi::search::ProviderCharge",
+      "publicPath": "yosoi::search::ProviderCharge",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::ProviderCharge"
+      ],
+      "sha256": "2245aa268b4731212eef8228341ba0dbe3a0da3cc71802da0f048b4d25af3d96",
+      "localeHashes": {
+        "en": "2245aa268b4731212eef8228341ba0dbe3a0da3cc71802da0f048b4d25af3d96"
+      }
+    },
+    "yosoi/search/enum/provideroutcome": {
+      "file": "pages/yosoi/search/enum/provideroutcome.json",
+      "title": "yosoi::search::ProviderOutcome",
+      "publicPath": "yosoi::search::ProviderOutcome",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::ProviderOutcome"
+      ],
+      "sha256": "a9414126decd84c1ed7040dda4bc9b2df94bb788a56502c5891b7e1ffc2e5b43",
+      "localeHashes": {
+        "en": "a9414126decd84c1ed7040dda4bc9b2df94bb788a56502c5891b7e1ffc2e5b43"
+      }
+    },
+    "yosoi/search/enum/requestattemptterminal": {
+      "file": "pages/yosoi/search/enum/requestattemptterminal.json",
+      "title": "yosoi::search::RequestAttemptTerminal",
+      "publicPath": "yosoi::search::RequestAttemptTerminal",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::RequestAttemptTerminal"
+      ],
+      "sha256": "256a5ab908dbd584663a0ab6858e548b9408ab76fd71331d10f62046ac968173",
+      "localeHashes": {
+        "en": "256a5ab908dbd584663a0ab6858e548b9408ab76fd71331d10f62046ac968173"
+      }
+    },
+    "yosoi/search/enum/searchattemptdiagnostic": {
+      "file": "pages/yosoi/search/enum/searchattemptdiagnostic.json",
+      "title": "yosoi::search::SearchAttemptDiagnostic",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchAttemptDiagnostic"
+      ],
+      "sha256": "984de19bfff1be548d107e1fa729302bd6c218464b75a37190632208ee02efb0",
+      "localeHashes": {
+        "en": "984de19bfff1be548d107e1fa729302bd6c218464b75a37190632208ee02efb0"
+      }
+    },
+    "yosoi/search/enum/searchfailure": {
+      "file": "pages/yosoi/search/enum/searchfailure.json",
+      "title": "yosoi::search::SearchFailure",
+      "publicPath": "yosoi::search::SearchFailure",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchFailure"
+      ],
+      "sha256": "b448379f6ae41ef730d79774c339fd41e7688ee8ef288b57934d7de91423505f",
+      "localeHashes": {
+        "en": "b448379f6ae41ef730d79774c339fd41e7688ee8ef288b57934d7de91423505f"
+      }
+    },
+    "yosoi/search/enum/searchfeature": {
+      "file": "pages/yosoi/search/enum/searchfeature.json",
+      "title": "yosoi::search::SearchFeature",
+      "publicPath": "yosoi::search::SearchFeature",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchFeature"
+      ],
+      "sha256": "d85d0c23523fda714b6a775031afc069abad794960457628aa5397ae416e5e38",
+      "localeHashes": {
+        "en": "d85d0c23523fda714b6a775031afc069abad794960457628aa5397ae416e5e38"
+      }
+    },
+    "yosoi/search/enum/searchissuekind": {
+      "file": "pages/yosoi/search/enum/searchissuekind.json",
+      "title": "yosoi::search::SearchIssueKind",
+      "publicPath": "yosoi::search::SearchIssueKind",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchIssueKind"
+      ],
+      "sha256": "dd23c476eaefa3fc243ab27868aee1bf2eccc9fc48723fa2b5195863fc9605c1",
+      "localeHashes": {
+        "en": "dd23c476eaefa3fc243ab27868aee1bf2eccc9fc48723fa2b5195863fc9605c1"
+      }
+    },
+    "yosoi/search/enum/searchqueryerror": {
+      "file": "pages/yosoi/search/enum/searchqueryerror.json",
+      "title": "yosoi::search::SearchQueryError",
+      "publicPath": "yosoi::search::SearchQueryError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::SearchQueryError",
+        "yosoi::prelude::search::SearchQueryError"
+      ],
+      "sha256": "0115181f61469db2e3ccb8e5db1289ae3a81e863cf6ff0639307a2e8d212aebd",
+      "localeHashes": {
+        "en": "0115181f61469db2e3ccb8e5db1289ae3a81e863cf6ff0639307a2e8d212aebd"
+      }
+    },
+    "yosoi/search/enum/searchsenderror": {
+      "file": "pages/yosoi/search/enum/searchsenderror.json",
+      "title": "yosoi::search::SearchSendError",
+      "publicPath": "yosoi::search::SearchSendError",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::SearchSendError",
+        "yosoi::prelude::search::SearchSendError"
+      ],
+      "sha256": "5e9249fe3407dea59816deadf97edca4bbd736dc50b820644908e58690749b1f",
+      "localeHashes": {
+        "en": "5e9249fe3407dea59816deadf97edca4bbd736dc50b820644908e58690749b1f"
+      }
+    },
+    "yosoi/search/enum/searchtermination": {
+      "file": "pages/yosoi/search/enum/searchtermination.json",
+      "title": "yosoi::search::SearchTermination",
+      "publicPath": "yosoi::search::SearchTermination",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchTermination"
+      ],
+      "sha256": "a422407dacd080ac33658f52ddd061b802b77dba2ab457ec37fbc542c4a1588a",
+      "localeHashes": {
+        "en": "a422407dacd080ac33658f52ddd061b802b77dba2ab457ec37fbc542c4a1588a"
+      }
+    },
+    "yosoi/search/enum/searchunavailablereason": {
+      "file": "pages/yosoi/search/enum/searchunavailablereason.json",
+      "title": "yosoi::search::SearchUnavailableReason",
+      "publicPath": "yosoi::search::SearchUnavailableReason",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::SearchUnavailableReason"
+      ],
+      "sha256": "aa931f663dd264cd987604dc1e451db2f4eb83d5ca42a7e370d89603bc50e8c8",
+      "localeHashes": {
+        "en": "aa931f663dd264cd987604dc1e451db2f4eb83d5ca42a7e370d89603bc50e8c8"
+      }
+    },
+    "yosoi/search/enum/webcoverage": {
+      "file": "pages/yosoi/search/enum/webcoverage.json",
+      "title": "yosoi::search::WebCoverage",
+      "publicPath": "yosoi::search::WebCoverage",
+      "kind": "enum",
+      "aliases": [
+        "yosoi::prelude::search::WebCoverage"
+      ],
+      "sha256": "032a276985463961a98d142d00f22b3c3df962ba964ec5e6fb4c21b2950f7ef1",
+      "localeHashes": {
+        "en": "032a276985463961a98d142d00f22b3c3df962ba964ec5e6fb4c21b2950f7ef1"
+      }
+    },
+    "yosoi/search/function/new": {
+      "file": "pages/yosoi/search/function/new.json",
+      "title": "yosoi::search::new",
+      "publicPath": "yosoi::search::new",
+      "kind": "function",
+      "aliases": [
+        "yosoi::prelude::search::new"
+      ],
+      "sha256": "82d99c1637ba0b039526fb4ec847c7d75f7b93cb61f39489ca2c0b0f756b9e92",
+      "localeHashes": {
+        "en": "82d99c1637ba0b039526fb4ec847c7d75f7b93cb61f39489ca2c0b0f756b9e92"
+      }
+    },
+    "yosoi/search/struct/boundsearchrequest": {
+      "file": "pages/yosoi/search/struct/boundsearchrequest.json",
+      "title": "yosoi::search::BoundSearchRequest",
+      "publicPath": "yosoi::search::BoundSearchRequest",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::BoundSearchRequest"
+      ],
+      "sha256": "cb9fa34565c6241d5673e5ab975b3fd723f6a69543973a6e21223d426fc209c8",
+      "localeHashes": {
+        "en": "cb9fa34565c6241d5673e5ab975b3fd723f6a69543973a6e21223d426fc209c8"
+      }
+    },
+    "yosoi/search/struct/imageresult": {
+      "file": "pages/yosoi/search/struct/imageresult.json",
+      "title": "yosoi::search::ImageResult",
+      "publicPath": "yosoi::search::ImageResult",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::ImageResult"
+      ],
+      "sha256": "61e8cbe4a0f7dda5801045ab41a860a472bb05b8f55637c9a88c65be3048365b",
+      "localeHashes": {
+        "en": "61e8cbe4a0f7dda5801045ab41a860a472bb05b8f55637c9a88c65be3048365b"
+      }
+    },
+    "yosoi/search/struct/localplace": {
+      "file": "pages/yosoi/search/struct/localplace.json",
+      "title": "yosoi::search::LocalPlace",
+      "publicPath": "yosoi::search::LocalPlace",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::LocalPlace"
+      ],
+      "sha256": "34eedcdddede8cf7de101aa4b5bbd7426ef6cb377038934c344409fa66c6ef7b",
+      "localeHashes": {
+        "en": "34eedcdddede8cf7de101aa4b5bbd7426ef6cb377038934c344409fa66c6ef7b"
+      }
+    },
+    "yosoi/search/struct/provideridentity": {
+      "file": "pages/yosoi/search/struct/provideridentity.json",
+      "title": "yosoi::search::ProviderIdentity",
+      "publicPath": "yosoi::search::ProviderIdentity",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::ProviderIdentity"
+      ],
+      "sha256": "4d2492d4021e29a77a111c23f4697ae8967e9767c28bd87ae577fe728f574f5a",
+      "localeHashes": {
+        "en": "4d2492d4021e29a77a111c23f4697ae8967e9767c28bd87ae577fe728f574f5a"
+      }
+    },
+    "yosoi/search/struct/providerresult": {
+      "file": "pages/yosoi/search/struct/providerresult.json",
+      "title": "yosoi::search::ProviderResult",
+      "publicPath": "yosoi::search::ProviderResult",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::ProviderResult"
+      ],
+      "sha256": "59cb69a985a249e1a2bb7ebaef6f6dad7eac955241229c63364a56a8cde25733",
+      "localeHashes": {
+        "en": "59cb69a985a249e1a2bb7ebaef6f6dad7eac955241229c63364a56a8cde25733"
+      }
+    },
+    "yosoi/search/struct/requestattemptsummary": {
+      "file": "pages/yosoi/search/struct/requestattemptsummary.json",
+      "title": "yosoi::search::RequestAttemptSummary",
+      "publicPath": "yosoi::search::RequestAttemptSummary",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::RequestAttemptSummary"
+      ],
+      "sha256": "fcc5fdc39c536fdad3055f2f40a4e4c5b5f340cca56fa14f2f27b86d8537ea72",
+      "localeHashes": {
+        "en": "fcc5fdc39c536fdad3055f2f40a4e4c5b5f340cca56fa14f2f27b86d8537ea72"
+      }
+    },
+    "yosoi/search/struct/searchcoverage": {
+      "file": "pages/yosoi/search/struct/searchcoverage.json",
+      "title": "yosoi::search::SearchCoverage",
+      "publicPath": "yosoi::search::SearchCoverage",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchCoverage"
+      ],
+      "sha256": "a916dc0d4d2814e2f644547282d38855b031968e6825149156aab512b15668d7",
+      "localeHashes": {
+        "en": "a916dc0d4d2814e2f644547282d38855b031968e6825149156aab512b15668d7"
+      }
+    },
+    "yosoi/search/struct/searchhit": {
+      "file": "pages/yosoi/search/struct/searchhit.json",
+      "title": "yosoi::search::SearchHit",
+      "publicPath": "yosoi::search::SearchHit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchHit"
+      ],
+      "sha256": "f57fdd9fbfdd8531f70ddc91da3437031b80a7d89c3b13dad54afacf52c66aaa",
+      "localeHashes": {
+        "en": "f57fdd9fbfdd8531f70ddc91da3437031b80a7d89c3b13dad54afacf52c66aaa"
+      }
+    },
+    "yosoi/search/struct/searchhitmetadata": {
+      "file": "pages/yosoi/search/struct/searchhitmetadata.json",
+      "title": "yosoi::search::SearchHitMetadata",
+      "publicPath": "yosoi::search::SearchHitMetadata",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchHitMetadata"
+      ],
+      "sha256": "926eee3d3d3d314b5d5aeb679c41d990144ae755e5fa4db8d5a63de7258d4a1f",
+      "localeHashes": {
+        "en": "926eee3d3d3d314b5d5aeb679c41d990144ae755e5fa4db8d5a63de7258d4a1f"
+      }
+    },
+    "yosoi/search/struct/searchissue": {
+      "file": "pages/yosoi/search/struct/searchissue.json",
+      "title": "yosoi::search::SearchIssue",
+      "publicPath": "yosoi::search::SearchIssue",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchIssue"
+      ],
+      "sha256": "258b32c81da80990010a9823c8ff785ddd36187d292ef21127602b87c408660d",
+      "localeHashes": {
+        "en": "258b32c81da80990010a9823c8ff785ddd36187d292ef21127602b87c408660d"
+      }
+    },
+    "yosoi/search/struct/searchpage": {
+      "file": "pages/yosoi/search/struct/searchpage.json",
+      "title": "yosoi::search::SearchPage",
+      "publicPath": "yosoi::search::SearchPage",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchPage"
+      ],
+      "sha256": "23547967350f2467ad9e12d8bedd67ee02990966b6f4e02190bfcc9e2aa62e42",
+      "localeHashes": {
+        "en": "23547967350f2467ad9e12d8bedd67ee02990966b6f4e02190bfcc9e2aa62e42"
+      }
+    },
+    "yosoi/search/struct/searchprofilefacts": {
+      "file": "pages/yosoi/search/struct/searchprofilefacts.json",
+      "title": "yosoi::search::SearchProfileFacts",
+      "publicPath": "yosoi::search::SearchProfileFacts",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchProfileFacts"
+      ],
+      "sha256": "9ba035f02460b94cd40cd0bc0695f584939fd955923b1b59a43274bd8adf923a",
+      "localeHashes": {
+        "en": "9ba035f02460b94cd40cd0bc0695f584939fd955923b1b59a43274bd8adf923a"
+      }
+    },
+    "yosoi/search/struct/searchrequest": {
+      "file": "pages/yosoi/search/struct/searchrequest.json",
+      "title": "yosoi::search::SearchRequest",
+      "publicPath": "yosoi::search::SearchRequest",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::SearchRequest",
+        "yosoi::prelude::search::SearchRequest"
+      ],
+      "sha256": "7803ab90471db80f7bc9d2df3080a076a27995968561a31b711eb1432a8f3d7d",
+      "localeHashes": {
+        "en": "7803ab90471db80f7bc9d2df3080a076a27995968561a31b711eb1432a8f3d7d"
+      }
+    },
+    "yosoi/search/struct/searchrequestid": {
+      "file": "pages/yosoi/search/struct/searchrequestid.json",
+      "title": "yosoi::search::SearchRequestId",
+      "publicPath": "yosoi::search::SearchRequestId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchRequestId"
+      ],
+      "sha256": "947f98297670d92ebd311347e9e0ed6b44fb44d5a0488d78b5f1c500dc11a326",
+      "localeHashes": {
+        "en": "947f98297670d92ebd311347e9e0ed6b44fb44d5a0488d78b5f1c500dc11a326"
+      }
+    },
+    "yosoi/search/struct/searchresponse": {
+      "file": "pages/yosoi/search/struct/searchresponse.json",
+      "title": "yosoi::search::SearchResponse",
+      "publicPath": "yosoi::search::SearchResponse",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::SearchResponse",
+        "yosoi::prelude::search::SearchResponse"
+      ],
+      "sha256": "3e968276f09fc13a5e1fa3e4dd1a848f1b3049b826b708b3b9398e1704b44c13",
+      "localeHashes": {
+        "en": "3e968276f09fc13a5e1fa3e4dd1a848f1b3049b826b708b3b9398e1704b44c13"
+      }
+    },
+    "yosoi/search/struct/searchresulturl": {
+      "file": "pages/yosoi/search/struct/searchresulturl.json",
+      "title": "yosoi::search::SearchResultUrl",
+      "publicPath": "yosoi::search::SearchResultUrl",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::prelude::search::SearchResultUrl"
+      ],
+      "sha256": "ef915ea2da9581717612f74f9b857dad0fb75425dc998d156238d8b3e434c9c5",
+      "localeHashes": {
+        "en": "ef915ea2da9581717612f74f9b857dad0fb75425dc998d156238d8b3e434c9c5"
+      }
+    },
+    "yosoi/struct/countlimit": {
+      "file": "pages/yosoi/struct/countlimit.json",
+      "title": "yosoi::CountLimit",
+      "publicPath": "yosoi::CountLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::CountLimit",
+        "yosoi::prelude::policy::CountLimit"
+      ],
+      "sha256": "dc7a35c9e7d13a6de576b6cf62a262a8fa8738915c21da872e82b9e760251ba1",
+      "localeHashes": {
+        "en": "dc7a35c9e7d13a6de576b6cf62a262a8fa8738915c21da872e82b9e760251ba1"
+      }
+    },
+    "yosoi/struct/document": {
+      "file": "pages/yosoi/struct/document.json",
+      "title": "yosoi::Document",
+      "publicPath": "yosoi::Document",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::documents::Document",
+        "yosoi::prelude::Document",
+        "yosoi::prelude::documents::Document"
+      ],
+      "sha256": "d58df74d133a16cd8fd204702a48617f94edaf20816d12baf21026ec6bd854aa",
+      "localeHashes": {
+        "en": "d58df74d133a16cd8fd204702a48617f94edaf20816d12baf21026ec6bd854aa"
+      }
+    },
+    "yosoi/struct/documentid": {
+      "file": "pages/yosoi/struct/documentid.json",
+      "title": "yosoi::DocumentId",
+      "publicPath": "yosoi::DocumentId",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::documents::DocumentId",
+        "yosoi::prelude::DocumentId",
+        "yosoi::prelude::documents::DocumentId"
+      ],
+      "sha256": "6bff80c028573f5b8e8aaab772da5806fced8f44db27b6074beb591ac3c9e151",
+      "localeHashes": {
+        "en": "6bff80c028573f5b8e8aaab772da5806fced8f44db27b6074beb591ac3c9e151"
+      }
+    },
+    "yosoi/struct/documentprofile": {
+      "file": "pages/yosoi/struct/documentprofile.json",
+      "title": "yosoi::DocumentProfile",
+      "publicPath": "yosoi::DocumentProfile",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::documents::DocumentProfile",
+        "yosoi::prelude::DocumentProfile",
+        "yosoi::prelude::documents::DocumentProfile"
+      ],
+      "sha256": "5a44cc7938b6d7ba9f216734d145f845977840fdeb7559da09080b28f9d4b9d4",
+      "localeHashes": {
+        "en": "5a44cc7938b6d7ba9f216734d145f845977840fdeb7559da09080b28f9d4b9d4"
+      }
+    },
+    "yosoi/struct/effectivepolicyidentity": {
+      "file": "pages/yosoi/struct/effectivepolicyidentity.json",
+      "title": "yosoi::EffectivePolicyIdentity",
+      "publicPath": "yosoi::EffectivePolicyIdentity",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::EffectivePolicyIdentity",
+        "yosoi::prelude::policy::EffectivePolicyIdentity"
+      ],
+      "sha256": "abdad23df30367fd40b410de26f40a1c2e11f9642d42a95a2146e8f50ccef36a",
+      "localeHashes": {
+        "en": "abdad23df30367fd40b410de26f40a1c2e11f9642d42a95a2146e8f50ccef36a"
+      }
+    },
+    "yosoi/struct/policy": {
+      "file": "pages/yosoi/struct/policy.json",
+      "title": "yosoi::Policy",
+      "publicPath": "yosoi::Policy",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::Policy",
+        "yosoi::prelude::Policy",
+        "yosoi::prelude::policy::Policy"
+      ],
+      "sha256": "46207582f4e9182ec3adaf10bad8ea1b1c636f0a4efeaf06f86645222dd293e4",
+      "localeHashes": {
+        "en": "46207582f4e9182ec3adaf10bad8ea1b1c636f0a4efeaf06f86645222dd293e4"
+      }
+    },
+    "yosoi/struct/steplimit": {
+      "file": "pages/yosoi/struct/steplimit.json",
+      "title": "yosoi::StepLimit",
+      "publicPath": "yosoi::StepLimit",
+      "kind": "struct",
+      "aliases": [
+        "yosoi::policy::StepLimit",
+        "yosoi::prelude::policy::StepLimit"
+      ],
+      "sha256": "e296056f5c1fd88f10e21e689328147f3daae42c6860531413e4186298ce72e6",
+      "localeHashes": {
+        "en": "e296056f5c1fd88f10e21e689328147f3daae42c6860531413e4186298ce72e6"
+      }
+    }
+  },
+  "preview": true,
+  "provenance": {
+    "status": "unsigned-preview",
+    "file": "provenance.json",
+    "sha256": "c2076269b4819fff8d749b92b4f096d937e16457a73eebfa48380637893650a4"
+  }
+}

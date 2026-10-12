@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::LocateResult",
+  "publicPath": "yosoi::locators::LocateResult",
+  "kind": "struct",
+  "title": "yosoi::locators::LocateResult",
+  "signature": "pub struct LocateResult",
+  "docs": "Non-empty matched regions or findings in deterministic global order.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 270,
+    "lineEnd": 274,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L270-L274"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/locators.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::LocateResult"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::LocateResult::clone",
+      "publicPath": "yosoi::locators::LocateResult::clone",
+      "title": "yosoi::locators::LocateResult::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::LocateResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 268,
+        "lineEnd": 268,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L268-L268"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::deserialize",
+      "publicPath": "yosoi::locators::LocateResult::deserialize",
+      "title": "yosoi::locators::LocateResult::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 356,
+        "lineEnd": 376,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L356-L376"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::document_id",
+      "publicPath": "yosoi::locators::LocateResult::document_id",
+      "title": "yosoi::locators::LocateResult::document_id",
+      "kind": "function",
+      "signature": "pub const fn document_id(&self) -> &yosoi::DocumentId",
+      "docs": "Borrows the shared identity checked against every retained finding.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 342,
+        "lineEnd": 344,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L342-L344"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::eq",
+      "publicPath": "yosoi::locators::LocateResult::eq",
+      "title": "yosoi::locators::LocateResult::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::LocateResult) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 268,
+        "lineEnd": 268,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L268-L268"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::findings",
+      "publicPath": "yosoi::locators::LocateResult::findings",
+      "title": "yosoi::locators::LocateResult::findings",
+      "kind": "function",
+      "signature": "pub fn findings(&self) -> &[yosoi::locators::Finding]",
+      "docs": "Borrows retained findings in strictly increasing global order.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 350,
+        "lineEnd": 352,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L350-L352"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::fmt",
+      "publicPath": "yosoi::locators::LocateResult::fmt",
+      "title": "yosoi::locators::LocateResult::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 268,
+        "lineEnd": 268,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L268-L268"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::regions",
+      "publicPath": "yosoi::locators::LocateResult::regions",
+      "title": "yosoi::locators::LocateResult::regions",
+      "kind": "function",
+      "signature": "pub fn regions(&self) -> &[yosoi::locators::RegionLineage]",
+      "docs": "Borrows matched regions, including those that emitted no projected findings.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 346,
+        "lineEnd": 348,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L346-L348"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::serialize",
+      "publicPath": "yosoi::locators::LocateResult::serialize",
+      "title": "yosoi::locators::LocateResult::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 268,
+        "lineEnd": 268,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L268-L268"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::try_new",
+      "publicPath": "yosoi::locators::LocateResult::try_new",
+      "title": "yosoi::locators::LocateResult::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(document_id: yosoi::DocumentId, findings: Vec<yosoi::locators::Finding>) -> Result<Self, LocateResultError>",
+      "docs": "Creates a result and derives its unique region set from finding lineage.\n\nOwns the supplied findings and checks that they are nonempty, belong to\n`document_id`, and have strictly increasing order. Returns\n[`LocateResultError`] for invalid structure. Use\n[`Self::try_new_with_regions`] to retain matched regions with no findings.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 283,
+        "lineEnd": 295,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L283-L295"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::LocateResult::try_new_with_regions",
+      "publicPath": "yosoi::locators::LocateResult::try_new_with_regions",
+      "title": "yosoi::locators::LocateResult::try_new_with_regions",
+      "kind": "function",
+      "signature": "pub fn try_new_with_regions(document_id: yosoi::DocumentId, regions: Vec<yosoi::locators::RegionLineage>, findings: Vec<yosoi::locators::Finding>) -> Result<Self, LocateResultError>",
+      "docs": "Creates a result with explicit owned matched regions and findings.\n\nAt least one collection must be nonempty. Region lineage must be unique;\nfindings must belong to `document_id`, have strictly increasing order,\nand refer only to parent lineage present in `regions`. Returns\n[`LocateResultError`] for violations. This validates structure, not the\ntruth of completeness claims or coordinates against a live document.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 304,
+        "lineEnd": 339,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/documents/outcome.rs#L304-L339"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "129a44c0a733444c41b4740c47bc556a9a70802ec7ead078c0eae0a954b88a0b",
+  "slug": "yosoi/locators/struct/locateresult",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "129a44c0a733444c41b4740c47bc556a9a70802ec7ead078c0eae0a954b88a0b"
+}

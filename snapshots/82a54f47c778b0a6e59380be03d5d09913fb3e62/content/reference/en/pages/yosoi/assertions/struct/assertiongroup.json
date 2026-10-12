@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::AssertionGroup",
+  "publicPath": "yosoi::assertions::AssertionGroup",
+  "kind": "struct",
+  "title": "yosoi::assertions::AssertionGroup",
+  "signature": "pub struct AssertionGroup<'a, C>",
+  "docs": "Group evaluation is synchronous after asynchronous capture; no retry is implied.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 63,
+    "lineEnd": 66,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/assertions.rs#L63-L66"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::evaluate",
+      "publicPath": "yosoi::assertions::AssertionGroup::evaluate",
+      "title": "yosoi::assertions::AssertionGroup::evaluate",
+      "kind": "function",
+      "signature": "pub fn evaluate(&self, document: &yosoi::Document) -> Result<yosoi::assertions::AssertionReport, yosoi::assertions::AssertionError>",
+      "docs": "Locates and validates one Contract record, then evaluates all local checks with default policy.\nPerforms no network acquisition or retry. Structural assertion failures\nreturn [`AssertionError`]; source and predicate failures remain in the report.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 88,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/assertions.rs#L88-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "publicPath": "yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "title": "yosoi::assertions::AssertionGroup::evaluate_with_policy",
+      "kind": "function",
+      "signature": "pub fn evaluate_with_policy(&self, document: &yosoi::Document, policy: &yosoi::Policy) -> Result<yosoi::assertions::AssertionReport, yosoi::assertions::AssertionError>",
+      "docs": "Evaluates one retained document using the supplied complete locator policy.\n\nRequires exactly one accepted Contract record without field or extraction\nissues before predicates can run. All ordinary predicates run even after\na false result; predicate panics become check errors. Returns structural\n[`AssertionError`] failures or a report retaining source and predicate evidence.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 97,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/assertions.rs#L97-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::fmt",
+      "publicPath": "yosoi::assertions::AssertionGroup::fmt",
+      "title": "yosoi::assertions::AssertionGroup::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 68,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/assertions.rs#L68-L73"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionGroup::new",
+      "publicPath": "yosoi::assertions::AssertionGroup::new",
+      "title": "yosoi::assertions::AssertionGroup::new",
+      "kind": "function",
+      "signature": "pub fn new(plan: yosoi::locators::Plan, checks: impl IntoIterator<Item = yosoi::assertions::Check<'a, C>>) -> Self",
+      "docs": "Owns a locator plan and local checks without executing or validating them yet.\nCollection is bounded to detect an excess check count at evaluation;\npredicates and names are checked by the evaluation path rather than silently dropped.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 79,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/assertions.rs#L79-L84"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c753c6bcbfee29f94dfe998e06a21c7b584695da44c17c1483c58e397ea69bfb",
+  "slug": "yosoi/assertions/struct/assertiongroup",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c753c6bcbfee29f94dfe998e06a21c7b584695da44c17c1483c58e397ea69bfb"
+}

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::DirectHttpRedirects",
+  "publicPath": "yosoi::policy::DirectHttpRedirects",
+  "kind": "enum",
+  "title": "yosoi::policy::DirectHttpRedirects",
+  "signature": "pub enum DirectHttpRedirects",
+  "docs": "Automatic redirect behavior for Direct HTTP only.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+    "lineStart": 70,
+    "lineEnd": 78,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L70-L78"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/policy.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::DirectHttpRedirects"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::DirectHttpRedirects::Disabled",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::Disabled",
+      "title": "yosoi::policy::DirectHttpRedirects::Disabled",
+      "kind": "variant",
+      "signature": "Disabled",
+      "docs": "Return the first response without following its location.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DirectHttpRedirects::Follow",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::Follow",
+      "title": "yosoi::policy::DirectHttpRedirects::Follow",
+      "kind": "variant",
+      "signature": "Follow { max_hops: yosoi::policy::RedirectHopLimit, targets: yosoi::policy::DirectHttpRedirectTargets }",
+      "docs": "Follow no more than the configured positive number of transitions.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 74,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L74-L77"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::clone",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::clone",
+      "title": "yosoi::policy::DirectHttpRedirects::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::DirectHttpRedirects",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::default",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::default",
+      "title": "yosoi::policy::DirectHttpRedirects::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 81,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L81-L86"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::deserialize",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::deserialize",
+      "title": "yosoi::policy::DirectHttpRedirects::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::eq",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::eq",
+      "title": "yosoi::policy::DirectHttpRedirects::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::DirectHttpRedirects) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::fmt",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::fmt",
+      "title": "yosoi::policy::DirectHttpRedirects::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::DirectHttpRedirects::serialize",
+      "publicPath": "yosoi::policy::DirectHttpRedirects::serialize",
+      "title": "yosoi::policy::DirectHttpRedirects::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/redirect.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/redirect.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4c5f3c786bcf482f4f7cceec74793acb1c49a37302cb6d4dd50f108ff1a53d2f",
+  "slug": "yosoi/policy/enum/directhttpredirects",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4c5f3c786bcf482f4f7cceec74793acb1c49a37302cb6d4dd50f108ff1a53d2f"
+}

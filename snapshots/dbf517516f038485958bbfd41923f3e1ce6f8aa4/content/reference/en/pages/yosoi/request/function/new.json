@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::request::new",
+  "publicPath": "yosoi::request::new",
+  "kind": "function",
+  "title": "yosoi::request::new",
+  "signature": "pub fn new(target: impl Into<super::WebTarget>) -> PageRequest",
+  "docs": "Creates a request without performing I/O. URL validation occurs on send.",
+  "source": {
+    "file": "crates/yosoi/src/request/authoring.rs",
+    "lineStart": 7,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/request/authoring.rs#L7-L11"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/request.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::request::new"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "5ff310f57c934b5b5cbcf1acb98f72aae7f03596907481b218a6b1bfbb58ae1a",
+  "slug": "yosoi/request/function/new",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5ff310f57c934b5b5cbcf1acb98f72aae7f03596907481b218a6b1bfbb58ae1a"
+}

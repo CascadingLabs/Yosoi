@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::StopScope",
+  "publicPath": "yosoi::StopScope",
+  "kind": "enum",
+  "title": "yosoi::StopScope",
+  "signature": "pub enum StopScope",
+  "docs": "The execution scope affected by a continuation policy.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+    "lineStart": 23,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L23-L28"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 31,
+    "lineEnd": 31,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/lib.rs#L31-L31"
+  },
+  "aliases": [
+    "yosoi::flow::StopScope",
+    "yosoi::policy::StopScope",
+    "yosoi::prelude::StopScope",
+    "yosoi::prelude::flow::StopScope",
+    "yosoi::prelude::policy::StopScope"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::StopScope::CurrentFlow",
+      "publicPath": "yosoi::StopScope::CurrentFlow",
+      "title": "yosoi::StopScope::CurrentFlow",
+      "kind": "variant",
+      "signature": "CurrentFlow",
+      "docs": "Stop the nearest containing Flow and return to its parent's next step.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::StopScope::Invocation",
+      "publicPath": "yosoi::StopScope::Invocation",
+      "title": "yosoi::StopScope::Invocation",
+      "kind": "variant",
+      "signature": "Invocation",
+      "docs": "Stop every remaining step in the invocation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::StopScope::clone",
+      "publicPath": "yosoi::StopScope::clone",
+      "title": "yosoi::StopScope::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::StopScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L21-L21"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::StopScope::deserialize",
+      "publicPath": "yosoi::StopScope::deserialize",
+      "title": "yosoi::StopScope::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L21-L21"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::StopScope::eq",
+      "publicPath": "yosoi::StopScope::eq",
+      "title": "yosoi::StopScope::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::StopScope) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L21-L21"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::StopScope::fmt",
+      "publicPath": "yosoi::StopScope::fmt",
+      "title": "yosoi::StopScope::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L21-L21"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::StopScope::serialize",
+      "publicPath": "yosoi::StopScope::serialize",
+      "title": "yosoi::StopScope::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/flow.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/internal/policy/policy/flow.rs#L21-L21"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a71eae1bdbf33cde9967b1b7d5b8ade37eb9e382518238700e90d20d6bcae46f",
+  "slug": "yosoi/enum/stopscope",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a71eae1bdbf33cde9967b1b7d5b8ade37eb9e382518238700e90d20d6bcae46f"
+}

@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::action::JavaScriptSourceError",
+  "publicPath": "yosoi::action::JavaScriptSourceError",
+  "kind": "enum",
+  "title": "yosoi::action::JavaScriptSourceError",
+  "signature": "pub enum JavaScriptSourceError",
+  "docs": "A source snapshot could not be read or failed its integrity/size checks.",
+  "source": {
+    "file": "crates/yosoi/src/action/source.rs",
+    "lineStart": 174,
+    "lineEnd": 230,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L174-L230"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptSourceError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "publicPath": "yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "title": "yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "kind": "variant",
+      "signature": "AllocationFailed { path: std::path::PathBuf, requested: usize }",
+      "docs": "The source exceeded a bound before an allocation could be made safely.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 224,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L224-L229"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::AllocationFailed::path",
+          "publicPath": "yosoi::action::JavaScriptSourceError::AllocationFailed::path",
+          "title": "yosoi::action::JavaScriptSourceError::AllocationFailed::path",
+          "kind": "struct_field",
+          "signature": "path: std::path::PathBuf",
+          "docs": "Local source path whose bounded capture could not reserve memory.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 226,
+            "lineEnd": 226,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L226-L226"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::AllocationFailed::requested",
+          "publicPath": "yosoi::action::JavaScriptSourceError::AllocationFailed::requested",
+          "title": "yosoi::action::JavaScriptSourceError::AllocationFailed::requested",
+          "kind": "struct_field",
+          "signature": "requested: usize",
+          "docs": "Additional source bytes whose allocation failed.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 228,
+            "lineEnd": 228,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L228-L228"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "publicPath": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "title": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "kind": "variant",
+      "signature": "ByteLengthMismatch { declared: usize, actual: usize }",
+      "docs": "The stored byte length does not match the source text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 213,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L213-L218"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::ByteLengthMismatch::declared",
+          "publicPath": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch::declared",
+          "title": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch::declared",
+          "kind": "struct_field",
+          "signature": "declared: usize",
+          "docs": "Byte count recorded in snapshot provenance.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 215,
+            "lineEnd": 215,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L215-L215"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::ByteLengthMismatch::actual",
+          "publicPath": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch::actual",
+          "title": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "Actual UTF-8 bytes in the retained source text.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 217,
+            "lineEnd": 217,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L217-L217"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "publicPath": "yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "title": "yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "kind": "variant",
+      "signature": "DigestMismatch",
+      "docs": "The stored digest does not match the source text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 221,
+        "lineEnd": 221,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L221-L221"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::Empty",
+      "publicPath": "yosoi::action::JavaScriptSourceError::Empty",
+      "title": "yosoi::action::JavaScriptSourceError::Empty",
+      "kind": "variant",
+      "signature": "Empty",
+      "docs": "The source contains no non-whitespace text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L202-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "publicPath": "yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "title": "yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "kind": "variant",
+      "signature": "InvalidLimit { maximum: usize }",
+      "docs": "A caller-supplied byte limit exceeds the SDK hard cap.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 207,
+        "lineEnd": 210,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L207-L210"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::InvalidLimit::maximum",
+          "publicPath": "yosoi::action::JavaScriptSourceError::InvalidLimit::maximum",
+          "title": "yosoi::action::JavaScriptSourceError::InvalidLimit::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Caller-supplied byte cap exceeding the supported SDK maximum.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 209,
+            "lineEnd": 209,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L209-L209"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "publicPath": "yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "title": "yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "kind": "variant",
+      "signature": "InvalidUtf8 { path: std::path::PathBuf }",
+      "docs": "The captured bytes are not valid UTF-8.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 196,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L196-L199"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::InvalidUtf8::path",
+          "publicPath": "yosoi::action::JavaScriptSourceError::InvalidUtf8::path",
+          "title": "yosoi::action::JavaScriptSourceError::InvalidUtf8::path",
+          "kind": "struct_field",
+          "signature": "path: std::path::PathBuf",
+          "docs": "Source file whose captured bytes could not be interpreted as UTF-8.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 198,
+            "lineEnd": 198,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L198-L198"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::Io",
+      "publicPath": "yosoi::action::JavaScriptSourceError::Io",
+      "title": "yosoi::action::JavaScriptSourceError::Io",
+      "kind": "variant",
+      "signature": "Io { path: std::path::PathBuf, source: io::Error }",
+      "docs": "The source file could not be opened or read.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 177,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L177-L183"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::Io::path",
+          "publicPath": "yosoi::action::JavaScriptSourceError::Io::path",
+          "title": "yosoi::action::JavaScriptSourceError::Io::path",
+          "kind": "struct_field",
+          "signature": "path: std::path::PathBuf",
+          "docs": "Local path whose bounded read failed.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 179,
+            "lineEnd": 179,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L179-L179"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::Io::source",
+          "publicPath": "yosoi::action::JavaScriptSourceError::Io::source",
+          "title": "yosoi::action::JavaScriptSourceError::Io::source",
+          "kind": "struct_field",
+          "signature": "source: io::Error",
+          "docs": "Underlying I/O failure retained for explicit caller inspection.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 182,
+            "lineEnd": 182,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L182-L182"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::TooLarge",
+      "publicPath": "yosoi::action::JavaScriptSourceError::TooLarge",
+      "title": "yosoi::action::JavaScriptSourceError::TooLarge",
+      "kind": "variant",
+      "signature": "TooLarge { path: Option<std::path::PathBuf>, actual: usize, maximum: usize }",
+      "docs": "The bounded reader observed more than the configured number of bytes.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 186,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L186-L193"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::TooLarge::path",
+          "publicPath": "yosoi::action::JavaScriptSourceError::TooLarge::path",
+          "title": "yosoi::action::JavaScriptSourceError::TooLarge::path",
+          "kind": "struct_field",
+          "signature": "path: Option<std::path::PathBuf>",
+          "docs": "Source file path when captured from disk, absent for inline text.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 188,
+            "lineEnd": 188,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L188-L188"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::TooLarge::actual",
+          "publicPath": "yosoi::action::JavaScriptSourceError::TooLarge::actual",
+          "title": "yosoi::action::JavaScriptSourceError::TooLarge::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "Bytes observed at the bound, not necessarily the file's complete length.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 190,
+            "lineEnd": 190,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L190-L190"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::action::JavaScriptSourceError::TooLarge::maximum",
+          "publicPath": "yosoi::action::JavaScriptSourceError::TooLarge::maximum",
+          "title": "yosoi::action::JavaScriptSourceError::TooLarge::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum permitted captured UTF-8 source bytes.",
+          "source": {
+            "file": "crates/yosoi/src/action/source.rs",
+            "lineStart": 192,
+            "lineEnd": 192,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L192-L192"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceError::fmt",
+      "title": "yosoi::action::JavaScriptSourceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 173,
+        "lineEnd": 173,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L173-L173"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceError::fmt",
+      "title": "yosoi::action::JavaScriptSourceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 173,
+        "lineEnd": 173,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L173-L173"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::source",
+      "publicPath": "yosoi::action::JavaScriptSourceError::source",
+      "title": "yosoi::action::JavaScriptSourceError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 173,
+        "lineEnd": 173,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action/source.rs#L173-L173"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "71c9af0dedfdc708284a0006910b75f5958e1779d5d39f40809f81e56d6135fa",
+  "slug": "yosoi/action/enum/javascriptsourceerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "71c9af0dedfdc708284a0006910b75f5958e1779d5d39f40809f81e56d6135fa"
+}

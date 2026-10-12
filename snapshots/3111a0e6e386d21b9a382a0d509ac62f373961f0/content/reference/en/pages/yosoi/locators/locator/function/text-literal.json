@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::locator::text_literal",
+  "publicPath": "yosoi::locators::locator::text_literal",
+  "kind": "function",
+  "title": "yosoi::locators::locator::text_literal",
+  "signature": "pub const fn text_literal(expression: &'static str) -> super::PinnedLocator",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/locator_declaration.rs",
+    "lineStart": 85,
+    "lineEnd": 87,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/locator_declaration.rs#L85-L87"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/locators.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::prelude::locator::text_literal",
+    "yosoi::prelude::locators::locator::text_literal"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/locator/function/text-literal",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

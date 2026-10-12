@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::Completeness",
+  "publicPath": "yosoi::locators::Completeness",
+  "kind": "enum",
+  "title": "yosoi::locators::Completeness",
+  "signature": "pub enum Completeness",
+  "docs": "Evidence certainty inherited by a finding or indeterminate outcome.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome.rs",
+    "lineStart": 41,
+    "lineEnd": 50,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L41-L50"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/locators.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::Completeness"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::Completeness::Complete",
+      "publicPath": "yosoi::locators::Completeness::Complete",
+      "title": "yosoi::locators::Completeness::Complete",
+      "kind": "variant",
+      "signature": "Complete",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::Completeness::Partial",
+      "publicPath": "yosoi::locators::Completeness::Partial",
+      "title": "yosoi::locators::Completeness::Partial",
+      "kind": "variant",
+      "signature": "Partial { reason_code: String, lost_items: Option<u64> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 43,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L43-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::Completeness::Unknown",
+      "publicPath": "yosoi::locators::Completeness::Unknown",
+      "title": "yosoi::locators::Completeness::Unknown",
+      "kind": "variant",
+      "signature": "Unknown { reason_code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 47,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L47-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Completeness::clone",
+      "publicPath": "yosoi::locators::Completeness::clone",
+      "title": "yosoi::locators::Completeness::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Completeness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::Completeness::deserialize",
+      "publicPath": "yosoi::locators::Completeness::deserialize",
+      "title": "yosoi::locators::Completeness::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::Completeness::eq",
+      "publicPath": "yosoi::locators::Completeness::eq",
+      "title": "yosoi::locators::Completeness::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Completeness) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::Completeness::fmt",
+      "publicPath": "yosoi::locators::Completeness::fmt",
+      "title": "yosoi::locators::Completeness::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::Completeness::serialize",
+      "publicPath": "yosoi::locators::Completeness::serialize",
+      "title": "yosoi::locators::Completeness::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/outcome.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9bf460357c4c92b3219a37db288a3efc96b252d87920c48c1721308ec4861771",
+  "slug": "yosoi/locators/enum/completeness",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9bf460357c4c92b3219a37db288a3efc96b252d87920c48c1721308ec4861771"
+}

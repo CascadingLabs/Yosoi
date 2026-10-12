@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::DocumentOutcome",
+  "publicPath": "yosoi::request::DocumentOutcome",
+  "kind": "enum",
+  "title": "yosoi::request::DocumentOutcome",
+  "signature": "pub enum DocumentOutcome<'response>",
+  "docs": "Materialization state. Partial and unavailable results remain explicit.",
+  "source": {
+    "file": "crates/yosoi/src/request/outcomes.rs",
+    "lineStart": 104,
+    "lineEnd": 112,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L104-L112"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::request::DocumentOutcome"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::DocumentOutcome::Partial",
+      "publicPath": "yosoi::request::DocumentOutcome::Partial",
+      "title": "yosoi::request::DocumentOutcome::Partial",
+      "kind": "variant",
+      "signature": "Partial { document: Option<crate::documents::DocumentRef<'response>>, reasons: &'response [super::PartialReason] }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 106,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L106-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DocumentOutcome::Produced",
+      "publicPath": "yosoi::request::DocumentOutcome::Produced",
+      "title": "yosoi::request::DocumentOutcome::Produced",
+      "kind": "variant",
+      "signature": "Produced(crate::documents::DocumentRef<'response>)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 105,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L105-L105"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DocumentOutcome::Unavailable",
+      "publicPath": "yosoi::request::DocumentOutcome::Unavailable",
+      "title": "yosoi::request::DocumentOutcome::Unavailable",
+      "kind": "variant",
+      "signature": "Unavailable(super::UnavailableReason)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 110,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L110-L110"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DocumentOutcome::Unprojectable",
+      "publicPath": "yosoi::request::DocumentOutcome::Unprojectable",
+      "title": "yosoi::request::DocumentOutcome::Unprojectable",
+      "kind": "variant",
+      "signature": "Unprojectable(super::UnprojectableReason)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 111,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L111-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::DocumentOutcome::clone",
+      "publicPath": "yosoi::request::DocumentOutcome::clone",
+      "title": "yosoi::request::DocumentOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DocumentOutcome<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 103,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L103-L103"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::DocumentOutcome::document",
+      "publicPath": "yosoi::request::DocumentOutcome::document",
+      "title": "yosoi::request::DocumentOutcome::document",
+      "kind": "function",
+      "signature": "pub const fn document(self) -> Option<DocumentRef<'response>>",
+      "docs": "Returns a safely materialized document, including a valid partial document.",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 115,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L115-L121"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::DocumentOutcome::fmt",
+      "publicPath": "yosoi::request::DocumentOutcome::fmt",
+      "title": "yosoi::request::DocumentOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 103,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L103-L103"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0e37447221fddbdf47bfc19d974302401bd0e8f164348e466436c6f2cd43531e",
+  "slug": "yosoi/request/enum/documentoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0e37447221fddbdf47bfc19d974302401bd0e8f164348e466436c6f2cd43531e"
+}

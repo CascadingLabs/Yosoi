@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::SupportDocumentKind",
+  "publicPath": "yosoi::map::SupportDocumentKind",
+  "kind": "enum",
+  "title": "yosoi::map::SupportDocumentKind",
+  "signature": "pub enum SupportDocumentKind",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 141,
+    "lineEnd": 145,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L141-L145"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SupportDocumentKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::SupportDocumentKind::Robots",
+      "publicPath": "yosoi::map::SupportDocumentKind::Robots",
+      "title": "yosoi::map::SupportDocumentKind::Robots",
+      "kind": "variant",
+      "signature": "Robots",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L142-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SupportDocumentKind::Sitemap",
+      "publicPath": "yosoi::map::SupportDocumentKind::Sitemap",
+      "title": "yosoi::map::SupportDocumentKind::Sitemap",
+      "kind": "variant",
+      "signature": "Sitemap",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 143,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L143-L143"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SupportDocumentKind::SitemapIndex",
+      "publicPath": "yosoi::map::SupportDocumentKind::SitemapIndex",
+      "title": "yosoi::map::SupportDocumentKind::SitemapIndex",
+      "kind": "variant",
+      "signature": "SitemapIndex",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 144,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L144-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::SupportDocumentKind::clone",
+      "publicPath": "yosoi::map::SupportDocumentKind::clone",
+      "title": "yosoi::map::SupportDocumentKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> SupportDocumentKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SupportDocumentKind::eq",
+      "publicPath": "yosoi::map::SupportDocumentKind::eq",
+      "title": "yosoi::map::SupportDocumentKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &SupportDocumentKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::SupportDocumentKind::fmt",
+      "publicPath": "yosoi::map::SupportDocumentKind::fmt",
+      "title": "yosoi::map::SupportDocumentKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::SupportDocumentKind::serialize",
+      "publicPath": "yosoi::map::SupportDocumentKind::serialize",
+      "title": "yosoi::map::SupportDocumentKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/supportdocumentkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::FieldSchema",
+  "publicPath": "yosoi::contracts::FieldSchema",
+  "kind": "struct",
+  "title": "yosoi::contracts::FieldSchema",
+  "signature": "pub struct FieldSchema",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/schema.rs",
+    "lineStart": 36,
+    "lineEnd": 41,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L36-L41"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::FieldSchema"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::FieldSchema::cardinality",
+      "publicPath": "yosoi::contracts::FieldSchema::cardinality",
+      "title": "yosoi::contracts::FieldSchema::cardinality",
+      "kind": "function",
+      "signature": "pub const fn cardinality(&self) -> Cardinality",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 90,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L90-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::clone",
+      "publicPath": "yosoi::contracts::FieldSchema::clone",
+      "title": "yosoi::contracts::FieldSchema::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> FieldSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::description",
+      "publicPath": "yosoi::contracts::FieldSchema::description",
+      "title": "yosoi::contracts::FieldSchema::description",
+      "kind": "function",
+      "signature": "pub fn description(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 87,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L87-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::deserialize",
+      "publicPath": "yosoi::contracts::FieldSchema::deserialize",
+      "title": "yosoi::contracts::FieldSchema::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 99,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L99-L114"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::eq",
+      "publicPath": "yosoi::contracts::FieldSchema::eq",
+      "title": "yosoi::contracts::FieldSchema::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &FieldSchema) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::fmt",
+      "publicPath": "yosoi::contracts::FieldSchema::fmt",
+      "title": "yosoi::contracts::FieldSchema::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::id",
+      "publicPath": "yosoi::contracts::FieldSchema::id",
+      "title": "yosoi::contracts::FieldSchema::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &FieldId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 84,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L84-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::serialize",
+      "publicPath": "yosoi::contracts::FieldSchema::serialize",
+      "title": "yosoi::contracts::FieldSchema::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::try_new",
+      "publicPath": "yosoi::contracts::FieldSchema::try_new",
+      "title": "yosoi::contracts::FieldSchema::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(id: FieldId, description: impl Into<String>, cardinality: Cardinality, value_type: impl Into<String>) -> Result<Self, ContractSchemaError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 44,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L44-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::value_type",
+      "publicPath": "yosoi::contracts::FieldSchema::value_type",
+      "title": "yosoi::contracts::FieldSchema::value_type",
+      "kind": "function",
+      "signature": "pub fn value_type(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 93,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/schema.rs#L93-L95"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/fieldschema",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

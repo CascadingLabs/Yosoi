@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ExtractionFailure",
+  "publicPath": "yosoi::contracts::ExtractionFailure",
+  "kind": "enum",
+  "title": "yosoi::contracts::ExtractionFailure",
+  "signature": "pub enum ExtractionFailure",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-extractor/src/lib.rs",
+    "lineStart": 159,
+    "lineEnd": 172,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L159-L172"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/contracts.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ExtractionFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ExtractionFailure::CountOverflow",
+      "publicPath": "yosoi::contracts::ExtractionFailure::CountOverflow",
+      "title": "yosoi::contracts::ExtractionFailure::CountOverflow",
+      "kind": "variant",
+      "signature": "CountOverflow { limit: ExtractionLimit }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 163,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L163-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionFailure::GroupingIndexInvariant",
+      "publicPath": "yosoi::contracts::ExtractionFailure::GroupingIndexInvariant",
+      "title": "yosoi::contracts::ExtractionFailure::GroupingIndexInvariant",
+      "kind": "variant",
+      "signature": "GroupingIndexInvariant",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 165,
+        "lineEnd": 165,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L165-L165"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionFailure::InvalidContractSchema",
+      "publicPath": "yosoi::contracts::ExtractionFailure::InvalidContractSchema",
+      "title": "yosoi::contracts::ExtractionFailure::InvalidContractSchema",
+      "kind": "variant",
+      "signature": "InvalidContractSchema(yosoi_contracts::ContractSchemaError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 161,
+        "lineEnd": 161,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L161-L161"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionFailure::LimitExceeded",
+      "publicPath": "yosoi::contracts::ExtractionFailure::LimitExceeded",
+      "title": "yosoi::contracts::ExtractionFailure::LimitExceeded",
+      "kind": "variant",
+      "signature": "LimitExceeded { limit: ExtractionLimit, maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 167,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L167-L171"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::clone",
+      "publicPath": "yosoi::contracts::ExtractionFailure::clone",
+      "title": "yosoi::contracts::ExtractionFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ExtractionFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::eq",
+      "publicPath": "yosoi::contracts::ExtractionFailure::eq",
+      "title": "yosoi::contracts::ExtractionFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ExtractionFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::fmt",
+      "publicPath": "yosoi::contracts::ExtractionFailure::fmt",
+      "title": "yosoi::contracts::ExtractionFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::fmt",
+      "publicPath": "yosoi::contracts::ExtractionFailure::fmt",
+      "title": "yosoi::contracts::ExtractionFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::from",
+      "publicPath": "yosoi::contracts::ExtractionFailure::from",
+      "title": "yosoi::contracts::ExtractionFailure::from",
+      "kind": "function",
+      "signature": "fn from(source: ContractSchemaError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::serialize",
+      "publicPath": "yosoi::contracts::ExtractionFailure::serialize",
+      "title": "yosoi::contracts::ExtractionFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 175,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L175-L205"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionFailure::source",
+      "publicPath": "yosoi::contracts::ExtractionFailure::source",
+      "title": "yosoi::contracts::ExtractionFailure::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-extractor/src/lib.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/extractionfailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

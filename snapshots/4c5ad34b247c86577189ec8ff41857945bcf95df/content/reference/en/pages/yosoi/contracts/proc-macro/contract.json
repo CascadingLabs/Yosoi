@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "proc_macro:yosoi::contracts::Contract",
+  "publicPath": "yosoi::contracts::Contract",
+  "kind": "proc_macro",
+  "title": "yosoi::contracts::Contract",
+  "signature": "#[derive] Contract",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts-derive/src/lib.rs",
+    "lineStart": 14,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts-derive/src/lib.rs#L14-L19"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/contracts.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::Contract",
+    "yosoi::prelude::contracts::Contract"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/proc-macro/contract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

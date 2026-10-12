@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::Plan",
+  "publicPath": "yosoi::locators::Plan",
+  "kind": "struct",
+  "title": "yosoi::locators::Plan",
+  "signature": "pub struct Plan",
+  "docs": "Portable compiled semantics with no document identity or lifecycle handle.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+    "lineStart": 104,
+    "lineEnd": 114,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L104-L114"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::Plan",
+    "yosoi::prelude::locators::Plan"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::Plan::clone",
+      "publicPath": "yosoi::locators::Plan::clone",
+      "title": "yosoi::locators::Plan::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::Plan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::Plan::deserialize",
+      "publicPath": "yosoi::locators::Plan::deserialize",
+      "title": "yosoi::locators::Plan::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 332,
+        "lineEnd": 378,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L332-L378"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::Plan::eq",
+      "publicPath": "yosoi::locators::Plan::eq",
+      "title": "yosoi::locators::Plan::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 117,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L117-L121"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::Plan::fmt",
+      "publicPath": "yosoi::locators::Plan::fmt",
+      "title": "yosoi::locators::Plan::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 127,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L127-L134"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::Plan::new",
+      "publicPath": "yosoi::locators::Plan::new",
+      "title": "yosoi::locators::Plan::new",
+      "kind": "function",
+      "signature": "pub fn new(outputs: impl IntoIterator<Item = yosoi::locators::NamedOutput>) -> Result<Self, yosoi::locators::PlanError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 138,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L138-L140"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Plan::serialize",
+      "publicPath": "yosoi::locators::Plan::serialize",
+      "title": "yosoi::locators::Plan::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c504ad36f7558f54622cb1e07c0e1c167fc722765862ba278e19afeeed1c5518",
+  "slug": "yosoi/locators/struct/plan",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c504ad36f7558f54622cb1e07c0e1c167fc722765862ba278e19afeeed1c5518"
+}

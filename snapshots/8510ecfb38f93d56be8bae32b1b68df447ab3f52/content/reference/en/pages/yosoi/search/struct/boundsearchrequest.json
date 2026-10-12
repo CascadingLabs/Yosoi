@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::BoundSearchRequest",
+  "publicPath": "yosoi::search::BoundSearchRequest",
+  "kind": "struct",
+  "title": "yosoi::search::BoundSearchRequest",
+  "signature": "pub struct BoundSearchRequest<'policy>",
+  "docs": "Search intent bound to the caller's policy; execution internals stay private.",
+  "source": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 53,
+    "lineEnd": 55,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L53-L55"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::search::BoundSearchRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::fmt",
+      "publicPath": "yosoi::search::BoundSearchRequest::fmt",
+      "title": "yosoi::search::BoundSearchRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::id",
+      "publicPath": "yosoi::search::BoundSearchRequest::id",
+      "title": "yosoi::search::BoundSearchRequest::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> SearchRequestId",
+      "docs": "Returns the query correlation identity.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 59,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L59-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::policy",
+      "publicPath": "yosoi::search::BoundSearchRequest::policy",
+      "title": "yosoi::search::BoundSearchRequest::policy",
+      "kind": "function",
+      "signature": "pub const fn policy(&self) -> &Policy",
+      "docs": "Returns the borrowed policy.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 69,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L69-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::query",
+      "publicPath": "yosoi::search::BoundSearchRequest::query",
+      "title": "yosoi::search::BoundSearchRequest::query",
+      "kind": "function",
+      "signature": "pub fn query(&self) -> &str",
+      "docs": "Returns the query as authored.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 64,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L64-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::send",
+      "publicPath": "yosoi::search::BoundSearchRequest::send",
+      "title": "yosoi::search::BoundSearchRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(&self) -> Result<SearchResponse, SearchSendError>",
+      "docs": "Executes through the package's standard provider adapters.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 79,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L79-L81"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::send_cancellable",
+      "publicPath": "yosoi::search::BoundSearchRequest::send_cancellable",
+      "title": "yosoi::search::BoundSearchRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(&self, cancellation: &CancellationToken) -> Result<SearchResponse, SearchSendError>",
+      "docs": "Executes with caller-controlled cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 84,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L84-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::BoundSearchRequest::validate",
+      "publicPath": "yosoi::search::BoundSearchRequest::validate",
+      "title": "yosoi::search::BoundSearchRequest::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), SearchSendError>",
+      "docs": "Resolves the policy without contacting a provider.",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 74,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/search.rs#L74-L76"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a027947fb234e3459a0a3a8ed2a15087aa29ee371b03df7e3800874c5f794f74",
+  "slug": "yosoi/search/struct/boundsearchrequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a027947fb234e3459a0a3a8ed2a15087aa29ee371b03df7e3800874c5f794f74"
+}

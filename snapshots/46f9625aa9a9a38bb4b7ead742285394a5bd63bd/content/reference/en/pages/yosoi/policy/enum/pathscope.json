@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::PathScope",
+  "publicPath": "yosoi::policy::PathScope",
+  "kind": "enum",
+  "title": "yosoi::policy::PathScope",
+  "signature": "pub enum PathScope",
+  "docs": "Paths Map may include on an in-scope host.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+    "lineStart": 103,
+    "lineEnd": 109,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L103-L109"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/policy.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::PathScope"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::PathScope::EntireOrigin",
+      "publicPath": "yosoi::policy::PathScope::EntireOrigin",
+      "title": "yosoi::policy::PathScope::EntireOrigin",
+      "kind": "variant",
+      "signature": "EntireOrigin",
+      "docs": "Every path on the seed origin.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 108,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L108-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::PathScope::SeedSubtree",
+      "publicPath": "yosoi::policy::PathScope::SeedSubtree",
+      "title": "yosoi::policy::PathScope::SeedSubtree",
+      "kind": "variant",
+      "signature": "SeedSubtree",
+      "docs": "The seed path and its descendants.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::clone",
+      "publicPath": "yosoi::policy::PathScope::clone",
+      "title": "yosoi::policy::PathScope::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::PathScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::default",
+      "publicPath": "yosoi::policy::PathScope::default",
+      "title": "yosoi::policy::PathScope::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::policy::PathScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::deserialize",
+      "publicPath": "yosoi::policy::PathScope::deserialize",
+      "title": "yosoi::policy::PathScope::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::eq",
+      "publicPath": "yosoi::policy::PathScope::eq",
+      "title": "yosoi::policy::PathScope::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::PathScope) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::fmt",
+      "publicPath": "yosoi::policy::PathScope::fmt",
+      "title": "yosoi::policy::PathScope::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::PathScope::serialize",
+      "publicPath": "yosoi::policy::PathScope::serialize",
+      "title": "yosoi::policy::PathScope::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/policy/policy/map.rs#L101-L101"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1444a9a592ea79eefd376a92f2fadd8cfe92bc8d3df2e08a0d541935dc7e6f52",
+  "slug": "yosoi/policy/enum/pathscope",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1444a9a592ea79eefd376a92f2fadd8cfe92bc8d3df2e08a0d541935dc7e6f52"
+}

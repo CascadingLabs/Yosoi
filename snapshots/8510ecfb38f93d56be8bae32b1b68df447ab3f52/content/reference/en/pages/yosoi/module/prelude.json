@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::prelude",
+  "publicPath": "yosoi::prelude",
+  "kind": "module",
+  "title": "yosoi::prelude",
+  "signature": "pub mod prelude",
+  "docs": "Common SDK imports. Every item here belongs to a public SDK namespace.\n\nImport this module as `ys` when authoring a document, locator plan, request,\nor Contract. There are no separate namespace-specific SDK preludes.",
+  "source": {
+    "file": "crates/yosoi/src/prelude.rs",
+    "lineStart": 1,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/prelude.rs#L1-L19"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "d17323ba46969e8d22475b46c865723c39989422a65974a860fb64d5ab507e32",
+  "slug": "yosoi/module/prelude",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d17323ba46969e8d22475b46c865723c39989422a65974a860fb64d5ab507e32"
+}

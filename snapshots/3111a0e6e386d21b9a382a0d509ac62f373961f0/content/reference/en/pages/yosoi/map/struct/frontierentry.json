@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::FrontierEntry",
+  "publicPath": "yosoi::map::FrontierEntry",
+  "kind": "struct",
+  "title": "yosoi::map::FrontierEntry",
+  "signature": "pub struct FrontierEntry",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 134,
+    "lineEnd": 137,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L134-L137"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::map::FrontierEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::FrontierEntry::clone",
+      "publicPath": "yosoi::map::FrontierEntry::clone",
+      "title": "yosoi::map::FrontierEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> FrontierEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L133-L133"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::FrontierEntry::fmt",
+      "publicPath": "yosoi::map::FrontierEntry::fmt",
+      "title": "yosoi::map::FrontierEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L133-L133"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::FrontierEntry::page",
+      "publicPath": "yosoi::map::FrontierEntry::page",
+      "title": "yosoi::map::FrontierEntry::page",
+      "kind": "struct_field",
+      "signature": "pub page: url::Url",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L135-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::FrontierEntry::reason",
+      "publicPath": "yosoi::map::FrontierEntry::reason",
+      "title": "yosoi::map::FrontierEntry::reason",
+      "kind": "struct_field",
+      "signature": "pub reason: PendingReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 136,
+        "lineEnd": 136,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L136-L136"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::FrontierEntry::serialize",
+      "publicPath": "yosoi::map::FrontierEntry::serialize",
+      "title": "yosoi::map::FrontierEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L133-L133"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/frontierentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

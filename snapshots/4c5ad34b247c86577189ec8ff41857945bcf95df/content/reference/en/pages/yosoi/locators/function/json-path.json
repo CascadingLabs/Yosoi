@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::json_path",
+  "publicPath": "yosoi::locators::json_path",
+  "kind": "function",
+  "title": "yosoi::locators::json_path",
+  "signature": "pub fn json_path(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/query_builders.rs",
+    "lineStart": 30,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/query_builders.rs#L30-L40"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::json_path",
+    "yosoi::prelude::locators::json_path"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/function/json-path",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

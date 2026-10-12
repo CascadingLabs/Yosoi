@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::automation_record",
+  "publicPath": "yosoi::automation_record",
+  "kind": "module",
+  "title": "yosoi::automation_record",
+  "signature": "pub mod automation_record",
+  "docs": "Versioned, offline-first automation evidence records.\n\nThis first-pass container stores one bounded JSON record as a validated\nYosoi text Document. The Archive's immutable Document reference is the\ndurable identity; source observation IDs and their session/tab coordinates\nremain the provenance carried by the record itself.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 1,
+    "lineEnd": 1625,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/automation_record.rs#L1-L1625"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "6eb68da9d9f05e50b1102cb06fdafb7cecc5acc749f68fd7085c28aa3e28adc5",
+  "slug": "yosoi/module/automation-record",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6eb68da9d9f05e50b1102cb06fdafb7cecc5acc749f68fd7085c28aa3e28adc5"
+}

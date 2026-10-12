@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::click",
+  "publicPath": "yosoi::action::click",
+  "kind": "function",
+  "title": "yosoi::action::click",
+  "signature": "pub fn click(selector: impl Into<String>) -> yosoi::flow::Step",
+  "docs": "Creates a click step for one selector-resolved element.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 43,
+    "lineEnd": 47,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/action.rs#L43-L47"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::click"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "17743d29c0516c1e9bb0b559a15b4159e4f2a0221da4f46bb24ef413c1b7f95b",
+  "slug": "yosoi/action/function/click",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "17743d29c0516c1e9bb0b559a15b4159e4f2a0221da4f46bb24ef413c1b7f95b"
+}

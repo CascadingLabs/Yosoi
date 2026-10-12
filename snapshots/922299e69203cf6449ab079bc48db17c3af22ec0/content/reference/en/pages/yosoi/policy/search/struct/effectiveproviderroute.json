@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::search::EffectiveProviderRoute",
+  "publicPath": "yosoi::policy::search::EffectiveProviderRoute",
+  "kind": "struct",
+  "title": "yosoi::policy::search::EffectiveProviderRoute",
+  "signature": "pub struct EffectiveProviderRoute",
+  "docs": "One provider route resolved from Current or an exact Requests profile.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+    "lineStart": 124,
+    "lineEnd": 133,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L124-L133"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 21,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/policy.rs#L21-L21"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::search::EffectiveProviderRoute"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::clone",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::clone",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::search::EffectiveProviderRoute",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L122-L122"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "kind": "struct_field",
+      "signature": "pub defaults_status: yosoi::policy::ProviderDefaultsStatus",
+      "docs": "Registry state captured into effective identity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L132-L132"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::defaults_status",
+      "kind": "function",
+      "signature": "pub const fn defaults_status(&self) -> yosoi::policy::ProviderDefaultsStatus",
+      "docs": "Returns the registry state captured for this route.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 152,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L152-L154"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::defaults_version",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::defaults_version",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::defaults_version",
+      "kind": "function",
+      "signature": "pub const fn defaults_version(&self) -> Option<yosoi::policy::ProviderDefaultsVersion>",
+      "docs": "Returns the version of a resolved Current route.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 157,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L157-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::deserialize",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::deserialize",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L122-L122"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::documents",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::documents",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::documents",
+      "kind": "function",
+      "signature": "pub fn documents(&self) -> Option<&yosoi::policy::Documents>",
+      "docs": "Returns the resolved document policy when one is available.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 176,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L176-L178"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::eq",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::eq",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::search::EffectiveProviderRoute) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L122-L122"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::fmt",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::fmt",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L122-L122"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::page",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::page",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::page",
+      "kind": "function",
+      "signature": "pub fn page(&self) -> Option<&yosoi::policy::Page>",
+      "docs": "Returns the resolved page policy when one is available.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 166,
+        "lineEnd": 168,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L166-L168"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveProviderRoute::profile",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::profile",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::profile",
+      "kind": "struct_field",
+      "signature": "pub profile: Option<yosoi::policy::ProviderRequestProfile>",
+      "docs": "Exact profile when available; unavailable Current routes retain `None`.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::profile",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::profile",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::profile",
+      "kind": "function",
+      "signature": "pub const fn profile(&self) -> Option<&yosoi::policy::ProviderRequestProfile>",
+      "docs": "Returns the resolved preview, certified, or explicitly authored profile.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 142,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L142-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "kind": "struct_field",
+      "signature": "pub profile_selection_kind: yosoi::policy::search::ProfileSelectionKind",
+      "docs": "Authored resolution mode.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L130-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::profile_selection_kind",
+      "kind": "function",
+      "signature": "pub const fn profile_selection_kind(&self) -> yosoi::policy::search::ProfileSelectionKind",
+      "docs": "Returns the authored Current or Exact selection kind.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 147,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L147-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::search::EffectiveProviderRoute::provider",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::provider",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::provider",
+      "kind": "struct_field",
+      "signature": "pub provider: yosoi::policy::search::Provider",
+      "docs": "Selected provider.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L126-L126"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::provider",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::provider",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::provider",
+      "kind": "function",
+      "signature": "pub const fn provider(&self) -> yosoi::policy::search::Provider",
+      "docs": "Returns the selected provider.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 137,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L137-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::request",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::request",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::request",
+      "kind": "function",
+      "signature": "pub fn request(&self) -> Option<&yosoi::policy::Request>",
+      "docs": "Returns the resolved Requests policy when one is available.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 171,
+        "lineEnd": 173,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L171-L173"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::search::EffectiveProviderRoute::serialize",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute::serialize",
+      "title": "yosoi::policy::search::EffectiveProviderRoute::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/effective.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/search/effective.rs#L122-L122"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0cf11b008bf14ba91b5224df5ff7863541efd9890200d1551afa2d105b49893c",
+  "slug": "yosoi/policy/search/struct/effectiveproviderroute",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0cf11b008bf14ba91b5224df5ff7863541efd9890200d1551afa2d105b49893c"
+}

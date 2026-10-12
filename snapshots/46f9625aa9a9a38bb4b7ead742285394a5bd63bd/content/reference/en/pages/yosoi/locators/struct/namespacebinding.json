@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::NamespaceBinding",
+  "publicPath": "yosoi::locators::NamespaceBinding",
+  "kind": "struct",
+  "title": "yosoi::locators::NamespaceBinding",
+  "signature": "pub struct NamespaceBinding",
+  "docs": "A query-local namespace prefix binding used by XML CSS and XPath queries.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query.rs",
+    "lineStart": 100,
+    "lineEnd": 103,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L100-L103"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::NamespaceBinding"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::clone",
+      "publicPath": "yosoi::locators::NamespaceBinding::clone",
+      "title": "yosoi::locators::NamespaceBinding::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::NamespaceBinding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::deserialize",
+      "publicPath": "yosoi::locators::NamespaceBinding::deserialize",
+      "title": "yosoi::locators::NamespaceBinding::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::eq",
+      "publicPath": "yosoi::locators::NamespaceBinding::eq",
+      "title": "yosoi::locators::NamespaceBinding::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::NamespaceBinding) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::fmt",
+      "publicPath": "yosoi::locators::NamespaceBinding::fmt",
+      "title": "yosoi::locators::NamespaceBinding::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::namespace_uri",
+      "publicPath": "yosoi::locators::NamespaceBinding::namespace_uri",
+      "title": "yosoi::locators::NamespaceBinding::namespace_uri",
+      "kind": "function",
+      "signature": "pub fn namespace_uri(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 110,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L110-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::prefix",
+      "publicPath": "yosoi::locators::NamespaceBinding::prefix",
+      "title": "yosoi::locators::NamespaceBinding::prefix",
+      "kind": "function",
+      "signature": "pub fn prefix(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 106,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L106-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::NamespaceBinding::serialize",
+      "publicPath": "yosoi::locators::NamespaceBinding::serialize",
+      "title": "yosoi::locators::NamespaceBinding::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "95fd2a113262ceec8efd3376ed03063bc7d8595505bfb61f2ad04a068162fccc",
+  "slug": "yosoi/locators/struct/namespacebinding",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "95fd2a113262ceec8efd3376ed03063bc7d8595505bfb61f2ad04a068162fccc"
+}

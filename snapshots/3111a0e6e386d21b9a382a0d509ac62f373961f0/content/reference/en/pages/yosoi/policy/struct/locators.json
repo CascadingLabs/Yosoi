@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Locators",
+  "publicPath": "yosoi::policy::Locators",
+  "kind": "struct",
+  "title": "yosoi::policy::Locators",
+  "signature": "pub struct Locators",
+  "docs": "Plan and evaluation bounds; query meaning remains document-owned.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L8-L16"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Locators"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Locators::clone",
+      "publicPath": "yosoi::policy::Locators::clone",
+      "title": "yosoi::policy::Locators::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Locators",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Locators::default",
+      "publicPath": "yosoi::policy::Locators::default",
+      "title": "yosoi::policy::Locators::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 19,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L19-L29"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Locators::deserialize",
+      "publicPath": "yosoi::policy::Locators::deserialize",
+      "title": "yosoi::policy::Locators::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Locators::eq",
+      "publicPath": "yosoi::policy::Locators::eq",
+      "title": "yosoi::policy::Locators::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Locators) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Locators::fmt",
+      "publicPath": "yosoi::policy::Locators::fmt",
+      "title": "yosoi::policy::Locators::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_captures",
+      "publicPath": "yosoi::policy::Locators::max_captures",
+      "title": "yosoi::policy::Locators::max_captures",
+      "kind": "struct_field",
+      "signature": "pub max_captures: super::CountLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_matches",
+      "publicPath": "yosoi::policy::Locators::max_matches",
+      "title": "yosoi::policy::Locators::max_matches",
+      "kind": "struct_field",
+      "signature": "pub max_matches: super::CountLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_output_bytes",
+      "publicPath": "yosoi::policy::Locators::max_output_bytes",
+      "title": "yosoi::policy::Locators::max_output_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_output_bytes: super::AddressableByteLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_query_bytes",
+      "publicPath": "yosoi::policy::Locators::max_query_bytes",
+      "title": "yosoi::policy::Locators::max_query_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_query_bytes: super::AddressableByteLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L10-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_query_steps",
+      "publicPath": "yosoi::policy::Locators::max_query_steps",
+      "title": "yosoi::policy::Locators::max_query_steps",
+      "kind": "struct_field",
+      "signature": "pub max_query_steps: super::StepLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L11-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_regions",
+      "publicPath": "yosoi::policy::Locators::max_regions",
+      "title": "yosoi::policy::Locators::max_regions",
+      "kind": "struct_field",
+      "signature": "pub max_regions: super::StepLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Locators::max_selector_visits",
+      "publicPath": "yosoi::policy::Locators::max_selector_visits",
+      "title": "yosoi::policy::Locators::max_selector_visits",
+      "kind": "struct_field",
+      "signature": "pub max_selector_visits: super::CountLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Locators::serialize",
+      "publicPath": "yosoi::policy::Locators::serialize",
+      "title": "yosoi::policy::Locators::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "6ab9a253ccb266fe490257c8bf78f64bd0c062c74cc4e84ca0b92cd78adea43a",
+  "slug": "yosoi/policy/struct/locators",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6ab9a253ccb266fe490257c8bf78f64bd0c062c74cc4e84ca0b92cd78adea43a"
+}

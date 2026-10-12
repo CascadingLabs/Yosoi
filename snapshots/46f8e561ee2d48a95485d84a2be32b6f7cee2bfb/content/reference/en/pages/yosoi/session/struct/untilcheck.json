@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::UntilCheck",
+  "publicPath": "yosoi::session::UntilCheck",
+  "kind": "struct",
+  "title": "yosoi::session::UntilCheck",
+  "signature": "pub struct UntilCheck",
+  "docs": "Bounded evidence and diagnostics for one leaf check.",
+  "source": {
+    "file": "crates/yosoi/src/session/until.rs",
+    "lineStart": 54,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L54-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 25,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session.rs#L25-L25"
+  },
+  "aliases": [
+    "yosoi::prelude::session::UntilCheck"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::UntilCheck::clone",
+      "publicPath": "yosoi::session::UntilCheck::clone",
+      "title": "yosoi::session::UntilCheck::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::UntilCheck",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::UntilCheck::deserialize",
+      "publicPath": "yosoi::session::UntilCheck::deserialize",
+      "title": "yosoi::session::UntilCheck::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::session::UntilCheck::eq",
+      "publicPath": "yosoi::session::UntilCheck::eq",
+      "title": "yosoi::session::UntilCheck::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::UntilCheck) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::session::UntilCheck::error",
+      "publicPath": "yosoi::session::UntilCheck::error",
+      "title": "yosoi::session::UntilCheck::error",
+      "kind": "struct_field",
+      "signature": "pub error: Option<String>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::UntilCheck::evidence",
+      "publicPath": "yosoi::session::UntilCheck::evidence",
+      "title": "yosoi::session::UntilCheck::evidence",
+      "kind": "struct_field",
+      "signature": "pub evidence: Option<serde_json::Value>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L58-L58"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::UntilCheck::fmt",
+      "publicPath": "yosoi::session::UntilCheck::fmt",
+      "title": "yosoi::session::UntilCheck::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::session::UntilCheck::index",
+      "publicPath": "yosoi::session::UntilCheck::index",
+      "title": "yosoi::session::UntilCheck::index",
+      "kind": "struct_field",
+      "signature": "pub index: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::UntilCheck::serialize",
+      "publicPath": "yosoi::session::UntilCheck::serialize",
+      "title": "yosoi::session::UntilCheck::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L52-L52"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::session::UntilCheck::source",
+      "publicPath": "yosoi::session::UntilCheck::source",
+      "title": "yosoi::session::UntilCheck::source",
+      "kind": "struct_field",
+      "signature": "pub source: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L56-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::UntilCheck::state",
+      "publicPath": "yosoi::session::UntilCheck::state",
+      "title": "yosoi::session::UntilCheck::state",
+      "kind": "struct_field",
+      "signature": "pub state: yosoi::session::UntilCheckState",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/session/until.rs#L57-L57"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "29dcce8c00095b004fe2cc665606f3834598301b6ee897fcb36de6208c335e41",
+  "slug": "yosoi/session/struct/untilcheck",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "29dcce8c00095b004fe2cc665606f3834598301b6ee897fcb36de6208c335e41"
+}

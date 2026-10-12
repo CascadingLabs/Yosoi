@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::output",
+  "publicPath": "yosoi::locators::output",
+  "kind": "function",
+  "title": "yosoi::locators::output",
+  "signature": "pub fn output(id: impl Into<String>, value: OutputPlan) -> Result<NamedOutput, crate::plan::model::PlanError>",
+  "docs": "Associates a stable output name with a query-local value selection.",
+  "source": {
+    "file": "crates/yosoi-documents/src/plan_authoring.rs",
+    "lineStart": 202,
+    "lineEnd": 207,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/plan_authoring.rs#L202-L207"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::output",
+    "yosoi::prelude::locators::output"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "d8eafd87157af8242a6ba80be783cbead966e1c0bf964fc04b17896d177a287a",
+  "slug": "yosoi/locators/function/output",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d8eafd87157af8242a6ba80be783cbead966e1c0bf964fc04b17896d177a287a"
+}

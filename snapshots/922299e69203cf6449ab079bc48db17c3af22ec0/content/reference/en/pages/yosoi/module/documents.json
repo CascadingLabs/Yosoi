@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::documents",
+  "publicPath": "yosoi::documents",
+  "kind": "module",
+  "title": "yosoi::documents",
+  "signature": "pub mod documents",
+  "docs": "Create immutable documents, then parse or locate using a policy.",
+  "source": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 1,
+    "lineEnd": 184,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L1-L184"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::documents"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "22fe3e158aa62851e27f2570361c81a0ff2ae856c34ee61bf0019af59b034ab1",
+  "slug": "yosoi/module/documents",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "22fe3e158aa62851e27f2570361c81a0ff2ae856c34ee61bf0019af59b034ab1"
+}

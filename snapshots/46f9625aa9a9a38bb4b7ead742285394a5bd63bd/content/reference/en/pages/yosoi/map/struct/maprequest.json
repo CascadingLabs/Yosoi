@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::MapRequest",
+  "publicPath": "yosoi::map::MapRequest",
+  "kind": "struct",
+  "title": "yosoi::map::MapRequest",
+  "signature": "pub struct MapRequest",
+  "docs": "A user-authored site discovery request.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 29,
+    "lineEnd": 31,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L29-L31"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::MapRequest",
+    "yosoi::prelude::map::MapRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::MapRequest::bind",
+      "publicPath": "yosoi::map::MapRequest::bind",
+      "title": "yosoi::map::MapRequest::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> Self",
+      "docs": "Uses a complete SDK policy for discovery.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 39,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L39-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::clone",
+      "publicPath": "yosoi::map::MapRequest::clone",
+      "title": "yosoi::map::MapRequest::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::MapRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::fmt",
+      "publicPath": "yosoi::map::MapRequest::fmt",
+      "title": "yosoi::map::MapRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::send",
+      "publicPath": "yosoi::map::MapRequest::send",
+      "title": "yosoi::map::MapRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(self) -> Result<yosoi::map::MapOutcome, yosoi::map::MapError>",
+      "docs": "Executes discovery using standard SDK adapters.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 45,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L45-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::send_cancellable",
+      "publicPath": "yosoi::map::MapRequest::send_cancellable",
+      "title": "yosoi::map::MapRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(self, cancellation: &CancellationToken) -> Result<yosoi::map::MapOutcome, yosoi::map::MapError>",
+      "docs": "Executes discovery with caller-controlled cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 53,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L53-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::validate",
+      "publicPath": "yosoi::map::MapRequest::validate",
+      "title": "yosoi::map::MapRequest::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::map::MapError>",
+      "docs": "Validates the seed and policy without contacting a source.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 34,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L34-L36"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ae480e6e1a967ea0c17aed1a2bd6ebf0d22f4df7597bc398e047f08e11bb7bde",
+  "slug": "yosoi/map/struct/maprequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ae480e6e1a967ea0c17aed1a2bd6ebf0d22f4df7597bc398e047f08e11bb7bde"
+}

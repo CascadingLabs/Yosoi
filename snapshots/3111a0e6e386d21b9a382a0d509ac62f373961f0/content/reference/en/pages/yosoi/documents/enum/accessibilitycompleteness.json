@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::documents::AccessibilityCompleteness",
+  "publicPath": "yosoi::documents::AccessibilityCompleteness",
+  "kind": "enum",
+  "title": "yosoi::documents::AccessibilityCompleteness",
+  "signature": "pub enum AccessibilityCompleteness",
+  "docs": "Whether an immutable accessibility tree can prove that an absent match is absent.",
+  "source": {
+    "file": "crates/yosoi-documents/src/accessibility/types.rs",
+    "lineStart": 17,
+    "lineEnd": 26,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L17-L26"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::documents::AccessibilityCompleteness"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::documents::AccessibilityCompleteness::Complete",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::Complete",
+      "title": "yosoi::documents::AccessibilityCompleteness::Complete",
+      "kind": "variant",
+      "signature": "Complete",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::AccessibilityCompleteness::Partial",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::Partial",
+      "title": "yosoi::documents::AccessibilityCompleteness::Partial",
+      "kind": "variant",
+      "signature": "Partial { reason_code: String, lost_items: Option<u64> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 19,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L19-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::AccessibilityCompleteness::Unknown",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::Unknown",
+      "title": "yosoi::documents::AccessibilityCompleteness::Unknown",
+      "kind": "variant",
+      "signature": "Unknown { reason_code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 23,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L23-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::AccessibilityCompleteness::clone",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::clone",
+      "title": "yosoi::documents::AccessibilityCompleteness::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AccessibilityCompleteness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::documents::AccessibilityCompleteness::deserialize",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::deserialize",
+      "title": "yosoi::documents::AccessibilityCompleteness::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::documents::AccessibilityCompleteness::eq",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::eq",
+      "title": "yosoi::documents::AccessibilityCompleteness::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AccessibilityCompleteness) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::documents::AccessibilityCompleteness::fmt",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::fmt",
+      "title": "yosoi::documents::AccessibilityCompleteness::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::AccessibilityCompleteness::serialize",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness::serialize",
+      "title": "yosoi::documents::AccessibilityCompleteness::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L15-L15"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "eb610f4ae1da37ab9d0b82d19f72938ea2d6dfc2847d446ccbea016ad75a6490",
+  "slug": "yosoi/documents/enum/accessibilitycompleteness",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "eb610f4ae1da37ab9d0b82d19f72938ea2d6dfc2847d446ccbea016ad75a6490"
+}

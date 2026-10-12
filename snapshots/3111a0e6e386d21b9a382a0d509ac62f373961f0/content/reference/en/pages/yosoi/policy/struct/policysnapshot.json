@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::PolicySnapshot",
+  "publicPath": "yosoi::policy::PolicySnapshot",
+  "kind": "struct",
+  "title": "yosoi::policy::PolicySnapshot",
+  "signature": "pub struct PolicySnapshot",
+  "docs": "Immutable, validated policy values and their deterministic identity.",
+  "source": {
+    "file": "crates/yosoi-policy/src/snapshot.rs",
+    "lineStart": 7,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L7-L11"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::PolicySnapshot"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::clone",
+      "publicPath": "yosoi::policy::PolicySnapshot::clone",
+      "title": "yosoi::policy::PolicySnapshot::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> PolicySnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::effective_policy",
+      "publicPath": "yosoi::policy::PolicySnapshot::effective_policy",
+      "title": "yosoi::policy::PolicySnapshot::effective_policy",
+      "kind": "function",
+      "signature": "pub fn effective_policy(&self) -> &EffectivePolicy",
+      "docs": "Returns the immutable policy behavior with Current selections expanded.",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 35,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L35-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::eq",
+      "publicPath": "yosoi::policy::PolicySnapshot::eq",
+      "title": "yosoi::policy::PolicySnapshot::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &PolicySnapshot) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::fmt",
+      "publicPath": "yosoi::policy::PolicySnapshot::fmt",
+      "title": "yosoi::policy::PolicySnapshot::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::from_policy",
+      "publicPath": "yosoi::policy::PolicySnapshot::from_policy",
+      "title": "yosoi::policy::PolicySnapshot::from_policy",
+      "kind": "function",
+      "signature": "pub fn from_policy(policy: &Policy) -> Result<Self, PolicyError>",
+      "docs": "Validates and snapshots a caller-owned policy declaration.\n\nThe declaration remains available to the caller; the snapshot owns a\nvalidated clone, a Current-expanded behavior snapshot, and its\ndeterministic effective identity.",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 19,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L19-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::identity",
+      "publicPath": "yosoi::policy::PolicySnapshot::identity",
+      "title": "yosoi::policy::PolicySnapshot::identity",
+      "kind": "function",
+      "signature": "pub const fn identity(&self) -> EffectivePolicyIdentity",
+      "docs": "Returns the deterministic identity computed for this snapshot.",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 40,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L40-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::PolicySnapshot::policy",
+      "publicPath": "yosoi::policy::PolicySnapshot::policy",
+      "title": "yosoi::policy::PolicySnapshot::policy",
+      "kind": "function",
+      "signature": "pub fn policy(&self) -> &Policy",
+      "docs": "Returns the immutable policy value held by this snapshot.",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 30,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L30-L32"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9ddec4cf4d6153e08b8961334066e9736efa2b56a4b280412237e81e428c5c48",
+  "slug": "yosoi/policy/struct/policysnapshot",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9ddec4cf4d6153e08b8961334066e9736efa2b56a4b280412237e81e428c5c48"
+}

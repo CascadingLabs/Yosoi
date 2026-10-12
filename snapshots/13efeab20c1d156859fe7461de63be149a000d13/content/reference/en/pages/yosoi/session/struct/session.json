@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Session",
+  "publicPath": "yosoi::session::Session",
+  "kind": "struct",
+  "title": "yosoi::session::Session",
+  "signature": "pub struct Session",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 703,
+    "lineEnd": 705,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L703-L705"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Session",
+    "yosoi::prelude::session::Session"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Session::cancel",
+      "publicPath": "yosoi::session::Session::cancel",
+      "title": "yosoi::session::Session::cancel",
+      "kind": "function",
+      "signature": "pub fn cancel(&self)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 789,
+        "lineEnd": 792,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L789-L792"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::clone",
+      "publicPath": "yosoi::session::Session::clone",
+      "title": "yosoi::session::Session::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::Session",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 702,
+        "lineEnd": 702,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L702-L702"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::Session::close",
+      "publicPath": "yosoi::session::Session::close",
+      "title": "yosoi::session::Session::close",
+      "kind": "function",
+      "signature": "pub async fn close(&self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 793,
+        "lineEnd": 806,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L793-L806"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::execution_snapshot",
+      "publicPath": "yosoi::session::Session::execution_snapshot",
+      "title": "yosoi::session::Session::execution_snapshot",
+      "kind": "function",
+      "signature": "pub fn execution_snapshot(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "Independent active/queued/parked counts. A shared pool aggregates Sessions.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 715,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L715-L717"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::fmt",
+      "publicPath": "yosoi::session::Session::fmt",
+      "title": "yosoi::session::Session::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 707,
+        "lineEnd": 711,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L707-L711"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Session::new_tab",
+      "publicPath": "yosoi::session::Session::new_tab",
+      "title": "yosoi::session::Session::new_tab",
+      "kind": "function",
+      "signature": "pub async fn new_tab(&self) -> Result<yosoi::session::Tab, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 764,
+        "lineEnd": 782,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L764-L782"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::policy",
+      "publicPath": "yosoi::session::Session::policy",
+      "title": "yosoi::session::Session::policy",
+      "kind": "function",
+      "signature": "pub fn policy(&self) -> &yosoi::Policy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 730,
+        "lineEnd": 732,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L730-L732"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::settings",
+      "publicPath": "yosoi::session::Session::settings",
+      "title": "yosoi::session::Session::settings",
+      "kind": "function",
+      "signature": "pub fn settings(&self) -> &yosoi::session::SessionPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 733,
+        "lineEnd": 735,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L733-L735"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::watch",
+      "publicPath": "yosoi::session::Session::watch",
+      "title": "yosoi::session::Session::watch",
+      "kind": "function",
+      "signature": "pub fn watch(&self) -> yosoi::session::Watcher",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 783,
+        "lineEnd": 788,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L783-L788"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::work",
+      "publicPath": "yosoi::session::Session::work",
+      "title": "yosoi::session::Session::work",
+      "kind": "function",
+      "signature": "pub async fn work(&self) -> Result<yosoi::session::Work, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 736,
+        "lineEnd": 745,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L736-L745"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/session",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

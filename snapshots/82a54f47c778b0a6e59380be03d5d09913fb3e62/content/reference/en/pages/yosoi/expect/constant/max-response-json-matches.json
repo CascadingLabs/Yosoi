@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::expect::MAX_RESPONSE_JSON_MATCHES",
+  "publicPath": "yosoi::expect::MAX_RESPONSE_JSON_MATCHES",
+  "kind": "constant",
+  "title": "yosoi::expect::MAX_RESPONSE_JSON_MATCHES",
+  "signature": "pub const MAX_RESPONSE_JSON_MATCHES: usize = 32;",
+  "docs": "Maximum number of response JSON Pointer matches.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 15,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L15-L15"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::MAX_RESPONSE_JSON_MATCHES"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "08a29a4a8c32a54532ee05a2b22f2b5b315f0fb353cba9d9fb07ad00036fffa0",
+  "slug": "yosoi/expect/constant/max-response-json-matches",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "08a29a4a8c32a54532ee05a2b22f2b5b315f0fb353cba9d9fb07ad00036fffa0"
+}

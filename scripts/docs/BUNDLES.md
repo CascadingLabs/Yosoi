@@ -15,7 +15,7 @@ identity and excludes draft/private documents. `bundle.json` hashes every file.
 The deterministic archive is both an SDK release asset and the frontend build
 input; release publication reuses the already-built bundle.
 
-The public `docs-artifacts` branch contains `snapshots/SOURCE/bundle.tar.gz` and
+The Yosoi `main` trunk contains `snapshots/SOURCE/bundle.tar.gz` and
 `snapshots/SOURCE/content/` for on-demand raw-file access. `catalog.json` pins
 each snapshot to the artifact commit that contains it and its archive/manifest
 hashes. The catalog commit is separate from that artifact commit. Only the
@@ -23,6 +23,13 @@ catalog's latest pointer moves. Existing snapshots cannot be overwritten.
 Serialized publication checks source ancestry so retrying an older source cannot
 promote it over a newer snapshot. The mutable catalog is resolved once per build;
 all subsequent downloads use immutable commit URLs.
+
+Publication checks out the current `main`, appends the snapshot and catalog,
+and pushes forward without force. A concurrent source push rejects publication
+instead of overwriting it; rerun the workflow. Snapshot and catalog paths do not
+trigger docs publication, so publishing artifacts does not recursively build
+another snapshot. Historical artifact commits remain ancestors of `main`, keeping
+existing commit-pinned archive URLs valid without a separate artifact branch.
 
 The archive manifest includes version-local navigation and page checksums. Old
 authored pages fetch as Markdown; API pages fetch as generated JSON and render

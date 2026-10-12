@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ContractSchemaError",
+  "publicPath": "yosoi::contracts::ContractSchemaError",
+  "kind": "enum",
+  "title": "yosoi::contracts::ContractSchemaError",
+  "signature": "pub enum ContractSchemaError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/ids.rs",
+    "lineStart": 50,
+    "lineEnd": 71,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L50-L71"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/contracts.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractSchemaError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::DuplicateField",
+      "publicPath": "yosoi::contracts::ContractSchemaError::DuplicateField",
+      "title": "yosoi::contracts::ContractSchemaError::DuplicateField",
+      "kind": "variant",
+      "signature": "DuplicateField { field: FieldId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "kind": "variant",
+      "signature": "EmptyContractDescription",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "kind": "variant",
+      "signature": "EmptyContractId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L56-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "kind": "variant",
+      "signature": "EmptyFieldDescription { field: FieldId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L62-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "kind": "variant",
+      "signature": "EmptyFieldId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L58-L58"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "kind": "variant",
+      "signature": "EmptyValueType { field: FieldId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L64-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "publicPath": "yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "title": "yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "kind": "variant",
+      "signature": "LengthOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::NoFields",
+      "publicPath": "yosoi::contracts::ContractSchemaError::NoFields",
+      "title": "yosoi::contracts::ContractSchemaError::NoFields",
+      "kind": "variant",
+      "signature": "NoFields",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "publicPath": "yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "title": "yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "kind": "variant",
+      "signature": "UnsupportedVersion { observed: u32 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L54-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "publicPath": "yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "title": "yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "kind": "variant",
+      "signature": "ZeroVersion",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::clone",
+      "publicPath": "yosoi::contracts::ContractSchemaError::clone",
+      "title": "yosoi::contracts::ContractSchemaError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ContractSchemaError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L49-L49"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::eq",
+      "publicPath": "yosoi::contracts::ContractSchemaError::eq",
+      "title": "yosoi::contracts::ContractSchemaError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ContractSchemaError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L49-L49"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::fmt",
+      "publicPath": "yosoi::contracts::ContractSchemaError::fmt",
+      "title": "yosoi::contracts::ContractSchemaError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L49-L49"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::fmt",
+      "publicPath": "yosoi::contracts::ContractSchemaError::fmt",
+      "title": "yosoi::contracts::ContractSchemaError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/ids.rs#L49-L49"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/contractschemaerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

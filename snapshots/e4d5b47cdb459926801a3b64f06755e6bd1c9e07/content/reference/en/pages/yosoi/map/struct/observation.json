@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::Observation",
+  "publicPath": "yosoi::map::Observation",
+  "kind": "struct",
+  "title": "yosoi::map::Observation",
+  "signature": "pub struct Observation",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 33,
+    "lineEnd": 36,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L33-L36"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/map.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Observation"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::Observation::clone",
+      "publicPath": "yosoi::map::Observation::clone",
+      "title": "yosoi::map::Observation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::Observation::cmp",
+      "publicPath": "yosoi::map::Observation::cmp",
+      "title": "yosoi::map::Observation::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &Observation) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::Observation::eq",
+      "publicPath": "yosoi::map::Observation::eq",
+      "title": "yosoi::map::Observation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Observation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::Observation::fmt",
+      "publicPath": "yosoi::map::Observation::fmt",
+      "title": "yosoi::map::Observation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::Observation::partial_cmp",
+      "publicPath": "yosoi::map::Observation::partial_cmp",
+      "title": "yosoi::map::Observation::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &Observation) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::Observation::serialize",
+      "publicPath": "yosoi::map::Observation::serialize",
+      "title": "yosoi::map::Observation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L32-L32"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::Observation::source",
+      "publicPath": "yosoi::map::Observation::source",
+      "title": "yosoi::map::Observation::source",
+      "kind": "struct_field",
+      "signature": "pub source: DiscoverySource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L34-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Observation::source_url",
+      "publicPath": "yosoi::map::Observation::source_url",
+      "title": "yosoi::map::Observation::source_url",
+      "kind": "struct_field",
+      "signature": "pub source_url: Option<url::Url>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 35,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-map/src/lib.rs#L35-L35"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/observation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

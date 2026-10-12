@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::RuntimeContract",
+  "publicPath": "yosoi::contracts::RuntimeContract",
+  "kind": "struct",
+  "title": "yosoi::contracts::RuntimeContract",
+  "signature": "pub struct RuntimeContract",
+  "docs": "Runtime-authored Contract adapter with the same default Policy-derived\nextraction limits as a derive-backed Contract.",
+  "source": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 28,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L28-L30"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeContract"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::clone",
+      "publicPath": "yosoi::contracts::RuntimeContract::clone",
+      "title": "yosoi::contracts::RuntimeContract::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::RuntimeContract",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::extract",
+      "publicPath": "yosoi::contracts::RuntimeContract::extract",
+      "title": "yosoi::contracts::RuntimeContract::extract",
+      "kind": "function",
+      "signature": "pub fn extract(&self, located: &yosoi::LocateOutcome) -> yosoi::contracts::RuntimeExtracted",
+      "docs": "Extracts with the same default limits as `MyContract::extract`.",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 44,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L44-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::extract_with_limits",
+      "publicPath": "yosoi::contracts::RuntimeContract::extract_with_limits",
+      "title": "yosoi::contracts::RuntimeContract::extract_with_limits",
+      "kind": "function",
+      "signature": "pub fn extract_with_limits(&self, located: &yosoi::LocateOutcome, limits: ExtractionLimits) -> yosoi::contracts::RuntimeExtracted",
+      "docs": "Extracts with caller-supplied budgets using the same implementation as\nstatic Contracts.",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 50,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L50-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::fmt",
+      "publicPath": "yosoi::contracts::RuntimeContract::fmt",
+      "title": "yosoi::contracts::RuntimeContract::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::new",
+      "publicPath": "yosoi::contracts::RuntimeContract::new",
+      "title": "yosoi::contracts::RuntimeContract::new",
+      "kind": "function",
+      "signature": "pub fn new(schema: yosoi::contracts::ContractSchema) -> Result<Self, yosoi::contracts::RuntimeContractError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 33,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L33-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::schema",
+      "publicPath": "yosoi::contracts::RuntimeContract::schema",
+      "title": "yosoi::contracts::RuntimeContract::schema",
+      "kind": "function",
+      "signature": "pub const fn schema(&self) -> &yosoi::contracts::ContractSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 39,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L39-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContract::serialize",
+      "publicPath": "yosoi::contracts::RuntimeContract::serialize",
+      "title": "yosoi::contracts::RuntimeContract::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bfba76f68d3c6d116bbd8f405f549fde5128b344e58c469ef66a6cf9fb24cc28",
+  "slug": "yosoi/contracts/struct/runtimecontract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bfba76f68d3c6d116bbd8f405f549fde5128b344e58c469ef66a6cf9fb24cc28"
+}

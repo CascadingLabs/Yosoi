@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::RuntimeRecordIssue",
+  "publicPath": "yosoi::contracts::RuntimeRecordIssue",
+  "kind": "struct",
+  "title": "yosoi::contracts::RuntimeRecordIssue",
+  "signature": "pub struct RuntimeRecordIssue",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/runtime.rs",
+    "lineStart": 207,
+    "lineEnd": 210,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L207-L210"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/contracts.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeRecordIssue"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::contracts::RuntimeRecordIssue::candidate",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::candidate",
+      "title": "yosoi::contracts::RuntimeRecordIssue::candidate",
+      "kind": "struct_field",
+      "signature": "pub candidate: yosoi_contracts::CandidateInput",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L208-L208"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeRecordIssue::clone",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::clone",
+      "title": "yosoi::contracts::RuntimeRecordIssue::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RuntimeRecordIssue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeRecordIssue::deserialize",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::deserialize",
+      "title": "yosoi::contracts::RuntimeRecordIssue::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeRecordIssue::eq",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::eq",
+      "title": "yosoi::contracts::RuntimeRecordIssue::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RuntimeRecordIssue) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::contracts::RuntimeRecordIssue::fields",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::fields",
+      "title": "yosoi::contracts::RuntimeRecordIssue::fields",
+      "kind": "struct_field",
+      "signature": "pub fields: Vec<crate::FieldIssue>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 209,
+        "lineEnd": 209,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L209-L209"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeRecordIssue::fmt",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::fmt",
+      "title": "yosoi::contracts::RuntimeRecordIssue::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeRecordIssue::serialize",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue::serialize",
+      "title": "yosoi::contracts::RuntimeRecordIssue::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contract-validation/src/runtime.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/runtimerecordissue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

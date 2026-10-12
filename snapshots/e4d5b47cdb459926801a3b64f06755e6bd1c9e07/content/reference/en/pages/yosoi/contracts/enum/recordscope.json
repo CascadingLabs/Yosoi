@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::RecordScope",
+  "publicPath": "yosoi::contracts::RecordScope",
+  "kind": "enum",
+  "title": "yosoi::contracts::RecordScope",
+  "signature": "pub enum RecordScope",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/schema.rs",
+    "lineStart": 12,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L12-L15"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RecordScope"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::RecordScope::Page",
+      "publicPath": "yosoi::contracts::RecordScope::Page",
+      "title": "yosoi::contracts::RecordScope::Page",
+      "kind": "variant",
+      "signature": "Page",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RecordScope::Repeated",
+      "publicPath": "yosoi::contracts::RecordScope::Repeated",
+      "title": "yosoi::contracts::RecordScope::Repeated",
+      "kind": "variant",
+      "signature": "Repeated",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RecordScope::clone",
+      "publicPath": "yosoi::contracts::RecordScope::clone",
+      "title": "yosoi::contracts::RecordScope::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RecordScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RecordScope::deserialize",
+      "publicPath": "yosoi::contracts::RecordScope::deserialize",
+      "title": "yosoi::contracts::RecordScope::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RecordScope::eq",
+      "publicPath": "yosoi::contracts::RecordScope::eq",
+      "title": "yosoi::contracts::RecordScope::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RecordScope) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::RecordScope::fmt",
+      "publicPath": "yosoi::contracts::RecordScope::fmt",
+      "title": "yosoi::contracts::RecordScope::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RecordScope::serialize",
+      "publicPath": "yosoi::contracts::RecordScope::serialize",
+      "title": "yosoi::contracts::RecordScope::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-contracts/src/schema.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/recordscope",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

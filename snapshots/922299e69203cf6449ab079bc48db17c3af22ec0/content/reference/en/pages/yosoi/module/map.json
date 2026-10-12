@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::map",
+  "publicPath": "yosoi::map",
+  "kind": "module",
+  "title": "yosoi::map",
+  "signature": "pub mod map",
+  "docs": "Discover pages within an explicitly bounded site scope.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 1,
+    "lineEnd": 162,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/map.rs#L1-L162"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::map"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "8bd247e82df85fa3bcf8d4c1378f92aecc795397e5787d28e3e311e9c45da8e3",
+  "slug": "yosoi/module/map",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8bd247e82df85fa3bcf8d4c1378f92aecc795397e5787d28e3e311e9c45da8e3"
+}

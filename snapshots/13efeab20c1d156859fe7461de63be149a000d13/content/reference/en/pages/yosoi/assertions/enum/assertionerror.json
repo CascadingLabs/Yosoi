@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::assertions::AssertionError",
+  "publicPath": "yosoi::assertions::AssertionError",
+  "kind": "enum",
+  "title": "yosoi::assertions::AssertionError",
+  "signature": "pub enum AssertionError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 195,
+    "lineEnd": 216,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L195-L216"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::assertions::AssertionError::CheckCount",
+      "publicPath": "yosoi::assertions::AssertionError::CheckCount",
+      "title": "yosoi::assertions::AssertionError::CheckCount",
+      "kind": "variant",
+      "signature": "CheckCount",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::CheckName",
+      "publicPath": "yosoi::assertions::AssertionError::CheckName",
+      "title": "yosoi::assertions::AssertionError::CheckName",
+      "kind": "variant",
+      "signature": "CheckName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 201,
+        "lineEnd": 201,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L201-L201"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::ContractType",
+      "publicPath": "yosoi::assertions::AssertionError::ContractType",
+      "title": "yosoi::assertions::AssertionError::ContractType",
+      "kind": "variant",
+      "signature": "ContractType",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 209,
+        "lineEnd": 209,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L209-L209"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::EvaluatorTask",
+      "publicPath": "yosoi::assertions::AssertionError::EvaluatorTask",
+      "title": "yosoi::assertions::AssertionError::EvaluatorTask",
+      "kind": "variant",
+      "signature": "EvaluatorTask",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 215,
+        "lineEnd": 215,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L215-L215"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::ExternalEvaluator",
+      "publicPath": "yosoi::assertions::AssertionError::ExternalEvaluator",
+      "title": "yosoi::assertions::AssertionError::ExternalEvaluator",
+      "kind": "variant",
+      "signature": "ExternalEvaluator(String)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 211,
+        "lineEnd": 211,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L211-L211"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::ExternalReport",
+      "publicPath": "yosoi::assertions::AssertionError::ExternalReport",
+      "title": "yosoi::assertions::AssertionError::ExternalReport",
+      "kind": "variant",
+      "signature": "ExternalReport",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 213,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L213-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::PlanLimit",
+      "publicPath": "yosoi::assertions::AssertionError::PlanLimit",
+      "title": "yosoi::assertions::AssertionError::PlanLimit",
+      "kind": "variant",
+      "signature": "PlanLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::ReportEncoding",
+      "publicPath": "yosoi::assertions::AssertionError::ReportEncoding",
+      "title": "yosoi::assertions::AssertionError::ReportEncoding",
+      "kind": "variant",
+      "signature": "ReportEncoding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 197,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L197-L197"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::AssertionError::Unbound",
+      "publicPath": "yosoi::assertions::AssertionError::Unbound",
+      "title": "yosoi::assertions::AssertionError::Unbound",
+      "kind": "variant",
+      "signature": "Unbound",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L203-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionError::clone",
+      "publicPath": "yosoi::assertions::AssertionError::clone",
+      "title": "yosoi::assertions::AssertionError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::AssertionError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionError::eq",
+      "publicPath": "yosoi::assertions::AssertionError::eq",
+      "title": "yosoi::assertions::AssertionError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::assertions::AssertionError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionError::fmt",
+      "publicPath": "yosoi::assertions::AssertionError::fmt",
+      "title": "yosoi::assertions::AssertionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionError::fmt",
+      "publicPath": "yosoi::assertions::AssertionError::fmt",
+      "title": "yosoi::assertions::AssertionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/assertions.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/assertions/enum/assertionerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::map::new",
+  "publicPath": "yosoi::map::new",
+  "kind": "function",
+  "title": "yosoi::map::new",
+  "signature": "pub fn new(seed: impl Into<String>) -> MapRequest",
+  "docs": "Creates a bounded discovery request without performing I/O.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 19,
+    "lineEnd": 23,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L19-L23"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::map::new"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "01b7ebdcf12b8801cf911aff33c3a953412774e8a10d601b46739ee7a4c3a237",
+  "slug": "yosoi/map/function/new",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "01b7ebdcf12b8801cf911aff33c3a953412774e8a10d601b46739ee7a4c3a237"
+}

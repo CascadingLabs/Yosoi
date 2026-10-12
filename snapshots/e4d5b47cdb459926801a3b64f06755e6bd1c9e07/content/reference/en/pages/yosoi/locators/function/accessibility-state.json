@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::accessibility_state",
+  "publicPath": "yosoi::locators::accessibility_state",
+  "kind": "function",
+  "title": "yosoi::locators::accessibility_state",
+  "signature": "pub const fn accessibility_state(name: crate::query::AccessibilityStateName, value: bool) -> crate::query::QuerySpec",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/query_builders.rs",
+    "lineStart": 66,
+    "lineEnd": 71,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-documents/src/query_builders.rs#L66-L71"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/locators.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::accessibility_state",
+    "yosoi::prelude::locators::accessibility_state"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/function/accessibility-state",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

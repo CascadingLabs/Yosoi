@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::documents::DocumentRef",
+  "publicPath": "yosoi::documents::DocumentRef",
+  "kind": "struct",
+  "title": "yosoi::documents::DocumentRef",
+  "signature": "pub struct DocumentRef<'document>",
+  "docs": "A borrowed document returned by an SDK request, without an engine handle.",
+  "source": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 137,
+    "lineEnd": 139,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L137-L139"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::documents::DocumentRef"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::documents::DocumentRef::bind",
+      "publicPath": "yosoi::documents::DocumentRef::bind",
+      "title": "yosoi::documents::DocumentRef::bind",
+      "kind": "function",
+      "signature": "pub const fn bind<'policy>(self, policy: &'policy yosoi::Policy) -> yosoi::documents::BoundDocument<'document, 'policy>",
+      "docs": "Binds a borrowed policy to this borrowed document.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 173,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L173-L177"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::byte_len",
+      "publicPath": "yosoi::documents::DocumentRef::byte_len",
+      "title": "yosoi::documents::DocumentRef::byte_len",
+      "kind": "function",
+      "signature": "pub const fn byte_len(self) -> u64",
+      "docs": "Returns the number of retained bytes.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 161,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L161-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::bytes",
+      "publicPath": "yosoi::documents::DocumentRef::bytes",
+      "title": "yosoi::documents::DocumentRef::bytes",
+      "kind": "function",
+      "signature": "pub fn bytes(self) -> &'document [u8]",
+      "docs": "Returns the immutable captured bytes without a copy.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 157,
+        "lineEnd": 159,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L157-L159"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::class",
+      "publicPath": "yosoi::documents::DocumentRef::class",
+      "title": "yosoi::documents::DocumentRef::class",
+      "kind": "function",
+      "signature": "pub const fn class(self) -> yosoi::documents::DocumentClass",
+      "docs": "Returns the representation class.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 149,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L149-L151"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::clone",
+      "publicPath": "yosoi::documents::DocumentRef::clone",
+      "title": "yosoi::documents::DocumentRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::documents::DocumentRef<'document>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 136,
+        "lineEnd": 136,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L136-L136"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::fmt",
+      "publicPath": "yosoi::documents::DocumentRef::fmt",
+      "title": "yosoi::documents::DocumentRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 136,
+        "lineEnd": 136,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L136-L136"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::id",
+      "publicPath": "yosoi::documents::DocumentRef::id",
+      "title": "yosoi::documents::DocumentRef::id",
+      "kind": "function",
+      "signature": "pub const fn id(self) -> &'document yosoi::DocumentId",
+      "docs": "Returns the document identity.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 145,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L145-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::locate",
+      "publicPath": "yosoi::documents::DocumentRef::locate",
+      "title": "yosoi::documents::DocumentRef::locate",
+      "kind": "function",
+      "signature": "pub fn locate(self, plan: &yosoi::locators::Plan) -> yosoi::LocateOutcome",
+      "docs": "Evaluates a plan using the default policy.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 169,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L169-L171"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::parse",
+      "publicPath": "yosoi::documents::DocumentRef::parse",
+      "title": "yosoi::documents::DocumentRef::parse",
+      "kind": "function",
+      "signature": "pub fn parse(self) -> Result<yosoi::documents::ParsedDocument<'document>, yosoi::documents::ParseError>",
+      "docs": "Parses once for repeated locator evaluation.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 165,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L165-L167"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::profile",
+      "publicPath": "yosoi::documents::DocumentRef::profile",
+      "title": "yosoi::documents::DocumentRef::profile",
+      "kind": "function",
+      "signature": "pub const fn profile(self) -> yosoi::DocumentProfile",
+      "docs": "Returns the interpretation profile.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 153,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L153-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentRef::to_owned",
+      "publicPath": "yosoi::documents::DocumentRef::to_owned",
+      "title": "yosoi::documents::DocumentRef::to_owned",
+      "kind": "function",
+      "signature": "pub fn to_owned(self) -> yosoi::Document",
+      "docs": "Retains an owned copy when this document must outlive its response.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 179,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/documents.rs#L179-L183"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4a253ee2063f92c3c4aef4fcf22df2a084c5a64e597176cd97e8fd836d1dc9f8",
+  "slug": "yosoi/documents/struct/documentref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4a253ee2063f92c3c4aef4fcf22df2a084c5a64e597176cd97e8fd836d1dc9f8"
+}

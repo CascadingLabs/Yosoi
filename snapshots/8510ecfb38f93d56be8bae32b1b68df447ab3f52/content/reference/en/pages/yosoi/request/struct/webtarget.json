@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::WebTarget",
+  "publicPath": "yosoi::request::WebTarget",
+  "kind": "struct",
+  "title": "yosoi::request::WebTarget",
+  "signature": "pub struct WebTarget",
+  "docs": "An owned target string authored before URL validation.\n\nValidation is intentionally deferred until request preparation, where the\nshared [`RequestedWebTarget`] rules canonicalize HTTP(S) URLs and reject\nmissing hosts and credentials.",
+  "source": {
+    "file": "crates/yosoi-engine/src/request.rs",
+    "lineStart": 32,
+    "lineEnd": 32,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L32-L32"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "aliases": [
+    "yosoi::prelude::WebTarget",
+    "yosoi::prelude::request::WebTarget"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::WebTarget::as_ref",
+      "publicPath": "yosoi::request::WebTarget::as_ref",
+      "title": "yosoi::request::WebTarget::as_ref",
+      "kind": "function",
+      "signature": "fn as_ref(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 77,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L77-L79"
+      },
+      "examples": [],
+      "trait": "AsRef"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::as_str",
+      "publicPath": "yosoi::request::WebTarget::as_str",
+      "title": "yosoi::request::WebTarget::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "Returns the authored target string.",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 41,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L41-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::clone",
+      "publicPath": "yosoi::request::WebTarget::clone",
+      "title": "yosoi::request::WebTarget::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> WebTarget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::eq",
+      "publicPath": "yosoi::request::WebTarget::eq",
+      "title": "yosoi::request::WebTarget::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &WebTarget) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::fmt",
+      "publicPath": "yosoi::request::WebTarget::fmt",
+      "title": "yosoi::request::WebTarget::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 83,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L83-L88"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::from",
+      "publicPath": "yosoi::request::WebTarget::from",
+      "title": "yosoi::request::WebTarget::from",
+      "kind": "function",
+      "signature": "fn from(value: String) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 47,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L47-L49"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::from",
+      "publicPath": "yosoi::request::WebTarget::from",
+      "title": "yosoi::request::WebTarget::from",
+      "kind": "function",
+      "signature": "fn from(value: &str) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 53,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L53-L55"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::from",
+      "publicPath": "yosoi::request::WebTarget::from",
+      "title": "yosoi::request::WebTarget::from",
+      "kind": "function",
+      "signature": "fn from(value: &String) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 59,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L59-L61"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::from",
+      "publicPath": "yosoi::request::WebTarget::from",
+      "title": "yosoi::request::WebTarget::from",
+      "kind": "function",
+      "signature": "fn from(value: Box<str>) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 65,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L65-L67"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::from",
+      "publicPath": "yosoi::request::WebTarget::from",
+      "title": "yosoi::request::WebTarget::from",
+      "kind": "function",
+      "signature": "fn from(value: Cow<'value, str>) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 71,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L71-L73"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::hash",
+      "publicPath": "yosoi::request::WebTarget::hash",
+      "title": "yosoi::request::WebTarget::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L31-L31"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::request::WebTarget::new",
+      "publicPath": "yosoi::request::WebTarget::new",
+      "title": "yosoi::request::WebTarget::new",
+      "kind": "function",
+      "signature": "pub fn new(value: impl Into<String>) -> Self",
+      "docs": "Stores a target string without parsing or validating it.",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 36,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request.rs#L36-L38"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4552573ea91fdc311b08043c7f1efb73da1b34b96090f5f5dcf48649f756008c",
+  "slug": "yosoi/request/struct/webtarget",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4552573ea91fdc311b08043c7f1efb73da1b34b96090f5f5dcf48649f756008c"
+}

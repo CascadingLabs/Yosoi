@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::RuntimeFieldValue",
+  "publicPath": "yosoi::contracts::RuntimeFieldValue",
+  "kind": "enum",
+  "title": "yosoi::contracts::RuntimeFieldValue",
+  "signature": "pub enum RuntimeFieldValue",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+    "lineStart": 196,
+    "lineEnd": 200,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L196-L200"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeFieldValue"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "title": "yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "kind": "variant",
+      "signature": "ExactlyOne { value: yosoi::contracts::RuntimeValue }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 197,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L197-L197"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::Many",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::Many",
+      "title": "yosoi::contracts::RuntimeFieldValue::Many",
+      "kind": "variant",
+      "signature": "Many { values: Vec<yosoi::contracts::RuntimeValue> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "title": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "kind": "variant",
+      "signature": "ZeroOrOne { value: Option<yosoi::contracts::RuntimeValue> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 198,
+        "lineEnd": 198,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L198-L198"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::clone",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::clone",
+      "title": "yosoi::contracts::RuntimeFieldValue::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::RuntimeFieldValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::deserialize",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::deserialize",
+      "title": "yosoi::contracts::RuntimeFieldValue::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::eq",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::eq",
+      "title": "yosoi::contracts::RuntimeFieldValue::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::RuntimeFieldValue) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::fmt",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::fmt",
+      "title": "yosoi::contracts::RuntimeFieldValue::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::serialize",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::serialize",
+      "title": "yosoi::contracts::RuntimeFieldValue::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 194,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/runtime.rs#L194-L194"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/runtimefieldvalue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

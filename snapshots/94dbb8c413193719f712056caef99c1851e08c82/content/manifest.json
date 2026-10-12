@@ -1,0 +1,455 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0-rc.8",
+  "source": {
+    "repository": "CascadingLabs/Yosoi",
+    "commit": "94dbb8c413193719f712056caef99c1851e08c82",
+    "root": "docs/public"
+  },
+  "pages": {
+    "/": {
+      "file": "index.md",
+      "title": "Yosoi",
+      "description": "Discover, fetch, and work with web documents.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "44f5a4b24b37505225878b032df973a2063a9d2712f0ab233eb835118aca7f7a"
+    },
+    "/cli": {
+      "file": "cli/index.md",
+      "title": "CLI",
+      "description": "Use Yosoi from your terminal.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "d3d260788015c759c4e4b61e7f9185c41eb6e0b972ee2aa3e3741817555c3338"
+    },
+    "/cli/map": {
+      "file": "cli/map.md",
+      "title": "Map",
+      "description": "Discover pages and inspect a site inventory.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "390682c71cfd51a70e0f0ddb11a5d98d8702f52f94850cb5407958372c003ddd"
+    },
+    "/cli/search": {
+      "file": "cli/search.md",
+      "title": "Search",
+      "description": "Find candidate URLs across search providers.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "c6cf31b9025da10768d65ecf9764e5be048dd9938dcbe0729df498fa15cab610"
+    },
+    "/concepts": {
+      "file": "concepts/index.md",
+      "title": "How Yosoi fits together",
+      "description": "Follow data from discovery through acquisition, location, and validation.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "a6f34f9444d9d8a0482bf691c14935db2f2fc61846d736527afaf3db2300d5aa"
+    },
+    "/cookbook": {
+      "file": "cookbook/index.md",
+      "title": "Cookbook",
+      "description": "Small recipes that combine Yosoi tools.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "b7bacc84c4913b4e418c6615b778f12ee94a33be52929a77dd876f2914bf7f5e"
+    },
+    "/cookbook/discover-and-fetch": {
+      "file": "cookbook/discover-and-fetch.md",
+      "title": "Discover and fetch",
+      "description": "Discover candidate pages, fetch a few, or reuse retained Map responses.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "3b14e4bdcaae0008f47c22f5d963f0301d8267792e9944115e50ef9d70c2f626"
+    },
+    "/cookbook/extract-structured-data": {
+      "file": "cookbook/extract-structured-data.md",
+      "title": "Extract structured data",
+      "description": "Fetch a page and validate its heading as a Rust record.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "f4d4b3a5e5fee2806c4d66c8563fae6090b50d829298ed778075f8e788cebd3b"
+    },
+    "/cookbook/save-and-reuse": {
+      "file": "cookbook/save-and-reuse.md",
+      "title": "Save and reuse a document",
+      "description": "Store a document's identity, profile, and bytes, then locate it again locally.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "5e2a34b857677ad5a711c1c7dc10f177c7020d0231cc71339404c101805c7859"
+    },
+    "/guides/locating": {
+      "file": "guides/locating.md",
+      "title": "Choose a locator",
+      "description": "Pick the document representation and query that match your task.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "f45a9e3dd2e9e330409a1dded2dd3fe6284bc703f8991d56611f69845bca295f"
+    },
+    "/python": {
+      "file": "python/index.md",
+      "title": "Python SDK",
+      "description": "Author documents, locators, and typed Contracts with Pydantic and run them in Rust.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "4c7e4373383f7826296b42ac9b0ead8e075bd2a9a798e03b4733e5034058f26f"
+    },
+    "/python/compatibility": {
+      "file": "python/compatibility.md",
+      "title": "Python compatibility status",
+      "description": "Separate declared interpreter targets from current wheel, browser, and provider evidence.",
+      "order": 6,
+      "format": "markdown",
+      "sha256": "12e74dfa13cbbf7d693ab585613cb2c45a71e3402ed6eba24814fff7e2f7e460"
+    },
+    "/python/contracts": {
+      "file": "python/contracts.md",
+      "title": "Python Contracts",
+      "description": "Declare typed Pydantic records and let Rust extract, convert, and validate them.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "ef5557b91feaac5908378f73c87c997b605bbb35499a62f6f2b15e30fb772673"
+    },
+    "/python/documents-and-locators": {
+      "file": "python/documents-and-locators.md",
+      "title": "Python documents and locators",
+      "description": "Build immutable documents, compile locator plans in Rust, and inspect evidence.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "41daabfe67e12cc7e67db1e4b336eb0e2a928fde33fa5577fe753c582485e751"
+    },
+    "/python/errors-and-limits": {
+      "file": "python/errors-and-limits.md",
+      "title": "Python errors and limits",
+      "description": "Distinguish authoring exceptions from Rust operation outcomes and their budgets.",
+      "order": 5,
+      "format": "markdown",
+      "sha256": "ed5eef70e7ee47304c9957f67d5c32e8c3871af4f95febe2e81f02456db110ef"
+    },
+    "/python/installation": {
+      "file": "python/installation.md",
+      "title": "Install the Python SDK",
+      "description": "Choose a compatible Yosoi wheel and interpreter ABI.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "1b19c6cdf57f7c434cb4ef38bcee012a7ea0000df7fa2d1c6c8c6f3282cd7b57"
+    },
+    "/python/parity": {
+      "file": "python/parity.md",
+      "title": "Rust and Python parity",
+      "description": "Read the machine-readable surface inventory and conformance status without overstating coverage.",
+      "order": 7,
+      "format": "markdown",
+      "sha256": "ba29f91045023dc850a91aae9b35b2ba73795fb15254a46f44b389b75ade143d"
+    },
+    "/python/workflows": {
+      "file": "python/workflows.md",
+      "title": "Python workflows",
+      "description": "Bind Rust-defaulted Policy and run async Requests, Map, and Search.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "98e3cf1ae4018213c096956fd74b4ee67ec53f8e3b54ec6c43fb58ea65f17431"
+    },
+    "/quickstart": {
+      "file": "quickstart.md",
+      "title": "Install and quickstart",
+      "description": "Install Yosoi and make your first request.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "79fb1e599e1df84c2eaab36739c41912ab3a86bb9ca2aa9f42ba4c4d0ecb4fb4"
+    },
+    "/releases": {
+      "file": "releases/index.md",
+      "title": "Release notes",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "a791add3c1c47fabe2e98084b4d8f478cffe3dd733ef8832f06d94e3b4d929d0"
+    },
+    "/releases/0-1-0-rc-1": {
+      "file": "releases/0-1-0-rc-1.md",
+      "title": "Yosoi 0.1.0-rc.1 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.1.",
+      "version": "0.1.0-rc.1",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "50c80c584dba4ad147b79918247a89decbe27840afea29b8e4c3034eea8f620b"
+    },
+    "/releases/0-1-0-rc-2": {
+      "file": "releases/0-1-0-rc-2.md",
+      "title": "Yosoi 0.1.0-rc.2 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.2.",
+      "version": "0.1.0-rc.2",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.1",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "39ad2cd208a6065ecccf5c2b22bdb34f1f5e6f0dcf047180e6842aa671586e01"
+    },
+    "/releases/0-1-0-rc-3": {
+      "file": "releases/0-1-0-rc-3.md",
+      "title": "Yosoi 0.1.0-rc.3 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.3.",
+      "version": "0.1.0-rc.3",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.2",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "17611f1ed2bc385ba0cd90d4bb31a794d6ce50fedd48b7ff497d376b2aa249ae"
+    },
+    "/releases/0-1-0-rc-4": {
+      "file": "releases/0-1-0-rc-4.md",
+      "title": "Yosoi 0.1.0-rc.4 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.4.",
+      "version": "0.1.0-rc.4",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.3",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "8076d149f31fb367ca79e2b24c53c15904c6bc64fc5a50ab46548a4e20a2fbe8"
+    },
+    "/releases/0-1-0-rc-5": {
+      "file": "releases/0-1-0-rc-5.md",
+      "title": "Yosoi 0.1.0-rc.5 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.5.",
+      "version": "0.1.0-rc.5",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.4",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "d701ba88f679bc59dc250168024cb03c675771e5fca9c2b242368d8b1e2d54bc"
+    },
+    "/releases/0-1-0-rc-6": {
+      "file": "releases/0-1-0-rc-6.md",
+      "title": "Yosoi 0.1.0-rc.6 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.6.",
+      "version": "0.1.0-rc.6",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.5",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "aaa0e7608f0c9ec6a45415cdb70fffc73f39387a68b2b3f8cb2a3dc065bf6941"
+    },
+    "/releases/0-1-0-rc-7": {
+      "file": "releases/0-1-0-rc-7.md",
+      "title": "Yosoi 0.1.0-rc.7 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.7.",
+      "version": "0.1.0-rc.7",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.6",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "a02c7b38bc566285568e90ba8d41308ca093970597fe48035b1fdfe6df807fd5"
+    },
+    "/releases/0-1-0-rc-8": {
+      "file": "releases/0-1-0-rc-8.md",
+      "title": "Yosoi 0.1.0-rc.8 release notes",
+      "description": "Release notes for Yosoi 0.1.0-rc.8.",
+      "version": "0.1.0-rc.8",
+      "date": "2026-10-10",
+      "channel": "preview",
+      "previous": "0.1.0-rc.7",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "bff2ea0831a7c1b8fe573416fbb5c87b6a9e4b0a5581e5f478ec2545a51a6701"
+    },
+    "/sdk": {
+      "file": "sdk/index.md",
+      "title": "Rust SDK",
+      "description": "Fetch pages, select evidence, and turn it into typed Rust records.",
+      "order": 0,
+      "format": "markdown",
+      "sha256": "dbb37a65fea229c77482b5312fe590fe932a2828ad0ff826a2743dbbde7b8fd4"
+    },
+    "/sdk/accessibility": {
+      "file": "sdk/accessibility.md",
+      "title": "Accessibility",
+      "description": "Query roles, names, text, and states in a captured accessibility tree.",
+      "order": 11,
+      "format": "markdown",
+      "sha256": "876ede60094c379b6a52d66a5951d64235f8f22d39063577dea9a5002e256cf1"
+    },
+    "/sdk/archive": {
+      "file": "sdk/archive.md",
+      "title": "Archive availability",
+      "description": "Preserve document data today and understand the SDK's current archive boundary.",
+      "order": 19,
+      "format": "markdown",
+      "sha256": "48923b81fe70fd386d62eb02cbc131d63014dff5fed0011878439a72a66473a6"
+    },
+    "/sdk/browser": {
+      "file": "sdk/browser.md",
+      "title": "Browser",
+      "description": "Acquire response, rendered-DOM, and accessibility documents with Chrome or Chromium.",
+      "order": 15,
+      "format": "markdown",
+      "sha256": "3df7ac78ef61e0569fd0c9f8b600d0efd4ce1cf77258003cf31e1c69cf0d13d0"
+    },
+    "/sdk/contracts": {
+      "file": "sdk/contracts.md",
+      "title": "Contracts",
+      "description": "Turn located evidence into typed records with a derived Contract.",
+      "order": 12,
+      "format": "markdown",
+      "sha256": "829c5bf527261cdb24f242e8dd6210f85be667be7fad0aa8def34d5f0e9bb4a2"
+    },
+    "/sdk/documents": {
+      "file": "sdk/documents.md",
+      "title": "Documents",
+      "description": "Create immutable documents from bytes and reuse their parsed representation.",
+      "order": 5,
+      "format": "markdown",
+      "sha256": "0503be1a9d08060138e196afc115a8507c70c8caba8fcf05c17b05b36f51edaf"
+    },
+    "/sdk/errors": {
+      "file": "sdk/errors.md",
+      "title": "Errors and troubleshooting",
+      "description": "Find the stage that failed and keep absence separate from incomplete evidence.",
+      "order": 17,
+      "format": "markdown",
+      "sha256": "d621a167f7bfdeb7a177a830daa3804b226d3cbb92fc291c7d64ec53c105f9d3"
+    },
+    "/sdk/html": {
+      "file": "sdk/html.md",
+      "title": "HTML and CSS",
+      "description": "Select elements, attributes, and text from HTML or rendered DOM.",
+      "order": 7,
+      "format": "markdown",
+      "sha256": "ffd9afb61fd5bf4224a8a64bad174d948046306892555490edb2edc8194346ab"
+    },
+    "/sdk/installation": {
+      "file": "sdk/installation.md",
+      "title": "Installation",
+      "description": "Add the Rust SDK to a local application and run your first request.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "acb315a5802f8d81434712e6e30768ffa10a861818ce3f5034e940c9ef43a00f"
+    },
+    "/sdk/json": {
+      "file": "sdk/json.md",
+      "title": "JSON",
+      "description": "Select JSON values with JSON Pointer and a small JSONPath subset.",
+      "order": 9,
+      "format": "markdown",
+      "sha256": "f23acb64d429a7d3ae99f00565d02c1b2e6f1b60b205b448568fa8c0917aaec1"
+    },
+    "/sdk/limits": {
+      "file": "sdk/limits.md",
+      "title": "Limits",
+      "description": "Choose explicit bounds for acquisition, parsing, location, and discovery.",
+      "order": 16,
+      "format": "markdown",
+      "sha256": "89cce8ca76aedc04449b0b2ccaf43c940bf5567c40d6b826c96d49bb5b7762e2"
+    },
+    "/sdk/locators": {
+      "file": "sdk/locators.md",
+      "title": "Locators",
+      "description": "Describe named outputs and inspect the evidence behind each match.",
+      "order": 6,
+      "format": "markdown",
+      "sha256": "2b9a79db5334bbbea238c64cd2887cd833af6d7a5791a15dc780fdf2f5b740c2"
+    },
+    "/sdk/map": {
+      "file": "sdk/map.md",
+      "title": "Map",
+      "description": "Discover a bounded inventory of URLs and inspect how each one was found.",
+      "order": 14,
+      "format": "markdown",
+      "sha256": "9b1bdae4a2c0291ba204407e8a31437a3987ea35bec2e4466039092f8653ebaf"
+    },
+    "/sdk/packages": {
+      "file": "sdk/packages.md",
+      "title": "Packages and capabilities",
+      "description": "Choose the Rust SDK, Python SDK, or CLI without importing implementation crates.",
+      "order": 1,
+      "format": "markdown",
+      "sha256": "95c79730804961a6bd8641b07dc9061355b78d88d18ab6c42c00035d1a7292c0"
+    },
+    "/sdk/policy": {
+      "file": "sdk/policy.md",
+      "title": "Policy",
+      "description": "Configure acquisition, parsing, discovery, and resource limits with ordinary Rust values.",
+      "order": 4,
+      "format": "markdown",
+      "sha256": "4c53ef6e37303e64b8ccb1645590d77daa6388ab0129374b83afe9fdd2c18d77"
+    },
+    "/sdk/python": {
+      "file": "sdk/python.md",
+      "title": "Python SDK",
+      "description": "Author documents, locators, Contracts, and operations with Pydantic while Rust owns processing.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "53bbe0a03aca1d5565de75f8d67d25fd8b0c581b454b176e147556529f172a9f"
+    },
+    "/sdk/requests": {
+      "file": "sdk/requests.md",
+      "title": "Requests",
+      "description": "Fetch a URL with a shared Policy and inspect each acquisition.",
+      "order": 2,
+      "format": "markdown",
+      "sha256": "5fd0c769b4bae8f2fd0ba92cd1cb1180c86c701a36910da5710fa75ab0c77b48"
+    },
+    "/sdk/responses": {
+      "file": "sdk/responses.md",
+      "title": "Responses",
+      "description": "Distinguish acquisition failures, partial documents, and usable evidence.",
+      "order": 3,
+      "format": "markdown",
+      "sha256": "c783ad1a1ff80db1f967678986358eb3fbd4851b6cb9a3fc3e22d25acd18723f"
+    },
+    "/sdk/search": {
+      "file": "sdk/search.md",
+      "title": "Search",
+      "description": "Find candidate URLs through provider-backed search.",
+      "order": 18,
+      "format": "markdown",
+      "sha256": "7795eca6538d4ea55b574e673b20a5f75e7188c852f36d230fdb25449068835f"
+    },
+    "/sdk/text": {
+      "file": "sdk/text.md",
+      "title": "Text and regex",
+      "description": "Find literal text and named captures in decoded UTF-8 documents.",
+      "order": 10,
+      "format": "markdown",
+      "sha256": "71682faefb41c0fa2af0bee49bf8380242afa514ab8d43bf9a94c3925803381e"
+    },
+    "/sdk/validation": {
+      "file": "sdk/validation.md",
+      "title": "Validation",
+      "description": "Inspect valid records, rejected fields, and the evidence behind them.",
+      "order": 13,
+      "format": "markdown",
+      "sha256": "7fac41fa3865663dfbe007e80b318a368f3ffad3902d42829a7cf9c651fc9a8d"
+    },
+    "/sdk/xml": {
+      "file": "sdk/xml.md",
+      "title": "XML",
+      "description": "Query XML with explicit namespace bindings.",
+      "order": 8,
+      "format": "markdown",
+      "sha256": "f5959cb4751818abdff4f91f595f366af1c6335c718d06ae46a64a9e7220c73a"
+    }
+  },
+  "assets": {
+    "assets/demo.svg": {
+      "sha256": "64b4bd50c3a986a47a134dbd07b94bfb984c4b144b63526e88f8b967fabf5168"
+    },
+    "assets/media/logo-dark.svg": {
+      "sha256": "4e3ab57b675264f888e19b1592cc62ffac00b2831944d68aef2e3cfb7053baec"
+    },
+    "assets/media/logo-light.svg": {
+      "sha256": "42b8dbf1ad88bcbc646c47f1af7bf633ee9801294fc18cb89e52525e80f0d16d"
+    },
+    "assets/python-sdk-parity.json": {
+      "sha256": "3b7ba32e31e2f9c295434a86867a38aa72dfdf73eb9bd9401e96d083caf79347"
+    }
+  }
+}

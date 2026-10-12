@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::documents::ParseError",
+  "publicPath": "yosoi::documents::ParseError",
+  "kind": "enum",
+  "title": "yosoi::documents::ParseError",
+  "signature": "pub enum ParseError",
+  "docs": "A facade parsing error, including invalid operation-owned resource policy.",
+  "source": {
+    "file": "crates/yosoi-engine/src/document.rs",
+    "lineStart": 15,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L15-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/documents.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::ParseError",
+    "yosoi::prelude::documents::ParseError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::documents::ParseError::Document",
+      "publicPath": "yosoi::documents::ParseError::Document",
+      "title": "yosoi::documents::ParseError::Document",
+      "kind": "variant",
+      "signature": "Document(yosoi_documents::DocumentParseError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::ParseError::InvalidResourcePolicy",
+      "publicPath": "yosoi::documents::ParseError::InvalidResourcePolicy",
+      "title": "yosoi::documents::ParseError::InvalidResourcePolicy",
+      "kind": "variant",
+      "signature": "InvalidResourcePolicy { limit: yosoi_documents::ResourceLimit }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::ParseError::fmt",
+      "publicPath": "yosoi::documents::ParseError::fmt",
+      "title": "yosoi::documents::ParseError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::ParseError::fmt",
+      "publicPath": "yosoi::documents::ParseError::fmt",
+      "title": "yosoi::documents::ParseError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::documents::ParseError::from",
+      "publicPath": "yosoi::documents::ParseError::from",
+      "title": "yosoi::documents::ParseError::from",
+      "kind": "function",
+      "signature": "fn from(source: EngineDocumentParseError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::documents::ParseError::source",
+      "publicPath": "yosoi::documents::ParseError::source",
+      "title": "yosoi::documents::ParseError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/document.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "3fdf1cd0b9204483dbad49a84454245e190fd9950bb118a45070d8036a81bdb3",
+  "slug": "yosoi/documents/enum/parseerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "3fdf1cd0b9204483dbad49a84454245e190fd9950bb118a45070d8036a81bdb3"
+}

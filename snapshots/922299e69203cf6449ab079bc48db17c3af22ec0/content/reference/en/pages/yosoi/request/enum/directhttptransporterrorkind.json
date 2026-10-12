@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::DirectHttpTransportErrorKind",
+  "publicPath": "yosoi::request::DirectHttpTransportErrorKind",
+  "kind": "enum",
+  "title": "yosoi::request::DirectHttpTransportErrorKind",
+  "signature": "pub enum DirectHttpTransportErrorKind",
+  "docs": "Stable transport failure class, independent of provider error wording.",
+  "source": {
+    "file": "crates/yosoi/src/internal/direct_http/error.rs",
+    "lineStart": 15,
+    "lineEnd": 27,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L15-L27"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::request::DirectHttpTransportErrorKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Cancelled",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Cancelled",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Client",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Client",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Client",
+      "kind": "variant",
+      "signature": "Client",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Connect",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Connect",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Connect",
+      "kind": "variant",
+      "signature": "Connect",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Dns",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Dns",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Dns",
+      "kind": "variant",
+      "signature": "Dns",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Protocol",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Protocol",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Protocol",
+      "kind": "variant",
+      "signature": "Protocol",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Redirect",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Redirect",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Redirect",
+      "kind": "variant",
+      "signature": "Redirect(yosoi::request::DirectHttpRedirectErrorKind)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Timeout",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Timeout",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Timeout",
+      "kind": "variant",
+      "signature": "Timeout",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::Tls",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::Tls",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::Tls",
+      "kind": "variant",
+      "signature": "Tls",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::UnsupportedProfile",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedProfile",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedProfile",
+      "kind": "variant",
+      "signature": "UnsupportedProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::UnsupportedRedirects",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedRedirects",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedRedirects",
+      "kind": "variant",
+      "signature": "UnsupportedRedirects",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpTransportErrorKind::UnsupportedSession",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedSession",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::UnsupportedSession",
+      "kind": "variant",
+      "signature": "UnsupportedSession",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpTransportErrorKind::clone",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::clone",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::DirectHttpTransportErrorKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpTransportErrorKind::eq",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::eq",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::DirectHttpTransportErrorKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpTransportErrorKind::fmt",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::fmt",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpTransportErrorKind::serialize",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind::serialize",
+      "title": "yosoi::request::DirectHttpTransportErrorKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/direct_http/error.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/direct_http/error.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a43bae47badbc815677d1e20a717acf2f5b93474134ce3b77c5bc96085c37eb0",
+  "slug": "yosoi/request/enum/directhttptransporterrorkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a43bae47badbc815677d1e20a717acf2f5b93474134ce3b77c5bc96085c37eb0"
+}

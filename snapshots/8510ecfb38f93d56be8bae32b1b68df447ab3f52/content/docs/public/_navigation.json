@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "collapsed": true,
+  "sections": [
+    {
+      "title": "Getting started",
+      "pages": [{ "file": "index.md", "label": "Overview" }, "quickstart.md"],
+    },
+    {
+      "title": "CLI",
+      "directory": "cli",
+      "order": ["index.md", "map.md", "search.md"],
+    },
+    {
+      "title": "SDK",
+      "directory": "sdk",
+      "order": [
+        "index.md",
+        "python.md",
+        "installation.md",
+        "requests.md",
+        "responses.md",
+        "policy.md",
+        "documents.md",
+        "locators.md",
+        "html.md",
+        "xml.md",
+        "json.md",
+        "text.md",
+        "accessibility.md",
+        "contracts.md",
+        "validation.md",
+        "map.md",
+        "browser.md",
+        "limits.md",
+        "errors.md",
+        "search.md",
+        "archive.md",
+      ],
+    },
+    {
+      "title": "Python",
+      "directory": "python",
+      "order": [
+        "index.md",
+        "installation.md",
+        "documents-and-locators.md",
+        "contracts.md",
+        "workflows.md",
+        "errors-and-limits.md",
+        "compatibility.md",
+        "parity.md",
+      ],
+    },
+    {
+      "title": "Concepts",
+      "directory": "concepts",
+    },
+    {
+      "title": "Cookbook",
+      "directory": "cookbook",
+      "order": [
+        "index.md",
+        "extract-structured-data.md",
+        "discover-and-fetch.md",
+        "save-and-reuse.md",
+      ],
+    },
+    {
+      "title": "Guides",
+      "directory": "guides",
+    },
+    {
+      "title": "Release notes",
+      "directory": "releases",
+      "order": ["index.md"],
+    },
+    {
+      "title": "Reference",
+      "generated": "rust-api",
+    },
+  ],
+}

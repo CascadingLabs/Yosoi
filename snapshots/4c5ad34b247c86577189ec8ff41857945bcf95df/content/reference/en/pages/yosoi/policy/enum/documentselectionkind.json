@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::DocumentSelectionKind",
+  "publicPath": "yosoi::policy::DocumentSelectionKind",
+  "kind": "enum",
+  "title": "yosoi::policy::DocumentSelectionKind",
+  "signature": "pub enum DocumentSelectionKind",
+  "docs": "Whether the authored acquisition uses the current document default or an\nexplicit replacement set.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/page.rs",
+    "lineStart": 38,
+    "lineEnd": 43,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L38-L43"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::DocumentSelectionKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::DocumentSelectionKind::Current",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::Current",
+      "title": "yosoi::policy::DocumentSelectionKind::Current",
+      "kind": "variant",
+      "signature": "Current",
+      "docs": "Resolve to the current default document set when creating a snapshot.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L40-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DocumentSelectionKind::Exact",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::Exact",
+      "title": "yosoi::policy::DocumentSelectionKind::Exact",
+      "kind": "variant",
+      "signature": "Exact",
+      "docs": "Use the exact document set authored by the caller.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::clone",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::clone",
+      "title": "yosoi::policy::DocumentSelectionKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DocumentSelectionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::deserialize",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::deserialize",
+      "title": "yosoi::policy::DocumentSelectionKind::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::eq",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::eq",
+      "title": "yosoi::policy::DocumentSelectionKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DocumentSelectionKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::fmt",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::fmt",
+      "title": "yosoi::policy::DocumentSelectionKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::hash",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::hash",
+      "title": "yosoi::policy::DocumentSelectionKind::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentSelectionKind::serialize",
+      "publicPath": "yosoi::policy::DocumentSelectionKind::serialize",
+      "title": "yosoi::policy::DocumentSelectionKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5a0864dcefd1cb8f2dfbd956f498a3c6a0a1e1252b0b28d07310f20d65654000",
+  "slug": "yosoi/policy/enum/documentselectionkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5a0864dcefd1cb8f2dfbd956f498a3c6a0a1e1252b0b28d07310f20d65654000"
+}

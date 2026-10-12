@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::documents::BoundDocument",
+  "publicPath": "yosoi::documents::BoundDocument",
+  "kind": "struct",
+  "title": "yosoi::documents::BoundDocument",
+  "signature": "pub struct BoundDocument<'document, 'policy>",
+  "docs": "A borrowed document and policy for bounded SDK operations.",
+  "source": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 119,
+    "lineEnd": 121,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/documents.rs#L119-L121"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::documents::BoundDocument"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::documents::BoundDocument::fmt",
+      "publicPath": "yosoi::documents::BoundDocument::fmt",
+      "title": "yosoi::documents::BoundDocument::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 118,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/documents.rs#L118-L118"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::BoundDocument::locate",
+      "publicPath": "yosoi::documents::BoundDocument::locate",
+      "title": "yosoi::documents::BoundDocument::locate",
+      "kind": "function",
+      "signature": "pub fn locate(&self, plan: &Plan) -> LocateOutcome",
+      "docs": "Evaluates a plan using the bound policy.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 128,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/documents.rs#L128-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::BoundDocument::parse",
+      "publicPath": "yosoi::documents::BoundDocument::parse",
+      "title": "yosoi::documents::BoundDocument::parse",
+      "kind": "function",
+      "signature": "pub fn parse(&self) -> Result<ParsedDocument<'document>, ParseError>",
+      "docs": "Parses using the bound policy.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 124,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/documents.rs#L124-L126"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c46e5297715698641a2d614612f9e9232eb22727e89263666991db3876b9a0b7",
+  "slug": "yosoi/documents/struct/bounddocument",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c46e5297715698641a2d614612f9e9232eb22727e89263666991db3876b9a0b7"
+}

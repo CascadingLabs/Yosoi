@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "reexport:yosoi::request::CancellationToken",
+  "publicPath": "yosoi::request::CancellationToken",
+  "kind": "reexport",
+  "title": "yosoi::request::CancellationToken",
+  "signature": "pub use yosoi_engine::CancellationToken;",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::request::CancellationToken"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/request/reexport/cancellationtoken",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

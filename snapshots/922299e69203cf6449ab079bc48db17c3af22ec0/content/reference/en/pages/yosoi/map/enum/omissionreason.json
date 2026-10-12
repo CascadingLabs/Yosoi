@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::OmissionReason",
+  "publicPath": "yosoi::map::OmissionReason",
+  "kind": "enum",
+  "title": "yosoi::map::OmissionReason",
+  "signature": "pub enum OmissionReason",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 207,
+    "lineEnd": 217,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L207-L217"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/map.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::map::OmissionReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::OmissionReason::Admission",
+      "publicPath": "yosoi::map::OmissionReason::Admission",
+      "title": "yosoi::map::OmissionReason::Admission",
+      "kind": "variant",
+      "signature": "Admission(yosoi::map::Rejection)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L208-L208"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Depth",
+      "publicPath": "yosoi::map::OmissionReason::Depth",
+      "title": "yosoi::map::OmissionReason::Depth",
+      "kind": "variant",
+      "signature": "Depth",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 210,
+        "lineEnd": 210,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L210-L210"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Inventory",
+      "publicPath": "yosoi::map::OmissionReason::Inventory",
+      "title": "yosoi::map::OmissionReason::Inventory",
+      "kind": "variant",
+      "signature": "Inventory",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 213,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L213-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Other",
+      "publicPath": "yosoi::map::OmissionReason::Other",
+      "title": "yosoi::map::OmissionReason::Other",
+      "kind": "variant",
+      "signature": "Other",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 216,
+        "lineEnd": 216,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L216-L216"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Pending",
+      "publicPath": "yosoi::map::OmissionReason::Pending",
+      "title": "yosoi::map::OmissionReason::Pending",
+      "kind": "variant",
+      "signature": "Pending",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L212-L212"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Retention",
+      "publicPath": "yosoi::map::OmissionReason::Retention",
+      "title": "yosoi::map::OmissionReason::Retention",
+      "kind": "variant",
+      "signature": "Retention",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L214-L214"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Robots",
+      "publicPath": "yosoi::map::OmissionReason::Robots",
+      "title": "yosoi::map::OmissionReason::Robots",
+      "kind": "variant",
+      "signature": "Robots",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 209,
+        "lineEnd": 209,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L209-L209"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::SitemapDepth",
+      "publicPath": "yosoi::map::OmissionReason::SitemapDepth",
+      "title": "yosoi::map::OmissionReason::SitemapDepth",
+      "kind": "variant",
+      "signature": "SitemapDepth",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 211,
+        "lineEnd": 211,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L211-L211"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Wildcard",
+      "publicPath": "yosoi::map::OmissionReason::Wildcard",
+      "title": "yosoi::map::OmissionReason::Wildcard",
+      "kind": "variant",
+      "signature": "Wildcard",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 215,
+        "lineEnd": 215,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L215-L215"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::clone",
+      "publicPath": "yosoi::map::OmissionReason::clone",
+      "title": "yosoi::map::OmissionReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::OmissionReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::cmp",
+      "publicPath": "yosoi::map::OmissionReason::cmp",
+      "title": "yosoi::map::OmissionReason::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::map::OmissionReason) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::eq",
+      "publicPath": "yosoi::map::OmissionReason::eq",
+      "title": "yosoi::map::OmissionReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::OmissionReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::fmt",
+      "publicPath": "yosoi::map::OmissionReason::fmt",
+      "title": "yosoi::map::OmissionReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::partial_cmp",
+      "publicPath": "yosoi::map::OmissionReason::partial_cmp",
+      "title": "yosoi::map::OmissionReason::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::map::OmissionReason) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::serialize",
+      "publicPath": "yosoi::map::OmissionReason::serialize",
+      "title": "yosoi::map::OmissionReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/map/mod.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/omissionreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

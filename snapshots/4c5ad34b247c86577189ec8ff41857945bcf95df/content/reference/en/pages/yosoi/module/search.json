@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::search",
+  "publicPath": "yosoi::search",
+  "kind": "module",
+  "title": "yosoi::search",
+  "signature": "pub mod search",
+  "docs": "Find candidate URLs and inspect each provider's bounded, typed outcome.",
+  "source": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 1,
+    "lineEnd": 90,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/search.rs#L1-L90"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::search"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "802e65e0f4d5cf29cf68f9c15ee8fddc7b380d43cd83222b60e9fa27cea9d109",
+  "slug": "yosoi/module/search",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "802e65e0f4d5cf29cf68f9c15ee8fddc7b380d43cd83222b60e9fa27cea9d109"
+}

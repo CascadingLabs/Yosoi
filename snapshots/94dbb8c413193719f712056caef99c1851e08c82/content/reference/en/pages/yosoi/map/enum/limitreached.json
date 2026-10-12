@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::LimitReached",
+  "publicPath": "yosoi::map::LimitReached",
+  "kind": "enum",
+  "title": "yosoi::map::LimitReached",
+  "signature": "pub enum LimitReached",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 181,
+    "lineEnd": 194,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L181-L194"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::map::LimitReached"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::LimitReached::Hosts",
+      "publicPath": "yosoi::map::LimitReached::Hosts",
+      "title": "yosoi::map::LimitReached::Hosts",
+      "kind": "variant",
+      "signature": "Hosts",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 182,
+        "lineEnd": 182,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L182-L182"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::InventoryBytes",
+      "publicPath": "yosoi::map::LimitReached::InventoryBytes",
+      "title": "yosoi::map::LimitReached::InventoryBytes",
+      "kind": "variant",
+      "signature": "InventoryBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L192-L192"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Observations",
+      "publicPath": "yosoi::map::LimitReached::Observations",
+      "title": "yosoi::map::LimitReached::Observations",
+      "kind": "variant",
+      "signature": "Observations",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L185-L185"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::ParserEntries",
+      "publicPath": "yosoi::map::LimitReached::ParserEntries",
+      "title": "yosoi::map::LimitReached::ParserEntries",
+      "kind": "variant",
+      "signature": "ParserEntries",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L193-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Pending",
+      "publicPath": "yosoi::map::LimitReached::Pending",
+      "title": "yosoi::map::LimitReached::Pending",
+      "kind": "variant",
+      "signature": "Pending",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L186-L186"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Relationships",
+      "publicPath": "yosoi::map::LimitReached::Relationships",
+      "title": "yosoi::map::LimitReached::Relationships",
+      "kind": "variant",
+      "signature": "Relationships",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 184,
+        "lineEnd": 184,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L184-L184"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Requests",
+      "publicPath": "yosoi::map::LimitReached::Requests",
+      "title": "yosoi::map::LimitReached::Requests",
+      "kind": "variant",
+      "signature": "Requests",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L187-L187"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::ResponseBytes",
+      "publicPath": "yosoi::map::LimitReached::ResponseBytes",
+      "title": "yosoi::map::LimitReached::ResponseBytes",
+      "kind": "variant",
+      "signature": "ResponseBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 190,
+        "lineEnd": 190,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L190-L190"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::SitemapDepth",
+      "publicPath": "yosoi::map::LimitReached::SitemapDepth",
+      "title": "yosoi::map::LimitReached::SitemapDepth",
+      "kind": "variant",
+      "signature": "SitemapDepth",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 189,
+        "lineEnd": 189,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L189-L189"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Sitemaps",
+      "publicPath": "yosoi::map::LimitReached::Sitemaps",
+      "title": "yosoi::map::LimitReached::Sitemaps",
+      "kind": "variant",
+      "signature": "Sitemaps",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 188,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L188-L188"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::TotalResponseBytes",
+      "publicPath": "yosoi::map::LimitReached::TotalResponseBytes",
+      "title": "yosoi::map::LimitReached::TotalResponseBytes",
+      "kind": "variant",
+      "signature": "TotalResponseBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L191-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Urls",
+      "publicPath": "yosoi::map::LimitReached::Urls",
+      "title": "yosoi::map::LimitReached::Urls",
+      "kind": "variant",
+      "signature": "Urls",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 183,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L183-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::clone",
+      "publicPath": "yosoi::map::LimitReached::clone",
+      "title": "yosoi::map::LimitReached::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> LimitReached",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::eq",
+      "publicPath": "yosoi::map::LimitReached::eq",
+      "title": "yosoi::map::LimitReached::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &LimitReached) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::fmt",
+      "publicPath": "yosoi::map::LimitReached::fmt",
+      "title": "yosoi::map::LimitReached::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::serialize",
+      "publicPath": "yosoi::map::LimitReached::serialize",
+      "title": "yosoi::map::LimitReached::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-map/src/lib.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/limitreached",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::contracts::Contract",
+  "publicPath": "yosoi::contracts::Contract",
+  "kind": "trait",
+  "title": "yosoi::contracts::Contract",
+  "signature": "pub trait Contract",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/candidate.rs",
+    "lineStart": 127,
+    "lineEnd": 134,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/candidate.rs#L127-L134"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/contracts.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::Contract",
+    "yosoi::prelude::contracts::Contract"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::contracts::Contract::Candidate",
+      "publicPath": "yosoi::contracts::Contract::Candidate",
+      "title": "yosoi::contracts::Contract::Candidate",
+      "kind": "assoc_type",
+      "signature": "type Candidate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/candidate.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::Contract::schema",
+      "publicPath": "yosoi::contracts::Contract::schema",
+      "title": "yosoi::contracts::Contract::schema",
+      "kind": "function",
+      "signature": "fn schema() -> Result<&'static ContractSchema, ContractSchemaError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 131,
+        "lineEnd": 131,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/candidate.rs#L131-L131"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/trait/contract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

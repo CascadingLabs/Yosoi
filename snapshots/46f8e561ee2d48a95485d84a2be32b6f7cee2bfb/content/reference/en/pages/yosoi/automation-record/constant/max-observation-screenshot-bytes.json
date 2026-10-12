@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES",
+  "publicPath": "yosoi::automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES",
+  "kind": "constant",
+  "title": "yosoi::automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES",
+  "signature": "pub const MAX_OBSERVATION_SCREENSHOT_BYTES: usize = _;",
+  "docs": "Maximum retained screenshot bytes in one observation.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 40,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L40-L40"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "90cc9af0e2d58751681219a069c794ca56f8984fccead0411be10e1ff4827011",
+  "slug": "yosoi/automation-record/constant/max-observation-screenshot-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "90cc9af0e2d58751681219a069c794ca56f8984fccead0411be10e1ff4827011"
+}

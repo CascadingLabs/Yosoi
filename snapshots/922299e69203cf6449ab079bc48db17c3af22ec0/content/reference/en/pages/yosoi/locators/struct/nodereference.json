@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::NodeReference",
+  "publicPath": "yosoi::locators::NodeReference",
+  "kind": "struct",
+  "title": "yosoi::locators::NodeReference",
+  "signature": "pub struct NodeReference",
+  "docs": "A projected node reference remains meaningful only with its document ID.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+    "lineStart": 160,
+    "lineEnd": 163,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L160-L163"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::NodeReference"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::NodeReference::clone",
+      "publicPath": "yosoi::locators::NodeReference::clone",
+      "title": "yosoi::locators::NodeReference::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::NodeReference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::coordinate",
+      "publicPath": "yosoi::locators::NodeReference::coordinate",
+      "title": "yosoi::locators::NodeReference::coordinate",
+      "kind": "function",
+      "signature": "pub const fn coordinate(&self) -> &yosoi::locators::NativeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 176,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L176-L178"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::deserialize",
+      "publicPath": "yosoi::locators::NodeReference::deserialize",
+      "title": "yosoi::locators::NodeReference::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::document_id",
+      "publicPath": "yosoi::locators::NodeReference::document_id",
+      "title": "yosoi::locators::NodeReference::document_id",
+      "kind": "function",
+      "signature": "pub const fn document_id(&self) -> &yosoi::DocumentId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 173,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L173-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::eq",
+      "publicPath": "yosoi::locators::NodeReference::eq",
+      "title": "yosoi::locators::NodeReference::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::NodeReference) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::fmt",
+      "publicPath": "yosoi::locators::NodeReference::fmt",
+      "title": "yosoi::locators::NodeReference::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::new",
+      "publicPath": "yosoi::locators::NodeReference::new",
+      "title": "yosoi::locators::NodeReference::new",
+      "kind": "function",
+      "signature": "pub const fn new(document_id: yosoi::DocumentId, coordinate: yosoi::locators::NativeCoordinate) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 166,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L166-L171"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::NodeReference::serialize",
+      "publicPath": "yosoi::locators::NodeReference::serialize",
+      "title": "yosoi::locators::NodeReference::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d881b5a0d4984b8ccd5277b287d4e638c57592e375c222eb3015ff49f3c0d557",
+  "slug": "yosoi/locators/struct/nodereference",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d881b5a0d4984b8ccd5277b287d4e638c57592e375c222eb3015ff49f3c0d557"
+}

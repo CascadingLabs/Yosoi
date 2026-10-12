@@ -1,0 +1,3804 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi",
+  "publicPath": "yosoi",
+  "title": "yosoi Rust API",
+  "kind": "module",
+  "signature": "pub crate yosoi",
+  "docs": "Yosoi's user-facing Rust SDK.\n\nUse the named SDK namespaces for explicit imports, or [`prelude`] for\ncommon authoring vocabulary. Implementation crates are not re-exported.",
+  "docsDigest": "c9409f44b0f0e5e8f6c53e8014b02ef9db5e095abf93bb612570664c5e4b7882",
+  "source": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 1,
+    "lineEnd": 27,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/lib.rs#L1-L27"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "enum:yosoi::contracts::Cardinality",
+      "publicPath": "yosoi::contracts::Cardinality",
+      "title": "yosoi::contracts::Cardinality",
+      "kind": "enum",
+      "signature": "pub enum Cardinality",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 19,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L19-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ContractLocatorError",
+      "publicPath": "yosoi::contracts::ContractLocatorError",
+      "title": "yosoi::contracts::ContractLocatorError",
+      "kind": "enum",
+      "signature": "pub enum ContractLocatorError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/contract_locator.rs",
+        "lineStart": 5,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/contract_locator.rs#L5-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ContractOutcome",
+      "publicPath": "yosoi::contracts::ContractOutcome",
+      "title": "yosoi::contracts::ContractOutcome",
+      "kind": "enum",
+      "signature": "pub enum ContractOutcome<T: Contract>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 35,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L35-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ContractSchemaError",
+      "publicPath": "yosoi::contracts::ContractSchemaError",
+      "title": "yosoi::contracts::ContractSchemaError",
+      "kind": "enum",
+      "signature": "pub enum ContractSchemaError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 50,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/ids.rs#L50-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::Currency",
+      "publicPath": "yosoi::contracts::Currency",
+      "title": "yosoi::contracts::Currency",
+      "kind": "enum",
+      "signature": "pub enum Currency",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/value.rs",
+        "lineStart": 32,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/value.rs#L32-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ExtractionDiagnostic",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic",
+      "title": "yosoi::contracts::ExtractionDiagnostic",
+      "kind": "enum",
+      "signature": "pub enum ExtractionDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L116-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ExtractionFailure",
+      "publicPath": "yosoi::contracts::ExtractionFailure",
+      "title": "yosoi::contracts::ExtractionFailure",
+      "kind": "enum",
+      "signature": "pub enum ExtractionFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 159,
+        "lineEnd": 172,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L159-L172"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ExtractionLimit",
+      "publicPath": "yosoi::contracts::ExtractionLimit",
+      "title": "yosoi::contracts::ExtractionLimit",
+      "kind": "enum",
+      "signature": "pub enum ExtractionLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 148,
+        "lineEnd": 156,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L148-L156"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::FieldIssueKind",
+      "publicPath": "yosoi::contracts::FieldIssueKind",
+      "title": "yosoi::contracts::FieldIssueKind",
+      "kind": "enum",
+      "signature": "pub enum FieldIssueKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 34,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L34-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::RecordScope",
+      "publicPath": "yosoi::contracts::RecordScope",
+      "title": "yosoi::contracts::RecordScope",
+      "kind": "enum",
+      "signature": "pub enum RecordScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 12,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L12-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::RuntimeContractError",
+      "publicPath": "yosoi::contracts::RuntimeContractError",
+      "title": "yosoi::contracts::RuntimeContractError",
+      "kind": "enum",
+      "signature": "pub enum RuntimeContractError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 61,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L61-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::RuntimeContractOutcome",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome",
+      "title": "yosoi::contracts::RuntimeContractOutcome",
+      "kind": "enum",
+      "signature": "pub enum RuntimeContractOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 214,
+        "lineEnd": 238,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L214-L238"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::RuntimeFieldValue",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue",
+      "title": "yosoi::contracts::RuntimeFieldValue",
+      "kind": "enum",
+      "signature": "pub enum RuntimeFieldValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 192,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L192-L196"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::RuntimeValue",
+      "publicPath": "yosoi::contracts::RuntimeValue",
+      "title": "yosoi::contracts::RuntimeValue",
+      "kind": "enum",
+      "signature": "pub enum RuntimeValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 185,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L185-L188"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ValidationCode",
+      "publicPath": "yosoi::contracts::ValidationCode",
+      "title": "yosoi::contracts::ValidationCode",
+      "kind": "enum",
+      "signature": "pub enum ValidationCode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 9,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L9-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::contracts::ValidationFailure",
+      "publicPath": "yosoi::contracts::ValidationFailure",
+      "title": "yosoi::contracts::ValidationFailure",
+      "kind": "enum",
+      "signature": "pub enum ValidationFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 127,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L127-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "proc_macro:yosoi::contracts::Contract",
+      "publicPath": "yosoi::contracts::Contract",
+      "title": "yosoi::contracts::Contract",
+      "kind": "proc_macro",
+      "signature": "#[derive] Contract",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts-derive/src/lib.rs",
+        "lineStart": 14,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts-derive/src/lib.rs#L14-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "reexport:yosoi::contracts::ArchivedContractOutcome",
+      "publicPath": "yosoi::contracts::ArchivedContractOutcome",
+      "title": "yosoi::contracts::ArchivedContractOutcome",
+      "kind": "reexport",
+      "signature": "pub use yosoi_contract_validation::archived::ContractOutcome as ArchivedContractOutcome;",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "reexport:yosoi::contracts::RuntimeContractArchiveError",
+      "publicPath": "yosoi::contracts::RuntimeContractArchiveError",
+      "title": "yosoi::contracts::RuntimeContractArchiveError",
+      "kind": "reexport",
+      "signature": "pub use yosoi_contract_validation::RuntimeContractArchiveError;",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::CandidateField",
+      "publicPath": "yosoi::contracts::CandidateField",
+      "title": "yosoi::contracts::CandidateField",
+      "kind": "struct",
+      "signature": "pub struct CandidateField<T>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 56,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/candidate.rs#L56-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::ContractId",
+      "publicPath": "yosoi::contracts::ContractId",
+      "title": "yosoi::contracts::ContractId",
+      "kind": "struct",
+      "signature": "pub struct ContractId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::ContractIdentity",
+      "publicPath": "yosoi::contracts::ContractIdentity",
+      "title": "yosoi::contracts::ContractIdentity",
+      "kind": "struct",
+      "signature": "pub struct ContractIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L259-L259"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::ContractSchema",
+      "publicPath": "yosoi::contracts::ContractSchema",
+      "title": "yosoi::contracts::ContractSchema",
+      "kind": "struct",
+      "signature": "pub struct ContractSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 119,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L119-L127"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::FieldId",
+      "publicPath": "yosoi::contracts::FieldId",
+      "title": "yosoi::contracts::FieldId",
+      "kind": "struct",
+      "signature": "pub struct FieldId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::FieldIssue",
+      "publicPath": "yosoi::contracts::FieldIssue",
+      "title": "yosoi::contracts::FieldIssue",
+      "kind": "struct",
+      "signature": "pub struct FieldIssue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 15,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L15-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::FieldSchema",
+      "publicPath": "yosoi::contracts::FieldSchema",
+      "title": "yosoi::contracts::FieldSchema",
+      "kind": "struct",
+      "signature": "pub struct FieldSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 36,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L36-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::Money",
+      "publicPath": "yosoi::contracts::Money",
+      "title": "yosoi::contracts::Money",
+      "kind": "struct",
+      "signature": "pub struct Money",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/value.rs",
+        "lineStart": 43,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/value.rs#L43-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::RecordIssue",
+      "publicPath": "yosoi::contracts::RecordIssue",
+      "title": "yosoi::contracts::RecordIssue",
+      "kind": "struct",
+      "signature": "pub struct RecordIssue<T: Contract>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 21,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L21-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::RuntimeContract",
+      "publicPath": "yosoi::contracts::RuntimeContract",
+      "title": "yosoi::contracts::RuntimeContract",
+      "kind": "struct",
+      "signature": "pub struct RuntimeContract",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 24,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L24-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::RuntimeExtracted",
+      "publicPath": "yosoi::contracts::RuntimeExtracted",
+      "title": "yosoi::contracts::RuntimeExtracted",
+      "kind": "struct",
+      "signature": "pub struct RuntimeExtracted",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 68,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L68-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::RuntimeRecordIssue",
+      "publicPath": "yosoi::contracts::RuntimeRecordIssue",
+      "title": "yosoi::contracts::RuntimeRecordIssue",
+      "kind": "struct",
+      "signature": "pub struct RuntimeRecordIssue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 207,
+        "lineEnd": 210,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L207-L210"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::RuntimeValidatedRecord",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord",
+      "title": "yosoi::contracts::RuntimeValidatedRecord",
+      "kind": "struct",
+      "signature": "pub struct RuntimeValidatedRecord",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 200,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/runtime.rs#L200-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::contracts::ValidatedRecord",
+      "publicPath": "yosoi::contracts::ValidatedRecord",
+      "title": "yosoi::contracts::ValidatedRecord",
+      "kind": "struct",
+      "signature": "pub struct ValidatedRecord<T: Contract>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 7,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L7-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "trait:yosoi::contracts::Contract",
+      "publicPath": "yosoi::contracts::Contract",
+      "title": "yosoi::contracts::Contract",
+      "kind": "trait",
+      "signature": "pub trait Contract",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 127,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/candidate.rs#L127-L134"
+      },
+      "examples": []
+    },
+    {
+      "id": "trait:yosoi::contracts::ContractValue",
+      "publicPath": "yosoi::contracts::ContractValue",
+      "title": "yosoi::contracts::ContractValue",
+      "kind": "trait",
+      "signature": "pub trait ContractValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/schema.rs",
+        "lineStart": 26,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/schema.rs#L26-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "type_alias:yosoi::contracts::Extracted",
+      "publicPath": "yosoi::contracts::Extracted",
+      "title": "yosoi::contracts::Extracted",
+      "kind": "type_alias",
+      "signature": "pub type Extracted<T> = <T as yosoi_contracts::Contract>::Extracted",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/lib.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/lib.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "type_alias:yosoi::contracts::RuntimeCandidate",
+      "publicPath": "yosoi::contracts::RuntimeCandidate",
+      "title": "yosoi::contracts::RuntimeCandidate",
+      "kind": "type_alias",
+      "signature": "pub type RuntimeCandidate = CandidateInput",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contracts/src/candidate.rs#L54-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::AccessibilityCompleteness",
+      "publicPath": "yosoi::documents::AccessibilityCompleteness",
+      "title": "yosoi::documents::AccessibilityCompleteness",
+      "kind": "enum",
+      "signature": "pub enum AccessibilityCompleteness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/accessibility/types.rs",
+        "lineStart": 17,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/accessibility/types.rs#L17-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::DocumentClass",
+      "publicPath": "yosoi::documents::DocumentClass",
+      "title": "yosoi::documents::DocumentClass",
+      "kind": "enum",
+      "signature": "pub enum DocumentClass",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 40,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L40-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::DocumentError",
+      "publicPath": "yosoi::documents::DocumentError",
+      "title": "yosoi::documents::DocumentError",
+      "kind": "enum",
+      "signature": "pub enum DocumentError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document.rs",
+        "lineStart": 62,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document.rs#L62-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::DocumentRepresentation",
+      "publicPath": "yosoi::documents::DocumentRepresentation",
+      "title": "yosoi::documents::DocumentRepresentation",
+      "kind": "enum",
+      "signature": "pub enum DocumentRepresentation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 9,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L9-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::DocumentSchemaProfile",
+      "publicPath": "yosoi::documents::DocumentSchemaProfile",
+      "title": "yosoi::documents::DocumentSchemaProfile",
+      "kind": "enum",
+      "signature": "pub enum DocumentSchemaProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 28,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L28-L35"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::ParseError",
+      "publicPath": "yosoi::documents::ParseError",
+      "title": "yosoi::documents::ParseError",
+      "kind": "enum",
+      "signature": "pub enum ParseError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/document.rs",
+        "lineStart": 15,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/document.rs#L15-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::documents::SourceFormat",
+      "publicPath": "yosoi::documents::SourceFormat",
+      "title": "yosoi::documents::SourceFormat",
+      "kind": "enum",
+      "signature": "pub enum SourceFormat",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 18,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L18-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::documents::BoundDocument",
+      "publicPath": "yosoi::documents::BoundDocument",
+      "title": "yosoi::documents::BoundDocument",
+      "kind": "struct",
+      "signature": "pub struct BoundDocument<'document, 'policy>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 119,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L119-L121"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::documents::DocumentEpoch",
+      "publicPath": "yosoi::documents::DocumentEpoch",
+      "title": "yosoi::documents::DocumentEpoch",
+      "kind": "struct",
+      "signature": "pub struct DocumentEpoch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::documents::DocumentRef",
+      "publicPath": "yosoi::documents::DocumentRef",
+      "title": "yosoi::documents::DocumentRef",
+      "kind": "struct",
+      "signature": "pub struct DocumentRef<'document>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 135,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L135-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::documents::ParsedDocument",
+      "publicPath": "yosoi::documents::ParsedDocument",
+      "title": "yosoi::documents::ParsedDocument",
+      "kind": "struct",
+      "signature": "pub struct ParsedDocument<'document>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 107,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L107-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::LocateOutcome",
+      "publicPath": "yosoi::LocateOutcome",
+      "title": "yosoi::LocateOutcome",
+      "kind": "enum",
+      "signature": "pub enum LocateOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 340,
+        "lineEnd": 355,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L340-L355"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::PolicyError",
+      "publicPath": "yosoi::PolicyError",
+      "title": "yosoi::PolicyError",
+      "kind": "enum",
+      "signature": "pub enum PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 6,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L6-L120"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::ResponseTermination",
+      "publicPath": "yosoi::ResponseTermination",
+      "title": "yosoi::ResponseTermination",
+      "kind": "enum",
+      "signature": "pub enum ResponseTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 72,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request/execution/outcome/response.rs#L72-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::AccessibilityStateName",
+      "publicPath": "yosoi::locators::AccessibilityStateName",
+      "title": "yosoi::locators::AccessibilityStateName",
+      "kind": "enum",
+      "signature": "pub enum AccessibilityStateName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 31,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query.rs#L31-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::Completeness",
+      "publicPath": "yosoi::locators::Completeness",
+      "title": "yosoi::locators::Completeness",
+      "kind": "enum",
+      "signature": "pub enum Completeness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 41,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L41-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::CoordinateError",
+      "publicPath": "yosoi::locators::CoordinateError",
+      "title": "yosoi::locators::CoordinateError",
+      "kind": "enum",
+      "signature": "pub enum CoordinateError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_coordinates.rs",
+        "lineStart": 5,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_coordinates.rs#L5-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::IncompleteEvidence",
+      "publicPath": "yosoi::locators::IncompleteEvidence",
+      "title": "yosoi::locators::IncompleteEvidence",
+      "kind": "enum",
+      "signature": "pub enum IncompleteEvidence",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 55,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L55-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::JsonQuerySyntaxError",
+      "publicPath": "yosoi::locators::JsonQuerySyntaxError",
+      "title": "yosoi::locators::JsonQuerySyntaxError",
+      "kind": "enum",
+      "signature": "pub enum JsonQuerySyntaxError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/json/types.rs",
+        "lineStart": 8,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/json/types.rs#L8-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::LocateFailure",
+      "publicPath": "yosoi::locators::LocateFailure",
+      "title": "yosoi::locators::LocateFailure",
+      "kind": "enum",
+      "signature": "pub enum LocateFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 316,
+        "lineEnd": 334,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L316-L334"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::NativeCoordinate",
+      "publicPath": "yosoi::locators::NativeCoordinate",
+      "title": "yosoi::locators::NativeCoordinate",
+      "kind": "enum",
+      "signature": "pub enum NativeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 149,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L149-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::PlanError",
+      "publicPath": "yosoi::locators::PlanError",
+      "title": "yosoi::locators::PlanError",
+      "kind": "enum",
+      "signature": "pub enum PlanError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_model.rs",
+        "lineStart": 283,
+        "lineEnd": 319,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_model.rs#L283-L319"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::ProjectedValue",
+      "publicPath": "yosoi::locators::ProjectedValue",
+      "title": "yosoi::locators::ProjectedValue",
+      "kind": "enum",
+      "signature": "pub enum ProjectedValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 24,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L24-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::QueryAtom",
+      "publicPath": "yosoi::locators::QueryAtom",
+      "title": "yosoi::locators::QueryAtom",
+      "kind": "enum",
+      "signature": "pub enum QueryAtom",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 52,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query.rs#L52-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::QueryError",
+      "publicPath": "yosoi::locators::QueryError",
+      "title": "yosoi::locators::QueryError",
+      "kind": "enum",
+      "signature": "pub enum QueryError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 6,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_error.rs#L6-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::QueryResultShape",
+      "publicPath": "yosoi::locators::QueryResultShape",
+      "title": "yosoi::locators::QueryResultShape",
+      "kind": "enum",
+      "signature": "pub enum QueryResultShape",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 90,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query.rs#L90-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::locators::ResourceLimit",
+      "publicPath": "yosoi::locators::ResourceLimit",
+      "title": "yosoi::locators::ResourceLimit",
+      "kind": "enum",
+      "signature": "pub enum ResourceLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 28,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/limits.rs#L28-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::accessibility_state",
+      "publicPath": "yosoi::locators::accessibility_state",
+      "title": "yosoi::locators::accessibility_state",
+      "kind": "function",
+      "signature": "pub const fn accessibility_state(name: crate::query::AccessibilityStateName, value: bool) -> crate::query::QuerySpec",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 66,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L66-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::accessibility_text",
+      "publicPath": "yosoi::locators::accessibility_text",
+      "title": "yosoi::locators::accessibility_text",
+      "kind": "function",
+      "signature": "pub fn accessibility_text(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 58,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L58-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::accessible_name",
+      "publicPath": "yosoi::locators::accessible_name",
+      "title": "yosoi::locators::accessible_name",
+      "kind": "function",
+      "signature": "pub fn accessible_name(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 50,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L50-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::css",
+      "publicPath": "yosoi::locators::css",
+      "title": "yosoi::locators::css",
+      "kind": "function",
+      "signature": "pub fn css(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 5,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L5-L7"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::json_path",
+      "publicPath": "yosoi::locators::json_path",
+      "title": "yosoi::locators::json_path",
+      "kind": "function",
+      "signature": "pub fn json_path(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 30,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L30-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::json_pointer",
+      "publicPath": "yosoi::locators::json_pointer",
+      "title": "yosoi::locators::json_pointer",
+      "kind": "function",
+      "signature": "pub fn json_pointer(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 21,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L21-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::output",
+      "publicPath": "yosoi::locators::output",
+      "title": "yosoi::locators::output",
+      "kind": "function",
+      "signature": "pub fn output(id: impl Into<String>, value: OutputPlan) -> Result<NamedOutput, crate::plan::model::PlanError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 202,
+        "lineEnd": 207,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L202-L207"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::regex",
+      "publicPath": "yosoi::locators::regex",
+      "title": "yosoi::locators::regex",
+      "kind": "function",
+      "signature": "pub fn regex(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 84,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L84-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::role",
+      "publicPath": "yosoi::locators::role",
+      "title": "yosoi::locators::role",
+      "kind": "function",
+      "signature": "pub fn role(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 42,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L42-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::text_literal",
+      "publicPath": "yosoi::locators::text_literal",
+      "title": "yosoi::locators::text_literal",
+      "kind": "function",
+      "signature": "pub fn text_literal(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 73,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L73-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::tree_text_contains",
+      "publicPath": "yosoi::locators::tree_text_contains",
+      "title": "yosoi::locators::tree_text_contains",
+      "kind": "function",
+      "signature": "pub fn tree_text_contains(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 13,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L13-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::xpath",
+      "publicPath": "yosoi::locators::xpath",
+      "title": "yosoi::locators::xpath",
+      "kind": "function",
+      "signature": "pub fn xpath(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_builders.rs",
+        "lineStart": 9,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query_builders.rs#L9-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::locator::css",
+      "publicPath": "yosoi::locators::locator::css",
+      "title": "yosoi::locators::locator::css",
+      "kind": "function",
+      "signature": "pub const fn css(expression: &'static str) -> super::PinnedLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/locator_declaration.rs",
+        "lineStart": 81,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/locator_declaration.rs#L81-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::locator::text_literal",
+      "publicPath": "yosoi::locators::locator::text_literal",
+      "title": "yosoi::locators::locator::text_literal",
+      "kind": "function",
+      "signature": "pub const fn text_literal(expression: &'static str) -> super::PinnedLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/locator_declaration.rs",
+        "lineStart": 85,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/locator_declaration.rs#L85-L87"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::locators::locator",
+      "publicPath": "yosoi::locators::locator",
+      "title": "yosoi::locators::locator",
+      "kind": "module",
+      "signature": "pub mod locator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/locators.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/locators.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::AccessibilityCoordinate",
+      "publicPath": "yosoi::locators::AccessibilityCoordinate",
+      "title": "yosoi::locators::AccessibilityCoordinate",
+      "kind": "struct",
+      "signature": "pub struct AccessibilityCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 99,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L99-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::ByteRange",
+      "publicPath": "yosoi::locators::ByteRange",
+      "title": "yosoi::locators::ByteRange",
+      "kind": "struct",
+      "signature": "pub struct ByteRange",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_coordinates.rs",
+        "lineStart": 29,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_coordinates.rs#L29-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::DecodedTextCoordinate",
+      "publicPath": "yosoi::locators::DecodedTextCoordinate",
+      "title": "yosoi::locators::DecodedTextCoordinate",
+      "kind": "struct",
+      "signature": "pub struct DecodedTextCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_coordinates.rs",
+        "lineStart": 96,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_coordinates.rs#L96-L99"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::DomCoordinate",
+      "publicPath": "yosoi::locators::DomCoordinate",
+      "title": "yosoi::locators::DomCoordinate",
+      "kind": "struct",
+      "signature": "pub struct DomCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 74,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L74-L77"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::DomNodeId",
+      "publicPath": "yosoi::locators::DomNodeId",
+      "title": "yosoi::locators::DomNodeId",
+      "kind": "struct",
+      "signature": "pub struct DomNodeId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::ExpandedNamePathSegment",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment",
+      "title": "yosoi::locators::ExpandedNamePathSegment",
+      "kind": "struct",
+      "signature": "pub struct ExpandedNamePathSegment",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 7,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L7-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::Finding",
+      "publicPath": "yosoi::locators::Finding",
+      "title": "yosoi::locators::Finding",
+      "kind": "struct",
+      "signature": "pub struct Finding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 101,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L101-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::JsonCoordinate",
+      "publicPath": "yosoi::locators::JsonCoordinate",
+      "title": "yosoi::locators::JsonCoordinate",
+      "kind": "struct",
+      "signature": "pub struct JsonCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L10-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::LocateResult",
+      "publicPath": "yosoi::locators::LocateResult",
+      "title": "yosoi::locators::LocateResult",
+      "kind": "struct",
+      "signature": "pub struct LocateResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 219,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L219-L223"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::NamedOutput",
+      "publicPath": "yosoi::locators::NamedOutput",
+      "title": "yosoi::locators::NamedOutput",
+      "kind": "struct",
+      "signature": "pub struct NamedOutput",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 196,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L196-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::NamespaceBinding",
+      "publicPath": "yosoi::locators::NamespaceBinding",
+      "title": "yosoi::locators::NamespaceBinding",
+      "kind": "struct",
+      "signature": "pub struct NamespaceBinding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 100,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query.rs#L100-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::NodeReference",
+      "publicPath": "yosoi::locators::NodeReference",
+      "title": "yosoi::locators::NodeReference",
+      "kind": "struct",
+      "signature": "pub struct NodeReference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 160,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_native_coordinates.rs#L160-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::OutputId",
+      "publicPath": "yosoi::locators::OutputId",
+      "title": "yosoi::locators::OutputId",
+      "kind": "struct",
+      "signature": "pub struct OutputId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::OutputPlan",
+      "publicPath": "yosoi::locators::OutputPlan",
+      "title": "yosoi::locators::OutputPlan",
+      "kind": "struct",
+      "signature": "pub struct OutputPlan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 175,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L175-L179"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::PinnedLocator",
+      "publicPath": "yosoi::locators::PinnedLocator",
+      "title": "yosoi::locators::PinnedLocator",
+      "kind": "struct",
+      "signature": "pub struct PinnedLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/locator_declaration.rs",
+        "lineStart": 11,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/locator_declaration.rs#L11-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::PinnedOutputLocator",
+      "publicPath": "yosoi::locators::PinnedOutputLocator",
+      "title": "yosoi::locators::PinnedOutputLocator",
+      "kind": "struct",
+      "signature": "pub struct PinnedOutputLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/locator_declaration.rs",
+        "lineStart": 53,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/locator_declaration.rs#L53-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::Plan",
+      "publicPath": "yosoi::locators::Plan",
+      "title": "yosoi::locators::Plan",
+      "kind": "struct",
+      "signature": "pub struct Plan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_model.rs",
+        "lineStart": 100,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_model.rs#L100-L110"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::QuerySpec",
+      "publicPath": "yosoi::locators::QuerySpec",
+      "title": "yosoi::locators::QuerySpec",
+      "kind": "struct",
+      "signature": "pub struct QuerySpec",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 121,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/query.rs#L121-L126"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::RegionId",
+      "publicPath": "yosoi::locators::RegionId",
+      "title": "yosoi::locators::RegionId",
+      "kind": "struct",
+      "signature": "pub struct RegionId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::RegionLineage",
+      "publicPath": "yosoi::locators::RegionLineage",
+      "title": "yosoi::locators::RegionLineage",
+      "kind": "struct",
+      "signature": "pub struct RegionLineage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L68-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::RegionPlan",
+      "publicPath": "yosoi::locators::RegionPlan",
+      "title": "yosoi::locators::RegionPlan",
+      "kind": "struct",
+      "signature": "pub struct RegionPlan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 86,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/plan_authoring.rs#L86-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::TextRange",
+      "publicPath": "yosoi::locators::TextRange",
+      "title": "yosoi::locators::TextRange",
+      "kind": "struct",
+      "signature": "pub struct TextRange",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_coordinates.rs",
+        "lineStart": 71,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_coordinates.rs#L71-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::locators::TreeCoordinate",
+      "publicPath": "yosoi::locators::TreeCoordinate",
+      "title": "yosoi::locators::TreeCoordinate",
+      "kind": "struct",
+      "signature": "pub struct TreeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 74,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L74-L79"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::DiscoverySource",
+      "publicPath": "yosoi::map::DiscoverySource",
+      "title": "yosoi::map::DiscoverySource",
+      "kind": "enum",
+      "signature": "pub enum DiscoverySource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 15,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L15-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::Exploration",
+      "publicPath": "yosoi::map::Exploration",
+      "title": "yosoi::map::Exploration",
+      "kind": "enum",
+      "signature": "pub enum Exploration",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 64,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L64-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::HostVerification",
+      "publicPath": "yosoi::map::HostVerification",
+      "title": "yosoi::map::HostVerification",
+      "kind": "enum",
+      "signature": "pub enum HostVerification",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 104,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L104-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::LimitReached",
+      "publicPath": "yosoi::map::LimitReached",
+      "title": "yosoi::map::LimitReached",
+      "kind": "enum",
+      "signature": "pub enum LimitReached",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 181,
+        "lineEnd": 194,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L181-L194"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::MapTermination",
+      "publicPath": "yosoi::map::MapTermination",
+      "title": "yosoi::map::MapTermination",
+      "kind": "enum",
+      "signature": "pub enum MapTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 198,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L198-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::OmissionReason",
+      "publicPath": "yosoi::map::OmissionReason",
+      "title": "yosoi::map::OmissionReason",
+      "kind": "enum",
+      "signature": "pub enum OmissionReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 207,
+        "lineEnd": 217,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L207-L217"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::PendingReason",
+      "publicPath": "yosoi::map::PendingReason",
+      "title": "yosoi::map::PendingReason",
+      "kind": "enum",
+      "signature": "pub enum PendingReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 126,
+        "lineEnd": 131,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L126-L131"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::PublicProvider",
+      "publicPath": "yosoi::map::PublicProvider",
+      "title": "yosoi::map::PublicProvider",
+      "kind": "enum",
+      "signature": "pub enum PublicProvider",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 20,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/providers.rs#L20-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::Rejection",
+      "publicPath": "yosoi::map::Rejection",
+      "title": "yosoi::map::Rejection",
+      "kind": "enum",
+      "signature": "pub enum Rejection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 13,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L13-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::RelationshipKind",
+      "publicPath": "yosoi::map::RelationshipKind",
+      "title": "yosoi::map::RelationshipKind",
+      "kind": "enum",
+      "signature": "pub enum RelationshipKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 111,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L111-L115"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::SkipReason",
+      "publicPath": "yosoi::map::SkipReason",
+      "title": "yosoi::map::SkipReason",
+      "kind": "enum",
+      "signature": "pub enum SkipReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 40,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L40-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::SourceFailure",
+      "publicPath": "yosoi::map::SourceFailure",
+      "title": "yosoi::map::SourceFailure",
+      "kind": "enum",
+      "signature": "pub enum SourceFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 49,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L49-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::SourceSkipReason",
+      "publicPath": "yosoi::map::SourceSkipReason",
+      "title": "yosoi::map::SourceSkipReason",
+      "kind": "enum",
+      "signature": "pub enum SourceSkipReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 149,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L149-L151"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::SourceStatus",
+      "publicPath": "yosoi::map::SourceStatus",
+      "title": "yosoi::map::SourceStatus",
+      "kind": "enum",
+      "signature": "pub enum SourceStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 155,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L155-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::map::SupportDocumentKind",
+      "publicPath": "yosoi::map::SupportDocumentKind",
+      "title": "yosoi::map::SupportDocumentKind",
+      "kind": "enum",
+      "signature": "pub enum SupportDocumentKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 141,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L141-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::new",
+      "publicPath": "yosoi::map::new",
+      "title": "yosoi::map::new",
+      "kind": "function",
+      "signature": "pub fn new(seed: impl Into<String>) -> MapRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 19,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L19-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::FrontierEntry",
+      "publicPath": "yosoi::map::FrontierEntry",
+      "title": "yosoi::map::FrontierEntry",
+      "kind": "struct",
+      "signature": "pub struct FrontierEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 134,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L134-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::HostEntry",
+      "publicPath": "yosoi::map::HostEntry",
+      "title": "yosoi::map::HostEntry",
+      "kind": "struct",
+      "signature": "pub struct HostEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 96,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L96-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::MapError",
+      "publicPath": "yosoi::map::MapError",
+      "title": "yosoi::map::MapError",
+      "kind": "struct",
+      "signature": "pub struct MapError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L154-L154"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::MapOutcome",
+      "publicPath": "yosoi::map::MapOutcome",
+      "title": "yosoi::map::MapOutcome",
+      "kind": "struct",
+      "signature": "pub struct MapOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 65,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L65-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::MapRequest",
+      "publicPath": "yosoi::map::MapRequest",
+      "title": "yosoi::map::MapRequest",
+      "kind": "struct",
+      "signature": "pub struct MapRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 27,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L27-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::Observation",
+      "publicPath": "yosoi::map::Observation",
+      "title": "yosoi::map::Observation",
+      "kind": "struct",
+      "signature": "pub struct Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 33,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L33-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::Omission",
+      "publicPath": "yosoi::map::Omission",
+      "title": "yosoi::map::Omission",
+      "kind": "struct",
+      "signature": "pub struct Omission",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 220,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L220-L223"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::PageEntry",
+      "publicPath": "yosoi::map::PageEntry",
+      "title": "yosoi::map::PageEntry",
+      "kind": "struct",
+      "signature": "pub struct PageEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 73,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L73-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::Relationship",
+      "publicPath": "yosoi::map::Relationship",
+      "title": "yosoi::map::Relationship",
+      "kind": "struct",
+      "signature": "pub struct Relationship",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 118,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L118-L122"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::RequestTrace",
+      "publicPath": "yosoi::map::RequestTrace",
+      "title": "yosoi::map::RequestTrace",
+      "kind": "struct",
+      "signature": "pub struct RequestTrace",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/map/mod.rs",
+        "lineStart": 116,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/map/mod.rs#L116-L120"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::RetainedCapture",
+      "publicPath": "yosoi::map::RetainedCapture",
+      "title": "yosoi::map::RetainedCapture",
+      "kind": "struct",
+      "signature": "pub struct RetainedCapture<'map>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 136,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L136-L138"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::SourceOutcome",
+      "publicPath": "yosoi::map::SourceOutcome",
+      "title": "yosoi::map::SourceOutcome",
+      "kind": "struct",
+      "signature": "pub struct SourceOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 166,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L166-L170"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::Summary",
+      "publicPath": "yosoi::map::Summary",
+      "title": "yosoi::map::Summary",
+      "kind": "struct",
+      "signature": "pub struct Summary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 226,
+        "lineEnd": 236,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L226-L236"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::SupportDocument",
+      "publicPath": "yosoi::map::SupportDocument",
+      "title": "yosoi::map::SupportDocument",
+      "kind": "struct",
+      "signature": "pub struct SupportDocument",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 173,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L173-L177"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::TreeEntry",
+      "publicPath": "yosoi::map::TreeEntry",
+      "title": "yosoi::map::TreeEntry",
+      "kind": "struct",
+      "signature": "pub struct TreeEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 239,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L239-L243"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::map::WildcardEntry",
+      "publicPath": "yosoi::map::WildcardEntry",
+      "title": "yosoi::map::WildcardEntry",
+      "kind": "struct",
+      "signature": "pub struct WildcardEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 90,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L90-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::contracts",
+      "publicPath": "yosoi::contracts",
+      "title": "yosoi::contracts",
+      "kind": "module",
+      "signature": "pub mod contracts",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/contracts.rs",
+        "lineStart": 1,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L1-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::documents",
+      "publicPath": "yosoi::documents",
+      "title": "yosoi::documents",
+      "kind": "module",
+      "signature": "pub mod documents",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 1,
+        "lineEnd": 182,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L1-L182"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::locators",
+      "publicPath": "yosoi::locators",
+      "title": "yosoi::locators",
+      "kind": "module",
+      "signature": "pub mod locators",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/locators.rs",
+        "lineStart": 1,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/locators.rs#L1-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::map",
+      "publicPath": "yosoi::map",
+      "title": "yosoi::map",
+      "kind": "module",
+      "signature": "pub mod map",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 1,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L1-L160"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::policy",
+      "publicPath": "yosoi::policy",
+      "title": "yosoi::policy",
+      "kind": "module",
+      "signature": "pub mod policy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/policy.rs",
+        "lineStart": 1,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L1-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::prelude",
+      "publicPath": "yosoi::prelude",
+      "title": "yosoi::prelude",
+      "kind": "module",
+      "signature": "pub mod prelude",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/prelude.rs",
+        "lineStart": 1,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/prelude.rs#L1-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::request",
+      "publicPath": "yosoi::request",
+      "title": "yosoi::request",
+      "kind": "module",
+      "signature": "pub mod request",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request.rs",
+        "lineStart": 1,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request.rs#L1-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::search",
+      "publicPath": "yosoi::search",
+      "title": "yosoi::search",
+      "kind": "module",
+      "signature": "pub mod search",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 1,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/search.rs#L1-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::Acquisition",
+      "publicPath": "yosoi::policy::Acquisition",
+      "title": "yosoi::policy::Acquisition",
+      "kind": "enum",
+      "signature": "pub enum Acquisition",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 51,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/page.rs#L51-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::AcquisitionKind",
+      "publicPath": "yosoi::policy::AcquisitionKind",
+      "title": "yosoi::policy::AcquisitionKind",
+      "kind": "enum",
+      "signature": "pub enum AcquisitionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 27,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/page.rs#L27-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::BrowserMode",
+      "publicPath": "yosoi::policy::BrowserMode",
+      "title": "yosoi::policy::BrowserMode",
+      "kind": "enum",
+      "signature": "pub enum BrowserMode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 43,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L43-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::DirectHttpRedirects",
+      "publicPath": "yosoi::policy::DirectHttpRedirects",
+      "title": "yosoi::policy::DirectHttpRedirects",
+      "kind": "enum",
+      "signature": "pub enum DirectHttpRedirects",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 70,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/redirect.rs#L70-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::DirectHttpRedirectTargets",
+      "publicPath": "yosoi::policy::DirectHttpRedirectTargets",
+      "title": "yosoi::policy::DirectHttpRedirectTargets",
+      "kind": "enum",
+      "signature": "pub enum DirectHttpRedirectTargets",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 59,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/redirect.rs#L59-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::DiscoveryDocuments",
+      "publicPath": "yosoi::policy::DiscoveryDocuments",
+      "title": "yosoi::policy::DiscoveryDocuments",
+      "kind": "enum",
+      "signature": "pub enum DiscoveryDocuments",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 147,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L147-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::DocumentRequest",
+      "publicPath": "yosoi::policy::DocumentRequest",
+      "title": "yosoi::policy::DocumentRequest",
+      "kind": "enum",
+      "signature": "pub enum DocumentRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 13,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/page.rs#L13-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::DocumentSelectionKind",
+      "publicPath": "yosoi::policy::DocumentSelectionKind",
+      "title": "yosoi::policy::DocumentSelectionKind",
+      "kind": "enum",
+      "signature": "pub enum DocumentSelectionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 38,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/page.rs#L38-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::HostScope",
+      "publicPath": "yosoi::policy::HostScope",
+      "title": "yosoi::policy::HostScope",
+      "kind": "enum",
+      "signature": "pub enum HostScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 92,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L92-L98"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::PageDiscovery",
+      "publicPath": "yosoi::policy::PageDiscovery",
+      "title": "yosoi::policy::PageDiscovery",
+      "kind": "enum",
+      "signature": "pub enum PageDiscovery",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 114,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L114-L120"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::PathScope",
+      "publicPath": "yosoi::policy::PathScope",
+      "title": "yosoi::policy::PathScope",
+      "kind": "enum",
+      "signature": "pub enum PathScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 103,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L103-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::ProfileSelection",
+      "publicPath": "yosoi::policy::ProfileSelection",
+      "title": "yosoi::policy::ProfileSelection",
+      "kind": "enum",
+      "signature": "pub enum ProfileSelection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 178,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L178-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::ProviderDefaultsStatus",
+      "publicPath": "yosoi::policy::ProviderDefaultsStatus",
+      "title": "yosoi::policy::ProviderDefaultsStatus",
+      "kind": "enum",
+      "signature": "pub enum ProviderDefaultsStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 78,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L78-L87"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::Robots",
+      "publicPath": "yosoi::policy::Robots",
+      "title": "yosoi::policy::Robots",
+      "kind": "enum",
+      "signature": "pub enum Robots",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 125,
+        "lineEnd": 131,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L125-L131"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::Subdomains",
+      "publicPath": "yosoi::policy::Subdomains",
+      "title": "yosoi::policy::Subdomains",
+      "kind": "enum",
+      "signature": "pub enum Subdomains",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 136,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L136-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::TuningMode",
+      "publicPath": "yosoi::policy::TuningMode",
+      "title": "yosoi::policy::TuningMode",
+      "kind": "enum",
+      "signature": "pub enum TuningMode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 29,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/tuning.rs#L29-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "module:yosoi::policy::search",
+      "publicPath": "yosoi::policy::search",
+      "title": "yosoi::policy::search",
+      "kind": "module",
+      "signature": "pub mod search",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/policy.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::search::ProfileSelectionKind",
+      "publicPath": "yosoi::policy::search::ProfileSelectionKind",
+      "title": "yosoi::policy::search::ProfileSelectionKind",
+      "kind": "enum",
+      "signature": "pub enum ProfileSelectionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 92,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L92-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::policy::search::Provider",
+      "publicPath": "yosoi::policy::search::Provider",
+      "title": "yosoi::policy::search::Provider",
+      "kind": "enum",
+      "signature": "pub enum Provider",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 16,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L16-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::search::EffectiveProviderRoute",
+      "publicPath": "yosoi::policy::search::EffectiveProviderRoute",
+      "title": "yosoi::policy::search::EffectiveProviderRoute",
+      "kind": "struct",
+      "signature": "pub struct EffectiveProviderRoute",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/effective.rs",
+        "lineStart": 124,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/effective.rs#L124-L133"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::search::EffectiveSearch",
+      "publicPath": "yosoi::policy::search::EffectiveSearch",
+      "title": "yosoi::policy::search::EffectiveSearch",
+      "kind": "struct",
+      "signature": "pub struct EffectiveSearch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/effective.rs",
+        "lineStart": 19,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/effective.rs#L19-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::search::Search",
+      "publicPath": "yosoi::policy::search::Search",
+      "title": "yosoi::policy::search::Search",
+      "kind": "struct",
+      "signature": "pub struct Search",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/plan.rs",
+        "lineStart": 19,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/plan.rs#L19-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::AccessibilityNodeLimit",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit",
+      "title": "yosoi::policy::AccessibilityNodeLimit",
+      "kind": "struct",
+      "signature": "pub struct AccessibilityNodeLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L193-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::AddressableByteLimit",
+      "publicPath": "yosoi::policy::AddressableByteLimit",
+      "title": "yosoi::policy::AddressableByteLimit",
+      "kind": "struct",
+      "signature": "pub struct AddressableByteLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::BrowserLimits",
+      "publicPath": "yosoi::policy::BrowserLimits",
+      "title": "yosoi::policy::BrowserLimits",
+      "kind": "struct",
+      "signature": "pub struct BrowserLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 35,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L35-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Budget",
+      "publicPath": "yosoi::policy::Budget",
+      "title": "yosoi::policy::Budget",
+      "kind": "struct",
+      "signature": "pub struct Budget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/limits.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Documents",
+      "publicPath": "yosoi::policy::Documents",
+      "title": "yosoi::policy::Documents",
+      "kind": "struct",
+      "signature": "pub struct Documents",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/documents.rs",
+        "lineStart": 8,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/documents.rs#L8-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::EventLimit",
+      "publicPath": "yosoi::policy::EventLimit",
+      "title": "yosoi::policy::EventLimit",
+      "kind": "struct",
+      "signature": "pub struct EventLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L89-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Filters",
+      "publicPath": "yosoi::policy::Filters",
+      "title": "yosoi::policy::Filters",
+      "kind": "struct",
+      "signature": "pub struct Filters",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 16,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L16-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Limits",
+      "publicPath": "yosoi::policy::Limits",
+      "title": "yosoi::policy::Limits",
+      "kind": "struct",
+      "signature": "pub struct Limits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 39,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/limits.rs#L39-L77"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Locators",
+      "publicPath": "yosoi::policy::Locators",
+      "title": "yosoi::policy::Locators",
+      "kind": "struct",
+      "signature": "pub struct Locators",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/locators.rs",
+        "lineStart": 8,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/locators.rs#L8-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Map",
+      "publicPath": "yosoi::policy::Map",
+      "title": "yosoi::policy::Map",
+      "kind": "struct",
+      "signature": "pub struct Map",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 14,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L14-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::MaximumElapsed",
+      "publicPath": "yosoi::policy::MaximumElapsed",
+      "title": "yosoi::policy::MaximumElapsed",
+      "kind": "struct",
+      "signature": "pub struct MaximumElapsed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 244,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L244-L244"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Page",
+      "publicPath": "yosoi::policy::Page",
+      "title": "yosoi::policy::Page",
+      "kind": "struct",
+      "signature": "pub struct Page",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 152,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/page.rs#L152-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::PolicySnapshot",
+      "publicPath": "yosoi::policy::PolicySnapshot",
+      "title": "yosoi::policy::PolicySnapshot",
+      "kind": "struct",
+      "signature": "pub struct PolicySnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/snapshot.rs",
+        "lineStart": 7,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/snapshot.rs#L7-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::ProviderDefaultsVersion",
+      "publicPath": "yosoi::policy::ProviderDefaultsVersion",
+      "title": "yosoi::policy::ProviderDefaultsVersion",
+      "kind": "struct",
+      "signature": "pub struct ProviderDefaultsVersion",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::ProviderRequestProfile",
+      "publicPath": "yosoi::policy::ProviderRequestProfile",
+      "title": "yosoi::policy::ProviderRequestProfile",
+      "kind": "struct",
+      "signature": "pub struct ProviderRequestProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 100,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L100-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::ProviderSelection",
+      "publicPath": "yosoi::policy::ProviderSelection",
+      "title": "yosoi::policy::ProviderSelection",
+      "kind": "struct",
+      "signature": "pub struct ProviderSelection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 145,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L145-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::RedirectHopLimit",
+      "publicPath": "yosoi::policy::RedirectHopLimit",
+      "title": "yosoi::policy::RedirectHopLimit",
+      "kind": "struct",
+      "signature": "pub struct RedirectHopLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/redirect.rs#L8-L8"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Request",
+      "publicPath": "yosoi::policy::Request",
+      "title": "yosoi::policy::Request",
+      "kind": "struct",
+      "signature": "pub struct Request",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 63,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L63-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::ResourceLimit",
+      "publicPath": "yosoi::policy::ResourceLimit",
+      "title": "yosoi::policy::ResourceLimit",
+      "kind": "struct",
+      "signature": "pub struct ResourceLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L142-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Scope",
+      "publicPath": "yosoi::policy::Scope",
+      "title": "yosoi::policy::Scope",
+      "kind": "struct",
+      "signature": "pub struct Scope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 82,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map.rs#L82-L87"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::SourceLimits",
+      "publicPath": "yosoi::policy::SourceLimits",
+      "title": "yosoi::policy::SourceLimits",
+      "kind": "struct",
+      "signature": "pub struct SourceLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 13,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L13-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::policy::Tuning",
+      "publicPath": "yosoi::policy::Tuning",
+      "title": "yosoi::policy::Tuning",
+      "kind": "struct",
+      "signature": "pub struct Tuning",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/tuning.rs",
+        "lineStart": 10,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/tuning.rs#L10-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "reexport:yosoi::CancellationToken",
+      "publicPath": "yosoi::CancellationToken",
+      "title": "yosoi::CancellationToken",
+      "kind": "reexport",
+      "signature": "pub use request::CancellationToken;",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/lib.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/lib.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::AttemptDiagnostic",
+      "publicPath": "yosoi::request::AttemptDiagnostic",
+      "title": "yosoi::request::AttemptDiagnostic",
+      "kind": "enum",
+      "signature": "pub enum AttemptDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 25,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L25-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::AttemptFailureKind",
+      "publicPath": "yosoi::request::AttemptFailureKind",
+      "title": "yosoi::request::AttemptFailureKind",
+      "kind": "enum",
+      "signature": "pub enum AttemptFailureKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 13,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L13-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::AttemptState",
+      "publicPath": "yosoi::request::AttemptState",
+      "title": "yosoi::request::AttemptState",
+      "kind": "enum",
+      "signature": "pub enum AttemptState",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 12,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L12-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::BrowserFailureReason",
+      "publicPath": "yosoi::request::BrowserFailureReason",
+      "title": "yosoi::request::BrowserFailureReason",
+      "kind": "enum",
+      "signature": "pub enum BrowserFailureReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 257,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L257-L270"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::DecodingErrorCode",
+      "publicPath": "yosoi::request::DecodingErrorCode",
+      "title": "yosoi::request::DecodingErrorCode",
+      "kind": "enum",
+      "signature": "pub enum DecodingErrorCode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 36,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/source/decode.rs#L36-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::DirectHttpRedirectErrorKind",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind",
+      "kind": "enum",
+      "signature": "pub enum DirectHttpRedirectErrorKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 22,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L22-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::DirectHttpTransportErrorKind",
+      "publicPath": "yosoi::request::DirectHttpTransportErrorKind",
+      "title": "yosoi::request::DirectHttpTransportErrorKind",
+      "kind": "enum",
+      "signature": "pub enum DirectHttpTransportErrorKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/error.rs",
+        "lineStart": 13,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/error.rs#L13-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::DocumentOutcome",
+      "publicPath": "yosoi::request::DocumentOutcome",
+      "title": "yosoi::request::DocumentOutcome",
+      "kind": "enum",
+      "signature": "pub enum DocumentOutcome<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 104,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L104-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::NotStartedReason",
+      "publicPath": "yosoi::request::NotStartedReason",
+      "title": "yosoi::request::NotStartedReason",
+      "kind": "enum",
+      "signature": "pub enum NotStartedReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 180,
+        "lineEnd": 182,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L180-L182"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::PartialReason",
+      "publicPath": "yosoi::request::PartialReason",
+      "title": "yosoi::request::PartialReason",
+      "kind": "enum",
+      "signature": "pub enum PartialReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/projection/outcome/reasons.rs",
+        "lineStart": 6,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/projection/outcome/reasons.rs#L6-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::UnavailableReason",
+      "publicPath": "yosoi::request::UnavailableReason",
+      "title": "yosoi::request::UnavailableReason",
+      "kind": "enum",
+      "signature": "pub enum UnavailableReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/projection/outcome/reasons.rs",
+        "lineStart": 42,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/projection/outcome/reasons.rs#L42-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::UnknownReason",
+      "publicPath": "yosoi::request::UnknownReason",
+      "title": "yosoi::request::UnknownReason",
+      "kind": "enum",
+      "signature": "pub enum UnknownReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source.rs",
+        "lineStart": 90,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/source.rs#L90-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::UnprojectableReason",
+      "publicPath": "yosoi::request::UnprojectableReason",
+      "title": "yosoi::request::UnprojectableReason",
+      "kind": "enum",
+      "signature": "pub enum UnprojectableReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/projection/outcome/reasons.rs",
+        "lineStart": 72,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/projection/outcome/reasons.rs#L72-L117"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::request::WebArtifactFamily",
+      "publicPath": "yosoi::request::WebArtifactFamily",
+      "title": "yosoi::request::WebArtifactFamily",
+      "kind": "enum",
+      "signature": "pub enum WebArtifactFamily",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 139,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L139-L162"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::new",
+      "publicPath": "yosoi::request::new",
+      "title": "yosoi::request::new",
+      "kind": "function",
+      "signature": "pub fn new(target: impl Into<super::WebTarget>) -> PageRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 7,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/authoring.rs#L7-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "reexport:yosoi::request::CancellationToken",
+      "publicPath": "yosoi::request::CancellationToken",
+      "title": "yosoi::request::CancellationToken",
+      "kind": "reexport",
+      "signature": "pub use yosoi_engine::CancellationToken;",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::ActivityId",
+      "publicPath": "yosoi::request::ActivityId",
+      "title": "yosoi::request::ActivityId",
+      "kind": "struct",
+      "signature": "pub struct ActivityId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/identity.rs#L37-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::Attempt",
+      "publicPath": "yosoi::request::Attempt",
+      "title": "yosoi::request::Attempt",
+      "kind": "struct",
+      "signature": "pub struct Attempt<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 20,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L20-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::AttemptDocument",
+      "publicPath": "yosoi::request::AttemptDocument",
+      "title": "yosoi::request::AttemptDocument",
+      "kind": "struct",
+      "signature": "pub struct AttemptDocument<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 72,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/outcomes.rs#L72-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::BoundPageRequest",
+      "publicPath": "yosoi::request::BoundPageRequest",
+      "title": "yosoi::request::BoundPageRequest",
+      "kind": "struct",
+      "signature": "pub struct BoundPageRequest<'policy>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 63,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/authoring.rs#L63-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::CaptureId",
+      "publicPath": "yosoi::request::CaptureId",
+      "title": "yosoi::request::CaptureId",
+      "kind": "struct",
+      "signature": "pub struct CaptureId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/identity.rs#L88-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::PageRequest",
+      "publicPath": "yosoi::request::PageRequest",
+      "title": "yosoi::request::PageRequest",
+      "kind": "struct",
+      "signature": "pub struct PageRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 15,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/authoring.rs#L15-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::RequestId",
+      "publicPath": "yosoi::request::RequestId",
+      "title": "yosoi::request::RequestId",
+      "kind": "struct",
+      "signature": "pub struct RequestId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 201,
+        "lineEnd": 201,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request.rs#L201-L201"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::RequestPreparationError",
+      "publicPath": "yosoi::request::RequestPreparationError",
+      "title": "yosoi::request::RequestPreparationError",
+      "kind": "struct",
+      "signature": "pub struct RequestPreparationError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/authoring.rs#L109-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::RequestSendError",
+      "publicPath": "yosoi::request::RequestSendError",
+      "title": "yosoi::request::RequestSendError",
+      "kind": "struct",
+      "signature": "pub struct RequestSendError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/authoring.rs#L119-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::Response",
+      "publicPath": "yosoi::request::Response",
+      "title": "yosoi::request::Response",
+      "kind": "struct",
+      "signature": "pub struct Response",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 6,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/response.rs#L6-L8"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::ResponseRef",
+      "publicPath": "yosoi::request::ResponseRef",
+      "title": "yosoi::request::ResponseRef",
+      "kind": "struct",
+      "signature": "pub struct ResponseRef<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 41,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request/response.rs#L41-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::request::WebTarget",
+      "publicPath": "yosoi::request::WebTarget",
+      "title": "yosoi::request::WebTarget",
+      "kind": "struct",
+      "signature": "pub struct WebTarget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/request.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::FeatureCoverage",
+      "publicPath": "yosoi::search::FeatureCoverage",
+      "title": "yosoi::search::FeatureCoverage",
+      "kind": "enum",
+      "signature": "pub enum FeatureCoverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 164,
+        "lineEnd": 168,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L164-L168"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::ProviderCharge",
+      "publicPath": "yosoi::search::ProviderCharge",
+      "title": "yosoi::search::ProviderCharge",
+      "kind": "enum",
+      "signature": "pub enum ProviderCharge",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 81,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L81-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::ProviderOutcome",
+      "publicPath": "yosoi::search::ProviderOutcome",
+      "title": "yosoi::search::ProviderOutcome",
+      "kind": "enum",
+      "signature": "pub enum ProviderOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 113,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L113-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::RequestAttemptTerminal",
+      "publicPath": "yosoi::search::RequestAttemptTerminal",
+      "title": "yosoi::search::RequestAttemptTerminal",
+      "kind": "enum",
+      "signature": "pub enum RequestAttemptTerminal",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 71,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L71-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchAttemptDiagnostic",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic",
+      "title": "yosoi::search::SearchAttemptDiagnostic",
+      "kind": "enum",
+      "signature": "pub enum SearchAttemptDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 39,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L39-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchFailure",
+      "publicPath": "yosoi::search::SearchFailure",
+      "title": "yosoi::search::SearchFailure",
+      "kind": "enum",
+      "signature": "pub enum SearchFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 88,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L88-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchFeature",
+      "publicPath": "yosoi::search::SearchFeature",
+      "title": "yosoi::search::SearchFeature",
+      "kind": "enum",
+      "signature": "pub enum SearchFeature",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 193,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L193-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchIssueKind",
+      "publicPath": "yosoi::search::SearchIssueKind",
+      "title": "yosoi::search::SearchIssueKind",
+      "kind": "enum",
+      "signature": "pub enum SearchIssueKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 280,
+        "lineEnd": 289,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L280-L289"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchQueryError",
+      "publicPath": "yosoi::search::SearchQueryError",
+      "title": "yosoi::search::SearchQueryError",
+      "kind": "enum",
+      "signature": "pub enum SearchQueryError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/query.rs",
+        "lineStart": 12,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/query.rs#L12-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchSendError",
+      "publicPath": "yosoi::search::SearchSendError",
+      "title": "yosoi::search::SearchSendError",
+      "kind": "enum",
+      "signature": "pub enum SearchSendError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/preparation.rs",
+        "lineStart": 16,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/preparation.rs#L16-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchTermination",
+      "publicPath": "yosoi::search::SearchTermination",
+      "title": "yosoi::search::SearchTermination",
+      "kind": "enum",
+      "signature": "pub enum SearchTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 227,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L227-L231"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::SearchUnavailableReason",
+      "publicPath": "yosoi::search::SearchUnavailableReason",
+      "title": "yosoi::search::SearchUnavailableReason",
+      "kind": "enum",
+      "signature": "pub enum SearchUnavailableReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 101,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L101-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "enum:yosoi::search::WebCoverage",
+      "publicPath": "yosoi::search::WebCoverage",
+      "title": "yosoi::search::WebCoverage",
+      "kind": "enum",
+      "signature": "pub enum WebCoverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 156,
+        "lineEnd": 159,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L156-L159"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::new",
+      "publicPath": "yosoi::search::new",
+      "title": "yosoi::search::new",
+      "kind": "function",
+      "signature": "pub fn new(query: impl Into<String>) -> Result<SearchRequest, SearchQueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 17,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/search.rs#L17-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::BoundSearchRequest",
+      "publicPath": "yosoi::search::BoundSearchRequest",
+      "title": "yosoi::search::BoundSearchRequest",
+      "kind": "struct",
+      "signature": "pub struct BoundSearchRequest<'policy>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 53,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/search.rs#L53-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::ImageResult",
+      "publicPath": "yosoi::search::ImageResult",
+      "title": "yosoi::search::ImageResult",
+      "kind": "struct",
+      "signature": "pub struct ImageResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 255,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L255-L258"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::LocalPlace",
+      "publicPath": "yosoi::search::LocalPlace",
+      "title": "yosoi::search::LocalPlace",
+      "kind": "struct",
+      "signature": "pub struct LocalPlace",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 267,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L267-L270"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::ProviderIdentity",
+      "publicPath": "yosoi::search::ProviderIdentity",
+      "title": "yosoi::search::ProviderIdentity",
+      "kind": "struct",
+      "signature": "pub struct ProviderIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 29,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L29-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::ProviderResult",
+      "publicPath": "yosoi::search::ProviderResult",
+      "title": "yosoi::search::ProviderResult",
+      "kind": "struct",
+      "signature": "pub struct ProviderResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 135,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L135-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::RequestAttemptSummary",
+      "publicPath": "yosoi::search::RequestAttemptSummary",
+      "title": "yosoi::search::RequestAttemptSummary",
+      "kind": "struct",
+      "signature": "pub struct RequestAttemptSummary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 57,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L57-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchCoverage",
+      "publicPath": "yosoi::search::SearchCoverage",
+      "title": "yosoi::search::SearchCoverage",
+      "kind": "struct",
+      "signature": "pub struct SearchCoverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 171,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L171-L174"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchHit",
+      "publicPath": "yosoi::search::SearchHit",
+      "title": "yosoi::search::SearchHit",
+      "kind": "struct",
+      "signature": "pub struct SearchHit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 67,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L67-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchHitMetadata",
+      "publicPath": "yosoi::search::SearchHitMetadata",
+      "title": "yosoi::search::SearchHitMetadata",
+      "kind": "struct",
+      "signature": "pub struct SearchHitMetadata",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 40,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L40-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchIssue",
+      "publicPath": "yosoi::search::SearchIssue",
+      "title": "yosoi::search::SearchIssue",
+      "kind": "struct",
+      "signature": "pub struct SearchIssue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 292,
+        "lineEnd": 295,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L292-L295"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchPage",
+      "publicPath": "yosoi::search::SearchPage",
+      "title": "yosoi::search::SearchPage",
+      "kind": "struct",
+      "signature": "pub struct SearchPage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/page.rs",
+        "lineStart": 7,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/page.rs#L7-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchProfileFacts",
+      "publicPath": "yosoi::search::SearchProfileFacts",
+      "title": "yosoi::search::SearchProfileFacts",
+      "kind": "struct",
+      "signature": "pub struct SearchProfileFacts",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 20,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L20-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchRequest",
+      "publicPath": "yosoi::search::SearchRequest",
+      "title": "yosoi::search::SearchRequest",
+      "kind": "struct",
+      "signature": "pub struct SearchRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/search.rs",
+        "lineStart": 23,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/search.rs#L23-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchRequestId",
+      "publicPath": "yosoi::search::SearchRequestId",
+      "title": "yosoi::search::SearchRequestId",
+      "kind": "struct",
+      "signature": "pub struct SearchRequestId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/query.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/query.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchResponse",
+      "publicPath": "yosoi::search::SearchResponse",
+      "title": "yosoi::search::SearchResponse",
+      "kind": "struct",
+      "signature": "pub struct SearchResponse",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 234,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L234-L239"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::search::SearchResultUrl",
+      "publicPath": "yosoi::search::SearchResultUrl",
+      "title": "yosoi::search::SearchResultUrl",
+      "kind": "struct",
+      "signature": "pub struct SearchResultUrl",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/result/types.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::CountLimit",
+      "publicPath": "yosoi::CountLimit",
+      "title": "yosoi::CountLimit",
+      "kind": "struct",
+      "signature": "pub struct CountLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/count.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/count.rs#L7-L7"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::Document",
+      "publicPath": "yosoi::Document",
+      "title": "yosoi::Document",
+      "kind": "struct",
+      "signature": "pub struct Document",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 16,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/documents.rs#L16-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::DocumentId",
+      "publicPath": "yosoi::DocumentId",
+      "title": "yosoi::DocumentId",
+      "kind": "struct",
+      "signature": "pub struct DocumentId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::DocumentProfile",
+      "publicPath": "yosoi::DocumentProfile",
+      "title": "yosoi::DocumentProfile",
+      "kind": "struct",
+      "signature": "pub struct DocumentProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 86,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/document_profile.rs#L86-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::EffectivePolicyIdentity",
+      "publicPath": "yosoi::EffectivePolicyIdentity",
+      "title": "yosoi::EffectivePolicyIdentity",
+      "kind": "struct",
+      "signature": "pub struct EffectivePolicyIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 14,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/identity.rs#L14-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::Policy",
+      "publicPath": "yosoi::Policy",
+      "title": "yosoi::Policy",
+      "kind": "struct",
+      "signature": "pub struct Policy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy_value.rs",
+        "lineStart": 14,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy_value.rs#L14-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct:yosoi::StepLimit",
+      "publicPath": "yosoi::StepLimit",
+      "title": "yosoi::StepLimit",
+      "kind": "struct",
+      "signature": "pub struct StepLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/count.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/count.rs#L51-L51"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c9409f44b0f0e5e8f6c53e8014b02ef9db5e095abf93bb612570664c5e4b7882"
+}

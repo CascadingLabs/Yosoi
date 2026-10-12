@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::AttemptFailureKind",
+  "publicPath": "yosoi::request::AttemptFailureKind",
+  "kind": "enum",
+  "title": "yosoi::request::AttemptFailureKind",
+  "signature": "pub enum AttemptFailureKind",
+  "docs": "Safe reason that one authored attempt failed.",
+  "source": {
+    "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+    "lineStart": 13,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L13-L18"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/request.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::prelude::request::AttemptFailureKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::AttemptFailureKind::CaptureExecution",
+      "publicPath": "yosoi::request::AttemptFailureKind::CaptureExecution",
+      "title": "yosoi::request::AttemptFailureKind::CaptureExecution",
+      "kind": "variant",
+      "signature": "CaptureExecution",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::AttemptFailureKind::MissingExecutionContext",
+      "publicPath": "yosoi::request::AttemptFailureKind::MissingExecutionContext",
+      "title": "yosoi::request::AttemptFailureKind::MissingExecutionContext",
+      "kind": "variant",
+      "signature": "MissingExecutionContext",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::AttemptFailureKind::PolicyResolution",
+      "publicPath": "yosoi::request::AttemptFailureKind::PolicyResolution",
+      "title": "yosoi::request::AttemptFailureKind::PolicyResolution",
+      "kind": "variant",
+      "signature": "PolicyResolution",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::AttemptFailureKind::Projection",
+      "publicPath": "yosoi::request::AttemptFailureKind::Projection",
+      "title": "yosoi::request::AttemptFailureKind::Projection",
+      "kind": "variant",
+      "signature": "Projection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::AttemptFailureKind::clone",
+      "publicPath": "yosoi::request::AttemptFailureKind::clone",
+      "title": "yosoi::request::AttemptFailureKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AttemptFailureKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::AttemptFailureKind::eq",
+      "publicPath": "yosoi::request::AttemptFailureKind::eq",
+      "title": "yosoi::request::AttemptFailureKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AttemptFailureKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::AttemptFailureKind::fmt",
+      "publicPath": "yosoi::request::AttemptFailureKind::fmt",
+      "title": "yosoi::request::AttemptFailureKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::AttemptFailureKind::serialize",
+      "publicPath": "yosoi::request::AttemptFailureKind::serialize",
+      "title": "yosoi::request::AttemptFailureKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "babf615dd0bdff24c106e1855ad435969248618ba5096df922955a1cec6a77fc",
+  "slug": "yosoi/request/enum/attemptfailurekind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "babf615dd0bdff24c106e1855ad435969248618ba5096df922955a1cec6a77fc"
+}

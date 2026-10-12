@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::BoundPageRequest",
+  "publicPath": "yosoi::request::BoundPageRequest",
+  "kind": "struct",
+  "title": "yosoi::request::BoundPageRequest",
+  "signature": "pub struct BoundPageRequest<'policy>",
+  "docs": "A request bound to a borrowed SDK policy.",
+  "source": {
+    "file": "crates/yosoi/src/request/authoring.rs",
+    "lineStart": 65,
+    "lineEnd": 67,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L65-L67"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "aliases": [
+    "yosoi::prelude::request::BoundPageRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::BoundPageRequest::fmt",
+      "publicPath": "yosoi::request::BoundPageRequest::fmt",
+      "title": "yosoi::request::BoundPageRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::id",
+      "publicPath": "yosoi::request::BoundPageRequest::id",
+      "title": "yosoi::request::BoundPageRequest::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> yosoi::request::RequestId",
+      "docs": "Returns the request identity.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 70,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L70-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::policy",
+      "publicPath": "yosoi::request::BoundPageRequest::policy",
+      "title": "yosoi::request::BoundPageRequest::policy",
+      "kind": "function",
+      "signature": "pub const fn policy(&self) -> &yosoi::Policy",
+      "docs": "Returns the policy used by this request.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 78,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L78-L80"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::send",
+      "publicPath": "yosoi::request::BoundPageRequest::send",
+      "title": "yosoi::request::BoundPageRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(&self) -> Result<yosoi::request::Response, yosoi::request::RequestSendError>",
+      "docs": "Executes through the package's standard adapters and this policy.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 89,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L89-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::send_cancellable",
+      "publicPath": "yosoi::request::BoundPageRequest::send_cancellable",
+      "title": "yosoi::request::BoundPageRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(&self, cancellation: &CancellationToken) -> Result<yosoi::request::Response, yosoi::request::RequestSendError>",
+      "docs": "Executes with caller-controlled cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 97,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L97-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::target",
+      "publicPath": "yosoi::request::BoundPageRequest::target",
+      "title": "yosoi::request::BoundPageRequest::target",
+      "kind": "function",
+      "signature": "pub const fn target(&self) -> &yosoi::request::WebTarget",
+      "docs": "Returns the target as authored.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 74,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L74-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::BoundPageRequest::validate",
+      "publicPath": "yosoi::request::BoundPageRequest::validate",
+      "title": "yosoi::request::BoundPageRequest::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::request::RequestPreparationError>",
+      "docs": "Validates without contacting a provider.",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 82,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request/authoring.rs#L82-L87"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d2affe7242aac640ea8371bdb883e9e1e7b5ecdce1b6b6a700ad60fbaf1f0565",
+  "slug": "yosoi/request/struct/boundpagerequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d2affe7242aac640ea8371bdb883e9e1e7b5ecdce1b6b6a700ad60fbaf1f0565"
+}

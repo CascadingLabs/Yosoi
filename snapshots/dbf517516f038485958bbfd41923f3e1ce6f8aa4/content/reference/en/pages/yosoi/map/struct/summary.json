@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::Summary",
+  "publicPath": "yosoi::map::Summary",
+  "kind": "struct",
+  "title": "yosoi::map::Summary",
+  "signature": "pub struct Summary",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 226,
+    "lineEnd": 236,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L226-L236"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/map.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Summary"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::Summary::clone",
+      "publicPath": "yosoi::map::Summary::clone",
+      "title": "yosoi::map::Summary::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Summary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::Summary::default",
+      "publicPath": "yosoi::map::Summary::default",
+      "title": "yosoi::map::Summary::default",
+      "kind": "function",
+      "signature": "fn default() -> Summary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::map::Summary::fmt",
+      "publicPath": "yosoi::map::Summary::fmt",
+      "title": "yosoi::map::Summary::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::inventory_bytes",
+      "publicPath": "yosoi::map::Summary::inventory_bytes",
+      "title": "yosoi::map::Summary::inventory_bytes",
+      "kind": "struct_field",
+      "signature": "pub inventory_bytes: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L232-L232"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::observations",
+      "publicPath": "yosoi::map::Summary::observations",
+      "title": "yosoi::map::Summary::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 233,
+        "lineEnd": 233,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L233-L233"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::omitted",
+      "publicPath": "yosoi::map::Summary::omitted",
+      "title": "yosoi::map::Summary::omitted",
+      "kind": "struct_field",
+      "signature": "pub omitted: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 234,
+        "lineEnd": 234,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L234-L234"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::page_concurrency_peak",
+      "publicPath": "yosoi::map::Summary::page_concurrency_peak",
+      "title": "yosoi::map::Summary::page_concurrency_peak",
+      "kind": "struct_field",
+      "signature": "pub page_concurrency_peak: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L229-L229"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::provider_concurrency_peak",
+      "publicPath": "yosoi::map::Summary::provider_concurrency_peak",
+      "title": "yosoi::map::Summary::provider_concurrency_peak",
+      "kind": "struct_field",
+      "signature": "pub provider_concurrency_peak: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L228-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::requests",
+      "publicPath": "yosoi::map::Summary::requests",
+      "title": "yosoi::map::Summary::requests",
+      "kind": "struct_field",
+      "signature": "pub requests: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 227,
+        "lineEnd": 227,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L227-L227"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::response_bytes",
+      "publicPath": "yosoi::map::Summary::response_bytes",
+      "title": "yosoi::map::Summary::response_bytes",
+      "kind": "struct_field",
+      "signature": "pub response_bytes: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 231,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L231-L231"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::retained_document_bytes",
+      "publicPath": "yosoi::map::Summary::retained_document_bytes",
+      "title": "yosoi::map::Summary::retained_document_bytes",
+      "kind": "struct_field",
+      "signature": "pub retained_document_bytes: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 235,
+        "lineEnd": 235,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L235-L235"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Summary::serialize",
+      "publicPath": "yosoi::map::Summary::serialize",
+      "title": "yosoi::map::Summary::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::Summary::unused_page_prefetches",
+      "publicPath": "yosoi::map::Summary::unused_page_prefetches",
+      "title": "yosoi::map::Summary::unused_page_prefetches",
+      "kind": "struct_field",
+      "signature": "pub unused_page_prefetches: u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 230,
+        "lineEnd": 230,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L230-L230"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/summary",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

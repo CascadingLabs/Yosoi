@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::WildcardEntry",
+  "publicPath": "yosoi::map::WildcardEntry",
+  "kind": "struct",
+  "title": "yosoi::map::WildcardEntry",
+  "signature": "pub struct WildcardEntry",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 90,
+    "lineEnd": 93,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L90-L93"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::WildcardEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::WildcardEntry::clone",
+      "publicPath": "yosoi::map::WildcardEntry::clone",
+      "title": "yosoi::map::WildcardEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> WildcardEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::WildcardEntry::fmt",
+      "publicPath": "yosoi::map::WildcardEntry::fmt",
+      "title": "yosoi::map::WildcardEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::WildcardEntry::observations",
+      "publicPath": "yosoi::map::WildcardEntry::observations",
+      "title": "yosoi::map::WildcardEntry::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: Vec<Observation>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L92-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::WildcardEntry::pattern",
+      "publicPath": "yosoi::map::WildcardEntry::pattern",
+      "title": "yosoi::map::WildcardEntry::pattern",
+      "kind": "struct_field",
+      "signature": "pub pattern: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L91-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::WildcardEntry::serialize",
+      "publicPath": "yosoi::map::WildcardEntry::serialize",
+      "title": "yosoi::map::WildcardEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/wildcardentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

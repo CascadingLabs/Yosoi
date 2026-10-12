@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::ExpandedNamePathSegment",
+  "publicPath": "yosoi::locators::ExpandedNamePathSegment",
+  "kind": "struct",
+  "title": "yosoi::locators::ExpandedNamePathSegment",
+  "signature": "pub struct ExpandedNamePathSegment",
+  "docs": "One namespace-qualified XML element identity within a tree path.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+    "lineStart": 7,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L7-L11"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/locators.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::ExpandedNamePathSegment"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::clone",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::clone",
+      "title": "yosoi::locators::ExpandedNamePathSegment::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ExpandedNamePathSegment",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::deserialize",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::deserialize",
+      "title": "yosoi::locators::ExpandedNamePathSegment::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 47,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L47-L66"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::eq",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::eq",
+      "title": "yosoi::locators::ExpandedNamePathSegment::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ExpandedNamePathSegment) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::fmt",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::fmt",
+      "title": "yosoi::locators::ExpandedNamePathSegment::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::hash",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::hash",
+      "title": "yosoi::locators::ExpandedNamePathSegment::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::local_name",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::local_name",
+      "title": "yosoi::locators::ExpandedNamePathSegment::local_name",
+      "kind": "function",
+      "signature": "pub fn local_name(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 37,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L37-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::namespace_uri",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::namespace_uri",
+      "title": "yosoi::locators::ExpandedNamePathSegment::namespace_uri",
+      "kind": "function",
+      "signature": "pub fn namespace_uri(&self) -> Option<&str>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 33,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L33-L35"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::same_name_sibling_index",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::same_name_sibling_index",
+      "title": "yosoi::locators::ExpandedNamePathSegment::same_name_sibling_index",
+      "kind": "function",
+      "signature": "pub const fn same_name_sibling_index(&self) -> u32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 41,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L41-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::serialize",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::serialize",
+      "title": "yosoi::locators::ExpandedNamePathSegment::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::ExpandedNamePathSegment::try_new",
+      "publicPath": "yosoi::locators::ExpandedNamePathSegment::try_new",
+      "title": "yosoi::locators::ExpandedNamePathSegment::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(namespace_uri: Option<String>, local_name: impl Into<String>, same_name_sibling_index: u32) -> Result<Self, CoordinateError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 14,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L14-L31"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "179067a41ea9555fc4227c31131ffef0428e9ba21e8ae02d8fa9e4b178e6568e",
+  "slug": "yosoi/locators/struct/expandednamepathsegment",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "179067a41ea9555fc4227c31131ffef0428e9ba21e8ae02d8fa9e4b178e6568e"
+}

@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::Observation",
+  "publicPath": "yosoi::automation_record::Observation",
+  "kind": "struct",
+  "title": "yosoi::automation_record::Observation",
+  "signature": "pub struct Observation",
+  "docs": "A browser observation retained as primary evidence.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 48,
+    "lineEnd": 56,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L48-L56"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::automation_record::Observation::clone",
+      "publicPath": "yosoi::automation_record::Observation::clone",
+      "title": "yosoi::automation_record::Observation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::deserialize",
+      "publicPath": "yosoi::automation_record::Observation::deserialize",
+      "title": "yosoi::automation_record::Observation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::document_epoch",
+      "publicPath": "yosoi::automation_record::Observation::document_epoch",
+      "title": "yosoi::automation_record::Observation::document_epoch",
+      "kind": "struct_field",
+      "signature": "pub document_epoch: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::eq",
+      "publicPath": "yosoi::automation_record::Observation::eq",
+      "title": "yosoi::automation_record::Observation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::Observation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::fmt",
+      "publicPath": "yosoi::automation_record::Observation::fmt",
+      "title": "yosoi::automation_record::Observation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::html",
+      "publicPath": "yosoi::automation_record::Observation::html",
+      "title": "yosoi::automation_record::Observation::html",
+      "kind": "struct_field",
+      "signature": "pub html: Option<String>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::id",
+      "publicPath": "yosoi::automation_record::Observation::id",
+      "title": "yosoi::automation_record::Observation::id",
+      "kind": "struct_field",
+      "signature": "pub id: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::screenshot",
+      "publicPath": "yosoi::automation_record::Observation::screenshot",
+      "title": "yosoi::automation_record::Observation::screenshot",
+      "kind": "struct_field",
+      "signature": "pub screenshot: Option<Vec<u8>>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::serialize",
+      "publicPath": "yosoi::automation_record::Observation::serialize",
+      "title": "yosoi::automation_record::Observation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::session_id",
+      "publicPath": "yosoi::automation_record::Observation::session_id",
+      "title": "yosoi::automation_record::Observation::session_id",
+      "kind": "struct_field",
+      "signature": "pub session_id: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L50-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::tab_id",
+      "publicPath": "yosoi::automation_record::Observation::tab_id",
+      "title": "yosoi::automation_record::Observation::tab_id",
+      "kind": "struct_field",
+      "signature": "pub tab_id: String",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::url",
+      "publicPath": "yosoi::automation_record::Observation::url",
+      "title": "yosoi::automation_record::Observation::url",
+      "kind": "struct_field",
+      "signature": "pub url: Option<String>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/automation_record.rs#L54-L54"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "da3766015c7dffe95b7a3da648f53454f44a821cb475ca390e9f7dae0934a63c",
+  "slug": "yosoi/automation-record/struct/observation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "da3766015c7dffe95b7a3da648f53454f44a821cb475ca390e9f7dae0934a63c"
+}

@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::action::JavaScriptSourceError",
+  "publicPath": "yosoi::action::JavaScriptSourceError",
+  "kind": "enum",
+  "title": "yosoi::action::JavaScriptSourceError",
+  "signature": "pub enum JavaScriptSourceError",
+  "docs": "A source snapshot could not be read or failed its integrity/size checks.",
+  "source": {
+    "file": "crates/yosoi/src/action/source.rs",
+    "lineStart": 171,
+    "lineEnd": 206,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L171-L206"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptSourceError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "publicPath": "yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "title": "yosoi::action::JavaScriptSourceError::AllocationFailed",
+      "kind": "variant",
+      "signature": "AllocationFailed { path: std::path::PathBuf, requested: usize }",
+      "docs": "The source exceeded a bound before an allocation could be made safely.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L205-L205"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "publicPath": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "title": "yosoi::action::JavaScriptSourceError::ByteLengthMismatch",
+      "kind": "variant",
+      "signature": "ByteLengthMismatch { declared: usize, actual: usize }",
+      "docs": "The stored byte length does not match the source text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "publicPath": "yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "title": "yosoi::action::JavaScriptSourceError::DigestMismatch",
+      "kind": "variant",
+      "signature": "DigestMismatch",
+      "docs": "The stored digest does not match the source text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L202-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::Empty",
+      "publicPath": "yosoi::action::JavaScriptSourceError::Empty",
+      "title": "yosoi::action::JavaScriptSourceError::Empty",
+      "kind": "variant",
+      "signature": "Empty",
+      "docs": "The source contains no non-whitespace text.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L191-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "publicPath": "yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "title": "yosoi::action::JavaScriptSourceError::InvalidLimit",
+      "kind": "variant",
+      "signature": "InvalidLimit { maximum: usize }",
+      "docs": "A caller-supplied byte limit exceeds the SDK hard cap.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 196,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L196-L196"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "publicPath": "yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "title": "yosoi::action::JavaScriptSourceError::InvalidUtf8",
+      "kind": "variant",
+      "signature": "InvalidUtf8 { path: std::path::PathBuf }",
+      "docs": "The captured bytes are not valid UTF-8.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 188,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L188-L188"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::Io",
+      "publicPath": "yosoi::action::JavaScriptSourceError::Io",
+      "title": "yosoi::action::JavaScriptSourceError::Io",
+      "kind": "variant",
+      "signature": "Io { path: std::path::PathBuf, source: io::Error }",
+      "docs": "The source file could not be opened or read.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 174,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L174-L178"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::action::JavaScriptSourceError::TooLarge",
+      "publicPath": "yosoi::action::JavaScriptSourceError::TooLarge",
+      "title": "yosoi::action::JavaScriptSourceError::TooLarge",
+      "kind": "variant",
+      "signature": "TooLarge { path: Option<std::path::PathBuf>, actual: usize, maximum: usize }",
+      "docs": "The bounded reader observed more than the configured number of bytes.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 181,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L181-L185"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceError::fmt",
+      "title": "yosoi::action::JavaScriptSourceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 170,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L170-L170"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceError::fmt",
+      "title": "yosoi::action::JavaScriptSourceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 170,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L170-L170"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceError::source",
+      "publicPath": "yosoi::action::JavaScriptSourceError::source",
+      "title": "yosoi::action::JavaScriptSourceError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 170,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/action/source.rs#L170-L170"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "71c9af0dedfdc708284a0006910b75f5958e1779d5d39f40809f81e56d6135fa",
+  "slug": "yosoi/action/enum/javascriptsourceerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "71c9af0dedfdc708284a0006910b75f5958e1779d5d39f40809f81e56d6135fa"
+}

@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::DirectHttpRedirectErrorKind",
+  "publicPath": "yosoi::request::DirectHttpRedirectErrorKind",
+  "kind": "enum",
+  "title": "yosoi::request::DirectHttpRedirectErrorKind",
+  "signature": "pub enum DirectHttpRedirectErrorKind",
+  "docs": "Secret-safe reason redirect traversal terminated.",
+  "source": {
+    "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+    "lineStart": 22,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L22-L30"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 18,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request.rs#L18-L18"
+  },
+  "aliases": [
+    "yosoi::prelude::request::DirectHttpRedirectErrorKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::CredentialsNotAllowed",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::CredentialsNotAllowed",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::CredentialsNotAllowed",
+      "kind": "variant",
+      "signature": "CredentialsNotAllowed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::HopLimit",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::HopLimit",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::HopLimit",
+      "kind": "variant",
+      "signature": "HopLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::Loop",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::Loop",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::Loop",
+      "kind": "variant",
+      "signature": "Loop",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::MalformedLocation",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::MalformedLocation",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::MalformedLocation",
+      "kind": "variant",
+      "signature": "MalformedLocation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::MissingLocation",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::MissingLocation",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::MissingLocation",
+      "kind": "variant",
+      "signature": "MissingLocation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::TargetRefused",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::TargetRefused",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::TargetRefused",
+      "kind": "variant",
+      "signature": "TargetRefused",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DirectHttpRedirectErrorKind::UnsupportedScheme",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::UnsupportedScheme",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::UnsupportedScheme",
+      "kind": "variant",
+      "signature": "UnsupportedScheme",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpRedirectErrorKind::clone",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::clone",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DirectHttpRedirectErrorKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L20-L20"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpRedirectErrorKind::eq",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::eq",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DirectHttpRedirectErrorKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L20-L20"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L20-L20"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L116-L118"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::request::DirectHttpRedirectErrorKind::serialize",
+      "publicPath": "yosoi::request::DirectHttpRedirectErrorKind::serialize",
+      "title": "yosoi::request::DirectHttpRedirectErrorKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture-direct-http/src/redirect.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture-direct-http/src/redirect.rs#L20-L20"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b2165e05f56015467665db7d091bac00cd0b4ea47792b50cf49cc0a4bd13b0bc",
+  "slug": "yosoi/request/enum/directhttpredirecterrorkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b2165e05f56015467665db7d091bac00cd0b4ea47792b50cf49cc0a4bd13b0bc"
+}

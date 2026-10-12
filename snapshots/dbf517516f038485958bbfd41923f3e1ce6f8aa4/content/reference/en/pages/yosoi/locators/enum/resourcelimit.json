@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::ResourceLimit",
+  "publicPath": "yosoi::locators::ResourceLimit",
+  "kind": "enum",
+  "title": "yosoi::locators::ResourceLimit",
+  "signature": "pub enum ResourceLimit",
+  "docs": "Which checked resource budget stopped parsing or locating.",
+  "source": {
+    "file": "crates/yosoi-documents/src/limits.rs",
+    "lineStart": 28,
+    "lineEnd": 39,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L28-L39"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::ResourceLimit"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::Captures",
+      "publicPath": "yosoi::locators::ResourceLimit::Captures",
+      "title": "yosoi::locators::ResourceLimit::Captures",
+      "kind": "variant",
+      "signature": "Captures",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L36-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::Depth",
+      "publicPath": "yosoi::locators::ResourceLimit::Depth",
+      "title": "yosoi::locators::ResourceLimit::Depth",
+      "kind": "variant",
+      "signature": "Depth",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L37-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::InputBytes",
+      "publicPath": "yosoi::locators::ResourceLimit::InputBytes",
+      "title": "yosoi::locators::ResourceLimit::InputBytes",
+      "kind": "variant",
+      "signature": "InputBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::Matches",
+      "publicPath": "yosoi::locators::ResourceLimit::Matches",
+      "title": "yosoi::locators::ResourceLimit::Matches",
+      "kind": "variant",
+      "signature": "Matches",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 35,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L35-L35"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::Nodes",
+      "publicPath": "yosoi::locators::ResourceLimit::Nodes",
+      "title": "yosoi::locators::ResourceLimit::Nodes",
+      "kind": "variant",
+      "signature": "Nodes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::OutputBytes",
+      "publicPath": "yosoi::locators::ResourceLimit::OutputBytes",
+      "title": "yosoi::locators::ResourceLimit::OutputBytes",
+      "kind": "variant",
+      "signature": "OutputBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L38-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::QueryBytes",
+      "publicPath": "yosoi::locators::ResourceLimit::QueryBytes",
+      "title": "yosoi::locators::ResourceLimit::QueryBytes",
+      "kind": "variant",
+      "signature": "QueryBytes",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::QuerySteps",
+      "publicPath": "yosoi::locators::ResourceLimit::QuerySteps",
+      "title": "yosoi::locators::ResourceLimit::QuerySteps",
+      "kind": "variant",
+      "signature": "QuerySteps",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::Regions",
+      "publicPath": "yosoi::locators::ResourceLimit::Regions",
+      "title": "yosoi::locators::ResourceLimit::Regions",
+      "kind": "variant",
+      "signature": "Regions",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L34-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::ResourceLimit::SelectorVisits",
+      "publicPath": "yosoi::locators::ResourceLimit::SelectorVisits",
+      "title": "yosoi::locators::ResourceLimit::SelectorVisits",
+      "kind": "variant",
+      "signature": "SelectorVisits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::clone",
+      "publicPath": "yosoi::locators::ResourceLimit::clone",
+      "title": "yosoi::locators::ResourceLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ResourceLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::deserialize",
+      "publicPath": "yosoi::locators::ResourceLimit::deserialize",
+      "title": "yosoi::locators::ResourceLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::eq",
+      "publicPath": "yosoi::locators::ResourceLimit::eq",
+      "title": "yosoi::locators::ResourceLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ResourceLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::fmt",
+      "publicPath": "yosoi::locators::ResourceLimit::fmt",
+      "title": "yosoi::locators::ResourceLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::hash",
+      "publicPath": "yosoi::locators::ResourceLimit::hash",
+      "title": "yosoi::locators::ResourceLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::ResourceLimit::serialize",
+      "publicPath": "yosoi::locators::ResourceLimit::serialize",
+      "title": "yosoi::locators::ResourceLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/limits.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/limits.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a604c364343657bf84b033ed3879efd1eccf5a20770cb3908c431415ea12a794",
+  "slug": "yosoi/locators/enum/resourcelimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a604c364343657bf84b033ed3879efd1eccf5a20770cb3908c431415ea12a794"
+}

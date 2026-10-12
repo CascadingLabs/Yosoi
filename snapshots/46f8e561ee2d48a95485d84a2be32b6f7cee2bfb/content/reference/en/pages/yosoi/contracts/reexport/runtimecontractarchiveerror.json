@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "reexport:yosoi::contracts::RuntimeContractArchiveError",
+  "publicPath": "yosoi::contracts::RuntimeContractArchiveError",
+  "kind": "reexport",
+  "title": "yosoi::contracts::RuntimeContractArchiveError",
+  "signature": "pub use crate::internal::contract_validation::RuntimeContractArchiveError;",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/contracts.rs#L19-L19"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeContractArchiveError"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/reexport/runtimecontractarchiveerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

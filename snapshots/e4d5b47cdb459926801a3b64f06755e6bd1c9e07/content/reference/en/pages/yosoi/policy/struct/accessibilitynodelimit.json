@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::AccessibilityNodeLimit",
+  "publicPath": "yosoi::policy::AccessibilityNodeLimit",
+  "kind": "struct",
+  "title": "yosoi::policy::AccessibilityNodeLimit",
+  "signature": "pub struct AccessibilityNodeLimit",
+  "docs": "Positive maximum number of nodes in an accessibility-tree response.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/limits.rs",
+    "lineStart": 193,
+    "lineEnd": 193,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L193-L193"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/policy.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::AccessibilityNodeLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::AccessibilityNodeLimit::Error",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::Error",
+      "title": "yosoi::policy::AccessibilityNodeLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L212-L212"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::clone",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::clone",
+      "title": "yosoi::policy::AccessibilityNodeLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AccessibilityNodeLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::cmp",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::cmp",
+      "title": "yosoi::policy::AccessibilityNodeLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &AccessibilityNodeLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::deserialize",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::deserialize",
+      "title": "yosoi::policy::AccessibilityNodeLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 233,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L233-L239"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::eq",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::eq",
+      "title": "yosoi::policy::AccessibilityNodeLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AccessibilityNodeLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::fmt",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::fmt",
+      "title": "yosoi::policy::AccessibilityNodeLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::get",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::get",
+      "title": "yosoi::policy::AccessibilityNodeLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u32",
+      "docs": "Returns the exact accessibility-node limit.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 197,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L197-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::hash",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::hash",
+      "title": "yosoi::policy::AccessibilityNodeLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::partial_cmp",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::partial_cmp",
+      "title": "yosoi::policy::AccessibilityNodeLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &AccessibilityNodeLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L192-L192"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::serialize",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::serialize",
+      "title": "yosoi::policy::AccessibilityNodeLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 224,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L224-L229"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::to_nonzero",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::to_nonzero",
+      "title": "yosoi::policy::AccessibilityNodeLimit::to_nonzero",
+      "kind": "function",
+      "signature": "pub fn to_nonzero(self) -> Result<NonZeroU32, PolicyError>",
+      "docs": "Converts to the provider's nonzero node bound.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 202,
+        "lineEnd": 204,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L202-L204"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AccessibilityNodeLimit::try_from",
+      "publicPath": "yosoi::policy::AccessibilityNodeLimit::try_from",
+      "title": "yosoi::policy::AccessibilityNodeLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u32) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 214,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/policy/limits.rs#L214-L220"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2d1f9b11f2eae711b470ec3fc88722377a129e95d290703816df21e59ae5db7f",
+  "slug": "yosoi/policy/struct/accessibilitynodelimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2d1f9b11f2eae711b470ec3fc88722377a129e95d290703816df21e59ae5db7f"
+}

@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::ByteRange",
+  "publicPath": "yosoi::locators::ByteRange",
+  "kind": "struct",
+  "title": "yosoi::locators::ByteRange",
+  "signature": "pub struct ByteRange",
+  "docs": "Half-open byte range in the exact owned source payload, possibly empty.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+    "lineStart": 29,
+    "lineEnd": 32,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L29-L32"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::ByteRange"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::ByteRange::clone",
+      "publicPath": "yosoi::locators::ByteRange::clone",
+      "title": "yosoi::locators::ByteRange::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::ByteRange",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::deserialize",
+      "publicPath": "yosoi::locators::ByteRange::deserialize",
+      "title": "yosoi::locators::ByteRange::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 52,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L52-L65"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::end",
+      "publicPath": "yosoi::locators::ByteRange::end",
+      "title": "yosoi::locators::ByteRange::end",
+      "kind": "function",
+      "signature": "pub const fn end(self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 46,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L46-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::eq",
+      "publicPath": "yosoi::locators::ByteRange::eq",
+      "title": "yosoi::locators::ByteRange::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::ByteRange) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::fmt",
+      "publicPath": "yosoi::locators::ByteRange::fmt",
+      "title": "yosoi::locators::ByteRange::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::hash",
+      "publicPath": "yosoi::locators::ByteRange::hash",
+      "title": "yosoi::locators::ByteRange::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::serialize",
+      "publicPath": "yosoi::locators::ByteRange::serialize",
+      "title": "yosoi::locators::ByteRange::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::start",
+      "publicPath": "yosoi::locators::ByteRange::start",
+      "title": "yosoi::locators::ByteRange::start",
+      "kind": "function",
+      "signature": "pub const fn start(self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 43,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L43-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::ByteRange::try_new",
+      "publicPath": "yosoi::locators::ByteRange::try_new",
+      "title": "yosoi::locators::ByteRange::try_new",
+      "kind": "function",
+      "signature": "pub const fn try_new(start: u64, end: u64) -> Result<Self, yosoi::locators::CoordinateError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_coordinates.rs",
+        "lineStart": 35,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/outcome_coordinates.rs#L35-L41"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a8692a8af46b7bea784b17328004e296e80f8f3e7d41d1002d73d4788ddd939a",
+  "slug": "yosoi/locators/struct/byterange",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a8692a8af46b7bea784b17328004e296e80f8f3e7d41d1002d73d4788ddd939a"
+}

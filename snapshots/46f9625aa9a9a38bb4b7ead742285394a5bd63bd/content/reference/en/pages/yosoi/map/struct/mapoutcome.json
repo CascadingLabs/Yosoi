@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::MapOutcome",
+  "publicPath": "yosoi::map::MapOutcome",
+  "kind": "struct",
+  "title": "yosoi::map::MapOutcome",
+  "signature": "pub struct MapOutcome",
+  "docs": "A bounded discovery result. Captures are exposed through SDK response views.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 67,
+    "lineEnd": 69,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L67-L69"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::MapOutcome",
+    "yosoi::prelude::map::MapOutcome"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::MapOutcome::captures",
+      "publicPath": "yosoi::map::MapOutcome::captures",
+      "title": "yosoi::map::MapOutcome::captures",
+      "kind": "function",
+      "signature": "pub fn captures(&self) -> impl ExactSizeIterator<Item = yosoi::map::RetainedCapture<'_>>",
+      "docs": "Borrows retained captures through the SDK, without cloning payloads.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 104,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L104-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::fmt",
+      "publicPath": "yosoi::map::MapOutcome::fmt",
+      "title": "yosoi::map::MapOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::frontier",
+      "publicPath": "yosoi::map::MapOutcome::frontier",
+      "title": "yosoi::map::MapOutcome::frontier",
+      "kind": "function",
+      "signature": "pub fn frontier(&self) -> &[yosoi::map::FrontierEntry]",
+      "docs": "Returns queued or pending discoveries.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 88,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L88-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::hosts",
+      "publicPath": "yosoi::map::MapOutcome::hosts",
+      "title": "yosoi::map::MapOutcome::hosts",
+      "kind": "function",
+      "signature": "pub fn hosts(&self) -> &[yosoi::map::HostEntry]",
+      "docs": "Returns observed hosts.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 76,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L76-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::omissions",
+      "publicPath": "yosoi::map::MapOutcome::omissions",
+      "title": "yosoi::map::MapOutcome::omissions",
+      "kind": "function",
+      "signature": "pub fn omissions(&self) -> &[yosoi::map::Omission]",
+      "docs": "Returns explicit omissions.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 127,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L127-L129"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::pages",
+      "publicPath": "yosoi::map::MapOutcome::pages",
+      "title": "yosoi::map::MapOutcome::pages",
+      "kind": "function",
+      "signature": "pub fn pages(&self) -> &[yosoi::map::PageEntry]",
+      "docs": "Returns discovered pages.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 80,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L80-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::policy_snapshot",
+      "publicPath": "yosoi::map::MapOutcome::policy_snapshot",
+      "title": "yosoi::map::MapOutcome::policy_snapshot",
+      "kind": "function",
+      "signature": "pub const fn policy_snapshot(&self) -> &yosoi::policy::PolicySnapshot",
+      "docs": "Returns the immutable policy used for discovery.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 72,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L72-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::relationships",
+      "publicPath": "yosoi::map::MapOutcome::relationships",
+      "title": "yosoi::map::MapOutcome::relationships",
+      "kind": "function",
+      "signature": "pub fn relationships(&self) -> &[yosoi::map::Relationship]",
+      "docs": "Returns observed relationships.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 84,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L84-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::request_trace",
+      "publicPath": "yosoi::map::MapOutcome::request_trace",
+      "title": "yosoi::map::MapOutcome::request_trace",
+      "kind": "function",
+      "signature": "pub fn request_trace(&self) -> &[yosoi::map::RequestTrace]",
+      "docs": "Returns every admitted acquisition request and its observed outcome.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 119,
+        "lineEnd": 121,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L119-L121"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::sources",
+      "publicPath": "yosoi::map::MapOutcome::sources",
+      "title": "yosoi::map::MapOutcome::sources",
+      "kind": "function",
+      "signature": "pub fn sources(&self) -> &[yosoi::map::SourceOutcome]",
+      "docs": "Returns source outcomes.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 96,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L96-L98"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::summary",
+      "publicPath": "yosoi::map::MapOutcome::summary",
+      "title": "yosoi::map::MapOutcome::summary",
+      "kind": "function",
+      "signature": "pub const fn summary(&self) -> &yosoi::map::Summary",
+      "docs": "Returns bounded aggregate counts.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 131,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L131-L133"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::support_documents",
+      "publicPath": "yosoi::map::MapOutcome::support_documents",
+      "title": "yosoi::map::MapOutcome::support_documents",
+      "kind": "function",
+      "signature": "pub fn support_documents(&self) -> &[yosoi::map::SupportDocument]",
+      "docs": "Returns robots and sitemap support-document facts.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 92,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L92-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::termination",
+      "publicPath": "yosoi::map::MapOutcome::termination",
+      "title": "yosoi::map::MapOutcome::termination",
+      "kind": "function",
+      "signature": "pub const fn termination(&self) -> yosoi::map::MapTermination",
+      "docs": "Returns the reason discovery stopped.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 123,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L123-L125"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::tree",
+      "publicPath": "yosoi::map::MapOutcome::tree",
+      "title": "yosoi::map::MapOutcome::tree",
+      "kind": "function",
+      "signature": "pub fn tree(&self) -> &[yosoi::map::TreeEntry]",
+      "docs": "Returns the discovery tree.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 100,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L100-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::wildcard_names",
+      "publicPath": "yosoi::map::MapOutcome::wildcard_names",
+      "title": "yosoi::map::MapOutcome::wildcard_names",
+      "kind": "function",
+      "signature": "pub fn wildcard_names(&self) -> &[String]",
+      "docs": "Returns observed wildcard names.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 111,
+        "lineEnd": 113,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L111-L113"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapOutcome::wildcards",
+      "publicPath": "yosoi::map::MapOutcome::wildcards",
+      "title": "yosoi::map::MapOutcome::wildcards",
+      "kind": "function",
+      "signature": "pub fn wildcards(&self) -> &[yosoi::map::WildcardEntry]",
+      "docs": "Returns wildcard patterns with their source observations.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 115,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/map.rs#L115-L117"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2f372e59e32c13fcfe1cdec04b57cb5824c802ac6385cf61739576ef5753ccf3",
+  "slug": "yosoi/map/struct/mapoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2f372e59e32c13fcfe1cdec04b57cb5824c802ac6385cf61739576ef5753ccf3"
+}

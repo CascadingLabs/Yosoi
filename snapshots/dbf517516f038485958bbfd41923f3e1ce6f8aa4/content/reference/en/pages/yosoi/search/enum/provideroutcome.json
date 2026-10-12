@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::ProviderOutcome",
+  "publicPath": "yosoi::search::ProviderOutcome",
+  "kind": "enum",
+  "title": "yosoi::search::ProviderOutcome",
+  "signature": "pub enum ProviderOutcome",
+  "docs": "Terminal interpretation of one selected provider.",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/outcome.rs",
+    "lineStart": 113,
+    "lineEnd": 119,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L113-L119"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/search.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::search::ProviderOutcome"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::ProviderOutcome::Cancelled",
+      "publicPath": "yosoi::search::ProviderOutcome::Cancelled",
+      "title": "yosoi::search::ProviderOutcome::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 117,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L117-L117"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::ProviderOutcome::Empty",
+      "publicPath": "yosoi::search::ProviderOutcome::Empty",
+      "title": "yosoi::search::ProviderOutcome::Empty",
+      "kind": "variant",
+      "signature": "Empty",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 115,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L115-L115"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::ProviderOutcome::Failed",
+      "publicPath": "yosoi::search::ProviderOutcome::Failed",
+      "title": "yosoi::search::ProviderOutcome::Failed",
+      "kind": "variant",
+      "signature": "Failed(SearchFailure)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 116,
+        "lineEnd": 116,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L116-L116"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::ProviderOutcome::NotStarted",
+      "publicPath": "yosoi::search::ProviderOutcome::NotStarted",
+      "title": "yosoi::search::ProviderOutcome::NotStarted",
+      "kind": "variant",
+      "signature": "NotStarted(SearchUnavailableReason)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 118,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L118-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::ProviderOutcome::Results",
+      "publicPath": "yosoi::search::ProviderOutcome::Results",
+      "title": "yosoi::search::ProviderOutcome::Results",
+      "kind": "variant",
+      "signature": "Results(super::SearchPage)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L114-L114"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::ProviderOutcome::clone",
+      "publicPath": "yosoi::search::ProviderOutcome::clone",
+      "title": "yosoi::search::ProviderOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ProviderOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 111,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L111-L111"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::ProviderOutcome::eq",
+      "publicPath": "yosoi::search::ProviderOutcome::eq",
+      "title": "yosoi::search::ProviderOutcome::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ProviderOutcome) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 111,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L111-L111"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::ProviderOutcome::fmt",
+      "publicPath": "yosoi::search::ProviderOutcome::fmt",
+      "title": "yosoi::search::ProviderOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 122,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L122-L130"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::ProviderOutcome::serialize",
+      "publicPath": "yosoi::search::ProviderOutcome::serialize",
+      "title": "yosoi::search::ProviderOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 111,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/outcome.rs#L111-L111"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5db21c54496cd2155fcac36081cdcf6f9caa53e1660f14c944205a721f43e791",
+  "slug": "yosoi/search/enum/provideroutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5db21c54496cd2155fcac36081cdcf6f9caa53e1660f14c944205a721f43e791"
+}

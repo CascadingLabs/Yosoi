@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::search::new",
+  "publicPath": "yosoi::search::new",
+  "kind": "function",
+  "title": "yosoi::search::new",
+  "signature": "pub fn new(query: impl Into<String>) -> Result<SearchRequest, SearchQueryError>",
+  "docs": "Creates query intent without selecting a provider or performing I/O.",
+  "source": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 17,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/search.rs#L17-L19"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::search::new"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "97fa29978758fc77a1c7a4b26423fd16aa997fe8bf4d45dd619fb5c7258969ac",
+  "slug": "yosoi/search/function/new",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "97fa29978758fc77a1c7a4b26423fd16aa997fe8bf4d45dd619fb5c7258969ac"
+}

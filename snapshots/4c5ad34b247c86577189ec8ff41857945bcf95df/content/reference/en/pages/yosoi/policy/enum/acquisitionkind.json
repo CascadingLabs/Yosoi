@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::AcquisitionKind",
+  "publicPath": "yosoi::policy::AcquisitionKind",
+  "kind": "enum",
+  "title": "yosoi::policy::AcquisitionKind",
+  "signature": "pub enum AcquisitionKind",
+  "docs": "The acquisition mechanism, independent of its document selection.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/page.rs",
+    "lineStart": 27,
+    "lineEnd": 32,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L27-L32"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::AcquisitionKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::AcquisitionKind::Browser",
+      "publicPath": "yosoi::policy::AcquisitionKind::Browser",
+      "title": "yosoi::policy::AcquisitionKind::Browser",
+      "kind": "variant",
+      "signature": "Browser { mode: super::BrowserMode }",
+      "docs": "Navigate with the selected browser windowing mode.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::AcquisitionKind::DirectHttp",
+      "publicPath": "yosoi::policy::AcquisitionKind::DirectHttp",
+      "title": "yosoi::policy::AcquisitionKind::DirectHttp",
+      "kind": "variant",
+      "signature": "DirectHttp",
+      "docs": "Use the standalone HTTP acquisition path.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::clone",
+      "publicPath": "yosoi::policy::AcquisitionKind::clone",
+      "title": "yosoi::policy::AcquisitionKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AcquisitionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::deserialize",
+      "publicPath": "yosoi::policy::AcquisitionKind::deserialize",
+      "title": "yosoi::policy::AcquisitionKind::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::eq",
+      "publicPath": "yosoi::policy::AcquisitionKind::eq",
+      "title": "yosoi::policy::AcquisitionKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AcquisitionKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::fmt",
+      "publicPath": "yosoi::policy::AcquisitionKind::fmt",
+      "title": "yosoi::policy::AcquisitionKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::hash",
+      "publicPath": "yosoi::policy::AcquisitionKind::hash",
+      "title": "yosoi::policy::AcquisitionKind::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::AcquisitionKind::serialize",
+      "publicPath": "yosoi::policy::AcquisitionKind::serialize",
+      "title": "yosoi::policy::AcquisitionKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L25-L25"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "28f0b0cfc522825bd361f31e381f4a2b9f6f934fba6ec842d4e20bdc7f66109b",
+  "slug": "yosoi/policy/enum/acquisitionkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "28f0b0cfc522825bd361f31e381f4a2b9f6f934fba6ec842d4e20bdc7f66109b"
+}

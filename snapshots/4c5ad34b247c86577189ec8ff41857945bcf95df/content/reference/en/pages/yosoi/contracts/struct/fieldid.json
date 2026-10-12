@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::FieldId",
+  "publicPath": "yosoi::contracts::FieldId",
+  "kind": "struct",
+  "title": "yosoi::contracts::FieldId",
+  "signature": "pub struct FieldId",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/ids.rs",
+    "lineStart": 47,
+    "lineEnd": 47,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::FieldId"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::FieldId::as_str",
+      "publicPath": "yosoi::contracts::FieldId::as_str",
+      "title": "yosoi::contracts::FieldId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::clone",
+      "publicPath": "yosoi::contracts::FieldId::clone",
+      "title": "yosoi::contracts::FieldId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> FieldId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::cmp",
+      "publicPath": "yosoi::contracts::FieldId::cmp",
+      "title": "yosoi::contracts::FieldId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &FieldId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::deserialize",
+      "publicPath": "yosoi::contracts::FieldId::deserialize",
+      "title": "yosoi::contracts::FieldId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::eq",
+      "publicPath": "yosoi::contracts::FieldId::eq",
+      "title": "yosoi::contracts::FieldId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &FieldId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::fmt",
+      "publicPath": "yosoi::contracts::FieldId::fmt",
+      "title": "yosoi::contracts::FieldId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::fmt",
+      "publicPath": "yosoi::contracts::FieldId::fmt",
+      "title": "yosoi::contracts::FieldId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::hash",
+      "publicPath": "yosoi::contracts::FieldId::hash",
+      "title": "yosoi::contracts::FieldId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::partial_cmp",
+      "publicPath": "yosoi::contracts::FieldId::partial_cmp",
+      "title": "yosoi::contracts::FieldId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &FieldId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::serialize",
+      "publicPath": "yosoi::contracts::FieldId::serialize",
+      "title": "yosoi::contracts::FieldId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldId::try_new",
+      "publicPath": "yosoi::contracts::FieldId::try_new",
+      "title": "yosoi::contracts::FieldId::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(value: impl Into<String>) -> Result<Self, ContractSchemaError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-contracts/src/ids.rs#L47-L47"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/fieldid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

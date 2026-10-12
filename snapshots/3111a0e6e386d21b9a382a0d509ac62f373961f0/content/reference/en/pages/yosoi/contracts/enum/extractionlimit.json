@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ExtractionLimit",
+  "publicPath": "yosoi::contracts::ExtractionLimit",
+  "kind": "enum",
+  "title": "yosoi::contracts::ExtractionLimit",
+  "signature": "pub enum ExtractionLimit",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-extractor/src/lib.rs",
+    "lineStart": 148,
+    "lineEnd": 156,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L148-L156"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ExtractionLimit"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::Candidates",
+      "publicPath": "yosoi::contracts::ExtractionLimit::Candidates",
+      "title": "yosoi::contracts::ExtractionLimit::Candidates",
+      "kind": "variant",
+      "signature": "Candidates",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 152,
+        "lineEnd": 152,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L152-L152"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::Diagnostics",
+      "publicPath": "yosoi::contracts::ExtractionLimit::Diagnostics",
+      "title": "yosoi::contracts::ExtractionLimit::Diagnostics",
+      "kind": "variant",
+      "signature": "Diagnostics",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L155-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "publicPath": "yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "title": "yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "kind": "variant",
+      "signature": "MatchingFindings",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L151-L151"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "publicPath": "yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "title": "yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "kind": "variant",
+      "signature": "RetainedEvidence",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L154-L154"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "title": "yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "kind": "variant",
+      "signature": "ScannedFindings",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L150-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "title": "yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "kind": "variant",
+      "signature": "ScannedRegions",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L149-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "title": "yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "kind": "variant",
+      "signature": "ValuesPerField",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L153-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::clone",
+      "publicPath": "yosoi::contracts::ExtractionLimit::clone",
+      "title": "yosoi::contracts::ExtractionLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ExtractionLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L146-L146"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::eq",
+      "publicPath": "yosoi::contracts::ExtractionLimit::eq",
+      "title": "yosoi::contracts::ExtractionLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ExtractionLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L146-L146"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::fmt",
+      "publicPath": "yosoi::contracts::ExtractionLimit::fmt",
+      "title": "yosoi::contracts::ExtractionLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L146-L146"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::serialize",
+      "publicPath": "yosoi::contracts::ExtractionLimit::serialize",
+      "title": "yosoi::contracts::ExtractionLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-extractor/src/lib.rs#L146-L146"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/extractionlimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

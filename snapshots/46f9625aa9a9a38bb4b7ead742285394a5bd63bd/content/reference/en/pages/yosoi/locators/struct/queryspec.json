@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::QuerySpec",
+  "publicPath": "yosoi::locators::QuerySpec",
+  "kind": "struct",
+  "title": "yosoi::locators::QuerySpec",
+  "signature": "pub struct QuerySpec",
+  "docs": "A query atom plus its declared result shape.\n\nPublic construction is deliberate: deserialized plans are hostile input,\nso compilation validates the complete atom/shape/projection combination.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query.rs",
+    "lineStart": 121,
+    "lineEnd": 126,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L121-L126"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::QuerySpec"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::QuerySpec::atom",
+      "publicPath": "yosoi::locators::QuerySpec::atom",
+      "title": "yosoi::locators::QuerySpec::atom",
+      "kind": "function",
+      "signature": "pub const fn atom(&self) -> &yosoi::locators::QueryAtom",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 137,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L137-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::attribute",
+      "publicPath": "yosoi::locators::QuerySpec::attribute",
+      "title": "yosoi::locators::QuerySpec::attribute",
+      "kind": "function",
+      "signature": "pub fn attribute(self, name: impl Into<String>) -> Result<yosoi::locators::OutputPlan, yosoi::locators::QueryError>",
+      "docs": "Selects one attribute from each matched element.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 13,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L13-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::captures",
+      "publicPath": "yosoi::locators::QuerySpec::captures",
+      "title": "yosoi::locators::QuerySpec::captures",
+      "kind": "function",
+      "signature": "pub fn captures(self, names: impl IntoIterator<Item = impl Into<String>>) -> Result<yosoi::locators::OutputPlan, yosoi::locators::QueryError>",
+      "docs": "Selects each regex match and the explicitly requested named captures.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 34,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L34-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::clone",
+      "publicPath": "yosoi::locators::QuerySpec::clone",
+      "title": "yosoi::locators::QuerySpec::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::QuerySpec",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::deserialize",
+      "publicPath": "yosoi::locators::QuerySpec::deserialize",
+      "title": "yosoi::locators::QuerySpec::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::each_as_region",
+      "publicPath": "yosoi::locators::QuerySpec::each_as_region",
+      "title": "yosoi::locators::QuerySpec::each_as_region",
+      "kind": "function",
+      "signature": "pub fn each_as_region(self, id: impl Into<String>) -> Result<yosoi::locators::RegionPlan, yosoi::locators::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 301,
+        "lineEnd": 303,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L301-L303"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::eq",
+      "publicPath": "yosoi::locators::QuerySpec::eq",
+      "title": "yosoi::locators::QuerySpec::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::QuerySpec) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::fmt",
+      "publicPath": "yosoi::locators::QuerySpec::fmt",
+      "title": "yosoi::locators::QuerySpec::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::name",
+      "publicPath": "yosoi::locators::QuerySpec::name",
+      "title": "yosoi::locators::QuerySpec::name",
+      "kind": "function",
+      "signature": "pub const fn name(self) -> yosoi::locators::OutputPlan",
+      "docs": "Selects each matched accessibility node's accessible name.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 29,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L29-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::namespace_bindings",
+      "publicPath": "yosoi::locators::QuerySpec::namespace_bindings",
+      "title": "yosoi::locators::QuerySpec::namespace_bindings",
+      "kind": "function",
+      "signature": "pub fn namespace_bindings(&self) -> &[yosoi::locators::NamespaceBinding]",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 145,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L145-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::new",
+      "publicPath": "yosoi::locators::QuerySpec::new",
+      "title": "yosoi::locators::QuerySpec::new",
+      "kind": "function",
+      "signature": "pub const fn new(atom: yosoi::locators::QueryAtom, result_shape: yosoi::locators::QueryResultShape) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 129,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L129-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::node",
+      "publicPath": "yosoi::locators::QuerySpec::node",
+      "title": "yosoi::locators::QuerySpec::node",
+      "kind": "function",
+      "signature": "pub const fn node(self) -> yosoi::locators::OutputPlan",
+      "docs": "Selects a reference to each matched native node.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 24,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L24-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::query_bytes",
+      "publicPath": "yosoi::locators::QuerySpec::query_bytes",
+      "title": "yosoi::locators::QuerySpec::query_bytes",
+      "kind": "function",
+      "signature": "pub fn query_bytes(&self) -> Result<u64, yosoi::locators::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 203,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L203-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::result_shape",
+      "publicPath": "yosoi::locators::QuerySpec::result_shape",
+      "title": "yosoi::locators::QuerySpec::result_shape",
+      "kind": "function",
+      "signature": "pub const fn result_shape(&self) -> yosoi::locators::QueryResultShape",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 141,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L141-L143"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::serialize",
+      "publicPath": "yosoi::locators::QuerySpec::serialize",
+      "title": "yosoi::locators::QuerySpec::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L119-L119"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::text",
+      "publicPath": "yosoi::locators::QuerySpec::text",
+      "title": "yosoi::locators::QuerySpec::text",
+      "kind": "function",
+      "signature": "pub const fn text(self) -> yosoi::locators::OutputPlan",
+      "docs": "Selects the query's natural text value.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 7,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L7-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::value",
+      "publicPath": "yosoi::locators::QuerySpec::value",
+      "title": "yosoi::locators::QuerySpec::value",
+      "kind": "function",
+      "signature": "pub const fn value(self) -> yosoi::locators::OutputPlan",
+      "docs": "Selects the matched JSON value.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query_output.rs",
+        "lineStart": 19,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query_output.rs#L19-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::with_default_namespace",
+      "publicPath": "yosoi::locators::QuerySpec::with_default_namespace",
+      "title": "yosoi::locators::QuerySpec::with_default_namespace",
+      "kind": "function",
+      "signature": "pub fn with_default_namespace(self, namespace_uri: impl Into<String>) -> Result<Self, yosoi::locators::QueryError>",
+      "docs": "Sets the namespace used by unprefixed CSS element selectors.\n\nXPath keeps its standard 1.0 rule that unprefixed element tests match\nelements in no namespace.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 166,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L166-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QuerySpec::with_namespace",
+      "publicPath": "yosoi::locators::QuerySpec::with_namespace",
+      "title": "yosoi::locators::QuerySpec::with_namespace",
+      "kind": "function",
+      "signature": "pub fn with_namespace(self, prefix: impl Into<String>, namespace_uri: impl Into<String>) -> Result<Self, yosoi::locators::QueryError>",
+      "docs": "Binds one non-default prefix for namespace-aware XML locators.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 150,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/query.rs#L150-L160"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0e11e4e9bbb9ef32dae95eb6a284f0eaf66318e5c666170f0e554a73b9d5c8c0",
+  "slug": "yosoi/locators/struct/queryspec",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0e11e4e9bbb9ef32dae95eb6a284f0eaf66318e5c666170f0e554a73b9d5c8c0"
+}

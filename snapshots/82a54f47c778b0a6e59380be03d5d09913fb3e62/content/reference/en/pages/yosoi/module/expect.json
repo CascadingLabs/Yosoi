@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::expect",
+  "publicPath": "yosoi::expect",
+  "kind": "module",
+  "title": "yosoi::expect",
+  "signature": "pub mod expect",
+  "docs": "Typed expectations for bounded eventual assertions.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 1,
+    "lineEnd": 303,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/expect.rs#L1-L303"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "66d7b3448792f3b5d6e89c27bf18147b3e4f8b0713051bd46316f8f563df6c41",
+  "slug": "yosoi/module/expect",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "66d7b3448792f3b5d6e89c27bf18147b3e4f8b0713051bd46316f8f563df6c41"
+}

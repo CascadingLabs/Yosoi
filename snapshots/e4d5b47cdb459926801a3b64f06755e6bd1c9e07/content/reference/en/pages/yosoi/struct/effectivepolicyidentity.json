@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::EffectivePolicyIdentity",
+  "publicPath": "yosoi::EffectivePolicyIdentity",
+  "kind": "struct",
+  "title": "yosoi::EffectivePolicyIdentity",
+  "signature": "pub struct EffectivePolicyIdentity",
+  "docs": "Versioned SHA-256 identity of canonical, fully resolved policy behavior.",
+  "source": {
+    "file": "crates/yosoi-policy/src/identity.rs",
+    "lineStart": 14,
+    "lineEnd": 17,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L14-L17"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 18,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi/src/lib.rs#L18-L18"
+  },
+  "aliases": [
+    "yosoi::policy::EffectivePolicyIdentity",
+    "yosoi::prelude::policy::EffectivePolicyIdentity"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::clone",
+      "publicPath": "yosoi::EffectivePolicyIdentity::clone",
+      "title": "yosoi::EffectivePolicyIdentity::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> EffectivePolicyIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::digest",
+      "publicPath": "yosoi::EffectivePolicyIdentity::digest",
+      "title": "yosoi::EffectivePolicyIdentity::digest",
+      "kind": "function",
+      "signature": "pub const fn digest(self) -> Sha256Digest",
+      "docs": "Returns the SHA-256 digest of the canonical, domain-separated policy.",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 50,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L50-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::eq",
+      "publicPath": "yosoi::EffectivePolicyIdentity::eq",
+      "title": "yosoi::EffectivePolicyIdentity::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &EffectivePolicyIdentity) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::fmt",
+      "publicPath": "yosoi::EffectivePolicyIdentity::fmt",
+      "title": "yosoi::EffectivePolicyIdentity::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::hash",
+      "publicPath": "yosoi::EffectivePolicyIdentity::hash",
+      "title": "yosoi::EffectivePolicyIdentity::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::EffectivePolicyIdentity::version",
+      "publicPath": "yosoi::EffectivePolicyIdentity::version",
+      "title": "yosoi::EffectivePolicyIdentity::version",
+      "kind": "function",
+      "signature": "pub const fn version(self) -> u16",
+      "docs": "Returns the projection version used to compute this identity.",
+      "source": {
+        "file": "crates/yosoi-policy/src/identity.rs",
+        "lineStart": 45,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/e4d5b47cdb459926801a3b64f06755e6bd1c9e07/crates/yosoi-policy/src/identity.rs#L45-L47"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d009ecac944c7c36e496df8c88fe5b38a6bdf4fcc956e0ffa5874fe62616f2d6",
+  "slug": "yosoi/struct/effectivepolicyidentity",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d009ecac944c7c36e496df8c88fe5b38a6bdf4fcc956e0ffa5874fe62616f2d6"
+}

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::MaximumElapsed",
+  "publicPath": "yosoi::policy::MaximumElapsed",
+  "kind": "struct",
+  "title": "yosoi::policy::MaximumElapsed",
+  "signature": "pub struct MaximumElapsed",
+  "docs": "Positive maximum elapsed attempt time in microseconds.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/limits.rs",
+    "lineStart": 244,
+    "lineEnd": 244,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L244-L244"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/policy.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::MaximumElapsed"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::MaximumElapsed::Error",
+      "publicPath": "yosoi::policy::MaximumElapsed::Error",
+      "title": "yosoi::policy::MaximumElapsed::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L259-L259"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::as_microseconds",
+      "publicPath": "yosoi::policy::MaximumElapsed::as_microseconds",
+      "title": "yosoi::policy::MaximumElapsed::as_microseconds",
+      "kind": "function",
+      "signature": "pub const fn as_microseconds(self) -> u64",
+      "docs": "Returns the positive elapsed bound in microseconds.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 248,
+        "lineEnd": 250,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L248-L250"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::clone",
+      "publicPath": "yosoi::policy::MaximumElapsed::clone",
+      "title": "yosoi::policy::MaximumElapsed::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> MaximumElapsed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::cmp",
+      "publicPath": "yosoi::policy::MaximumElapsed::cmp",
+      "title": "yosoi::policy::MaximumElapsed::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &MaximumElapsed) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::default",
+      "publicPath": "yosoi::policy::MaximumElapsed::default",
+      "title": "yosoi::policy::MaximumElapsed::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 270,
+        "lineEnd": 272,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L270-L272"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::deserialize",
+      "publicPath": "yosoi::policy::MaximumElapsed::deserialize",
+      "title": "yosoi::policy::MaximumElapsed::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 295,
+        "lineEnd": 301,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L295-L301"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::eq",
+      "publicPath": "yosoi::policy::MaximumElapsed::eq",
+      "title": "yosoi::policy::MaximumElapsed::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &MaximumElapsed) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::fmt",
+      "publicPath": "yosoi::policy::MaximumElapsed::fmt",
+      "title": "yosoi::policy::MaximumElapsed::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::hash",
+      "publicPath": "yosoi::policy::MaximumElapsed::hash",
+      "title": "yosoi::policy::MaximumElapsed::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::partial_cmp",
+      "publicPath": "yosoi::policy::MaximumElapsed::partial_cmp",
+      "title": "yosoi::policy::MaximumElapsed::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &MaximumElapsed) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 243,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L243-L243"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::serialize",
+      "publicPath": "yosoi::policy::MaximumElapsed::serialize",
+      "title": "yosoi::policy::MaximumElapsed::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 286,
+        "lineEnd": 291,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L286-L291"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::to_capture_deadline",
+      "publicPath": "yosoi::policy::MaximumElapsed::to_capture_deadline",
+      "title": "yosoi::policy::MaximumElapsed::to_capture_deadline",
+      "kind": "function",
+      "signature": "pub fn to_capture_deadline(self) -> Result<CaptureDeadline, CaptureDeadlineError>",
+      "docs": "Converts to the shared monotonic capture-deadline primitive.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 253,
+        "lineEnd": 255,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L253-L255"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::MaximumElapsed::try_from",
+      "publicPath": "yosoi::policy::MaximumElapsed::try_from",
+      "title": "yosoi::policy::MaximumElapsed::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u64) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 261,
+        "lineEnd": 266,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/limits.rs#L261-L266"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1106c7c90990d0cb1a3066c4f9cf69e6ff75f9ba329b8b28c56727cca8170d09",
+  "slug": "yosoi/policy/struct/maximumelapsed",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1106c7c90990d0cb1a3066c4f9cf69e6ff75f9ba329b8b28c56727cca8170d09"
+}

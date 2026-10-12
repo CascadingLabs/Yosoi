@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::AttemptDocument",
+  "publicPath": "yosoi::request::AttemptDocument",
+  "kind": "struct",
+  "title": "yosoi::request::AttemptDocument",
+  "signature": "pub struct AttemptDocument<'response>",
+  "docs": "One document requested by policy, paired with its projection outcome.",
+  "source": {
+    "file": "crates/yosoi/src/request/outcomes.rs",
+    "lineStart": 72,
+    "lineEnd": 74,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/outcomes.rs#L72-L74"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::request::AttemptDocument"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::AttemptDocument::clone",
+      "publicPath": "yosoi::request::AttemptDocument::clone",
+      "title": "yosoi::request::AttemptDocument::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AttemptDocument<'response>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/outcomes.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::AttemptDocument::fmt",
+      "publicPath": "yosoi::request::AttemptDocument::fmt",
+      "title": "yosoi::request::AttemptDocument::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/outcomes.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::AttemptDocument::outcome",
+      "publicPath": "yosoi::request::AttemptDocument::outcome",
+      "title": "yosoi::request::AttemptDocument::outcome",
+      "kind": "function",
+      "signature": "pub fn outcome(self) -> DocumentOutcome<'response>",
+      "docs": "Returns only SDK documents and completeness diagnostics.",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 81,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/outcomes.rs#L81-L99"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::AttemptDocument::requested",
+      "publicPath": "yosoi::request::AttemptDocument::requested",
+      "title": "yosoi::request::AttemptDocument::requested",
+      "kind": "function",
+      "signature": "pub const fn requested(self) -> DocumentRequest",
+      "docs": "Returns the representation requested by policy.",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 77,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/outcomes.rs#L77-L79"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c2ffa320ecf82ac3d7606fc1c05bb1da70bf7470b11b9ea72ff90c4da6b3ba61",
+  "slug": "yosoi/request/struct/attemptdocument",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c2ffa320ecf82ac3d7606fc1c05bb1da70bf7470b11b9ea72ff90c4da6b3ba61"
+}

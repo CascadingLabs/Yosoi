@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::CandidateField",
+  "publicPath": "yosoi::contracts::CandidateField",
+  "kind": "struct",
+  "title": "yosoi::contracts::CandidateField",
+  "signature": "pub struct CandidateField<T>",
+  "docs": "Owned ordered findings for one field before conversion to the declared type `T`.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+    "lineStart": 57,
+    "lineEnd": 61,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L57-L61"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::CandidateField"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::CandidateField::clone",
+      "publicPath": "yosoi::contracts::CandidateField::clone",
+      "title": "yosoi::contracts::CandidateField::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 64,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L64-L70"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::evidence",
+      "publicPath": "yosoi::contracts::CandidateField::evidence",
+      "title": "yosoi::contracts::CandidateField::evidence",
+      "kind": "function",
+      "signature": "pub fn evidence(&self) -> &[yosoi::locators::Finding]",
+      "docs": "Borrows original findings, including coordinates and evidence completeness.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 110,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L110-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::fmt",
+      "publicPath": "yosoi::contracts::CandidateField::fmt",
+      "title": "yosoi::contracts::CandidateField::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 74,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L74-L80"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::id",
+      "publicPath": "yosoi::contracts::CandidateField::id",
+      "title": "yosoi::contracts::CandidateField::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &yosoi::contracts::FieldId",
+      "docs": "Borrows the authored field identity associated with these findings.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 102,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L102-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::is_absent",
+      "publicPath": "yosoi::contracts::CandidateField::is_absent",
+      "title": "yosoi::contracts::CandidateField::is_absent",
+      "kind": "function",
+      "signature": "pub const fn is_absent(&self) -> bool",
+      "docs": "Returns whether no findings are retained, without asserting complete document absence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 114,
+        "lineEnd": 116,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L114-L116"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::is_empty",
+      "publicPath": "yosoi::contracts::CandidateField::is_empty",
+      "title": "yosoi::contracts::CandidateField::is_empty",
+      "kind": "function",
+      "signature": "pub const fn is_empty(&self) -> bool",
+      "docs": "Returns whether the finding collection is empty; inspect terminal and completeness states separately.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 118,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L118-L120"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::len",
+      "publicPath": "yosoi::contracts::CandidateField::len",
+      "title": "yosoi::contracts::CandidateField::len",
+      "kind": "function",
+      "signature": "pub const fn len(&self) -> usize",
+      "docs": "Returns retained finding count, not an accepted or converted value count.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 122,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L122-L124"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::values",
+      "publicPath": "yosoi::contracts::CandidateField::values",
+      "title": "yosoi::contracts::CandidateField::values",
+      "kind": "function",
+      "signature": "pub fn values(&self) -> impl ExactSizeIterator<Item = &yosoi::locators::ProjectedValue>",
+      "docs": "Iterates borrowed projection values in evidence order without converting them to `T`.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 106,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/82a54f47c778b0a6e59380be03d5d09913fb3e62/crates/yosoi/src/internal/contracts/candidate.rs#L106-L108"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "15a93ea96de82e302c5b9d6eee23bd44c59361e418cb031d41736777d3fdc933",
+  "slug": "yosoi/contracts/struct/candidatefield",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "15a93ea96de82e302c5b9d6eee23bd44c59361e418cb031d41736777d3fdc933"
+}

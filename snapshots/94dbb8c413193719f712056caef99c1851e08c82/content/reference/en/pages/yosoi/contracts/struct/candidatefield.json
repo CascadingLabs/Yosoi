@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::CandidateField",
+  "publicPath": "yosoi::contracts::CandidateField",
+  "kind": "struct",
+  "title": "yosoi::contracts::CandidateField",
+  "signature": "pub struct CandidateField<T>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/candidate.rs",
+    "lineStart": 56,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L56-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/contracts.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::CandidateField"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::CandidateField::clone",
+      "publicPath": "yosoi::contracts::CandidateField::clone",
+      "title": "yosoi::contracts::CandidateField::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 63,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L63-L69"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::evidence",
+      "publicPath": "yosoi::contracts::CandidateField::evidence",
+      "title": "yosoi::contracts::CandidateField::evidence",
+      "kind": "function",
+      "signature": "pub fn evidence(&self) -> &[Finding]",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 106,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L106-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::fmt",
+      "publicPath": "yosoi::contracts::CandidateField::fmt",
+      "title": "yosoi::contracts::CandidateField::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 73,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L73-L79"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::id",
+      "publicPath": "yosoi::contracts::CandidateField::id",
+      "title": "yosoi::contracts::CandidateField::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &FieldId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 100,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L100-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::is_absent",
+      "publicPath": "yosoi::contracts::CandidateField::is_absent",
+      "title": "yosoi::contracts::CandidateField::is_absent",
+      "kind": "function",
+      "signature": "pub const fn is_absent(&self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 109,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L109-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::is_empty",
+      "publicPath": "yosoi::contracts::CandidateField::is_empty",
+      "title": "yosoi::contracts::CandidateField::is_empty",
+      "kind": "function",
+      "signature": "pub const fn is_empty(&self) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 112,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L112-L114"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::len",
+      "publicPath": "yosoi::contracts::CandidateField::len",
+      "title": "yosoi::contracts::CandidateField::len",
+      "kind": "function",
+      "signature": "pub const fn len(&self) -> usize",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 115,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L115-L117"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::CandidateField::values",
+      "publicPath": "yosoi::contracts::CandidateField::values",
+      "title": "yosoi::contracts::CandidateField::values",
+      "kind": "function",
+      "signature": "pub fn values(&self) -> impl ExactSizeIterator<Item = &ProjectedValue>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/candidate.rs",
+        "lineStart": 103,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-contracts/src/candidate.rs#L103-L105"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/candidatefield",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

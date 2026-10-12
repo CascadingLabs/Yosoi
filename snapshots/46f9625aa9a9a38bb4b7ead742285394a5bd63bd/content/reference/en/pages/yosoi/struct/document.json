@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::Document",
+  "publicPath": "yosoi::Document",
+  "kind": "struct",
+  "title": "yosoi::Document",
+  "signature": "pub struct Document",
+  "docs": "An immutable SDK document. Storage and engine handles remain private.",
+  "source": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 18,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L18-L20"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 18,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/lib.rs#L18-L18"
+  },
+  "aliases": [
+    "yosoi::documents::Document",
+    "yosoi::prelude::Document",
+    "yosoi::prelude::documents::Document"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::Document::accessibility_tree",
+      "publicPath": "yosoi::Document::accessibility_tree",
+      "title": "yosoi::Document::accessibility_tree",
+      "kind": "function",
+      "signature": "pub fn accessibility_tree(id: impl Into<String>, epoch: yosoi::documents::DocumentEpoch, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates an accessibility-tree document bound to its browser document epoch.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 48,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L48-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::as_ref",
+      "publicPath": "yosoi::Document::as_ref",
+      "title": "yosoi::Document::as_ref",
+      "kind": "function",
+      "signature": "pub const fn as_ref(&self) -> yosoi::documents::DocumentRef<'_>",
+      "docs": "Borrows the same document without cloning its bytes.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 85,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L85-L87"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::bind",
+      "publicPath": "yosoi::Document::bind",
+      "title": "yosoi::Document::bind",
+      "kind": "function",
+      "signature": "pub const fn bind<'document, 'policy>(&'document self, policy: &'policy yosoi::Policy) -> yosoi::documents::BoundDocument<'document, 'policy>",
+      "docs": "Borrows a policy for subsequent parse and locate operations.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 89,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L89-L96"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::byte_len",
+      "publicPath": "yosoi::Document::byte_len",
+      "title": "yosoi::Document::byte_len",
+      "kind": "function",
+      "signature": "pub const fn byte_len(&self) -> u64",
+      "docs": "Returns the number of retained bytes.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 80,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L80-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::bytes",
+      "publicPath": "yosoi::Document::bytes",
+      "title": "yosoi::Document::bytes",
+      "kind": "function",
+      "signature": "pub fn bytes(&self) -> &[u8]",
+      "docs": "Returns the immutable document bytes.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 76,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L76-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::class",
+      "publicPath": "yosoi::Document::class",
+      "title": "yosoi::Document::class",
+      "kind": "function",
+      "signature": "pub const fn class(&self) -> yosoi::documents::DocumentClass",
+      "docs": "Returns the representation class.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 68,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L68-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::clone",
+      "publicPath": "yosoi::Document::clone",
+      "title": "yosoi::Document::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::Document",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::Document::eq",
+      "publicPath": "yosoi::Document::eq",
+      "title": "yosoi::Document::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::Document) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::Document::fmt",
+      "publicPath": "yosoi::Document::fmt",
+      "title": "yosoi::Document::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::Document::from_profile",
+      "publicPath": "yosoi::Document::from_profile",
+      "title": "yosoi::Document::from_profile",
+      "kind": "function",
+      "signature": "pub fn from_profile(id: yosoi::DocumentId, profile: yosoi::DocumentProfile, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates a document with an explicitly chosen representation profile.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 56,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L56-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::html",
+      "publicPath": "yosoi::Document::html",
+      "title": "yosoi::Document::html",
+      "kind": "function",
+      "signature": "pub fn html(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates a source HTML document with an explicit identity.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 24,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L24-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::id",
+      "publicPath": "yosoi::Document::id",
+      "title": "yosoi::Document::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &yosoi::DocumentId",
+      "docs": "Returns the document identity.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 64,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L64-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::json",
+      "publicPath": "yosoi::Document::json",
+      "title": "yosoi::Document::json",
+      "kind": "function",
+      "signature": "pub fn json(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates a JSON document.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 32,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L32-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::locate",
+      "publicPath": "yosoi::Document::locate",
+      "title": "yosoi::Document::locate",
+      "kind": "function",
+      "signature": "pub fn locate(&self, plan: &yosoi::locators::Plan) -> yosoi::LocateOutcome",
+      "docs": "Evaluates a locator plan using the package's default policy.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 102,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L102-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::parse",
+      "publicPath": "yosoi::Document::parse",
+      "title": "yosoi::Document::parse",
+      "kind": "function",
+      "signature": "pub fn parse(&self) -> Result<yosoi::documents::ParsedDocument<'_>, yosoi::documents::ParseError>",
+      "docs": "Parses once so multiple plans can reuse the representation.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 98,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L98-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::profile",
+      "publicPath": "yosoi::Document::profile",
+      "title": "yosoi::Document::profile",
+      "kind": "function",
+      "signature": "pub const fn profile(&self) -> yosoi::DocumentProfile",
+      "docs": "Returns the representation profile.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 72,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L72-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::rendered_dom",
+      "publicPath": "yosoi::Document::rendered_dom",
+      "title": "yosoi::Document::rendered_dom",
+      "kind": "function",
+      "signature": "pub fn rendered_dom(id: impl Into<String>, epoch: yosoi::documents::DocumentEpoch, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates a rendered DOM document bound to its browser document epoch.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 40,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L40-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::text",
+      "publicPath": "yosoi::Document::text",
+      "title": "yosoi::Document::text",
+      "kind": "function",
+      "signature": "pub fn text(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates a decoded text document.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 36,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L36-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Document::xml",
+      "publicPath": "yosoi::Document::xml",
+      "title": "yosoi::Document::xml",
+      "kind": "function",
+      "signature": "pub fn xml(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, yosoi::documents::DocumentError>",
+      "docs": "Creates an XML document.",
+      "source": {
+        "file": "crates/yosoi/src/documents.rs",
+        "lineStart": 28,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/documents.rs#L28-L30"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "18a56213f6d7fbd99bfe064eea4eea676d4e21f48f4ac7e0383dba3923071536",
+  "slug": "yosoi/struct/document",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "18a56213f6d7fbd99bfe064eea4eea676d4e21f48f4ac7e0383dba3923071536"
+}

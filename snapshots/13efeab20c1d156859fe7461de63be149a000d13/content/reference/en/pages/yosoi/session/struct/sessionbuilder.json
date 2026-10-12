@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::SessionBuilder",
+  "publicPath": "yosoi::session::SessionBuilder",
+  "kind": "struct",
+  "title": "yosoi::session::SessionBuilder",
+  "signature": "pub struct SessionBuilder",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 569,
+    "lineEnd": 574,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L569-L574"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionBuilder"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::SessionBuilder::acquire",
+      "publicPath": "yosoi::session::SessionBuilder::acquire",
+      "title": "yosoi::session::SessionBuilder::acquire",
+      "kind": "function",
+      "signature": "pub async fn acquire(self) -> Result<yosoi::session::Session, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 617,
+        "lineEnd": 619,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L617-L619"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::acquire_cancellable",
+      "publicPath": "yosoi::session::SessionBuilder::acquire_cancellable",
+      "title": "yosoi::session::SessionBuilder::acquire_cancellable",
+      "kind": "function",
+      "signature": "pub async fn acquire_cancellable(self, cancellation: &CancellationToken) -> Result<yosoi::session::Session, yosoi::session::SessionError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 620,
+        "lineEnd": 691,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L620-L691"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::allow_javascript",
+      "publicPath": "yosoi::session::SessionBuilder::allow_javascript",
+      "title": "yosoi::session::SessionBuilder::allow_javascript",
+      "kind": "function",
+      "signature": "pub fn allow_javascript(self) -> Self",
+      "docs": "Explicitly permits arbitrary JavaScript through Work evaluation methods.\nBrowser acquisition mode remains selected by the bound Policy.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 578,
+        "lineEnd": 588,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L578-L588"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::bind",
+      "publicPath": "yosoi::session::SessionBuilder::bind",
+      "title": "yosoi::session::SessionBuilder::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 595,
+        "lineEnd": 611,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L595-L611"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::clone",
+      "publicPath": "yosoi::session::SessionBuilder::clone",
+      "title": "yosoi::session::SessionBuilder::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::SessionBuilder",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 568,
+        "lineEnd": 568,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L568-L568"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::configure",
+      "publicPath": "yosoi::session::SessionBuilder::configure",
+      "title": "yosoi::session::SessionBuilder::configure",
+      "kind": "function",
+      "signature": "pub fn configure(self, settings: yosoi::session::SessionPolicy) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 612,
+        "lineEnd": 616,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L612-L616"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::execution_pool",
+      "publicPath": "yosoi::session::SessionBuilder::execution_pool",
+      "title": "yosoi::session::SessionBuilder::execution_pool",
+      "kind": "function",
+      "signature": "pub fn execution_pool(self, pool: &yosoi::session::ExecutionPool) -> Self",
+      "docs": "Shares controller capacity across Sessions/browser processes. Without this,\nthe Session creates its own pool using its execution policy limits.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 591,
+        "lineEnd": 594,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L591-L594"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::fmt",
+      "publicPath": "yosoi::session::SessionBuilder::fmt",
+      "title": "yosoi::session::SessionBuilder::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 568,
+        "lineEnd": 568,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L568-L568"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/sessionbuilder",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

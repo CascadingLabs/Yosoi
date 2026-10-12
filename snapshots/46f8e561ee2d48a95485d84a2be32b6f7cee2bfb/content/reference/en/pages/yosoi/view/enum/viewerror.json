@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::view::ViewError",
+  "publicPath": "yosoi::view::ViewError",
+  "kind": "enum",
+  "title": "yosoi::view::ViewError",
+  "signature": "pub enum ViewError",
+  "docs": "Typed failure while constructing or paging an offline View.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 491,
+    "lineEnd": 514,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L491-L514"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::ViewError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::view::ViewError::CursorOutOfRange",
+      "publicPath": "yosoi::view::ViewError::CursorOutOfRange",
+      "title": "yosoi::view::ViewError::CursorOutOfRange",
+      "kind": "variant",
+      "signature": "CursorOutOfRange { offset: u64, total_rows: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 506,
+        "lineEnd": 506,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L506-L506"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::Document",
+      "publicPath": "yosoi::view::ViewError::Document",
+      "title": "yosoi::view::ViewError::Document",
+      "kind": "variant",
+      "signature": "Document(String)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 512,
+        "lineEnd": 512,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L512-L512"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::EmptyIdentity",
+      "publicPath": "yosoi::view::ViewError::EmptyIdentity",
+      "title": "yosoi::view::ViewError::EmptyIdentity",
+      "kind": "variant",
+      "signature": "EmptyIdentity { field: &'static str }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 492,
+        "lineEnd": 492,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L492-L492"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::ForeignCursor",
+      "publicPath": "yosoi::view::ViewError::ForeignCursor",
+      "title": "yosoi::view::ViewError::ForeignCursor",
+      "kind": "variant",
+      "signature": "ForeignCursor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 501,
+        "lineEnd": 501,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L501-L501"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::ForeignObservation",
+      "publicPath": "yosoi::view::ViewError::ForeignObservation",
+      "title": "yosoi::view::ViewError::ForeignObservation",
+      "kind": "variant",
+      "signature": "ForeignObservation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 503,
+        "lineEnd": 503,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L503-L503"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::HtmlTooLarge",
+      "publicPath": "yosoi::view::ViewError::HtmlTooLarge",
+      "title": "yosoi::view::ViewError::HtmlTooLarge",
+      "kind": "variant",
+      "signature": "HtmlTooLarge { maximum: usize, observed: usize }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 496,
+        "lineEnd": 496,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L496-L496"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::HtmlUnavailable",
+      "publicPath": "yosoi::view::ViewError::HtmlUnavailable",
+      "title": "yosoi::view::ViewError::HtmlUnavailable",
+      "kind": "variant",
+      "signature": "HtmlUnavailable",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 495,
+        "lineEnd": 495,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L495-L495"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::IdentityTooLong",
+      "publicPath": "yosoi::view::ViewError::IdentityTooLong",
+      "title": "yosoi::view::ViewError::IdentityTooLong",
+      "kind": "variant",
+      "signature": "IdentityTooLong { field: &'static str }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 493,
+        "lineEnd": 493,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L493-L493"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::IncompleteEvidence",
+      "publicPath": "yosoi::view::ViewError::IncompleteEvidence",
+      "title": "yosoi::view::ViewError::IncompleteEvidence",
+      "kind": "variant",
+      "signature": "IncompleteEvidence { reason_code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 510,
+        "lineEnd": 510,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L510-L510"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidCursor",
+      "publicPath": "yosoi::view::ViewError::InvalidCursor",
+      "title": "yosoi::view::ViewError::InvalidCursor",
+      "kind": "variant",
+      "signature": "InvalidCursor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 500,
+        "lineEnd": 500,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L500-L500"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidDocumentEpoch",
+      "publicPath": "yosoi::view::ViewError::InvalidDocumentEpoch",
+      "title": "yosoi::view::ViewError::InvalidDocumentEpoch",
+      "kind": "variant",
+      "signature": "InvalidDocumentEpoch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 494,
+        "lineEnd": 494,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L494-L494"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidPageSize",
+      "publicPath": "yosoi::view::ViewError::InvalidPageSize",
+      "title": "yosoi::view::ViewError::InvalidPageSize",
+      "kind": "variant",
+      "signature": "InvalidPageSize { maximum: usize }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 499,
+        "lineEnd": 499,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L499-L499"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::LocateFailed",
+      "publicPath": "yosoi::view::ViewError::LocateFailed",
+      "title": "yosoi::view::ViewError::LocateFailed",
+      "kind": "variant",
+      "signature": "LocateFailed { detail: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 511,
+        "lineEnd": 511,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L511-L511"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::MismatchedLocatorProjection",
+      "publicPath": "yosoi::view::ViewError::MismatchedLocatorProjection",
+      "title": "yosoi::view::ViewError::MismatchedLocatorProjection",
+      "kind": "variant",
+      "signature": "MismatchedLocatorProjection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 509,
+        "lineEnd": 509,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L509-L509"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::Plan",
+      "publicPath": "yosoi::view::ViewError::Plan",
+      "title": "yosoi::view::ViewError::Plan",
+      "kind": "variant",
+      "signature": "Plan(String)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 513,
+        "lineEnd": 513,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L513-L513"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::RowCountOverflow",
+      "publicPath": "yosoi::view::ViewError::RowCountOverflow",
+      "title": "yosoi::view::ViewError::RowCountOverflow",
+      "kind": "variant",
+      "signature": "RowCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 507,
+        "lineEnd": 507,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L507-L507"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::SelectorTooLong",
+      "publicPath": "yosoi::view::ViewError::SelectorTooLong",
+      "title": "yosoi::view::ViewError::SelectorTooLong",
+      "kind": "variant",
+      "signature": "SelectorTooLong { maximum: usize, observed: usize }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 498,
+        "lineEnd": 498,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L498-L498"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::StaleCursor",
+      "publicPath": "yosoi::view::ViewError::StaleCursor",
+      "title": "yosoi::view::ViewError::StaleCursor",
+      "kind": "variant",
+      "signature": "StaleCursor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 502,
+        "lineEnd": 502,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L502-L502"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::StaleObservation",
+      "publicPath": "yosoi::view::ViewError::StaleObservation",
+      "title": "yosoi::view::ViewError::StaleObservation",
+      "kind": "variant",
+      "signature": "StaleObservation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 504,
+        "lineEnd": 504,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L504-L504"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UnexpectedProjection",
+      "publicPath": "yosoi::view::ViewError::UnexpectedProjection",
+      "title": "yosoi::view::ViewError::UnexpectedProjection",
+      "kind": "variant",
+      "signature": "UnexpectedProjection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 508,
+        "lineEnd": 508,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L508-L508"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UnsupportedCondition",
+      "publicPath": "yosoi::view::ViewError::UnsupportedCondition",
+      "title": "yosoi::view::ViewError::UnsupportedCondition",
+      "kind": "variant",
+      "signature": "UnsupportedCondition { kind: &'static str }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 505,
+        "lineEnd": 505,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L505-L505"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UrlTooLong",
+      "publicPath": "yosoi::view::ViewError::UrlTooLong",
+      "title": "yosoi::view::ViewError::UrlTooLong",
+      "kind": "variant",
+      "signature": "UrlTooLong { maximum: usize }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 497,
+        "lineEnd": 497,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L497-L497"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewError::clone",
+      "publicPath": "yosoi::view::ViewError::clone",
+      "title": "yosoi::view::ViewError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::ViewError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 490,
+        "lineEnd": 490,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L490-L490"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::eq",
+      "publicPath": "yosoi::view::ViewError::eq",
+      "title": "yosoi::view::ViewError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::ViewError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 490,
+        "lineEnd": 490,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L490-L490"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::fmt",
+      "publicPath": "yosoi::view::ViewError::fmt",
+      "title": "yosoi::view::ViewError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 490,
+        "lineEnd": 490,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L490-L490"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::fmt",
+      "publicPath": "yosoi::view::ViewError::fmt",
+      "title": "yosoi::view::ViewError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 517,
+        "lineEnd": 579,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f8e561ee2d48a95485d84a2be32b6f7cee2bfb/crates/yosoi/src/view.rs#L517-L579"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "85e1e3c35c21abb0449e1d3c3792984cab711f5cc285b1f7e6d60f3201905653",
+  "slug": "yosoi/view/enum/viewerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "85e1e3c35c21abb0449e1d3c3792984cab711f5cc285b1f7e6d60f3201905653"
+}

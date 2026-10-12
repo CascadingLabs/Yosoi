@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Filters",
+  "publicPath": "yosoi::policy::Filters",
+  "kind": "struct",
+  "title": "yosoi::policy::Filters",
+  "signature": "pub struct Filters",
+  "docs": "URL components omitted from a Map inventory.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+    "lineStart": 16,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L16-L21"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Filters"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Filters::clone",
+      "publicPath": "yosoi::policy::Filters::clone",
+      "title": "yosoi::policy::Filters::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Filters",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Filters::default",
+      "publicPath": "yosoi::policy::Filters::default",
+      "title": "yosoi::policy::Filters::default",
+      "kind": "function",
+      "signature": "fn default() -> Filters",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Filters::deserialize",
+      "publicPath": "yosoi::policy::Filters::deserialize",
+      "title": "yosoi::policy::Filters::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 47,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L47-L67"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Filters::eq",
+      "publicPath": "yosoi::policy::Filters::eq",
+      "title": "yosoi::policy::Filters::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Filters) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Filters::excluded_path_prefixes",
+      "publicPath": "yosoi::policy::Filters::excluded_path_prefixes",
+      "title": "yosoi::policy::Filters::excluded_path_prefixes",
+      "kind": "struct_field",
+      "signature": "pub excluded_path_prefixes: Vec<String>",
+      "docs": "Path prefixes whose matching URLs are excluded.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Filters::excluded_query_keys",
+      "publicPath": "yosoi::policy::Filters::excluded_query_keys",
+      "title": "yosoi::policy::Filters::excluded_query_keys",
+      "kind": "struct_field",
+      "signature": "pub excluded_query_keys: Vec<String>",
+      "docs": "Query parameter names whose presence excludes a discovered URL.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Filters::fmt",
+      "publicPath": "yosoi::policy::Filters::fmt",
+      "title": "yosoi::policy::Filters::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::Filters::serialize",
+      "publicPath": "yosoi::policy::Filters::serialize",
+      "title": "yosoi::policy::Filters::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::Filters::validate",
+      "publicPath": "yosoi::policy::Filters::validate",
+      "title": "yosoi::policy::Filters::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), PolicyError>",
+      "docs": "Validates the number and UTF-8 size of every filter string.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/filters.rs",
+        "lineStart": 25,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/map/filters.rs#L25-L43"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a1e994303eff4f86e34516cc2c0d39b5aea0f6f10cc462cc95c2fd9bcb235684",
+  "slug": "yosoi/policy/struct/filters",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a1e994303eff4f86e34516cc2c0d39b5aea0f6f10cc462cc95c2fd9bcb235684"
+}

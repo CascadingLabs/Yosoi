@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::RegionId",
+  "publicPath": "yosoi::locators::RegionId",
+  "kind": "struct",
+  "title": "yosoi::locators::RegionId",
+  "signature": "pub struct RegionId",
+  "docs": "A validated repeated-region name stable within one plan.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+    "lineStart": 55,
+    "lineEnd": 55,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L55-L55"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::RegionId"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::RegionId::as_str",
+      "publicPath": "yosoi::locators::RegionId::as_str",
+      "title": "yosoi::locators::RegionId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 67,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L67-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::clone",
+      "publicPath": "yosoi::locators::RegionId::clone",
+      "title": "yosoi::locators::RegionId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::RegionId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::cmp",
+      "publicPath": "yosoi::locators::RegionId::cmp",
+      "title": "yosoi::locators::RegionId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::locators::RegionId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::deserialize",
+      "publicPath": "yosoi::locators::RegionId::deserialize",
+      "title": "yosoi::locators::RegionId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 73,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L73-L78"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::eq",
+      "publicPath": "yosoi::locators::RegionId::eq",
+      "title": "yosoi::locators::RegionId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::RegionId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::fmt",
+      "publicPath": "yosoi::locators::RegionId::fmt",
+      "title": "yosoi::locators::RegionId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::hash",
+      "publicPath": "yosoi::locators::RegionId::hash",
+      "title": "yosoi::locators::RegionId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::partial_cmp",
+      "publicPath": "yosoi::locators::RegionId::partial_cmp",
+      "title": "yosoi::locators::RegionId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::locators::RegionId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::serialize",
+      "publicPath": "yosoi::locators::RegionId::serialize",
+      "title": "yosoi::locators::RegionId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::RegionId::try_new",
+      "publicPath": "yosoi::locators::RegionId::try_new",
+      "title": "yosoi::locators::RegionId::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(value: impl Into<String>) -> Result<Self, yosoi::locators::QueryError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 58,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/internal/documents/plan_authoring.rs#L58-L65"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "258bab838e51995590768939880ce217cb9472666dbf0e8e71b8ce28e5e02da6",
+  "slug": "yosoi/locators/struct/regionid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "258bab838e51995590768939880ce217cb9472666dbf0e8e71b8ce28e5e02da6"
+}

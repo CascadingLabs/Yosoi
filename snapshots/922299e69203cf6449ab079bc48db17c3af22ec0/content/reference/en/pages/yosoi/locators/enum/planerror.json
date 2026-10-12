@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::PlanError",
+  "publicPath": "yosoi::locators::PlanError",
+  "kind": "enum",
+  "title": "yosoi::locators::PlanError",
+  "signature": "pub enum PlanError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+    "lineStart": 293,
+    "lineEnd": 329,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L293-L329"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::PlanError",
+    "yosoi::prelude::locators::PlanError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::PlanError::ConflictingRegion",
+      "publicPath": "yosoi::locators::PlanError::ConflictingRegion",
+      "title": "yosoi::locators::PlanError::ConflictingRegion",
+      "kind": "variant",
+      "signature": "ConflictingRegion { id: yosoi::locators::RegionId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 315,
+        "lineEnd": 315,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L315-L315"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::DuplicateCaptureName",
+      "publicPath": "yosoi::locators::PlanError::DuplicateCaptureName",
+      "title": "yosoi::locators::PlanError::DuplicateCaptureName",
+      "kind": "variant",
+      "signature": "DuplicateCaptureName { name: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 309,
+        "lineEnd": 309,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L309-L309"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::DuplicateOutput",
+      "publicPath": "yosoi::locators::PlanError::DuplicateOutput",
+      "title": "yosoi::locators::PlanError::DuplicateOutput",
+      "kind": "variant",
+      "signature": "DuplicateOutput { id: yosoi::locators::OutputId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 313,
+        "lineEnd": 313,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L313-L313"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::EmptyOutputId",
+      "publicPath": "yosoi::locators::PlanError::EmptyOutputId",
+      "title": "yosoi::locators::PlanError::EmptyOutputId",
+      "kind": "variant",
+      "signature": "EmptyOutputId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 297,
+        "lineEnd": 297,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L297-L297"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::EmptyProjectionArgument",
+      "publicPath": "yosoi::locators::PlanError::EmptyProjectionArgument",
+      "title": "yosoi::locators::PlanError::EmptyProjectionArgument",
+      "kind": "variant",
+      "signature": "EmptyProjectionArgument",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 307,
+        "lineEnd": 307,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L307-L307"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::EmptyQueryExpression",
+      "publicPath": "yosoi::locators::PlanError::EmptyQueryExpression",
+      "title": "yosoi::locators::PlanError::EmptyQueryExpression",
+      "kind": "variant",
+      "signature": "EmptyQueryExpression",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 299,
+        "lineEnd": 299,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L299-L299"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::InvalidCombination",
+      "publicPath": "yosoi::locators::PlanError::InvalidCombination",
+      "title": "yosoi::locators::PlanError::InvalidCombination",
+      "kind": "variant",
+      "signature": "InvalidCombination { atom: yosoi::locators::QueryAtom, result_shape: yosoi::locators::QueryResultShape, projection: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L322-L326"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::InvalidJsonQuery",
+      "publicPath": "yosoi::locators::PlanError::InvalidJsonQuery",
+      "title": "yosoi::locators::PlanError::InvalidJsonQuery",
+      "kind": "variant",
+      "signature": "InvalidJsonQuery(yosoi::locators::JsonQuerySyntaxError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 305,
+        "lineEnd": 305,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L305-L305"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::InvalidQueryNamespaces",
+      "publicPath": "yosoi::locators::PlanError::InvalidQueryNamespaces",
+      "title": "yosoi::locators::PlanError::InvalidQueryNamespaces",
+      "kind": "variant",
+      "signature": "InvalidQueryNamespaces(yosoi::locators::QueryError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 301,
+        "lineEnd": 301,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L301-L301"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::InvalidQuerySyntax",
+      "publicPath": "yosoi::locators::PlanError::InvalidQuerySyntax",
+      "title": "yosoi::locators::PlanError::InvalidQuerySyntax",
+      "kind": "variant",
+      "signature": "InvalidQuerySyntax { atom: yosoi::locators::QueryAtom }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 303,
+        "lineEnd": 303,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L303-L303"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::InvalidRegionQuery",
+      "publicPath": "yosoi::locators::PlanError::InvalidRegionQuery",
+      "title": "yosoi::locators::PlanError::InvalidRegionQuery",
+      "kind": "variant",
+      "signature": "InvalidRegionQuery { atom: yosoi::locators::QueryAtom, result_shape: yosoi::locators::QueryResultShape }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 317,
+        "lineEnd": 320,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L317-L320"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::NoCommonDocument",
+      "publicPath": "yosoi::locators::PlanError::NoCommonDocument",
+      "title": "yosoi::locators::PlanError::NoCommonDocument",
+      "kind": "variant",
+      "signature": "NoCommonDocument",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 328,
+        "lineEnd": 328,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L328-L328"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::NoOutputs",
+      "publicPath": "yosoi::locators::PlanError::NoOutputs",
+      "title": "yosoi::locators::PlanError::NoOutputs",
+      "kind": "variant",
+      "signature": "NoOutputs",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 295,
+        "lineEnd": 295,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L295-L295"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::PlanError::UnknownCaptureName",
+      "publicPath": "yosoi::locators::PlanError::UnknownCaptureName",
+      "title": "yosoi::locators::PlanError::UnknownCaptureName",
+      "kind": "variant",
+      "signature": "UnknownCaptureName { name: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 311,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L311-L311"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::clone",
+      "publicPath": "yosoi::locators::PlanError::clone",
+      "title": "yosoi::locators::PlanError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::PlanError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::eq",
+      "publicPath": "yosoi::locators::PlanError::eq",
+      "title": "yosoi::locators::PlanError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::PlanError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::fmt",
+      "publicPath": "yosoi::locators::PlanError::fmt",
+      "title": "yosoi::locators::PlanError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::fmt",
+      "publicPath": "yosoi::locators::PlanError::fmt",
+      "title": "yosoi::locators::PlanError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::from",
+      "publicPath": "yosoi::locators::PlanError::from",
+      "title": "yosoi::locators::PlanError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::locators::JsonQuerySyntaxError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::locators::PlanError::source",
+      "publicPath": "yosoi::locators::PlanError::source",
+      "title": "yosoi::locators::PlanError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_model.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/plan_model.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/enum/planerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

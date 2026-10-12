@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "channel": "nightly-2026-09-06",
+  "compilerCommit": "f248f4038796913873f11ca65b1b901e311c8dae",
+  "rustdocJsonFormat": 61,
+  "target": "x86_64-unknown-linux-gnu"
+}

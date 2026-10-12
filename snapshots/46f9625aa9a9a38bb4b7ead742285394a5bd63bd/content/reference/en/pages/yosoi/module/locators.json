@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::locators",
+  "publicPath": "yosoi::locators",
+  "kind": "module",
+  "title": "yosoi::locators",
+  "signature": "pub mod locators",
+  "docs": "Describe named outputs and inspect the evidence found in a document.",
+  "source": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 1,
+    "lineEnd": 17,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/46f9625aa9a9a38bb4b7ead742285394a5bd63bd/crates/yosoi/src/locators.rs#L1-L17"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::locators"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "0cf90205ab2d3e672cc1733efd04a7bf2d9eefce4c84bd1c37b79537972ca69c",
+  "slug": "yosoi/module/locators",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0cf90205ab2d3e672cc1733efd04a7bf2d9eefce4c84bd1c37b79537972ca69c"
+}

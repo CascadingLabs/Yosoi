@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::SessionRequest",
+  "publicPath": "yosoi::session::SessionRequest",
+  "kind": "struct",
+  "title": "yosoi::session::SessionRequest",
+  "signature": "pub struct SessionRequest<'scope>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 277,
+    "lineEnd": 281,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L277-L281"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::SessionRequest::bind",
+      "publicPath": "yosoi::session::SessionRequest::bind",
+      "title": "yosoi::session::SessionRequest::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 304,
+        "lineEnd": 307,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L304-L307"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::fmt",
+      "publicPath": "yosoi::session::SessionRequest::fmt",
+      "title": "yosoi::session::SessionRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 283,
+        "lineEnd": 287,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L283-L287"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::send",
+      "publicPath": "yosoi::session::SessionRequest::send",
+      "title": "yosoi::session::SessionRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(&self) -> Result<yosoi::request::Response, yosoi::session::SessionRequestError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 308,
+        "lineEnd": 313,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L308-L313"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::send_cancellable",
+      "publicPath": "yosoi::session::SessionRequest::send_cancellable",
+      "title": "yosoi::session::SessionRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(&self, cancellation: &CancellationToken) -> Result<yosoi::request::Response, yosoi::session::SessionRequestError>",
+      "docs": "Executes while honoring caller cancellation through acquisition and request settlement.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 319,
+        "lineEnd": 349,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/13efeab20c1d156859fe7461de63be149a000d13/crates/yosoi/src/session.rs#L319-L349"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/session/struct/sessionrequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
