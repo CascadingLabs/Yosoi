@@ -2,7 +2,7 @@ name: Publish Yosoi docs
 on:
   push:
     branches: [main]
-    paths: ['docs/public/**', 'scripts/docs/**', '!scripts/docs/BUNDLES.md', 'python/yosoi/**', 'crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']
+    paths: ['docs/public/**', 'scripts/docs/**', '!scripts/docs/BUNDLES.md', '!scripts/docs/node_modules', '!scripts/docs/node_modules/**', 'python/yosoi/**', 'crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
       release_tag:

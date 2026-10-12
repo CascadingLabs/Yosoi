@@ -56,7 +56,7 @@ Thumbs.db
 .agents/
 completions/
 
-/scripts/docs/node_modules/
+/scripts/docs/node_modules
 
 /scripts/docs/.vite/
 
