@@ -183,7 +183,7 @@ jobs:
       - name: Install native prerequisites
         run: |
           if [ "$RUNNER_OS" = Windows ]; then
-            echo 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
+            printf '%s\n' 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
           elif [ "$RUNNER_OS" = macOS ]; then
             echo "LIBCLANG_PATH=$(xcrun --find clang | xargs dirname)/../lib" >> "$GITHUB_ENV"
           fi
@@ -414,7 +414,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends cmake clang libclang-dev ninja-build pkg-config libssl-dev
           elif [ "$RUNNER_OS" = Windows ]; then
-            echo 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
+            printf '%s\n' 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
           fi
           rustup toolchain install "$TOOLCHAIN" --profile minimal --target "$TARGET"
       - name: Give native builds a fresh cache save key
@@ -570,6 +570,10 @@ jobs:
           bun-version: 1.4.2
       - name: Install pinned docs tooling
         run: cd scripts/docs && bun install --frozen-lockfile
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.15'
       - name: Export versioned public content and compiler reference
         env:
           SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
