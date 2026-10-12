@@ -47,9 +47,8 @@ def validate(value):
     located = document.locate(plan)
     with document.parse() as parsed:
         assert parsed.locate(plan) == located
-    extracted = yosoi.extract(document, ContractRecord)
     validation_barrier.wait()
-    contract_records = extracted.validate().require_all()
+    contract_records = yosoi.extract(document, ContractRecord)
     assert contract_records[0].value == str(value)
     return Record.model_validate({"value": located.values()[0]}).value
 

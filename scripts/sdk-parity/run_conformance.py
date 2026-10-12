@@ -53,7 +53,13 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             },
         }
     )
-    from yosoi.contracts import RuntimeZeroOrOne
+    from yosoi.contracts import (
+        RuntimeExactlyOne,
+        RuntimeMany,
+        RuntimeMoneyUsd,
+        RuntimeString,
+        RuntimeZeroOrOne,
+    )
     from yosoi.locators import QueryAtom, QuerySpec, TreeCoordinate
 
     for name, value in (
@@ -392,31 +398,51 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         tags=(list[str], ys.Field("Tags", locator=ys.css(".tag"))),
     )
     contract.root = ys.css("article")
-    field_map = {"byline": "author", "price": "price", "link": "link", "tags": "tags"}
+    # This workflow asserts the shared Rust contract wire; Python business validation
+    # is covered by Contract tests and intentionally follows Pydantic semantics.
+    runtime_contract = ys.contracts.RuntimeContract.new(contract.contract_schema())
+    field_ids = ("byline", "price", "link", "tags")
+
+    def scalar(value: Any) -> Any:
+        if value is None:
+            return None
+        if isinstance(value, RuntimeString):
+            return value.value
+        if isinstance(value, RuntimeMoneyUsd):
+            return value.value.model_dump(mode="json")
+        raise TypeError(f"unsupported runtime scalar: {type(value).__name__}")
+
     for name, content in contract_specs:
         document = ys.Document.html(name, content)
         plan = contract.plan()
         located = document.locate(plan)
-        extracted = ys.extract(document, contract)
+        extracted = runtime_contract.extract(located)
         outcome = extracted.validate()
         wire = outcome.model_dump()
         try:
             records = outcome.require_all()
-            # Check actual Python record values, while retaining native provenance.
-            assert len(records) == len(outcome.records)
-            required = {"records": wire.get("records", [])}
+            required = {
+                "records": [record.model_dump(mode="json") for record in records]
+            }
         except ys.contracts.ContractIssues as error:
             required = {"error": error.detail}
         typed_values = []
         for record in outcome.records:
             values = {}
-            for field_id, attribute in field_map.items():
-                value = getattr(record.value, attribute)
-                values[field_id] = (
-                    value.model_dump(mode="json")
-                    if isinstance(value, ys.Money)
-                    else value
-                )
+            for field_id in field_ids:
+                value = record.value[field_id]
+                if isinstance(value, RuntimeExactlyOne):
+                    values[field_id] = scalar(value.value)
+                elif isinstance(value, RuntimeZeroOrOne):
+                    values[field_id] = (
+                        None if value.value is None else scalar(value.value)
+                    )
+                elif isinstance(value, RuntimeMany):
+                    values[field_id] = [scalar(item) for item in value.values]
+                else:
+                    raise TypeError(
+                        f"unsupported runtime field value: {type(value).__name__}"
+                    )
             typed_values.append(values)
         cases.append(
             {
@@ -425,7 +451,7 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 "content": content,
                 "profile": document.profile.model_dump(mode="json"),
                 "plan": plan.compiled(),
-                "schema": contract.contract_schema().model_dump(mode="json"),
+                "schema": runtime_contract.contract_schema.model_dump(mode="json"),
             }
         )
         expected.append(
@@ -437,7 +463,7 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                     "byte_len": document.byte_len,
                     "plan": plan.compiled(),
                     "located": located.model_dump(mode="json"),
-                    "identity": contract.identity(),
+                    "identity": runtime_contract.identity(),
                     "extracted": extracted.model_dump(),
                     "outcome": wire,
                     "archived": outcome.to_archived().model_dump(),

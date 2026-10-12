@@ -3,16 +3,27 @@
 Yosoi's Python package provides Pydantic authoring and typed outcomes over the
 public Rust SDK. The surface includes browser Flows and owned Session/Work
 contexts, documents, locator plans, typed Contracts, policy, asynchronous
-Requests, Map, Search, and caller-controlled cancellation. Python Contracts
-are bound to Rust extraction and validation. Cross-language parity is tracked
-per public item; this package does not claim complete verified parity.
+Requests, Map, Search, and caller-controlled cancellation. Rust parses and
+locates documents, groups raw Contract evidence, acquires URLs, discovers
+candidates, and validates Policy. Python Contracts construct and validate
+their records through Pydantic. Cross-language parity is tracked per public
+item; this package does not claim complete verified parity.
 
 Pydantic models describe inputs and result values. The packaged PyO3 extension
-calls the public Rust SDK, which owns parsing, locator compilation and
-evaluation, acquisition and discovery, and complete policy validation. Python
-objects hold native handles; for example, a parsed document can be reused and
-closed explicitly or with a context manager. Pydantic 2 is the only declared
-Python runtime dependency; the native extension is part of the package.
+calls the public Rust SDK for native processing. Python Contract fields use
+ordinary Pydantic types, defaults, aliases, constraints, validators, and
+serializers. Python objects also hold native handles; for example, a parsed
+document can be reused and closed explicitly or with a context manager.
+Pydantic 2 is the only declared Python runtime dependency; the native
+extension is part of the package.
+
+> [!NOTE]
+> **Python**
+>
+> A typed `Contract` record follows its Pydantic model behavior. Its native
+> schema identity covers only the transport shape. `RuntimeContract` is the
+> separate API for Rust-owned String and Money conversion, validation, and
+> portable archives.
 
 Start with the [runnable review examples](examples/README.md) to inspect Rust
 policy defaults, Contract schemas and evidence, local HTTP workflows, and
@@ -69,14 +80,21 @@ form a bounded relative local graph; remote, absolute, bare, and computed
 dynamic imports are rejected. Selected exports are read as JSON after
 evaluation and are not invoked.
 
-Typed `ys.assert_all(Contract, plan=..., checks=[...])` performs one immediate
-Contract extraction and runs all synchronous predicates against the same
-Rust-validated record. Attach `.until()` or pass the assertion to
+Typed `ys.assert_all(Contract, plan=..., checks=[...])` assembles one immediate
+Contract observation, constructs its Python model through Pydantic, and runs
+all synchronous predicates against that record. Attach `.until()` or pass the assertion to
 `ys.until(...)` when bounded polling is intended. Callback exceptions remain
 visible as structured check errors; async predicates and non-boolean results
 are rejected. Serialized assertion descriptors contain no Python code, so a
 Flow loaded from a persisted descriptor must be rebuilt with its local checks
 before invocation.
+
+> [!NOTE]
+> **Python**
+>
+> Pydantic validation runs before assertion predicates. If model construction
+> fails, the predicates are skipped and the report retains the candidate and
+> structured validation details.
 
 This Python surface does not expose Watch streams, additional tab creation,
 or remote browser attachment. The example accepts site-specific actions,

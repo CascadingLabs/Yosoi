@@ -365,9 +365,10 @@ def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
                 "Contract, rather than a separate processing engine."
             ),
             "equivalentCapability": (
-                "Python Contract.extract(...).validate() and typed assertion "
-                "callbacks use the same Rust extraction and validation pipeline, "
-                "verified by Contract and browser workflows."
+                "Python Contract extracts Rust-located values and validates business "
+                "records through Pydantic, so its record rules intentionally follow "
+                "Python model behavior. The parity workflow exercises Rust-owned "
+                "staging through Python RuntimeContract instead."
             ),
         }
     trait = item.get("trait")

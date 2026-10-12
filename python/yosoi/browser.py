@@ -1778,20 +1778,75 @@ class _AssertionBinding:
         located = TypeAdapter(LocateOutcome).validate_json(
             located_json, context=RUST_DOMAIN_VALIDATED
         )
-        result = self.contract.extract(located).validate()
+        result = self.contract.assemble(located).validate()
         source_error: dict[str, Any] | None = None
-        field_issues = [
-            field.model_dump(mode="json", exclude_none=True)
-            for issue in result.issues
-            for field in issue.fields
-        ]
+        field_issues: list[dict[str, Any]] = []
+        validation_errors: list[dict[str, Any]] = []
+        for issue in result.issues:
+            field_ids = [str(field_id) for field_id in issue.field_ids]
+            if issue.error is not None:
+                validation_errors.append({"fields": field_ids, "errors": issue.errors})
+            field_kinds = dict(issue.field_kinds)
+            for field_id in field_ids:
+                kind = field_kinds.get(field_id, issue.kind)
+                issue_kind: dict[str, Any]
+                if kind == "missing_required":
+                    issue_kind = {"kind": "missing_required"}
+                elif kind == "excess_candidates":
+                    issue_kind = {
+                        "kind": "excess_candidates",
+                        "observed": len(issue.candidate.fields[field_id].evidence),
+                    }
+                elif kind == "incomplete_evidence":
+                    issue_kind = {"kind": "incomplete_evidence"}
+                elif kind == "validation_error":
+                    issue_kind = {"kind": "conversion_failed"}
+                else:
+                    raise TypeError(
+                        f"unsupported Contract assertion issue kind: {kind!r}"
+                    )
+                field = issue.candidate.fields[field_id]
+                evidence = field.evidence
+                if kind == "incomplete_evidence":
+                    evidence = tuple(
+                        item
+                        for item in evidence
+                        if item.completeness.status != "complete"
+                    )
+                field_issues.append(
+                    {
+                        "field": field_id,
+                        "kind": issue_kind,
+                        "evidence": [
+                            item.model_dump(
+                                mode="json", exclude_none=True, by_alias=True
+                            )
+                            for item in evidence
+                        ],
+                    }
+                )
+
         diagnostics = [
             item.model_dump(mode="json", exclude_none=True)
             for item in result.extraction_diagnostics
         ]
+        if validation_errors:
+            # AssertionReport has a fixed Rust FieldIssue shape. Keep those entries
+            # compatible and retain richer Pydantic details in its JSON diagnostics
+            # sidecar, which Rust already preserves without changing that API.
+            diagnostics.append(
+                {
+                    "kind": "python_validation_errors",
+                    "validation_errors": validation_errors,
+                }
+            )
         check_results: list[dict[str, Any]] = []
 
-        if result.status == "locate_failed":
+        if field_issues or diagnostics:
+            # Rust's external assertion report requires InvalidContract whenever
+            # per-field rejection facts or diagnostics are retained.
+            source_error = {"kind": "invalid_contract"}
+        elif result.status == "locate_failed":
             source_error = {"kind": "locate_failed"}
         elif result.status == "no_match":
             source_error = {"kind": "record_count", "actual": 0}
@@ -1887,7 +1942,12 @@ def assert_all(
     plan: Plan | None = None,
     checks: Iterable[Check],
 ) -> LocalRustAssertion:
-    """Check one typed Contract observation using synchronous local predicates."""
+    """Check one typed Contract observation using synchronous local predicates.
+
+    Python validation failures retain Rust-compatible field issues in the assertion
+    report. Sanitized Pydantic details are carried as a tagged item in
+    ``extraction_diagnostics`` because the Rust FieldIssue wire shape is fixed.
+    """
     from .contracts import Contract as ContractType
 
     if not isinstance(contract, type) or not issubclass(contract, ContractType):

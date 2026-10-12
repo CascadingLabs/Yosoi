@@ -25,12 +25,13 @@ uv run --no-sync python python/examples/review.py local
 existing binding keeps its validated policy snapshot. `locate` shows
 Pydantic-authored plans, Rust compilation and execution, extraction evidence,
 repeated-region lineage, and parse reuse. `contracts` prints the Pydantic model
-schema, Rust Contract schema and compiled plan, extracted candidates, validated
-records, and field issues. `runtime-contracts` reviews schema-authored extraction and
-portable archival. `errors` prints Rust error variants and payloads, plus a Map
-rejection message returned by Rust. `local` starts a loopback HTTP server and exercises
-Requests and Map plus explicit cancellation before I/O. These commands need no public website. Fresh installed-wheel verification for the new Contract
-example is pending.
+schema, native transport schema and compiled plan, assembled candidates,
+Pydantic-validated records, and field errors. `runtime-contracts` reviews
+schema-authored Rust extraction, validation, and portable archival. `errors`
+prints Rust error variants and payloads, plus a Map rejection message returned
+by Rust. `local` starts a loopback HTTP server and exercises Requests and Map
+plus explicit cancellation before I/O. These commands need no public website.
+Fresh installed-wheel verification for the new Contract example is pending.
 
 `browser_beta.py` is an application integration template rather than a
 self-contained browser fixture. It expects the caller to provide typed site
@@ -70,8 +71,10 @@ CARGO_BUILD_JOBS=1 cargo run --locked --package yosoi --example review -- cancel
 
 Pass `--features browser` before `--` to the Rust command when reviewing
 browser-backed Search routes. The Python `local` example has no matching
-Rust runner command. These examples show selected SDK paths; Python Contracts use the shared Rust
-extraction and validation implementation.
+Rust runner command. These examples show selected SDK paths. Python Contracts
+use Rust to locate and group evidence, then Pydantic to construct and validate
+records. The separate `runtime-contracts` path demonstrates Rust-owned staged
+validation and archives.
 
 For source review before rebuilding the editable package in this checkout, use
 `PYTHONPATH=python .venv/bin/python` in place of `uv run --no-sync python`.

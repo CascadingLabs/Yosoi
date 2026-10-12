@@ -1,41 +1,49 @@
-"""Declarative Contracts over Rust's extraction and validation pipeline."""
+"""Mutable Pydantic Contracts over Rust's bounded raw evidence extraction."""
 
 from __future__ import annotations
 
 import json
+import re
 import types
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from threading import RLock
 from typing import (
     Annotated,
     Any,
     ClassVar,
     Literal,
-    NoReturn,
     Protocol,
     Self,
-    SupportsIndex,
     TypeVar,
     Union,
     get_args,
     get_origin,
 )
 
+from pydantic import (
+    ConfigDict,
+    SerializeAsAny,
+    TypeAdapter,
+    ValidationError,
+    create_model,
+    model_validator,
+)
 from pydantic import Field as PydanticField
-from pydantic import SerializeAsAny, TypeAdapter, create_model, model_validator
-from pydantic_core import PydanticUndefined
-from typing_extensions import Doc
+from pydantic_core import InitErrorDetails, PydanticCustomError, PydanticUndefined
 
 from . import _native
-from ._models import ImmutableModel, NativeAuthoringModel
+from ._models import ImmutableModel, Model, NativeAuthoringModel
 from .documents import BoundDocument, Document, ParsedDocument
 from .identities import ContractIdentity
 from .locators import Locator, Plan, Query, output
 from .outcomes import (
+    Complete,
     Completeness,
     Finding,
     LocateOutcome,
+    Partial,
     ProjectedValue,
     RegionLineage,
 )
@@ -44,16 +52,16 @@ from .scalars import RUST_DOMAIN_VALIDATED, ContractId, FieldId
 T = TypeVar("T", bound="Contract")
 Cardinality = Literal["exactly_one", "zero_or_one", "many"]
 """Required accepted field count: exactly one, zero or one, or an ordered collection
-including empty. Rust validation enforces these distinctions after extraction.
+including empty. Python applies these distinctions to complete raw evidence.
 """
 
 
 class ContractValue(Protocol):
-    """Identity-only protocol for the Rust Contract scalar vocabulary.
+    """Identity-only protocol for native Rust Contract scalar types.
 
     Attributes:
-        TYPE_ID: Stable scalar identifier included in schema identity. This protocol
-            alone does not register a runtime converter.
+        TYPE_ID: Stable scalar identifier included in native transport identity. This
+            protocol does not register a Pydantic validator or runtime converter.
     """
 
     TYPE_ID: ClassVar[str]
@@ -72,8 +80,24 @@ class Money(NativeAuthoringModel):
 
     TYPE_ID: ClassVar[str] = _native.contract_value_type_id(True)
 
-    minor_units: Annotated[int, PydanticField(strict=True, repr=False)]
+    minor_units: Annotated[
+        int, PydanticField(strict=True, ge=0, le=2**63 - 1, repr=False)
+    ]
     currency: Literal["usd"] = "usd"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_text(cls, value: Any) -> Any:
+        """Accept the Rust Contract USD text spelling during normal Pydantic use."""
+        if not isinstance(value, str):
+            return value
+        match = re.fullmatch(r"\$([0-9]+)\.([0-9]{2})", value)
+        if match is None:
+            raise ValueError("invalid USD amount")
+        minor_units = int(match.group(1)) * 100 + int(match.group(2))
+        if minor_units > 2**63 - 1:
+            raise ValueError("USD amount exceeds the supported range")
+        return {"minor_units": minor_units, "currency": "usd"}
 
     @model_validator(mode="after")
     def _rust_validate(self) -> Self:
@@ -108,7 +132,7 @@ class _LocatorMetadata:
 
 
 def Field(
-    description: str,
+    description: str | None = None,
     *,
     id: str | FieldId | None = None,
     locator: Locator | Query | None = None,
@@ -117,8 +141,9 @@ def Field(
 ) -> Any:
     """Describe a Contract field using a genuine Pydantic FieldInfo.
 
-    A bare query uses text projection. Defaults affect model authoring, while
-    extraction cardinality and missing-value behavior follow the Rust schema.
+    A bare query uses text projection. Pydantic constraints, aliases, defaults, and
+    other FieldInfo options are forwarded. Only the locator and field ID participate in
+    native candidate extraction; Pydantic validates each raw projected value.
     """
     if isinstance(locator, Query):
         locator = locator.text()
@@ -133,15 +158,14 @@ def Field(
 
 
 class FieldSchema(ImmutableModel):
-    """Rust-validated field meaning, cardinality, and type metadata.
+    """Native transport field meaning, cardinality, and scalar type metadata.
 
     Attributes:
         id: Authored identifier matching locator output evidence.
         description: Nonblank business meaning; it does not discover a locator.
-        cardinality: exactly_one, zero_or_one, or many constrains validation, not
-            extraction.
-        value_type: Nonblank conversion identifier; runtime Contracts support string and
-            money.usd.
+        cardinality: exactly_one, zero_or_one, or many describes candidate field shape.
+        value_type: Native transport type, string or money.usd. Python Contracts map
+            other annotations to string and validate raw findings in Pydantic.
     """
 
     id: FieldId
@@ -156,7 +180,7 @@ class FieldSchema(ImmutableModel):
 
 
 class ContractSchema(ImmutableModel):
-    """Portable record meaning, scope, and ordered field declarations.
+    """Native transport meaning, scope, and ordered field declarations.
 
     Attributes:
         version: Supported portable format version, currently 1.
@@ -165,7 +189,8 @@ class ContractSchema(ImmutableModel):
         scope: page groups compatible findings into one record; repeated groups by
             parent-region lineage.
         fields: Nonempty ordered fields with unique IDs. Order, IDs, cardinalities, and
-            type IDs contribute to identity; descriptions do not.
+            native type IDs contribute to transport identity; Python annotations and
+            validators are not represented.
     """
 
     version: Literal[1] = 1
@@ -238,14 +263,15 @@ class ExtractionLimits(ImmutableModel):
 
 
 class ValidationLimits(ImmutableModel):
-    """Rust-owned default budgets for conversion and validation accounting.
+    """Native-shaped work budgets applied before Python validation.
 
     Attributes:
-        max_fields: Maximum schema fields requiring validation.
+        max_fields: Maximum schema fields in one validation pass.
         max_records: Maximum candidate records requiring validation.
-        max_conversions: Maximum charged field conversions.
-        max_issues: Maximum retained field rejection issues.
-        max_retained_provenance: Maximum retained finding evidence references.
+        max_conversions: Maximum field inputs, default slots and alias-container
+            expansion passed to Pydantic.
+        max_issues: Maximum field-level candidate issues retained.
+        max_retained_provenance: Maximum candidate and issue evidence references.
     """
 
     max_fields: Limit = PydanticField(
@@ -267,6 +293,26 @@ class ValidationLimits(ImmutableModel):
 
 def _validation_default(name: str) -> int:
     return json.loads(_native.validation_limits_defaults())[name]
+
+
+class ExtractionPolicy(ImmutableModel):
+    """Immutable acceptance and native-work limits for Python Contract extraction.
+
+    Attributes:
+        on_rejected_record: Raise when any candidate fails by default, or collect only
+            the accepted models while retaining rejected evidence in an extraction
+            report.
+        minimum_records: Minimum number of accepted records required by convenience
+            extraction. Reports retain results even when this threshold is unmet.
+        extraction_limits: Optional Rust limits for raw candidate assembly.
+        validation_limits: Optional native-shaped work limits applied before Python
+            validators run.
+    """
+
+    on_rejected_record: Literal["raise", "collect"] = "raise"
+    minimum_records: Annotated[int, PydanticField(strict=True, ge=0)] = 0
+    extraction_limits: ExtractionLimits | None = None
+    validation_limits: ValidationLimits | None = None
 
 
 class TerminalFailure(ImmutableModel):
@@ -335,6 +381,26 @@ class Candidate(ImmutableModel):
     document_id: str
     region: RegionLineage | None = None
 
+    @property
+    def fields(self) -> dict[str, CandidateField]:
+        """Return field evidence keyed by authored native field ID.
+
+        The mapping is a fresh dictionary; its frozen CandidateField values retain
+        ordered findings without copying projected source content.
+        """
+        return {
+            str(value.field_id): value
+            for value in self.__dict__.values()
+            if isinstance(value, CandidateField)
+        }
+
+    def field(self, field_id: str | FieldId) -> CandidateField:
+        """Return one candidate field by its authored native field ID."""
+        try:
+            return self.fields[str(field_id)]
+        except KeyError as error:
+            raise KeyError(f"candidate has no field {field_id!s}") from error
+
 
 class FieldIssueKind(ImmutableModel):
     """Cardinality, completeness, conversion, or semantic field rejection.
@@ -388,10 +454,10 @@ class ExtractionDiagnostic(ImmutableModel):
 
 
 class ValidatedRecord[T: "Contract"](ImmutableModel):
-    """Accepted typed value with original candidate evidence retained.
+    """Pydantic-accepted typed value with original candidate evidence retained.
 
     Attributes:
-        value: Record accepted by Rust cardinality, conversion, and semantics.
+        value: Record accepted by the Contract's Pydantic model validators.
         candidate: Original grouped findings and provenance.
     """
 
@@ -415,15 +481,15 @@ class ContractIssues(_native.ContractError):
     """Structured rejection of a request for all accepted record values.
 
     Attributes:
-        detail: Copied top-level Rust rejection mapping. Nested values are not
-            recursively frozen; the original outcome remains available.
+        detail: Copied terminal, cardinality, or report-level rejection facts. Nested
+            values are not recursively frozen; the extraction report remains available.
     """
 
     def __init__(self, detail: Mapping[str, Any]) -> None:
         """Copy top-level Rust rejection details and encode an exception message.
 
         Args:
-            detail: Rejection counts or terminal classification supplied by Rust.
+            detail: Safe rejection counts, validation details, or terminal facts.
 
         Nested values are not frozen; the original outcome retains its evidence.
         """
@@ -431,15 +497,18 @@ class ContractIssues(_native.ContractError):
         super().__init__(json.dumps(self.detail))
 
 
-class Contract(ImmutableModel):
-    """Typed record definition with Rust-owned cardinality and validation.
+class Contract(Model):
+    """Mutable Pydantic record model with native candidate extraction.
 
     Attributes:
         root: Optional repeated-region query; None selects page grouping.
         contract_id: Optional schema ID; the class name is used when omitted.
         contract_description: Optional meaning; class docstring or name supplies the
-            default. Fields require Field and nonblank descriptions.
+            default. Field descriptions are optional and do not affect Python
+            validation.
     """
+
+    model_config = ConfigDict(hide_input_in_errors=True)
 
     root: ClassVar[Query | None] = None
     contract_id: ClassVar[str | None] = None
@@ -465,20 +534,24 @@ class Contract(ImmutableModel):
 
     @classmethod
     def contract_schema(cls) -> ContractSchema:
-        """Return this class's validated schema without document I/O.
+        """Return the native transport schema without document I/O.
 
         Raises:
-            ContractError: Fields, scalar annotations, aliases, or processing hooks
-                cannot be represented by the supported Rust vocabulary.
+            ContractError: The class's field identifiers or descriptions cannot be
+                represented by the native transport schema.
+
+        Python annotations, aliases, defaults, Pydantic configuration, validators,
+        serializers, and computed fields are not represented here.
         """
         return cls._definition().schema
 
     @classmethod
     def identity(cls) -> ContractIdentity:
-        """Return Rust's semantic identity for this typed schema.
+        """Return the Rust identity for this class's native transport shape.
 
-        Descriptions do not affect identity. Version, Contract ID, scope, and ordered
-        field IDs, cardinalities, and scalar type IDs do.
+        This identity covers version, Contract ID, scope, ordered field IDs,
+        cardinalities, and native scalar transport types. It does not identify Python
+        annotations, aliases, defaults, model configuration, or Python validators.
 
         Raises:
             ContractError: The class cannot form a supported portable schema.
@@ -500,18 +573,18 @@ class Contract(ImmutableModel):
         return definition.plan
 
     @classmethod
-    def extract(
+    def assemble(
         cls: type[T], located: LocateOutcome, *, limits: ExtractionLimits | None = None
     ) -> Extracted[T]:
-        """Group located evidence without converting or validating values.
+        """Assemble raw native findings for explicit Pydantic validation.
 
         Args:
             located: Locator outcome retaining completeness and failure distinctions.
-            limits: Explicit assembly budgets, or None for Rust defaults.
+            limits: Native candidate assembly budgets, or None for Rust defaults.
 
         Returns:
-            Read-only candidates, diagnostics, or a terminal state. Call validate
-            explicitly before treating candidate evidence as accepted records.
+            Raw candidates, diagnostics, or a terminal state. Call ``validate`` to
+            produce a report of Pydantic-accepted models and rejected candidates.
 
         Raises:
             ContractError: Declaration or native input setup cannot be represented.
@@ -522,43 +595,61 @@ class Contract(ImmutableModel):
         )
         return Extracted(cls, handle)
 
+    @classmethod
+    def extract_report(
+        cls: type[T],
+        document: Document | BoundDocument | ParsedDocument,
+        *,
+        policy: ExtractionPolicy | None = None,
+    ) -> ContractOutcome[T]:
+        """Return accepted Pydantic records and every rejected candidate.
+
+        The report retains source evidence and terminal outcomes. Convenience
+        extraction raises according to ``policy``; this method does not raise merely
+        because a candidate failed Pydantic validation or minimum-record acceptance.
+        """
+        effective = _extraction_policy(policy)
+        located = document.locate(cls.plan())
+        return cls.assemble(located, limits=effective.extraction_limits).validate(
+            limits=effective.validation_limits, policy=effective
+        )
+
+    @classmethod
+    def extract(
+        cls: type[T],
+        document: Document | BoundDocument | ParsedDocument,
+        *,
+        policy: ExtractionPolicy | None = None,
+    ) -> list[T]:
+        """Locate, validate, and return accepted model instances.
+
+        Use ``extract_report`` to inspect rejected candidates, status, and evidence.
+        Incomplete or terminal native outcomes always raise. A single candidate's
+        Pydantic error raises as ``ValidationError`` by default; combined rejections
+        raise ``ContractIssues`` with sanitized details. With
+        ``on_rejected_record='collect'``, only accepted models are returned.
+        """
+        effective = _extraction_policy(policy)
+        report = cls.extract_report(document, policy=effective)
+        return _accepted_records(report, effective)
+
 
 class _Definition:
     def __init__(self, contract: type[Contract]) -> None:
-        _reject_python_processing_hooks(contract)
+        self.contract = contract
         contract.model_rebuild()
         fields: list[FieldSchema] = []
         pins: list[tuple[str, str, Locator | None]] = []
         self.field_map: list[tuple[str, str]] = []
         for name, info in contract.model_fields.items():
-            unsupported_metadata = [
-                item
-                for item in info.metadata
-                if not isinstance(item, (_LocatorMetadata, Doc))
-            ]
-            if unsupported_metadata:
-                raise _native.ContractError(
-                    f"field {name!r} has Python processing metadata that Rust "
-                    "Contracts do not support"
-                )
             value_type, cardinality = _field_type(info.annotation)
-            description = info.description
-            if not description:
-                raise _native.ContractError(f"field {name!r} requires a description")
+            description = info.description or name
             metadata = [
                 item for item in info.metadata if isinstance(item, _LocatorMetadata)
             ]
             if len(metadata) != 1:
                 raise _native.ContractError(f"field {name!r} must use ys.Field")
             field_id = metadata[0].field_id or name
-            if (
-                info.alias is not None
-                or info.validation_alias is not None
-                or info.serialization_alias is not None
-            ):
-                raise _native.ContractError(
-                    "Contract field aliases are not supported by Rust"
-                )
             fields.append(
                 FieldSchema(
                     id=field_id,
@@ -605,7 +696,7 @@ class _Definition:
             name: (CandidateField, ...) for name in contract.model_fields
         }
         # Candidate metadata cannot shadow named model fields.
-        reserved = set(Candidate.model_fields)
+        reserved = set(Candidate.model_fields) | {"fields", "field"}
         if reserved.intersection(contract.model_fields):
             raise _native.ContractError(
                 "Contract fields cannot shadow candidate document_id or region"
@@ -633,112 +724,35 @@ class _Definition:
         )
 
 
-def _reject_python_processing_hooks(contract: type[Contract]) -> None:
-    decorators = contract.__pydantic_decorators__
-    unsupported = [
-        name
-        for name in (
-            "field_validators",
-            "root_validators",
-            "model_validators",
-            "field_serializers",
-            "model_serializers",
-            "computed_fields",
-        )
-        if getattr(decorators, name)
-    ]
-    if contract.__dict__.get("__init__") is not None:
-        unsupported.append("custom initializer")
-    if contract.__dict__.get("model_post_init") is not None:
-        unsupported.append("model_post_init")
-    if unsupported:
-        raise _native.ContractError(
-            "Python Contract processing hooks are not supported: "
-            + ", ".join(unsupported)
-            + "; conversion and validation are Rust-owned"
-        )
-
-
 def _field_type(annotation: Any) -> tuple[Literal["string", "money.usd"], Cardinality]:
+    """Return only the coarse native transport type and extraction cardinality."""
+    while get_origin(annotation) is Annotated:
+        annotation = get_args(annotation)[0]
+
     cardinality: Cardinality = "exactly_one"
     origin = get_origin(annotation)
     if origin in (Union, types.UnionType):
-        args = get_args(annotation)
-        non_none = tuple(arg for arg in args if arg is not type(None))
-        if len(args) != 2 or len(non_none) != 1:
-            raise _native.ContractError("only scalar T | None is supported")
-        annotation = non_none[0]
-        cardinality = "zero_or_one"
-    elif annotation is list:
-        raise _native.ContractError(
-            "Contract list fields require one scalar element type"
-        )
-    elif origin is list:
-        args = get_args(annotation)
-        if len(args) != 1:
-            raise _native.ContractError(
-                "Contract list fields require one scalar element type"
-            )
-        (annotation,) = args
+        alternatives = get_args(annotation)
+        non_none = tuple(item for item in alternatives if item is not type(None))
+        if len(non_none) == 1:
+            annotation = non_none[0]
+            origin = get_origin(annotation)
+            cardinality = "zero_or_one"
+        elif type(None) in alternatives:
+            cardinality = "zero_or_one"
+    if annotation is list or origin is list:
         cardinality = "many"
-    if annotation is str:
-        return "string", cardinality
-    if annotation is Money:
-        return "money.usd", cardinality
-    raise _native.ContractError(
-        "Rust Contracts support str and Money, optionally None or list[T]"
-    )
-
-
-class _FrozenList(list[Any]):
-    """A list-shaped immutable value for Rust-validated `Many` fields."""
-
-    @staticmethod
-    def _readonly(*args: Any, **kwargs: Any) -> NoReturn:
-        del args, kwargs
-        raise TypeError("Contract record values are read-only")
-
-    __setitem__ = _readonly
-    __delitem__ = _readonly
-
-    def __iadd__(self, value: Iterable[Any]) -> Self:
-        del value
-        self._readonly()
-
-    def __imul__(self, value: SupportsIndex) -> Self:
-        del value
-        self._readonly()
-
-    append = _readonly
-    clear = _readonly
-    extend = _readonly
-    insert = _readonly
-    pop = _readonly
-    remove = _readonly
-    reverse = _readonly
-    sort = _readonly
-
-
-def _record[T: "Contract"](contract: type[T], data: Mapping[str, Any]) -> T:
-    values: dict[str, Any] = {}
-    for python_name, field_id in contract._definition().field_map:
-        field = data[field_id]
-        if field["cardinality"] == "many":
-            values[python_name] = _FrozenList(
-                _scalar(value) for value in field["values"]
-            )
+        arguments = get_args(annotation)
+        if arguments:
+            annotation = arguments[0]
         else:
-            value = field["value"]
-            values[python_name] = None if value is None else _scalar(value)
-    # Rust has already converted and validated every field. Pydantic validators
-    # and defaults must not change the equivalent Rust record.
-    return contract.model_construct(**values)
-
-
-def _scalar(value: Mapping[str, Any]) -> str | Money:
-    if value["type"] == "string":
-        return value["value"]
-    return Money.model_validate(value["value"])
+            annotation = Any
+        while get_origin(annotation) is Annotated:
+            annotation = get_args(annotation)[0]
+    value_type: Literal["string", "money.usd"] = (
+        "money.usd" if annotation is Money else "string"
+    )
+    return value_type, cardinality
 
 
 class _ReadOnlyView:
@@ -828,20 +842,28 @@ class Extracted[T: "Contract"](_ReadOnlyView):
         )
         self._seal()
 
-    def validate(self, *, limits: ValidationLimits | None = None) -> ContractOutcome[T]:
-        """Convert and validate evidence with explicit or default budgets.
+    def validate(
+        self,
+        *,
+        limits: ValidationLimits | None = None,
+        policy: ExtractionPolicy | None = None,
+    ) -> ContractOutcome[T]:
+        """Run Pydantic validation after checking bounded native-work limits.
 
         Args:
-            limits: Validation budgets, or None for Rust defaults.
+            limits: Validation-work budgets, or None for Rust defaults.
+            policy: Acceptance policy. An explicit ``limits`` value overrides its
+                ``validation_limits`` member.
 
         Returns:
-            Accepted records, rejected candidates, or terminal states. Incomplete
-            evidence is never converted into an empty successful result.
+            Pydantic-accepted records, candidate issues, or terminal states. User
+            validators are skipped when extraction evidence is incomplete or the
+            validation-work budget is exceeded.
         """
-        return ContractOutcome(
-            self.contract,
-            self._handle.validate(None if limits is None else limits.model_dump_json()),
-        )
+        effective = _extraction_policy(policy)
+        if limits is not None:
+            effective = effective.model_copy(update={"validation_limits": limits})
+        return ContractOutcome(self, effective)
 
     def model_dump(self) -> dict[str, Any]:
         """Return a new native wire-data dictionary without validating again."""
@@ -852,134 +874,746 @@ class Extracted[T: "Contract"](_ReadOnlyView):
         return self._handle.to_json()
 
 
+@dataclass(frozen=True, slots=True)
+class ContractRecordIssue:
+    """One rejected candidate with Pydantic details and source evidence.
+
+    Attributes:
+        candidate: Original candidate with all field findings.
+        field_ids: Authored field IDs responsible for rejection.
+        kind: missing_required, excess_candidates, incomplete_evidence, or
+            validation_error.
+        observed: Finding count for excess_candidates when available.
+        evidence: Findings for the affected field IDs, without copying source text.
+        error: Original Pydantic ValidationError, when model validation ran.
+    """
+
+    candidate: Candidate = dataclass_field(repr=False)
+    field_ids: tuple[str, ...]
+    kind: str
+    evidence: tuple[Finding, ...] = dataclass_field(repr=False)
+    error: ValidationError | None = dataclass_field(default=None, repr=False)
+    observed: int | None = None
+    field_kinds: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def errors(self) -> tuple[dict[str, Any], ...]:
+        """Return Pydantic error details without input values or documentation URLs."""
+        if self.error is None:
+            return ()
+        return tuple(
+            {
+                key: value
+                for key, value in detail.items()
+                if key not in {"input", "url", "ctx"}
+            }
+            for detail in self.error.errors(include_input=False, include_url=False)
+        )
+
+    @property
+    def fields(self) -> tuple[FieldIssue, ...]:
+        """Return Rust-compatible field summaries with exact source evidence."""
+        result: list[FieldIssue] = []
+        for field_id, kind in self.field_kinds:
+            mapped_kind = "conversion_failed" if kind == "validation_error" else kind
+            details: dict[str, Any] = {"kind": mapped_kind}
+            evidence = self.candidate.field(field_id).evidence
+            if kind == "excess_candidates":
+                details["observed"] = len(evidence)
+            elif kind == "incomplete_evidence":
+                evidence = tuple(
+                    finding
+                    for finding in evidence
+                    if finding.completeness.status != "complete"
+                )
+            result.append(
+                FieldIssue(
+                    field=FieldId(field_id),
+                    kind=FieldIssueKind.model_validate(details),
+                    evidence=evidence,
+                )
+            )
+        return tuple(result)
+
+
 class ContractOutcome[T: "Contract"](_ReadOnlyView):
-    """Read-only evaluation retaining accepted and rejected candidates.
+    """Pydantic validation report retaining accepted and rejected candidates.
 
     Attributes:
         contract: Typed record definition used for validation.
-        status: evaluated, no_match, indeterminate, locate_failed, extraction_rejected,
-            or validation_rejected retains the phase distinction.
+        status: evaluated, no_match, indeterminate, locate_failed,
+            extraction_rejected, or validation_rejected.
         document_id: Evidence document identity when available.
         failure: Typed phase or operation-budget rejection when present.
         completeness: Partial or unknown coverage for indeterminate outcomes.
         reason_code: Structural explanation of indeterminate coverage.
-        records: Accepted typed values and original candidate evidence.
-        issues: Rejected candidates with field-specific reasons and findings.
-        extraction_diagnostics: Nonfatal grouping issues preventing an all-accepted
-            claim.
+        candidates: All complete-candidate evidence retained by native extraction.
+        records: Accepted Pydantic values paired with original candidates.
+        issues: Rejected candidates with Pydantic error details and findings.
+        extraction_diagnostics: Nonfatal grouping issues retained alongside accepted
+            values; strict all-record access treats them as rejection facts.
     """
 
     __slots__ = (
         "contract",
-        "_handle",
+        "policy",
+        "extraction_status",
         "status",
         "document_id",
         "failure",
         "completeness",
         "reason_code",
+        "candidates",
         "records",
         "issues",
         "extraction_diagnostics",
     )
 
-    def __init__(self, contract: type[T], handle: _native.ContractOutcome) -> None:
-        """Retain a native evaluation handle and read-only typed results.
+    def __init__(self, extracted: Extracted[T], policy: ExtractionPolicy) -> None:
+        """Validate each complete candidate under the supplied resource limits.
 
         Args:
-            contract: Definition used to interpret converted values.
-            handle: Native validation outcome from the Rust pipeline.
-
-        Rust results are reconstructed without Python validators or defaults changing
-        accepted records. Construction does not acquire documents.
+            extracted: Raw candidates from Rust's bounded extraction stage.
+            policy: Minimum acceptance and validation-work limits.
         """
-        self.contract = contract
-        self._handle = handle
-        wire = json.loads(handle.to_json())
-        self.status: str = wire["status"]
-        self.document_id: str | None = wire.get("document_id")
-        failure_data = (
-            TypeAdapter(_runtime_contracts.RuntimeContractOutcomeData).validate_python(
-                wire, context=RUST_DOMAIN_VALIDATED
-            )
-            if "failure" in wire
-            else None
+        self.contract = extracted.contract
+        self.policy = policy
+        self.extraction_status = extracted.status
+        self.document_id = extracted.document_id
+        self.failure = extracted.failure
+        self.completeness = extracted.completeness
+        self.reason_code = extracted.reason_code
+        self.candidates = extracted.candidates
+        self.records: tuple[ValidatedRecord[T], ...] = ()
+        self.issues: tuple[ContractRecordIssue, ...] = ()
+        self.extraction_diagnostics = extracted.diagnostics
+        self.status = _report_status(extracted.status)
+
+        if self.completeness is None and self.status in {"evaluated", "no_match"}:
+            self.completeness = Complete(status="complete")
+
+        if self.status not in {"evaluated", "no_match"}:
+            self._seal()
+            return
+
+        limits = policy.validation_limits or ValidationLimits()
+        limit_failure = _validation_limit_failure(
+            self.candidates, self.contract, limits
         )
-        self.failure = (
-            failure_data.failure
-            if isinstance(
-                failure_data,
-                (
-                    _runtime_contracts._RuntimeOutcomeLocateFailed,
-                    _runtime_contracts._RuntimeExtractionRejected,
-                    _runtime_contracts._RuntimeValidationRejected,
-                ),
-            )
-            else None
+        if limit_failure is not None:
+            self.status = "validation_rejected"
+            self.failure = limit_failure
+            self._seal()
+            return
+
+        accepted: list[ValidatedRecord[T]] = []
+        issues: list[ContractRecordIssue] = []
+        issue_count = 0
+        retained_issue_evidence = 0
+        total_evidence = sum(
+            len(field.evidence)
+            for candidate in self.candidates
+            for field in candidate.fields.values()
         )
-        self.completeness: Completeness | None = (
-            TypeAdapter(Completeness).validate_python(wire["completeness"])
-            if "completeness" in wire
-            else None
-        )
-        self.reason_code: str | None = wire.get("reason_code")
-        self.records: tuple[ValidatedRecord[T], ...] = tuple(
-            ValidatedRecord(
-                value=_record(contract, item["value"]),
-                candidate=contract._definition().candidate(item["candidate"]),
-            )
-            for item in wire.get("records", [])
-        )
-        self.issues = tuple(
-            RecordIssue(
-                candidate=contract._definition().candidate(item["candidate"]),
-                fields=tuple(
-                    FieldIssue.model_validate(field) for field in item["fields"]
-                ),
-            )
-            for item in wire.get("issues", [])
-        )
-        self.extraction_diagnostics = tuple(
-            ExtractionDiagnostic.model_validate(item)
-            for item in wire.get("extraction_diagnostics", [])
-        )
+        definition = self.contract._definition()
+        for candidate in self.candidates:
+            incomplete = _candidate_incomplete_fields(definition, candidate)
+            if incomplete:
+                issue = _manual_issue(candidate, incomplete, "incomplete_evidence")
+                issue_count += len(issue.field_ids)
+                retained_issue_evidence += len(issue.evidence)
+                issues.append(issue)
+                self.completeness = _partial_completeness(
+                    issue.evidence, self.completeness
+                )
+                self.status = "indeterminate"
+                if issue_count > limits.max_issues:
+                    self.status = "validation_rejected"
+                    self.failure = _issue_limit_failure(limits, issue_count)
+                    break
+                provenance_failure = _issue_provenance_failure(
+                    limits, total_evidence, retained_issue_evidence
+                )
+                if provenance_failure is not None:
+                    self.status = "validation_rejected"
+                    self.failure = provenance_failure
+                    break
+                continue
+
+            excess = _candidate_excess_fields(definition, candidate)
+            if excess:
+                issue = _excess_issue(definition, candidate, excess)
+                issue_count += len(issue.field_ids)
+                retained_issue_evidence += len(issue.evidence)
+                issues.append(issue)
+                if issue_count > limits.max_issues:
+                    self.status = "validation_rejected"
+                    self.failure = _issue_limit_failure(limits, issue_count)
+                    break
+                provenance_failure = _issue_provenance_failure(
+                    limits, total_evidence, retained_issue_evidence
+                )
+                if provenance_failure is not None:
+                    self.status = "validation_rejected"
+                    self.failure = provenance_failure
+                    break
+                continue
+
+            inputs = _candidate_validation_inputs(definition, candidate)
+            try:
+                value = self.contract.model_validate(inputs)
+            except ValidationError as error:
+                issue = _validation_issue(self.contract, definition, candidate, error)
+                issue_count += max(1, len(issue.field_ids))
+                retained_issue_evidence += len(issue.evidence)
+                issues.append(issue)
+                if issue_count > limits.max_issues:
+                    self.status = "validation_rejected"
+                    self.failure = _issue_limit_failure(limits, issue_count)
+                    break
+                provenance_failure = _issue_provenance_failure(
+                    limits, total_evidence, retained_issue_evidence
+                )
+                if provenance_failure is not None:
+                    self.status = "validation_rejected"
+                    self.failure = provenance_failure
+                    break
+            else:
+                accepted.append(ValidatedRecord(value=value, candidate=candidate))
+
+        # An operation budget failure withholds a partially processed prefix.
+        # Raw candidates and rejection details remain available for diagnosis.
+        self.records = () if self.status == "validation_rejected" else tuple(accepted)
+        self.issues = () if self.status == "validation_rejected" else tuple(issues)
         self._seal()
 
+    @property
+    def accepted_records(self) -> tuple[T, ...]:
+        """Return the accepted model values without their evidence wrappers."""
+        return tuple(record.value for record in self.records)
+
+    @property
+    def meets_minimum_records(self) -> bool:
+        """Return whether accepted values meet this report's requested minimum."""
+        return len(self.records) >= self.policy.minimum_records
+
     def require_all(self) -> list[T]:
-        """Return values only when no record or extraction issue remains.
+        """Return bare values only when the report is fully acceptable.
 
         Returns:
-            A new typed list, empty for complete no-match. The original outcome
-            remains available for inspection of evidence and rejected records.
+            A mutable list of accepted Pydantic models. The report keeps its evidence.
 
         Raises:
-            ContractIssues: Issues, indeterminate evidence, or failed phases prevent
-                an all-accepted result.
+            ContractIssues: Rejected candidates, terminal states, or an unmet minimum
+                prevent an all-accepted result.
         """
-        result = json.loads(self._handle.require_all())
-        if "error" in result:
-            raise ContractIssues(result["error"])
-        return [_record(self.contract, item["value"]) for item in result["records"]]
+        if (
+            self.status not in {"evaluated", "no_match"}
+            or self.issues
+            or self.extraction_diagnostics
+        ):
+            raise ContractIssues(_report_rejection(self))
+        if not self.meets_minimum_records:
+            raise ContractIssues(
+                {
+                    "kind": "minimum_records",
+                    "minimum": self.policy.minimum_records,
+                    "observed": len(self.records),
+                }
+            )
+        return list(self.accepted_records)
 
     def to_archived(self) -> ArchivedContractOutcome:
-        """Return Rust's code-independent portable archive representation."""
-        return _runtime_contracts._archived_outcome(
-            self._handle, self.contract.contract_schema()
+        """Reject Python-to-Rust archive conversion and name the portable API."""
+        raise TypeError(
+            "Pydantic Contract values are Python-specific; use RuntimeContract "
+            "for portable Rust Contract archives"
         )
 
     def model_dump(self) -> dict[str, Any]:
-        """Return a new native wire-data dictionary without validating again."""
-        return json.loads(self._handle.to_json())
+        """Return report metadata and safe Pydantic validation details."""
+        return {
+            "status": self.status,
+            "extraction_status": self.extraction_status,
+            "document_id": self.document_id,
+            "completeness": (
+                None
+                if self.completeness is None
+                else self.completeness.model_dump(mode="json")
+            ),
+            "reason_code": self.reason_code,
+            "failure": (
+                None
+                if self.failure is None
+                else self.failure.model_dump(mode="json", exclude_none=True)
+            ),
+            "candidates": [
+                candidate.model_dump(mode="json") for candidate in self.candidates
+            ],
+            "records": [
+                {
+                    "value": record.value.model_dump(mode="json"),
+                    "candidate": record.candidate.model_dump(mode="json"),
+                }
+                for record in self.records
+            ],
+            "issues": [
+                {
+                    "kind": issue.kind,
+                    "field_ids": list(issue.field_ids),
+                    "field_kinds": dict(issue.field_kinds),
+                    "observed": issue.observed,
+                    "errors": list(issue.errors),
+                    "candidate": issue.candidate.model_dump(mode="json"),
+                }
+                for issue in self.issues
+            ],
+            "extraction_diagnostics": [
+                item.model_dump(mode="json") for item in self.extraction_diagnostics
+            ],
+        }
 
     def model_dump_json(self) -> str:
-        """Return native wire JSON with evidence and terminal states preserved."""
-        return self._handle.to_json()
+        """Return JSON report details without Pydantic error inputs."""
+        return json.dumps(self.model_dump(), default=str)
+
+
+ContractValidationReport = ContractOutcome
+"""Readable alias for the Python Pydantic Contract validation report."""
+
+
+def _extraction_policy(
+    policy: ExtractionPolicy | Mapping[str, Any] | None,
+) -> ExtractionPolicy:
+    if policy is None:
+        return ExtractionPolicy()
+    if isinstance(policy, ExtractionPolicy):
+        return policy
+    return ExtractionPolicy.model_validate(policy)
+
+
+def _report_status(extraction_status: str) -> str:
+    if extraction_status == "candidates":
+        return "evaluated"
+    if extraction_status == "rejected":
+        return "extraction_rejected"
+    if extraction_status == "failed":
+        return "locate_failed"
+    return extraction_status
+
+
+def _validation_limit_failure(
+    candidates: tuple[Candidate, ...],
+    contract: type[Contract],
+    limits: ValidationLimits,
+) -> TerminalFailure | None:
+    definition = contract._definition()
+    field_count = len(definition.field_map)
+    conversion_work = sum(
+        max(1, len(field.evidence))
+        for candidate in candidates
+        for field in candidate.fields.values()
+    )
+    evidence_count = sum(
+        len(field.evidence)
+        for candidate in candidates
+        for field in candidate.fields.values()
+    )
+    if contract.model_config.get("validate_by_alias", True):
+        for candidate in candidates:
+            for name, field_id in definition.field_map:
+                info = contract.model_fields[name]
+                _, cardinality = _field_type(info.annotation)
+                if candidate.field(field_id).evidence or (
+                    cardinality == "many" and info.is_required()
+                ):
+                    conversion_work += sum(
+                        abs(part) if part < 0 else part + 1
+                        for part in _validation_alias_path(info)
+                        if isinstance(part, int)
+                    )
+    work = (
+        ("max_fields", field_count, "field_limit_exceeded", "fields"),
+        ("max_records", len(candidates), "record_limit_exceeded", "records"),
+        (
+            "max_conversions",
+            conversion_work,
+            "conversion_limit_exceeded",
+            "conversions",
+        ),
+        (
+            "max_retained_provenance",
+            evidence_count,
+            "provenance_limit_exceeded",
+            "retained_provenance",
+        ),
+    )
+    for name, observed, failure_kind, limit_name in work:
+        maximum = getattr(limits, name)
+        if observed > maximum:
+            return TerminalFailure(
+                kind=failure_kind,
+                limit=limit_name,
+                maximum=maximum,
+                observed=observed,
+            )
+    return None
+
+
+def _issue_limit_failure(limits: ValidationLimits, observed: int) -> TerminalFailure:
+    return TerminalFailure(
+        kind="issue_limit_exceeded",
+        limit="issues",
+        maximum=limits.max_issues,
+        observed=observed,
+    )
+
+
+def _issue_provenance_failure(
+    limits: ValidationLimits, total_evidence: int, issue_evidence: int
+) -> TerminalFailure | None:
+    observed = total_evidence + issue_evidence
+    if observed <= limits.max_retained_provenance:
+        return None
+    return TerminalFailure(
+        kind="provenance_limit_exceeded",
+        limit="retained_provenance",
+        maximum=limits.max_retained_provenance,
+        observed=observed,
+    )
+
+
+def _candidate_incomplete_fields(
+    definition: _Definition, candidate: Candidate
+) -> tuple[str, ...]:
+    return tuple(
+        field_id
+        for _, field_id in definition.field_map
+        if any(
+            finding.completeness.status != "complete"
+            for finding in candidate.field(field_id).evidence
+        )
+    )
+
+
+def _candidate_excess_fields(
+    definition: _Definition, candidate: Candidate
+) -> tuple[tuple[str, int], ...]:
+    excess: list[tuple[str, int]] = []
+    for name, field_id in definition.field_map:
+        _, cardinality = _field_type(definition.contract.model_fields[name].annotation)
+        count = len(candidate.field(field_id).evidence)
+        if cardinality != "many" and count > 1:
+            excess.append((field_id, count))
+    return tuple(excess)
+
+
+def _candidate_validation_inputs(
+    definition: _Definition, candidate: Candidate
+) -> dict[str, Any]:
+    values: dict[str, Any] = {}
+    by_alias = definition.contract.model_config.get("validate_by_alias", True)
+    for name, field_id in definition.field_map:
+        info = definition.contract.model_fields[name]
+        _, cardinality = _field_type(info.annotation)
+        evidence = candidate.field(field_id).evidence
+        if evidence:
+            value: Any = [finding.value for finding in evidence]
+            if cardinality != "many":
+                value = value[0]
+            _put_validation_input(values, name, info, value, by_alias=by_alias)
+        elif cardinality == "many" and info.is_required():
+            _put_validation_input(values, name, info, [], by_alias=by_alias)
+    return values
+
+
+def _put_validation_input(
+    values: dict[str, Any], name: str, info: Any, value: Any, *, by_alias: bool
+) -> None:
+    if not by_alias:
+        values[name] = value
+        return
+    alias = info.validation_alias or info.alias or name
+    if isinstance(alias, str):
+        values[alias] = value
+        return
+    choices = getattr(alias, "choices", None)
+    if choices:
+        alias = choices[0]
+        if isinstance(alias, str):
+            values[alias] = value
+            return
+    path = getattr(alias, "path", None)
+    if path is None:
+        convert = getattr(alias, "convert_to_aliases", None)
+        path = convert() if callable(convert) else None
+    if not path:
+        values[name] = value
+        return
+    cursor: Any = values
+    for index, component in enumerate(path):
+        final = index == len(path) - 1
+        if final:
+            if isinstance(cursor, list):
+                required = -component if component < 0 else component + 1
+                while len(cursor) < required:
+                    cursor.append(None)
+                cursor[component] = value
+            else:
+                cursor[component] = value
+            return
+        next_is_index = isinstance(path[index + 1], int)
+        if isinstance(cursor, list):
+            required = -component if component < 0 else component + 1
+            while len(cursor) < required:
+                cursor.append(None)
+            child = cursor[component]
+        else:
+            child = cursor.get(component)
+        if child is None:
+            child = [] if next_is_index else {}
+            if isinstance(cursor, list):
+                cursor[component] = child
+            else:
+                cursor[component] = child
+        elif not isinstance(child, list if next_is_index else dict):
+            child = [] if next_is_index else {}
+            if isinstance(cursor, list):
+                cursor[component] = child
+            else:
+                cursor[component] = child
+        cursor = child
+
+
+def _validation_alias_path(info: Any) -> tuple[str | int, ...]:
+    alias = info.validation_alias or info.alias
+    choices = getattr(alias, "choices", None)
+    if choices:
+        alias = choices[0]
+    return tuple(getattr(alias, "path", ()))
+
+
+def _manual_issue(
+    candidate: Candidate,
+    field_ids: tuple[str, ...],
+    kind: str,
+    *,
+    observed: int | None = None,
+) -> ContractRecordIssue:
+    evidence = tuple(
+        finding
+        for field_id in field_ids
+        for finding in candidate.field(field_id).evidence
+    )
+    return ContractRecordIssue(
+        candidate=candidate,
+        field_ids=field_ids,
+        kind=kind,
+        evidence=evidence,
+        observed=observed,
+        field_kinds=tuple((field_id, kind) for field_id in field_ids),
+    )
+
+
+def _excess_issue(
+    definition: _Definition,
+    candidate: Candidate,
+    excess: tuple[tuple[str, int], ...],
+) -> ContractRecordIssue:
+    names = {field_id: name for name, field_id in definition.field_map}
+    line_errors: list[InitErrorDetails] = [
+        {
+            "type": PydanticCustomError(
+                "multiple_candidates", "expected one finding for this field"
+            ),
+            "loc": (names[field_id],),
+            "input": None,
+        }
+        for field_id, _ in excess
+    ]
+    error = ValidationError.from_exception_data(
+        definition.contract.__name__, line_errors
+    )
+    issue = _manual_issue(
+        candidate,
+        tuple(field_id for field_id, _ in excess),
+        "excess_candidates",
+        observed=max(count for _, count in excess),
+    )
+    return ContractRecordIssue(
+        candidate=issue.candidate,
+        field_ids=issue.field_ids,
+        kind=issue.kind,
+        evidence=issue.evidence,
+        error=error,
+        observed=issue.observed,
+        field_kinds=issue.field_kinds,
+    )
+
+
+def _validation_issue(
+    contract: type[Contract],
+    definition: _Definition,
+    candidate: Candidate,
+    error: ValidationError,
+) -> ContractRecordIssue:
+    field_ids: list[str] = []
+    field_kinds: dict[str, str] = {}
+    by_key: dict[tuple[str | int, ...], str] = {}
+
+    def bind(field_id: str, key: str | tuple[str | int, ...]) -> None:
+        by_key[(key,) if isinstance(key, str) else key] = field_id
+
+    for name, field_id in definition.field_map:
+        info = contract.model_fields[name]
+        bind(field_id, name)
+        for key in (info.alias, info.validation_alias):
+            if isinstance(key, str):
+                bind(field_id, key)
+                continue
+            for choice in getattr(key, "choices", ()):
+                if isinstance(choice, str):
+                    bind(field_id, choice)
+                else:
+                    path = getattr(choice, "path", None)
+                    if path:
+                        bind(field_id, tuple(path))
+            path = getattr(key, "path", None)
+            if path:
+                bind(field_id, tuple(path))
+    details = error.errors(include_input=False, include_url=False)
+    for detail in details:
+        location = detail.get("loc", ())
+        field_id = next(
+            (
+                by_key[location[:depth]]
+                for depth in range(len(location), 0, -1)
+                if location[:depth] in by_key
+            ),
+            None,
+        )
+        if field_id is not None:
+            if field_id not in field_ids:
+                field_ids.append(field_id)
+            error_kind = (
+                "missing_required"
+                if detail.get("type") == "missing"
+                else "validation_error"
+            )
+            field_kinds[field_id] = error_kind
+    if not field_ids:
+        field_ids = [field_id for _, field_id in definition.field_map]
+    ordered = tuple(
+        field_id for _, field_id in definition.field_map if field_id in field_ids
+    )
+    kinds = tuple(
+        (field_id, field_kinds.get(field_id, "validation_error"))
+        for field_id in ordered
+    )
+    kind = (
+        "missing_required"
+        if kinds and all(value == "missing_required" for _, value in kinds)
+        else "validation_error"
+    )
+    return ContractRecordIssue(
+        candidate=candidate,
+        field_ids=ordered,
+        kind=kind,
+        evidence=tuple(
+            finding
+            for field_id in ordered
+            for finding in candidate.field(field_id).evidence
+        ),
+        error=error,
+        field_kinds=kinds,
+    )
+
+
+def _partial_completeness(
+    evidence: tuple[Finding, ...], prior: Completeness | None
+) -> Completeness:
+    for finding in evidence:
+        completeness = finding.completeness
+        if completeness.status != "complete":
+            return completeness
+    if prior is not None and prior.status != "complete":
+        return prior
+    return Partial(status="partial", reason_code="incomplete_candidate_evidence")
+
+
+def _report_rejection(report: ContractOutcome[Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {"kind": report.status}
+    if report.document_id is not None:
+        result["document_id"] = report.document_id
+    if report.reason_code is not None:
+        result["reason_code"] = report.reason_code
+    if report.failure is not None:
+        result["failure"] = report.failure.model_dump(mode="json", exclude_none=True)
+    if report.completeness is not None:
+        result["completeness"] = report.completeness.model_dump(mode="json")
+    if report.issues:
+        result["issues"] = [
+            {
+                "kind": issue.kind,
+                "field_ids": list(issue.field_ids),
+                "field_kinds": dict(issue.field_kinds),
+                "observed": issue.observed,
+                "errors": list(issue.errors),
+            }
+            for issue in report.issues
+        ]
+    if report.extraction_diagnostics:
+        result["extraction_diagnostics"] = [
+            item.model_dump(mode="json") for item in report.extraction_diagnostics
+        ]
+    return result
+
+
+def _accepted_records[T: Contract](
+    report: ContractOutcome[T], policy: ExtractionPolicy
+) -> list[T]:
+    if report.status not in {"evaluated", "no_match"}:
+        raise ContractIssues(_report_rejection(report))
+    if report.issues and policy.on_rejected_record == "raise":
+        if (
+            len(report.issues) == 1
+            and report.issues[0].error is not None
+            and not report.extraction_diagnostics
+        ):
+            raise report.issues[0].error
+        raise ContractIssues(_report_rejection(report))
+    if report.extraction_diagnostics and policy.on_rejected_record == "raise":
+        raise ContractIssues(_report_rejection(report))
+    if len(report.records) < policy.minimum_records:
+        raise ContractIssues(
+            {
+                "kind": "minimum_records",
+                "minimum": policy.minimum_records,
+                "observed": len(report.records),
+            }
+        )
+    return list(report.accepted_records)
 
 
 def extract[T: "Contract"](
-    document: Document | BoundDocument | ParsedDocument, contract: type[T]
-) -> Extracted[T]:
-    """Locate pinned fields and return Rust's extraction outcome."""
-    return contract.extract(document.locate(contract.plan()))
+    document: Document | BoundDocument | ParsedDocument,
+    contract: type[T],
+    *,
+    policy: ExtractionPolicy | None = None,
+) -> list[T]:
+    """Return validated Pydantic models extracted from a document."""
+    effective = _extraction_policy(policy)
+    return contract.extract(document, policy=effective)
+
+
+def extract_report[T: "Contract"](
+    document: Document | BoundDocument | ParsedDocument,
+    contract: type[T],
+    *,
+    policy: ExtractionPolicy | None = None,
+) -> ContractOutcome[T]:
+    """Return a report with accepted models, rejected candidates, and evidence."""
+    return contract.extract_report(document, policy=policy)
 
 
 from . import runtime_contracts as _runtime_contracts  # noqa: E402
