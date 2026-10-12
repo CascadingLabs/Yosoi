@@ -9,9 +9,13 @@ import { registerBundle } from './bundle.mjs';
 const scripts = fileURLToPath(new URL('./', import.meta.url));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const json = (value) => JSON.stringify(value, null, 2) + '\n';
-test.each([false, true])(
-  'publication binds Rust and optional Python references to one immutable source (Python: %s)',
-  async (python) => {
+test.each([
+  [false, false],
+  [true, false],
+  [true, true],
+])(
+  'publication binds references to immutable source (Python: %s, relative output: %s)',
+  async (python, relativeOutput) => {
     const work = fileURLToPath(new URL('../../.generated/docs-tests/', import.meta.url));
     await mkdir(work, { recursive: true });
     const fixture = await mkdtemp(path.join(work, 'bundle-'));
@@ -128,7 +132,7 @@ test.each([false, true])(
         '--reference',
         reference,
         '--out',
-        out,
+        relativeOutput ? path.relative(fixture, out) : out,
       ];
       execFileSync('node', args, { cwd: fixture });
       const bundle = JSON.parse(await readFile(path.join(out, 'bundle.json'), 'utf8'));

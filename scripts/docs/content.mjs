@@ -7,8 +7,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
 export function preparePythonReference(repo, target, source, repository = 'CascadingLabs/Yosoi') {
-  const packageRoot = path.join(repo, 'python/yosoi');
-  const generator = path.join(repo, 'scripts/docs/python_reference.py');
+  const packageRoot = path.resolve(repo, 'python/yosoi');
+  const generator = path.resolve(repo, 'scripts/docs/python_reference.py');
   if (!existsSync(generator) || !existsSync(path.join(packageRoot, '__init__.py'))) return;
   execFileSync(
     'uv',
@@ -22,7 +22,7 @@ export function preparePythonReference(repo, target, source, repository = 'Casca
       '--package',
       packageRoot,
       '--out',
-      path.join(target, 'python-api'),
+      path.resolve(target, 'python-api'),
       '--source',
       source,
       '--repository',
