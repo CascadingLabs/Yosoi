@@ -35,6 +35,22 @@ HISTORY_INTRO = (
     "This section records the user-visible changes, compatibility impact, and upgrade actions "
     "for each published Yosoi release."
 )
+HISTORY_GUIDE = """> **Yosoi is currently in beta.** Versions below `1.0.0` have an API that can still change, including breaking changes in minor releases. Read the upgrade notes before updating. `1.0.0` will mark the first stable release.
+
+## Version numbers
+
+Versions use `MAJOR.MINOR.PATCH`. For example, `0.2.1` has major `0`, minor `2`, and patch `1`.
+
+| Part | Meaning |
+| --- | --- |
+| Major | Breaking API changes, such as `1.4.2` → `2.0.0`. Minor and patch reset to `0`. |
+| Minor | New features compatible with the existing API, such as `1.4.2` → `1.5.0`. Patch resets to `0`. |
+| Patch | Compatible bug fixes and hotfixes, such as `1.4.2` → `1.4.3`. |
+
+These are the [Semantic Versioning](https://semver.org/) conventions for a stable API. A minor version does not itself mean beta.
+
+A suffix such as `-rc.1` means **release candidate**: a version being evaluated before its final numbered release. Candidate notes remain accessible by direct link but are omitted from the release list, sidebar, and version picker.
+"""
 METADATA_FIELDS = {
     "title",
     "description",
@@ -734,27 +750,25 @@ def _history_content(root: Path) -> str:
     releases_dir = release_directory(root)
     if not os.path.lexists(releases_dir):
         return "Release entries will appear here as they are published."
-    entries: list[tuple[ReleaseVersion, str, str, str]] = []
+    entries: list[tuple[ReleaseVersion, str, str]] = []
     for path in sorted(releases_dir.glob("*.md")):
         if path.name == "index.md":
             continue
         document = read_document(path)
         version, date, _ = validate_metadata(document)
-        if document.metadata["draft"] is True:
+        if document.metadata["draft"] is True or version.candidate is not None:
             continue
         validated, _, _, _ = validate_release(root, version.text)
         del validated
-        channel = document.metadata["channel"]
-        badge = "Preview" if channel == "preview" else "Recommended"
         description = _markdown_inline(document.metadata["description"])
-        entries.append((version, date, badge, description))
+        entries.append((version, date, description))
     entries.sort(key=lambda item: item[0].ordering, reverse=True)
     if not entries:
         return "Release entries will appear here as they are published."
     lines = ["## Releases", ""]
-    for version, date, badge, description in entries:
+    for version, date, description in entries:
         lines.append(
-            f"- [{version.text}]({version.filename}) · {date} · **{badge}** — {description}"
+            f"- [{version.text}]({version.filename}) · {date}: {description}"
         )
     return "\n".join(lines)
 
@@ -764,6 +778,7 @@ def _history_wrapped(content: str) -> bytes:
         "# Release notes\n\n"
         "<!-- prettier-ignore-start -->\n\n"
         f"{HISTORY_INTRO}\n\n"
+        f"{HISTORY_GUIDE}\n"
         f"{HISTORY_BEGIN}\n\n"
         f"{content}\n\n"
     )

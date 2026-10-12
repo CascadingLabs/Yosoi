@@ -52,5 +52,8 @@ mod integration_tests;
 /// Generic access to a Contract's existing extraction and validation path.
 /// Deriving `Contract` supplies this adapter; no new field conversion is implied.
 pub trait ValidateContract: internal_contracts::Contract {
+    /// Extracts and validates located evidence using this typed Contract's existing implementation.
+    /// Returns accepted/rejected records or preserved terminal evidence states,
+    /// without acquiring documents or treating incomplete absence as success.
     fn validate_contract(located: &internal_documents::LocateOutcome) -> ContractOutcome<Self>;
 }

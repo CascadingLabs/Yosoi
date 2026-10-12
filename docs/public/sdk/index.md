@@ -1,18 +1,18 @@
 ---
-title: Rust SDK
-description: Fetch pages, select evidence, and turn it into typed Rust records.
+title: 'SDK'
+description: 'Build the same evidence-based tasks in Rust or Python.'
 order: 0
 ---
 
-# Rust SDK
+# SDK
 
-Yosoi gives you a small set of tools for working with web data. Fetch a page, select the parts you need, and validate them as Rust values. You can also start with a local document or discover URLs with Map.
+Construct or acquire a document, locate values, and validate a typed record. Add browser work or discovery when needed.
 
-For Python integrations, see the [Python SDK](python.md).
-[Packages and capabilities](packages.md) explains the shared boundary and supported
-interpreter targets.
+Install through [Get Started](../quickstart.md). Rust uses the public `yosoi` facade; Python uses `import yosoi as ys`.
 
-Start with a document you already have:
+## Example: locate a local heading
+
+### Rust
 
 ```rust
 use std::error::Error;
@@ -20,50 +20,67 @@ use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(
-        "welcome.html",
+        "greeting",
         b"<main><h1>Hello, Yosoi</h1></main>".to_vec(),
     )?;
     let plan = ys::Plan::new([
         ys::output("title", ys::css("h1")?.text())?,
     ])?;
-
-    if let ys::LocateOutcome::Matched { result } = document.locate(&plan) {
+    let outcome = document.locate(&plan);
+    if let ys::LocateOutcome::Matched { result } = outcome {
         for finding in result.findings() {
             println!("{}: {:?}", finding.output_id(), finding.value());
         }
+    } else {
+        return Err(std::io::Error::other("title was not located").into());
     }
     Ok(())
 }
 ```
 
-This prints a `title` finding containing `Hello, Yosoi`. It runs locally, without a browser or network connection.
+The Plan names the output before evaluation. A finding preserves the selected value and its coordinate. Match on the outcome rather than assuming every query succeeded.
 
-## Choose your next step
+### Python
 
-| I want to…                                   | Read                            |
-| -------------------------------------------- | ------------------------------- |
-| Add Yosoi to an application                  | [Installation](installation.md) |
-| Fetch a URL                                  | [Requests](requests.md)         |
-| Understand what a request returned           | [Responses](responses.md)       |
-| Configure behavior and budgets               | [Policy](policy.md)             |
-| Work with saved bytes                        | [Documents](documents.md)       |
-| Select text, attributes, or values           | [Locators](locators.md)         |
-| Extract a typed record                       | [Contracts](contracts.md)       |
-| Keep valid records and inspect rejected ones | [Validation](validation.md)     |
-| Discover a site's URLs                       | [Map](map.md)                   |
-| Capture a page with JavaScript               | [Browser](browser.md)           |
+```python
+import yosoi as ys
 
-## Imports
+document = ys.Document.html(
+    "greeting",
+    "<main><h1>Hello, Yosoi</h1></main>",
+)
+plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+outcome = document.locate(plan)
 
-Examples use `use yosoi::prelude as ys;`. The prelude includes common types and the `request`, `documents`, `locators`, `contracts`, `policy`, `map`, and `search` namespaces. For explicit imports, use those modules directly, such as `yosoi::request::DocumentOutcome`.
+assert outcome.status == "matched"
+assert outcome.values("title") == ["Hello, Yosoi"]
+print(outcome.values("title"))
+```
 
-The package name is `yosoi`; the Rust crate name is `yosoi`.
+The same Plan uses typed Python models. `values` is convenient for this small check. Keep full findings when downstream work needs coordinates or provenance.
 
-## What is available
+## Choose a task
 
-These pages describe the current facade in this repository. [Search](search.md)
-is available through the Rust and Python SDKs; its provider routes remain
-previews pending certification. [Archive](archive.md) explains an implementation
-boundary that is not exported as an application SDK namespace.
+| Task                        | Page                          |
+| --------------------------- | ----------------------------- |
+| Fetch a URL                 | [Requests](requests.md)       |
+| Interpret acquisition       | [Responses](responses.md)     |
+| Configure budgets           | [Policy](policy.md)           |
+| Work with bytes             | [Documents](documents.md)     |
+| Select evidence             | [Locators](locators.md)       |
+| Produce typed records       | [Contracts](contracts.md)     |
+| Inspect rejected candidates | [Validation](validation.md)   |
+| Discover site URLs          | [Map](map.md)                 |
+| Search providers            | [Search](search.md)           |
+| Acquire rendered evidence   | [Browser](browser.md)         |
+| Compose browser actions     | [Flows](flows.md)             |
+| Retain browser state        | [Sessions](sessions/index.md) |
+| Preserve captures           | [Archive](archive.md)         |
 
-Use the guides for workflows and the generated API reference for individual type and method signatures.
+## Interface differences
+
+Shared behavior does not require identical method names, field access or ownership syntax. Python models describe inputs and inspect results while Rust executes the shared operations.
+
+Some browser and archive controls are Rust-only. Each affected page states its boundary. See [Packages and capabilities](packages.md) and the detailed [parity audit](../python/parity.md).
+
+Use the [Cookbook](../cookbook/index.md) for complete tasks and the reference for individual signatures.

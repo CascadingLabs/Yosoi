@@ -8,14 +8,11 @@ order: 3
 
 A response contains acquisition attempts in Policy order. Each attempt contains an outcome for each document requested from that acquisition.
 
-```text
-Response
-  Attempt: Direct HTTP
-    Response document: Produced
-  Attempt: Browser
-    Rendered DOM: Produced
-    Accessibility tree: Partial
-```
+| Acquisition attempt | Requested representation | Example outcome |
+| ------------------- | ------------------------ | --------------- |
+| Direct HTTP         | Response document        | Produced        |
+| Browser             | Rendered DOM             | Produced        |
+| Browser             | Accessibility tree       | Partial         |
 
 This structure lets you use a successful document while keeping the reasons another document was unavailable.
 
@@ -44,6 +41,10 @@ Use `document()` when you intentionally accept both produced and usable partial 
 
 This function accepts a response and prints titles from fully produced HTML documents:
 
+## Example: responses
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -71,6 +72,30 @@ fn print_titles(response: ResponseRef<'_>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+This helper accepts an acquired Response and inspects each requested representation. Partial documents remain distinct from produced HTML.
+
+### Python
+
+```python
+import yosoi as ys
+
+def print_titles(response):
+    plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+    for attempt in response.attempts:
+        for selected in attempt.documents:
+            outcome = selected.outcome
+            if outcome.status == "produced" and outcome.document.document_class == "source_html":
+                print(outcome.document.locate(plan))
+            elif outcome.status == "partial":
+                print("Partial document:", outcome.reasons)
+            else:
+                print("Other document outcome:", outcome)
+```
+
+Pass a Response returned by `send` to this helper. The fields expose the same per-attempt document outcomes.
+
+## Walk through the result
 
 Pass `response.as_ref()` for a normal request or `capture.response()` for a [Map capture](map.md).
 

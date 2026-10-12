@@ -1,17 +1,19 @@
 ---
 title: Python compatibility status
-description: Declared interpreter targets and the exact local wheel and browser evidence currently available.
+description: Declared interpreter targets and historical source-pinned local wheel evidence.
 order: 6
 ---
 
 # Python compatibility status
 
+This page retains source-pinned development receipts. They apply to the named snapshots, not automatically to the current release. For installation, use [Get Started](../quickstart.md).
+
 The package declares `>=3.12,<3.16` and requires Pydantic `>=2.14,<3`.
 The current CI configuration selects CPython 3.12, 3.13, 3.14, and 3.15.0,
 plus free-threaded CPython 3.14t and 3.15.0t. Those selections are targets,
-not evidence that this candidate built or passed on each target.
+not evidence that every published artifact passed on each target.
 
-## Current local candidate evidence
+## Historical local candidate evidence
 
 The evidence below was collected in the default Yosoi workspace on 2026-10-11.
 The latest integration with main `46f9625a` has its own source-pinned wheel,
@@ -31,7 +33,7 @@ fresh compiler inventory for that source.
 
 These are local Linux x86-64 development-artifact results. Release-profile
 artifacts, full hosted interpreter/platform coverage and Chrome/CDP certification
-remain separate gates in the [release checklist](../browser-automation-review/release.md).
+are separate from these local receipts.
 
 ### Earlier candidate evidence
 

@@ -14,10 +14,13 @@ use super::{BoundSearchRequest, SearchExecutionSetupError, SearchRequestId};
 /// A structural or setup failure before any provider Requests begin.
 #[derive(Debug, Error)]
 pub enum SearchSendError {
+    /// The resolved search policy selects no providers, so no provider Request can start.
     #[error("Search policy has no selected providers")]
     NoProviderConfigured,
+    /// Complete policy validation or provider-default resolution failed before execution.
     #[error("Search policy is invalid")]
     Policy(#[source] PolicyError),
+    /// Adapter setup or shared output-budget preparation failed before a response.
     #[error(transparent)]
     Execution(#[from] SearchExecutionSetupError),
 }

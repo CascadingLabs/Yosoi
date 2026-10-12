@@ -91,7 +91,12 @@ pub enum PolicyError {
     SearchPlanArithmeticOverflow,
     /// The total-hit bound cannot hold every provider's configured maximum.
     #[error("Search total-hit limit {limit} is below the planned maximum {required}")]
-    SearchPlanExceedsTotalResults { required: u32, limit: u32 },
+    SearchPlanExceedsTotalResults {
+        /// Aggregate hit capacity required by the selected provider plan.
+        required: u32,
+        /// Authored positive shared retained-hit capacity.
+        limit: u32,
+    },
     /// A Search per-provider hit limit was set to zero.
     #[error("Search per-provider result limit must be greater than zero")]
     ZeroSearchPerProviderLimit,

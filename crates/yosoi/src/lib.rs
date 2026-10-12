@@ -3,6 +3,8 @@
 //! Use the named SDK namespaces for explicit imports, or [`prelude`] for
 //! common authoring vocabulary. Implementation crates are not re-exported.
 
+#![deny(missing_docs)]
+
 mod internal;
 
 pub mod action;

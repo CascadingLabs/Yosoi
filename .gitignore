@@ -17,6 +17,7 @@ dist/
 # Public docs source is the only new content tracked under docs.
 /docs/*
 !/docs/public/
+!/docs/documentation/
 !/docs/archive/
 
 # Checkout-local live examples (may contact public websites)

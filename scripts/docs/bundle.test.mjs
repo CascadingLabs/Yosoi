@@ -9,121 +9,161 @@ import { registerBundle } from './bundle.mjs';
 const scripts = fileURLToPath(new URL('./', import.meta.url));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const json = (value) => JSON.stringify(value, null, 2) + '\n';
-test('publication binds public content, navigation, and API to one source and refuses preview identity drift', async () => {
-  const work = fileURLToPath(new URL('../../.generated/docs-tests/', import.meta.url));
-  await mkdir(work, { recursive: true });
-  const fixture = await mkdtemp(path.join(work, 'bundle-'));
-  const git = (...args) =>
-    execFileSync(
-      'git',
-      [
-        '-c',
-        'user.name=Fixture',
-        '-c',
-        'user.email=fixture@example.invalid',
-        '-c',
-        'commit.gpgsign=false',
-        '-c',
-        'core.hooksPath=/dev/null',
-        ...args,
-      ],
-      { cwd: fixture, encoding: 'utf8' },
-    ).trim();
-  try {
-    await mkdir(path.join(fixture, 'docs/public'), { recursive: true });
-    await writeFile(
-      path.join(fixture, 'docs/public/index.md'),
-      '---\ntitle: Overview\n---\n# Overview\nHello\n',
-    );
-    await writeFile(path.join(fixture, 'docs/public/AGENTS.md'), 'Private instructions');
-    await writeFile(path.join(fixture, 'docs/public/draft.md'), '---\ndraft: true\n---\n# Draft\n');
-    await writeFile(
-      path.join(fixture, 'docs/public/_navigation.json'),
-      json({
-        schemaVersion: 1,
-        sections: [
-          { title: 'Start', pages: ['index.md'] },
-          { title: 'Reference', generated: 'rust-api' },
-        ],
-      }),
-    );
-    await mkdir(path.join(fixture, 'scripts/docs'), { recursive: true });
-    for (const file of [
-      'generate.mjs',
-      'content.mjs',
-      'navigation.mjs',
-      'reference/generate.mjs',
-      'reference/model.mjs',
-      'reference/sdk-discovery.mjs',
-      'reference/toolchain.json',
-      'reference/sdk-policy.json',
-    ]) {
-      await mkdir(path.dirname(path.join(fixture, 'scripts/docs', file)), { recursive: true });
-      await cp(path.join(scripts, file), path.join(fixture, 'scripts/docs', file));
-    }
-    git('init', '-q');
-    git('add', '.');
-    git('commit', '-qm', 'Source');
-    const source = git('rev-parse', 'HEAD');
-    const reference = path.join(fixture, 'reference');
-    await mkdir(path.join(reference, 'en/pages'), { recursive: true });
-    const page = json({ publicPath: 'yosoi', kind: 'module', docs: 'SDK overview' });
-    await writeFile(path.join(reference, 'en/pages/index.json'), page);
-    const base = {
-      schemaVersion: 1,
-      kind: 'rust-api-reference',
-      version: '0.1.0',
-      source: { commit: source, repository: 'CascadingLabs/Yosoi' },
-      sdk: { crate: 'yosoi', version: '0.1.0' },
-      locales: ['en'],
-      pages: { index: { file: 'pages/index.json', localeHashes: { en: hash(page) } } },
-    };
-    const provenance = json({ sourceCommit: source, contentDigest: hash(json(base)) });
-    await writeFile(path.join(reference, 'provenance.json'), provenance);
-    await writeFile(
-      path.join(reference, 'manifest.json'),
-      json({
-        ...base,
-        provenance: {
-          file: 'provenance.json',
-          sha256: hash(provenance),
-          status: 'unsigned-preview',
-        },
-      }),
-    );
-    const out = path.join(fixture, 'output');
-    const args = [
-      path.join(scripts, 'bundle.mjs'),
-      'create',
-      '--source',
-      source,
-      '--version',
-      '0.1.0',
-      '--reference',
-      reference,
-      '--out',
-      out,
-    ];
-    execFileSync('node', args, { cwd: fixture });
-    const bundle = JSON.parse(await readFile(path.join(out, 'bundle.json'), 'utf8'));
-    expect(bundle.sourceCommit).toBe(source);
-    expect(bundle.files['docs/public/_navigation.json']).toBeTruthy();
-    expect(bundle.files['docs/public/draft.md']).toBeUndefined();
-    expect(bundle.files['docs/public/AGENTS.md']).toBeUndefined();
-    const archive = JSON.parse(await readFile(path.join(out, 'archive-manifest.json'), 'utf8'));
-    expect(archive.pages.map((item) => item.format)).toEqual(['markdown', 'rust-api']);
-    expect(archive.navigation.children.map((item) => item.title)).toEqual(['Start', 'Reference']);
-    expect(() =>
+test.each([false, true])(
+  'publication binds Rust and optional Python references to one immutable source (Python: %s)',
+  async (python) => {
+    const work = fileURLToPath(new URL('../../.generated/docs-tests/', import.meta.url));
+    await mkdir(work, { recursive: true });
+    const fixture = await mkdtemp(path.join(work, 'bundle-'));
+    const git = (...args) =>
       execFileSync(
-        'node',
-        [...args.slice(0, -1), path.join(fixture, 'other'), '--version', '0.2.0'],
-        { cwd: fixture, stdio: 'pipe' },
-      ),
-    ).toThrow();
-  } finally {
-    await rm(fixture, { recursive: true, force: true });
-  }
-});
+        'git',
+        [
+          '-c',
+          'user.name=Fixture',
+          '-c',
+          'user.email=fixture@example.invalid',
+          '-c',
+          'commit.gpgsign=false',
+          '-c',
+          'core.hooksPath=/dev/null',
+          ...args,
+        ],
+        { cwd: fixture, encoding: 'utf8' },
+      ).trim();
+    try {
+      await mkdir(path.join(fixture, 'docs/public'), { recursive: true });
+      await writeFile(
+        path.join(fixture, 'docs/public/index.md'),
+        '---\ntitle: Overview\n---\n# Overview\nHello\n',
+      );
+      await writeFile(path.join(fixture, 'docs/public/AGENTS.md'), 'Private instructions');
+      await writeFile(
+        path.join(fixture, 'docs/public/draft.md'),
+        '---\ndraft: true\n---\n# Draft\n',
+      );
+      await writeFile(
+        path.join(fixture, 'docs/public/_navigation.json'),
+        json({
+          schemaVersion: 1,
+          sections: [
+            { title: 'Start', pages: ['index.md'] },
+            { title: 'Reference', generated: 'rust-api' },
+            ...(python ? [{ title: 'Python API reference', directory: 'python-api' }] : []),
+          ],
+        }),
+      );
+      await mkdir(path.join(fixture, 'scripts/docs'), { recursive: true });
+      for (const file of [
+        'generate.mjs',
+        'content.mjs',
+        'navigation.mjs',
+        'reference/generate.mjs',
+        'reference/model.mjs',
+        'reference/sdk-discovery.mjs',
+        'reference/toolchain.json',
+        'reference/sdk-policy.json',
+      ]) {
+        await mkdir(path.dirname(path.join(fixture, 'scripts/docs', file)), { recursive: true });
+        await cp(path.join(scripts, file), path.join(fixture, 'scripts/docs', file));
+      }
+      if (python) {
+        await cp(
+          path.join(scripts, 'python_reference.py'),
+          path.join(fixture, 'scripts/docs/python_reference.py'),
+        );
+        await mkdir(path.join(fixture, 'python/yosoi'), { recursive: true });
+        await writeFile(
+          path.join(fixture, 'python/yosoi/__init__.py'),
+          'from .sample import Foo as Foo\n__all__ = ["Foo"]\n',
+        );
+        await writeFile(
+          path.join(fixture, 'python/yosoi/sample.py'),
+          'class Foo:\n    name: str\n',
+        );
+      }
+      git('init', '-q');
+      git('add', '.');
+      git('commit', '-qm', 'Source');
+      const source = git('rev-parse', 'HEAD');
+      if (python)
+        await writeFile(
+          path.join(fixture, 'python/yosoi/sample.py'),
+          'class Foo:\n    wrong_working_tree_field: bool\n',
+        );
+      const reference = path.join(fixture, 'reference');
+      await mkdir(path.join(reference, 'en/pages'), { recursive: true });
+      const page = json({ publicPath: 'yosoi', kind: 'module', docs: 'SDK overview' });
+      await writeFile(path.join(reference, 'en/pages/index.json'), page);
+      const base = {
+        schemaVersion: 1,
+        kind: 'rust-api-reference',
+        version: '0.1.0',
+        source: { commit: source, repository: 'CascadingLabs/Yosoi' },
+        sdk: { crate: 'yosoi', version: '0.1.0' },
+        locales: ['en'],
+        pages: { index: { file: 'pages/index.json', localeHashes: { en: hash(page) } } },
+      };
+      const provenance = json({ sourceCommit: source, contentDigest: hash(json(base)) });
+      await writeFile(path.join(reference, 'provenance.json'), provenance);
+      await writeFile(
+        path.join(reference, 'manifest.json'),
+        json({
+          ...base,
+          provenance: {
+            file: 'provenance.json',
+            sha256: hash(provenance),
+            status: 'unsigned-preview',
+          },
+        }),
+      );
+      const out = path.join(fixture, 'output');
+      const args = [
+        path.join(scripts, 'bundle.mjs'),
+        'create',
+        '--source',
+        source,
+        '--version',
+        '0.1.0',
+        '--reference',
+        reference,
+        '--out',
+        out,
+      ];
+      execFileSync('node', args, { cwd: fixture });
+      const bundle = JSON.parse(await readFile(path.join(out, 'bundle.json'), 'utf8'));
+      expect(bundle.sourceCommit).toBe(source);
+      expect(bundle.files['docs/public/_navigation.json']).toBeTruthy();
+      expect(bundle.files['docs/public/draft.md']).toBeUndefined();
+      expect(bundle.files['docs/public/AGENTS.md']).toBeUndefined();
+      const archive = JSON.parse(await readFile(path.join(out, 'archive-manifest.json'), 'utf8'));
+      expect(archive.pages.filter((item) => item.format === 'rust-api')).toHaveLength(1);
+      expect(archive.navigation.children.map((item) => item.title)).toEqual([
+        'Start',
+        'Reference',
+        ...(python ? ['Python API reference'] : []),
+      ]);
+      if (python) {
+        const item = archive.pages.find((page) => page.route === 'python-api/sample/types/foo');
+        expect(item.format).toBe('markdown');
+        const body = await readFile(path.join(out, item.file), 'utf8');
+        expect(body).toContain('name: str');
+        expect(body).not.toContain('wrong_working_tree_field');
+        expect(body).toContain(`/blob/${source}/python/yosoi/sample.py`);
+        expect(bundle.files[item.file]).toBe(hash(body));
+      } else expect(archive.pages.map((item) => item.format)).toEqual(['markdown', 'rust-api']);
+      expect(() =>
+        execFileSync(
+          'node',
+          [...args.slice(0, -1), path.join(fixture, 'other'), '--version', '0.2.0'],
+          { cwd: fixture, stdio: 'pipe' },
+        ),
+      ).toThrow();
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  },
+);
 
 test('catalog publication preserves immutable pointers and an older retry cannot replace latest', async () => {
   const work = fileURLToPath(new URL('../../.generated/docs-tests/', import.meta.url));

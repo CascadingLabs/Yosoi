@@ -34,51 +34,117 @@ if TYPE_CHECKING:
     from .request import BoundPageRequest, PageRequest, Response
 
 BrowserError = _native.BrowserError
+"""Native browser acquisition, execution, policy, or cleanup exception."""
 
 U64 = Annotated[int, Field(strict=True, ge=0, le=(1 << 64) - 1)]
+"""Strict integer from 0 through 2**64 - 1 for unsigned browser values.
+
+Booleans, floating-point values, and numeric strings are rejected rather than
+coerced. Units depend on the parameter using this alias.
+"""
+
 PositiveU32 = Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)]
+"""Strict integer from 1 through 2**32 - 1 for positive browser values.
+
+Zero, booleans, floating-point values, and numeric strings are rejected. This
+alias checks numeric range, not whether a referenced object exists.
+"""
+
 PositiveU64 = Annotated[int, Field(strict=True, gt=0, le=(1 << 64) - 1)]
+"""Strict integer from 1 through 2**64 - 1 for positive browser values.
+
+Zero, booleans, floating-point values, and numeric strings are rejected rather
+than coerced. Units belong to the consuming parameter; this alias alone does
+not imply milliseconds, bytes, or an existing browser object.
+"""
+
 PositiveMilliseconds = Annotated[
     int, Field(strict=True, gt=0, le=((1 << 64) - 1) // 1_000)
 ]
+"""Positive integer milliseconds whose microsecond conversion fits in u64.
+
+Accepts 1 through (2**64 - 1) // 1_000 without numeric coercion. This validates
+the representable duration range; operation-specific deadlines still apply.
+"""
 HttpStatus = Annotated[int, Field(strict=True, ge=100, le=599)]
+"""Strict integer HTTP status from 100 through 599; booleans are rejected."""
 ExecutionConcurrency = Annotated[int, Field(strict=True, ge=1, le=32)]
+"""Strict admitted execution capacity from one through 32 permits."""
 MaximumQueuedOperations = Annotated[int, Field(strict=True, ge=1, le=1_024)]
+"""Strict queue capacity from one through 1,024 waiting operations."""
 MAX_UNTIL_REPORT_BYTES = 1_048_576
+"""Maximum encoded Until report size in bytes, currently 1 MiB."""
 
 BrowserMode = Literal["headless", "headful"]
+"""Native browser display mode: headless or headful."""
 ActionKind = Literal[
     "navigate", "click", "enter_text", "screenshot", "wait", "assert", "evaluate"
 ]
+"""Session policy action names used to allow or reject browser operations."""
 OperationStatus = Literal["observed", "rejected", "unknown"]
+"""Observed, rejected, or unknown operation state; unknown preserves uncertainty."""
 FlowTermination = Literal[
     "completed", "completed_with_issues", "failed", "unknown", "cancelled"
 ]
+"""Flow terminal states retaining issues, uncertainty, and cancellation."""
 
 
 class Exists(ImmutableModel):
+    """Declare that at least one matching DOM element must exist.
+
+    Existence does not imply visibility, readiness, or business success.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        selector: CSS selector identifying elements on the current browser page.
+    """
+
     kind: Literal["exists"] = "exists"
     selector: StrictStr = Field(min_length=1, max_length=4096)
 
 
 class Visible(ImmutableModel):
+    """Declare that a matching element must satisfy browser visibility checks.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        selector: CSS selector identifying elements on the current browser page.
+    """
+
     kind: Literal["visible"] = "visible"
     selector: StrictStr = Field(min_length=1, max_length=4096)
 
 
 class CountAtLeast(ImmutableModel):
+    """Declare a minimum number of matching DOM elements.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        selector: CSS selector identifying elements on the current browser page.
+        count: Unsigned minimum match count; zero is permitted.
+    """
+
     kind: Literal["count_at_least"] = "count_at_least"
     selector: StrictStr = Field(min_length=1, max_length=4096)
     count: U64
 
 
 Condition = Annotated[Exists | Visible | CountAtLeast, Field(discriminator="kind")]
+"""DOM condition tagged as existence, visibility, or minimum match count."""
 
 
 class TriggerStep(ImmutableModel):
     """A one-shot action that can be followed by a bounded expectation wait."""
 
     def until(self, expectation: UntilExpectation | LocalRustAssertion) -> UntilStep:
+        """Observe an expectation around this one-shot action.
+
+        Args:
+            expectation: Typed expectation or locally bound Contract assertion.
+
+        Returns:
+            Until declaration that registers observers before dispatching this trigger.
+        """
         if isinstance(expectation, LocalRustAssertion):
             return UntilStep(
                 trigger=cast(Step, self),
@@ -91,51 +157,127 @@ class WaitExpectation(ImmutableModel):
     """An expectation that can wait on the current page without a trigger."""
 
     def until(self) -> UntilStep:
+        """Build an Until declaration that observes the page without a trigger."""
         return UntilStep(expectation=cast(UntilExpectation, self))
 
 
 class Navigate(ImmutableModel):
+    """Declare navigation to a URL on the leased browser tab.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        url: Nonempty destination URL; construction does not navigate or acquire a tab.
+    """
+
     kind: Literal["navigate"] = "navigate"
     url: StrictStr = Field(min_length=1)
 
 
 class Click(TriggerStep):
+    """Declare a single click on the current browser page.
+
+    Dispatching a click does not prove that its intended effect occurred. Use Until with
+    an explicit domain expectation to observe that effect.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        selector: CSS selector identifying elements on the current browser page.
+    """
+
     kind: Literal["click"] = "click"
     selector: StrictStr = Field(min_length=1, max_length=4096)
 
 
 class EnterText(TriggerStep):
+    """Declare text input on the current browser page.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        selector: CSS selector identifying elements on the current browser page.
+        text: Text passed to the browser input action; an empty string is permitted.
+    """
+
     kind: Literal["enter_text"] = "enter_text"
     selector: StrictStr = Field(min_length=1, max_length=4096)
     text: StrictStr
 
 
 class Wait(ImmutableModel):
+    """Declare an explicit elapsed-time wait.
+
+    Elapsed time is not evidence that a page or operation is ready.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        milliseconds: Unsigned duration in milliseconds; zero is permitted.
+    """
+
     kind: Literal["wait"] = "wait"
     milliseconds: U64
 
 
 class Screenshot(ImmutableModel):
+    """Declare screenshot capture from the current browser tab.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+    """
+
     kind: Literal["screenshot"] = "screenshot"
 
 
 class Assert(ImmutableModel):
+    """Declare an immediate DOM condition check.
+
+    This checks one observation rather than waiting for the condition to become true.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        condition: Existence, visibility, or minimum-count condition to evaluate.
+    """
+
     kind: Literal["assert"] = "assert"
     condition: Condition
 
 
 class WaitUntil(ImmutableModel):
+    """Declare a bounded wait for a DOM condition.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        condition: Existence, visibility, or minimum-count condition to observe.
+        timeout_ms: Positive local deadline in milliseconds.
+    """
+
     kind: Literal["wait_until"] = "wait_until"
     condition: Condition
     timeout_ms: PositiveU64
 
 
 class Evaluate(TriggerStep):
+    """Declare JavaScript evaluation in the browser page.
+
+    Execution requires JavaScript permission in the owning Session or managed
+    invocation. Construction does not execute the source.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        source: Nonempty JavaScript source bounded to 65,536 characters.
+    """
+
     kind: Literal["evaluate"] = "evaluate"
     source: StrictStr = Field(min_length=1, max_length=65_536)
 
 
 class ConditionExpectation(WaitExpectation):
+    """Observe a DOM condition as part of an Until wait.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        condition: Existence, visibility, or minimum-count condition; selector is
+            bounded to 4,096 UTF-8 bytes.
+    """
+
     kind: Literal["condition"] = "condition"
     condition: Condition
 
@@ -147,7 +289,15 @@ class ConditionExpectation(WaitExpectation):
 
 
 class LocalContractExpectation(WaitExpectation):
-    """Inspection descriptor; executing its Rust checks still requires rebinding."""
+    """Retain an inspectable descriptor for local Contract checks.
+
+    Executing checks requires the original local predicate binding. Deserializing the
+    descriptor does not restore executable predicates.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        assertion: JSON descriptor bounded to 65,536 encoded bytes.
+    """
 
     kind: Literal["contract"] = "contract"
     assertion: dict[str, Any]
@@ -167,6 +317,14 @@ class LocalContractExpectation(WaitExpectation):
 
 
 class AccessibilityExpectation(WaitExpectation):
+    """Observe an accessible name and optional role during Until.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        name: Nonblank accessible name bounded to 4,096 UTF-8 bytes.
+        role: Optional nonblank accessibility role bounded to 128 UTF-8 bytes.
+    """
+
     kind: Literal["accessibility"] = "accessibility"
     name: StrictStr = Field(min_length=1, max_length=4_096)
     role: StrictStr | None = None
@@ -185,6 +343,13 @@ class AccessibilityExpectation(WaitExpectation):
 
 
 class JsonMatch(ImmutableModel):
+    """Compare a response JSON value at an RFC 6901 pointer.
+
+    Attributes:
+        pointer: JSON Pointer; empty selects the root, and ~0/~1 escape tilde/slash.
+        value: JSON-serializable expected value bounded to 16,384 encoded bytes.
+    """
+
     pointer: StrictStr
     value: Any
 
@@ -213,6 +378,19 @@ class JsonMatch(ImmutableModel):
 
 
 class ResponseExpectation(WaitExpectation):
+    """Observe a matching network response during an Until wait.
+
+    A matching response is evidence for this expectation, not a general guarantee that
+    every page request succeeded.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        url: Exact full response URL bounded to 8,192 UTF-8 bytes.
+        method: Optional HTTP method filter bounded to 32 UTF-8 bytes.
+        status: Optional expected HTTP status from 100 through 599.
+        json_matches: Up to 32 JSON comparisons; serialized under the key json.
+    """
+
     kind: Literal["response"] = "response"
     url: StrictStr = Field(min_length=1, max_length=8_192)
     method: StrictStr | None = Field(default=None, max_length=32)
@@ -236,6 +414,14 @@ class ResponseExpectation(WaitExpectation):
 
 
 class AllExpectation(WaitExpectation):
+    """Require every child expectation within one Until wait.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        expectations: One through 128 expectations; complete trees allow at most 128
+            nodes and eight nesting levels.
+    """
+
     kind: Literal["all"] = "all"
     expectations: tuple[UntilExpectation, ...] = Field(min_length=1, max_length=128)
 
@@ -248,9 +434,22 @@ UntilExpectation = Annotated[
     | AllExpectation,
     Field(discriminator="kind"),
 ]
+"""Tagged DOM, Contract, accessibility, network, or combined Until expectation."""
 
 
 class UntilStep(ImmutableModel):
+    """Observe an expectation around an optional one-shot trigger.
+
+    Observers start before dispatching the trigger. Trigger and observation share a
+    bounded execution scope; cancellation does not undo the dispatched action.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        trigger: Optional Click, EnterText, Evaluate, EvaluateFile, or EvaluateModule
+            action.
+        expectation: DOM, accessibility, network, Contract, or combined expectation.
+    """
+
     kind: Literal["until"] = "until"
     trigger: Step | None = None
     expectation: UntilExpectation
@@ -266,13 +465,30 @@ class UntilStep(ImmutableModel):
 
 
 class Duration(ImmutableModel):
-    """Unit-bearing Rust duration in persisted Flow and action records."""
+    """Represent a persisted Rust duration with explicit units.
+
+    Attributes:
+        secs: Whole unsigned seconds.
+        nanos: Subsecond nanoseconds from zero through 999,999,999.
+    """
 
     secs: U64
     nanos: Annotated[int, Field(strict=True, ge=0, lt=1_000_000_000)]
 
 
 class Timed(ImmutableModel):
+    """Apply a local execution deadline to one action.
+
+    Exactly one timeout field must be supplied.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        action: Action wrapped by this deadline.
+        timeout: Unit-bearing duration; mutually exclusive with timeout_us.
+        timeout_us: Legacy positive microsecond deadline; mutually exclusive with
+            timeout.
+    """
+
     kind: Literal["timed"] = "timed"
     action: Step
     timeout: Duration | None = None
@@ -286,6 +502,20 @@ class Timed(ImmutableModel):
 
 
 class Configured(ImmutableModel):
+    """Override continuation decisions for one action.
+
+    A persisted descriptor does not recreate live cancellation token authority.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        action: Action to execute with these overrides.
+        on_failure: Failure continuation override; None inherits enclosing defaults.
+        on_cancellation: Cancellation continuation override; None inherits enclosing
+            defaults.
+        cancellation_binding_required: Whether execution needs an external cancellation
+            binding restored.
+    """
+
     kind: Literal["configured"] = "configured"
     action: Step
     on_failure: Continuation | None = None
@@ -294,12 +524,27 @@ class Configured(ImmutableModel):
 
 
 class NestedFlow(ImmutableModel):
+    """Execute a nested Flow within its enclosing invocation.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        flow: Nested declaration retaining its own steps and continuation scope.
+    """
+
     kind: Literal["nested_flow"] = "nested_flow"
     flow: Flow
 
 
 class LocalRustAssertion(ImmutableModel):
-    """Inspection descriptor; executing it requires Rust predicate rebinding."""
+    """Retain a local Contract assertion descriptor for inspection.
+
+    Executing it requires the original local predicates. Deserialization retains
+    inspection data but cannot restore executable callback bindings.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        assertion: Serialized schema, plan, and named-check declaration.
+    """
 
     kind: Literal["assert_all"] = "assert_all"
     assertion: dict[str, Any]
@@ -312,12 +557,28 @@ class LocalRustAssertion(ImmutableModel):
         return expectation
 
     def until(self, *, trigger: Step | None = None) -> UntilStep:
+        """Observe these locally bound Contract checks during an Until wait.
+
+        Args:
+            trigger: Optional supported one-shot action dispatched after registration.
+
+        Returns:
+            Until declaration retaining the original local predicate binding.
+        """
         expectation = self._as_expectation()
         return UntilStep(trigger=trigger, expectation=expectation)
 
 
 class EvaluateFile(TriggerStep):
-    """Rust-validated construction-time source snapshot."""
+    """Retain a construction-time JavaScript file snapshot.
+
+    The factory reads source during construction. Later execution uses the retained
+    snapshot rather than rereading the file, and requires JavaScript permission.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        snapshot: Rust-validated source snapshot bounded to 1 MiB of encoded JSON.
+    """
 
     kind: Literal["evaluate_file"] = "evaluate_file"
     snapshot: dict[str, Any]
@@ -329,7 +590,15 @@ class EvaluateFile(TriggerStep):
 
 
 class EvaluateModule(TriggerStep):
-    """Rust-validated module graph retained in an inspection record."""
+    """Retain a construction-time local JavaScript module graph.
+
+    Execution uses the retained local graph and requires JavaScript permission.
+    Inspection records cannot authorize execution by themselves.
+
+    Attributes:
+        kind: Wire discriminator identifying this declaration.
+        bundle: Rust-validated module bundle bounded to 4 MiB of encoded JSON.
+    """
 
     kind: Literal["evaluate_module"] = "evaluate_module"
     bundle: dict[str, Any]
@@ -358,6 +627,7 @@ Step = Annotated[
     | UntilStep,
     Field(discriminator="kind"),
 ]
+"""Tagged browser action, wrapper, nested Flow, or Until declaration."""
 
 
 def _bounded_text(
@@ -435,6 +705,24 @@ def _contains_until_wire(value: object) -> bool:
 
 
 class Flow(ImmutableModel):
+    """Declare ordered browser steps without acquiring a Session.
+
+    Invocation either manages browser ownership or borrows an explicit Work lease.
+    JavaScript permission must be explicitly enabled for managed execution; a
+    borrowed Session retains its own permission policy.
+
+    Attributes:
+        schema_version: Wire schema version; Until requires version 4, and legacy
+            timeout_us implies version 1 when omitted.
+        steps: Ordered immutable tuple of at most 128 steps.
+        timeout: Optional total execution duration with explicit seconds/nanoseconds.
+        timeout_us: Optional legacy total timeout in positive microseconds.
+        on_failure: Flow failure continuation override; None uses policy defaults.
+        on_cancellation: Flow cancellation continuation override; None uses policy
+            defaults.
+        capture_on_failure: Whether to attempt a screenshot when execution fails.
+    """
+
     schema_version: Literal[1, 2, 3, 4] = 3
     steps: tuple[Step, ...] = Field(default_factory=tuple, max_length=128)
     timeout: Duration | None = None
@@ -510,13 +798,27 @@ Flow.model_rebuild()
 
 
 class BoundFlow(ImmutableModel):
-    """A Flow invocation with its validated policy declaration attached."""
+    """Retain an immutable Flow with a validated policy snapshot.
+
+    The stored wire snapshot is used for invocation. Editing a separate Policy object
+    does not change this binding.
+
+    Attributes:
+        flow: Flow declaration to invoke.
+        policy: Policy declaration whose serialized snapshot is captured on
+            construction.
+    """
 
     flow: Flow
     policy: Policy
     _policy_json: str = PrivateAttr()
 
     def model_post_init(self, context: object) -> None:
+        """Capture the validated policy wire snapshot for later invocation.
+
+        Args:
+            context: Pydantic initialization context; unused by this bridge.
+        """
         del context
         object.__setattr__(self, "_policy_json", self.policy.to_json())
 
@@ -530,12 +832,41 @@ class BoundFlow(ImmutableModel):
         *,
         cancellation: CancellationToken | None = None,
     ) -> FlowOutcome:
+        """Invoke this Flow with its captured policy and optional borrowed Work.
+
+        Args:
+            lease: Caller-owned Work, or None for managed acquisition and cleanup.
+            cancellation: Optional token bounding execution without rolling back
+                effects.
+
+        Returns:
+            Flow outcome retaining partial, unknown, skipped, and cleanup facts.
+
+        Raises:
+            BrowserError: Acquisition or execution fails at the native boundary.
+            FlowInvocationError: Native failure includes partial or cleanup evidence.
+        """
         return await _invoke_flow(
             self.flow, self._policy_json, lease=lease, cancellation=cancellation
         )
 
 
 class Observation(ImmutableModel):
+    """Retain browser evidence from a particular document epoch.
+
+    Evidence describes an observation at capture time and does not grant live tab
+    authority.
+
+    Attributes:
+        id: Observation identity.
+        session_id: Identity of the Session that produced the observation.
+        tab_id: Identity of the observed tab.
+        document_epoch: Unsigned document generation used to fence stale observations.
+        html: Captured HTML when this observation carries DOM evidence.
+        url: Observed URL when present.
+        screenshot: Optional screenshot bytes; JSON encoding uses base64.
+    """
+
     model_config = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
 
     id: StrictStr
@@ -559,10 +890,25 @@ class Observation(ImmutableModel):
 
     @property
     def screenshot_bytes(self) -> bytes | None:
+        """Return retained screenshot bytes, or None when no image was captured."""
         return self.screenshot
 
 
 class OperationReceipt(ImmutableModel):
+    """Retain observed, rejected, or unknown facts about an operation.
+
+    Unknown does not imply that a dispatched operation had no effect. Inspect operation-
+    specific evidence before claiming business success.
+
+    Attributes:
+        id: Operation receipt identity.
+        kind: Operation kind; Until results carry a validated report.
+        status: Whether the operation was observed, rejected, or left unknown.
+        result: Operation-specific result payload, or None.
+        observation: Optional browser evidence attached to the operation.
+        error: Optional retained error detail.
+    """
+
     id: StrictStr
     kind: StrictStr
     status: OperationStatus
@@ -588,6 +934,16 @@ class OperationReceipt(ImmutableModel):
 
 
 class UntilScope(ImmutableModel):
+    """Fence an Until report to its Session, tab, and document.
+
+    Attributes:
+        session_id: Owning Session identity.
+        tab_id: Observed tab identity.
+        document_epoch: Document generation evaluated by the wait.
+        frame_id: Optional frame identity; required for a satisfied report.
+        loader_id: Optional document loader identity; required for a satisfied report.
+    """
+
     session_id: StrictStr = Field(min_length=1, max_length=4_096)
     tab_id: StrictStr = Field(min_length=1, max_length=4_096)
     document_epoch: U64
@@ -607,11 +963,24 @@ class UntilScope(ImmutableModel):
 UntilTermination = Literal[
     "satisfied", "timed_out", "cancelled", "rejected", "unavailable", "trigger_failed"
 ]
+"""Wait terminal states preserving unsuccessful and uncertain observations."""
 UntilCheckSource = Literal["dom", "accessibility", "network"]
+"""Evidence source used by a DOM, accessibility, or network expectation check."""
 UntilCheckState = Literal["pending", "satisfied", "rejected", "unavailable"]
+"""Per-check pending, satisfied, rejected, or unavailable evaluation state."""
 
 
 class UntilCheck(ImmutableModel):
+    """Retain the state and evidence of one expectation check.
+
+    Attributes:
+        index: Zero-based check position in the report.
+        source: DOM, accessibility, or network evidence source.
+        state: Pending, satisfied, rejected, or unavailable evaluation state.
+        evidence: Retained evidence; satisfied checks require it.
+        error: Optional error bounded to 16,384 UTF-8 bytes.
+    """
+
     index: U64
     source: UntilCheckSource
     state: UntilCheckState
@@ -627,7 +996,21 @@ class UntilCheck(ImmutableModel):
 
 
 class UntilReport(ImmutableModel):
-    """Typed Until receipt result. The enclosing Flow remains authoritative."""
+    """Retain a typed Until result within the authoritative Flow outcome.
+
+    A satisfied report requires supporting check evidence and scope identities. The
+    enclosing Flow outcome remains authoritative for continuation and cleanup.
+
+    Attributes:
+        version: Report wire version, currently 1.
+        termination: Wait termination, including satisfaction or an explicit
+            unsuccessful result.
+        scope: Fenced Session, tab, document, frame, and loader identities.
+        trigger: Optional receipt from the one-shot action dispatched by Until.
+        evaluations: Unsigned count of expectation evaluations.
+        checks: One through 128 checks with contiguous zero-based indexes.
+        error: Optional report error bounded to 16,384 UTF-8 bytes.
+    """
 
     version: Literal[1]
     termination: UntilTermination
@@ -721,6 +1104,17 @@ class UntilReport(ImmutableModel):
 
 
 class StepOutcome(ImmutableModel):
+    """Retain one executed step with failure and cancellation facts.
+
+    Attributes:
+        index: Step position within its Flow.
+        flow_path: Nested Flow path locating the step in the invocation.
+        receipt: Operation receipt, including unknown outcomes when applicable.
+        failure: Optional rejected, execution, or unknown-outcome classification.
+        cancellation: Optional step, invocation, or Session cancellation scope.
+        cancelled_flow: Optional Flow path affected by cancellation.
+    """
+
     index: U64
     flow_path: tuple[U64, ...] = ()
     receipt: OperationReceipt
@@ -730,15 +1124,33 @@ class StepOutcome(ImmutableModel):
 
 
 StopCause = Literal["failure", "cancellation", "unknown_outcome", "unsafe_state"]
+"""Explicit failure, cancellation, unknown-outcome, or unsafe-state stop cause."""
 
 
 class FlowStopReason(ImmutableModel):
+    """Explain where execution stopped and which continuation applied.
+
+    Attributes:
+        flow_path: Flow path where the stop decision occurred.
+        cause: Failure, cancellation, unknown outcome, or unsafe state.
+        continuation: Applied continuation decision when recorded.
+    """
+
     flow_path: tuple[U64, ...]
     cause: StopCause
     continuation: Continuation | None = None
 
 
 class SkippedStep(ImmutableModel):
+    """Retain a declared step that was not started after a stop decision.
+
+    Attributes:
+        flow_path: Path of the skipped step.
+        stopped_by: Path of the step or Flow that caused the stop.
+        cause: Reason execution skipped this step.
+        scope: Whether the stop applies to the current Flow or entire invocation.
+    """
+
     flow_path: tuple[U64, ...]
     stopped_by: tuple[U64, ...]
     cause: StopCause
@@ -746,15 +1158,37 @@ class SkippedStep(ImmutableModel):
 
 
 class FlowExecutionError(RuntimeError):
-    """A noncompleted Flow outcome, retained intact for caller inspection."""
+    """Raise strict completion failure while preserving the Flow outcome.
+
+    Attributes:
+        outcome: Original outcome rejected by require_completed().
+    """
 
     def __init__(self, outcome: FlowOutcome) -> None:
+        """Retain the outcome that failed strict completion checking.
+
+        Args:
+            outcome: Original Flow outcome, including partial steps and cleanup
+                receipts.
+        """
         self.outcome = outcome
         super().__init__(f"browser Flow ended with terminal state {outcome.terminal!r}")
 
 
 class FlowInvocationError(BrowserError):
-    """Native invocation failure with any partial outcome and cleanup detail."""
+    """Retain native invocation failure and any partial execution evidence.
+
+    Attributes:
+        native_error: Original native exception.
+        outcome: Parsed partial Flow outcome when available.
+        outcome_json: Original partial outcome JSON when available.
+        outcome_encoding_error: Native failure to encode partial outcome evidence, if
+            any.
+        cleanup_error: Native cleanup error detail, if any.
+        rust_variant: Native failure variant name, if provided.
+        outcome_parse_error: Exception encountered while parsing retained partial
+            outcome JSON.
+    """
 
     def __init__(
         self,
@@ -767,6 +1201,17 @@ class FlowInvocationError(BrowserError):
         rust_variant: str | None,
         outcome_parse_error: BaseException | None = None,
     ) -> None:
+        """Retain the original native failure and available partial evidence.
+
+        Args:
+            native_error: Exception from native invocation.
+            outcome: Parsed partial outcome, or None when absent or unparseable.
+            outcome_json: Original partial JSON, if emitted.
+            outcome_encoding_error: Failure to encode an outcome, if reported.
+            cleanup_error: Native cleanup failure detail, if reported.
+            rust_variant: Rust failure variant name, if reported.
+            outcome_parse_error: Error encountered while parsing retained outcome JSON.
+        """
         self.native_error = native_error
         self.outcome = outcome
         self.outcome_json = outcome_json
@@ -778,13 +1223,24 @@ class FlowInvocationError(BrowserError):
 
 
 class BrowserCleanupError(RuntimeError):
-    """Context cleanup failed while preserving the operation's original error."""
+    """Retain cleanup failures alongside the original operation exception.
+
+    Attributes:
+        original_error: Exception raised before context cleanup failed.
+        cleanup_errors: Cleanup exceptions retained in order.
+    """
 
     def __init__(
         self,
         original_error: BaseException,
         cleanup_errors: tuple[BaseException, ...],
     ) -> None:
+        """Preserve the operation exception alongside subsequent cleanup failures.
+
+        Args:
+            original_error: Exception raised by the operation or caller cancellation.
+            cleanup_errors: Exceptions raised while settling cleanup.
+        """
         self.original_error = original_error
         self.cleanup_errors = cleanup_errors
         detail = "; ".join(str(error) for error in cleanup_errors)
@@ -792,6 +1248,26 @@ class BrowserCleanupError(RuntimeError):
 
 
 class FlowOutcome(ImmutableModel):
+    """Retain executed, skipped, and cleanup facts for a Flow invocation.
+
+    Cancellation preserves partial and unknown facts without rolling back effects.
+    require_completed() checks receipts, skips, and cleanup as well as the terminal
+    label.
+
+    Attributes:
+        version: Outcome wire version, independent of the embedded Flow schema version.
+        flow: Original Flow declaration.
+        steps: Executed steps with their receipts and cancellation facts.
+        terminal: Invocation termination; inspect issues and cleanup rather than
+            trusting the label alone.
+        continuation_defaults: Policy continuation defaults recorded for this
+            invocation.
+        stop_reason: Optional explicit stop decision.
+        skipped_steps: Declared steps not started after a stop decision.
+        cleanup: Receipts from managed cleanup attempts.
+        failure_capture: Optional screenshot or capture receipt produced after failure.
+    """
+
     version: Literal[1, 2, 3]
     flow: Flow
     steps: tuple[StepOutcome, ...]
@@ -866,7 +1342,31 @@ def _native_session_allowed_actions() -> tuple[ActionKind, ...]:
 
 
 class SessionPolicy(Model):
-    """Rust-owned browser limits and capabilities for one retained Session."""
+    """Configure Rust-owned limits and capabilities for a retained Session.
+
+    Omitted values use native Rust defaults. Construction and to_json() run Rust
+    validation; numeric bounds alone do not authorize an operation.
+
+    Attributes:
+        mode: Headless or headful browser mode; must agree with the acquisition policy.
+        maximum_tabs: Positive tab capacity; this Python bridge does not expose explicit
+            tab creation.
+        dom: Whether DOM operations are allowed.
+        allow_arbitrary_js: Whether arbitrary JavaScript evaluation is permitted.
+        allowed_actions: Action kinds allowed by the Session.
+        execution_concurrency: Admitted execution permits from 1 through 32.
+        maximum_queued_operations: Bounded queued operations from 1 through 1,024.
+        yield_on_wait: Whether eligible waits yield execution capacity while retaining
+            tab ownership.
+        operation_timeout_ms: Positive default operation deadline in milliseconds.
+        maximum_input_bytes: Positive maximum encoded operation input size.
+        maximum_result_bytes: Positive maximum encoded operation result size.
+        maximum_observation_bytes: Positive maximum retained observation size.
+        watch_capacity: Positive Rust watcher capacity; watcher streams are not exposed
+            by this bridge.
+        remote_endpoint: Optional remote-browser declaration; current acquisition does
+            not support it.
+    """
 
     mode: BrowserMode = Field(
         default_factory=lambda: _native_session_default(
@@ -985,10 +1485,23 @@ class SessionPolicy(Model):
         return self
 
     def to_json(self) -> str:
+        """Validate these settings in Rust and return their canonical wire JSON.
+
+        Raises:
+            BrowserError: Mutated settings no longer satisfy Rust policy requirements.
+        """
         return _native.validate_session_policy(self.model_dump_json(exclude_none=True))
 
 
 def navigate(url: str) -> Navigate:
+    """Declare navigation without acquiring or changing a browser.
+
+    Args:
+        url: Nonempty destination URL.
+
+    Returns:
+        Immutable Navigate step.
+    """
     return Navigate(url=url)
 
 
@@ -1020,14 +1533,39 @@ def _duration_from_milliseconds(milliseconds: int) -> Duration:
 
 
 def click(selector: str) -> Click:
+    """Declare one click without dispatching it.
+
+    Args:
+        selector: CSS selector for the current browser page.
+
+    Returns:
+        Click trigger; use Until to observe its intended effect.
+    """
     return Click(selector=selector)
 
 
 def enter_text(selector: str, text: str) -> EnterText:
+    """Declare a text input action without executing it.
+
+    Args:
+        selector: CSS selector for the current browser page.
+        text: Text to send, including an empty string.
+
+    Returns:
+        Immutable EnterText trigger.
+    """
     return EnterText(selector=selector, text=text)
 
 
 def wait(milliseconds: int) -> Wait:
+    """Declare an explicit duration rather than a readiness condition.
+
+    Args:
+        milliseconds: Unsigned elapsed-time duration; zero is permitted.
+
+    Returns:
+        Immutable Wait step.
+    """
     return Wait(milliseconds=milliseconds)
 
 
@@ -1038,10 +1576,23 @@ def timed(step: Step, timeout_ms: int) -> Timed:
 
 
 def screenshot() -> Screenshot:
+    """Declare screenshot capture without executing it.
+
+    Returns:
+        Immutable Screenshot step; captured bytes appear in execution evidence.
+    """
     return Screenshot()
 
 
 def assert_that(condition: Condition | ConditionExpectation) -> Assert:
+    """Declare an immediate check of a DOM condition.
+
+    Args:
+        condition: Raw DOM condition or ConditionExpectation wrapper.
+
+    Returns:
+        Assert step; it checks once instead of waiting for readiness.
+    """
     value = (
         condition.condition
         if isinstance(condition, ConditionExpectation)
@@ -1053,6 +1604,15 @@ def assert_that(condition: Condition | ConditionExpectation) -> Assert:
 def wait_until(
     condition: Condition | ConditionExpectation, timeout_ms: int
 ) -> WaitUntil:
+    """Declare a bounded DOM-condition wait.
+
+    Args:
+        condition: Raw DOM condition or ConditionExpectation wrapper.
+        timeout_ms: Positive local deadline in milliseconds.
+
+    Returns:
+        WaitUntil step; construction does not start the wait.
+    """
     value = (
         condition.condition
         if isinstance(condition, ConditionExpectation)
@@ -1062,18 +1622,51 @@ def wait_until(
 
 
 def evaluate(source: str) -> Evaluate:
+    """Declare JavaScript evaluation without executing the source.
+
+    Args:
+        source: Nonempty JavaScript source bounded to 65,536 characters.
+
+    Returns:
+        Evaluate trigger requiring explicit JavaScript execution permission.
+    """
     return Evaluate(source=source)
 
 
 def exists(selector: str) -> ConditionExpectation:
+    """Declare an element-existence expectation for Until.
+
+    Args:
+        selector: CSS selector for the current browser page.
+
+    Returns:
+        ConditionExpectation; existence does not imply visibility.
+    """
     return ConditionExpectation(condition=Exists(selector=selector))
 
 
 def visible(selector: str) -> ConditionExpectation:
+    """Declare a browser visibility expectation for Until.
+
+    Args:
+        selector: CSS selector for the current browser page.
+
+    Returns:
+        ConditionExpectation using browser visibility checks.
+    """
     return ConditionExpectation(condition=Visible(selector=selector))
 
 
 def count_at_least(selector: str, count: int) -> ConditionExpectation:
+    """Declare a minimum DOM match count for Until.
+
+    Args:
+        selector: CSS selector for the current browser page.
+        count: Unsigned minimum; zero is permitted.
+
+    Returns:
+        ConditionExpectation requiring at least the declared match count.
+    """
     return ConditionExpectation(condition=CountAtLeast(selector=selector, count=count))
 
 
@@ -1084,6 +1677,18 @@ def response(
     status: int | None = None,
     json_matches: Iterable[JsonMatch] = (),
 ) -> ResponseExpectation:
+    """Declare a matching network-response expectation for Until.
+
+    Args:
+        url: Exact full response URL.
+        method: Optional HTTP method filter.
+        status: Optional expected status from 100 through 599.
+        json_matches: At most 32 pointer/value comparisons, copied into an immutable
+            tuple.
+
+    Returns:
+        ResponseExpectation; this does not send an HTTP request.
+    """
     return ResponseExpectation(
         url=url,
         method=method,
@@ -1093,12 +1698,30 @@ def response(
 
 
 def ax(name: str, *, role: str | None = None) -> AccessibilityExpectation:
+    """Declare an accessibility expectation for Until.
+
+    Args:
+        name: Nonblank accessible name bounded to 4,096 UTF-8 bytes.
+        role: Optional nonblank role bounded to 128 UTF-8 bytes.
+
+    Returns:
+        AccessibilityExpectation based on browser accessibility evidence.
+    """
     return AccessibilityExpectation(name=name, role=role)
 
 
 def all_of(
     expectations: Iterable[UntilExpectation | LocalRustAssertion],
 ) -> AllExpectation:
+    """Combine expectations so every child must be satisfied.
+
+    Args:
+        expectations: Nonempty iterable copied into a tuple; local assertions retain
+            bindings.
+
+    Returns:
+        AllExpectation; Until validates tree size and depth.
+    """
     return AllExpectation(
         expectations=tuple(
             item._as_expectation() if isinstance(item, LocalRustAssertion) else item
@@ -1112,6 +1735,18 @@ def until(
     *,
     trigger: Step | None = None,
 ) -> UntilStep:
+    """Declare an expectation wait around an optional one-shot trigger.
+
+    The trigger and wait share the execution deadline. Cancellation preserves execution
+    facts and does not roll back effects.
+
+    Args:
+        expectation: Typed expectation or locally bound Contract assertion.
+        trigger: Optional Click, EnterText, or JavaScript trigger.
+
+    Returns:
+        UntilStep; observation begins before trigger dispatch.
+    """
     if isinstance(expectation, LocalRustAssertion):
         return expectation.until(trigger=trigger)
     return UntilStep(trigger=trigger, expectation=expectation)
@@ -1119,7 +1754,13 @@ def until(
 
 @dataclass(frozen=True, slots=True)
 class Check:
-    """A synchronous local predicate with a short diagnostic name."""
+    """Name a synchronous local predicate for Contract assertions.
+
+    Attributes:
+        name: Short diagnostic name recorded when a check fails.
+        predicate: Synchronous callable evaluating a validated record and returning a
+            boolean.
+    """
 
     name: str
     predicate: Callable[[Any], bool]
@@ -1472,6 +2113,10 @@ class Session:
     and explicit tab creation are not exposed through this first pass.
     Omitted settings inherit the bound policy's browser mode; explicit settings
     retain their configured mode and must agree with that policy.
+
+    Attributes:
+        policy: Policy serialized when acquisition or operations require it.
+        settings: Optional retained Session settings, or None to use native defaults.
     """
 
     def __init__(
@@ -1481,6 +2126,16 @@ class Session:
         *,
         cancellation: CancellationToken | None = None,
     ) -> None:
+        """Prepare a Session owner without acquiring a browser yet.
+
+        Args:
+            policy: Policy serialized on acquisition; None creates the default policy.
+            settings: Optional Session settings, with mode agreeing with the policy.
+            cancellation: Default cancellation token for acquisition and operations.
+
+        Raises:
+            TypeError: An argument has the wrong SDK type.
+        """
         if policy is not None and not isinstance(policy, Policy):
             raise TypeError("session policy must be a Yosoi Policy")
         if settings is not None and not isinstance(settings, SessionPolicy):
@@ -1495,6 +2150,11 @@ class Session:
         self._close_task: asyncio.Task[None] | None = None
 
     async def __aenter__(self) -> Session:
+        """Acquire the native browser Session and return this owner.
+
+        Raises:
+            BrowserError: This Session is already acquired or acquisition fails.
+        """
         if self._handle is not None:
             raise BrowserError("browser Session is already acquired")
         self._handle = await _native.acquire_browser_session(
@@ -1510,6 +2170,19 @@ class Session:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> Literal[False]:
+        """Close the owned Session and preserve the context's original exception.
+
+        Args:
+            exc_type: Exception type supplied by async context management.
+            exc: Original operation exception, if any.
+            traceback: Original traceback supplied by async context management.
+
+        Returns:
+            False so successful cleanup does not suppress the original exception.
+
+        Raises:
+            BrowserCleanupError: Cleanup fails while an original exception is active.
+        """
         try:
             await self.close()
         except BaseException as cleanup_error:
@@ -1520,9 +2193,18 @@ class Session:
 
     @property
     def closed(self) -> bool:
+        """Return whether no native handle is held, including before first entry."""
         return self._handle is None
 
     def work(self) -> Work:
+        """Create a lazy Work wrapper for this acquired Session.
+
+        Returns:
+            Caller-owned wrapper; control is acquired on entry or its first operation.
+
+        Raises:
+            BrowserError: The Session has not been entered or is closed.
+        """
         if self._handle is None:
             raise BrowserError("enter the browser Session before creating Work")
         return Work(self)
@@ -1545,6 +2227,20 @@ class Session:
         policy: Policy | None = None,
         cancellation: CancellationToken | None = None,
     ) -> FlowOutcome:
+        """Run a Flow with temporary Work ownership, retaining this Session.
+
+        Args:
+            flow: Declaration executed on this Session's leased tab.
+            policy: Optional operation policy; None inherits the Session policy.
+            cancellation: Explicit token, or the Session token when omitted.
+
+        Returns:
+            Flow outcome after the temporary Work lease is released.
+
+        Raises:
+            BrowserError: Work acquisition or native invocation fails.
+            BrowserCleanupError: Lease cleanup fails after an operation exception.
+        """
         return await self.run(flow, policy=policy, cancellation=cancellation)
 
     async def send(
@@ -1568,6 +2264,16 @@ class Session:
         return RequestResponse._from_native(response)
 
     async def close(self) -> None:
+        """Await owned Session cleanup, then clear its native handle.
+
+        Repeated calls on a closed Session are harmless. Cleanup settlement is shielded
+        from caller task cancellation; cancellation is re-raised after settlement.
+        Closing does not undo already dispatched browser operations.
+
+        Raises:
+            BrowserError: Native cleanup fails; retained state is not claimed closed.
+            BrowserCleanupError: Cleanup fails while caller cancellation is pending.
+        """
         async with self._close_lock:
             handle = self._handle
             if handle is None:
@@ -1597,6 +2303,13 @@ class Work:
     """
 
     def __init__(self, session: Session) -> None:
+        """Prepare a lazy control lease tied to a caller-owned Session.
+
+        Args:
+            session: Session whose tab authority will be borrowed on acquisition.
+
+        No control is acquired until context entry or the first operation.
+        """
         self._session = session
         self._handle: Any | None = None
         self._released = False
@@ -1605,6 +2318,12 @@ class Work:
         self._release_task: asyncio.Task[None] | None = None
 
     async def __aenter__(self) -> Work:
+        """Acquire serialized Work control and return this wrapper.
+
+        Raises:
+            BrowserError: Work was released, the Session is closed, or acquisition
+                fails.
+        """
         async with self._operation_lock:
             await self._acquire()
         return self
@@ -1615,6 +2334,19 @@ class Work:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> Literal[False]:
+        """Release control without closing the caller-owned Session.
+
+        Args:
+            exc_type: Exception type supplied by async context management.
+            exc: Original operation exception, if any.
+            traceback: Original traceback supplied by async context management.
+
+        Returns:
+            False so successful release does not suppress an original exception.
+
+        Raises:
+            BrowserCleanupError: Release fails while an original exception is active.
+        """
         try:
             await self.release()
         except BaseException as cleanup_error:
@@ -1625,6 +2357,7 @@ class Work:
 
     @property
     def released(self) -> bool:
+        """Return whether release has settled; a released wrapper cannot reacquire."""
         return self._released
 
     async def run(
@@ -1634,6 +2367,16 @@ class Work:
         policy: Policy | None = None,
         cancellation: CancellationToken | None = None,
     ) -> FlowOutcome:
+        """Invoke a Flow through this retained Work lease.
+
+        Args:
+            flow: Declaration executed on the borrowed tab.
+            policy: Optional operation policy; None inherits the Session policy.
+            cancellation: Explicit token, or the Session token when omitted.
+
+        Returns:
+            Flow outcome; this method retains the Work lease and owning Session.
+        """
         return await self.invoke(flow, policy=policy, cancellation=cancellation)
 
     async def invoke(
@@ -1643,6 +2386,21 @@ class Work:
         policy: Policy | None = None,
         cancellation: CancellationToken | None = None,
     ) -> FlowOutcome:
+        """Execute serialized Flow work without releasing caller-owned control.
+
+        Args:
+            flow: Declaration executed after lazy Work acquisition if needed.
+            policy: Optional operation policy; None inherits the Session policy.
+            cancellation: Explicit token, or the Session token when omitted.
+
+        Returns:
+            Outcome retaining partial and unknown facts. Cancellation does not roll
+            back dispatched effects or close the owning Session.
+
+        Raises:
+            BrowserError: Work is unavailable or native invocation fails.
+            FlowInvocationError: Native failure carries partial or cleanup evidence.
+        """
         return await _invoke_flow(flow, policy, lease=self, cancellation=cancellation)
 
     async def send(
@@ -1689,6 +2447,16 @@ class Work:
             return await handle.invoke_flow(flow_json, policy_json, token, assertions)
 
     async def release(self) -> None:
+        """Await native control release while retaining the owning Session.
+
+        Repeated calls are harmless. The wrapper becomes permanently released after
+        settlement. Caller task cancellation is shielded during release and re-raised
+        afterward; release does not undo dispatched effects.
+
+        Raises:
+            BrowserError: Native release fails; settlement is not claimed successful.
+            BrowserCleanupError: Release fails while caller cancellation is pending.
+        """
         async with self._operation_lock:
             if self._released:
                 return

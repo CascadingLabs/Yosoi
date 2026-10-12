@@ -15,12 +15,18 @@ pub(super) const MAX_ACCESSIBILITY_NODES: u64 = 100_000;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AccessibilityCompleteness {
+    /// Snapshot coverage supports absence claims within the declared accessibility evidence scope.
     Complete,
+    /// Known missing nodes or evidence prevent an unqualified absence claim.
     Partial {
+        /// Nonblank structural explanation of the evidence loss.
         reason_code: String,
+        /// Positive omitted-node count when known, absent when not quantified.
         lost_items: Option<u64>,
     },
+    /// Snapshot completeness is unestablished and cannot support complete absence claims.
     Unknown {
+        /// Nonblank structural explanation of unresolved evidence coverage.
         reason_code: String,
     },
 }

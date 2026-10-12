@@ -30,8 +30,9 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 - Preview with `cargo xtask bump-version 0.2.0 --dry-run`, then run `cargo xtask bump-version 0.2.0` to update in place. Use the actual chosen version in both commands.
 - A real run validates the metadata and stages complete replacements beside the originals before asking `Apply these changes? [y/N]`. This checks file preparation, not compilation, dependency resolution, or release test results. Answer `y` or `yes` to apply; `n`, `no`, an empty answer, or end-of-input cancels. Use `-y` or `--yes` for scripting (for example `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 -y`); staging and validation still run. `--dry-run` and `--check` never prompt or stage files and cannot be combined with `-y`.
 - Applying rechecks the originals for concurrent edits, preserves permissions, and replaces each file with an atomic rename. Ordinary replacement failures restore already updated files. The entire multi-file update is not atomic across process termination; inspect the diff and rerun the consistency check after an interruption.
-- The command synchronizes `[workspace.package].version`, every first-party package under `crates/`, `benchmarks/`, `xtask/`, and `fuzz/`, local dependency requirements (including renamed and target-specific dependencies), `Cargo.lock`, `fuzz/Cargo.lock`, and `CITATION.cff`. Packages listed in `[workspace.metadata.yosoi-release].independent-version-packages` retain their own explicit versions and exact dependency pins; the Contract derive helper is independently versioned. Vendored Chromium manifests and dependency versions also retain their independent identities. Synchronized SDK dependency requirements use `=VERSION` so beta dependencies resolve to the chosen iteration.
+- The command synchronizes `[workspace.package].version`, every first-party package under `crates/`, `benchmarks/`, `xtask/`, and `fuzz/`, local dependency requirements (including renamed and target-specific dependencies), `Cargo.lock`, `fuzz/Cargo.lock`, and `CITATION.cff`. The Contract derive helper shares the workspace version. Vendored Chromium manifests and dependency versions retain their independent upstream identities. Synchronized SDK dependency requirements use `=VERSION` so beta dependencies resolve to the chosen iteration.
 - Verify with `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 --check` (fails on version or date drift), using the chosen release version and date. Review the diff and run the focused release checks. The command does not build product crates, resolve dependencies, create tags, or publish releases. Keep existing unrelated changes intact.
+- Browser evidence resolves its SDK identity from `[workspace.package].version`, including separate Cargo and Python RC spellings. Do not hard-code a release version in the behavior contract or its verifier; the effective contract digest remains bound to the selected source version.
 - Set `CITATION.cff`'s `date-released` through `cargo xtask bump-version 0.2.0 --date-released 2026-10-04`, using the actual release version and date. The date must be a valid calendar date in `YYYY-MM-DD` format. Combine this option with `--dry-run` to preview or `--check` to verify both version and date; omit it to preserve the existing date. The CFF schema version stays unchanged. Example versions in docs, historical evidence, and generated reference artifacts are not release metadata and are not rewritten.
 
 
@@ -41,6 +42,53 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 - Keep the reviewed Markdown under `docs/public/releases/` as the canonical notes. Preserve the imported GitHub change references, contributor mentions, and first-time contributor recognition. Remove editorial placeholders and mark `draft: false` only after review.
 - Run `cargo xtask release check VERSION` after synchronizing versions and the citation date. It verifies finalized notes, imported attribution, and the existing release metadata consistency contract. `body VERSION` exports validated Markdown; `history` refreshes the docs index from finalized entries and excludes drafts.
 - These commands do not tag, publish, build release binaries, upload to registries, or manage nightly artifacts. Only the explicitly requested `fetch` command accesses GitHub, read-only, with an explicit comparison range.
+
+# Public API documentation
+
+- Write meaningful Rust `///` comments for every publicly reachable SDK item,
+  including definitions re-exported from private modules, enum variants, fields,
+  associated functions, and methods. Private implementation details and vendored
+  code are outside this requirement. Keep `#![deny(missing_docs)]` enabled in
+  the SDK and Contract derive crate, and document generated public items in
+  the derive expansion. Exceptions must narrowly identify generated or
+  third-party code and explain their provenance.
+- Document public Python modules, classes, functions, constructors, and methods
+  with Google-style docstrings. Explain model fields in `Attributes:` sections
+  or Pydantic `Field(description=...)`; Ruff cannot check field explanations.
+  Keep Ruff D enforcement with the Google convention enabled for
+  `python/yosoi`. Describe public value/type aliases with adjacent source
+  docstrings, and preserve defining prose when aliases re-export an API.
+- Explain behavior and relevant inputs, outputs, errors, ownership, cancellation,
+  completeness, and limitations. Do not substitute the symbol's name for an
+  explanation. Completed operations can still contain unsuccessful attempts;
+  cancellation documentation must match what execution observes and preserves.
+- Keep descriptions in source and retain them through reference generation.
+  Never invent frontend descriptions to hide missing source documentation.
+- Required checks: `CARGO_BUILD_JOBS=1 cargo check -p yosoi --lib --all-features`,
+  `uv run --no-sync ruff check python/yosoi`, and
+  `node --test scripts/docs/reference/reference.test.mjs`, and
+  `uv run --no-sync python -m unittest discover -s scripts/docs/tests -p test_python_reference.py`.
+  Changes to Contract derive expansion also require
+  `CARGO_BUILD_JOBS=1 cargo check -p yosoi-contracts-renamed-dependency-fixture --lib`.
+  Audit model field descriptions separately from Ruff. Regenerate references
+  from the working source and
+  inspect representative enum variants and Python methods in actual output.
+  Report absent generators and remaining gaps explicitly; lint success alone
+  does not establish useful prose or reference coverage.
+- Review locally through the existing CascadingLabsFE pipeline with
+  `YOSOI_REPO_ROOT` set to this Yosoi workspace's absolute path. Verify the
+  server's working directory, selected source, and served HTML. Local previews,
+  hosted CI, and deployed documentation are separate evidence.
+
+# Documentation
+
+## Local documentation review
+
+- Author public documentation in this Yosoi workspace's `docs/public`; follow `docs/public/AGENTS.md`. CascadingLabsFE renders it through the existing Astro/Starlight pipeline.
+- Run the docs server from the active CascadingLabsFE workspace, with `YOSOI_REPO_ROOT` set to the absolute path of the Yosoi workspace being reviewed: `YOSOI_REPO_ROOT=/absolute/path/to/Yosoi bun scripts/docs/dev.mjs --port 4321`. Keep the requested port and stop only its existing docs watcher/server before replacing it. Do not replace unrelated local servers.
+- The watcher prepares Markdown and navigation from that source workspace and restarts Astro after successful preparation. Verify the server's working directory, selected source, and the actual HTML at `http://127.0.0.1:4321/yosoi/`; a running process alone is not proof that the current changes are served.
+- Reuse a verified API artifact from the intended source commit for Markdown-only changes. Never silently select an older `docs-sources.local.json` override, compile Rust for a prose edit, or hand-edit `.generated` output. If no matching artifact is available, report the gap before choosing a broader regeneration.
+- Production builds consume immutable published Yosoi bundles; local working-tree previews are separate evidence and are not deployed changes.
 
 # Linear
 

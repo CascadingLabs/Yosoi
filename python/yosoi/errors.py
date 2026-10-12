@@ -41,7 +41,18 @@ from ._native import (
 
 @dataclass(frozen=True, slots=True)
 class RustErrorDetails:
-    """Exact Rust error identity and structured payload attached by the binding."""
+    """Exact Rust error identity and structured payload attached by the binding.
+
+    Values returned by rust_error_details contain recursively frozen payloads.
+    The dataclass prevents attribute reassignment; constructing it directly does
+    not freeze a caller-supplied mapping.
+
+    Attributes:
+        rust_type: Rust type name recorded by the native binding.
+        variant: Public enum variant name, or None for an opaque error wrapper.
+        details: Structured variant payload, without replacing the exception.
+        source_chain: Display messages from nested Rust source errors, in order.
+    """
 
     rust_type: str
     variant: str | None
@@ -64,6 +75,13 @@ def rust_error_details(error: BaseException) -> RustErrorDetails | None:
     validator exception in each error context. This accessor follows those
     contexts and Python's explicit cause chain to find the original native
     exception without replacing the raised exception.
+
+    Args:
+        error: Exception whose native details or nested validation causes to inspect.
+
+    Returns:
+        The first valid native metadata record found, with recursively frozen
+        mappings and sequences, or None if no such record is reachable.
     """
     pending = [error]
     visited: set[int] = set()

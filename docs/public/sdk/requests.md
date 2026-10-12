@@ -8,6 +8,10 @@ order: 2
 
 A request describes a URL to acquire. Creating it performs no I/O. Sending it validates the target and Policy, then runs the selected acquisitions.
 
+## Example: requests
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -26,6 +30,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+`validate` checks configuration before I/O. `send` acquires the target. Inspect each attempt's state even when the Response itself was returned successfully.
+
+### Python
+
+```python
+import asyncio
+import yosoi as ys
+
+async def main():
+    policy = ys.Policy()
+    request = ys.request.new("https://example.org/").bind(policy)
+    request.check()
+    response = await request.send()
+    print("Target:", response.requested_target)
+    for attempt in response.attempts:
+        print(attempt.acquisition, attempt.state)
+
+asyncio.run(main())
+```
+
+`check` validates the authored request without I/O. The request is asynchronous. The Policy is captured when bound. Each returned attempt exposes its acquisition and state as fields.
+
+## Walk through the result
 
 `validate()` is useful for checking configuration before work begins. `send()` performs preparation too, so a separate validation call is optional.
 

@@ -1,44 +1,43 @@
 ---
-title: How Yosoi fits together
-description: Follow data from discovery through acquisition, location, and validation.
+title: 'Concepts'
+description: 'Follow evidence through acquisition, location, validation and browser work.'
 order: 0
 ---
 
-# How Yosoi fits together
+# Concepts
 
-Yosoi separates finding a URL, acquiring its content, selecting evidence, and validating a record. Use the stages you need. A local JSON file can start at Documents; a known URL can start at Requests.
+A useful task has an input, some work, and a result you can check. Yosoi keeps evidence and outcomes explicit.
 
-```text
-Map → URLs → Request → Documents → Locator Plan → Findings → Contract → Records
-             Policy bounds acquisition, parsing, location, and discovery.
-```
+1. Find a candidate URL, or begin with a URL you already know.
+2. Acquire its Document, or begin with local bytes.
+3. Locate the evidence needed for your task.
+4. Extract and validate a typed record when the task needs one.
+5. Check the intended result before using it downstream.
 
-## Discovery
+Begin at the stage your task needs. A local file needs no discovery or Request.
 
-[Map](../sdk/map.md) finds URLs within a declared scope. It records where each URL came from and whether it was inspected. An inventory entry is a candidate, not proof that a page is reachable or useful.
+## Evidence and records
 
-## Acquisition
+A [Document](../sdk/documents.md) has immutable data, an identity and a representation. Source HTML, rendered DOM and accessibility trees are different evidence.
 
-[Requests](../sdk/requests.md) run the acquisitions chosen by Policy. Direct HTTP and browser acquisition can produce different evidence for the same URL. A [response](../sdk/responses.md) preserves each attempt and each requested document's outcome.
+A [Plan](../sdk/locators.md) names values to locate. Findings preserve where each value came from. Regions keep fields together in repeated records.
 
-## Documents
+A [Contract](../sdk/contracts.md) describes a typed record. Extraction gathers candidates; validation checks cardinality, conversion and supported constraints. Valid records and rejected candidates remain distinguishable.
 
-A [Document](../sdk/documents.md) is immutable data with an identity and representation profile. Source HTML, rendered DOM, and an accessibility tree are distinct documents even when they describe the same page.
+Rust and Python author these inputs differently, but both execute the shared operations through Rust.
 
-## Location
+## Acquisition and discovery
 
-A [Plan](../sdk/locators.md) gives names to selected outputs. Its findings keep the value, document identity, native coordinate, repeated-region lineage, and completeness. This lets you trace a record back to its evidence.
+A [Request](../sdk/requests.md) acquires a URL under Policy. Its Response can contain failed acquisitions or partial documents.
 
-## Contracts
+[Map](../sdk/map.md) inventories scoped URLs. [Search](../sdk/search.md) gets provider candidates. Finding a URL does not prove that its document was acquired.
 
-A [Contract](../sdk/contracts.md) describes the typed record you want. Extraction groups findings into candidates. Validation checks those candidates and returns valid records alongside issues. A field's Rust type determines both its conversion and cardinality.
+## Browser work
 
-## Policy
+[Actions and Flows](actions-and-flows.md) describe the recipe. [Sessions and ownership](sessions-and-ownership.md) explain browser lifetime and tab authority.
 
-[Policy](../sdk/policy.md) controls the work an operation may do. A snapshot records the validated choices used for a run. The same URL and Policy can still return different remote content at different times.
+## Policy and outcomes
 
-## Completion and completeness
+[Policy](../sdk/policy.md) bounds work and resource use. [Outcomes](outcomes.md) distinguish operation completion, evidence completeness and business success.
 
-Finishing an operation does not prove that its evidence is complete. An acquisition can finish with a partial document, a locator can return some findings while another output is absent, and Map can exhaust its queue without observing every site URL.
-
-Keep the typed outcomes through your workflow. They explain the difference between missing data, incomplete evidence, and work that failed.
+Continue with [SDK](../sdk/index.md) or a [Cookbook](../cookbook/index.md) task.

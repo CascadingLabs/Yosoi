@@ -13,6 +13,7 @@ import unittest
 import zipfile
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 from xml.etree import ElementTree
 
 SCRIPT = Path(__file__).with_name("browser_evidence.py")
@@ -22,6 +23,8 @@ if SPEC is None or SPEC.loader is None:
 browser_evidence = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = browser_evidence
 SPEC.loader.exec_module(browser_evidence)
+
+SDK_VERSION = browser_evidence._contract()[0]["sdkVersion"]
 
 
 def _sha(value: bytes) -> str:
@@ -74,9 +77,11 @@ def _synthetic_wheel(
     init_bytes = b"# installed wheel init\n"
     init_member = "yosoi/__init__.py"
     native_member = "yosoi/_native.cpython-314-x86_64-linux-gnu.so"
-    metadata_member = "yosoi-0.2.0.dist-info/METADATA"
-    record_member = "yosoi-0.2.0.dist-info/RECORD"
-    metadata_bytes = b"Metadata-Version: 2.4\nName: yosoi\nVersion: 0.2.0\n\n"
+    metadata_member = f"yosoi-{SDK_VERSION}.dist-info/METADATA"
+    record_member = f"yosoi-{SDK_VERSION}.dist-info/RECORD"
+    metadata_bytes = (
+        f"Metadata-Version: 2.4\nName: yosoi\nVersion: {SDK_VERSION}\n\n".encode()
+    )
     rows = [
         [init_member, f"sha256={_record_digest(init_bytes)}", str(len(init_bytes))],
         [
@@ -93,7 +98,7 @@ def _synthetic_wheel(
     ]
     record_output = StringIO()
     csv.writer(record_output).writerows(rows)
-    wheel_path = root / "yosoi-0.2.0-cp314-cp314-linux_x86_64.whl"
+    wheel_path = root / f"yosoi-{SDK_VERSION}-cp314-cp314-linux_x86_64.whl"
     with zipfile.ZipFile(wheel_path, "w") as archive:
         archive.writestr(init_member, init_bytes)
         archive.writestr(native_member, native_bytes)
@@ -141,8 +146,8 @@ def _valid_report(
             "nativeExtensionSha256": wheel_info["nativeExtensionSha256"],
         },
         "installedPackage": {
-            "version": "0.2.0",
-            "nativeVersion": "0.2.0",
+            "version": SDK_VERSION,
+            "nativeVersion": contract["nativeVersion"],
             "pythonInit": {
                 "path": str(init_path),
                 "sha256": wheel_info["pythonInitSha256"],
@@ -175,6 +180,36 @@ def _valid_report(
 
 
 class BrowserEvidenceTests(unittest.TestCase):
+    def test_contract_resolves_patch_and_rc_versions_from_workspace(self) -> None:
+        digests = set()
+        for version in ("0.2.1", "0.2.2", "0.2.1-rc.2"):
+            with (
+                self.subTest(version=version),
+                tempfile.TemporaryDirectory() as temporary,
+            ):
+                root = Path(temporary)
+                (root / "Cargo.toml").write_text(
+                    f'[workspace.package]\nversion = "{version}"\n'
+                )
+                with patch.object(browser_evidence, "ROOT", root):
+                    contract, digest = browser_evidence._contract()
+                self.assertEqual(contract["sdkVersion"], version.replace("-rc.", "rc"))
+                self.assertEqual(contract["nativeVersion"], version)
+                digests.add(digest)
+        self.assertEqual(len(digests), 3)
+
+    def test_contract_rejects_a_stale_explicit_sdk_version(self) -> None:
+        contract = json.loads(browser_evidence.CONTRACT_PATH.read_text())
+        contract["sdkVersion"] = "0.2.0"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "contract.json"
+            path.write_text(json.dumps(contract))
+            with self.assertRaisesRegex(
+                browser_evidence.BrowserEvidenceError,
+                "unsupported browser behavior contract",
+            ):
+                browser_evidence._contract(path)
+
     def test_passing_junit_names_map_to_contract_stories_without_fake_comparisons(
         self,
     ) -> None:
@@ -295,7 +330,7 @@ class BrowserEvidenceTests(unittest.TestCase):
             )
             wheel, members = browser_evidence._read_wheel_members(wheel_path)
 
-        self.assertEqual(wheel["version"], "0.2.0")
+        self.assertEqual(wheel["version"], SDK_VERSION)
         self.assertEqual(
             wheel["nativeMember"], "yosoi/_native.cpython-314-x86_64-linux-gnu.so"
         )
@@ -308,7 +343,7 @@ class BrowserEvidenceTests(unittest.TestCase):
             wheel_path, _init_path, _native_path, _wheel_info = _synthetic_wheel(root)
             with zipfile.ZipFile(wheel_path) as archive:
                 members = {name: archive.read(name) for name in archive.namelist()}
-            record_name = "yosoi-0.2.0.dist-info/RECORD"
+            record_name = f"yosoi-{SDK_VERSION}.dist-info/RECORD"
             rows = list(csv.reader(members[record_name].decode("utf-8").splitlines()))
             native_row = next(
                 row for row in rows if row[0].startswith("yosoi/_native.")

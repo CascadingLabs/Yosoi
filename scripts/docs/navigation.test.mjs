@@ -6,6 +6,7 @@ import {
   resolveNavigation,
 } from './navigation.mjs';
 import * as jsonc from 'jsonc-parser';
+import { authoredPages } from './content.mjs';
 const parseNavigationMetadata = (source) => decode(source, jsonc);
 const page = (file, route, title, order = 0) => ({
   file,
@@ -32,6 +33,107 @@ const metadata = {
     { title: 'Reference', generated: 'rust-api' },
   ],
 };
+
+test('Python symbol kinds reach navigation without treating overview pages as symbols', () => {
+  const routes = {
+    '/python-api': 'Python reference',
+    '/python-api/browser/types/flow': 'Flow',
+    '/python-api/browser/functions/navigate': 'navigate',
+    '/python-api/browser/aliases/positive-u64': 'PositiveU64',
+    '/python-api/browser/constants/default-timeout': 'DEFAULT_TIMEOUT',
+  };
+  const inventory = authoredPages({
+    pages: Object.fromEntries(
+      Object.entries(routes).map(([route, title]) => [
+        route,
+        {
+          file: `${route.slice(1)}.md`,
+          title,
+          order: 0,
+        },
+      ]),
+    ),
+  });
+  const tree = resolveNavigation(inventory, {
+    schemaVersion: 1,
+    sections: [{ title: 'Python', directory: 'python-api' }],
+  });
+  const nodes = (node) => [node, ...node.children.flatMap(nodes)];
+  const symbols = nodes(tree).filter((node) => node.kind);
+  assert.deepEqual(Object.fromEntries(symbols.map((node) => [node.title, node.kind])), {
+    PositiveU64: 'type_alias',
+    DEFAULT_TIMEOUT: 'constant',
+    navigate: 'function',
+    Flow: 'class',
+  });
+  assert.equal(tree.children[0].kind, undefined);
+  assert.ok(symbols.every((node) => node.children.length === 0));
+});
+
+test('Reference nests Rust and Python without allowing pages to be assigned twice', () => {
+  const python = page('python-api/index.md', 'python-api', 'Python reference');
+  const inventory = [...pages, python];
+  const reference = {
+    title: 'Reference',
+    sections: [
+      { title: 'Rust', generated: 'rust-api' },
+      { title: 'Python', directory: 'python-api' },
+    ],
+  };
+  const tree = resolveNavigation(inventory, { schemaVersion: 1, sections: [reference] });
+  assert.deepEqual(
+    tree.children.map((node) => node.title),
+    ['Reference'],
+  );
+  assert.deepEqual(
+    tree.children[0].children.map((node) => node.title),
+    ['Rust', 'Python'],
+  );
+  assert.equal(tree.children[0].children[0].id, 'api');
+  assert.equal(tree.children[0].children[1].id, 'python-api');
+  assert.throws(
+    () =>
+      resolveNavigation(inventory, {
+        schemaVersion: 1,
+        sections: [reference, { title: 'Again', pages: ['python-api/index.md'] }],
+      }),
+    /assigned more than once/,
+  );
+});
+
+test('release navigation hides candidates and orders final versions numerically newest first', () => {
+  const releases = [
+    page('releases/index.md', 'releases', 'Release notes'),
+    ...['0.1.0', '0.1.0-rc.8', '0.10.0', '0.2.0', '0.1.2', '0.3.0-rc.1'].map((version) => ({
+      ...page(
+        `releases/${version.replaceAll('.', '-')}.md`,
+        `releases/${version.replaceAll('.', '-')}`,
+        `Yosoi ${version} release notes`,
+      ),
+      version,
+    })),
+  ];
+  const tree = resolveNavigation(releases, {
+    schemaVersion: 1,
+    sections: [{ title: 'Release notes', directory: 'releases', order: ['index.md'] }],
+  });
+  assert.equal(tree.children[0].id, 'releases');
+  assert.deepEqual(
+    tree.children[0].children.flatMap((node) => node.children.map((child) => child.route)),
+    ['releases/0-10-0', 'releases/0-2-0', 'releases/0-1-2', 'releases/0-1-0'],
+  );
+  assert.deepEqual(
+    tree.children[0].children.map((node) => node.title),
+    ['0.10.x', '0.2.x', '0.1.x'],
+  );
+  assert.deepEqual(
+    tree.children[0].children[2].children.map((node) => node.title),
+    ['0.1.2', '0.1.0'],
+  );
+  assert.equal(tree.children[0].children[2].collapsed, true);
+  assert.equal(releases[1].title, 'Yosoi 0.1.0 release notes');
+  assert.equal(releases.length, 7);
+});
 
 test('comments and trailing commas can remove Guides and Reference from a human-edited navigation file', () => {
   const metadata = parseNavigationMetadata(`{
@@ -211,19 +313,23 @@ test('generated reference uses public namespaces rather than route kind folders'
   const tree = referenceNavigation(references);
   assert.deepEqual(
     tree.children.map((node) => node.title),
-    ['Locators'],
+    ['Modules'],
   );
   assert.deepEqual(
-    tree.children[0].children.map((node) => node.title),
+    tree.children[0].children[0].children[0].children.map((node) => node.title),
     ['Alpha', 'Zeta'],
   );
-  assert.equal(tree.children[0].children[0].route, 'api/yosoi/locators/enum/alpha');
+  assert.equal(tree.children[0].children[0].children[0].title, 'Types');
+  assert.equal(
+    tree.children[0].children[0].children[0].children[0].route,
+    'api/yosoi/locators/enum/alpha',
+  );
   const configured = resolveNavigation(references, {
     schemaVersion: 1,
     sections: [{ title: 'Reference', generated: 'rust-api' }],
   });
   assert.deepEqual(
     configured.children[0].children.map((node) => node.title),
-    ['Locators'],
+    ['Modules'],
   );
 });

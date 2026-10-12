@@ -1,0 +1,8 @@
+{
+  "generated_source": "mise ~/.config/mise/config.toml tools: gh@2.101.0\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.2.0...v0.2.1\n",
+  "generated_source_sha256": "3841fa0edeb11d51cdc59482939ef575d26eddb0b304b032ba28499f260abdc9",
+  "github_notes_file": "github-notes.md",
+  "previous": "0.2.0",
+  "schema": 1,
+  "version": "0.2.1"
+}

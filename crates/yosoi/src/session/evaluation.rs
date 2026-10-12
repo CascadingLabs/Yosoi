@@ -7,11 +7,19 @@ use crate::{
 };
 
 impl Work {
+    /// Executes explicitly permitted JavaScript in the current main frame and world.
+    /// Returns a bounded effect receipt. Post-dispatch errors or oversized
+    /// results can leave effects unknown; permission, input, and authority
+    /// failures return [`SessionError`]. Confirm business effects separately.
     pub async fn evaluate(&self, source: &str) -> Result<OperationReceipt, SessionError> {
         self.evaluate_targeted_kind(&JsTarget::default(), source, "evaluate")
             .await
     }
 
+    /// Executes source after uniquely resolving the frame and checking any epoch precondition.
+    /// Only the main world is currently supported. Explicit arbitrary-script
+    /// permission is required. Returns a bounded receipt or [`SessionError`],
+    /// preserving possible post-dispatch uncertainty rather than retrying it.
     pub async fn evaluate_targeted(
         &self,
         target: &JsTarget,
@@ -21,6 +29,9 @@ impl Work {
             .await
     }
 
+    /// Executes retained construction-time file bytes on the current main frame and world.
+    /// No live file read occurs here. Returns a bounded receipt or [`SessionError`]
+    /// for invalid snapshots, permissions, authority, or dispatch uncertainty.
     pub async fn evaluate_file(
         &self,
         snapshot: &JavaScriptSourceSnapshot,
@@ -29,6 +40,10 @@ impl Work {
             .await
     }
 
+    /// Executes a validated file snapshot in one uniquely selected current frame.
+    /// Changed disk contents do not replace captured bytes. Only the main world
+    /// is supported. Returns a bounded receipt or [`SessionError`]; possible
+    /// dispatch must not be interpreted as proof of no effect.
     pub async fn evaluate_file_targeted(
         &self,
         target: &JsTarget,
@@ -44,6 +59,10 @@ impl Work {
             .await
     }
 
+    /// Executes a retained local module bundle on the current main frame and world.
+    /// Uses captured bytes instead of rereading files and requires arbitrary-script
+    /// permission. Returns a bounded receipt or [`SessionError`], retaining
+    /// post-dispatch uncertainty instead of silently retrying.
     pub async fn evaluate_module(
         &self,
         bundle: &JavaScriptModuleBundle,
@@ -52,6 +71,10 @@ impl Work {
             .await
     }
 
+    /// Executes a retained local module graph in one uniquely selected current frame.
+    /// Checks bundle structure, input bounds, permission, and any epoch
+    /// precondition before dispatch. Isolated worlds are currently unsupported.
+    /// Returns a bounded effect receipt or [`SessionError`]; no effect rollback is implied.
     pub async fn evaluate_module_targeted(
         &self,
         target: &JsTarget,

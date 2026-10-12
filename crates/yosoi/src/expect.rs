@@ -19,29 +19,44 @@ pub const MAX_RESPONSE_JSON_MATCHES: usize = 32;
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Expectation {
     /// A typed DOM condition, checked against the current document.
-    Condition { condition: Condition },
+    Condition {
+        /// One current-document DOM condition to confirm within the retained scope.
+        condition: Condition,
+    },
     /// A local Rust Contract assertion; executable code is bound in memory only.
-    Contract { assertion: LocalAssertion },
+    Contract {
+        /// Bounded saved descriptor whose executable evaluator must be bound explicitly.
+        assertion: LocalAssertion,
+    },
     /// An exact accessible name, optionally constrained to a role.
     Accessibility {
+        /// Exact accessible name expected in the supported current accessibility snapshot.
         name: String,
+        /// Optional accessibility role constraint, absent when any supported role is acceptable.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         role: Option<String>,
     },
     /// A response matching the full URL and any supplied response fields.
     Response {
+        /// Full response URL to match, not an implicit prefix or substring selector.
         url: String,
+        /// Exact HTTP method constraint when supplied.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         method: Option<String>,
+        /// Exact HTTP response status constraint when supplied.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         status: Option<u16>,
+        /// Bounded JSON Pointer/value equality checks against the retained response body.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         json: Vec<JsonMatch>,
     },
     /// Every clause must be confirmed in the same result cycle. Each source
     /// keeps its own evidence and timestamp; a response may be retained from
     /// earlier in the wait while DOM and accessibility evidence is fresh.
-    All { expectations: Vec<Self> },
+    All {
+        /// Authored conjunction leaves, validated against the maximum expectation count.
+        expectations: Vec<Self>,
+    },
 }
 
 impl Expectation {

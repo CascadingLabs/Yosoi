@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "yosoi-python-browser-behavior-contract",
-  "sdkVersion": "0.2.0",
+  "sdkVersionSource": "workspace.package.version",
   "testModule": "python/tests/test_browser_beta.py",
   "browser": {
     "distribution": "Google Chrome Stable",

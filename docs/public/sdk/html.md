@@ -8,6 +8,10 @@ order: 7
 
 Use CSS for familiar element selection. The same plan can inspect source HTML and a compatible rendered-DOM snapshot.
 
+## Example: html
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -25,6 +29,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+CSS selects the heading and link. Text projection includes descendant text; attribute projection preserves the link target.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.html(
+    "article.html",
+    '<main><h1>Tea <em>guide</em></h1><a class="next" href="/brewing">Next</a></main>',
+)
+plan = ys.Plan(outputs=[
+    ys.output("title", ys.css("main h1").text()),
+    ys.output("next", ys.css("a.next[href]").attribute("href")),
+])
+outcome = document.locate(plan)
+assert outcome.values("title") == ["Tea guide"]
+assert outcome.values("next") == ["/brewing"]
+```
+
+The same HTML and query produce the heading and target. The checks make the expected values visible.
+
+## Walk through the result
 
 The title is descendant text, including text inside `em`. The link value is the authored `/brewing` attribute. Locator projection does not turn relative links into absolute URLs.
 

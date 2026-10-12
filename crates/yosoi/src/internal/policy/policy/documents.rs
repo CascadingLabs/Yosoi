@@ -6,8 +6,11 @@ use super::{AddressableByteLimit, CountLimit, StepLimit};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Documents {
+    /// Positive addressable byte limit for retained document parsing input.
     pub max_input_bytes: AddressableByteLimit,
+    /// Positive maximum parsed document nodes.
     pub max_nodes: CountLimit,
+    /// Positive maximum document parse or traversal depth.
     pub max_depth: StepLimit,
 }
 

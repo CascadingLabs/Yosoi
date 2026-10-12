@@ -80,10 +80,12 @@ impl PinnedOutputLocator {
 pub mod locator {
     use super::{LocatorKind, PinnedLocator};
 
+    /// Retains static CSS query data for a Contract declaration without validation or document I/O. Supported compilation validates the expression later.
     pub const fn css(expression: &'static str) -> PinnedLocator {
         PinnedLocator::new(LocatorKind::Css, expression)
     }
 
+    /// Retains static decoded-text literal query data for a Contract declaration. Compilation and evidence matching are separate phases.
     pub const fn text_literal(expression: &'static str) -> PinnedLocator {
         PinnedLocator::new(LocatorKind::TextLiteral, expression)
     }

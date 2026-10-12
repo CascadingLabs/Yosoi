@@ -13,16 +13,27 @@ use super::DirectHttpRedirectErrorKind;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum DirectHttpTransportErrorKind {
+    /// Hostname resolution did not produce a usable transport destination.
     Dns,
+    /// Connection establishment failed before a usable HTTP exchange.
     Connect,
+    /// TLS negotiation failed; this does not weaken certificate validation.
     Tls,
+    /// Transport work exceeded its permitted elapsed deadline.
     Timeout,
+    /// HTTP or transport protocol exchange failed without a more specific category.
     Protocol,
+    /// Client setup or configured request identity could not be used.
     Client,
+    /// Caller cancellation was observed by the acquisition transport.
     Cancelled,
+    /// The adapter does not implement the selected transport profile.
     UnsupportedProfile,
+    /// The adapter does not implement the requested session mode.
     UnsupportedSession,
+    /// The adapter cannot perform the authored redirect traversal policy.
     UnsupportedRedirects,
+    /// Redirect admission, hop accounting, or traversal failed with the supplied typed reason.
     Redirect(DirectHttpRedirectErrorKind),
 }
 
@@ -112,6 +123,7 @@ impl DirectHttpTransportError {
         Self { kind, source: None }
     }
 
+    /// Returns a bounded provider-independent failure class without exposing the opaque source error.
     pub const fn kind(&self) -> DirectHttpTransportErrorKind {
         self.kind
     }

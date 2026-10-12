@@ -8,6 +8,10 @@ order: 10
 
 Text locators operate on a decoded UTF-8 document. Use literal matching for a fixed string and regex for a pattern.
 
+## Example: text
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -28,6 +32,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+The literal query reads decoded text. The regex names a capture, so callers can distinguish the order ID from the full match.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.text("orders.txt", "Order #123 shipped. Order #456 pending.")
+plan = ys.Plan(outputs=[
+    ys.output("shipped", ys.text_literal("shipped").text()),
+    ys.output("order", ys.regex(r"Order #(?P<id>\d+)").captures("id")),
+])
+outcome = document.locate(plan)
+assert outcome.values("shipped") == ["shipped"]
+print(outcome.values("order"))
+```
+
+The same named capture is authored with `captures`. Regex operates on the text document rather than a DOM.
+
+## Walk through the result
 
 The `order` findings contain the full matched text and the requested `id` capture. Use `.text()` if you only need the full match.
 

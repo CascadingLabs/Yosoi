@@ -26,9 +26,11 @@ pub struct CompiledRegion {
 }
 
 impl CompiledRegion {
+    /// Borrows the authored identity used for repeated-region lineage.
     pub const fn id(&self) -> &RegionId {
         &self.id
     }
+    /// Borrows the root query used to select repeated-region evidence.
     pub const fn query(&self) -> &QuerySpec {
         &self.query
     }
@@ -45,15 +47,19 @@ pub struct CompiledOutput {
 }
 
 impl CompiledOutput {
+    /// Borrows the unique authored identity of this projected output.
     pub const fn id(&self) -> &OutputId {
         &self.id
     }
+    /// Borrows the repeated parent-region identity, absent for unscoped output.
     pub const fn parent_region(&self) -> Option<&RegionId> {
         self.parent_region.as_ref()
     }
+    /// Borrows the compiled query semantics before projection.
     pub const fn query(&self) -> &QuerySpec {
         &self.query
     }
+    /// Borrows the supported projection determining finding value shape.
     pub const fn projection(&self) -> &Projection {
         &self.projection
     }
@@ -63,24 +69,43 @@ impl CompiledOutput {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LocatorCapability {
+    /// CSS source-tree node selection.
     Css,
+    /// Supported XPath source-tree node selection.
     XPath,
+    /// Literal substring selection over tree descendant text.
     TreeTextContains,
+    /// JSON Pointer value selection.
     JsonPointer,
+    /// Supported JSONPath value selection.
     JsonPath,
+    /// Accessibility snapshot role selection.
     AccessibilityRole,
+    /// Selection by accessible name rather than source-tree text.
     AccessibleNameQuery,
+    /// Selection by accessibility-node text.
     AccessibilityTextQuery,
+    /// Selection by supported boolean accessibility state.
     AccessibilityStateQuery,
+    /// Literal decoded-text range selection.
     TextLiteral,
+    /// Supported regular-expression range selection.
     TextRegex,
+    /// Projection of tree descendant text from selected nodes.
     DescendantTextProjection,
+    /// Projection of a named attribute from selected nodes.
     AttributeProjection,
+    /// Projection preserving native JSON value shape.
     JsonValueProjection,
+    /// Projection retaining a document-bound native node reference.
     NodeReferenceProjection,
+    /// Projection of an accessibility node's reported name.
     AccessibleNameProjection,
+    /// Projection of an accessibility node's reported text.
     AccessibilityTextProjection,
+    /// Projection of selected decoded-text match content.
     MatchedTextProjection,
+    /// Projection of decoded-text matches with named capture values.
     MatchedTextWithCapturesProjection,
 }
 
@@ -93,6 +118,8 @@ pub struct DocumentRequirement {
 }
 
 impl DocumentRequirement {
+    /// Returns whether this compiled plan accepts the supplied document capability class.
+    /// This checks class compatibility, not payload validity, resource availability, or completeness.
     pub fn accepts(&self, document: DocumentClass) -> bool {
         self.accepted_documents.contains(&document)
     }
@@ -135,6 +162,10 @@ impl fmt::Debug for Plan {
 }
 
 impl Plan {
+    /// Compiles owned named outputs into portable query, projection, and region semantics.
+    /// Returns [`PlanError`] for invalid identities, shape/projection combinations,
+    /// nested or inconsistent regions, and supported syntax violations. No document
+    /// is acquired or matched; document capability and resource checks occur at execution.
     pub fn new(outputs: impl IntoIterator<Item = NamedOutput>) -> Result<Self, PlanError> {
         super::authoring::compile_outputs(outputs.into_iter().collect())
     }
@@ -290,40 +321,75 @@ const fn check_budget(
 }
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
+/// Authored output, query, projection, or region declarations cannot form one supported portable plan.
 pub enum PlanError {
+    /// The authored plan contains no named output declarations.
     #[error("locator plan must contain at least one output")]
     NoOutputs,
+    /// A named output lacks a nonblank authored identity.
     #[error("output identity cannot be empty")]
     EmptyOutputId,
+    /// A query vocabulary requiring expression text received empty input.
     #[error("query expression cannot be empty")]
     EmptyQueryExpression,
+    /// Explicit query-local namespace metadata fails supported XML binding rules.
     #[error("query namespace bindings are invalid: {0}")]
     InvalidQueryNamespaces(QueryError),
+    /// No compatible document engine accepts the authored query syntax.
     #[error("query syntax is unsupported by every compatible document engine: {atom:?}")]
-    InvalidQuerySyntax { atom: QueryAtom },
+    InvalidQuerySyntax {
+        /// Authored operation whose syntax could not be compiled.
+        atom: QueryAtom,
+    },
+    /// JSON Pointer or supported JSONPath parsing rejected the query.
     #[error(transparent)]
     InvalidJsonQuery(#[from] JsonQuerySyntaxError),
+    /// A projection requiring an attribute or capture argument received empty metadata.
     #[error("projection argument cannot be empty")]
     EmptyProjectionArgument,
+    /// Named capture selection contains the same capture more than once.
     #[error("capture name {name} is requested more than once")]
-    DuplicateCaptureName { name: String },
+    DuplicateCaptureName {
+        /// Repeated authored capture name.
+        name: String,
+    },
+    /// A requested capture name has no definition in the compiled pattern.
     #[error("capture name {name} does not exist in the regular expression")]
-    UnknownCaptureName { name: String },
+    UnknownCaptureName {
+        /// Capture name absent from the regex definition.
+        name: String,
+    },
+    /// Multiple output declarations use one authored identity.
     #[error("output {id} is defined more than once")]
-    DuplicateOutput { id: OutputId },
+    DuplicateOutput {
+        /// Repeated identity that would make finding attribution ambiguous.
+        id: OutputId,
+    },
+    /// One region identity names inconsistent root query declarations.
     #[error("region {id:?} has conflicting definitions")]
-    ConflictingRegion { id: RegionId },
+    ConflictingRegion {
+        /// Region identity whose definitions disagree.
+        id: RegionId,
+    },
+    /// A repeated-region root combines incompatible query operation and native result shape.
     #[error("region query has an unsupported atom/result-shape combination")]
     InvalidRegionQuery {
+        /// Authored root query operation.
         atom: QueryAtom,
+        /// Declared root-result capability incompatible with the query.
         result_shape: QueryResultShape,
     },
+    /// Output query, native result shape, and projection cannot be evaluated together.
     #[error("query atom, result shape, and projection are incompatible")]
     InvalidCombination {
+        /// Authored query operation involved in the mismatch.
         atom: QueryAtom,
+        /// Declared native result capability.
         result_shape: QueryResultShape,
+        /// Projection label incompatible with the query and shape.
         projection: String,
     },
+    /// No single document capability class can satisfy every operation in the plan.
     #[error("plan operations cannot be satisfied by one document class")]
     NoCommonDocument,
 }

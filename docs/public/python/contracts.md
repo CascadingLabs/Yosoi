@@ -100,6 +100,9 @@ or a Python class is not the right authoring model. The Rust constructor
 validates the schema and owns its identity, extraction, and validation:
 
 ```python
+import yosoi as ys
+
+# Declare the record independently of its queries.
 schema = ys.contracts.ContractSchema(
     id="catalog_item",
     description="One item in a catalog",
@@ -122,6 +125,15 @@ schema = ys.contracts.ContractSchema(
 runtime = ys.contracts.RuntimeContract(contract_schema=schema)
 
 identity = runtime.identity()
+
+# Bind the schema field IDs to a controlled product region.
+document = ys.Document.html("catalog", "<article><h2>Tea</h2><b class=price>$4.50</b></article>")
+region = ys.css("article").each_as_region("catalog_item")
+plan = ys.Plan(outputs=[
+    ys.output("name", region.find(ys.css("h2")).text()),
+    ys.output("price", region.find(ys.css(".price")).text()),
+])
+located = document.locate(plan)
 extracted = runtime.extract(located)
 outcome = extracted.validate()
 ```

@@ -10,6 +10,11 @@ use crate::internal::documents::{DocumentEpoch, DocumentId};
 pub struct JsonCoordinate(String);
 
 impl JsonCoordinate {
+    /// Owns a JSON Pointer after validating its root syntax and token escapes.
+    ///
+    /// The empty pointer selects the root; other pointers must begin with `/`,
+    /// and `~` escapes must be `~0` or `~1`. Returns [`CoordinateError`] for
+    /// violations. This does not verify that the pointer resolves in a document.
     pub fn try_new(pointer: impl Into<String>) -> Result<Self, CoordinateError> {
         let pointer = pointer.into();
         if !pointer.is_empty() && !pointer.starts_with('/') {
@@ -19,6 +24,7 @@ impl JsonCoordinate {
         Ok(Self(pointer))
     }
 
+    /// Borrows the validated JSON Pointer spelling, including the empty root pointer.
     pub fn as_pointer(&self) -> &str {
         &self.0
     }
@@ -49,12 +55,17 @@ impl<'de> Deserialize<'de> for JsonCoordinate {
 pub struct DomNodeId(NonZeroU64);
 
 impl DomNodeId {
+    /// Creates a positive snapshot-local node identity, rejecting zero.
+    ///
+    /// Returns [`CoordinateError::ZeroDomNodeId`] for zero; no DOM membership
+    /// or epoch is checked by this scalar constructor.
     pub fn try_new(value: u64) -> Result<Self, CoordinateError> {
         NonZeroU64::new(value)
             .map(Self)
             .ok_or(CoordinateError::ZeroDomNodeId)
     }
 
+    /// Returns the positive numeric node identity without its snapshot epoch.
     pub const fn get(self) -> u64 {
         self.0.get()
     }
@@ -77,6 +88,10 @@ pub struct DomCoordinate {
 }
 
 impl DomCoordinate {
+    /// Pairs a snapshot epoch and node identity without querying a live DOM.
+    ///
+    /// Node IDs are meaningful only within the supplied epoch; construction
+    /// does not prove that the node exists in that snapshot.
     pub const fn new(document_epoch: DocumentEpoch, node_id: DomNodeId) -> Self {
         Self {
             document_epoch,
@@ -84,10 +99,12 @@ impl DomCoordinate {
         }
     }
 
+    /// Returns the immutable rendered-DOM snapshot epoch that scopes this node.
     pub const fn document_epoch(self) -> DocumentEpoch {
         self.document_epoch
     }
 
+    /// Returns the node identity, which must be interpreted with its document epoch.
     pub const fn node_id(self) -> DomNodeId {
         self.node_id
     }
@@ -102,6 +119,11 @@ pub struct AccessibilityCoordinate {
 }
 
 impl AccessibilityCoordinate {
+    /// Owns an accessibility node identity within a supplied immutable epoch.
+    ///
+    /// Returns [`CoordinateError::EmptyIdentity`] for blank `node_id`. The
+    /// original spelling is retained; no tree membership or epoch correspondence
+    /// is verified against live accessibility evidence.
     pub fn try_new(
         document_epoch: DocumentEpoch,
         node_id: impl Into<String>,
@@ -117,10 +139,12 @@ impl AccessibilityCoordinate {
         }
     }
 
+    /// Returns the immutable accessibility snapshot epoch that scopes this node.
     pub const fn document_epoch(&self) -> DocumentEpoch {
         self.document_epoch
     }
 
+    /// Borrows the retained node identity without resolving it against a tree.
     pub fn node_id(&self) -> &str {
         &self.node_id
     }
@@ -147,10 +171,15 @@ impl<'de> Deserialize<'de> for AccessibilityCoordinate {
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "coordinate", rename_all = "snake_case")]
 pub enum NativeCoordinate {
+    /// Child path and optional exact-byte or expanded-name evidence in HTML/XML source.
     SourceTree(TreeCoordinate),
+    /// Validated JSON Pointer spelling, not a proof of resolution in a document.
     Json(JsonCoordinate),
+    /// Node identity scoped to one immutable rendered-DOM snapshot epoch.
     RenderedDom(DomCoordinate),
+    /// Node identity scoped to one immutable accessibility-tree snapshot epoch.
     Accessibility(AccessibilityCoordinate),
+    /// Paired owned-source byte offsets and decoded-text Unicode-scalar offsets.
     DecodedText(DecodedTextCoordinate),
 }
 
@@ -163,6 +192,10 @@ pub struct NodeReference {
 }
 
 impl NodeReference {
+    /// Owns a native node coordinate together with its document identity.
+    ///
+    /// This does not resolve the coordinate or retain document contents; the
+    /// caller must retain the corresponding document to interpret the reference.
     pub const fn new(document_id: DocumentId, coordinate: NativeCoordinate) -> Self {
         Self {
             document_id,
@@ -170,9 +203,11 @@ impl NodeReference {
         }
     }
 
+    /// Borrows the identity of the document needed to interpret this reference.
     pub const fn document_id(&self) -> &DocumentId {
         &self.document_id
     }
+    /// Borrows the native location without fetching or retaining the document.
     pub const fn coordinate(&self) -> &NativeCoordinate {
         &self.coordinate
     }

@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+import tomllib
 import zipfile
 from datetime import UTC, datetime
 from email.parser import Parser
@@ -73,10 +74,24 @@ def _contract(path: Path = CONTRACT_PATH) -> tuple[dict[str, Any], str]:
         not isinstance(document, dict)
         or document.get("schemaVersion") != SCHEMA_VERSION
         or document.get("kind") != "yosoi-python-browser-behavior-contract"
-        or document.get("sdkVersion") != "0.2.0"
+        or document.get("sdkVersionSource") != "workspace.package.version"
+        or "sdkVersion" in document
         or document.get("testModule") != "python/tests/test_browser_beta.py"
     ):
         raise BrowserEvidenceError("unsupported browser behavior contract")
+    try:
+        workspace = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
+        version = workspace["workspace"]["package"]["version"]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise BrowserEvidenceError("cannot resolve workspace SDK version") from error
+    if not isinstance(version, str) or not re.fullmatch(
+        r"0\.[1-9][0-9]*\.(0|[1-9][0-9]*)(?:-rc\.[1-9][0-9]*)?", version
+    ):
+        raise BrowserEvidenceError("unsupported workspace SDK version")
+    # Bind the effective contract digest to the selected release. Rust and
+    # Python spell numbered release candidates differently.
+    document["nativeVersion"] = version
+    document["sdkVersion"] = version.replace("-rc.", "rc")
     profiles = document.get("modeProfiles")
     if not isinstance(profiles, dict) or set(profiles) != {"headless", "headful"}:
         raise BrowserEvidenceError(
@@ -266,7 +281,7 @@ def _outside_python_source(path: Path) -> bool:
 
 
 def _installed_package(
-    wheel_path: Path, *, expected_version: str
+    wheel_path: Path, *, expected_version: str, expected_native_version: str
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     wheel_info, wheel_files = _read_wheel_members(wheel_path)
     if wheel_info["version"] != expected_version:
@@ -303,10 +318,10 @@ def _installed_package(
             "installed Yosoi version does not match selected wheel "
             f"({installed_version} != {wheel_info['version']})"
         )
-    if native_version != wheel_info["version"]:
+    if native_version != expected_native_version:
         raise BrowserEvidenceError(
             "installed native extension version does not match selected wheel "
-            f"({native_version} != {wheel_info['version']})"
+            f"({native_version} != {expected_native_version})"
         )
     if (
         init_path.name != "__init__.py"
@@ -509,7 +524,9 @@ def create_evidence(
     case_statuses = _junit_case_statuses(junit_path, contract)
     stories = _required_stories(contract, case_statuses)
     installed, wheel_info = _installed_package(
-        wheel_path, expected_version=contract["sdkVersion"]
+        wheel_path,
+        expected_version=contract["sdkVersion"],
+        expected_native_version=contract["nativeVersion"],
     )
     browser = _chrome_identity(
         chrome or os.environ.get("CHROME"),
@@ -621,7 +638,7 @@ def validate_browser_evidence_document(
     if (
         not isinstance(installed, dict)
         or installed.get("version") != wheel["version"]
-        or installed.get("nativeVersion") != wheel["version"]
+        or installed.get("nativeVersion") != contract["nativeVersion"]
         or not isinstance(installed.get("pythonInit"), dict)
         or not isinstance(installed.get("nativeExtension"), dict)
     ):

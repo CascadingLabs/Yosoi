@@ -12,26 +12,42 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
 pub enum EnvironmentValue<T, U = ReasonCode, O = U> {
-    Known { value: T },
-    Unavailable { reason: U },
-    Omitted { reason: O },
+    /// A value was observed or explicitly supplied and retained.
+    Known {
+        /// Retained value in its declared domain and units.
+        value: T,
+    },
+    /// Required environment evidence could not be obtained.
+    Unavailable {
+        /// Typed explanation of unavailable evidence.
+        reason: U,
+    },
+    /// Evidence was intentionally not retained or requested.
+    Omitted {
+        /// Typed omission explanation, distinct from evidence being unavailable.
+        reason: O,
+    },
 }
 
 impl<T> EnvironmentValue<T> {
+    /// Wraps owned environment evidence without independently verifying its truth.
     pub const fn known(value: T) -> Self {
         Self::Known { value }
     }
 
+    /// Retains a reason why environment evidence could not be obtained.
     pub const fn unavailable(reason: ReasonCode) -> Self {
         Self::Unavailable { reason }
     }
 
+    /// Retains a reason why environment evidence was intentionally omitted.
     pub const fn omitted(reason: ReasonCode) -> Self {
         Self::Omitted { reason }
     }
 }
 
 impl<T, U, O> EnvironmentValue<T, U, O> {
+    /// Borrows retained known evidence, or `None` without collapsing its typed absence reason.
     pub const fn as_known(&self) -> Option<&T> {
         match self {
             Self::Known { value } => Some(value),
@@ -44,7 +60,9 @@ impl<T, U, O> EnvironmentValue<T, U, O> {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BrowserMode {
+    /// Run without a visible browser window; rendering behavior still depends on browser identity.
     Headless,
+    /// Run with visible windowing, without an independent browser certification claim.
     Headful,
 }
 
@@ -52,8 +70,11 @@ pub enum BrowserMode {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ColorScheme {
+    /// Effective or requested light color preference.
     Light,
+    /// Effective or requested dark color preference.
     Dark,
+    /// No authored or observed light/dark preference claim.
     NoPreference,
 }
 
@@ -61,7 +82,9 @@ pub enum ColorScheme {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReducedMotion {
+    /// Effective or requested reduced-motion preference.
     Reduce,
+    /// No reduced-motion preference claim.
     NoPreference,
 }
 
@@ -74,6 +97,7 @@ pub struct Viewport {
 }
 
 impl Viewport {
+    /// Owns positive CSS-pixel dimensions without querying a live browser.
     pub const fn new(width_css_pixels: NonZeroU32, height_css_pixels: NonZeroU32) -> Self {
         Self {
             width_css_pixels,
@@ -81,10 +105,12 @@ impl Viewport {
         }
     }
 
+    /// Returns positive viewport width in CSS pixels, not device pixels.
     pub const fn width_css_pixels(self) -> NonZeroU32 {
         self.width_css_pixels
     }
 
+    /// Returns positive viewport height in CSS pixels, not device pixels.
     pub const fn height_css_pixels(self) -> NonZeroU32 {
         self.height_css_pixels
     }
@@ -104,8 +130,10 @@ impl Viewport {
 /// A browser viewport dimension was zero.
 #[derive(Clone, Copy, Debug, Eq, thiserror::Error, PartialEq)]
 pub enum ViewportError {
+    /// Reported CSS viewport width is zero.
     #[error("viewport width must be greater than zero")]
     ZeroWidth,
+    /// Reported CSS viewport height is zero.
     #[error("viewport height must be greater than zero")]
     ZeroHeight,
 }
@@ -259,16 +287,28 @@ mod tests {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BrowserFailureReason {
+    /// Browser process could not launch under the required execution environment.
     Launch,
+    /// Controller connection to the selected browser could not be established or maintained.
     Connection,
+    /// Requested browser navigation failed before usable capture evidence.
     Navigation,
+    /// A browser acquisition or controller deadline expired.
     Timeout,
+    /// Requested visible windowing cannot use a suitable display environment.
     DisplayUnavailable,
+    /// Observed browser environment disagrees with requested capture constraints.
     EnvironmentMismatch,
+    /// Requested browser profile cannot be acquired.
     ProfileUnavailable,
+    /// Browser acquisition is unavailable without a more specific retained reason.
     Unavailable,
+    /// Browser or tab admission exhausted configured capacity.
     CapacityExhausted,
+    /// Owning browser authority closed before the requested work could proceed.
     Closed,
+    /// Renderer process crashed, preventing reliable current-page evidence.
     RendererCrashed,
+    /// Selected browser settings or capabilities are unsupported by this implementation.
     UnsupportedConfiguration,
 }

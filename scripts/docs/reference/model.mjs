@@ -227,7 +227,20 @@ export function buildReference(docs, context) {
 		for (const id of memberIds || []) {
 			const member = doc.index[id];
 			if (!member || hidden(member) || (kind !== 'enum' && kind !== 'trait' && member.visibility !== 'public')) continue;
-			page.members.push(memberRecord(member, `${publicPath}::${member.name}`, context, doc));
+			const record = memberRecord(member, `${publicPath}::${member.name}`, context, doc);
+			page.members.push(record);
+			// Variant fields are public through their enclosing variant even when
+			// rustdoc uses default visibility. Retain their own source prose, not
+			// just the types printed in the variant's signature.
+			const variant = member.inner.variant;
+			const fields = variant?.kind?.struct?.fields || variant?.kind?.tuple || [];
+			if (fields.length) record.fields = [];
+			for (const [ordinal, fieldId] of fields.entries()) {
+				const field = doc.index[fieldId];
+				if (!field || hidden(field)) continue;
+				const fieldName = field.name ?? String(ordinal);
+				record.fields.push(memberRecord({ ...field, name: fieldName }, `${publicPath}::${member.name}::${fieldName}`, context, doc));
+			}
 		}
 		for (const implId of new Set([...(inner.impls || []), ...(receiverImpls.get(key) || [])].map(String))) {
 			const impl = doc.index[implId]?.inner.impl;

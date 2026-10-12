@@ -7,8 +7,11 @@ use thiserror::Error;
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DocumentRepresentation {
+    /// Owned source payload rather than a live or rendered browser snapshot.
     Source,
+    /// Versioned immutable rendered-DOM snapshot scoped to a document epoch.
     RenderedDom,
+    /// Versioned immutable accessibility-tree snapshot scoped to a document epoch.
     AccessibilityTree,
 }
 
@@ -16,9 +19,13 @@ pub enum DocumentRepresentation {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SourceFormat {
+    /// HTML payload interpreted using the selected HTML schema profile.
     Html,
+    /// XML payload interpreted using the selected XML schema profile.
     Xml,
+    /// JSON payload, including structured rendered or accessibility snapshots.
     Json,
+    /// UTF-8 text payload without tree or JSON capabilities.
     Text,
 }
 
@@ -26,11 +33,17 @@ pub enum SourceFormat {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DocumentSchemaProfile {
+    /// HTML5 source-tree interpretation.
     Html5,
+    /// XML 1.0 source-tree interpretation.
     Xml10,
+    /// RFC 8259 source JSON interpretation.
     JsonRfc8259,
+    /// Decoded UTF-8 text interpretation.
     Utf8Text,
+    /// Yosoi version-1 rendered-DOM JSON schema with snapshot-local node identities.
     YosoiRenderedDomV1,
+    /// Yosoi version-1 accessibility-tree JSON schema with snapshot-local node identities.
     YosoiAccessibilityTreeV1,
 }
 
@@ -38,11 +51,17 @@ pub enum DocumentSchemaProfile {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DocumentClass {
+    /// HTML source bytes supporting the source-tree locator vocabulary.
     SourceHtml,
+    /// XML source bytes supporting namespace-aware tree locators.
     SourceXml,
+    /// Source JSON values supporting the JSON locator vocabulary.
     SourceJson,
+    /// Source text supporting literal and regular-expression ranges.
     SourceText,
+    /// Immutable rendered-DOM evidence supporting snapshot-local node coordinates.
     RenderedDom,
+    /// Immutable accessibility evidence supporting role, name, text, and state locators.
     AccessibilityTree,
 }
 
@@ -52,6 +71,7 @@ pub enum DocumentClass {
 pub struct DocumentEpoch(NonZeroU64);
 
 impl DocumentEpoch {
+    /// Returns the positive document-local generation without a global browser identity claim.
     pub const fn get(self) -> u64 {
         self.0.get()
     }
@@ -70,12 +90,16 @@ impl TryFrom<u64> for DocumentEpoch {
 /// Invalid combinations of representation, payload syntax, schema, and epoch.
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum DocumentProfileError {
+    /// Representation, payload syntax, and selected schema do not form a supported class.
     #[error("document profile combines incompatible representation, format, and schema axes")]
     IncompatibleAxes,
+    /// Source payloads incorrectly declare a browser snapshot epoch.
     #[error("source documents must not claim a rendered document epoch")]
     UnexpectedEpoch,
+    /// Rendered-DOM or accessibility evidence omits its required snapshot epoch.
     #[error("rendered DOM and accessibility documents require a document epoch")]
     MissingEpoch,
+    /// A snapshot generation is zero rather than a positive document-local epoch.
     #[error("document epoch must be greater than zero")]
     ZeroEpoch,
 }
@@ -91,6 +115,10 @@ pub struct DocumentProfile {
 }
 
 impl DocumentProfile {
+    /// Validates representation, payload syntax, schema, and optional epoch as one profile.
+    /// Returns [`DocumentProfileError`] for incompatible axes or incorrect epoch
+    /// presence. This validates interpretation metadata, not payload bytes or
+    /// live browser state; parsing and evidence acquisition are separate phases.
     pub fn try_new(
         representation: DocumentRepresentation,
         source_format: SourceFormat,
@@ -107,22 +135,28 @@ impl DocumentProfile {
         Ok(profile)
     }
 
+    /// Creates HTML5 source metadata without a snapshot epoch or document acquisition.
     pub const fn source_html() -> Self {
         Self::source(SourceFormat::Html, DocumentSchemaProfile::Html5)
     }
 
+    /// Creates XML 1.0 source metadata without an epoch or document acquisition.
     pub const fn source_xml() -> Self {
         Self::source(SourceFormat::Xml, DocumentSchemaProfile::Xml10)
     }
 
+    /// Creates RFC 8259 source JSON metadata without an epoch or acquisition.
     pub const fn source_json() -> Self {
         Self::source(SourceFormat::Json, DocumentSchemaProfile::JsonRfc8259)
     }
 
+    /// Creates UTF-8 source text metadata without an epoch or acquisition.
     pub const fn source_text() -> Self {
         Self::source(SourceFormat::Text, DocumentSchemaProfile::Utf8Text)
     }
 
+    /// Declares a version-1 rendered-DOM JSON snapshot at the supplied positive epoch.
+    /// This does not capture a browser or validate payload membership in that epoch.
     pub const fn rendered_dom(epoch: DocumentEpoch) -> Self {
         Self {
             representation: DocumentRepresentation::RenderedDom,
@@ -132,6 +166,8 @@ impl DocumentProfile {
         }
     }
 
+    /// Declares a version-1 accessibility JSON snapshot at the supplied positive epoch.
+    /// This does not capture a browser or validate payload membership in that epoch.
     pub const fn accessibility_tree_v1(epoch: DocumentEpoch) -> Self {
         Self {
             representation: DocumentRepresentation::AccessibilityTree,
@@ -150,22 +186,29 @@ impl DocumentProfile {
         }
     }
 
+    /// Returns whether this profile interprets source, rendered-DOM, or accessibility evidence.
     pub const fn representation(self) -> DocumentRepresentation {
         self.representation
     }
 
+    /// Returns the syntax expected for the owned payload bytes.
     pub const fn source_format(self) -> SourceFormat {
         self.source_format
     }
 
+    /// Returns the exact parser or versioned snapshot-schema interpretation.
     pub const fn schema(self) -> DocumentSchemaProfile {
         self.schema
     }
 
+    /// Returns snapshot-local generation for rendered evidence, absent for source payloads.
     pub const fn epoch(self) -> Option<DocumentEpoch> {
         self.epoch
     }
 
+    /// Resolves a supported capability class after checking all metadata axes together.
+    /// Returns [`DocumentProfileError`] for incompatible schema/syntax or epoch
+    /// presence. Resolution does not parse bytes or prove evidence completeness.
     pub const fn class(self) -> Result<DocumentClass, DocumentProfileError> {
         match (
             self.representation,

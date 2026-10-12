@@ -8,6 +8,10 @@ order: 6
 
 A locator plan says what to select and which values to return. Each output has a name, a query, and a projection.
 
+## Example: locators
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -37,6 +41,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+The Plan names a heading and link target. Matching the outcome keeps successful, absent, incomplete and failed evaluation distinct.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.html(
+    "article.html",
+    "<h1>Getting started</h1><a href='/next'>Next</a>",
+)
+plan = ys.Plan(outputs=[
+    ys.output("heading", ys.css("h1").text()),
+    ys.output("link", ys.css("a").attribute("href")),
+])
+outcome = document.locate(plan)
+assert outcome.values("heading") == ["Getting started"]
+assert outcome.values("link") == ["/next"]
+for finding in outcome.findings:
+    print(finding.output_id, finding.coordinate)
+```
+
+The same inputs produce the named `heading` and `link` values. Each finding also retains its coordinate; keep that evidence when the result needs provenance.
+
+## Walk through the result
 
 `css("a")` selects elements. `.attribute("href")` chooses what to return. `output("link", ...)` names that value. `Plan::new(...)` checks that all outputs can run against one compatible document class.
 

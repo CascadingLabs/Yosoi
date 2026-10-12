@@ -6,7 +6,11 @@ order: 4
 
 # Policy
 
-Policy is a Rust struct with public fields. Start with the defaults, change the values your application needs, and bind it to an operation.
+Start with the default Policy, change the values your application needs, and bind it to an operation. Rust uses public struct fields; Python uses typed authoring models.
+
+## Example: policy
+
+### Rust
 
 ```rust
 use std::error::Error;
@@ -24,19 +28,38 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+The deadline uses microseconds, so five million means five seconds. The match limit bounds locator work. `validate` rejects unsupported settings before an operation.
+
+### Python
+
+```python
+from yosoi.policy import Locators, Policy, Request
+
+policy = Policy(
+    request=Request(maximum_elapsed=5_000_000),
+    locators=Locators(max_matches=500),
+)
+policy.check()
+print(policy.to_json())
+```
+
+The typed Request and Locators models express the same limits. `check` validates them through Rust; `to_json` serializes the validated declaration.
+
+## Walk through the result
+
 `MaximumElapsed` uses microseconds. The example allows five seconds per acquisition attempt and up to 500 locator matches.
 
 ## Policy fields
 
-| Field       | Controls                                                                        |
-| ----------- | ------------------------------------------------------------------------------- |
-| `page`      | Ordered acquisition choices and requested documents                             |
-| `request`   | Attempt deadline, source and browser limits, Direct HTTP redirects              |
-| `documents` | Parser input bytes, nodes, and depth                                            |
-| `locators`  | Query work, matches, regions, captures, and output bytes                        |
-| `tuning`    | Execution tuning; currently only `Default` exists                               |
-| `map`       | Discovery scope, robots rules, filters, retention, and budgets                  |
-| `search`    | Stored Search configuration; Search execution is outside the current SDK facade |
+| Field       | Controls                                                           |
+| ----------- | ------------------------------------------------------------------ |
+| `page`      | Ordered acquisition choices and requested documents                |
+| `request`   | Attempt deadline, source and browser limits, Direct HTTP redirects |
+| `documents` | Parser input bytes, nodes, and depth                               |
+| `locators`  | Query work, matches, regions, captures, and output bytes           |
+| `tuning`    | Execution tuning; currently only `Default` exists                  |
+| `map`       | Discovery scope, robots rules, filters, retention, and budgets     |
+| `search`    | Search provider choices, profiles and limits                       |
 
 See [Limits](limits.md) for defaults and units, and [Map](map.md) for discovery settings.
 

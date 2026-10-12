@@ -23,32 +23,65 @@ One provider can succeed while another is challenged or unavailable. Preserve th
 
 Current built-in provider routes are previews pending certification.
 
-## Rust SDK
+## Configure the provider
+
+## Example: search provider candidates
+
+### Rust
 
 ```rust
+use std::error::Error;
 use yosoi::prelude as ys;
 use ys::policy::search::{Provider, Search};
 
-let policy = ys::Policy {
-    search: Search::new([Provider::Bing])?,
-    ..ys::Policy::default()
-};
-let request = ys::search::new("rust sdk")?.bind(&policy);
-request.validate()?; // Does not contact a provider.
-let response = request.send().await?;
-for provider in response.providers() {
-    match provider.outcome() {
-        ys::search::ProviderOutcome::Results(page) => {
-            for hit in page.hits() {
-                println!("{}", hit.url());
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let policy = ys::Policy {
+        search: Search::new([Provider::Bing])?,
+        ..ys::Policy::default()
+    };
+    let request = ys::search::new("rust sdk")?.bind(&policy);
+    request.validate()?; // Does not contact a provider.
+    let response = request.send().await?;
+    for provider in response.providers() {
+        match provider.outcome() {
+            ys::search::ProviderOutcome::Results(page) => {
+                for hit in page.hits() {
+                    println!("{}", hit.url());
+                }
             }
+            outcome => println!("{outcome:?}"),
         }
-        outcome => println!("{outcome:?}"),
     }
+    Ok(())
 }
 ```
 
-This example belongs inside an async function returning a compatible error.
+Read the per-operation result before using its discovered URLs. This excerpt uses the public facade and explicit Policy.
+
+### Python
+
+```python
+import asyncio
+import yosoi as ys
+from yosoi.policy import Policy, ProviderSelection, Search
+
+async def main():
+    policy = Policy(search=Search(providers=[ProviderSelection(provider="bing")]))
+    request = ys.search.new("rust sdk").bind(policy)
+    request.check()
+    response = await request.send()
+    for provider in response.providers:
+        print(provider.provider, provider.outcome)
+
+asyncio.run(main())
+```
+
+The Python variant uses the same provider or discovery choices. Keep attempt and termination information alongside selected URLs.
+
+## Walk through the result
+
+The example uses an async application entry point.
 Provider failures remain typed outcomes; preparation and initialization failures
 are returned as errors.
 

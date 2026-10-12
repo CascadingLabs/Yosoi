@@ -34,6 +34,7 @@ pub enum PartialReason {
     AccessibilityByteLossUnknown,
     /// The retained browser artifact itself is truncated and was not normalized.
     BrowserArtifactTruncated {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
 }
@@ -52,18 +53,22 @@ pub enum UnavailableReason {
     BrowserDecodedSourceNotRetained,
     /// The requested browser artifact was intentionally not retained.
     CaptureArtifactNotRetained {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
     /// The requested browser artifact payload is absent from the consumed bundle.
     CaptureArtifactPayloadUnavailable {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
     /// The requested browser artifact capture failed.
     CaptureArtifactFailed {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
     /// The requested browser artifact was unavailable from the provider.
     CaptureArtifactUnavailable {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
 }
@@ -110,10 +115,12 @@ pub enum UnprojectableReason {
     BrowserDocumentNormalizationFailed,
     /// The finalized capture omitted an artifact family that the prepared attempt requested.
     CaptureArtifactNotRequested {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
     /// The provider marked an artifact family unsupported.
     CaptureArtifactUnsupported {
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
 }
@@ -143,6 +150,7 @@ pub enum ProjectionError {
     #[error("requested {family:?} artifact family did not contain exactly one artifact")]
     ArtifactCountMismatch {
         /// Capture family associated with the requested document.
+        /// Affected capture artifact family, preserving source/DOM/accessibility evidence distinctions.
         family: yosoi_web_capture::WebArtifactFamily,
     },
     /// The prepared document policy could not be represented as a normalization budget.

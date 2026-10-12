@@ -9,12 +9,16 @@ use crate::internal::documents::{DocumentClass, DocumentId};
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum JsonQuerySyntaxError {
     #[error("JSON Pointer must be empty or begin with a slash")]
+    /// A nonroot JSON Pointer does not use the supported leading-slash syntax.
     InvalidPointerSyntax,
     #[error("JSON Pointer contains an invalid tilde escape")]
+    /// A JSON Pointer token uses an escape other than ~0 or ~1.
     InvalidPointerEscape,
     #[error("JSONPath expression is malformed")]
+    /// The authored expression is not valid in the supported JSONPath grammar.
     InvalidPathSyntax,
     #[error("JSONPath expression uses syntax outside the supported subset")]
+    /// JSONPath requests a feature outside the bounded supported evaluator subset.
     UnsupportedPathFeature,
 }
 

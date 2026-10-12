@@ -71,7 +71,7 @@ uv run --no-sync python python/examples/review.py contracts
 uv run --no-sync python python/examples/review.py local
 ```
 
-These commands describe the current review surface. Fresh native-wheel and
-Contract runtime results are still pending; the recorded wheel matrix covers
-an earlier Python SDK snapshot. See [compatibility](compatibility.md) for the
-evidence boundary.
+These commands describe the source-checkout review surface. The recorded wheel
+matrix applies to named earlier SDK snapshots. See [compatibility](compatibility.md)
+for that historical evidence boundary and [Get Started](../quickstart.md) for
+the shared current learning path.

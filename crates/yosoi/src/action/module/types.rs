@@ -150,25 +150,46 @@ pub enum JavaScriptModuleError {
     ParserConfiguration,
     /// The parser could not produce a module syntax tree.
     #[error("could not parse JavaScript module {module_id}")]
-    ParseFailed { module_id: String },
+    ParseFailed {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// The source has a JavaScript syntax error.
     #[error("JavaScript module {module_id} contains invalid syntax")]
-    InvalidSyntax { module_id: String },
+    InvalidSyntax {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// A parsed import declaration did not contain its expected source node.
     #[error("JavaScript module {module_id} has a malformed import declaration")]
-    MalformedImport { module_id: String },
+    MalformedImport {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// A module source string literal could not be decoded safely.
     #[error("JavaScript module {module_id} has an unsupported string escape in an import")]
-    InvalidStringSpecifier { module_id: String },
+    InvalidStringSpecifier {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// A dynamic import must use a literal specifier so its graph can be bounded.
     #[error("JavaScript module {module_id} has a computed dynamic import; use a string literal")]
-    ComputedDynamicImport { module_id: String },
+    ComputedDynamicImport {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// Import attributes require a module kind that this JavaScript-only bundle does not capture.
     #[error("JavaScript module {module_id} uses unsupported import attributes")]
-    UnsupportedImportAttributes { module_id: String },
+    UnsupportedImportAttributes {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// The entry path could not be resolved.
     #[error("could not resolve JavaScript module entry {path}")]
-    EntryUnreadable { path: PathBuf },
+    EntryUnreadable {
+        /// Authored or resolved local entry path involved in the failure.
+        path: PathBuf,
+    },
     /// The entry path has no valid parent/name.
     #[error("JavaScript module entry path is invalid: {0}")]
     InvalidEntryPath(PathBuf),
@@ -177,7 +198,10 @@ pub enum JavaScriptModuleError {
     InvalidRootPath(PathBuf),
     /// The selected entry is outside the caller's explicit bundle root.
     #[error("JavaScript module entry is outside the bundle root: {path}")]
-    EntryOutsideBundle { path: PathBuf },
+    EntryOutsideBundle {
+        /// Authored or resolved local entry path involved in the failure.
+        path: PathBuf,
+    },
     /// A module path could not be represented as UTF-8.
     #[error("JavaScript module paths must be valid UTF-8 relative paths")]
     InvalidModulePath,
@@ -186,19 +210,44 @@ pub enum JavaScriptModuleError {
     InvalidModuleId(String),
     /// A dependency was not found under the bundle root.
     #[error("module {importer} imports missing local module {specifier}")]
-    ModuleNotFound { importer: String, specifier: String },
+    ModuleNotFound {
+        /// Bundle-relative module containing the rejected dependency edge.
+        importer: String,
+        /// Decoded authored module specifier involved in resolution.
+        specifier: String,
+    },
     /// A symlinked dependency points outside the bundle root.
     #[error("module {importer} imports {specifier}, which resolves outside the bundle root")]
-    ModuleOutsideBundle { importer: String, specifier: String },
+    ModuleOutsideBundle {
+        /// Bundle-relative module containing the rejected dependency edge.
+        importer: String,
+        /// Decoded authored module specifier involved in resolution.
+        specifier: String,
+    },
     /// Only local relative module specifiers can be captured in a bundle.
     #[error("module {importer} uses unsupported import specifier {specifier:?}")]
-    UnsupportedSpecifier { importer: String, specifier: String },
+    UnsupportedSpecifier {
+        /// Bundle-relative module containing the rejected dependency edge.
+        importer: String,
+        /// Decoded authored module specifier involved in resolution.
+        specifier: String,
+    },
     /// The bundle exceeded its module count bound.
     #[error("JavaScript module bundle has {actual} modules; maximum is {maximum}")]
-    TooManyModules { actual: usize, maximum: usize },
+    TooManyModules {
+        /// Observed captured modules requiring capture.
+        actual: usize,
+        /// Maximum permitted captured modules.
+        maximum: usize,
+    },
     /// The bundle exceeded its aggregate UTF-8 source bound.
     #[error("JavaScript module bundle has {actual} source bytes; maximum is {maximum}")]
-    BundleTooLarge { actual: usize, maximum: usize },
+    BundleTooLarge {
+        /// Observed aggregate UTF-8 source bytes requiring capture.
+        actual: usize,
+        /// Maximum permitted aggregate UTF-8 source bytes.
+        maximum: usize,
+    },
     /// A configured limit is zero or exceeds an SDK hard cap.
     #[error("JavaScript module limits must be positive and no greater than SDK hard caps")]
     InvalidLimits,
@@ -207,7 +256,10 @@ pub enum JavaScriptModuleError {
     MissingEntry,
     /// Serialized module source and import edges disagree.
     #[error("JavaScript module {module_id} import graph does not match its source")]
-    ImportGraphMismatch { module_id: String },
+    ImportGraphMismatch {
+        /// Bundle-relative source module whose parsing or import metadata was rejected.
+        module_id: String,
+    },
     /// Serialized bundle contains modules unreachable from its entry.
     #[error("JavaScript module bundle contains unreachable modules")]
     UnreachableModule,

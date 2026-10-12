@@ -264,6 +264,7 @@ def plan(root: Path, tag: str) -> dict:
             runner=r,
             arch=a,
             wheel_platform=w,
+            cli_wheel_platform=(f"manylinux_2_39_{a}" if p.startswith("linux-") else w),
             build_jobs=1 if p == "macos-aarch64" else 2,
         )
         for p, t, r, a, w in PLATFORMS
@@ -280,6 +281,9 @@ def plan(root: Path, tag: str) -> dict:
         "candidate": "-rc." in version,
         "toolchain": read_toml(root / "rust-toolchain.toml")["toolchain"]["channel"],
         "platforms": {"include": platforms},
+        # Older release tags predate standalone tool packaging. Every release
+        # from 0.2.1 onward must contain the complete CLI wheel matrix.
+        "cli_wheels": tuple(map(int, version.split("-")[0].split("."))) >= (0, 2, 1),
         "wheels": {
             "include": [platform | abi for platform in platforms for abi in builds]
         },
@@ -327,6 +331,8 @@ def verify_wheels(directory: Path, release: dict) -> None:
     }
     seen = set()
     for file in sorted(directory.glob("*.whl")):
+        if release.get("cli_wheels") and file.name.startswith("yosoi_cli-"):
+            continue
         python, abi, platforms = wheel_identity(
             file, python_version(release["version"])
         )
@@ -376,6 +382,10 @@ def verify_wheels(directory: Path, release: dict) -> None:
                     "Source distribution license is not a nonempty regular file: "
                     f"{license_file}"
                 )
+    if release.get("cli_wheels"):
+        from cli_wheel import verify_cli_wheels
+
+        verify_cli_wheels(directory, release)
 
 
 def sha256(path: Path) -> str:
@@ -400,15 +410,19 @@ def json_url(url: str, *, token: str | None = None) -> dict | None:
 def pypi_pending(directory: Path, version: str, output: Path) -> None:
     import shutil
 
-    release = json_url(f"https://pypi.org/pypi/yosoi/{version}/json")
-    existing = {
-        entry["filename"]: entry["digests"]["sha256"]
-        for entry in (release or {}).get("urls", [])
-    }
+    existing_by_project = {}
     output.mkdir()
     for file in sorted(directory.iterdir()):
         if file.suffix != ".whl" and not file.name.endswith(".tar.gz"):
             continue
+        project = "yosoi-cli" if file.name.startswith("yosoi_cli-") else "yosoi"
+        if project not in existing_by_project:
+            release = json_url(f"https://pypi.org/pypi/{project}/{version}/json")
+            existing_by_project[project] = {
+                entry["filename"]: entry["digests"]["sha256"]
+                for entry in (release or {}).get("urls", [])
+            }
+        existing = existing_by_project[project]
         checksum = sha256(file)
         if file.name in existing:
             if existing[file.name] != checksum:
@@ -453,6 +467,7 @@ def main() -> None:
                     "version",
                     "python_version",
                     "candidate",
+                    "cli_wheels",
                     "toolchain",
                     "source_commit",
                     "platforms",

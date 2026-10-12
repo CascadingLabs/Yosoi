@@ -1,21 +1,29 @@
 ---
-title: Archive availability
-description: Preserve document data today and understand the SDK's current archive boundary.
-order: 19
+title: 'Archive'
+description: 'Preserve captured evidence and understand interface boundaries.'
+order: 0
 ---
 
-# Archive availability
+# Archive
 
-The repository has archive and replay implementations, but `yosoi` does not export an `Archive` type, an `archive` module, or archived request execution methods. Responses intentionally expose data and diagnostics without archive handles.
+The current Rust facade exports `yosoi::Archive`, `automation_record` and `view`. Browser records can retain receipts and captured evidence after a Session closes.
 
-## Save data in your application
+The current Python bridge does not expose those Rust Archive/View APIs. It can preserve ordinary document metadata and bytes in application-owned files.
 
-For a document you want to inspect again, store its ID, profile, and bytes. Reconstruct it with `Document::from_profile(...)` and apply the same Plan. The [save and reuse recipe](../cookbook/save-and-reuse.md) shows this with ordinary files.
+## Choose what to preserve
 
-You can serialize a Policy, Plan, and locator outcome through their Serde implementations. Preserve the Policy used for parsing and evaluation if you need to reproduce those choices.
+| Need                                             | Approach                                                       |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| Re-run location on the same document             | Save identity, profile and bytes                               |
+| Inspect stored browser receipts and observations | Use the supported Rust AutomationRecord and Archive APIs       |
+| Continue live browser interactions               | Keep a live Session; stored evidence is not live tab authority |
 
-## What this preserves
+## Local document reuse
 
-Saving a document lets you repeat document parsing and location without another network request. It does not save the full request lifecycle, every capture artifact, or a live browser session. Preserve response diagnostics and partial-document reasons separately when they matter to your application.
+Follow [Save and reuse a document](../cookbook/save-and-reuse.md). Preserve Policy and Plan when evaluation must use the same settings. Keep partial-document reasons separately when they matter.
 
-Use [Map retention](map.md#reuse-retained-documents) to access responses collected during discovery. Retention is in memory and bounded; it is not a disk archive.
+## Replay and fresh execution
+
+Re-evaluating retained evidence does not send another request or recreate a browser Session. Fresh execution can observe changed remote content.
+
+Map's retained documents are bounded in-memory captures. They are not automatically a persistent disk archive.

@@ -100,12 +100,16 @@ pub struct BoundPageRequest<'policy> {
     request: PageRequest,
 }
 impl BoundPageRequest<'_> {
+    /// Borrows a caller-owned Session while retaining this request's complete Policy.
+    /// Sending acquires temporary Work without closing the caller's browser owner.
     pub fn in_session<'session>(
         &self,
         session: &'session session::Session,
     ) -> session::SessionRequest<'session> {
         crate::session::SessionRequest::new(self.request.clone(), session).bind(self.inner.policy())
     }
+    /// Borrows caller-held tab control with this bound request's complete Policy.
+    /// No new tab control is acquired and the caller remains responsible for releasing Work.
     pub fn with_work<'work>(&self, work: &'work session::Work) -> session::SessionRequest<'work> {
         crate::session::SessionRequest::on_work(self.request.clone(), work)
             .bind(self.inner.policy())

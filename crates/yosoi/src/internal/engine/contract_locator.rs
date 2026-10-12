@@ -4,10 +4,13 @@ use crate::internal::documents::{
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
+/// Pinned Contract locator declarations failed query construction or portable plan compilation.
 pub enum ContractLocatorError {
     #[error(transparent)]
+    /// A pinned root or field query/projection has invalid supported semantics.
     Query(#[from] QueryError),
     #[error(transparent)]
+    /// Named pinned outputs and region declarations cannot form a supported plan.
     Plan(#[from] PlanError),
 }
 

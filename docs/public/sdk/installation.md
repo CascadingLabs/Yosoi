@@ -1,77 +1,49 @@
 ---
-title: Installation
-description: Add the Rust SDK to a local application and run your first request.
-order: 1
+title: 'Installation'
+description: 'Add the released Rust or Python SDK and choose capabilities.'
+order: 0
 ---
 
 # Installation
 
-The examples here use the SDK from a local Yosoi checkout. This avoids assuming that the current facade has been published to a package registry.
+[Get Started](../quickstart.md) runs a first local example. Add Yosoi to your existing project.
 
-## Create an application
+## Install
 
-The repository requires Rust 1.99 or newer and uses edition 2024. Its development toolchain is pinned in `rust-toolchain.toml`.
-
-Create an application next to your checkout:
+### Cargo
 
 ```sh
-cargo new yosoi-example
-cd yosoi-example
+cargo add yosoi
 ```
 
-Add these dependencies to `Cargo.toml`. Adjust the path to point to your checkout's `crates/yosoi` directory:
-
-```toml
-[dependencies]
-yosoi = { path = "../Yosoi/crates/yosoi" }
-tokio = { version = "1", features = ["macros", "rt"] }
-```
-
-## Fetch your first page
-
-Replace `src/main.rs` with:
-
-```rust
-use std::error::Error;
-use yosoi::prelude as ys;
-use ys::request::DocumentOutcome;
-
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let response = ys::request::new("https://example.org/").send().await?;
-
-    for attempt in response.attempts() {
-        println!("Attempt: {:?}, HTTP {:?}", attempt.state(), attempt.status());
-        for selected in attempt.documents() {
-            match selected.outcome() {
-                DocumentOutcome::Produced(document) => {
-                    println!("{:?}: {} bytes", document.class(), document.byte_len());
-                }
-                other => eprintln!("Document: {other:?}"),
-            }
-        }
-    }
-    Ok(())
-}
-```
-
-Run it:
+Rust 1.99 or newer is required. Async examples also use Tokio:
 
 ```sh
-CARGO_BUILD_JOBS=1 cargo run
+cargo add tokio --features macros,rt
 ```
 
-This uses Direct HTTP. Its output depends on the response from the remote site. For a fully local example, start with the [SDK overview](index.md).
+### uv
 
-## Optional dependencies
+```sh
+uv add yosoi
+```
 
-| Task                                                       | Dependency or feature                                                         |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Local documents, locators, contracts, and Policy           | `yosoi`                                                                       |
-| Async Requests and Map                                     | An async runtime; these examples use Tokio                                    |
-| Browser acquisition                                        | `yosoi` with `features = ["browser"]`, plus regular Chrome or Chromium Stable |
-| Serialize policies, plans, or findings in your application | `serde_json = "1"`                                                            |
+Use CPython 3.12 through 3.15. uv resolves the native wheel and Pydantic. Source builds require the Rust toolchain and native prerequisites.
 
-The SDK has no default Cargo features. Enabling `browser` makes browser acquisition available; choose it through [Policy](policy.md) to use it.
+## Browser support
 
-Continue with [Requests](requests.md), or [Documents](documents.md) if your input is already on disk.
+Rust browser examples need the feature:
+
+```sh
+cargo add yosoi --features browser
+```
+
+Python wheels have a fixed compiled capability set. Extras do not rebuild the extension. Choose the published wheel matching your platform and interpreter ABI.
+
+Both interfaces need compatible regular Chrome or Chromium installed separately for browser work. Keep browser sandboxing and site isolation enabled.
+
+## Packages
+
+The distribution name is `yosoi` on [crates.io](https://crates.io/crates/yosoi/0.2.1) and [PyPI](https://pypi.org/project/yosoi/0.2.1/). The Rust crate name is also `yosoi`.
+
+Continue with [Requests](requests.md), [Documents](documents.md) or [Flows](flows.md).

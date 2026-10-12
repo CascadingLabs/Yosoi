@@ -636,7 +636,7 @@ fi
             ]
             self.assertEqual(len(matching), 1)
 
-    def test_release_plan_publishes_only_sdk_and_independent_derive(self):
+    def test_release_plan_publishes_sdk_and_synchronized_derive(self):
         root = DIRECTORY.parents[1]
         version = release.read_toml(root / "Cargo.toml")["workspace"]["package"][
             "version"
@@ -655,7 +655,10 @@ fi
         self.assertNotIn("yosoi-chromiumoxide", manifests)
         self.assertNotIn("yosoi-chromiumoxide-cdp", manifests)
         derive = manifests["yosoi-contracts-derive"][1]
-        self.assertEqual(release.package_version(root, derive), "0.1.2")
+        self.assertEqual(
+            release.package_version(root, derive),
+            release.read_toml(root / "Cargo.toml")["workspace"]["package"]["version"],
+        )
 
         workspace = release.read_toml(root / "Cargo.toml")["workspace"]
         owned_forks = {"yosoi-chromiumoxide", "yosoi-chromiumoxide-cdp"}

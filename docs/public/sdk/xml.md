@@ -8,6 +8,10 @@ order: 8
 
 XML documents support CSS, XPath, and tree text queries. Names are case sensitive, and namespace identity matters.
 
+## Example: xml
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -28,6 +32,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+Both queries explicitly bind prefix `s` to the fixture namespace. Namespace URI and local name identify the elements.
+
+### Python
+
+```python
+import yosoi as ys
+
+document = ys.Document.xml(
+    "catalog.xml",
+    '<catalog xmlns="urn:shop"><product sku="tea"><name>Tea</name></product></catalog>',
+)
+names = ys.xpath("/s:catalog/s:product/s:name").with_namespace("s", "urn:shop")
+products = ys.css("s|product").with_namespace("s", "urn:shop")
+plan = ys.Plan(outputs=[
+    ys.output("name", names.text()),
+    ys.output("sku", products.attribute("sku")),
+])
+outcome = document.locate(plan)
+assert outcome.values("name") == ["Tea"]
+assert outcome.values("sku") == ["tea"]
+```
+
+Use the same explicit namespace binding for XPath and CSS. The checks confirm both element text and the SKU attribute.
+
+## Walk through the result
 
 The query prefix `s` is local to your query. It resolves to `urn:shop`, regardless of which prefix the source document uses.
 

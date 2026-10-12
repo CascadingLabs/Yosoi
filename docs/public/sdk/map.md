@@ -10,6 +10,10 @@ Map starts with a seed URL and builds an inventory from links, robots and sitema
 
 ## Basic usage
 
+## Example: map
+
+### Rust
+
 ```rust
 use std::error::Error;
 use yosoi::prelude as ys;
@@ -33,6 +37,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+The Policy respects robots and bounds the run to 20 requests with two concurrent operations. Pages retain their exploration state.
+
+### Python
+
+```python
+import asyncio
+import yosoi as ys
+from yosoi.policy import Map, MapLimits, Policy
+
+async def main():
+    policy = Policy(map=Map(
+        robots="respect",
+        limits=MapLimits(max_requests=20, max_concurrency=2),
+    ))
+    outcome = await ys.map.new("https://example.org/").bind(policy).send()
+    print("Stopped:", outcome.termination)
+    for page in outcome.pages:
+        print(page.url, page.exploration)
+
+asyncio.run(main())
+```
+
+The same robots behavior and limits use Python authoring models. Termination and page exploration are separate facts; inventory entries do not prove site-wide coverage.
+
+## Walk through the result
 
 Creating or binding a Map request performs no network I/O. Map clones the bound Policy and validates it when sending. `send()` consumes the request; create another request for another run.
 

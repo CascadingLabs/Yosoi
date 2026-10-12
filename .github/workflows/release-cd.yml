@@ -50,6 +50,7 @@ jobs:
       version: ${{ steps.plan.outputs.version }}
       python_version: ${{ steps.plan.outputs.python_version }}
       candidate: ${{ steps.plan.outputs.candidate }}
+      cli_wheels: ${{ steps.plan.outputs.cli_wheels }}
       source_commit: ${{ steps.plan.outputs.source_commit }}
       toolchain: ${{ steps.plan.outputs.toolchain }}
       platforms: ${{ steps.plan.outputs.platforms }}
@@ -462,10 +463,58 @@ jobs:
           "$executable" --version
           archive="yosoi-$RELEASE_TAG-$PLATFORM.tar.gz"
           uv run --locked --project scripts/releases python scripts/cd/archive.py --executable "$executable" --output "dist/$archive"
+      - name: Package the same executable for Python tool installation
+        if: needs.identity.outputs.cli_wheels == 'true'
+        env:
+          TARGET: ${{ matrix.target }}
+          PLATFORM: ${{ matrix.cli_wheel_platform }}
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          executable="target/$TARGET/release/yosoi"
+          if [ "$RUNNER_OS" = Windows ]; then executable="$executable.exe"; fi
+          if [ "$RUNNER_OS" = Linux ]; then
+            native_platform="linux_${PLATFORM##*_2_39_}"
+            uv run --locked --project scripts/releases python scripts/cd/cli_wheel.py --executable "$executable" --version "$VERSION" --platform "$native_platform" --output cli-wheel-input
+            uv run --locked --project scripts/releases --with auditwheel==6.8.2 --with patchelf==0.19.1.0 auditwheel repair --plat "$PLATFORM" --only-plat --wheel-dir dist cli-wheel-input/*.whl
+          else
+            uv run --locked --project scripts/releases python scripts/cd/cli_wheel.py --executable "$executable" --version "$VERSION" --platform "$PLATFORM" --output dist
+          fi
+      - name: Install the CLI wheel as an isolated uv tool and exercise its commands
+        if: needs.identity.outputs.cli_wheels == 'true'
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
+          UV_TOOL_DIR: ${{ runner.temp }}/yosoi-cli-tools
+          UV_TOOL_BIN_DIR: ${{ runner.temp }}/yosoi-cli-bin
+        run: |
+          uv tool install --no-index dist/yosoi_cli-*.whl
+          installed="$UV_TOOL_BIN_DIR/yosoi"
+          if [ "$RUNNER_OS" = Windows ]; then installed="$installed.exe"; fi
+          test "$("$installed" --version)" = "yosoi $VERSION"
+          "$installed" --help
+          "$installed" request --help
+          "$installed" completions bash > "$RUNNER_TEMP/yosoi-completions.bash"
+          uv run --locked --project scripts/releases python scripts/cd/cli_smoke.py --executable "$installed" --version "$VERSION"
+          uv tool uninstall yosoi-cli
+      - name: Test the native installer against local release fixtures
+        if: runner.os != 'Windows' && needs.identity.outputs.cli_wheels == 'true'
+        env:
+          YOSOI_TEST_EXECUTABLE: target/${{ matrix.target }}/release/yosoi
+        run: uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests -p test_installers.py
+      - name: Test PowerShell installation against local release fixtures
+        if: runner.os == 'Windows' && needs.identity.outputs.cli_wheels == 'true'
+        shell: pwsh
+        run: ./scripts/install/test-install.ps1 -Executable "target/${{ matrix.target }}/release/yosoi.exe" -Version "${{ needs.identity.outputs.version }}"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: release-cli-${{ matrix.platform }}
           path: dist/*.tar.gz
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: needs.identity.outputs.cli_wheels == 'true'
+        with:
+          name: release-cli-wheel-${{ matrix.platform }}
+          path: dist/yosoi_cli-*.whl
           if-no-files-found: error
 
   reference:
@@ -561,6 +610,12 @@ jobs:
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: release-wheel-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        if: needs.identity.outputs.cli_wheels == 'true'
+        with:
+          pattern: release-cli-wheel-*
           path: dist
           merge-multiple: true
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
@@ -728,8 +783,12 @@ jobs:
       - name: Publish checksummed artifacts and finalized notes
         env:
           GH_TOKEN: ${{ github.token }}
+          CLI_WHEELS: ${{ needs.identity.outputs.cli_wheels }}
         run: |
           cp release-plan.json dist/
+          if [ "$CLI_WHEELS" = true ]; then
+            cp scripts/install/install.sh scripts/install/install.ps1 dist/
+          fi
           uv run --locked --project scripts/releases python scripts/cd/release.py checksums --tag "$RELEASE_TAG" > dist/SHA256SUMS
           uv run --locked --project scripts/releases python scripts/cd/publish.py github --tag "$RELEASE_TAG" --finalize
 
