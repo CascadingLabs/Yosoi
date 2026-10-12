@@ -456,6 +456,7 @@ jobs:
           CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
         run: |
           cargo test --release --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
+          cargo test --release --locked --target "$TARGET" -p yosoi --features cli --bin yosoi self_command -- --test-threads=1
           cargo build --release --locked --target "$TARGET" -p yosoi --features cli --bin yosoi
           mkdir -p dist
           executable="target/$TARGET/release/yosoi"
@@ -493,8 +494,15 @@ jobs:
           "$installed" --help
           "$installed" request --help
           "$installed" completions bash > "$RUNNER_TEMP/yosoi-completions.bash"
+          "$installed" self update --yes
+          "$installed" self uninstall --yes
+          test -f "$installed"
           uv run --locked --project scripts/releases python scripts/cd/cli_smoke.py --executable "$installed" --version "$VERSION"
           uv tool uninstall yosoi-cli
+      - name: Test self maintenance with the exact native executable
+        env:
+          YOSOI_TEST_CLI: target/${{ matrix.target }}/release/yosoi${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests -p test_self_maintenance.py
       - name: Test the native installer against local release fixtures
         if: runner.os != 'Windows' && needs.identity.outputs.cli_wheels == 'true'
         env:
@@ -504,6 +512,10 @@ jobs:
         if: runner.os == 'Windows' && needs.identity.outputs.cli_wheels == 'true'
         shell: pwsh
         run: ./scripts/install/test-install.ps1 -Executable "target/${{ matrix.target }}/release/yosoi.exe" -Version "${{ needs.identity.outputs.version }}"
+      - name: Test deferred Windows update and failure preservation
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/install/test-self-helper.ps1 -Executable "target/${{ matrix.target }}/release/yosoi.exe" -Version "${{ needs.identity.outputs.version }}"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: release-cli-${{ matrix.platform }}

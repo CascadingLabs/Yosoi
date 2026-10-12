@@ -209,3 +209,29 @@ fn sdk_manifest_retains_a_feature_gated_cli_and_private_runtime_boundary()
     }
     Ok(())
 }
+
+#[test]
+fn self_maintenance_help_and_syntax_are_available() -> Result<(), Box<dyn Error>> {
+    for args in [
+        vec!["self", "--help"],
+        vec!["self", "update", "--help"],
+        vec!["self", "uninstall", "--help"],
+    ] {
+        let output = run_yosoi(&args)?;
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let update = run_yosoi(&["self", "update", "--help"])?;
+    let text = String::from_utf8(update.stdout)?;
+    assert!(text.contains("--target-version"));
+    assert!(text.contains("--yes"));
+    let invalid = run_yosoi(&["self", "unknown"])?;
+    assert_eq!(invalid.status.code(), Some(2));
+    let profile = run_yosoi(&["--profile", "example", "self", "uninstall", "--yes"])?;
+    assert!(!profile.status.success());
+    assert!(String::from_utf8(profile.stderr)?.contains("--profile does not apply"));
+    Ok(())
+}

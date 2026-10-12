@@ -36,9 +36,34 @@ esac
 case "$install_dir" in /*) ;; *) fail '--install-dir must be an absolute path' ;; esac
 [ ! -L "$install_dir/yosoi" ] || fail "Refusing to replace a symlink at $install_dir/yosoi. If this is the old Python CLI, run: uv tool uninstall yosoi"
 [ ! -d "$install_dir/yosoi" ] || fail 'Destination is a directory'
-work=$(mktemp -d)
+root_dir=$(dirname "$install_dir")
+[ ! -f "$root_dir/pyvenv.cfg" ] && [ ! -f "$root_dir/.crates2.json" ] && [ ! -f "$root_dir/.crates.toml" ] || fail 'Destination is managed by UV/Python or Cargo. Uninstall through that manager before changing installation methods.'
+[ ! -L "$install_dir/.yosoi-install.json" ] && [ ! -d "$install_dir/.yosoi-install.json" ] || fail 'Invalid installation receipt destination'
+mkdir -p "$install_dir"
+lock="$install_dir/.yosoi-maintenance.lock"
+(set -C; : > "$lock") 2>/dev/null || fail 'Another maintenance operation holds .yosoi-maintenance.lock. Inspect an interrupted operation before removing its lock.'
+work=$(mktemp -d) || { rm -f "$lock"; fail 'Could not create installer staging directory'; }
 staged=
-trap 'rm -rf "$work"; if [ -n "$staged" ]; then rm -f "$staged"; fi' EXIT HUP INT TERM
+receipt_staged=
+backup=
+replaced=false
+cleanup() {
+    if [ "$replaced" = true ]; then
+        if [ -n "$backup" ]; then
+            if ! mv -f "$backup" "$install_dir/yosoi"; then
+                printf 'Rollback failed. Previous executable preserved at %s\n' "$backup" >&2
+            fi
+            backup=
+        else rm -f "$install_dir/yosoi"; fi
+    fi
+    rm -rf "$work"
+    if [ -n "$staged" ]; then rm -f "$staged"; fi
+    if [ -n "$receipt_staged" ]; then rm -f "$receipt_staged"; fi
+    if [ -n "$backup" ]; then rm -f "$backup"; fi
+    rm -f "$lock"
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 base=https://github.com/CascadingLabs/Yosoi/releases
 download() { curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fLsS --retry 2 --connect-timeout 15 --max-time 300 "$1" -o "$2"; }
 if [ -z "$version" ]; then
@@ -71,8 +96,23 @@ mkdir -p "$install_dir"
 staged=$(mktemp "$install_dir/.yosoi.XXXXXX")
 cp "$work/yosoi" "$staged"
 chmod 755 "$staged"
+if command -v sha256sum >/dev/null 2>&1; then
+    binary_hash=$(sha256sum "$staged" | awk '{print $1}')
+else
+    binary_hash=$(shasum -a 256 "$staged" | awk '{print $1}')
+fi
+receipt_staged=$(mktemp "$install_dir/.yosoi-receipt.XXXXXX")
+printf '{"schema":1,"method":"standalone","version":"%s","sha256":"%s","path_added":false}\n' "$version" "$binary_hash" > "$receipt_staged"
+if [ -f "$install_dir/yosoi" ]; then
+    backup=$(mktemp "$install_dir/.yosoi-backup.XXXXXX")
+    cp -p "$install_dir/yosoi" "$backup"
+fi
 mv -f "$staged" "$install_dir/yosoi"
 staged=
+replaced=true
+mv -f "$receipt_staged" "$install_dir/.yosoi-install.json"
+receipt_staged=
+replaced=false
 printf 'Installed Yosoi %s to %s/yosoi\n' "$version" "$install_dir"
 case ":$PATH:" in
     *":$install_dir:"*) printf 'Run: yosoi --help\n' ;;

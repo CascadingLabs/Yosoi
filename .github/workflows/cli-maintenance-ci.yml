@@ -1,0 +1,106 @@
+name: CLI maintenance
+
+on:
+  pull_request:
+    paths:
+      - 'crates/yosoi/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'scripts/install/**'
+      - 'scripts/cd/tests/test_self_maintenance.py'
+      - '.github/workflows/cli-maintenance-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-maintenance-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_BUILD_JOBS: '1'
+  RAYON_NUM_THREADS: '1'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  native:
+    name: Native maintenance (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        runner: [windows-2025, macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Load toolchain and native prerequisites
+        run: |
+          channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+          test -n "$channel"
+          rustup toolchain install "$channel" --profile minimal
+          if [ "$RUNNER_OS" = Windows ]; then
+            printf '%s\n' 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
+          fi
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: cli-maintenance-${{ matrix.runner }}
+          cache-workspace-crates: 'true'
+          cache-on-failure: 'true'
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.15'
+      - name: Run focused CLI tests and choose the same executable for installation tests
+        run: |
+          cargo test --locked -p yosoi --features cli --bin yosoi --test cli --test completions_cli -- --test-threads=1
+          executable=target/debug/yosoi
+          if [ "$RUNNER_OS" = Windows ]; then executable="$executable.exe"; fi
+          echo "YOSOI_TEST_CLI=$executable" >> "$GITHUB_ENV"
+          version=$("$executable" --version | tr -d '\r' | cut -d ' ' -f 2)
+          echo "YOSOI_TEST_VERSION=$version" >> "$GITHUB_ENV"
+      - name: Exercise the executable in disposable standalone and package-managed installations
+        run: uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests -p test_self_maintenance.py
+      - name: Exercise a real UV installation of the same executable
+        env:
+          UV_TOOL_DIR: ${{ runner.temp }}/yosoi-self-ci-tools
+          UV_TOOL_BIN_DIR: ${{ runner.temp }}/yosoi-self-ci-bin
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            platform=win_amd64
+          elif [ "$(uname -m)" = arm64 ]; then
+            platform=macosx_11_0_arm64
+          else
+            platform=macosx_11_0_x86_64
+          fi
+          uv run --locked --project scripts/releases python scripts/cd/cli_wheel.py --executable "$YOSOI_TEST_CLI" --version "$YOSOI_TEST_VERSION" --platform "$platform" --output "$RUNNER_TEMP/self-ci-wheels"
+          uv tool install --no-index "$RUNNER_TEMP"/self-ci-wheels/*.whl
+          installed="$UV_TOOL_BIN_DIR/yosoi"
+          if [ "$RUNNER_OS" = Windows ]; then installed="$installed.exe"; fi
+          "$installed" self update --yes | tee "$RUNNER_TEMP/self-ci-update.txt"
+          "$installed" self uninstall --yes | tee "$RUNNER_TEMP/self-ci-uninstall.txt"
+          grep -Fq 'uv tool upgrade yosoi-cli' "$RUNNER_TEMP/self-ci-update.txt"
+          grep -Fq 'uv tool uninstall yosoi-cli' "$RUNNER_TEMP/self-ci-uninstall.txt"
+          test -f "$installed"
+          uv tool uninstall yosoi-cli
+      - name: Verify native PowerShell installation and deferred replacement
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./scripts/install/test-install.ps1 -Executable $env:YOSOI_TEST_CLI -Version $env:YOSOI_TEST_VERSION
+          ./scripts/install/test-self-helper.ps1 -Executable $env:YOSOI_TEST_CLI -Version $env:YOSOI_TEST_VERSION
+      - name: Verify native macOS installer
+        if: runner.os == 'macOS'
+        env:
+          YOSOI_TEST_EXECUTABLE: ${{ env.YOSOI_TEST_CLI }}
+        run: uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests -p test_installers.py
