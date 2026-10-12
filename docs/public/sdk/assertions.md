@@ -1,6 +1,6 @@
 ---
 title: Assertions
-description: Check one validated Contract observation with ordinary Rust predicates.
+description: Check one validated Contract observation with Rust closures or Python predicates.
 order: 14
 ---
 
@@ -61,6 +61,7 @@ class Cart(ys.Contract):
     items: list[str] = ys.Field("Items", locator=ys.css(".item"))
 
 checkout = ys.flow([
+    # callout: Pydantic validates the observed Cart before the named checks run.
     ys.assert_all(Cart, checks=[
         ys.check("expected total", lambda cart: cart.total.minor_units == 450),
         ys.check("nonempty cart", lambda cart: len(cart.items) > 0),
@@ -71,7 +72,17 @@ checkout = ys.flow([
 print(checkout.to_json())
 ```
 
-The same Contract and checks use named synchronous predicates. Serializing validates the recipe without executing the checks. Invocation requires a Work lease whose page contains the cart bindings.
+The same Contract and checks use named synchronous predicates. Serializing
+validates the recipe without executing the checks. Invocation requires a Work
+lease whose page contains the cart bindings.
+
+> [!NOTE]
+> **Python**
+>
+> The browser assertion path constructs the Cart model through Pydantic before
+> running its predicates. Field and model validators apply; if model
+> validation fails, the predicates are skipped and the report keeps structured
+> validation details with the candidate evidence.
 
 ## Walk through the checks
 
@@ -79,7 +90,7 @@ The explicit `&Cart` parameter annotation gives Rust enough type information
 for the free `check` helper. `Cart::plan()` is the existing locator Plan;
 there is no new target or source-binding wrapper.
 
-A `check` is an `Fn(&Cart) -> bool`. It can compare fields, use `!=`, `<`, `<=`,
+A Rust `check` is an `Fn(&Cart) -> bool`. It can compare fields, use `!=`, `<`, `<=`,
 `>`, `>=`, ranges and iterators, and inspect existing supported collection
 fields. Contract validation remains separate from the business predicate.
 This feature does not add new Contract value conversions.
@@ -158,7 +169,7 @@ document = ys.Document.html(
 )
 
 # Validate the record before checking the business rules.
-cart, = ys.extract(document, Cart).validate().require_all()
+cart, = ys.extract(document, Cart)
 assert cart.total.minor_units == 450
 assert len(cart.items) == 1
 print(cart)
@@ -196,7 +207,7 @@ panics cannot be recovered.
 The group accepts 1–128 checks and optional nonempty names of at most 256 bytes.
 Recipe, capture and result bounds still apply.
 
-Immediate assertions check once. Use [Until](../cookbook/assert-and-wait.md)
+Immediate assertions check once. Use [Until](../concepts/actions-and-flows.md#checks-and-waits)
 to observe a supported condition within a bounded scope. Async capture and ordered execution do not introduce polling
 or retries. Checking after a click observes later state; it does not establish
 that the click caused the observed state.

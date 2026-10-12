@@ -258,7 +258,7 @@ function checkSafeMdx(body, file) {
   if (calloutOpen) fail(`${file}: Callout block has no closing tag`);
 }
 
-function buildManifestEntries(entries) {
+function buildManifestEntries(entries, requireRoot = true) {
   const pages = Object.create(null);
   const assets = Object.create(null);
   const foldedAssets = new Map();
@@ -314,8 +314,8 @@ function buildManifestEntries(entries) {
     assets[relativePath] = { sha256: sha256(entry.bytes) };
   }
 
-  if (Object.keys(pages).length === 0) fail('docs/public must contain at least one non-draft Markdown or MDX page');
-  if (!Object.hasOwn(pages, '/')) fail('docs/public requires a root index.md or index.mdx');
+  if (requireRoot && Object.keys(pages).length === 0) fail('docs/public must contain at least one non-draft Markdown or MDX page');
+  if (requireRoot && !Object.hasOwn(pages, '/')) fail('docs/public requires a root index.md or index.mdx');
   const sortedPages = Object.fromEntries(Object.entries(pages).sort(([left], [right]) => compareText(left, right)));
   const sortedAssets = Object.fromEntries(Object.entries(assets).sort(([left], [right]) => compareText(left, right)));
   return { pages: sortedPages, assets: sortedAssets };
@@ -446,6 +446,16 @@ export function generatePreview({ root, version, repository, sourceCommit, schem
   const commit = parseCommit(sourceCommit, 'preview source commit');
   const entries = collectDirectory(root);
   return makeManifest({ version, repository, commit, entries, preview: true });
+}
+
+// Local watchers reuse the publication rules without scanning the whole source
+// tree. An excluded or draft page has no entry and requires route reconciliation.
+export function generatePreviewPage(file, bytes) {
+  if (!file.endsWith('.md')) fail(`${file}: incremental previews require Markdown`);
+  const { pages } = buildManifestEntries([
+    { file, bytes, type: 'blob', mode: '100644' },
+  ], false);
+  return Object.entries(pages)[0];
 }
 
 export function generateFromGit({ cwd = process.cwd(), source, version, repository, schemaVersion = SCHEMA_VERSION }) {

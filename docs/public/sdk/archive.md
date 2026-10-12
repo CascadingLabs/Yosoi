@@ -20,7 +20,7 @@ The current Python bridge does not expose those Rust Archive/View APIs. It can p
 
 ## Local document reuse
 
-Follow [Save and reuse a document](../cookbook/save-and-reuse.md). Preserve Policy and Plan when evaluation must use the same settings. Keep partial-document reasons separately when they matter.
+See [Documents](documents.md). Preserve Policy and Plan when evaluation must use the same settings. Keep partial-document reasons separately when they matter.
 
 ## Replay and fresh execution
 

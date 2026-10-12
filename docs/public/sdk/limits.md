@@ -69,6 +69,15 @@ Contract extraction and validation have additional bounds. The default extractio
 
 Default validation allows 1,024 fields and 100,000 records, conversions, issues, and retained provenance items in their respective domains. Low-level validation-limit types are not exported by the SDK's authoring namespaces.
 
+> [!NOTE]
+> **Python**
+>
+> Python Contract extraction accepts an `ExtractionPolicy` with separate
+> `extraction_limits` and `validation_limits`. Native preflight bounds candidate
+> and schema work before Pydantic validators run. The issue limit is applied
+> after validation errors are collected; it does not interrupt work inside a
+> custom Python validator. See [Python errors and limits](../python/errors-and-limits.md).
+
 ## Map defaults
 
 All these fields live under `policy.map.limits`:

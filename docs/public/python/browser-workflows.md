@@ -69,11 +69,11 @@ async def main():
 asyncio.run(main())
 ```
 
-See [Run JavaScript](../cookbook/run-javascript.md) for the explanation and immutable source snapshots.
+See [Actions and Flows](../concepts/actions-and-flows.md) for how recipes are authored and invoked.
 
 ## Assertions and waits
 
-Use the [typed assertion programs](../sdk/assertions.md) to check a current observation. Use [bounded Until](../cookbook/assert-and-wait.md) when the task needs to wait for supported evidence. Predicates are synchronous and must return promptly.
+Use the [typed assertion programs](../sdk/assertions.md) to check a current observation. Use [bounded Until](../concepts/actions-and-flows.md#checks-and-waits) when the task needs to wait for supported evidence. Predicates are synchronous and must return promptly.
 
 ## Cancellation and cleanup
 

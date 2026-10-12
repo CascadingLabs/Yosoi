@@ -26,4 +26,4 @@ The JSON includes pages, source observations, and unfinished work. Inspect termi
 
 Use `yosoi map --help` for the full option list.
 
-Try [Discover and fetch](../cookbook/discover-and-fetch.md), or see [SDK Map](../sdk/map.md).
+See [SDK Map](../sdk/map.md) for scope and retained documents.

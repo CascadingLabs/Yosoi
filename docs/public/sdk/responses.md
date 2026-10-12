@@ -54,15 +54,17 @@ use ys::request::{DocumentOutcome, ResponseRef};
 fn print_titles(response: ResponseRef<'_>) -> Result<(), Box<dyn Error>> {
     let plan = ys::Plan::new([ys::output("title", ys::css("h1")?.text())?])?;
 
+    // callout: A response keeps every acquisition attempt in Policy order. Inspect each attempt's requested documents separately.
     for attempt in response.attempts() {
         for selected in attempt.documents() {
             match selected.outcome() {
+                // callout: This branch accepts only fully produced HTML. A completed acquisition alone does not guarantee usable evidence.
                 DocumentOutcome::Produced(document)
                     if document.class() == DocumentClass::SourceHtml =>
                 {
                     println!("{:?}", document.locate(&plan));
                 }
-                DocumentOutcome::Partial { reasons, .. } => {
+                DocumentOutcome::Partial { reasons, .. } => { // callout: Partial evidence stays distinct. Inspect `reasons` before deciding whether it is sufficient for your task.
                     eprintln!("Partial document: {reasons:?}");
                 }
                 other => eprintln!("Other document outcome: {other:?}"),
@@ -82,12 +84,14 @@ import yosoi as ys
 
 def print_titles(response):
     plan = ys.Plan(outputs=[ys.output("title", ys.css("h1").text())])
+    # callout: A response keeps every acquisition attempt in Policy order. Inspect each attempt's requested documents separately.
     for attempt in response.attempts:
         for selected in attempt.documents:
             outcome = selected.outcome
+            # callout: This branch accepts only fully produced HTML. A completed acquisition alone does not guarantee usable evidence.
             if outcome.status == "produced" and outcome.document.document_class == "source_html":
                 print(outcome.document.locate(plan))
-            elif outcome.status == "partial":
+            elif outcome.status == "partial": # callout: Partial evidence stays distinct. Inspect `reasons` before deciding whether it is sufficient for your task.
                 print("Partial document:", outcome.reasons)
             else:
                 print("Other document outcome:", outcome)

@@ -92,6 +92,7 @@ Try [CLI Search](../cli/search.md) for a terminal example. Exact Rust signatures
 Use [Requests](requests.md) to acquire a chosen destination and
 [Contracts](contracts.md) to extract a typed Rust record. Search does not fetch
 its result URLs automatically. The [Python SDK](python.md) has a runnable Search
-review example and a Pydantic Contract surface. Python Contracts delegate
-extraction and validation to Rust; their per-item parity evidence is tracked in
-the [Python parity report](../python/parity.md).
+review example and a Pydantic Contract surface. Python locates and groups
+evidence through the native SDK, then validates Contract records through
+Pydantic. The [Python parity report](../python/parity.md) keeps those typed
+record rules separate from Rust `RuntimeContract` conformance.

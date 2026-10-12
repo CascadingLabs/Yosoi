@@ -9,6 +9,6 @@ order: 0
 This URL previously held a browser design review with proposed interfaces and implementation checkpoints. The current learning pages describe the supported public APIs.
 
 - [Shared concepts](../concepts/index.md) explains the shared behavior.
-- [Worked tasks](../cookbook/index.md) provides the corresponding task or capability details.
+- [Actions and Flows](../sdk/flows.md) provides Rust and Python examples.
 
 Use the Rust or Python example controls on those pages. The original review remains in repository history; its proposed interfaces are not current SDK examples.

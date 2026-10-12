@@ -82,6 +82,17 @@ Filters, recursive descent, unions, slices, negative indices, object wildcards, 
 
 ## Contract conversion
 
-JSON findings remain `ProjectedValue::Json`. The current Contract `String` conversion accepts text and attribute projections; it does not coerce a JSON string. Read JSON values directly in your application, or explicitly convert them before constructing an application model.
+For Rust `RuntimeContract`, JSON findings remain `ProjectedValue::Json`. Its
+`String` conversion accepts text and attribute projections; it does not coerce
+a JSON string. Read JSON values directly in your application, or explicitly
+convert them before constructing a runtime Contract value.
+
+> [!NOTE]
+> **Python**
+>
+> A Python Contract validates the projected value through Pydantic. A custom
+> Pydantic model can accept a text or JSON projection when its schema or
+> validators support that input. This Python behavior does not extend the
+> portable Rust `RuntimeContract` value vocabulary.
 
 See [Locators](locators.md) for evidence coordinates and outcome handling.

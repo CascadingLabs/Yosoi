@@ -62,3 +62,6 @@ completions/
 
 # Pinned local release-note tooling environment
 /scripts/releases/.venv
+
+# Local Kyoto cafe discovery experiment
+/Kyoto/

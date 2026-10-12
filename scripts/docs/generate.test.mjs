@@ -10,11 +10,27 @@ import {
   addCatalogVersion,
   generateFromGit,
   generatePreview,
+  generatePreviewPage,
   parseFrontmatter,
   setCatalogLatest,
   validateManifest,
   writeManifest,
 } from './generate.mjs';
+
+test('incremental page metadata uses the full manifest rules without requiring a root page', () => {
+  const bytes = Buffer.from('---\ntitle: Guide\ndescription: A guide.\norder: 3\n---\n# Guide\n\nBody.\n');
+  const [route, page] = generatePreviewPage('guides/example.md', bytes);
+  assert.equal(route, '/guides/example');
+  assert.deepEqual(page, {
+    file: 'guides/example.md', title: 'Guide', description: 'A guide.', order: 3,
+    format: 'markdown', sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+  });
+  assert.equal(generatePreviewPage('guides/example.md', Buffer.from('---\ndraft: true\n---\nDraft.')), undefined);
+  assert.equal(generatePreviewPage('_private.md', Buffer.from('Private.')), undefined);
+  assert.throws(() => generatePreviewPage('../escape.md', bytes), /path|segment/);
+  assert.throws(() => generatePreviewPage('guides/example.md', Buffer.from('---\norder: -1\n---')), /order/);
+  assert.throws(() => generatePreviewPage('guides/example.md', Buffer.from([0xff])), /UTF-8/);
+});
 
 function git(root, ...args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

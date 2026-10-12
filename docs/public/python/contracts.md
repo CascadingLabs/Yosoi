@@ -1,97 +1,145 @@
 ---
 title: Python Contracts
-description: Declare typed Pydantic records and let Rust extract, convert, and validate them.
+description: Extract validated Pydantic models, including custom types and field validators.
 order: 3
 ---
 
 # Python Contracts
 
-Subclass `ys.Contract` to describe a record. Use `ys.Field` for each named
-field. Pydantic supplies the authoring model; the native Rust SDK owns schema
-identity, evidence grouping, cardinality checks, conversion, semantic
-validation, and the final `require_all()` decision.
+Subclass `ys.Contract` to describe a record and use `ys.Field` for extraction bindings. Rust locates and groups the original evidence. Python constructs the resulting records through Pydantic, including your constraints, defaults, field validators and model validators.
+
+## Example: validated records
+
+`Book.extract(book_document)` returns validated Book instances. `ys.extract(document, Book)` is the equivalent functional entry point. Neither requires a separate validation call.
+
+`ys.Field` accepts ordinary Pydantic field options alongside a locator, description and optional output ID. A bare query uses text projection.
 
 ```python
+from pydantic import field_validator
 import yosoi as ys
 
 class Book(ys.Contract):
     """A book offered for sale."""
 
     root = ys.css("article")
-    author: str = ys.Field("Author", id="byline", locator=ys.css(".author"))
+    author: str = ys.Field("Author", locator=ys.css(".author"), min_length=1)
     price: ys.Money = ys.Field("USD price", locator=ys.css(".price"))
-    subtitle: str | None = ys.Field("Optional subtitle", locator=ys.css(".subtitle"))
+    subtitle: str | None = ys.Field("Optional subtitle", locator=ys.css(".subtitle"), default=None)
     tags: list[str] = ys.Field("Book tags", locator=ys.css(".tag"))
 
-document = ys.Document.html(
+    @field_validator("author", mode="before")
+    @classmethod
+    def clean_author(cls, value: str) -> str:
+        return value.strip()
+
+book_document = ys.Document.html(
     "books",
-    "<article><b class='author'>Ada</b><b class='price'>$12.34</b>"
+    "<article><b class='author'> Ada </b><b class='price'>$12.34</b>"
     "<i class='tag'>computing</i></article>",
 )
-extracted = ys.extract(document, Book)
-outcome = extracted.validate()
+# callout: The class method and ys.extract(book_document, Book) share the same Pydantic validation path.
+books = Book.extract(book_document)
+for book in books:
+    print(book.author, book.price, book.tags)
 ```
 
-## Types determine cardinality
+The name validator trims the extracted text before Pydantic checks its length. The price becomes Money, the absent subtitle becomes None, and the tags remain an ordered list. These selectors are explicit bindings for the supplied HTML; descriptions alone do not discover elements.
 
-The first Contract slice accepts `str`, `ys.Money`, `T | None`, and
-`list[T]`, where `T` is `str` or `ys.Money`:
+## Custom field types
 
-| Python annotation                   | Rust cardinality | Meaning                                         |
-| ----------------------------------- | ---------------- | ----------------------------------------------- |
-| `str` or `ys.Money`                 | `exactly_one`    | One complete scalar value is required.          |
-| `str \| None` or `ys.Money \| None` | `zero_or_one`    | No value or one complete scalar value is valid. |
-| `list[str]` or `list[ys.Money]`     | `many`           | Zero or more complete values are valid.         |
-
-Two or more findings for either scalar shape produce an `excess_candidates`
-issue. A `list[T]` preserves every value in locator order. A partial or unknown
-finding remains an `incomplete_evidence` issue; Rust does not turn uncertain
-absence into `None` or an empty list. `ys.Money` represents USD integer
-minor-units. Its extraction conversion accepts the Rust USD text format and
-rejects negative amounts as a semantic validation issue.
-
-`ys.Field(description, locator=...)` stores ordinary Pydantic field metadata.
-A bare query passed as `locator` uses its text projection; use a `Locator` to
-choose another supported projection. Field descriptions are required. Use
-`id="byline"` to choose the Rust schema and locator output ID independently
-from the Python attribute name `author`. Pydantic aliases remain unsupported;
-Rust output IDs must match the Contract's field IDs.
-
-## Schema and plan are separate
-
-`Book.contract_schema()` describes the semantic record: contract ID,
-description, page or repeated scope, field IDs, cardinalities, and value types.
-`Book.identity()` asks Rust for that schema's stable identity. Locator
-expressions are stored in a `Plan`; they do not define the semantic schema
-identity.
-
-`ys.contracts.ContractValue` is an identity-only typing Protocol with a
-`TYPE_ID: ClassVar[str]` member, matching Rust's public `ContractValue` trait.
-`ys.Money.TYPE_ID` exposes Rust's `money.usd` identity, and
-`ys.contracts.value_type_id(str)` or `ys.contracts.value_type_id(ys.Money)`
-returns the identities for the built-in values. A custom class that declares a
-string `TYPE_ID` can also use `value_type_id` when constructing a `FieldSchema`.
-This records its schema identity only: Contract field authoring and runtime
-conversion still support `str` and `ys.Money` only, because Rust has no
-downstream custom scalar conversion extension point.
-
-When every field has a locator, `Book.plan()` returns the Rust-compiled plan.
-Pin all fields or leave all fields unpinned. A class-level `root` query makes
-the schema repeated and supplies the region for every field. The default
-contract ID is the class name; set `contract_id` and `contract_description` on
-the class to author them explicitly.
+A Contract field can use a Pydantic model, an Annotated type with validators, or a custom class with Pydantic integration. The type does not need registration in Rust. Parsing and business validation follow Pydantic's normal model construction.
 
 ```python
-plan = Book.plan()
-compiled_plan = plan.compiled()
-schema = Book.contract_schema()
-schema_identity = Book.identity()
+from decimal import Decimal
+from typing import Literal
+from pydantic import BaseModel, Field, field_validator, model_validator
+import yosoi as ys
+
+class CustomMoney(BaseModel):
+    amount: Decimal = Field(ge=0)
+    currency: Literal["USD"]
+
+    # callout: The custom type receives the original projected value before type validation.
+    @model_validator(mode="before")
+    @classmethod
+    def parse_price(cls, value):
+        if isinstance(value, str):
+            if not value.startswith("$"):
+                raise ValueError("Expected a USD price")
+            return {"amount": value[1:], "currency": "USD"}
+        return value
+
+class Product(ys.Contract):
+    """A product with an application-defined price type."""
+
+    name: str = ys.Field("Product name", locator=ys.css("h1"), min_length=1)
+    price: CustomMoney = ys.Field("Advertised price", locator=ys.css(".price"))
+
+    @field_validator("price", mode="after")
+    @classmethod
+    def require_positive_price(cls, value: CustomMoney) -> CustomMoney:
+        if value.amount <= 0:
+            raise ValueError("Product price must be positive")
+        return value
+
+document = ys.Document.html("product", "<h1>Desk lamp</h1><b class='price'>$29.00</b>")
+for product in Product.extract(document):
+    print(product.name, product.price.amount, product.price.currency)
 ```
 
-For an unpinned Contract, create a plan separately and pass its
-`LocateOutcome` to `Book.extract(located)`. The field output IDs must still
-match the Contract's field IDs. This keeps locating usable on its own and lets
-an application reuse a plan across record types.
+CustomMoney interprets the extracted text. Product's price validator then adds an application rule. The same CustomMoney type can be used in an ordinary Pydantic model outside Yosoi. This parses one extracted value into a structured object; it does not automatically locate separate nested fields.
+
+## Cardinality and defaults
+
+A scalar field accepts one finding and a list field collects ordered findings. A nullable annotation permits None; add `default=None` when complete absence should produce None instead of a missing-field error. Multiple findings for a scalar remain an issue. Incomplete evidence cannot become a complete absent value or an empty successful list.
+
+Pydantic defaults and default factories apply when an absent field has a declared default. Constraints, aliases, custom validators, serializers and model configuration are handled by Pydantic. Original findings remain separate from transformed model values.
+
+Pin every field or leave every field unpinned. A class-level root selects repeated records and scopes each field locator to its row.
+
+## Acceptance policy
+
+Ordinary extraction raises a Pydantic `ValidationError` for a single model rejection, or `ys.contracts.ContractIssues` for combined or terminal failures. A single scalar-cardinality rejection can also surface as a Pydantic validation error. A complete no-match returns an empty list unless a minimum record count is requested.
+
+```python
+# callout: An empty complete result is allowed by default. This policy requires at least one accepted record.
+policy = ys.ExtractionPolicy(minimum_records=1)
+books = Book.extract(book_document, policy=policy)
+```
+
+To use accepted records while tolerating rejected candidates, set `on_rejected_record="collect"`. Every returned record still passes Pydantic validation. Use a report when you need the rejected evidence and detailed errors too.
+
+`ys.ExtractionPolicy` controls result acceptance and extraction/validation budgets. `ys.Policy` controls document processing and locator budgets; apply it through `document.bind(policy)` before extraction.
+
+## Inspect evidence and errors
+
+```python
+# callout: Reports retain original findings even when validators transform the model values.
+report = Book.extract_report(book_document)
+for record in report.records:
+    print(record.value, record.candidate)
+for issue in report.issues:
+    print(issue.field_ids, issue.kind, issue.errors)
+```
+
+A report validates automatically but does not require all candidates to pass. It retains accepted records, rejected candidates, extraction diagnostics and terminal states. Each accepted record has its original candidate; field issues retain findings. Pydantic validation details remain available alongside structural issues. Evidence may contain source content, so choose deliberately what to retain or display.
+
+For an unpinned Contract or a manually authored plan, use the explicit stages:
+
+```python
+located = book_document.locate(Book.plan())
+assembled = Book.assemble(located)
+report = assembled.validate()
+books = report.require_all()
+```
+
+`assemble` takes located evidence without running Pydantic validation. Pass `limits=` to assemble or validate for their respective resource budgets. The ordinary extraction methods apply both stages for you.
+
+## Schema identity
+
+`Book.contract_schema()` and `Book.identity()` describe the native transport shape used to assemble evidence. This identity does not fingerprint Python type behavior, validators, defaults, aliases or model configuration. It is not a claim that Python validation matches Rust validation. Locator expressions remain in `Book.plan()`.
+
+`ys.contracts.ContractValue` and `value_type_id` describe the portable native value vocabulary. A Python custom field type does not need a TYPE_ID or that registry.
 
 ## Use a runtime schema
 
@@ -134,6 +182,7 @@ plan = ys.Plan(outputs=[
     ys.output("price", region.find(ys.css(".price")).text()),
 ])
 located = document.locate(plan)
+# callout: RuntimeContract keeps the portable Rust string/Money pipeline. It does not run application-defined Python validators.
 extracted = runtime.extract(located)
 outcome = extracted.validate()
 ```
@@ -149,81 +198,14 @@ defaults.
 `RuntimeContractOutcome.require_all()` follows the same Rust success rules and
 returns `RuntimeValidatedRecord` objects. Each `record.value` is a map keyed by
 field ID, whose values retain the cardinality tag and typed scalar; each record
-also preserves its `candidate`. The class-based `Book` path instead maps those
-Rust values back to named Pydantic fields.
-
-## Inspect each stage
-
-```python
-extracted = ys.extract(document, Book)
-print(extracted.status)
-print(extracted.candidates)
-print(extracted.diagnostics)
-
-outcome = extracted.validate()
-print(outcome.status)
-print(outcome.records)
-print(outcome.issues)
-print(outcome.extraction_diagnostics)
-```
-
-Each candidate exposes `document_id`, `region`, and a named `CandidateField`
-for every Contract field. A candidate field provides ordered `evidence`,
-projected `values`, `is_absent`, and `is_empty`. Every finding retains its
-coordinate, completeness, and parent-region lineage. Empty repeated roots are
-still candidates, so validation can report required fields that were absent
-inside an existing row.
-
-An `outcome.records` item has a typed `value` and the original `candidate`.
-An `outcome.issues` item also retains its candidate plus field issues and their
-evidence. Rust constructs record values after validation. Python uses
-`model_construct` for this conversion, so Pydantic defaults are not applied to
-missing fields and Python hooks cannot change a Rust record. Contract
-definitions with field/model validators, serializers, computed fields, a
-root validator, custom `__init__`, or `model_post_init` are rejected when the
-Rust schema is created; conversion and validation remain Rust-owned.
-
-Extracted and validated outcome views are read-only after creation. Their
-candidate, record, issue, and evidence collections use immutable views, and
-record/evidence values are omitted from `repr` output. Call `model_dump()` or
-`model_dump_json()` when you explicitly want to serialize their values. A
-`require_all()` result is a fresh Python list of the already validated record
-models.
-
-The statuses distinguish evaluated records, complete `no_match`,
-`indeterminate` evidence, locator failure, extraction rejection, and
-validation rejection. The `require_all()` method returns the Pydantic record
-values only when there are no record issues or extraction diagnostics. It
-returns an empty list for complete `no_match` and raises `ContractIssues` for
-issues, incomplete outcomes, or terminal failures.
-
-```python
-try:
-    books = outcome.require_all()
-except ys.contracts.ContractIssues as error:
-    print(error.detail)
-```
-
-Both stages accept explicit limits: `Contract.extract(..., limits=...)` takes
-`ExtractionLimits`, and `Extracted.validate(limits=...)` takes
-`ValidationLimits`. Omit them to use the Rust defaults. See
-[errors and limits](errors-and-limits.md) for their domains.
+also preserves its `candidate`. The class-based `Book` path instead constructs records through Pydantic. Its custom types and validators are Python behavior, separate from the portable Rust runtime.
 
 ## Portable outcomes
 
-```python
-archived = outcome.to_archived()
-print(archived.status)
-print(archived.model_dump_json())
-```
+Python model reports can contain arbitrary types, transformed values and application validators. They cannot be represented faithfully by the Rust portable Contract format; `to_archived()` directs callers to RuntimeContract instead. Use ordinary Pydantic serialization for your model values and retain the report's original evidence separately.
 
-This calls the Rust portable Contract converter and preserves its archive
-wire format, including typed field values, candidate evidence, diagnostics,
-and terminal outcomes. The returned `ArchivedContractOutcome` provides a
-read-only typed `view`, `records`, and `issues`; serialization explicitly
-includes the values omitted from `repr`.
+`RuntimeContractOutcome.to_archived()` continues to use the Rust schema and wire format. Its string/Money conversion, validation and archive behavior remain unchanged. General Python custom types do not extend that portable Rust vocabulary.
 
-Schema-authored `RuntimeContractOutcome` also supports `to_archived()`. It
-uses the schema retained from extraction, or accepts an explicit
-`to_archived(schema)` to match Rust's schema-driven conversion. Rust rejects
-inconsistent field types, cardinalities, or unknown candidate evidence.
+## Python API migration
+
+`Product.extract` now accepts a document and returns validated Product instances. The former located-evidence method is `Product.assemble(located)`. `ys.extract` now returns model values; use `ys.extract_report` for validated outcomes and issues. Rust's public Contract API remains unchanged.

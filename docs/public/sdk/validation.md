@@ -8,7 +8,7 @@ order: 13
 
 Validation turns candidate evidence into typed records. It checks cardinality, completeness, conversion, and the value type's semantic rules.
 
-Use `.validate().require_all()?` when any rejected record should fail the operation. Match `ContractOutcome` when you want to keep valid records and inspect the rest.
+Rust uses `.validate().require_all()?` when any rejected record should fail the operation. Python validates models automatically in `Product.extract(document)`. Use `Product.extract_report(document)` to inspect accepted records and rejected candidates without accepting the whole result.
 
 ## Example: validation
 
@@ -74,7 +74,8 @@ document = ys.Document.html(
     "<article><h2>Tea</h2><b class='price'>$4.50</b></article>"
     "<article><h2>Coffee</h2></article>",
 )
-outcome = ys.extract(document, Product).validate()
+# callout: The Python report validates automatically and retains both accepted models and rejected candidate evidence.
+outcome = Product.extract_report(document)
 assert len(outcome.records) == 1
 assert outcome.records[0].value.name == "Tea"
 assert len(outcome.issues) == 1
@@ -82,11 +83,15 @@ print(outcome.records)
 print(outcome.issues)
 ```
 
-The checks confirm one accepted record and one rejected candidate. Keep issues beside records when partial acceptance is useful.
+The report validates through Pydantic and retains one accepted record and one rejected candidate. Use `Product.extract(document)` for strict ordinary extraction, or keep this report when partial acceptance is useful.
 
 ## Walk through the result
 
 The Tea record validates. The Coffee record has a missing required price. Its candidate remains available in the record issue.
+
+> [!NOTE]
+> **Python**
+> Pydantic field and model validators run automatically during extraction. A single model rejection can raise its `ValidationError`; terminal failures and combined rejection reports use `ys.contracts.ContractIssues`. `extract_report` retains those errors and the original findings.
 
 ## Outcome states
 
@@ -101,15 +106,15 @@ The Tea record validates. The Coffee record has a missing required price. Its ca
 
 `Evaluated` does not imply every record passed. Inspect all three collections. Each `ValidatedRecord` includes both `value` and `candidate`; each `RecordIssue` retains the candidate and its field issues.
 
-## Strict mode with `require_all`
+## Rust strict mode with `require_all`
 
 `require_all()` returns `Vec<T>` only when evaluation has no record issues or extraction diagnostics. It returns an empty vector for `NoMatch`, so require a nonempty result separately if your application needs at least one record. Indeterminate and failed outcomes return errors.
 
 If you need detailed rejection reasons, inspect the outcome before consuming it with `require_all()`. The convenience error summarizes rejection rather than retaining every field issue.
 
-## Money
+## Built-in Money
 
-`Money` currently represents nonnegative USD amounts. Its text parser accepts `$`, whole ASCII digits, a decimal point, and exactly two fractional digits, such as `$4.50`.
+Rust's `Money` represents nonnegative USD amounts. Its text parser accepts `$`, whole ASCII digits, a decimal point, and exactly two fractional digits, such as `$4.50`.
 
 | Input                                                  | Result                                |
 | ------------------------------------------------------ | ------------------------------------- |
@@ -119,7 +124,7 @@ If you need detailed rejection reasons, inspect the outcome before consuming it 
 | `4.50`, `$4.5`, `$1,000.00`, or surrounding whitespace | Conversion failure                    |
 | An attribute or JSON projection                        | Unsupported projected value for Money |
 
-Use `minor_units()` for the exact integer amount, `currency()` for the currency, and `Display` for the formatted value. Other currencies are not supported by this type today.
+Rust uses `minor_units()` for the exact integer amount, `currency()` for the currency, and `Display` for the formatted value. Python exposes `minor_units` and `currency` and uses `str(money)` for display. Its Pydantic integration accepts extracted attribute or JSON string values as well as text, and can validate a mapping containing minor units and currency. Its Pydantic type also accepts the same price text during normal model construction. Use a custom Pydantic type for another currency or application-specific parsing.
 
 ## Keep enough evidence
 

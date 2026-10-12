@@ -141,3 +141,31 @@ Serialize a complete Policy rather than guessing its JSON layout. Deserializatio
 `PolicySnapshot::from_policy()` validates and clones the Policy, expands current document defaults, and computes its effective identity. Use `policy()` for the authored values and `effective_policy()` for resolved behavior.
 
 Requests and Map return the snapshot they used. Changing your original Policy later does not change that recorded snapshot. The identity describes effective configuration; it does not identify a document or guarantee identical remote content.
+
+## Python Contract acceptance
+
+> [!NOTE]
+> **Python**
+> `ys.Policy` governs document processing and locator budgets. `ys.ExtractionPolicy` governs accepted Contract results, minimum record count and extraction/validation work. It does not disable Pydantic validation.
+
+```python
+import yosoi as ys
+
+class Heading(ys.Contract):
+    """A required page heading."""
+
+    title: str = ys.Field("Page title", locator=ys.css("h1"), min_length=1)
+
+document = ys.Document.html("page", "<h1>Hello</h1>")
+# callout: ExtractionPolicy controls acceptance of Python Contract records. The bound ys.Policy still controls document and locator work.
+acceptance = ys.ExtractionPolicy(minimum_records=1)
+headings = Heading.extract(document.bind(ys.Policy()), policy=acceptance)
+for heading in headings:
+    print(heading.title)
+```
+
+The document uses the ordinary processing Policy. Extraction validates each Heading through Pydantic and requires at least one accepted record. Set `on_rejected_record="collect"` to return only valid records despite rejected candidates; use `Heading.extract_report` to retain every issue and its evidence. Incomplete or failed extraction always prevents ordinary success.
+
+> [!NOTE]
+> **Rust**
+> Rust's public Contract API retains explicit validation and `require_all()`. The Python acceptance options do not add fields to Rust's shared Policy.

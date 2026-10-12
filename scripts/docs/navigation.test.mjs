@@ -34,6 +34,15 @@ const metadata = {
   ],
 };
 
+test('homepage resolves from the selected source and rejects unpublished or looping destinations', () => {
+  const navigation = resolveNavigation(pages, { ...metadata, homepage: 'quickstart.md' });
+  assert.equal(navigation.homepage, 'quickstart');
+  assert.equal(resolveNavigation(pages, metadata).homepage, undefined);
+  for (const homepage of ['missing.md', '../private.md', 'api/index.md', 'index.md']) {
+    assert.throws(() => resolveNavigation(pages, { ...metadata, homepage }));
+  }
+});
+
 test('Python symbol kinds reach navigation without treating overview pages as symbols', () => {
   const routes = {
     '/python-api': 'Python reference',

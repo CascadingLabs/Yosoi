@@ -6,10 +6,18 @@ order: 7
 
 # Rust and Python parity
 
-Python Contracts are now bound to the Rust Contract runtime. The package also
-has Python surfaces for documents, locators, policy, Requests, Map, and Search.
-The machine-readable parity report tracks SDK mappings and executed capability
+Python Contracts use Rust to locate and group raw candidate evidence, then use
+Pydantic to construct and validate Python records. The package also has Python
+surfaces for documents, locators, policy, Requests, Map, and Search. The
+machine-readable parity report tracks SDK mappings and executed capability
 checks. Its full Rust inventory remains available as a separate audit.
+
+> [!NOTE]
+> **Python**
+>
+> A Python Contract's field types, validators, defaults, and model configuration
+> are Python business rules. The exact cross-language Contract conformance case
+> uses `RuntimeContract`, whose schema and validation stay Rust-owned.
 
 ## SDK parity gate
 
@@ -99,21 +107,29 @@ based on feature names.
 ## Current evidence boundary
 
 The checked-in SDK contract accounts for 1,288 SDK declarations: 1,286 direct
-mappings and two reviewed owning-view adaptations. The local semantic SDK
-gate passes all nine required capability suites with no structural drift or
-unresolved mappings. Its individual-item evidence remains separately visible;
-passing the SDK gate does not imply that every generated Rust inventory item
-has an individual comparison. Hosted CI results are separate from this local
-verification claim. The current
-independent comparison runner has 63 matching Rust/Python workflows, including
-independent policy defaults, query metadata and namespace errors, Contract
-extraction, validation, archival conversion, detached cloning, and exact
-null-versus-absence serialization. Those workflow results do not verify
-every public symbol or argument mapping.
+mappings and two reviewed owning-view adaptations. The committed summary was
+generated on 2026-10-05 for Rust source revision
+`0fd4ec5ac6b14ec180ba48c404a1c3166535f87a`. At that snapshot, the local semantic
+SDK gate passed all nine required capability suites with no structural drift
+or unresolved mappings. Its individual-item evidence remains separately
+visible; passing the SDK gate does not imply that every generated Rust
+inventory item has an individual comparison. Hosted CI results are separate
+from this local verification claim.
 
-The Contract identity workflow compares built-in, custom, and empty type IDs.
-The public identity protocol permits custom schema IDs; extraction and validation
-remain limited to the scalar readers supported by the Rust SDK.
+That recorded comparison runner has 63 matching Rust/Python workflows,
+including independent Policy defaults, query metadata and namespace errors,
+native `RuntimeContract` extraction, validation and archival conversion,
+detached cloning, and exact null-versus-absence serialization. It does not
+compare arbitrary Python Contract validators with Rust Contract validation.
+The 2026-10-05 summary predates the current Pydantic Contract extraction path;
+regenerate the runner evidence and summary before using it as evidence for the
+current source. Those workflow results do not verify every public symbol or
+argument mapping.
+
+The Contract identity workflow compares native built-in, custom, and empty
+transport type IDs. `RuntimeContract` permits custom schema IDs but reads only
+the scalar values supported by the Rust SDK. Those native IDs do not fingerprint
+a Python Contract's Pydantic types or validation behavior.
 
 WebTarget fixtures compare 24 authored values through every public Rust `From`
 string ownership form, `AsRef<str>`, `new`, and `as_str`. Unicode, whitespace,
@@ -145,9 +161,11 @@ an additional case does not automatically verify an unmapped public item.
 
 Serialization fixtures compare 60 values across 41 public Rust types, including
 independently constructed defaults, coordinates, projections, and runtime
-Contract values. They check exact JSON keys and nulls, with no blanket removal
-of null fields. This proves the exercised JSON representations; it does not
-claim compatibility with every serializer supported by Rust's Serde traits.
+Contract values. The Contract comparison exercises the Python `RuntimeContract`
+wire and Rust archive representation, not arbitrary Pydantic model serialization.
+The fixtures check exact JSON keys and nulls, with no blanket removal of null
+fields. This proves the exercised JSON representations; it does not claim
+compatibility with every serializer supported by Rust's Serde traits.
 
 Schema-error representation fixtures cover all ten public schema errors,
 each wrapped in both extraction and validation failures: 30 comparisons. They
