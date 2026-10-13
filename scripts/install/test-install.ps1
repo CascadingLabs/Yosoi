@@ -28,6 +28,8 @@ try {
     & $installer -InstallDir $installDir
     & $installer -Version $Version -InstallDir $installDir
     $installed = Join-Path $installDir 'yosoi.exe'
+    $receipt = Get-Content -LiteralPath (Join-Path $installDir '.yosoi-install.json') -Raw | ConvertFrom-Json
+    if ($receipt.method -cne 'standalone' -or $receipt.version -cne $Version -or $receipt.sha256 -cne (Get-FileHash $installed).Hash.ToLowerInvariant() -or -not $receipt.path_added) { throw 'Standalone installation receipt mismatch.' }
     if ((& $installed --version) -cne "yosoi $Version") { throw 'Installed version mismatch.' }
     & $installed request --help
     if ($LASTEXITCODE -ne 0) { throw 'Installed command failed.' }

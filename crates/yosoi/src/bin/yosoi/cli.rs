@@ -13,7 +13,7 @@ use crate::presentation::Theme;
 
 use crate::{
     locate_command, map_command, policy_command, presentation, request_command, search_command,
-    syntax,
+    self_command, syntax,
 };
 
 /// The top-level command line for Yosoi.
@@ -39,6 +39,9 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// Maintain the running CLI installation.
+    #[command(name = "self")]
+    Maintenance(self_command::SelfArgs),
     /// Inspect and validate JSON-authored Policy profiles.
     Policy(policy_command::PolicyArgs),
     /// Make a web request with the selected Policy.
@@ -67,6 +70,17 @@ pub async fn run() -> ExitCode {
         .and_then(|matches| Cli::from_arg_matches(&matches));
     match parsed {
         Ok(cli) => match cli.command {
+            Some(Commands::Maintenance(args)) => {
+                if cli.profile.is_some() {
+                    return report_app_error(&anyhow::anyhow!(
+                        "--profile does not apply to self maintenance"
+                    ));
+                }
+                match self_command::run(args).await {
+                    Ok(()) => ExitCode::SUCCESS,
+                    Err(error) => report_app_error(&error),
+                }
+            }
             Some(Commands::Policy(args)) => {
                 if cli.profile.is_some() {
                     return report_app_error(&anyhow::anyhow!(

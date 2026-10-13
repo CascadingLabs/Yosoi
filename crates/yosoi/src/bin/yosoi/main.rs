@@ -9,6 +9,7 @@ mod presentation;
 mod progress;
 mod request_command;
 mod search_command;
+mod self_command;
 mod stats;
 mod stream_output;
 mod syntax;

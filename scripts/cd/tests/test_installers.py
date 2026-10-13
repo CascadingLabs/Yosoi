@@ -107,6 +107,54 @@ cp "$FIXTURE_ROOT/${url##*/}" "$output"
                         f"yosoi {version}",
                     )
                     self.assertIn("Installed Yosoi", result.stdout)
+                    receipt = json.loads(
+                        (installed.parent / ".yosoi-install.json").read_text()
+                    )
+                    self.assertEqual(receipt["method"], "standalone")
+                    self.assertEqual(receipt["version"], version)
+                    self.assertEqual(
+                        receipt["sha256"],
+                        hashlib.sha256(installed.read_bytes()).hexdigest(),
+                    )
+                    self.assertFalse(
+                        (installed.parent / ".yosoi-maintenance.lock").exists()
+                    )
+
+    def test_receipt_and_package_manager_destinations_are_protected(self):
+        for metadata in (".crates2.json", ".crates.toml", "pyvenv.cfg"):
+            with self.subTest(metadata=metadata), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                env = self.fixture(root)
+                (root / metadata).write_text("metadata")
+                result = self.run_installer(env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("managed", result.stderr)
+                self.assertFalse(Path(env["YOSOI_INSTALL_DIR"]).exists())
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            env = self.fixture(root)
+            directory = Path(env["YOSOI_INSTALL_DIR"])
+            directory.mkdir()
+            original = root / "unrelated.json"
+            original.write_text("untouched")
+            (directory / ".yosoi-install.json").symlink_to(original)
+            result = self.run_installer(env)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(original.read_text(), "untouched")
+
+    def test_maintenance_lock_prevents_installer_replacement(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            env = self.fixture(root)
+            directory = Path(env["YOSOI_INSTALL_DIR"])
+            directory.mkdir()
+            (directory / ".yosoi-maintenance.lock").touch()
+            installed = directory / "yosoi"
+            installed.write_text("original")
+            result = self.run_installer(env)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(installed.read_text(), "original")
+            self.assertTrue((directory / ".yosoi-maintenance.lock").exists())
 
     def test_bad_checksum_and_archive_members_preserve_existing_binary(self):
         for failure in ("checksum", "missing-checksum", "traversal", "wrong-version"):
