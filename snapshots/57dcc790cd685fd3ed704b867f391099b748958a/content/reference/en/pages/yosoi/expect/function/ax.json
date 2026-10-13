@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::expect::ax",
+  "publicPath": "yosoi::expect::ax",
+  "kind": "function",
+  "title": "yosoi::expect::ax",
+  "signature": "pub fn ax(name: impl Into<String>) -> yosoi::expect::AccessibilityExpectation",
+  "docs": "Constructs an exact accessible-name expectation.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 288,
+    "lineEnd": 293,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/expect.rs#L288-L293"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::ax"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "4efe60c6beb8958de74c41c96bd68d70823c7f1e519acc5dffeaea52a13ae46f",
+  "slug": "yosoi/expect/function/ax",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4efe60c6beb8958de74c41c96bd68d70823c7f1e519acc5dffeaea52a13ae46f"
+}

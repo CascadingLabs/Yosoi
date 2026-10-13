@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::xpath",
+  "publicPath": "yosoi::locators::xpath",
+  "kind": "function",
+  "title": "yosoi::locators::xpath",
+  "signature": "pub fn xpath(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Owns a nonblank supported XPath expression with tree-node result shape.\n\nReturns [`QueryError`] for blank input. XML namespace and supported evaluator\nsemantics are validated separately; this constructor does not acquire evidence.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 19,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/documents/query_builders.rs#L19-L21"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::xpath",
+    "yosoi::prelude::locators::xpath"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "dd75be07574f2cf2e3762914012e8c3ba05be7914f257491936ea13f3d4ad194",
+  "slug": "yosoi/locators/function/xpath",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "dd75be07574f2cf2e3762914012e8c3ba05be7914f257491936ea13f3d4ad194"
+}

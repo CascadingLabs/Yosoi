@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::FrontierEntry",
+  "publicPath": "yosoi::map::FrontierEntry",
+  "kind": "struct",
+  "title": "yosoi::map::FrontierEntry",
+  "signature": "pub struct FrontierEntry",
+  "docs": "Retained unfinished page work; frontier entries are not promises of later execution.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 200,
+    "lineEnd": 205,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L200-L205"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::FrontierEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::FrontierEntry::clone",
+      "publicPath": "yosoi::map::FrontierEntry::clone",
+      "title": "yosoi::map::FrontierEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::FrontierEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L199-L199"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::FrontierEntry::fmt",
+      "publicPath": "yosoi::map::FrontierEntry::fmt",
+      "title": "yosoi::map::FrontierEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L199-L199"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::FrontierEntry::page",
+      "publicPath": "yosoi::map::FrontierEntry::page",
+      "title": "yosoi::map::FrontierEntry::page",
+      "kind": "struct_field",
+      "signature": "pub page: url::Url",
+      "docs": "Normalized page URL for the unfinished work.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L202-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::FrontierEntry::reason",
+      "publicPath": "yosoi::map::FrontierEntry::reason",
+      "title": "yosoi::map::FrontierEntry::reason",
+      "kind": "struct_field",
+      "signature": "pub reason: yosoi::map::PendingReason",
+      "docs": "Why this page remains unfinished in the returned outcome.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 204,
+        "lineEnd": 204,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L204-L204"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::FrontierEntry::serialize",
+      "publicPath": "yosoi::map::FrontierEntry::serialize",
+      "title": "yosoi::map::FrontierEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L199-L199"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e26737f332b6ccac685f9345770aa0c9fef685bdd4273817606ac204a637c13f",
+  "slug": "yosoi/map/struct/frontierentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e26737f332b6ccac685f9345770aa0c9fef685bdd4273817606ac204a637c13f"
+}

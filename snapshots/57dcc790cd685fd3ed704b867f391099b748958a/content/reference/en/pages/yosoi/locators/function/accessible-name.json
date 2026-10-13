@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::accessible_name",
+  "publicPath": "yosoi::locators::accessible_name",
+  "kind": "function",
+  "title": "yosoi::locators::accessible_name",
+  "signature": "pub fn accessible_name(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Owns a nonblank accessible-name query, distinct from descendant or decoded text.\n\nReturns [`QueryError`] for blank input; matching requires supported accessibility evidence.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 78,
+    "lineEnd": 84,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/documents/query_builders.rs#L78-L84"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/locators.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::accessible_name",
+    "yosoi::prelude::locators::accessible_name"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "2ed759b44a65c3d6fdae42ee22635cdd4d5f13ac3934477d9e4dc3af1cbd94ba",
+  "slug": "yosoi/locators/function/accessible-name",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2ed759b44a65c3d6fdae42ee22635cdd4d5f13ac3934477d9e4dc3af1cbd94ba"
+}

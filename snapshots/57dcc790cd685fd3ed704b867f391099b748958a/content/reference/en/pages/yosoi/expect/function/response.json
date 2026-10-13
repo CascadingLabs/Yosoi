@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::expect::response",
+  "publicPath": "yosoi::expect::response",
+  "kind": "function",
+  "title": "yosoi::expect::response",
+  "signature": "pub fn response(url: impl Into<String>) -> yosoi::expect::ResponseExpectation",
+  "docs": "Constructs an exact full-URL response expectation.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 278,
+    "lineEnd": 285,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/expect.rs#L278-L285"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::response"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f201a7b9ca702700c173c50221db0ae61f94dc22c978cbbc998e68d3f83a6291",
+  "slug": "yosoi/expect/function/response",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f201a7b9ca702700c173c50221db0ae61f94dc22c978cbbc998e68d3f83a6291"
+}

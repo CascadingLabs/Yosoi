@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::view::MAX_VIEW_URL_BYTES",
+  "publicPath": "yosoi::view::MAX_VIEW_URL_BYTES",
+  "kind": "constant",
+  "title": "yosoi::view::MAX_VIEW_URL_BYTES",
+  "signature": "pub const MAX_VIEW_URL_BYTES: usize = _;",
+  "docs": "Maximum UTF-8 bytes retained for the source URL in a View.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/view.rs#L19-L19"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::MAX_VIEW_URL_BYTES"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "25d0aee4f5b78450ae620b6d96d4b0202234e1c32c3cee58e73058d9da7b6d0e",
+  "slug": "yosoi/view/constant/max-view-url-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "25d0aee4f5b78450ae620b6d96d4b0202234e1c32c3cee58e73058d9da7b6d0e"
+}

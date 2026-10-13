@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::CheckResult",
+  "publicPath": "yosoi::assertions::CheckResult",
+  "kind": "struct",
+  "title": "yosoi::assertions::CheckResult",
+  "signature": "pub struct CheckResult",
+  "docs": "One local predicate result, including unevaluated and evaluator-failure distinctions.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 181,
+    "lineEnd": 190,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L181-L190"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::CheckResult::clone",
+      "publicPath": "yosoi::assertions::CheckResult::clone",
+      "title": "yosoi::assertions::CheckResult::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::CheckResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::deserialize",
+      "publicPath": "yosoi::assertions::CheckResult::deserialize",
+      "title": "yosoi::assertions::CheckResult::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::eq",
+      "publicPath": "yosoi::assertions::CheckResult::eq",
+      "title": "yosoi::assertions::CheckResult::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::assertions::CheckResult) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::error",
+      "publicPath": "yosoi::assertions::CheckResult::error",
+      "title": "yosoi::assertions::CheckResult::error",
+      "kind": "struct_field",
+      "signature": "pub error: Option<yosoi::assertions::CheckError>",
+      "docs": "Evaluator failure, distinct from a predicate returning false.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 189,
+        "lineEnd": 189,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L189-L189"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::fmt",
+      "publicPath": "yosoi::assertions::CheckResult::fmt",
+      "title": "yosoi::assertions::CheckResult::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::index",
+      "publicPath": "yosoi::assertions::CheckResult::index",
+      "title": "yosoi::assertions::CheckResult::index",
+      "kind": "struct_field",
+      "signature": "pub index: usize",
+      "docs": "Zero-based position in the authored check list.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 183,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L183-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::name",
+      "publicPath": "yosoi::assertions::CheckResult::name",
+      "title": "yosoi::assertions::CheckResult::name",
+      "kind": "struct_field",
+      "signature": "pub name: Option<String>",
+      "docs": "Authored nonblank diagnostic name, absent for an unnamed check.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L185-L185"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::CheckResult::passed",
+      "publicPath": "yosoi::assertions::CheckResult::passed",
+      "title": "yosoi::assertions::CheckResult::passed",
+      "kind": "struct_field",
+      "signature": "pub passed: Option<bool>",
+      "docs": "Predicate result, or `None` when no boolean result was established.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L187-L187"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::CheckResult::serialize",
+      "publicPath": "yosoi::assertions::CheckResult::serialize",
+      "title": "yosoi::assertions::CheckResult::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L179-L179"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f74c8349acf69ef25be1e6f40732f7fb750f5ef548103fd8c36635383eb094d3",
+  "slug": "yosoi/assertions/struct/checkresult",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f74c8349acf69ef25be1e6f40732f7fb750f5ef548103fd8c36635383eb094d3"
+}

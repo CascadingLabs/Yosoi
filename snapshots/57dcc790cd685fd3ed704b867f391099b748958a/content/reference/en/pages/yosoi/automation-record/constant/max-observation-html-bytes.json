@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::MAX_OBSERVATION_HTML_BYTES",
+  "publicPath": "yosoi::automation_record::MAX_OBSERVATION_HTML_BYTES",
+  "kind": "constant",
+  "title": "yosoi::automation_record::MAX_OBSERVATION_HTML_BYTES",
+  "signature": "pub const MAX_OBSERVATION_HTML_BYTES: usize = _;",
+  "docs": "Maximum retained HTML bytes in one observation.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 37,
+    "lineEnd": 37,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/automation_record.rs#L37-L37"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "9672fb90589da81c828a23dc54eeb432c4b41bd11a1300254875a18324020956",
+  "slug": "yosoi/automation-record/constant/max-observation-html-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9672fb90589da81c828a23dc54eeb432c4b41bd11a1300254875a18324020956"
+}

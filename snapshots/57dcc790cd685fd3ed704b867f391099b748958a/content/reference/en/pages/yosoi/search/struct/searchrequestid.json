@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::SearchRequestId",
+  "publicPath": "yosoi::search::SearchRequestId",
+  "kind": "struct",
+  "title": "yosoi::search::SearchRequestId",
+  "signature": "pub struct SearchRequestId",
+  "docs": "Logical identity of one Search query across its provider Requests.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/query.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L28-L28"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/search.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchRequestId"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::search::SearchRequestId::activity_id",
+      "publicPath": "yosoi::search::SearchRequestId::activity_id",
+      "title": "yosoi::search::SearchRequestId::activity_id",
+      "kind": "function",
+      "signature": "pub const fn activity_id(self) -> yosoi::request::ActivityId",
+      "docs": "Returns the shared activity identity used to correlate provider Requests.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 32,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L32-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchRequestId::clone",
+      "publicPath": "yosoi::search::SearchRequestId::clone",
+      "title": "yosoi::search::SearchRequestId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchRequestId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchRequestId::eq",
+      "publicPath": "yosoi::search::SearchRequestId::eq",
+      "title": "yosoi::search::SearchRequestId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchRequestId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchRequestId::fmt",
+      "publicPath": "yosoi::search::SearchRequestId::fmt",
+      "title": "yosoi::search::SearchRequestId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchRequestId::fmt",
+      "publicPath": "yosoi::search::SearchRequestId::fmt",
+      "title": "yosoi::search::SearchRequestId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 38,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L38-L40"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::search::SearchRequestId::hash",
+      "publicPath": "yosoi::search::SearchRequestId::hash",
+      "title": "yosoi::search::SearchRequestId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/query.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/query.rs#L27-L27"
+      },
+      "examples": [],
+      "trait": "Hash"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c7ca197378924749ea5c80af48194026db418e152934491d9fd20fd924c64cff",
+  "slug": "yosoi/search/struct/searchrequestid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c7ca197378924749ea5c80af48194026db418e152934491d9fd20fd924c64cff"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::expect::exists",
+  "publicPath": "yosoi::expect::exists",
+  "kind": "function",
+  "title": "yosoi::expect::exists",
+  "signature": "pub fn exists(selector: impl Into<String>) -> yosoi::expect::Expectation",
+  "docs": "Constructs a typed DOM condition that matches at least one element.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 253,
+    "lineEnd": 258,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/expect.rs#L253-L258"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::exists"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "2d9e3e790868c3013580ad7f98efe9908848704f6c44d543a4a26110482ad75e",
+  "slug": "yosoi/expect/function/exists",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2d9e3e790868c3013580ad7f98efe9908848704f6c44d543a4a26110482ad75e"
+}

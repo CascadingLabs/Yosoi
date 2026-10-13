@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::assertions::MAX_CHECK_ERROR_BYTES",
+  "publicPath": "yosoi::assertions::MAX_CHECK_ERROR_BYTES",
+  "kind": "constant",
+  "title": "yosoi::assertions::MAX_CHECK_ERROR_BYTES",
+  "signature": "pub const MAX_CHECK_ERROR_BYTES: usize = 1_024;",
+  "docs": "Maximum UTF-8 bytes retained for a predicate evaluation error message.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 29,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L29-L29"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "10674d7c339f35a76b2cd31c98d4799e39b9829fab512479a312ceb91ad7e635",
+  "slug": "yosoi/assertions/constant/max-check-error-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "10674d7c339f35a76b2cd31c98d4799e39b9829fab512479a312ceb91ad7e635"
+}

@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::FeatureCoverage",
+  "publicPath": "yosoi::search::FeatureCoverage",
+  "kind": "enum",
+  "title": "yosoi::search::FeatureCoverage",
+  "signature": "pub enum FeatureCoverage",
+  "docs": "Whether rich features were attempted, independent of whether any existed.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+    "lineStart": 189,
+    "lineEnd": 196,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L189-L196"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/search.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::search::FeatureCoverage"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::FeatureCoverage::Collected",
+      "publicPath": "yosoi::search::FeatureCoverage::Collected",
+      "title": "yosoi::search::FeatureCoverage::Collected",
+      "kind": "variant",
+      "signature": "Collected",
+      "docs": "Supported rich-feature extraction completed, possibly finding no features.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L193-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::FeatureCoverage::NotCollected",
+      "publicPath": "yosoi::search::FeatureCoverage::NotCollected",
+      "title": "yosoi::search::FeatureCoverage::NotCollected",
+      "kind": "variant",
+      "signature": "NotCollected",
+      "docs": "Rich-feature extraction was not attempted; an empty feature list proves no absence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L191-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::FeatureCoverage::Partial",
+      "publicPath": "yosoi::search::FeatureCoverage::Partial",
+      "title": "yosoi::search::FeatureCoverage::Partial",
+      "kind": "variant",
+      "signature": "Partial",
+      "docs": "Rich-feature extraction was attempted but some feature evidence is incomplete.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L195-L195"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::FeatureCoverage::clone",
+      "publicPath": "yosoi::search::FeatureCoverage::clone",
+      "title": "yosoi::search::FeatureCoverage::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::FeatureCoverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::FeatureCoverage::eq",
+      "publicPath": "yosoi::search::FeatureCoverage::eq",
+      "title": "yosoi::search::FeatureCoverage::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::FeatureCoverage) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::FeatureCoverage::fmt",
+      "publicPath": "yosoi::search::FeatureCoverage::fmt",
+      "title": "yosoi::search::FeatureCoverage::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::FeatureCoverage::serialize",
+      "publicPath": "yosoi::search::FeatureCoverage::serialize",
+      "title": "yosoi::search::FeatureCoverage::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/engine/search/result/types.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5ad44f694e61d142f295f02f4da58a0726905f870eb3fc55eff4fe9f4ed2ce62",
+  "slug": "yosoi/search/enum/featurecoverage",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5ad44f694e61d142f295f02f4da58a0726905f870eb3fc55eff4fe9f4ed2ce62"
+}

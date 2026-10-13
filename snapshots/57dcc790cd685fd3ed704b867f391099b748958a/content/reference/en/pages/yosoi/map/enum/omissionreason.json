@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::OmissionReason",
+  "publicPath": "yosoi::map::OmissionReason",
+  "kind": "enum",
+  "title": "yosoi::map::OmissionReason",
+  "signature": "pub enum OmissionReason",
+  "docs": "Classification of discovery evidence omitted from retention or exploration.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 318,
+    "lineEnd": 337,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L318-L337"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/map.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::map::OmissionReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::OmissionReason::Admission",
+      "publicPath": "yosoi::map::OmissionReason::Admission",
+      "title": "yosoi::map::OmissionReason::Admission",
+      "kind": "variant",
+      "signature": "Admission(yosoi::map::Rejection)",
+      "docs": "URL or hostname admission rejected evidence for the supplied reason.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 320,
+        "lineEnd": 320,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L320-L320"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::map::OmissionReason::Admission::0",
+          "publicPath": "yosoi::map::OmissionReason::Admission::0",
+          "title": "yosoi::map::OmissionReason::Admission::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::map::Rejection",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/map/mod.rs",
+            "lineStart": 320,
+            "lineEnd": 320,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L320-L320"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Depth",
+      "publicPath": "yosoi::map::OmissionReason::Depth",
+      "title": "yosoi::map::OmissionReason::Depth",
+      "kind": "variant",
+      "signature": "Depth",
+      "docs": "The rooted page exploration depth boundary excluded work.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 324,
+        "lineEnd": 324,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L324-L324"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Inventory",
+      "publicPath": "yosoi::map::OmissionReason::Inventory",
+      "title": "yosoi::map::OmissionReason::Inventory",
+      "kind": "variant",
+      "signature": "Inventory",
+      "docs": "Inventory capacity prevented retaining additional evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 330,
+        "lineEnd": 330,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L330-L330"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Other",
+      "publicPath": "yosoi::map::OmissionReason::Other",
+      "title": "yosoi::map::OmissionReason::Other",
+      "kind": "variant",
+      "signature": "Other",
+      "docs": "Evidence was omitted for a reason outside the more specific classifications.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 336,
+        "lineEnd": 336,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L336-L336"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Pending",
+      "publicPath": "yosoi::map::OmissionReason::Pending",
+      "title": "yosoi::map::OmissionReason::Pending",
+      "kind": "variant",
+      "signature": "Pending",
+      "docs": "Pending frontier capacity prevented queueing additional work.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 328,
+        "lineEnd": 328,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L328-L328"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Retention",
+      "publicPath": "yosoi::map::OmissionReason::Retention",
+      "title": "yosoi::map::OmissionReason::Retention",
+      "kind": "variant",
+      "signature": "Retention",
+      "docs": "Source or capture retention limits omitted evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 332,
+        "lineEnd": 332,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L332-L332"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Robots",
+      "publicPath": "yosoi::map::OmissionReason::Robots",
+      "title": "yosoi::map::OmissionReason::Robots",
+      "kind": "variant",
+      "signature": "Robots",
+      "docs": "Applicable robots rules excluded exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 322,
+        "lineEnd": 322,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L322-L322"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::SitemapDepth",
+      "publicPath": "yosoi::map::OmissionReason::SitemapDepth",
+      "title": "yosoi::map::OmissionReason::SitemapDepth",
+      "kind": "variant",
+      "signature": "SitemapDepth",
+      "docs": "Nested sitemap depth excluded further traversal.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 326,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L326-L326"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::OmissionReason::Wildcard",
+      "publicPath": "yosoi::map::OmissionReason::Wildcard",
+      "title": "yosoi::map::OmissionReason::Wildcard",
+      "kind": "variant",
+      "signature": "Wildcard",
+      "docs": "A wildcard was retained as a pattern rather than expanded into concrete hosts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 334,
+        "lineEnd": 334,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L334-L334"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::clone",
+      "publicPath": "yosoi::map::OmissionReason::clone",
+      "title": "yosoi::map::OmissionReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::OmissionReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::cmp",
+      "publicPath": "yosoi::map::OmissionReason::cmp",
+      "title": "yosoi::map::OmissionReason::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::map::OmissionReason) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::eq",
+      "publicPath": "yosoi::map::OmissionReason::eq",
+      "title": "yosoi::map::OmissionReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::OmissionReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::fmt",
+      "publicPath": "yosoi::map::OmissionReason::fmt",
+      "title": "yosoi::map::OmissionReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::partial_cmp",
+      "publicPath": "yosoi::map::OmissionReason::partial_cmp",
+      "title": "yosoi::map::OmissionReason::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::map::OmissionReason) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::OmissionReason::serialize",
+      "publicPath": "yosoi::map::OmissionReason::serialize",
+      "title": "yosoi::map::OmissionReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 316,
+        "lineEnd": 316,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/internal/map/mod.rs#L316-L316"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0045a5e48a81f21bd5d82f75b4439a0eec129fa7f01afe3811e233712ac96db7",
+  "slug": "yosoi/map/enum/omissionreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0045a5e48a81f21bd5d82f75b4439a0eec129fa7f01afe3811e233712ac96db7"
+}

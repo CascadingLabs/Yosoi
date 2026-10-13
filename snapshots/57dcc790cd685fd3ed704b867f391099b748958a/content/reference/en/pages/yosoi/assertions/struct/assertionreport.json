@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::AssertionReport",
+  "publicPath": "yosoi::assertions::AssertionReport",
+  "kind": "struct",
+  "title": "yosoi::assertions::AssertionReport",
+  "signature": "pub struct AssertionReport",
+  "docs": "One immediate assertion evaluation with retained source, field, and predicate evidence.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 227,
+    "lineEnd": 240,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L227-L240"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::checks",
+      "publicPath": "yosoi::assertions::AssertionReport::checks",
+      "title": "yosoi::assertions::AssertionReport::checks",
+      "kind": "struct_field",
+      "signature": "pub checks: Vec<yosoi::assertions::CheckResult>",
+      "docs": "Authored checks in order, including checks without a boolean result.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 231,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L231-L231"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionReport::clone",
+      "publicPath": "yosoi::assertions::AssertionReport::clone",
+      "title": "yosoi::assertions::AssertionReport::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::AssertionReport",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionReport::deserialize",
+      "publicPath": "yosoi::assertions::AssertionReport::deserialize",
+      "title": "yosoi::assertions::AssertionReport::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::extraction_diagnostics",
+      "publicPath": "yosoi::assertions::AssertionReport::extraction_diagnostics",
+      "title": "yosoi::assertions::AssertionReport::extraction_diagnostics",
+      "kind": "struct_field",
+      "signature": "pub extraction_diagnostics: Vec<serde_json::Value>",
+      "docs": "Retained serialized candidate-grouping diagnostics.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 237,
+        "lineEnd": 237,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L237-L237"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::field_issues",
+      "publicPath": "yosoi::assertions::AssertionReport::field_issues",
+      "title": "yosoi::assertions::AssertionReport::field_issues",
+      "kind": "struct_field",
+      "signature": "pub field_issues: Vec<yosoi::contracts::FieldIssue>",
+      "docs": "Retained field rejection details from Contract validation.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 235,
+        "lineEnd": 235,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L235-L235"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionReport::fmt",
+      "publicPath": "yosoi::assertions::AssertionReport::fmt",
+      "title": "yosoi::assertions::AssertionReport::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::located",
+      "publicPath": "yosoi::assertions::AssertionReport::located",
+      "title": "yosoi::assertions::AssertionReport::located",
+      "kind": "struct_field",
+      "signature": "pub located: yosoi::LocateOutcome",
+      "docs": "Exact located values/coordinates, including evidence for successful records.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L239-L239"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::passed",
+      "publicPath": "yosoi::assertions::AssertionReport::passed",
+      "title": "yosoi::assertions::AssertionReport::passed",
+      "kind": "struct_field",
+      "signature": "pub passed: bool",
+      "docs": "True only when source evaluation succeeded and every predicate returned true.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L229-L229"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::AssertionReport::serialize",
+      "publicPath": "yosoi::assertions::AssertionReport::serialize",
+      "title": "yosoi::assertions::AssertionReport::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L225-L225"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::assertions::AssertionReport::source_error",
+      "publicPath": "yosoi::assertions::AssertionReport::source_error",
+      "title": "yosoi::assertions::AssertionReport::source_error",
+      "kind": "struct_field",
+      "signature": "pub source_error: Option<yosoi::assertions::SourceError>",
+      "docs": "Source-level rejection that prevented ordinary predicate evaluation, when present.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 233,
+        "lineEnd": 233,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/assertions.rs#L233-L233"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a93e4c94531b68c6b5e420e8ecd0d9fd71f8d27837e7e3973256449dd48bc74a",
+  "slug": "yosoi/assertions/struct/assertionreport",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a93e4c94531b68c6b5e420e8ecd0d9fd71f8d27837e7e3973256449dd48bc74a"
+}

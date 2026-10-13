@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::enter_text",
+  "publicPath": "yosoi::action::enter_text",
+  "kind": "function",
+  "title": "yosoi::action::enter_text",
+  "signature": "pub fn enter_text(selector: impl Into<String>, text: impl Into<String>) -> yosoi::flow::Step",
+  "docs": "Creates a text-entry step for one selector-resolved element.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 50,
+    "lineEnd": 55,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/57dcc790cd685fd3ed704b867f391099b748958a/crates/yosoi/src/action.rs#L50-L55"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::enter_text"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e5966e1d45a651e9ab4f82cbd0ca86c6ca335a857dc36ba7156b7c112b8e87ec",
+  "slug": "yosoi/action/function/enter-text",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e5966e1d45a651e9ab4f82cbd0ca86c6ca335a857dc36ba7156b7c112b8e87ec"
+}
