@@ -22,6 +22,119 @@ use tokio_util::sync::CancellationToken;
 
 type TestResult<T = ()> = Result<T, Box<dyn Error + Send + Sync>>;
 
+#[tokio::test]
+async fn binary_response_retains_ico_bytes_without_fabricating_a_document() -> TestResult {
+    let icon = include_bytes!("../../../../tests/fixtures/favicon.ico");
+    let service = FixtureService::start(
+        Protocol::Http,
+        [(
+            "/favicon.ico".to_owned(),
+            FixtureResponse::bytes(200, Some("image/x-icon"), icon),
+        )],
+    )
+    .await;
+    let response = crate::request::new(service.url("/favicon.ico"))
+        .send()
+        .await;
+    service.shutdown().await;
+    let response = response?;
+    let attempt = response.attempts().next().ok_or("missing attempt")?;
+    assert_eq!(attempt.content_type(), Some("image/x-icon"));
+    assert_eq!(attempt.body_bytes(), Some(icon.as_slice()));
+    assert!(matches!(
+        attempt.documents().next().map(|item| item.outcome()),
+        Some(crate::request::DocumentOutcome::Unprojectable(
+            crate::request::UnprojectableReason::UnsupportedSourceFormat
+        ))
+    ));
+    assert!(!format!("{attempt:?}").contains("favicon.ico"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn binary_response_body_preserves_original_character_encoding() -> TestResult {
+    let bytes = b"<h1>caf\xe9</h1>";
+    let service = FixtureService::start(
+        Protocol::Http,
+        [(
+            "/latin1".to_owned(),
+            FixtureResponse::bytes(200, Some("text/html; charset=windows-1252"), bytes),
+        )],
+    )
+    .await;
+    let response = crate::request::new(service.url("/latin1")).send().await;
+    service.shutdown().await;
+    let response = response?;
+    let attempt = response.attempts().next().ok_or("missing attempt")?;
+    assert_eq!(attempt.body_bytes(), Some(bytes.as_slice()));
+    let document = attempt
+        .documents()
+        .find_map(|item| item.outcome().document())
+        .ok_or("missing HTML document")?;
+    assert_eq!(document.bytes(), "<h1>café</h1>".as_bytes());
+    Ok(())
+}
+
+#[tokio::test]
+async fn binary_response_truncated_body_is_not_exposed_as_complete() -> TestResult {
+    let service = FixtureService::start(
+        Protocol::Http,
+        [(
+            "/oversized.ico".to_owned(),
+            FixtureResponse::bytes(200, Some("image/vnd.microsoft.icon"), b"oversized-image"),
+        )],
+    )
+    .await;
+    let mut policy = crate::policy::Policy::default();
+    policy.request.source.representation_bytes =
+        crate::policy::AddressableByteLimit::try_from(3_u64)?;
+    let response = crate::request::new(service.url("/oversized.ico"))
+        .bind(&policy)
+        .send()
+        .await;
+    service.shutdown().await;
+    assert!(
+        response?
+            .attempts()
+            .all(|attempt| attempt.body_bytes().is_none())
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn binary_response_distinguishes_empty_body_from_omitted_selection() -> TestResult {
+    let service = FixtureService::start(
+        Protocol::Http,
+        [(
+            "/empty".to_owned(),
+            FixtureResponse::bytes(200, Some("application/octet-stream"), b""),
+        )],
+    )
+    .await;
+    let response = crate::request::new(service.url("/empty")).send().await?;
+    let mut policy = crate::policy::Policy::default();
+    policy.page.acquisitions = vec![crate::policy::Acquisition::DirectHttp.documents([])];
+    let omitted = crate::request::new(service.url("/empty"))
+        .bind(&policy)
+        .send()
+        .await;
+    service.shutdown().await;
+    assert_eq!(
+        response
+            .attempts()
+            .next()
+            .ok_or("missing attempt")?
+            .body_bytes(),
+        Some(&[][..])
+    );
+    assert!(
+        omitted?
+            .attempts()
+            .all(|attempt| attempt.body_bytes().is_none())
+    );
+    Ok(())
+}
+
 fn test_schema(name: &str) -> TestResult<Schema> {
     Ok(Schema::new(
         SchemaId::new(name)?,

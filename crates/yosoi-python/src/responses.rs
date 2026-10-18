@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use serde_json::{Value, json};
 use yosoi::{
     documents::DocumentRef,
@@ -102,6 +103,7 @@ impl NativeResponse {
                     "authored_selection": attempt.authored_selection(),
                     "requested_target": attempt.requested_target(),
                     "http_status": attempt.status(),
+                    "content_type": attempt.content_type(),
                     "state": state, "failure_kind": failure,
                     "not_started_reason": not_started, "diagnostic": attempt.diagnostic(),
                     "documents": documents,
@@ -127,5 +129,14 @@ impl NativeResponse {
         };
         value.borrowed()?;
         Ok(value)
+    }
+
+    fn body<'py>(&self, py: Python<'py>, attempt: usize) -> PyResult<Option<Bound<'py, PyBytes>>> {
+        let response = self.source.borrowed()?;
+        let attempt = response
+            .attempts()
+            .nth(attempt)
+            .ok_or_else(|| errors::RequestError::new_err("attempt index is out of range"))?;
+        Ok(attempt.body_bytes().map(|bytes| PyBytes::new(py, bytes)))
     }
 }
