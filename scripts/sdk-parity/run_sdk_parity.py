@@ -32,6 +32,7 @@ EXAMPLES: tuple[tuple[str, str, bool], ...] = (
     ("python_serde_conformance", "run_serde_conformance.py", False),
     ("python_document_errors_conformance", "run_document_errors_conformance.py", True),
     ("python_webtarget_conformance", "run_webtarget_conformance.py", True),
+    ("surface_conformance", "run_surface_conformance.py", False),
 )
 
 
@@ -185,7 +186,7 @@ def _generate_reference(
         "--version",
         f"0.1.0-sdk-parity.{source[:12]}",
         "--features",
-        "browser",
+        "browser,surface-video",
         "--preview",
     ]
     if offline:
@@ -219,7 +220,7 @@ def _build_examples(*, channel: str, offline: bool, command: Command) -> None:
         "--package",
         "yosoi",
         "--features",
-        "browser",
+        "browser,surface-video",
         "--jobs",
         workers,
     ]

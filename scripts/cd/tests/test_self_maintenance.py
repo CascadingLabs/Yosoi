@@ -156,14 +156,16 @@ class SelfMaintenanceTests(unittest.TestCase):
         import time
 
         executable = self.standalone()
-        for args, expected_prompt, answer, expected_result in [
-            (("self", "uninstall"), b"[y/N]", b"\n", "Uninstall cancelled."),
+        for args, expected_prompt, answer, expected_result, changed_receipt in [
+            (("self", "uninstall"), b"[y/N]", b"\n", "Uninstall cancelled.", False),
             (
                 ("self", "update", "--target-version", "0.100000.0"),
                 b"[Y/n]",
                 b"n\n",
                 "Update cancelled.",
+                False,
             ),
+            (("self", "uninstall"), b"[y/N]", b"y\n", "does not match", True),
         ]:
             master, slave = pty.openpty()
             try:
@@ -184,6 +186,11 @@ class SelfMaintenanceTests(unittest.TestCase):
                     readable, _, _ = select.select([master], [], [], remaining)
                     self.assertTrue(readable, data)
                     data += os.read(master, 65536)
+                if changed_receipt:
+                    receipt_path = executable.parent / ".yosoi-install.json"
+                    receipt = json.loads(receipt_path.read_text())
+                    receipt["sha256"] = "0" * 64
+                    receipt_path.write_text(json.dumps(receipt))
                 os.write(master, answer)
                 process.wait(timeout=15)
                 while select.select([master], [], [], 0)[0]:
@@ -194,7 +201,10 @@ class SelfMaintenanceTests(unittest.TestCase):
                         data += chunk
                     except OSError:
                         break
-                self.assertEqual(process.returncode, 0, data)
+                if changed_receipt:
+                    self.assertNotEqual(process.returncode, 0, data)
+                else:
+                    self.assertEqual(process.returncode, 0, data)
                 self.assertIn(expected_result, data.decode())
                 self.assertTrue(executable.exists())
             finally:

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {"name":"html-unicode","format":"html","content":"<main><h1>Arc lamp λ🙂</h1><ul><li>one</li><li>two</li><li>three</li></ul></main>","query":"lamp"},
+    {"name":"xml-source-range","format":"xml","content":"<r xmlns:x='urn:fixture'><x:name>Arc lamp λ🙂</x:name></r>","query":"lamp"},
+    {"name":"json-escaped-key","format":"json","content":"{\"a/b\":{\"~name\":\"Arc lamp λ🙂\"},\"stock\":3}","query":"lamp"},
+    {"name":"text-lines","format":"text","content":"Arc lamp λ🙂\nStock: 3\n","query":"lamp"},
+    {"name":"rendered-dom","format":"rendered_dom","content":"{\"schema\":\"yosoi.rendered-dom.v1\",\"document_epoch\":7,\"tree_model\":\"document_light_dom\",\"root\":1,\"nodes\":[{\"kind\":\"document\",\"id\":1,\"parent\":null,\"children\":[2]},{\"kind\":\"element\",\"id\":2,\"parent\":1,\"children\":[3],\"namespace_uri\":\"http://www.w3.org/1999/xhtml\",\"tag_name\":\"button\",\"attributes\":[]},{\"kind\":\"text\",\"id\":3,\"parent\":2,\"children\":[],\"value\":\"Arc lamp λ🙂\"}]}","query":"lamp"},
+    {"name":"accessibility","format":"accessibility_tree","content":"{\"schema\":\"yosoi.accessibility-tree.v1\",\"document_epoch\":7,\"root\":\"root\",\"completeness\":{\"status\":\"unknown\",\"reason_code\":\"provider_gap\"},\"nodes\":[{\"id\":\"root\",\"parent\":null,\"children\":[\"button\"],\"ignored\":false,\"role\":\"RootWebArea\",\"accessible_name\":null,\"text\":null,\"states\":{}},{\"id\":\"button\",\"parent\":\"root\",\"children\":[],\"ignored\":false,\"role\":\"button\",\"accessible_name\":\"Arc lamp λ🙂\",\"text\":null,\"states\":{}}]}","query":"lamp"}
+  ]
+}

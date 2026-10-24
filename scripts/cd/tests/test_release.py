@@ -603,8 +603,10 @@ fi
             [(row["python_tag"], row["abi"]) for row in builds],
             [("cp312", "abi3"), ("cp314", "cp314t"), ("cp315", "abi3.abi3t")],
         )
-        self.assertEqual(builds[0]["features"], "browser,pyo3/abi3-py312")
-        self.assertEqual(builds[-1]["features"], "browser,pyo3/abi3t-py315")
+        self.assertEqual(builds[0]["features"], "browser,surface-video,pyo3/abi3-py312")
+        self.assertEqual(
+            builds[-1]["features"], "browser,surface-video,pyo3/abi3t-py315"
+        )
         for row in abis:
             self.assertEqual(
                 len([build for build in builds if build["abi"] == row["wheel_abi"]]),
@@ -623,9 +625,13 @@ fi
         self.assertEqual(len(planned["wheel_tests"]["include"]), 30)
         self.assertEqual(len(planned["wheel_platforms"]["include"]), 5)
         for batch in planned["wheel_platforms"]["include"]:
-            self.assertEqual(batch["abi3_features"], "browser,pyo3/abi3-py312")
-            self.assertEqual(batch["cp314t_features"], "browser")
-            self.assertEqual(batch["abi3t_features"], "browser,pyo3/abi3t-py315")
+            self.assertEqual(
+                batch["abi3_features"], "browser,surface-video,pyo3/abi3-py312"
+            )
+            self.assertEqual(batch["cp314t_features"], "browser,surface-video")
+            self.assertEqual(
+                batch["abi3t_features"], "browser,surface-video,pyo3/abi3t-py315"
+            )
             self.assertEqual(batch["cp314t_python"], "3.14t")
         for row in planned["wheel_tests"]["include"]:
             matching = [

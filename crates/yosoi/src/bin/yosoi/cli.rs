@@ -13,7 +13,7 @@ use crate::presentation::Theme;
 
 use crate::{
     locate_command, map_command, policy_command, presentation, request_command, search_command,
-    self_command, syntax,
+    self_command, surface_command, syntax,
 };
 
 /// The top-level command line for Yosoi.
@@ -52,6 +52,8 @@ enum Commands {
     Search(search_command::SearchArgs),
     /// Locate values in a file or one typed Yosoi Document on stdin.
     Locate(locate_command::LocateArgs),
+    /// Inspect web/video evidence and drive controllable surfaces through bounded JSON.
+    Surface(surface_command::SurfaceArgs),
     /// Generate a shell completion script from this command tree.
     Completions { shell: Shell },
 }
@@ -112,6 +114,17 @@ pub async fn run() -> ExitCode {
             }
             Some(Commands::Locate(args)) => {
                 match locate_command::run(&args, cli.profile.as_deref()) {
+                    Ok(code) => code,
+                    Err(error) => report_app_error(&error),
+                }
+            }
+            Some(Commands::Surface(args)) => {
+                if cli.profile.is_some() {
+                    return report_app_error(&anyhow::anyhow!(
+                        "--profile does not apply to the experimental surface driver"
+                    ));
+                }
+                match surface_command::run(args).await {
                     Ok(code) => code,
                     Err(error) => report_app_error(&error),
                 }

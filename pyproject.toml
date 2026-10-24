@@ -26,7 +26,7 @@ manifest-path = "crates/yosoi-python/Cargo.toml"
 python-source = "python"
 module-name = "yosoi._native"
 bindings = "pyo3"
-features = ["browser"]
+features = ["browser", "surface-video"]
 include = [
     { path = "rust-toolchain.toml", format = "sdist" },
     { path = "LICENSE", format = "sdist" },

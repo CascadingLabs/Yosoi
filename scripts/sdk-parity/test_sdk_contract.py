@@ -155,7 +155,10 @@ class SdkContractTests(unittest.TestCase):
         self,
     ) -> None:
         report, _, _, _ = make_inputs()
-        for path, kind in (("yosoi::Archive", "struct"), ("yosoi::view", "module")):
+        for path, kind in (
+            ("yosoi::Archive", "struct"),
+            ("yosoi::view", "module"),
+        ):
             report["coverage"]["items"].append(
                 {**rust_item(path, kind, path), "status": "missing"}
             )
@@ -175,6 +178,22 @@ class SdkContractTests(unittest.TestCase):
         deferred[0]["deferredSurface"]["issue"] = "made-up-exemption"
         with self.assertRaisesRegex(ValueError, "beta boundary"):
             sdk_contract._validate_contract(contract)
+
+    def test_surface_and_provider_children_require_real_sdk_mappings(self) -> None:
+        report, _, _, _ = make_inputs()
+        paths = {
+            "yosoi::surface": "module",
+            "yosoi::surface::Surface": "struct",
+            "yosoi::surface::video::VideoSurface": "struct",
+        }
+        for path, kind in paths.items():
+            report["coverage"]["items"].append(
+                {**rust_item(path, kind, path), "status": "missing"}
+            )
+        contract = sdk_contract.build_contract(report)
+        declarations = {item["rustPath"]: item for item in contract["declarations"]}
+        for path in paths:
+            self.assertEqual(declarations[path]["classification"], "sdk")
 
     def test_implemented_request_api_cannot_be_relabelled_as_deferred(self) -> None:
         contract = copy.deepcopy(self.contract)

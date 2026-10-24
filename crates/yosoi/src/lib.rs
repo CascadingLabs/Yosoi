@@ -22,6 +22,7 @@ pub mod prelude;
 pub mod request;
 pub mod search;
 pub mod session;
+pub mod surface;
 pub mod timing;
 pub mod view;
 pub use crate::internal::engine::Archive;

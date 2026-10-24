@@ -701,14 +701,16 @@ pub async fn run(args: SelfArgs) -> Result<()> {
     let directory = executable.parent().context("Executable has no directory")?;
     #[allow(unused_mut)]
     let mut _lock = Lock::acquire(directory)?;
-    // Recheck under the lock: ownership could change while acquiring it.
-    recheck(&executable, &receipt)?;
+    // owner() already verified the executable. Defer the second full-file hash
+    // until confirmation so cancellation does not pay for it. Mutations still
+    // recheck ownership under this lock and again at their final commit boundary.
     match args.action {
         SelfAction::Uninstall { yes } => {
             if !confirm(&format!("Remove {}?", executable.display()), false, yes)? {
                 writeln!(io::stdout().lock(), "Uninstall cancelled.")?;
                 return Ok(());
             }
+            recheck(&executable, &receipt)?;
             uninstall(&executable, &receipt)?;
             #[cfg(windows)]
             {
@@ -766,6 +768,7 @@ pub async fn run(args: SelfArgs) -> Result<()> {
                 writeln!(io::stdout().lock(), "Update cancelled.")?;
                 return Ok(());
             }
+            recheck(&executable, &receipt)?;
             let asset = format!(
                 "yosoi-v{version}-{}.tar.gz",
                 platform(env::consts::OS, env::consts::ARCH)?

@@ -133,6 +133,11 @@ jobs:
         with:
           name: python-wheel-${{ matrix.wheel_abi }}
           path: dist
+      - name: Install video tools for installed SDK proof
+        if: matrix.python == '3.14' || matrix.python == '3.14t'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
       - name: Verify installed wheel
         run: |
           uv pip install --python .venv/bin/python --reinstall dist/*.whl

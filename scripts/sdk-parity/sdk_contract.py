@@ -22,6 +22,7 @@ NAMESPACES = (
     "policy",
     "request",
     "search",
+    "surface",
 )
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -33,14 +34,16 @@ DEFERRED_BETA_ROOTS = {
         "rationale": (
             "The full generic Rust Archive surface exceeds Python's supported "
             "Document, Plan and AutomationRecord operations. These supported "
-            "journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
+            "journeys have Archive tests; additional Rust value kinds and stronger "
+            "guarantees remain deferred."
         ),
     },
     "yosoi::view": {
         "issue": "CAS-567",
         "rationale": (
             "Python exposes bounded offline DOM View pages and capture-bound "
-            "continuation cursors. The full Rust View API, including direct condition verification, belongs to "
+            "continuation cursors. The full Rust View API, including direct condition "
+            "verification, belongs to "
             "later release work."
         ),
     },
@@ -257,6 +260,7 @@ REQUIRED_SUITES = (
     "run_serde_conformance.py",
     "run_document_errors_conformance.py",
     "run_webtarget_conformance.py",
+    "run_surface_conformance.py",
 )
 
 
@@ -352,7 +356,7 @@ def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
             ),
             "equivalentCapability": (
                 "Supported browser operations are checked separately by "
-                "installed-wheel browser behavior evidence; the seven existing Python "
+                "installed-wheel browser behavior evidence; the existing Python "
                 "SDK namespaces retain their semantic comparison suites."
             ),
         }
@@ -510,7 +514,7 @@ def _ledger_trait(entry: dict[str, Any]) -> str | None:
 def build_contract(inventory_report: dict[str, Any]) -> dict[str, Any]:
     """Create an initial auditable snapshot from a current full parity report.
 
-    Scope selection is explicit: Rust root items/members and the seven named
+    Scope selection is explicit: Rust root items/members and the named
     public namespaces, with only the `prelude` module added as an import-mechanic
     record. It does not infer SDK scope from visibility or Python package names.
     """

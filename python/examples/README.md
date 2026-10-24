@@ -1,5 +1,31 @@
 # Runnable SDK review examples
 
+## Surface readers
+
+From a Yosoi source checkout with an installed matching wheel:
+
+```sh
+uv run --no-sync python python/examples/surface_read.py
+uv run --no-sync python python/examples/surface_video.py recording.mp4 video-output
+uv run --no-sync python python/examples/surface_video_replay.py video-output
+```
+
+`surface_read.py` acquires the live QScrape lamp page, searches captured HTML,
+archives its Document, and reports whether restoration preserves the index
+identity. Pass URL, literal query and archive directory as positional arguments
+to use another document. This reads evidence; it does not control a browser.
+
+`surface_video.py` requires a wheel built with `surface-video` and local FFmpeg
+and FFprobe. It saves a frame and crop at 3.5 seconds, archives the source and
+crop, and writes `evidence.json` with typed references and actual pixel/timestamp
+metadata. Use `--position-us` for a different position. Local Archive currently
+requires Unix. Live-stream subscription, OCR and audio decoding are unsupported.
+`surface_video_replay.py` restores the saved timeline and crop in a new process;
+it does not need either video tool or the original video path.
+
+The corresponding Rust examples are `surface_read` and `surface_video` (the
+latter requires `--features surface-video`).
+
 The earlier compatibility report exercised the seven commands that existed in
 that SDK snapshot on normal 3.12, 3.13, 3.14, and exact 3.14.3t. It predates
 the Contract example and does not verify the current Contract wheel. See

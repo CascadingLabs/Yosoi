@@ -14,6 +14,7 @@ from . import map as map
 from . import policy as policy
 from . import request as request
 from . import search as search
+from . import surface as surface
 from . import view as view
 from .archive import Archive as Archive
 from .archive import AutomationRecord as AutomationRecord
@@ -228,6 +229,7 @@ __all__ = [
     "policy",
     "request",
     "search",
+    "surface",
     "Document",
     "Plan",
     "Policy",
