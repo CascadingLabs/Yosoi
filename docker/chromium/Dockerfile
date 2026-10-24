@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Adapted from CascadingLabs/VoidCrawl f7ca3ee0e9ad427e7695e1b241639cd7084f2975.
 FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS browser
-ARG CHROMIUM_VERSION=154.0.8037.92-1~deb13u1
+ARG CHROMIUM_VERSION=156.0.8078.47-1~deb13u1
 RUN apt-get update && apt-get install -y --no-install-recommends \
       chromium="$CHROMIUM_VERSION" chromium-common="$CHROMIUM_VERSION" chromium-sandbox="$CHROMIUM_VERSION" \
       supervisor curl ca-certificates python3 dbus procps fonts-liberation \

@@ -86,7 +86,7 @@ for index in range(int(os.environ['BROWSER_COUNT'])):
     port = int(os.environ['CDP_PORT_BASE']) + index
     with opener.open(f"http://127.0.0.1:{port}/json/version", timeout=3) as response:
         versions.append(json.load(response)['Browser'])
-assert all(version == 'Chrome/154.0.8037.92' for version in versions), versions
+assert all(version == 'Chrome/156.0.8078.47' for version in versions), versions
 renderers = []
 for process in pathlib.Path('/proc').iterdir():
     if process.name.isdigit():
