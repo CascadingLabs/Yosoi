@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::MAX_AUTOMATION_RECORD_BYTES",
+  "publicPath": "yosoi::automation_record::MAX_AUTOMATION_RECORD_BYTES",
+  "kind": "constant",
+  "title": "yosoi::automation_record::MAX_AUTOMATION_RECORD_BYTES",
+  "signature": "pub const MAX_AUTOMATION_RECORD_BYTES: u64 = _;",
+  "docs": "Maximum encoded record size accepted by this prototype container.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 31,
+    "lineEnd": 31,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L31-L31"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f3e0c69b7fcab500b32ebd6746965a9526027a12e24501a4677c6c6e9c6a7e0b",
+  "slug": "yosoi/automation-record/constant/max-automation-record-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f3e0c69b7fcab500b32ebd6746965a9526027a12e24501a4677c6c6e9c6a7e0b"
+}

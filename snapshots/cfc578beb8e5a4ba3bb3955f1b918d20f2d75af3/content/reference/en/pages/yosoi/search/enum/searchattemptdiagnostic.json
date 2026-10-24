@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchAttemptDiagnostic",
+  "publicPath": "yosoi::search::SearchAttemptDiagnostic",
+  "kind": "enum",
+  "title": "yosoi::search::SearchAttemptDiagnostic",
+  "signature": "pub enum SearchAttemptDiagnostic",
+  "docs": "Secret-safe failure class from the underlying Requests attempt.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 47,
+    "lineEnd": 74,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L47-L74"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/search.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchAttemptDiagnostic"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelled",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelled",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelled",
+      "kind": "variant",
+      "signature": "BrowserCancelled",
+      "docs": "Browser acquisition observed caller cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed",
+      "kind": "variant",
+      "signature": "BrowserCancelledCleanupFailed",
+      "docs": "Browser acquisition observed cancellation and then failed cleanup.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L61-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed",
+      "kind": "variant",
+      "signature": "BrowserCaptureFailed",
+      "docs": "Browser acquisition failed without a more specific failure classification.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed",
+      "kind": "variant",
+      "signature": "BrowserCleanupFailed",
+      "docs": "Browser resource cleanup failed after acquisition.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserFailure",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure",
+      "kind": "variant",
+      "signature": "BrowserFailure(yosoi::request::BrowserFailureReason)",
+      "docs": "Browser acquisition failed with the supplied typed failure reason.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L67-L67"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::search::SearchAttemptDiagnostic::BrowserFailure::0",
+          "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure::0",
+          "title": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::request::BrowserFailureReason",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+            "lineStart": 67,
+            "lineEnd": 67,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L67-L67"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled",
+      "kind": "variant",
+      "signature": "BrowserFeatureDisabled",
+      "docs": "The selected browser acquisition requires a feature absent from this build.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L71-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed",
+      "kind": "variant",
+      "signature": "BrowserFinalizationFailed",
+      "docs": "Browser acquisition could not finalize its capture artifacts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed",
+      "kind": "variant",
+      "signature": "DirectHttpBodyFailed",
+      "docs": "The HTTP response body could not be acquired successfully.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed",
+      "kind": "variant",
+      "signature": "DirectHttpFinalizationFailed",
+      "docs": "HTTP acquisition could not finalize its capture artifacts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport",
+      "title": "yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport",
+      "kind": "variant",
+      "signature": "DirectHttpTransport",
+      "docs": "Direct HTTP acquisition failed at the transport boundary.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext",
+      "title": "yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext",
+      "kind": "variant",
+      "signature": "MissingExecutionContext",
+      "docs": "No executor context was available for the selected acquisition.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed",
+      "kind": "variant",
+      "signature": "PolicyResolutionFailed",
+      "docs": "Authored policy could not be resolved into an executable request.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchAttemptDiagnostic::ProjectionFailed",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::ProjectionFailed",
+      "title": "yosoi::search::SearchAttemptDiagnostic::ProjectionFailed",
+      "kind": "variant",
+      "signature": "ProjectionFailed",
+      "docs": "Acquired content could not be projected into the requested document outputs.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L73-L73"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchAttemptDiagnostic::clone",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::clone",
+      "title": "yosoi::search::SearchAttemptDiagnostic::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchAttemptDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchAttemptDiagnostic::eq",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::eq",
+      "title": "yosoi::search::SearchAttemptDiagnostic::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchAttemptDiagnostic) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchAttemptDiagnostic::fmt",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::fmt",
+      "title": "yosoi::search::SearchAttemptDiagnostic::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchAttemptDiagnostic::serialize",
+      "publicPath": "yosoi::search::SearchAttemptDiagnostic::serialize",
+      "title": "yosoi::search::SearchAttemptDiagnostic::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "90677b53fe90ae40ec15bb3240b9165ed59d7e5fd322d93604ee8a7e75009d3f",
+  "slug": "yosoi/search/enum/searchattemptdiagnostic",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "90677b53fe90ae40ec15bb3240b9165ed59d7e5fd322d93604ee8a7e75009d3f"
+}

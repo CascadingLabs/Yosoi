@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::JsTarget",
+  "publicPath": "yosoi::session::JsTarget",
+  "kind": "struct",
+  "title": "yosoi::session::JsTarget",
+  "signature": "pub struct JsTarget",
+  "docs": "Dispatch-time frame and world selection with optional snapshot-epoch protection.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 101,
+    "lineEnd": 108,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L101-L108"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::JsTarget"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::JsTarget::clone",
+      "publicPath": "yosoi::session::JsTarget::clone",
+      "title": "yosoi::session::JsTarget::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::JsTarget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::JsTarget::default",
+      "publicPath": "yosoi::session::JsTarget::default",
+      "title": "yosoi::session::JsTarget::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::session::JsTarget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::session::JsTarget::deserialize",
+      "publicPath": "yosoi::session::JsTarget::deserialize",
+      "title": "yosoi::session::JsTarget::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::session::JsTarget::eq",
+      "publicPath": "yosoi::session::JsTarget::eq",
+      "title": "yosoi::session::JsTarget::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::JsTarget) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::session::JsTarget::expected_document_epoch",
+      "publicPath": "yosoi::session::JsTarget::expected_document_epoch",
+      "title": "yosoi::session::JsTarget::expected_document_epoch",
+      "kind": "struct_field",
+      "signature": "pub expected_document_epoch: Option<u64>",
+      "docs": "Required current document epoch, absent when no epoch precondition was authored.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 107,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L107-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::JsTarget::fmt",
+      "publicPath": "yosoi::session::JsTarget::fmt",
+      "title": "yosoi::session::JsTarget::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::session::JsTarget::frame",
+      "publicPath": "yosoi::session::JsTarget::frame",
+      "title": "yosoi::session::JsTarget::frame",
+      "kind": "struct_field",
+      "signature": "pub frame: yosoi::session::JsFrame",
+      "docs": "Frame selection resolved uniquely immediately before dispatch.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 103,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L103-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::JsTarget::serialize",
+      "publicPath": "yosoi::session::JsTarget::serialize",
+      "title": "yosoi::session::JsTarget::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L100-L100"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::session::JsTarget::world",
+      "publicPath": "yosoi::session::JsTarget::world",
+      "title": "yosoi::session::JsTarget::world",
+      "kind": "struct_field",
+      "signature": "pub world: yosoi::session::JsWorld",
+      "docs": "Selected execution world; current Work dispatch supports only `Main`.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 105,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L105-L105"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b343edef50bebe27094d396ceae0ae84d00b0fa3ae0a4c60c2588f8e6f0192c8",
+  "slug": "yosoi/session/struct/jstarget",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b343edef50bebe27094d396ceae0ae84d00b0fa3ae0a4c60c2588f8e6f0192c8"
+}

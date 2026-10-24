@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::ExecutionPool",
+  "publicPath": "yosoi::session::ExecutionPool",
+  "kind": "struct",
+  "title": "yosoi::session::ExecutionPool",
+  "signature": "pub struct ExecutionPool",
+  "docs": "Clone/share this pool across Sessions to bound work across browser processes.\nIt lends execution slots, never tab or browser ownership. Admission is FIFO.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 27,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L27-L29"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 30,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L30-L30"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionPool"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::ExecutionPool::clone",
+      "publicPath": "yosoi::session::ExecutionPool::clone",
+      "title": "yosoi::session::ExecutionPool::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionPool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::fmt",
+      "publicPath": "yosoi::session::ExecutionPool::fmt",
+      "title": "yosoi::session::ExecutionPool::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::new",
+      "publicPath": "yosoi::session::ExecutionPool::new",
+      "title": "yosoi::session::ExecutionPool::new",
+      "kind": "function",
+      "signature": "pub fn new(concurrency: u32, queue_capacity: u32) -> Result<Self, yosoi::session::ExecutionPoolError>",
+      "docs": "Creates a shareable worker pool with explicit concurrency and waiting-queue bounds.\nReturns [`ExecutionPoolError::InvalidLimits`] unless concurrency is 1–32\nand queue capacity 1–1024. This allocates capacity, not a browser or tab lease.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 66,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L66-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::snapshot",
+      "publicPath": "yosoi::session::ExecutionPool::snapshot",
+      "title": "yosoi::session::ExecutionPool::snapshot",
+      "kind": "function",
+      "signature": "pub fn snapshot(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "Reads independent active, queued, waiting, and parked counters without acquiring a permit.\nConcurrent changes can occur between counter reads; values are telemetry,\nnot an atomic ownership or business-completion receipt.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 93,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L93-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPool::subscribe",
+      "publicPath": "yosoi::session::ExecutionPool::subscribe",
+      "title": "yosoi::session::ExecutionPool::subscribe",
+      "kind": "function",
+      "signature": "pub fn subscribe(&self) -> broadcast::Receiver<yosoi::session::ExecutionSnapshot>",
+      "docs": "Bounded telemetry; slow observers receive Tokio's explicit lag error.\nObserving capacity does not acquire a worker or a tab lease.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 160,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/execution.rs#L160-L162"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ee939359cc6ffd62e3683b033b91a0b6edc7736c0fb545d06378e586ef8be64f",
+  "slug": "yosoi/session/struct/executionpool",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ee939359cc6ffd62e3683b033b91a0b6edc7736c0fb545d06378e586ef8be64f"
+}

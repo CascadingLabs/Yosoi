@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::locator::css",
+  "publicPath": "yosoi::locators::locator::css",
+  "kind": "function",
+  "title": "yosoi::locators::locator::css",
+  "signature": "pub const fn css(expression: &'static str) -> yosoi::locators::PinnedLocator",
+  "docs": "Retains static CSS query data for a Contract declaration without validation or document I/O. Supported compilation validates the expression later.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+    "lineStart": 84,
+    "lineEnd": 86,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/documents/locator_declaration.rs#L84-L86"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/locators.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::prelude::locator::css",
+    "yosoi::prelude::locators::locator::css"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "8b42e4de3343f63d1ba30bdb5a476761d22976b13b9d145986770e3c5a25515d",
+  "slug": "yosoi/locators/locator/function/css",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8b42e4de3343f63d1ba30bdb5a476761d22976b13b9d145986770e3c5a25515d"
+}

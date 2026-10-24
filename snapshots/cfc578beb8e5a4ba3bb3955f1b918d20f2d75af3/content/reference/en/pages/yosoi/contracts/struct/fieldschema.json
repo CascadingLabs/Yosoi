@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::FieldSchema",
+  "publicPath": "yosoi::contracts::FieldSchema",
+  "kind": "struct",
+  "title": "yosoi::contracts::FieldSchema",
+  "signature": "pub struct FieldSchema",
+  "docs": "Owned field meaning, cardinality, and conversion type metadata for a Contract schema.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/schema.rs",
+    "lineStart": 46,
+    "lineEnd": 51,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L46-L51"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/contracts.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::FieldSchema"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::FieldSchema::cardinality",
+      "publicPath": "yosoi::contracts::FieldSchema::cardinality",
+      "title": "yosoi::contracts::FieldSchema::cardinality",
+      "kind": "function",
+      "signature": "pub const fn cardinality(&self) -> yosoi::contracts::Cardinality",
+      "docs": "Returns the accepted-value count constraint for validation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 109,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L109-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::clone",
+      "publicPath": "yosoi::contracts::FieldSchema::clone",
+      "title": "yosoi::contracts::FieldSchema::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::FieldSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::description",
+      "publicPath": "yosoi::contracts::FieldSchema::description",
+      "title": "yosoi::contracts::FieldSchema::description",
+      "kind": "function",
+      "signature": "pub fn description(&self) -> &str",
+      "docs": "Borrows the field's business-meaning description, not a generated locator.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 105,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L105-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::deserialize",
+      "publicPath": "yosoi::contracts::FieldSchema::deserialize",
+      "title": "yosoi::contracts::FieldSchema::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 119,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L119-L134"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::eq",
+      "publicPath": "yosoi::contracts::FieldSchema::eq",
+      "title": "yosoi::contracts::FieldSchema::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::FieldSchema) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::fmt",
+      "publicPath": "yosoi::contracts::FieldSchema::fmt",
+      "title": "yosoi::contracts::FieldSchema::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::id",
+      "publicPath": "yosoi::contracts::FieldSchema::id",
+      "title": "yosoi::contracts::FieldSchema::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &yosoi::contracts::FieldId",
+      "docs": "Borrows the authored identity used to associate output findings with this field.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 101,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L101-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::serialize",
+      "publicPath": "yosoi::contracts::FieldSchema::serialize",
+      "title": "yosoi::contracts::FieldSchema::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::try_new",
+      "publicPath": "yosoi::contracts::FieldSchema::try_new",
+      "title": "yosoi::contracts::FieldSchema::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(id: yosoi::contracts::FieldId, description: impl Into<String>, cardinality: yosoi::contracts::Cardinality, value_type: impl Into<String>) -> Result<Self, yosoi::contracts::ContractSchemaError>",
+      "docs": "Owns field metadata after rejecting blank identity, description, or type text.\n\n`description` explains the business meaning; it does not discover a\nlocator automatically. `cardinality` is enforced at validation, and\n`value_type` declares conversion vocabulary without checking runtime\nsupport here. Returns [`ContractSchemaError`] for blank required metadata.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 60,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L60-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldSchema::value_type",
+      "publicPath": "yosoi::contracts::FieldSchema::value_type",
+      "title": "yosoi::contracts::FieldSchema::value_type",
+      "kind": "function",
+      "signature": "pub fn value_type(&self) -> &str",
+      "docs": "Borrows the declared scalar conversion identifier without resolving an implementation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 113,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contracts/schema.rs#L113-L115"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0e73ad136fd4112dd5078a03cf55003acef33ca3c987373cfa65761b20d5bc47",
+  "slug": "yosoi/contracts/struct/fieldschema",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0e73ad136fd4112dd5078a03cf55003acef33ca3c987373cfa65761b20d5bc47"
+}

@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Session",
+  "publicPath": "yosoi::session::Session",
+  "kind": "struct",
+  "title": "yosoi::session::Session",
+  "signature": "pub struct Session",
+  "docs": "Shared owner of a retained browser lifetime, tab inventory, and execution pool.\n\nClones share the same owner. Tab control is acquired through Work; worker\ncapacity is bounded separately and can be yielded during event-driven waits.\nExplicit close revokes the shared authority and reports cleanup failures.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 802,
+    "lineEnd": 804,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L802-L804"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Session",
+    "yosoi::prelude::session::Session"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Session::cancel",
+      "publicPath": "yosoi::session::Session::cancel",
+      "title": "yosoi::session::Session::cancel",
+      "kind": "function",
+      "signature": "pub fn cancel(&self)",
+      "docs": "Requests cancellation of shared browser authority without waiting for cleanup.\nPrior external effects are not rolled back; use [`Self::close`] to settle owned resources.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 900,
+        "lineEnd": 903,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L900-L903"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::clone",
+      "publicPath": "yosoi::session::Session::clone",
+      "title": "yosoi::session::Session::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::Session",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 801,
+        "lineEnd": 801,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L801-L801"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::Session::close",
+      "publicPath": "yosoi::session::Session::close",
+      "title": "yosoi::session::Session::close",
+      "kind": "function",
+      "signature": "pub async fn close(&self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "Revokes the shared browser owner and awaits cleanup.\nReturns [`SessionError::Cleanup`] when cleanup cannot complete; clones\nrefer to the same authority and do not preserve independent browser lifetimes.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 907,
+        "lineEnd": 920,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L907-L920"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::execution_snapshot",
+      "publicPath": "yosoi::session::Session::execution_snapshot",
+      "title": "yosoi::session::Session::execution_snapshot",
+      "kind": "function",
+      "signature": "pub fn execution_snapshot(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "Independent active/queued/parked counts. A shared pool aggregates Sessions.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 814,
+        "lineEnd": 816,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L814-L816"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::fmt",
+      "publicPath": "yosoi::session::Session::fmt",
+      "title": "yosoi::session::Session::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 806,
+        "lineEnd": 810,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L806-L810"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Session::new_tab",
+      "publicPath": "yosoi::session::Session::new_tab",
+      "title": "yosoi::session::Session::new_tab",
+      "kind": "function",
+      "signature": "pub async fn new_tab(&self) -> Result<yosoi::session::Tab, yosoi::session::SessionError>",
+      "docs": "Creates a retained tab within the Session's tab-count bound.\nReturns [`SessionError`] for disabled browser support or admission failure.\nThe returned tab does not grant exclusive Work control or execution capacity.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 871,
+        "lineEnd": 889,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L871-L889"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::policy",
+      "publicPath": "yosoi::session::Session::policy",
+      "title": "yosoi::session::Session::policy",
+      "kind": "function",
+      "signature": "pub fn policy(&self) -> &yosoi::Policy",
+      "docs": "Borrows the complete policy snapshot retained when this Session was acquired.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 830,
+        "lineEnd": 832,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L830-L832"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::settings",
+      "publicPath": "yosoi::session::Session::settings",
+      "title": "yosoi::session::Session::settings",
+      "kind": "function",
+      "signature": "pub fn settings(&self) -> &yosoi::session::SessionPolicy",
+      "docs": "Borrows the validated execution and evidence limits shared by Session clones.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 834,
+        "lineEnd": 836,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L834-L836"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::watch",
+      "publicPath": "yosoi::session::Session::watch",
+      "title": "yosoi::session::Session::watch",
+      "kind": "function",
+      "signature": "pub fn watch(&self) -> yosoi::session::Watcher",
+      "docs": "Subscribes to future bounded operation receipts without granting browser mutation authority.\nExisting receipts are not replayed; a slow consumer receives an explicit lag error.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 892,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L892-L897"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Session::work",
+      "publicPath": "yosoi::session::Session::work",
+      "title": "yosoi::session::Session::work",
+      "kind": "function",
+      "signature": "pub async fn work(&self) -> Result<yosoi::session::Work, yosoi::session::SessionError>",
+      "docs": "Acquires exclusive control of the Session's initial tab without closing the Session.\nReturns [`SessionError`] when browser support or control admission is unavailable.\nHolding Work owns tab authority; execution permits are acquired per operation.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 840,
+        "lineEnd": 849,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L840-L849"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2f1d01a598c39006eeee6a3e0a663229b330cb09fca8e793da27ac8b916033a9",
+  "slug": "yosoi/session/struct/session",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2f1d01a598c39006eeee6a3e0a663229b330cb09fca8e793da27ac8b916033a9"
+}

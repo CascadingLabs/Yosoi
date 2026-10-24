@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::SearchHitMetadata",
+  "publicPath": "yosoi::search::SearchHitMetadata",
+  "kind": "struct",
+  "title": "yosoi::search::SearchHitMetadata",
+  "signature": "pub struct SearchHitMetadata",
+  "docs": "Optional metadata shown by the provider; it is not fetched from the target.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+    "lineStart": 45,
+    "lineEnd": 58,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L45-L58"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/search.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchHitMetadata"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::search::SearchHitMetadata::clone",
+      "publicPath": "yosoi::search::SearchHitMetadata::clone",
+      "title": "yosoi::search::SearchHitMetadata::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchHitMetadata",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchHitMetadata::default",
+      "publicPath": "yosoi::search::SearchHitMetadata::default",
+      "title": "yosoi::search::SearchHitMetadata::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::search::SearchHitMetadata",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::display_url",
+      "publicPath": "yosoi::search::SearchHitMetadata::display_url",
+      "title": "yosoi::search::SearchHitMetadata::display_url",
+      "kind": "struct_field",
+      "signature": "pub display_url: Option<String>",
+      "docs": "Human-readable address shown by the provider, distinct from the destination URL.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchHitMetadata::eq",
+      "publicPath": "yosoi::search::SearchHitMetadata::eq",
+      "title": "yosoi::search::SearchHitMetadata::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchHitMetadata) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchHitMetadata::fmt",
+      "publicPath": "yosoi::search::SearchHitMetadata::fmt",
+      "title": "yosoi::search::SearchHitMetadata::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 61,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L61-L71"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::published_at",
+      "publicPath": "yosoi::search::SearchHitMetadata::published_at",
+      "title": "yosoi::search::SearchHitMetadata::published_at",
+      "kind": "struct_field",
+      "signature": "pub published_at: Option<String>",
+      "docs": "Provider-reported display date, not a verified publication date.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::publisher",
+      "publicPath": "yosoi::search::SearchHitMetadata::publisher",
+      "title": "yosoi::search::SearchHitMetadata::publisher",
+      "kind": "struct_field",
+      "signature": "pub publisher: Option<String>",
+      "docs": "Provider-displayed publisher label, without independent identity verification.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchHitMetadata::serialize",
+      "publicPath": "yosoi::search::SearchHitMetadata::serialize",
+      "title": "yosoi::search::SearchHitMetadata::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::snippet",
+      "publicPath": "yosoi::search::SearchHitMetadata::snippet",
+      "title": "yosoi::search::SearchHitMetadata::snippet",
+      "kind": "struct_field",
+      "signature": "pub snippet: Option<String>",
+      "docs": "Provider-displayed excerpt; it is not verified destination content.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::thumbnail_url",
+      "publicPath": "yosoi::search::SearchHitMetadata::thumbnail_url",
+      "title": "yosoi::search::SearchHitMetadata::thumbnail_url",
+      "kind": "struct_field",
+      "signature": "pub thumbnail_url: Option<yosoi::search::SearchResultUrl>",
+      "docs": "Validated thumbnail destination, if supplied; the image has not been fetched.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::SearchHitMetadata::title",
+      "publicPath": "yosoi::search::SearchHitMetadata::title",
+      "title": "yosoi::search::SearchHitMetadata::title",
+      "kind": "struct_field",
+      "signature": "pub title: Option<String>",
+      "docs": "Provider-displayed title, absent when the parser found no title.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/result/types.rs#L47-L47"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1ee14eca600db75fdf377f06a7c5edaca13421b7a939ee5b101798788b206ded",
+  "slug": "yosoi/search/struct/searchhitmetadata",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1ee14eca600db75fdf377f06a7c5edaca13421b7a939ee5b101798788b206ded"
+}

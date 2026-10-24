@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::AutomationRecordRef",
+  "publicPath": "yosoi::automation_record::AutomationRecordRef",
+  "kind": "struct",
+  "title": "yosoi::automation_record::AutomationRecordRef",
+  "signature": "pub struct AutomationRecordRef",
+  "docs": "One immutable Archive handle and the logical record schema version.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 98,
+    "lineEnd": 101,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L98-L101"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::clone",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::clone",
+      "title": "yosoi::automation_record::AutomationRecordRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::AutomationRecordRef",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::deserialize",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::deserialize",
+      "title": "yosoi::automation_record::AutomationRecordRef::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::document",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::document",
+      "title": "yosoi::automation_record::AutomationRecordRef::document",
+      "kind": "function",
+      "signature": "pub const fn document(&self) -> &yosoi::archive::DocumentArchiveRef",
+      "docs": "Returns the exact immutable Document reference persisted in Archive.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 110,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L110-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::eq",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::eq",
+      "title": "yosoi::automation_record::AutomationRecordRef::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::AutomationRecordRef) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::fmt",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::fmt",
+      "title": "yosoi::automation_record::AutomationRecordRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::serialize",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::serialize",
+      "title": "yosoi::automation_record::AutomationRecordRef::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordRef::version",
+      "publicPath": "yosoi::automation_record::AutomationRecordRef::version",
+      "title": "yosoi::automation_record::AutomationRecordRef::version",
+      "kind": "function",
+      "signature": "pub const fn version(&self) -> u32",
+      "docs": "Returns the logical record schema version named by this reference.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 105,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/automation_record.rs#L105-L107"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e8c511d6e5ef026b1e787256df47af176d441703bd270d948d67bbccef1f6607",
+  "slug": "yosoi/automation-record/struct/automationrecordref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e8c511d6e5ef026b1e787256df47af176d441703bd270d948d67bbccef1f6607"
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::session::MAX_UNTIL_REPORT_BYTES",
+  "publicPath": "yosoi::session::MAX_UNTIL_REPORT_BYTES",
+  "kind": "constant",
+  "title": "yosoi::session::MAX_UNTIL_REPORT_BYTES",
+  "signature": "pub const MAX_UNTIL_REPORT_BYTES: usize = _;",
+  "docs": "Maximum encoded confirmation report, including retained source evidence.",
+  "source": {
+    "file": "crates/yosoi/src/session/until.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session/until.rs#L14-L14"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 25,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/session.rs#L25-L25"
+  },
+  "aliases": [
+    "yosoi::prelude::session::MAX_UNTIL_REPORT_BYTES"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "2e12bbcd4da6533272566b28a900386c71580a05e8aa29db11d441ca1b2db1f9",
+  "slug": "yosoi/session/constant/max-until-report-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2e12bbcd4da6533272566b28a900386c71580a05e8aa29db11d441ca1b2db1f9"
+}

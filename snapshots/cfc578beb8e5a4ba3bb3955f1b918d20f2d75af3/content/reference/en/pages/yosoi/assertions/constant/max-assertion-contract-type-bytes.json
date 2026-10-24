@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::assertions::MAX_ASSERTION_CONTRACT_TYPE_BYTES",
+  "publicPath": "yosoi::assertions::MAX_ASSERTION_CONTRACT_TYPE_BYTES",
+  "kind": "constant",
+  "title": "yosoi::assertions::MAX_ASSERTION_CONTRACT_TYPE_BYTES",
+  "signature": "pub const MAX_ASSERTION_CONTRACT_TYPE_BYTES: usize = 256;",
+  "docs": "Maximum UTF-8 bytes identifying the Contract type in a saved assertion descriptor.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 31,
+    "lineEnd": 31,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/assertions.rs#L31-L31"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "1e7c8677bb60126d54a69d050f15b4ae6df2d4f4efc156231292fbf2b1988c9f",
+  "slug": "yosoi/assertions/constant/max-assertion-contract-type-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1e7c8677bb60126d54a69d050f15b4ae6df2d4f4efc156231292fbf2b1988c9f"
+}

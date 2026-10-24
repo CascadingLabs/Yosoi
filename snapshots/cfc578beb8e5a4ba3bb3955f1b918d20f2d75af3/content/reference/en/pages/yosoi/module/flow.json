@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::flow",
+  "publicPath": "yosoi::flow",
+  "kind": "module",
+  "title": "yosoi::flow",
+  "signature": "pub mod flow",
+  "docs": "Serializable Flow actions, outcomes and validation vocabulary.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 1,
+    "lineEnd": 918,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/flow/model.rs#L1-L918"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "18119fa4dd6a9dd35be8e03086e6c82f308dd848e4d661c0ebf4a215f84e40ea",
+  "slug": "yosoi/module/flow",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "18119fa4dd6a9dd35be8e03086e6c82f308dd848e4d661c0ebf4a215f84e40ea"
+}

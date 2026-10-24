@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::view::MAX_VIEW_PAGE_SIZE",
+  "publicPath": "yosoi::view::MAX_VIEW_PAGE_SIZE",
+  "kind": "constant",
+  "title": "yosoi::view::MAX_VIEW_PAGE_SIZE",
+  "signature": "pub const MAX_VIEW_PAGE_SIZE: usize = 100;",
+  "docs": "Maximum number of DOM rows returned in one View page.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/view.rs#L16-L16"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::MAX_VIEW_PAGE_SIZE"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "844da0278994bb0746ffcf16d468d310c78bfdec311fcdc2f6dc43583833bbda",
+  "slug": "yosoi/view/constant/max-view-page-size",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "844da0278994bb0746ffcf16d468d310c78bfdec311fcdc2f6dc43583833bbda"
+}

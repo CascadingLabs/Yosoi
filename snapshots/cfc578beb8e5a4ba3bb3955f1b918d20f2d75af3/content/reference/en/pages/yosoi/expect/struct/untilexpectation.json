@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::expect::UntilExpectation",
+  "publicPath": "yosoi::expect::UntilExpectation",
+  "kind": "struct",
+  "title": "yosoi::expect::UntilExpectation",
+  "signature": "pub struct UntilExpectation",
+  "docs": "A transient `Step::until` argument that carries existing Step modifiers.\n\nModifiers are lowered onto the compound Until step. They are intentionally\nomitted from the serialized expectation model.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 196,
+    "lineEnd": 202,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L196-L202"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::UntilExpectation",
+    "yosoi::prelude::expect::UntilExpectation"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::expect::UntilExpectation::clone",
+      "publicPath": "yosoi::expect::UntilExpectation::clone",
+      "title": "yosoi::expect::UntilExpectation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::expect::UntilExpectation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L195-L195"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::fmt",
+      "publicPath": "yosoi::expect::UntilExpectation::fmt",
+      "title": "yosoi::expect::UntilExpectation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L195-L195"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(builder: yosoi::action::AssertionBuilder) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 110,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/action/builder.rs#L110-L128"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(expectation: yosoi::expect::Expectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 217,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L217-L219"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(condition: yosoi::flow::Condition) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 223,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L223-L225"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(assertion: yosoi::assertions::LocalAssertion) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 229,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L229-L231"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(response: yosoi::expect::ResponseExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 235,
+        "lineEnd": 237,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L235-L237"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(accessibility: yosoi::expect::AccessibilityExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 241,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L241-L243"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::UntilExpectation::from",
+      "publicPath": "yosoi::expect::UntilExpectation::from",
+      "title": "yosoi::expect::UntilExpectation::from",
+      "kind": "function",
+      "signature": "fn from(all: yosoi::expect::AllExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 247,
+        "lineEnd": 249,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L247-L249"
+      },
+      "examples": [],
+      "trait": "From"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d569da2db8baae82b9179190750a4ef5fcce94fa435495967ffc05aa931c8079",
+  "slug": "yosoi/expect/struct/untilexpectation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d569da2db8baae82b9179190750a4ef5fcce94fa435495967ffc05aa931c8079"
+}

@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ValidationCode",
+  "publicPath": "yosoi::contracts::ValidationCode",
+  "kind": "enum",
+  "title": "yosoi::contracts::ValidationCode",
+  "signature": "pub enum ValidationCode",
+  "docs": "Semantic rejection code after a projection has been converted to its field type.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+    "lineStart": 10,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L10-L13"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/contracts.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ValidationCode"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ValidationCode::NegativeMoney",
+      "publicPath": "yosoi::contracts::ValidationCode::NegativeMoney",
+      "title": "yosoi::contracts::ValidationCode::NegativeMoney",
+      "kind": "variant",
+      "signature": "NegativeMoney",
+      "docs": "A converted monetary value is negative where the supported money semantics require nonnegative values.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationCode::clone",
+      "publicPath": "yosoi::contracts::ValidationCode::clone",
+      "title": "yosoi::contracts::ValidationCode::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ValidationCode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationCode::deserialize",
+      "publicPath": "yosoi::contracts::ValidationCode::deserialize",
+      "title": "yosoi::contracts::ValidationCode::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationCode::eq",
+      "publicPath": "yosoi::contracts::ValidationCode::eq",
+      "title": "yosoi::contracts::ValidationCode::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ValidationCode) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationCode::fmt",
+      "publicPath": "yosoi::contracts::ValidationCode::fmt",
+      "title": "yosoi::contracts::ValidationCode::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationCode::serialize",
+      "publicPath": "yosoi::contracts::ValidationCode::serialize",
+      "title": "yosoi::contracts::ValidationCode::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/issue.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "78c21814b3dbaed6157f680b86de2cc4ea9bc930d27a3187279439e9caa6956b",
+  "slug": "yosoi/contracts/enum/validationcode",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "78c21814b3dbaed6157f680b86de2cc4ea9bc930d27a3187279439e9caa6956b"
+}

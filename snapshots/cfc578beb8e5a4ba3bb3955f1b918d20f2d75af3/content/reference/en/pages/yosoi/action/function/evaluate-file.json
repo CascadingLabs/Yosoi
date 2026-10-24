@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::evaluate_file",
+  "publicPath": "yosoi::action::evaluate_file",
+  "kind": "function",
+  "title": "yosoi::action::evaluate_file",
+  "signature": "pub fn evaluate_file(path: impl AsRef<std::path::Path>) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptSourceError>",
+  "docs": "Snapshots a UTF-8 JavaScript file now, before a Flow can be serialized or run.\nThe source is read under [`MAX_JAVASCRIPT_SOURCE_BYTES`] and later file edits\ncannot change this step.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 93,
+    "lineEnd": 95,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/action.rs#L93-L95"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::evaluate_file"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "4ed03c0da4f04de77a5fe321440c8d36d972b7ce9c8a9f2bb2da922b8d52991e",
+  "slug": "yosoi/action/function/evaluate-file",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4ed03c0da4f04de77a5fe321440c8d36d972b7ce9c8a9f2bb2da922b8d52991e"
+}

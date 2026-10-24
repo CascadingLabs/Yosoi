@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::RuntimeValidatedRecord",
+  "publicPath": "yosoi::contracts::RuntimeValidatedRecord",
+  "kind": "struct",
+  "title": "yosoi::contracts::RuntimeValidatedRecord",
+  "signature": "pub struct RuntimeValidatedRecord",
+  "docs": "One accepted runtime record with the original candidate evidence retained.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+    "lineStart": 255,
+    "lineEnd": 260,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L255-L260"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/contracts.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeValidatedRecord"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::contracts::RuntimeValidatedRecord::candidate",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::candidate",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::candidate",
+      "kind": "struct_field",
+      "signature": "pub candidate: crate::internal::contracts::CandidateInput",
+      "docs": "Owned original field findings and candidate grouping provenance.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L259-L259"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeValidatedRecord::clone",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::clone",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::RuntimeValidatedRecord",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L253-L253"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeValidatedRecord::deserialize",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::deserialize",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L253-L253"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeValidatedRecord::eq",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::eq",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::RuntimeValidatedRecord) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L253-L253"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeValidatedRecord::fmt",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::fmt",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L253-L253"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeValidatedRecord::serialize",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::serialize",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L253-L253"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::contracts::RuntimeValidatedRecord::value",
+      "publicPath": "yosoi::contracts::RuntimeValidatedRecord::value",
+      "title": "yosoi::contracts::RuntimeValidatedRecord::value",
+      "kind": "struct_field",
+      "signature": "pub value: std::collections::BTreeMap<yosoi::contracts::FieldId, yosoi::contracts::RuntimeFieldValue>",
+      "docs": "Authored field identifiers mapped to converted cardinality-aware values.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 257,
+        "lineEnd": 257,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/contract_validation/runtime.rs#L257-L257"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ea80c825f9f23e6e250f91eb8530a2724f968165c1b48e7e78376bcdbb7dffa0",
+  "slug": "yosoi/contracts/struct/runtimevalidatedrecord",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ea80c825f9f23e6e250f91eb8530a2724f968165c1b48e7e78376bcdbb7dffa0"
+}

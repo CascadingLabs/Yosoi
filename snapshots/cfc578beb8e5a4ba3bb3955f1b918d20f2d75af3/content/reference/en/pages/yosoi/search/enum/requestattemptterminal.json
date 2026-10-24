@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::RequestAttemptTerminal",
+  "publicPath": "yosoi::search::RequestAttemptTerminal",
+  "kind": "enum",
+  "title": "yosoi::search::RequestAttemptTerminal",
+  "signature": "pub enum RequestAttemptTerminal",
+  "docs": "Execution state of an acquisition, independent of provider parsing success.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 98,
+    "lineEnd": 105,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L98-L105"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/search.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::search::RequestAttemptTerminal"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::RequestAttemptTerminal::Completed",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::Completed",
+      "title": "yosoi::search::RequestAttemptTerminal::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "Acquisition completed; the provider response may still be unusable.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L100-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::RequestAttemptTerminal::Failed",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::Failed",
+      "title": "yosoi::search::RequestAttemptTerminal::Failed",
+      "kind": "variant",
+      "signature": "Failed",
+      "docs": "Acquisition started and returned a typed failure.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L102-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::RequestAttemptTerminal::NotStarted",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::NotStarted",
+      "title": "yosoi::search::RequestAttemptTerminal::NotStarted",
+      "kind": "variant",
+      "signature": "NotStarted",
+      "docs": "Acquisition was skipped before starting, for example after cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 104,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L104-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptTerminal::clone",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::clone",
+      "title": "yosoi::search::RequestAttemptTerminal::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::RequestAttemptTerminal",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptTerminal::eq",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::eq",
+      "title": "yosoi::search::RequestAttemptTerminal::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::RequestAttemptTerminal) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptTerminal::fmt",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::fmt",
+      "title": "yosoi::search::RequestAttemptTerminal::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptTerminal::serialize",
+      "publicPath": "yosoi::search::RequestAttemptTerminal::serialize",
+      "title": "yosoi::search::RequestAttemptTerminal::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/engine/search/outcome.rs#L96-L96"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fa66a752cbe72b99758a775de042b6ff3a915f000fce622264a175f48f3be836",
+  "slug": "yosoi/search/enum/requestattemptterminal",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fa66a752cbe72b99758a775de042b6ff3a915f000fce622264a175f48f3be836"
+}

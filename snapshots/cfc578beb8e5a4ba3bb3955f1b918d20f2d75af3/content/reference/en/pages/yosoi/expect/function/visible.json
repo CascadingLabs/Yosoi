@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::expect::visible",
+  "publicPath": "yosoi::expect::visible",
+  "kind": "function",
+  "title": "yosoi::expect::visible",
+  "signature": "pub fn visible(selector: impl Into<String>) -> yosoi::expect::Expectation",
+  "docs": "Constructs a typed DOM condition that matches at least one visible element.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 261,
+    "lineEnd": 266,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/expect.rs#L261-L266"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::visible"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f82659fcaaf8902dc6dca8210dcff290977813bffcc916f7cc099400610e2780",
+  "slug": "yosoi/expect/function/visible",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f82659fcaaf8902dc6dca8210dcff290977813bffcc916f7cc099400610e2780"
+}

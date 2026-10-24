@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::ProfileSelection",
+  "publicPath": "yosoi::policy::ProfileSelection",
+  "kind": "enum",
+  "title": "yosoi::policy::ProfileSelection",
+  "signature": "pub enum ProfileSelection",
+  "docs": "How Search obtains one provider's Requests profile.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+    "lineStart": 193,
+    "lineEnd": 198,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L193-L198"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::policy::search::ProfileSelection",
+    "yosoi::prelude::policy::ProfileSelection",
+    "yosoi::prelude::policy::search::ProfileSelection"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::ProfileSelection::Current",
+      "publicPath": "yosoi::policy::ProfileSelection::Current",
+      "title": "yosoi::policy::ProfileSelection::Current",
+      "kind": "variant",
+      "signature": "Current",
+      "docs": "Resolve the provider's current certified Requests profile.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L195-L195"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::ProfileSelection::Exact",
+      "publicPath": "yosoi::policy::ProfileSelection::Exact",
+      "title": "yosoi::policy::ProfileSelection::Exact",
+      "kind": "variant",
+      "signature": "Exact(yosoi::policy::ProviderRequestProfile)",
+      "docs": "Pin one complete general Requests profile in the Search policy.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 197,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L197-L197"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::policy::ProfileSelection::Exact::0",
+          "publicPath": "yosoi::policy::ProfileSelection::Exact::0",
+          "title": "yosoi::policy::ProfileSelection::Exact::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::policy::ProviderRequestProfile",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+            "lineStart": 197,
+            "lineEnd": 197,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L197-L197"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::clone",
+      "publicPath": "yosoi::policy::ProfileSelection::clone",
+      "title": "yosoi::policy::ProfileSelection::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::ProfileSelection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L186-L186"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::deserialize",
+      "publicPath": "yosoi::policy::ProfileSelection::deserialize",
+      "title": "yosoi::policy::ProfileSelection::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L186-L186"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::eq",
+      "publicPath": "yosoi::policy::ProfileSelection::eq",
+      "title": "yosoi::policy::ProfileSelection::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::ProfileSelection) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L186-L186"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::fmt",
+      "publicPath": "yosoi::policy::ProfileSelection::fmt",
+      "title": "yosoi::policy::ProfileSelection::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L186-L186"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::kind",
+      "publicPath": "yosoi::policy::ProfileSelection::kind",
+      "title": "yosoi::policy::ProfileSelection::kind",
+      "kind": "function",
+      "signature": "pub const fn kind(&self) -> yosoi::policy::search::ProfileSelectionKind",
+      "docs": "Returns whether this is a Current or Exact profile declaration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 202,
+        "lineEnd": 207,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L202-L207"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProfileSelection::serialize",
+      "publicPath": "yosoi::policy::ProfileSelection::serialize",
+      "title": "yosoi::policy::ProfileSelection::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/search/provider.rs",
+        "lineStart": 186,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/crates/yosoi/src/internal/policy/policy/search/provider.rs#L186-L186"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ba9cc4c054532113e95df820d16dc40f92bd95b28b1cbc723197ded428eaf881",
+  "slug": "yosoi/policy/enum/profileselection",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ba9cc4c054532113e95df820d16dc40f92bd95b28b1cbc723197ded428eaf881"
+}

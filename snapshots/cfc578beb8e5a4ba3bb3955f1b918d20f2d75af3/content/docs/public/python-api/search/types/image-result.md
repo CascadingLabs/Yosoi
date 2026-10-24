@@ -1,0 +1,28 @@
+---
+title: "ImageResult"
+description: "yosoi.search.ImageResult Python API reference."
+order: 0
+---
+
+`yosoi.search.ImageResult`
+
+```python
+class ImageResult(ImmutableModel):
+```
+
+An image destination paired with its reported hosting page.
+
+Attributes:
+    image_url: Validated image destination; no bytes are downloaded by this model.
+    source_page_url: Validated source-page destination reported by the provider.
+
+[Source: python/yosoi/search.py:191](https://github.com/CascadingLabs/Yosoi/blob/cfc578beb8e5a4ba3bb3955f1b918d20f2d75af3/python/yosoi/search.py#L191-L206)
+
+Members below are declared on this class. Inherited Pydantic methods and generated constructor signatures are not expanded.
+
+## Fields and class attributes
+
+```python
+image_url: SearchResultUrl = Field(repr=False)
+source_page_url: SearchResultUrl = Field(repr=False)
+```
