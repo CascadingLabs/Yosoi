@@ -61,7 +61,7 @@ software rendering. Hardware GPU behavior is not covered by hosted smoke tests.
 
 The Debian 13 base is pinned by digest. Regular Debian Stable/security
 Chromium, chromium-common, and chromium-sandbox are pinned to
-`154.0.8037.92-1~deb13u1` for both architectures, as listed by
+`156.0.8078.47-1~deb13u1` for both architectures, as listed by
 [Debian](https://packages.debian.org/trixie/chromium). This is a normal browsing
 distribution, not Chrome for Testing. The repository's 2026-10-10 eligibility
 snapshot includes this M154 version; admitting Debian 13's distribution suffix
