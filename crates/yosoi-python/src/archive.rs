@@ -7,7 +7,10 @@ use serde::{Serialize, de::DeserializeOwned};
 use yosoi::{
     Archive,
     archive::{ArchiveError, DocumentArchiveRef, PlanArchiveRef},
-    automation_record::{AutomationRecord, AutomationRecordRef, MAX_AUTOMATION_RECORD_BYTES},
+    automation_record::{
+        AUTOMATION_RECORD_VERSION, AutomationRecord, AutomationRecordRef,
+        MAX_AUTOMATION_RECORD_BYTES,
+    },
     view::{View, ViewCursor},
 };
 
@@ -255,7 +258,7 @@ fn encode<T: Serialize>(value: &T) -> PyResult<String> {
 
 fn record(value: &str) -> PyResult<AutomationRecord> {
     let value: AutomationRecord = decode(value)?;
-    if value.version() != yosoi::automation_record::AUTOMATION_RECORD_VERSION {
+    if value.version() != AUTOMATION_RECORD_VERSION {
         return Err(errors::ArchiveError::new_err(
             "unsupported automation record version",
         ));

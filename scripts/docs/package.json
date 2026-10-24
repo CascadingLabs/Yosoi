@@ -14,10 +14,10 @@
     "mdast-util-gfm": "3.1.0",
     "mdast-util-to-markdown": "2.2.0",
     "satteri": "0.10.5",
-    "vite-plus": "1.0.0"
+    "vite-plus": "1.4.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
   },
   "packageManager": "bun@1.4.2"
 }

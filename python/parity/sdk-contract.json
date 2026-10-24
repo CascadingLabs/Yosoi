@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "05078b5e943f0d8f4be70261c9d201f7c7769216",
-    "inventorySignature": "ca3b130de2cefe7716883cc0b3178fdc20a0fe240d68ca48a6d283d6c6a12640"
+    "revision": "e5e9552e94ca5a4784c0f42be015c20901b3eb03",
+    "inventorySignature": "264c0243c7eacc8419ecb1bb292eb412228a4dffd89b9c725ede69ed8752a540"
   },
   "scope": {
     "crate": "yosoi",
@@ -189,7 +189,7 @@
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -215,7 +215,7 @@
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -230,18 +230,22 @@
       "symbolKey": "member:function:yosoi::Archive::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:d53c29bb234889135288347554e65c91aba34a144368ec91d497538edd794c96",
       "classification": "deferred-beta-surface",
       "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.Archive",
+        "pythonTargetSha256": "4de33c75629a3ed8fdc25713f596ece68d49fef2fdb7f33c37517681274505ac",
         "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
         "ledgerMappingSha256": null
       },
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -267,7 +271,7 @@
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -277,9 +281,35 @@
       "trait": null,
       "surface": "member",
       "parentRustPath": "yosoi::Archive",
-      "signatureSha256": "66713c2c3a646af273ac16f801b7ebaf262eb476f75e89b0957c8593819869cd",
+      "signatureSha256": "ade860564d8a21f1338fe36efc38c4e34156f0f4f03cc86172e33d70dd52b68f",
+      "baselineStatus": "stale",
+      "symbolKey": "member:function:yosoi::Archive::open@signature:ade860564d8a21f1338fe36efc38c4e34156f0f4f03cc86172e33d70dd52b68f@source:ed2864b8d8e5161464804b7d7defe5b2e57236b930f0691628ba674a20ae5dbb",
+      "classification": "deferred-beta-surface",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Archive.open",
+        "pythonTargetSha256": "049897185b82a2f860141afbf299b18bbd238542d3f856080a3f40bb3a789347",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.Archive.open.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "deferredSurface": {
+        "root": "yosoi::Archive",
+        "issue": "CAS-566",
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
+      }
+    },
+    {
+      "id": "yosoi::Archive::read_document|function|trait:|occurrence:1",
+      "rustPath": "yosoi::Archive::read_document",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::Archive",
+      "signatureSha256": "3cecd1457d52c1b0aa311ccaeffd29121e0d16347d07b2f10242988a9687279f",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::Archive::open@signature:66713c2c3a646af273ac16f801b7ebaf262eb476f75e89b0957c8593819869cd@source:ed2864b8d8e5161464804b7d7defe5b2e57236b930f0691628ba674a20ae5dbb",
+      "symbolKey": "member:function:yosoi::Archive::read_document@signature:3cecd1457d52c1b0aa311ccaeffd29121e0d16347d07b2f10242988a9687279f@source:03877138eb2ced0cec1a45059b7b165e3851566748be72f5a9a3d205274acbad",
       "classification": "deferred-beta-surface",
       "mapping": {
         "decision": "missing",
@@ -293,7 +323,7 @@
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -303,23 +333,23 @@
       "trait": null,
       "surface": "member",
       "parentRustPath": "yosoi::Archive",
-      "signatureSha256": "82734c2ba50bd3af3a4dc9b29d66c816a7df196bf382c14b88fa7f79633758cc",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::Archive::read@signature:82734c2ba50bd3af3a4dc9b29d66c816a7df196bf382c14b88fa7f79633758cc@source:5955e604df8c842f221836aa75551590db48d9fc00e2c816976c49d98875b37c",
+      "signatureSha256": "ad398015afa4564c49cfa5126a4031687756838cfc5af79bc2ac3d2baa56fceb",
+      "baselineStatus": "stale",
+      "symbolKey": "member:function:yosoi::Archive::read@signature:ad398015afa4564c49cfa5126a4031687756838cfc5af79bc2ac3d2baa56fceb@source:5955e604df8c842f221836aa75551590db48d9fc00e2c816976c49d98875b37c",
       "classification": "deferred-beta-surface",
       "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Archive.read",
+        "pythonTargetSha256": "cd40fb43a73520d60554849d6009f233c14db052738f4dee427e8952a06a53c9",
         "semanticEquivalent": null,
-        "rationale": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.Archive.read.",
         "review": null,
         "ledgerMappingSha256": null
       },
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -330,8 +360,34 @@
       "surface": "member",
       "parentRustPath": "yosoi::Archive",
       "signatureSha256": "ab2007a539c4db028ef17ab69b0a7b491ad15aae0a956bacd06521382545b606",
-      "baselineStatus": "missing",
+      "baselineStatus": "stale",
       "symbolKey": "member:function:yosoi::Archive::root@signature:ab2007a539c4db028ef17ab69b0a7b491ad15aae0a956bacd06521382545b606@source:fc46da752f7871875304171ec4280b103ebbc23990af9ce07576fbd6db30d7e3",
+      "classification": "deferred-beta-surface",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Archive.root",
+        "pythonTargetSha256": "e6dfbd607c6b40a42953bf50ffd59578406b7315ab6ae0cdcb0548bc2523552e",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.Archive.root.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "deferredSurface": {
+        "root": "yosoi::Archive",
+        "issue": "CAS-566",
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
+      }
+    },
+    {
+      "id": "yosoi::Archive::write_document|function|trait:|occurrence:1",
+      "rustPath": "yosoi::Archive::write_document",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::Archive",
+      "signatureSha256": "ae5ecddfc0ad2764d73da91da3304ad6ad5964cbd48fd7be4cf63d65ab5d94b6",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::Archive::write_document@signature:ae5ecddfc0ad2764d73da91da3304ad6ad5964cbd48fd7be4cf63d65ab5d94b6@source:b7356364884a15dc43665d566250311b3be5bca35e94270d20a37e911d0e531d",
       "classification": "deferred-beta-surface",
       "mapping": {
         "decision": "missing",
@@ -345,7 +401,7 @@
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -355,23 +411,23 @@
       "trait": null,
       "surface": "member",
       "parentRustPath": "yosoi::Archive",
-      "signatureSha256": "7af2da1aa8fc974a7db954fb04d06161e7c24027183dfeac5800232049557daa",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::Archive::write@signature:7af2da1aa8fc974a7db954fb04d06161e7c24027183dfeac5800232049557daa@source:4b7cf0ddfec10ce7d951b1e729aad17ea8305edbdb276496cf849cd16f639277",
+      "signatureSha256": "2cb764cf777171e59d16d6d8460d5906a4b5b74c1ab990866e32245b15721d4c",
+      "baselineStatus": "stale",
+      "symbolKey": "member:function:yosoi::Archive::write@signature:2cb764cf777171e59d16d6d8460d5906a4b5b74c1ab990866e32245b15721d4c@source:4b7cf0ddfec10ce7d951b1e729aad17ea8305edbdb276496cf849cd16f639277",
       "classification": "deferred-beta-surface",
       "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Archive.write",
+        "pythonTargetSha256": "9ba2af8169593c911ce8152d8a1271a29246483512bd308b4ec988db89a8f23e",
         "semanticEquivalent": null,
-        "rationale": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.Archive.write.",
         "review": null,
         "ledgerMappingSha256": null
       },
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -382,22 +438,22 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "507bf11ae86d8430d3f9a3ad061db5e195ce3e00261d50601f9c5db43e273e72",
-      "baselineStatus": "missing",
+      "baselineStatus": "stale",
       "symbolKey": "page:struct:yosoi::Archive",
       "classification": "deferred-beta-surface",
       "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Archive",
+        "pythonTargetSha256": "4de33c75629a3ed8fdc25713f596ece68d49fef2fdb7f33c37517681274505ac",
         "semanticEquivalent": null,
-        "rationale": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.Archive.",
         "review": null,
         "ledgerMappingSha256": null
       },
       "deferredSurface": {
         "root": "yosoi::Archive",
         "issue": "CAS-566",
-        "rationale": "The Rust Archive facade is outside the Python 0.2.0 surface; Flow receipts remain inspectable. Archive exposure and stronger guarantees belong to later release work."
+        "rationale": "The full generic Rust Archive surface exceeds Python's supported Document, Plan and AutomationRecord operations. These supported journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
       }
     },
     {
@@ -4865,6 +4921,31 @@
       }
     },
     {
+      "id": "yosoi::archive|module|trait:|occurrence:1",
+      "rustPath": "yosoi::archive",
+      "kind": "module",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "b7b1c3ddd3fe2e24aed5efc328dfb576fa29d62b6fe017b83089056a3f5704a1",
+      "baselineStatus": "missing",
+      "symbolKey": "page:module:yosoi::archive",
+      "classification": "namespace-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+      }
+    },
+    {
       "id": "yosoi::assertions|module|trait:|occurrence:1",
       "rustPath": "yosoi::assertions",
       "kind": "module",
@@ -6140,7 +6221,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='evaluated' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6161,7 +6242,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='extraction_rejected' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6182,7 +6263,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='indeterminate' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6203,7 +6284,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='locate_failed' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6224,7 +6305,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='no_match' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6245,7 +6326,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": "The read-only yosoi.contracts.ContractOutcome view exposes status='validation_rejected' and the listed properties; its native Rust wire/archive conversion remains available.",
         "rationale": "The outcome variant is a returned view selected by its status property; it is not a callable Python constructor. ContractOutcome.to_archived() preserves the native archival representation.",
         "review": null,
@@ -6266,7 +6347,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": null,
         "rationale": "Rust Debug is a concise tagged/count summary; Python uses typed fields/accessors and explicit serialization rather than promising matching formatter text. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -6339,7 +6420,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.ContractOutcome",
-        "pythonTargetSha256": "d4648f42c011472cc64c31ea5b483e056209a099ef7836e9603140f5ebe9bc36",
+        "pythonTargetSha256": "175fda88d6f66822719345f3bdcbdfac2197f02e0ead21856d542ed43019acc6",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.ContractOutcome.",
         "review": null,
@@ -9166,7 +9247,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "28d8e40f851eecc2bdd176973da2922773887a8172638d6ccf61662a2cd49e91",
+        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -9195,7 +9276,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "28d8e40f851eecc2bdd176973da2922773887a8172638d6ccf61662a2cd49e91",
+        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
         "semanticEquivalent": null,
         "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -9226,7 +9307,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "28d8e40f851eecc2bdd176973da2922773887a8172638d6ccf61662a2cd49e91",
+        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
         "semanticEquivalent": null,
         "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
         "review": {
@@ -9301,7 +9382,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "28d8e40f851eecc2bdd176973da2922773887a8172638d6ccf61662a2cd49e91",
+        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.Money.",
         "review": null,
@@ -11315,7 +11396,7 @@
       },
       "mechanic": {
         "rationale": "ValidateContract is the Rust type-level adapter generated for a Contract, rather than a separate processing engine.",
-        "equivalentCapability": "Python Contract.extract(...).validate() and typed assertion callbacks use the same Rust extraction and validation pipeline, verified by Contract and browser workflows."
+        "equivalentCapability": "Python Contract extracts Rust-located values and validates business records through Pydantic, so its record rules intentionally follow Python model behavior. The parity workflow exercises Rust-owned staging through Python RuntimeContract instead."
       }
     },
     {
@@ -11340,7 +11421,7 @@
       },
       "mechanic": {
         "rationale": "ValidateContract is the Rust type-level adapter generated for a Contract, rather than a separate processing engine.",
-        "equivalentCapability": "Python Contract.extract(...).validate() and typed assertion callbacks use the same Rust extraction and validation pipeline, verified by Contract and browser workflows."
+        "equivalentCapability": "Python Contract extracts Rust-located values and validates business records through Pydantic, so its record rules intentionally follow Python model behavior. The parity workflow exercises Rust-owned staging through Python RuntimeContract instead."
       }
     },
     {
@@ -12090,7 +12171,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.outcomes.Complete",
-        "pythonTargetSha256": "b97cb542e78105af7baad6eb6183feeda09cb6c68151b71653b8369b3d9a7795",
+        "pythonTargetSha256": "ef3cf93d14a7137899c396a248dfe43247bbd85edd2102f3c2c34f920e08c9c0",
         "semanticEquivalent": null,
         "rationale": "Rust variant Complete maps to the corresponding Python tagged value yosoi.outcomes.Complete. The Python discriminator value is 'status=complete'.",
         "review": null,
@@ -12111,7 +12192,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.outcomes.Partial",
-        "pythonTargetSha256": "22600385f70a0282daa89d97d2e042a06283e760fc92730fe4a53c656c1ee87c",
+        "pythonTargetSha256": "7cbda8975fd839a9905c1795749adcdf50433369200c6dcba2eaf6e60633c958",
         "semanticEquivalent": null,
         "rationale": "Rust variant Partial maps to the corresponding Python tagged value yosoi.outcomes.Partial. The Python discriminator value is 'status=partial'.",
         "review": null,
@@ -15442,7 +15523,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.outcomes.Complete",
-        "pythonTargetSha256": "b97cb542e78105af7baad6eb6183feeda09cb6c68151b71653b8369b3d9a7795",
+        "pythonTargetSha256": "ef3cf93d14a7137899c396a248dfe43247bbd85edd2102f3c2c34f920e08c9c0",
         "semanticEquivalent": null,
         "rationale": "Rust variant Complete maps to the corresponding Python tagged value yosoi.outcomes.Complete. The Python discriminator value is 'status=complete'.",
         "review": null,
@@ -15463,7 +15544,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.outcomes.Partial",
-        "pythonTargetSha256": "22600385f70a0282daa89d97d2e042a06283e760fc92730fe4a53c656c1ee87c",
+        "pythonTargetSha256": "7cbda8975fd839a9905c1795749adcdf50433369200c6dcba2eaf6e60633c958",
         "semanticEquivalent": null,
         "rationale": "Rust variant Partial maps to the corresponding Python tagged value yosoi.outcomes.Partial. The Python discriminator value is 'status=partial'.",
         "review": null,
@@ -17389,7 +17470,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.outcomes.Partial",
-        "pythonTargetSha256": "22600385f70a0282daa89d97d2e042a06283e760fc92730fe4a53c656c1ee87c",
+        "pythonTargetSha256": "7cbda8975fd839a9905c1795749adcdf50433369200c6dcba2eaf6e60633c958",
         "semanticEquivalent": null,
         "rationale": "Rust variant Partial maps to the corresponding Python tagged value yosoi.outcomes.Partial. The Python discriminator value is 'status=partial'.",
         "review": null,
@@ -44520,6 +44601,27 @@
       }
     },
     {
+      "id": "yosoi::request::Attempt::body_bytes|function|trait:|occurrence:1",
+      "rustPath": "yosoi::request::Attempt::body_bytes",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::request::Attempt",
+      "signatureSha256": "c76401fcfe9e1d485ec81b52edd9657d1915f6ea8a719522c648d07e40e51271",
+      "baselineStatus": "stale",
+      "symbolKey": "member:function:yosoi::request::Attempt::body_bytes@signature:c76401fcfe9e1d485ec81b52edd9657d1915f6ea8a719522c648d07e40e51271@source:72d7b17b23c426029a07dad1760399e42da6143d95440d8c5c34f722904fb34d",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.request.Attempt.body",
+        "pythonTargetSha256": "d1f1fb05ae257b86a349af2910c1026173a07a370b9df800ff65578d671f56e3",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.request.Attempt.body.",
+        "review": null,
+        "ledgerMappingSha256": "60d71dfc3b5c4096361473c756c7db10e6e9ff1b15ba559ca67e25589e554003"
+      }
+    },
+    {
       "id": "yosoi::request::Attempt::capture_id|function|trait:|occurrence:1",
       "rustPath": "yosoi::request::Attempt::capture_id",
       "kind": "function",
@@ -44563,6 +44665,27 @@
       "mechanic": {
         "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
         "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::request::Attempt::content_type|function|trait:|occurrence:1",
+      "rustPath": "yosoi::request::Attempt::content_type",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::request::Attempt",
+      "signatureSha256": "6d311e4718664d0d4443ea91ca443035b9b4d2c1486fb41aef35e16dc69517ed",
+      "baselineStatus": "stale",
+      "symbolKey": "member:function:yosoi::request::Attempt::content_type@signature:6d311e4718664d0d4443ea91ca443035b9b4d2c1486fb41aef35e16dc69517ed@source:18887e6a5a7921803a43025f4762c4269455fbe72712947ca4c199c32298d4ae",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.request.Attempt.content_type",
+        "pythonTargetSha256": "55e8206e78f6024cfb5822639d6652992bc94674e4923157c1f8acef8c992ea9",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.request.Attempt.content_type.",
+        "review": null,
+        "ledgerMappingSha256": "7693483282a5288ca44003de6132b208f0c050e38b0d996361ed0bc880db76a0"
       }
     },
     {
@@ -44621,7 +44744,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.request.Attempt",
-        "pythonTargetSha256": "226700fe79d49cd457283c99e26789e598a280d842292593b4f2b53d78ecda11",
+        "pythonTargetSha256": "f9d801c2162b30878810ff06cfbd14a4791e2b181e4d9ea30c941fb1ef77e143",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -45466,7 +45589,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.request.Attempt",
-        "pythonTargetSha256": "226700fe79d49cd457283c99e26789e598a280d842292593b4f2b53d78ecda11",
+        "pythonTargetSha256": "f9d801c2162b30878810ff06cfbd14a4791e2b181e4d9ea30c941fb1ef77e143",
         "semanticEquivalent": "NativeResponse flattens AttemptState::Failed to Attempt.state='failed' and the listed payload property.",
         "rationale": "The existing Attempt response view stores state and payload as sibling properties.",
         "review": null,
@@ -45487,7 +45610,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.request.Attempt",
-        "pythonTargetSha256": "226700fe79d49cd457283c99e26789e598a280d842292593b4f2b53d78ecda11",
+        "pythonTargetSha256": "f9d801c2162b30878810ff06cfbd14a4791e2b181e4d9ea30c941fb1ef77e143",
         "semanticEquivalent": "NativeResponse flattens AttemptState::NotStarted to Attempt.state='not_started' and the listed payload property.",
         "rationale": "The existing Attempt response view stores state and payload as sibling properties.",
         "review": null,
@@ -45610,7 +45733,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.request.Attempt",
-        "pythonTargetSha256": "226700fe79d49cd457283c99e26789e598a280d842292593b4f2b53d78ecda11",
+        "pythonTargetSha256": "f9d801c2162b30878810ff06cfbd14a4791e2b181e4d9ea30c941fb1ef77e143",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.request.Attempt.",
         "review": null,
@@ -57353,7 +57476,7 @@
       "deferredSurface": {
         "root": "yosoi::view",
         "issue": "CAS-567",
-        "rationale": "The Rust View facade is outside the Python 0.2.0 surface; structured Flow outcomes remain inspectable. Dedicated View APIs belong to later release work."
+        "rationale": "Python exposes bounded offline DOM View pages and capture-bound continuation cursors. The full Rust View API, including direct condition verification, belongs to later release work."
       }
     }
   ]

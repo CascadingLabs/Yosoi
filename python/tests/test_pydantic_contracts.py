@@ -182,4 +182,3 @@ def test_validation_limits_preflight_and_minimum_record_acceptance() -> None:
             ys.Document.html("empty-again", "<p>none</p>"),
             policy=ys.ExtractionPolicy(minimum_records=1),
         )
-
