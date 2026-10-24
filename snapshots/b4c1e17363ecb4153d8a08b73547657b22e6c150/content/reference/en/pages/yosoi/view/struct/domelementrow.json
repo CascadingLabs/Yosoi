@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::DomElementRow",
+  "publicPath": "yosoi::view::DomElementRow",
+  "kind": "struct",
+  "title": "yosoi::view::DomElementRow",
+  "signature": "pub struct DomElementRow",
+  "docs": "A row naming one exact locator-backed DOM element reference.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 68,
+    "lineEnd": 73,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L68-L73"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::DomElementRow"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::DomElementRow::clone",
+      "publicPath": "yosoi::view::DomElementRow::clone",
+      "title": "yosoi::view::DomElementRow::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::DomElementRow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::coordinate",
+      "publicPath": "yosoi::view::DomElementRow::coordinate",
+      "title": "yosoi::view::DomElementRow::coordinate",
+      "kind": "function",
+      "signature": "pub const fn coordinate(&self) -> &yosoi::locators::NativeCoordinate",
+      "docs": "Borrows the native source-tree coordinate without resolving a live browser element.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 87,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L87-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::deserialize",
+      "publicPath": "yosoi::view::DomElementRow::deserialize",
+      "title": "yosoi::view::DomElementRow::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::eq",
+      "publicPath": "yosoi::view::DomElementRow::eq",
+      "title": "yosoi::view::DomElementRow::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::DomElementRow) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::fmt",
+      "publicPath": "yosoi::view::DomElementRow::fmt",
+      "title": "yosoi::view::DomElementRow::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::node",
+      "publicPath": "yosoi::view::DomElementRow::node",
+      "title": "yosoi::view::DomElementRow::node",
+      "kind": "function",
+      "signature": "pub const fn node(&self) -> &yosoi::locators::NodeReference",
+      "docs": "Borrows the document-bound locator node reference for this exact row.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 82,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L82-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::ordinal",
+      "publicPath": "yosoi::view::DomElementRow::ordinal",
+      "title": "yosoi::view::DomElementRow::ordinal",
+      "kind": "function",
+      "signature": "pub const fn ordinal(&self) -> u64",
+      "docs": "Returns the deterministic zero-based position among elements of the captured document.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 77,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L77-L79"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::serialize",
+      "publicPath": "yosoi::view::DomElementRow::serialize",
+      "title": "yosoi::view::DomElementRow::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::text_preview",
+      "publicPath": "yosoi::view::DomElementRow::text_preview",
+      "title": "yosoi::view::DomElementRow::text_preview",
+      "kind": "function",
+      "signature": "pub fn text_preview(&self) -> &str",
+      "docs": "Returns the bounded descendant-text preview captured for this element.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 92,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L92-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::DomElementRow::text_truncated",
+      "publicPath": "yosoi::view::DomElementRow::text_truncated",
+      "title": "yosoi::view::DomElementRow::text_truncated",
+      "kind": "function",
+      "signature": "pub const fn text_truncated(&self) -> bool",
+      "docs": "Reports whether the source element's descendant text exceeded the preview.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 97,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/view.rs#L97-L99"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "aa61098662c45c91d0d1a3c8810ff00db50be7a68d8b852b44f7c58c675845d0",
+  "slug": "yosoi/view/struct/domelementrow",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "aa61098662c45c91d0d1a3c8810ff00db50be7a68d8b852b44f7c58c675845d0"
+}

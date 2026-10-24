@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::role",
+  "publicPath": "yosoi::locators::role",
+  "kind": "function",
+  "title": "yosoi::locators::role",
+  "signature": "pub fn role(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Owns a nonblank accessibility-role query for immutable snapshot nodes.\n\nReturns [`QueryError`] for blank input; it does not inspect or mutate a live browser.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 67,
+    "lineEnd": 73,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/query_builders.rs#L67-L73"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::role",
+    "yosoi::prelude::locators::role"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "68c48531cfeb0f87fdb72f650107566a1c440114fa90a1fe4f2523675fecf3e2",
+  "slug": "yosoi/locators/function/role",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "68c48531cfeb0f87fdb72f650107566a1c440114fa90a1fe4f2523675fecf3e2"
+}

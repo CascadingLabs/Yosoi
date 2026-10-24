@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::NamedOutput",
+  "publicPath": "yosoi::locators::NamedOutput",
+  "kind": "struct",
+  "title": "yosoi::locators::NamedOutput",
+  "signature": "pub struct NamedOutput",
+  "docs": "Owned authored identity and projected query declaration, validated for uniqueness when compiled into a Plan.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+    "lineStart": 205,
+    "lineEnd": 208,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/plan_authoring.rs#L205-L208"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/locators.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::NamedOutput"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::NamedOutput::clone",
+      "publicPath": "yosoi::locators::NamedOutput::clone",
+      "title": "yosoi::locators::NamedOutput::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::NamedOutput",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/plan_authoring.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::NamedOutput::eq",
+      "publicPath": "yosoi::locators::NamedOutput::eq",
+      "title": "yosoi::locators::NamedOutput::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::NamedOutput) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/plan_authoring.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::NamedOutput::fmt",
+      "publicPath": "yosoi::locators::NamedOutput::fmt",
+      "title": "yosoi::locators::NamedOutput::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/plan_authoring.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/plan_authoring.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0c6c921ce5afc62915975a3600143e82d05ca0da137b095713e603cf38360d56",
+  "slug": "yosoi/locators/struct/namedoutput",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0c6c921ce5afc62915975a3600143e82d05ca0da137b095713e603cf38360d56"
+}

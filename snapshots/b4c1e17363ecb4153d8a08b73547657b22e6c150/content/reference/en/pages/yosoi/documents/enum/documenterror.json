@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::documents::DocumentError",
+  "publicPath": "yosoi::documents::DocumentError",
+  "kind": "enum",
+  "title": "yosoi::documents::DocumentError",
+  "signature": "pub enum DocumentError",
+  "docs": "Invalid immutable document input.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/document.rs",
+    "lineStart": 66,
+    "lineEnd": 79,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L66-L79"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/documents.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::DocumentError",
+    "yosoi::prelude::documents::DocumentError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::documents::DocumentError::EmptyId",
+      "publicPath": "yosoi::documents::DocumentError::EmptyId",
+      "title": "yosoi::documents::DocumentError::EmptyId",
+      "kind": "variant",
+      "signature": "EmptyId",
+      "docs": "Caller document identity has no non-whitespace text.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentError::EmptyPayload",
+      "publicPath": "yosoi::documents::DocumentError::EmptyPayload",
+      "title": "yosoi::documents::DocumentError::EmptyPayload",
+      "kind": "variant",
+      "signature": "EmptyPayload",
+      "docs": "A non-text interpretation was supplied no payload bytes; source text can be empty.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentError::InvalidProfile",
+      "publicPath": "yosoi::documents::DocumentError::InvalidProfile",
+      "title": "yosoi::documents::DocumentError::InvalidProfile",
+      "kind": "variant",
+      "signature": "InvalidProfile(DocumentProfileError)",
+      "docs": "Representation, syntax, schema, or epoch metadata fails the interpretation contract.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L78-L78"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::documents::DocumentError::InvalidProfile::0",
+          "publicPath": "yosoi::documents::DocumentError::InvalidProfile::0",
+          "title": "yosoi::documents::DocumentError::InvalidProfile::0",
+          "kind": "struct_field",
+          "signature": "0: DocumentProfileError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/document.rs",
+            "lineStart": 78,
+            "lineEnd": 78,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L78-L78"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentError::PayloadLengthOverflow",
+      "publicPath": "yosoi::documents::DocumentError::PayloadLengthOverflow",
+      "title": "yosoi::documents::DocumentError::PayloadLengthOverflow",
+      "kind": "variant",
+      "signature": "PayloadLengthOverflow",
+      "docs": "Payload bytes cannot fit portable u64 length accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 75,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L75-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::clone",
+      "publicPath": "yosoi::documents::DocumentError::clone",
+      "title": "yosoi::documents::DocumentError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::documents::DocumentError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::eq",
+      "publicPath": "yosoi::documents::DocumentError::eq",
+      "title": "yosoi::documents::DocumentError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::documents::DocumentError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::fmt",
+      "publicPath": "yosoi::documents::DocumentError::fmt",
+      "title": "yosoi::documents::DocumentError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::fmt",
+      "publicPath": "yosoi::documents::DocumentError::fmt",
+      "title": "yosoi::documents::DocumentError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::from",
+      "publicPath": "yosoi::documents::DocumentError::from",
+      "title": "yosoi::documents::DocumentError::from",
+      "kind": "function",
+      "signature": "fn from(source: DocumentProfileError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentError::source",
+      "publicPath": "yosoi::documents::DocumentError::source",
+      "title": "yosoi::documents::DocumentError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/document.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/document.rs#L65-L65"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b91658d0678d685a16a099ef98a9c67fc1e0dbe4e4c68957517eac77e947821d",
+  "slug": "yosoi/documents/enum/documenterror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b91658d0678d685a16a099ef98a9c67fc1e0dbe4e4c68957517eac77e947821d"
+}

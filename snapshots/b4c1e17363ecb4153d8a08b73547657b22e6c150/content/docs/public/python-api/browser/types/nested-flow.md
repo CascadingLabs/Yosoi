@@ -1,0 +1,28 @@
+---
+title: "NestedFlow"
+description: "yosoi.browser.NestedFlow Python API reference."
+order: 0
+---
+
+`yosoi.browser.NestedFlow`
+
+```python
+class NestedFlow(ImmutableModel):
+```
+
+Execute a nested Flow within its enclosing invocation.
+
+Attributes:
+    kind: Wire discriminator identifying this declaration.
+    flow: Nested declaration retaining its own steps and continuation scope.
+
+[Source: python/yosoi/browser.py:526](https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/python/yosoi/browser.py#L526-L535)
+
+Members below are declared on this class. Inherited Pydantic methods and generated constructor signatures are not expanded.
+
+## Fields and class attributes
+
+```python
+kind: Literal['nested_flow'] = 'nested_flow'
+flow: Flow
+```

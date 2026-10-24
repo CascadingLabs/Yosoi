@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::JsWorld",
+  "publicPath": "yosoi::session::JsWorld",
+  "kind": "enum",
+  "title": "yosoi::session::JsWorld",
+  "signature": "pub enum JsWorld",
+  "docs": "JavaScript execution world within the selected current frame.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 92,
+    "lineEnd": 98,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L92-L98"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::JsWorld"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::JsWorld::Isolated",
+      "publicPath": "yosoi::session::JsWorld::Isolated",
+      "title": "yosoi::session::JsWorld::Isolated",
+      "kind": "variant",
+      "signature": "Isolated",
+      "docs": "Reserved isolated-world selection; current Work evaluation rejects it as unsupported.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::JsWorld::Main",
+      "publicPath": "yosoi::session::JsWorld::Main",
+      "title": "yosoi::session::JsWorld::Main",
+      "kind": "variant",
+      "signature": "Main",
+      "docs": "Execute in the page's main JavaScript world, sharing page-visible state.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L95-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::clone",
+      "publicPath": "yosoi::session::JsWorld::clone",
+      "title": "yosoi::session::JsWorld::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::JsWorld",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::default",
+      "publicPath": "yosoi::session::JsWorld::default",
+      "title": "yosoi::session::JsWorld::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::session::JsWorld",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::deserialize",
+      "publicPath": "yosoi::session::JsWorld::deserialize",
+      "title": "yosoi::session::JsWorld::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::eq",
+      "publicPath": "yosoi::session::JsWorld::eq",
+      "title": "yosoi::session::JsWorld::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::JsWorld) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::fmt",
+      "publicPath": "yosoi::session::JsWorld::fmt",
+      "title": "yosoi::session::JsWorld::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::JsWorld::serialize",
+      "publicPath": "yosoi::session::JsWorld::serialize",
+      "title": "yosoi::session::JsWorld::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5e0d0b4ca17c4168e9f34f8044395a1ae229d507dfbdf35c0c8fea4106cb37f4",
+  "slug": "yosoi/session/enum/jsworld",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5e0d0b4ca17c4168e9f34f8044395a1ae229d507dfbdf35c0c8fea4106cb37f4"
+}

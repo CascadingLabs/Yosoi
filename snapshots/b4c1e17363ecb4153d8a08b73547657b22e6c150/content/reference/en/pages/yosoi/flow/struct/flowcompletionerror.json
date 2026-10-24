@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::FlowCompletionError",
+  "publicPath": "yosoi::flow::FlowCompletionError",
+  "kind": "struct",
+  "title": "yosoi::flow::FlowCompletionError",
+  "signature": "pub struct FlowCompletionError",
+  "docs": "Retained outcome did not satisfy the strict clean-completion requirement.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 885,
+    "lineEnd": 888,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L885-L888"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowCompletionError"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::clone",
+      "publicPath": "yosoi::flow::FlowCompletionError::clone",
+      "title": "yosoi::flow::FlowCompletionError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowCompletionError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 884,
+        "lineEnd": 884,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L884-L884"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::eq",
+      "publicPath": "yosoi::flow::FlowCompletionError::eq",
+      "title": "yosoi::flow::FlowCompletionError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowCompletionError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 884,
+        "lineEnd": 884,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L884-L884"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::fmt",
+      "publicPath": "yosoi::flow::FlowCompletionError::fmt",
+      "title": "yosoi::flow::FlowCompletionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 884,
+        "lineEnd": 884,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L884-L884"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCompletionError::fmt",
+      "publicPath": "yosoi::flow::FlowCompletionError::fmt",
+      "title": "yosoi::flow::FlowCompletionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 890,
+        "lineEnd": 892,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L890-L892"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowCompletionError::terminal",
+      "publicPath": "yosoi::flow::FlowCompletionError::terminal",
+      "title": "yosoi::flow::FlowCompletionError::terminal",
+      "kind": "struct_field",
+      "signature": "pub terminal: yosoi::flow::FlowTermination",
+      "docs": "Recorded terminal state, including completed-with-issues rather than clean completion.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 887,
+        "lineEnd": 887,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/flow/model.rs#L887-L887"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "17fc5a449a8dd44fb9651792d5ea70a85eaae692706e326148f080cccb27ff5a",
+  "slug": "yosoi/flow/struct/flowcompletionerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "17fc5a449a8dd44fb9651792d5ea70a85eaae692706e326148f080cccb27ff5a"
+}

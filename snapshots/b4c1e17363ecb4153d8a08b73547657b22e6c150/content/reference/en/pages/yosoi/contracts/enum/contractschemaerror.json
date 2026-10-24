@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ContractSchemaError",
+  "publicPath": "yosoi::contracts::ContractSchemaError",
+  "kind": "enum",
+  "title": "yosoi::contracts::ContractSchemaError",
+  "signature": "pub enum ContractSchemaError",
+  "docs": "Portable Contract metadata rejected during construction, deserialization, or identity hashing.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/ids.rs",
+    "lineStart": 65,
+    "lineEnd": 108,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L65-L108"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractSchemaError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::DuplicateField",
+      "publicPath": "yosoi::contracts::ContractSchemaError::DuplicateField",
+      "title": "yosoi::contracts::ContractSchemaError::DuplicateField",
+      "kind": "variant",
+      "signature": "DuplicateField { field: yosoi::contracts::FieldId }",
+      "docs": "More than one field declares the same authored identity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 101,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L101-L104"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractSchemaError::DuplicateField::field",
+          "publicPath": "yosoi::contracts::ContractSchemaError::DuplicateField::field",
+          "title": "yosoi::contracts::ContractSchemaError::DuplicateField::field",
+          "kind": "struct_field",
+          "signature": "field: yosoi::contracts::FieldId",
+          "docs": "Repeated field identifier that would make evidence association ambiguous.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contracts/ids.rs",
+            "lineStart": 103,
+            "lineEnd": 103,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L103-L103"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyContractDescription",
+      "kind": "variant",
+      "signature": "EmptyContractDescription",
+      "docs": "Business-meaning description for the record contains no usable text.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L83-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyContractId",
+      "kind": "variant",
+      "signature": "EmptyContractId",
+      "docs": "Authored Contract identity contains no non-whitespace text.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 77,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L77-L77"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription",
+      "kind": "variant",
+      "signature": "EmptyFieldDescription { field: yosoi::contracts::FieldId }",
+      "docs": "A field has no usable business-meaning description.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 86,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L86-L89"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractSchemaError::EmptyFieldDescription::field",
+          "publicPath": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription::field",
+          "title": "yosoi::contracts::ContractSchemaError::EmptyFieldDescription::field",
+          "kind": "struct_field",
+          "signature": "field: yosoi::contracts::FieldId",
+          "docs": "Identifier of the field missing its description.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contracts/ids.rs",
+            "lineStart": 88,
+            "lineEnd": 88,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L88-L88"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyFieldId",
+      "kind": "variant",
+      "signature": "EmptyFieldId",
+      "docs": "Authored field identity contains no non-whitespace text.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L80-L80"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "publicPath": "yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "title": "yosoi::contracts::ContractSchemaError::EmptyValueType",
+      "kind": "variant",
+      "signature": "EmptyValueType { field: yosoi::contracts::FieldId }",
+      "docs": "A field has no nonblank scalar conversion type identifier.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 92,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L92-L95"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractSchemaError::EmptyValueType::field",
+          "publicPath": "yosoi::contracts::ContractSchemaError::EmptyValueType::field",
+          "title": "yosoi::contracts::ContractSchemaError::EmptyValueType::field",
+          "kind": "struct_field",
+          "signature": "field: yosoi::contracts::FieldId",
+          "docs": "Identifier of the field missing its scalar type vocabulary.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contracts/ids.rs",
+            "lineStart": 94,
+            "lineEnd": 94,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L94-L94"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "publicPath": "yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "title": "yosoi::contracts::ContractSchemaError::LengthOverflow",
+      "kind": "variant",
+      "signature": "LengthOverflow",
+      "docs": "A string or field-collection length cannot fit portable u64 identity accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 107,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L107-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::NoFields",
+      "publicPath": "yosoi::contracts::ContractSchemaError::NoFields",
+      "title": "yosoi::contracts::ContractSchemaError::NoFields",
+      "kind": "variant",
+      "signature": "NoFields",
+      "docs": "The Contract schema declares no fields to extract or validate.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L98-L98"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "publicPath": "yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "title": "yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+      "kind": "variant",
+      "signature": "UnsupportedVersion { observed: u32 }",
+      "docs": "Schema format version is not the currently supported portable version.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 71,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L71-L74"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractSchemaError::UnsupportedVersion::observed",
+          "publicPath": "yosoi::contracts::ContractSchemaError::UnsupportedVersion::observed",
+          "title": "yosoi::contracts::ContractSchemaError::UnsupportedVersion::observed",
+          "kind": "struct_field",
+          "signature": "observed: u32",
+          "docs": "Supplied portable schema format version.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contracts/ids.rs",
+            "lineStart": 73,
+            "lineEnd": 73,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L73-L73"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "publicPath": "yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "title": "yosoi::contracts::ContractSchemaError::ZeroVersion",
+      "kind": "variant",
+      "signature": "ZeroVersion",
+      "docs": "Schema format version is zero rather than a supported positive version.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::clone",
+      "publicPath": "yosoi::contracts::ContractSchemaError::clone",
+      "title": "yosoi::contracts::ContractSchemaError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ContractSchemaError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::eq",
+      "publicPath": "yosoi::contracts::ContractSchemaError::eq",
+      "title": "yosoi::contracts::ContractSchemaError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ContractSchemaError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::fmt",
+      "publicPath": "yosoi::contracts::ContractSchemaError::fmt",
+      "title": "yosoi::contracts::ContractSchemaError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchemaError::fmt",
+      "publicPath": "yosoi::contracts::ContractSchemaError::fmt",
+      "title": "yosoi::contracts::ContractSchemaError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/ids.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/contracts/ids.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "46ce5de3f020b5ff9be3266624d305f13c766ec3bf23af633b29fb035deb8298",
+  "slug": "yosoi/contracts/enum/contractschemaerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "46ce5de3f020b5ff9be3266624d305f13c766ec3bf23af633b29fb035deb8298"
+}

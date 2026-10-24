@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::TreeEntry",
+  "publicPath": "yosoi::map::TreeEntry",
+  "kind": "struct",
+  "title": "yosoi::map::TreeEntry",
+  "signature": "pub struct TreeEntry",
+  "docs": "One page's position in the deterministic rooted discovery forest.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 373,
+    "lineEnd": 380,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L373-L380"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/map.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::map::TreeEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::TreeEntry::clone",
+      "publicPath": "yosoi::map::TreeEntry::clone",
+      "title": "yosoi::map::TreeEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::TreeEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 372,
+        "lineEnd": 372,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L372-L372"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::map::TreeEntry::depth",
+      "publicPath": "yosoi::map::TreeEntry::depth",
+      "title": "yosoi::map::TreeEntry::depth",
+      "kind": "struct_field",
+      "signature": "pub depth: Option<u16>",
+      "docs": "Shortest established rooted link depth, absent when no rooted path was found.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 379,
+        "lineEnd": 379,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L379-L379"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::TreeEntry::fmt",
+      "publicPath": "yosoi::map::TreeEntry::fmt",
+      "title": "yosoi::map::TreeEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 372,
+        "lineEnd": 372,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L372-L372"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::TreeEntry::page",
+      "publicPath": "yosoi::map::TreeEntry::page",
+      "title": "yosoi::map::TreeEntry::page",
+      "kind": "struct_field",
+      "signature": "pub page: url::Url",
+      "docs": "Normalized page URL retained in the inventory.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 375,
+        "lineEnd": 375,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L375-L375"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::TreeEntry::parent",
+      "publicPath": "yosoi::map::TreeEntry::parent",
+      "title": "yosoi::map::TreeEntry::parent",
+      "kind": "struct_field",
+      "signature": "pub parent: Option<url::Url>",
+      "docs": "Selected rooted predecessor, absent for roots and unattached observations.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 377,
+        "lineEnd": 377,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L377-L377"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::TreeEntry::serialize",
+      "publicPath": "yosoi::map::TreeEntry::serialize",
+      "title": "yosoi::map::TreeEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 372,
+        "lineEnd": 372,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L372-L372"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "3dde4460a6f100e8fc3d2fe1eaf56b506fe7affba09ad678a8be7f3abc137f91",
+  "slug": "yosoi/map/struct/treeentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "3dde4460a6f100e8fc3d2fe1eaf56b506fe7affba09ad678a8be7f3abc137f91"
+}

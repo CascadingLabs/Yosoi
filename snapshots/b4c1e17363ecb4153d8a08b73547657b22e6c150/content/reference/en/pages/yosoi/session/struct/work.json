@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Work",
+  "publicPath": "yosoi::session::Work",
+  "kind": "struct",
+  "title": "yosoi::session::Work",
+  "signature": "pub struct Work",
+  "docs": "Exclusive authority to operate one retained tab, keeping its Session owner alive.\n\nWork serializes operations on that tab. Each operation separately acquires\nbounded worker capacity; yielding a wait retains tab control while releasing\nthat execution permit. Releasing Work does not close the Session or tab.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 1011,
+    "lineEnd": 1017,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1011-L1017"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Work",
+    "yosoi::prelude::session::Work"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Work::assert_all",
+      "publicPath": "yosoi::session::Work::assert_all",
+      "title": "yosoi::session::Work::assert_all",
+      "kind": "function",
+      "signature": "pub async fn assert_all(&self, assertion: &yosoi::assertions::LocalAssertion) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Captures once, validates one Contract record, and checks it immediately.\nCaptures one current Contract observation and evaluates its local predicate group.\nReturns a receipt with retained assertion evidence; failed checks are\nnot retried. Invalid or unbound assertions and unavailable authority or\nevidence return [`SessionError`]. All ordinary predicates are evaluated,\nincluding those after a false predicate.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1354,
+        "lineEnd": 1434,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1354-L1434"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::assert_condition",
+      "publicPath": "yosoi::session::Work::assert_condition",
+      "title": "yosoi::session::Work::assert_condition",
+      "kind": "function",
+      "signature": "pub async fn assert_condition(&self, condition: &yosoi::flow::Condition) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Checks a DOM condition once against current-tab evidence without waiting or retrying.\nReturns an observed or rejected assertion receipt. Invalid input,\ndenied assertions, and unavailable authority return [`SessionError`].",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1575,
+        "lineEnd": 1615,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1575-L1615"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::click",
+      "publicPath": "yosoi::session::Work::click",
+      "title": "yosoi::session::Work::click",
+      "kind": "function",
+      "signature": "pub async fn click(&self, selector: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Dispatches a click to one selector-resolved target on the owned tab.\nReturns an effect receipt, including known rejection or uncertainty;\npermission, input, and pre-dispatch failures return [`SessionError`].\nConfirm the expected page state separately rather than blindly retrying unknown effects.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1332,
+        "lineEnd": 1347,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1332-L1347"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::enter_text",
+      "publicPath": "yosoi::session::Work::enter_text",
+      "title": "yosoi::session::Work::enter_text",
+      "kind": "function",
+      "signature": "pub async fn enter_text(&self, selector: &str, text: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Types `text` into one selector-resolved editable target on the owned tab.\nThe target is checked again before keyboard dispatch. Returns an effect\nreceipt rather than a claim that application state accepted the text;\nauthority, permission, input, and pre-dispatch failures return [`SessionError`].",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1468,
+        "lineEnd": 1488,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1468-L1488"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate",
+      "publicPath": "yosoi::session::Work::evaluate",
+      "title": "yosoi::session::Work::evaluate",
+      "kind": "function",
+      "signature": "pub async fn evaluate(&self, source: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes explicitly permitted JavaScript in the current main frame and world.\nReturns a bounded effect receipt. Post-dispatch errors or oversized\nresults can leave effects unknown; permission, input, and authority\nfailures return [`SessionError`]. Confirm business effects separately.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 14,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L14-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_file",
+      "publicPath": "yosoi::session::Work::evaluate_file",
+      "title": "yosoi::session::Work::evaluate_file",
+      "kind": "function",
+      "signature": "pub async fn evaluate_file(&self, snapshot: &yosoi::action::JavaScriptSourceSnapshot) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes retained construction-time file bytes on the current main frame and world.\nNo live file read occurs here. Returns a bounded receipt or [`SessionError`]\nfor invalid snapshots, permissions, authority, or dispatch uncertainty.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 35,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L35-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_file_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_file_targeted",
+      "title": "yosoi::session::Work::evaluate_file_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_file_targeted(&self, target: &yosoi::session::JsTarget, snapshot: &yosoi::action::JavaScriptSourceSnapshot) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes a validated file snapshot in one uniquely selected current frame.\nChanged disk contents do not replace captured bytes. Only the main world\nis supported. Returns a bounded receipt or [`SessionError`]; possible\ndispatch must not be interpreted as proof of no effect.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 47,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L47-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_module",
+      "publicPath": "yosoi::session::Work::evaluate_module",
+      "title": "yosoi::session::Work::evaluate_module",
+      "kind": "function",
+      "signature": "pub async fn evaluate_module(&self, bundle: &yosoi::action::JavaScriptModuleBundle) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes a retained local module bundle on the current main frame and world.\nUses captured bytes instead of rereading files and requires arbitrary-script\npermission. Returns a bounded receipt or [`SessionError`], retaining\npost-dispatch uncertainty instead of silently retrying.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 66,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L66-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_module_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_module_targeted",
+      "title": "yosoi::session::Work::evaluate_module_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_module_targeted(&self, target: &yosoi::session::JsTarget, bundle: &yosoi::action::JavaScriptModuleBundle) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes a retained local module graph in one uniquely selected current frame.\nChecks bundle structure, input bounds, permission, and any epoch\nprecondition before dispatch. Isolated worlds are currently unsupported.\nReturns a bounded effect receipt or [`SessionError`]; no effect rollback is implied.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 78,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L78-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::evaluate_targeted",
+      "publicPath": "yosoi::session::Work::evaluate_targeted",
+      "title": "yosoi::session::Work::evaluate_targeted",
+      "kind": "function",
+      "signature": "pub async fn evaluate_targeted(&self, target: &yosoi::session::JsTarget, source: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Executes source after uniquely resolving the frame and checking any epoch precondition.\nOnly the main world is currently supported. Explicit arbitrary-script\npermission is required. Returns a bounded receipt or [`SessionError`],\npreserving possible post-dispatch uncertainty rather than retrying it.",
+      "source": {
+        "file": "crates/yosoi/src/session/evaluation.rs",
+        "lineStart": 23,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/evaluation.rs#L23-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::fmt",
+      "publicPath": "yosoi::session::Work::fmt",
+      "title": "yosoi::session::Work::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1033,
+        "lineEnd": 1037,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1033-L1037"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Work::navigate",
+      "publicPath": "yosoi::session::Work::navigate",
+      "title": "yosoi::session::Work::navigate",
+      "kind": "function",
+      "signature": "pub async fn navigate(&self, url: &str) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Navigates the owned tab after validating `url` and checking action permission.\nReturns a receipt recording observed, rejected, or unknown effects.\nAuthority, input, or pre-dispatch admission failures return [`SessionError`];\nan observed command is not by itself a business-success assertion.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1309,
+        "lineEnd": 1327,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1309-L1327"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::observe",
+      "publicPath": "yosoi::session::Work::observe",
+      "title": "yosoi::session::Work::observe",
+      "kind": "function",
+      "signature": "pub async fn observe(&self) -> Result<yosoi::automation_record::Observation, yosoi::session::SessionError>",
+      "docs": "Captures owned current-tab DOM evidence within the configured observation bound.\nReturns [`SessionError`] if authority, DOM permission, evidence, or\nexecution capacity is unavailable. This observes the current epoch; it\ndoes not prove that a preceding business action succeeded.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1227,
+        "lineEnd": 1230,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1227-L1230"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::release",
+      "publicPath": "yosoi::session::Work::release",
+      "title": "yosoi::session::Work::release",
+      "kind": "function",
+      "signature": "pub async fn release(self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "Consumes Work and drops its exclusive control guard without closing the tab or Session.\nThe current implementation returns `Ok(())` immediately; it does not\nawait browser cleanup or resolve uncertain prior effects. Close the tab\nor owning Session explicitly when cleanup confirmation is required.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1684,
+        "lineEnd": 1687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1684-L1687"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::screenshot",
+      "publicPath": "yosoi::session::Work::screenshot",
+      "title": "yosoi::session::Work::screenshot",
+      "kind": "function",
+      "signature": "pub async fn screenshot(&self) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Captures the current tab screenshot and returns its bounded operation receipt.\nPermission and authority failures return [`SessionError`]. A retained\nscreenshot is visual evidence, not an assertion of business completion.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1492,
+        "lineEnd": 1532,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1492-L1532"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::until",
+      "publicPath": "yosoi::session::Work::until",
+      "title": "yosoi::session::Work::until",
+      "kind": "function",
+      "signature": "pub async fn until(&self, trigger: Option<&yosoi::flow::Step>, expectation: &yosoi::expect::Expectation) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Installs observation before an optional trigger, then parks until confirmed.",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 233,
+        "lineEnd": 250,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session/until.rs#L233-L250"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::wait",
+      "publicPath": "yosoi::session::Work::wait",
+      "title": "yosoi::session::Work::wait",
+      "kind": "function",
+      "signature": "pub async fn wait(&self, milliseconds: u64) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Waits an explicit millisecond duration, including zero, without confirming a condition.\nReturns a receipt on completion; cancellation, operation-deadline, denied\naction, and authority failures return [`SessionError`]. Prefer bounded\nevent-driven confirmation when readiness, rather than elapsed time, matters.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1537,
+        "lineEnd": 1571,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1537-L1571"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Work::wait_until",
+      "publicPath": "yosoi::session::Work::wait_until",
+      "title": "yosoi::session::Work::wait_until",
+      "kind": "function",
+      "signature": "pub async fn wait_until(&self, condition: &yosoi::flow::Condition, timeout_ms: u64) -> Result<yosoi::automation_record::OperationReceipt, yosoi::session::SessionError>",
+      "docs": "Confirms a DOM condition within a positive millisecond deadline using browser events.\nWhen configured, the wait retains exclusive tab authority while yielding\nworker capacity. Returns a confirmation receipt, including rejection or\nunavailable evidence; invalid input and authority failures return [`SessionError`].",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1624,
+        "lineEnd": 1674,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L1624-L1674"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1e388db758d4e22639f38701a33e53575ac046d61158554767c3a4e646016afd",
+  "slug": "yosoi/session/struct/work",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1e388db758d4e22639f38701a33e53575ac046d61158554767c3a4e646016afd"
+}

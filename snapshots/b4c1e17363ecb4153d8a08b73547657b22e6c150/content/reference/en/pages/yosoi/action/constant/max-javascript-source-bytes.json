@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::action::MAX_JAVASCRIPT_SOURCE_BYTES",
+  "publicPath": "yosoi::action::MAX_JAVASCRIPT_SOURCE_BYTES",
+  "kind": "constant",
+  "title": "yosoi::action::MAX_JAVASCRIPT_SOURCE_BYTES",
+  "signature": "pub const MAX_JAVASCRIPT_SOURCE_BYTES: usize = 65_536;",
+  "docs": "Default maximum source size for one JavaScript file snapshot.",
+  "source": {
+    "file": "crates/yosoi/src/action/source.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/source.rs#L10-L10"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::action::MAX_JAVASCRIPT_SOURCE_BYTES"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e6f061094218c672e7ff4ad6c48a9a08c1d34c3cdbc3007fdac80d340e713eb4",
+  "slug": "yosoi/action/constant/max-javascript-source-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e6f061094218c672e7ff4ad6c48a9a08c1d34c3cdbc3007fdac80d340e713eb4"
+}

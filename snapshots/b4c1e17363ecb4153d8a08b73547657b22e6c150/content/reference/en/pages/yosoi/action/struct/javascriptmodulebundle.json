@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::JavaScriptModuleBundle",
+  "publicPath": "yosoi::action::JavaScriptModuleBundle",
+  "kind": "struct",
+  "title": "yosoi::action::JavaScriptModuleBundle",
+  "signature": "pub struct JavaScriptModuleBundle",
+  "docs": "An exact, bounded module graph captured at Flow construction time.",
+  "source": {
+    "file": "crates/yosoi/src/action/module/bundle.rs",
+    "lineStart": 8,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L8-L13"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptModuleBundle"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::clone",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::clone",
+      "title": "yosoi::action::JavaScriptModuleBundle::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::JavaScriptModuleBundle",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::deserialize",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::deserialize",
+      "title": "yosoi::action::JavaScriptModuleBundle::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 16,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L16-L40"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::entry",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::entry",
+      "title": "yosoi::action::JavaScriptModuleBundle::entry",
+      "kind": "function",
+      "signature": "pub fn entry(&self) -> &str",
+      "docs": "Returns the normalized bundle-relative entry module ID.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 45,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L45-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::eq",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::eq",
+      "title": "yosoi::action::JavaScriptModuleBundle::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::action::JavaScriptModuleBundle) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::fmt",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::fmt",
+      "title": "yosoi::action::JavaScriptModuleBundle::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::limits",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::limits",
+      "title": "yosoi::action::JavaScriptModuleBundle::limits",
+      "kind": "function",
+      "signature": "pub const fn limits(&self) -> yosoi::action::JavaScriptModuleLimits",
+      "docs": "Returns the bounds used when this bundle was captured.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 60,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L60-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::modules",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::modules",
+      "title": "yosoi::action::JavaScriptModuleBundle::modules",
+      "kind": "function",
+      "signature": "pub const fn modules(&self) -> &BTreeMap<String, yosoi::action::JavaScriptModuleSource>",
+      "docs": "Returns the captured modules keyed by normalized bundle-relative ID.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 50,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L50-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::result_export",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::result_export",
+      "title": "yosoi::action::JavaScriptModuleBundle::result_export",
+      "kind": "function",
+      "signature": "pub fn result_export(&self) -> Option<&str>",
+      "docs": "Returns the selected default or named export to return as JSON, if any.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 55,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L55-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::serialize",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::serialize",
+      "title": "yosoi::action::JavaScriptModuleBundle::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::total_source_bytes",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::total_source_bytes",
+      "title": "yosoi::action::JavaScriptModuleBundle::total_source_bytes",
+      "kind": "function",
+      "signature": "pub fn total_source_bytes(&self) -> usize",
+      "docs": "Returns total exact UTF-8 source bytes in the module graph.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 65,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L65-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleBundle::validate",
+      "publicPath": "yosoi::action::JavaScriptModuleBundle::validate",
+      "title": "yosoi::action::JavaScriptModuleBundle::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self, maximum_total_source_bytes: usize) -> Result<(), yosoi::action::JavaScriptModuleError>",
+      "docs": "Revalidates source digests, parser ranges, graph targets, reachability,\nand the requested aggregate source bound.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/bundle.rs",
+        "lineStart": 73,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/action/module/bundle.rs#L73-L75"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "23f5cbb393626724215c71c53a10ee5ad255d46818caebf1dec6d050472de1af",
+  "slug": "yosoi/action/struct/javascriptmodulebundle",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "23f5cbb393626724215c71c53a10ee5ad255d46818caebf1dec6d050472de1af"
+}

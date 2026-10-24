@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::SupportDocument",
+  "publicPath": "yosoi::map::SupportDocument",
+  "kind": "struct",
+  "title": "yosoi::map::SupportDocument",
+  "signature": "pub struct SupportDocument",
+  "docs": "A robots or sitemap support source and its retained execution state.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 260,
+    "lineEnd": 267,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L260-L267"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/map.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SupportDocument"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::SupportDocument::clone",
+      "publicPath": "yosoi::map::SupportDocument::clone",
+      "title": "yosoi::map::SupportDocument::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::SupportDocument",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L259-L259"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SupportDocument::fmt",
+      "publicPath": "yosoi::map::SupportDocument::fmt",
+      "title": "yosoi::map::SupportDocument::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L259-L259"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::SupportDocument::kind",
+      "publicPath": "yosoi::map::SupportDocument::kind",
+      "title": "yosoi::map::SupportDocument::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: yosoi::map::SupportDocumentKind",
+      "docs": "Parser role selected for this support source.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 264,
+        "lineEnd": 264,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L264-L264"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::SupportDocument::serialize",
+      "publicPath": "yosoi::map::SupportDocument::serialize",
+      "title": "yosoi::map::SupportDocument::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L259-L259"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::SupportDocument::status",
+      "publicPath": "yosoi::map::SupportDocument::status",
+      "title": "yosoi::map::SupportDocument::status",
+      "kind": "struct_field",
+      "signature": "pub status: yosoi::map::SourceStatus",
+      "docs": "Processing state, including failures and incomplete evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 266,
+        "lineEnd": 266,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L266-L266"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::SupportDocument::url",
+      "publicPath": "yosoi::map::SupportDocument::url",
+      "title": "yosoi::map::SupportDocument::url",
+      "kind": "struct_field",
+      "signature": "pub url: url::Url",
+      "docs": "Normalized support-document URL.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 262,
+        "lineEnd": 262,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/map/mod.rs#L262-L262"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e8018c39f427390a9ff2fd7efc4a9e42ef0e7170ad943f3c6566c858eba7e0bb",
+  "slug": "yosoi/map/struct/supportdocument",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e8018c39f427390a9ff2fd7efc4a9e42ef0e7170ad943f3c6566c858eba7e0bb"
+}

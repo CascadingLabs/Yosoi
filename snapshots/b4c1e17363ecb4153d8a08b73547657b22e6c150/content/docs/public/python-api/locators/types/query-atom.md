@@ -1,0 +1,41 @@
+---
+title: "QueryAtom"
+description: "yosoi.locators.QueryAtom Python API reference."
+order: 0
+---
+
+`yosoi.locators.QueryAtom`
+
+```python
+class QueryAtom(ImmutableModel):
+```
+
+Closed portable query meaning, separate from Python authoring syntax.
+
+Attributes:
+    kind: CSS/XPath, JSON, accessibility, or decoded-text operation label.
+    value: Authored expression text, or a typed accessibility-state operand.
+
+[Source: python/yosoi/locators.py:96](https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/python/yosoi/locators.py#L96-L126)
+
+Members below are declared on this class. Inherited Pydantic methods and generated constructor signatures are not expanded.
+
+## Fields and class attributes
+
+```python
+kind: Literal['css', 'x_path', 'tree_text_contains', 'json_pointer', 'json_path', 'accessibility_role', 'accessible_name', 'accessibility_text', 'accessibility_state', 'text_literal', 'text_regex']
+value: str | AccessibilityStateAtom
+```
+
+## Methods
+
+### expression
+
+```python
+@property
+def expression(self) -> str:
+```
+
+Return expression text, or the state name for a boolean state query.
+
+[Source: python/yosoi/locators.py:120](https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/python/yosoi/locators.py#L120-L126)

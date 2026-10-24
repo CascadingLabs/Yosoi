@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::DomNodeId",
+  "publicPath": "yosoi::locators::DomNodeId",
+  "kind": "struct",
+  "title": "yosoi::locators::DomNodeId",
+  "signature": "pub struct DomNodeId",
+  "docs": "Stable identity for one node inside a single rendered DOM snapshot.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+    "lineStart": 55,
+    "lineEnd": 55,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L55-L55"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/locators.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::DomNodeId"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::locators::DomNodeId::Error",
+      "publicPath": "yosoi::locators::DomNodeId::Error",
+      "title": "yosoi::locators::DomNodeId::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = yosoi::locators::CoordinateError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 75,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L75-L75"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::clone",
+      "publicPath": "yosoi::locators::DomNodeId::clone",
+      "title": "yosoi::locators::DomNodeId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::DomNodeId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::cmp",
+      "publicPath": "yosoi::locators::DomNodeId::cmp",
+      "title": "yosoi::locators::DomNodeId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::locators::DomNodeId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::deserialize",
+      "publicPath": "yosoi::locators::DomNodeId::deserialize",
+      "title": "yosoi::locators::DomNodeId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::eq",
+      "publicPath": "yosoi::locators::DomNodeId::eq",
+      "title": "yosoi::locators::DomNodeId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::DomNodeId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::fmt",
+      "publicPath": "yosoi::locators::DomNodeId::fmt",
+      "title": "yosoi::locators::DomNodeId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::get",
+      "publicPath": "yosoi::locators::DomNodeId::get",
+      "title": "yosoi::locators::DomNodeId::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u64",
+      "docs": "Returns the positive numeric node identity without its snapshot epoch.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 69,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L69-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::hash",
+      "publicPath": "yosoi::locators::DomNodeId::hash",
+      "title": "yosoi::locators::DomNodeId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::partial_cmp",
+      "publicPath": "yosoi::locators::DomNodeId::partial_cmp",
+      "title": "yosoi::locators::DomNodeId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::locators::DomNodeId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::serialize",
+      "publicPath": "yosoi::locators::DomNodeId::serialize",
+      "title": "yosoi::locators::DomNodeId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::try_from",
+      "publicPath": "yosoi::locators::DomNodeId::try_from",
+      "title": "yosoi::locators::DomNodeId::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u64) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 77,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L77-L79"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::locators::DomNodeId::try_new",
+      "publicPath": "yosoi::locators::DomNodeId::try_new",
+      "title": "yosoi::locators::DomNodeId::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(value: u64) -> Result<Self, yosoi::locators::CoordinateError>",
+      "docs": "Creates a positive snapshot-local node identity, rejecting zero.\n\nReturns [`CoordinateError::ZeroDomNodeId`] for zero; no DOM membership\nor epoch is checked by this scalar constructor.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 62,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L62-L66"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f400859e64273ad11a20dfe8d83b676a7d720fde89d379c72712b199047f6853",
+  "slug": "yosoi/locators/struct/domnodeid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f400859e64273ad11a20dfe8d83b676a7d720fde89d379c72712b199047f6853"
+}

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Tab",
+  "publicPath": "yosoi::session::Tab",
+  "kind": "struct",
+  "title": "yosoi::session::Tab",
+  "signature": "pub struct Tab",
+  "docs": "Retained tab identity within a Session, distinct from exclusive Work control.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 932,
+    "lineEnd": 936,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L932-L936"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::Tab"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Tab::close",
+      "publicPath": "yosoi::session::Tab::close",
+      "title": "yosoi::session::Tab::close",
+      "kind": "function",
+      "signature": "pub async fn close(&self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "Closes only this tab and revokes any held control; other tabs remain usable.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 944,
+        "lineEnd": 953,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L944-L953"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Tab::fmt",
+      "publicPath": "yosoi::session::Tab::fmt",
+      "title": "yosoi::session::Tab::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 938,
+        "lineEnd": 940,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L938-L940"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Tab::work",
+      "publicPath": "yosoi::session::Tab::work",
+      "title": "yosoi::session::Tab::work",
+      "kind": "function",
+      "signature": "pub async fn work(&self) -> Result<yosoi::session::Work, yosoi::session::SessionError>",
+      "docs": "Acquires exclusive Work control for this tab, retaining its owning Session.\nReturns [`SessionError`] when browser support or control admission is unavailable.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 956,
+        "lineEnd": 965,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/b4c1e17363ecb4153d8a08b73547657b22e6c150/crates/yosoi/src/session.rs#L956-L965"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "52edfd11e557f533c6b4d391fecb35f5c261253ac871acd557179a0b73d88de7",
+  "slug": "yosoi/session/struct/tab",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "52edfd11e557f533c6b4d391fecb35f5c261253ac871acd557179a0b73d88de7"
+}
