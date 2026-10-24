@@ -424,8 +424,12 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             required = {
                 "records": [record.model_dump(mode="json") for record in records]
             }
+            # The public typed view fills absent schema fields. Keep the exact
+            # public outcome wire as an independent comparison, without filtering.
+            required_wire = {"records": wire.get("records", [])}
         except ys.contracts.ContractIssues as error:
             required = {"error": error.detail}
+            required_wire = {"error": error.detail}
         typed_values = []
         for record in outcome.records:
             values = {}
@@ -468,6 +472,7 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                     "outcome": wire,
                     "archived": outcome.to_archived().model_dump(),
                     "required": required,
+                    "required_wire": required_wire,
                     "typed_values": typed_values,
                 },
             }

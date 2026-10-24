@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 from typing import Any, Literal, Self, overload
 
@@ -164,7 +164,10 @@ class Archive:
         Raises:
             ArchiveError: Platform, path safety, permissions or filesystem I/O fails.
         """
-        return cls(await _native.Archive.open(str(root)))
+        path = fspath(root)
+        if not isinstance(path, str):
+            raise TypeError("Archive root must be a text filesystem path")
+        return cls(await _native.Archive.open(path))
 
     @property
     def root(self) -> Path:

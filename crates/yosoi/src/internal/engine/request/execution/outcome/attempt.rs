@@ -86,7 +86,7 @@ impl AttemptResult {
     }
 
     /// Complete HTTP representation bytes, independent of document projection.
-    pub(crate) fn response_body(&self) -> Option<&[u8]> {
+    pub fn response_body(&self) -> Option<&[u8]> {
         self.raw_response.as_deref()
     }
 

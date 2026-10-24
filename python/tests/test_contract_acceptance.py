@@ -104,9 +104,7 @@ def test_full_pydantic_lifecycle_aliases_defaults_and_attribute_text() -> None:
             "Product URL",
             locator=ys.css("a").attribute("href"),
         )
-        price: PurchaseMoney = ys.Field(
-            "Custom money model", locator=ys.css(".price")
-        )
+        price: PurchaseMoney = ys.Field("Custom money model", locator=ys.css(".price"))
         release_date: date = ys.Field("Release date", locator=ys.css("time"))
         note: str = ys.Field(
             "Optional generated note",
@@ -221,9 +219,7 @@ def test_alias_path_config_and_preflight_budget_behavior() -> None:
     class AliasDisabled(ys.Contract):
         model_config = ConfigDict(validate_by_alias=False, validate_by_name=True)
 
-        sku: str = ys.Field(
-            "SKU", locator=ys.css(".sku"), alias="wire-sku"
-        )
+        sku: str = ys.Field("SKU", locator=ys.css(".sku"), alias="wire-sku")
 
     document = ys.Document.html("aliased", "<b class='sku'>tea-42</b>")
     assert NegativePath.extract(document)[0].sku == "tea-42"
@@ -247,12 +243,10 @@ def test_alias_path_config_and_preflight_budget_behavior() -> None:
 
     limited = LargePath.extract_report(
         document,
-        policy=ExtractionPolicy(
-            validation_limits=ValidationLimits(max_conversions=1)
-        ),
+        policy=ExtractionPolicy(validation_limits=ValidationLimits(max_conversions=1)),
     )
     assert limited.status == "validation_rejected"
-    assert limited.failure is not None
+    assert isinstance(limited.failure, ys.contracts.TerminalFailure)
     assert limited.failure.limit == "conversions"
     assert limited.failure.observed == 10_002
     assert validation_calls == 0
@@ -419,9 +413,7 @@ def test_validation_budget_rejects_before_user_validator_side_effects() -> None:
     document = ys.Document.html("budgeted", "<article><b>42</b></article>")
     report = Budgeted.extract_report(
         document,
-        policy=ExtractionPolicy(
-            validation_limits=ValidationLimits(max_conversions=0)
-        ),
+        policy=ExtractionPolicy(validation_limits=ValidationLimits(max_conversions=0)),
     )
 
     assert report.status == "validation_rejected"
@@ -489,9 +481,11 @@ def test_local_assertion_callback_uses_pydantic_without_browser() -> None:
         checks=[
             ys.check(
                 "typed-decimal",
-                lambda product: isinstance(product.amount, Decimal)
-                and product.amount == Decimal("12.50")
-                and product.code == "ACME",
+                lambda product: (
+                    isinstance(product.amount, Decimal)
+                    and product.amount == Decimal("12.50")
+                    and product.code == "ACME"
+                ),
             )
         ],
     )
@@ -559,9 +553,7 @@ def test_local_assertion_callback_uses_pydantic_without_browser() -> None:
         )
     )
     assert partial_report["source_error"] == {"kind": "invalid_contract"}
-    assert partial_report["field_issues"][0]["kind"] == {
-        "kind": "incomplete_evidence"
-    }
+    assert partial_report["field_issues"][0]["kind"] == {"kind": "incomplete_evidence"}
 
 
 def test_local_assertion_reports_each_excess_field_count() -> None:

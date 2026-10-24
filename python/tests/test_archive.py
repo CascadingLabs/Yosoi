@@ -9,6 +9,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -49,6 +50,9 @@ def record() -> ys.AutomationRecord:
 
 def test_archive_platform_boundary(tmp_path: Path) -> None:
     async def run() -> None:
+        for invalid in (123, b"unexpected-byte-path"):
+            with pytest.raises(TypeError):
+                await ys.Archive.open(cast(Any, invalid))
         if os.name == "posix":
             assert (await ys.Archive.open(tmp_path / "store")).root.is_absolute()
         else:
@@ -79,9 +83,9 @@ def test_document_and_plan_keep_exact_bytes_profile_and_identity(
         assert restored_plan.compiled() == plan.compiled()
         assert restored.locate(restored_plan).values() == ["Arc desk lamp"]
         with pytest.raises(TypeError):
-            await archive.write({"arbitrary": "model"})
+            await archive.write(cast(Any, {"arbitrary": "model"}))
         with pytest.raises(TypeError):
-            await archive.read(saved.value)
+            await archive.read(cast(Any, saved.value))
 
     asyncio.run(run())
 
@@ -177,7 +181,9 @@ def test_reference_version_and_kind_are_not_silently_reinterpreted(
         future = DocumentArchiveRef(value=saved.value.replace(":v1:", ":v99:"))
         with pytest.raises(ArchiveError) as failure:
             await archive.read(future)
-        assert rust_error_details(failure.value).variant == "UnsupportedFormat"
+        details = rust_error_details(failure.value)
+        assert details is not None
+        assert details.variant == "UnsupportedFormat"
         with pytest.raises(ArchiveError, match="version"):
             await archive.read(AutomationRecordRef(version=99, document=saved.value))
 
@@ -204,7 +210,7 @@ def test_view_pages_cover_capture_and_reject_foreign_and_changed_evidence() -> N
             ys.View.continue_from(captured.model_copy(update=update), first_cursor)
     for invalid in (0, 101, True, 1.5):
         with pytest.raises(ValueError):
-            ys.View.from_observation(captured, invalid)
+            ys.View.from_observation(captured, cast(Any, invalid))
 
 
 def test_record_rejects_duplicate_identity_and_bounded_evidence() -> None:
@@ -274,7 +280,7 @@ def test_real_flow_is_inspected_in_fresh_process_after_browser_cleanup(
             self.end_headers()
             self.wfile.write(body)
 
-        def log_message(self, *args: object) -> None:
+        def log_message(self, format: str, *args: object) -> None:
             pass
 
     server = HTTPServer(("127.0.0.1", 0), Handler)

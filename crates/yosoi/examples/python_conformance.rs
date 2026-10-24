@@ -212,13 +212,32 @@ fn main() -> Result<(), Box<dyn Error>> {
                             .collect::<Vec<_>>(),
                         _ => Vec::new(),
                     };
-                    let required = match outcome.clone().require_all() {
+                    let required_wire = match outcome.clone().require_all() {
                         Ok(records) => json!({"records": records}),
                         Err(error) => json!({"error": error}),
                     };
+                    // Python's documented typed candidate view includes every
+                    // schema field, even when the original wire omits empty ones.
+                    // Compare that view and the untouched Rust wire separately.
+                    let mut required = required_wire.clone();
+                    if let Some(records) = required.get_mut("records").and_then(Value::as_array_mut)
+                    {
+                        for record in records {
+                            let fields = record
+                                .get_mut("candidate")
+                                .and_then(|candidate| candidate.get_mut("fields"))
+                                .and_then(Value::as_object_mut)
+                                .ok_or("required record is missing candidate fields")?;
+                            for field in contract.schema().fields() {
+                                fields
+                                    .entry(field.id().as_str())
+                                    .or_insert_with(|| json!([]));
+                            }
+                        }
+                    }
                     json!({"profile": profile, "class": document.class(), "byte_len": document.byte_len(),
                         "plan": plan, "located": located, "identity": contract.schema().identity()?.to_string(),
-                        "extracted": extracted, "outcome": outcome, "archived": archived, "required": required, "typed_values": typed_values})
+                        "extracted": extracted, "outcome": outcome, "archived": archived, "required": required, "required_wire": required_wire, "typed_values": typed_values})
                 } else {
                     json!({"profile": profile, "class": document.class(), "byte_len": document.byte_len(),
                         "plan": plan, "located": located})

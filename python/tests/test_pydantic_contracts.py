@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import pytest
 from pydantic import (
@@ -82,13 +82,13 @@ def test_contract_is_mutable_pydantic_and_money_accepts_text() -> None:
 
     product = Product(
         name="  Tea  ",
-        productSku="tea-1",
-        price="$29.00",
+        price=cast(Any, "$29.00"),
         quantity="3",
         labels=["2", "5"],
+        **cast(Any, {"productSku": "tea-1"}),
     )
     assert isinstance(product, BaseModel)
-    assert CartLine(price="$29.00").price.minor_units == 2900
+    assert CartLine(price=cast(Any, "$29.00")).price.minor_units == 2900
     assert product.name == "Tea"
     assert product.labels == [2, 5]
     assert product.model_dump()["productSku"] == "tea-1"
@@ -106,6 +106,7 @@ def test_extract_report_keeps_accepted_models_errors_and_candidate_evidence() ->
     report = Product.extract_report(_document(), policy=policy)
 
     assert report.status == "evaluated"
+    assert report.completeness is not None
     assert report.completeness.status == "complete"
     assert len(report.candidates) == 2
     assert len(report.records) == 1
@@ -168,6 +169,7 @@ def test_validation_limits_preflight_and_minimum_record_acceptance() -> None:
         ),
     )
     assert report.status == "validation_rejected"
+    assert isinstance(report.failure, ys.contracts.TerminalFailure)
     assert report.failure.limit == "records"
     assert calls == 0
 
