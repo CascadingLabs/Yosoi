@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* feat(cli): add self update and uninstall for 0.3.0 by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/161\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.2.1...v0.3.0\n",
+  "generated_source_sha256": "08574922af2a4b2f09e692a0f09197f61330f2de252592d834f68daa793983a7",
+  "github_notes_file": "github-notes.md",
+  "previous": "0.2.1",
+  "schema": 1,
+  "version": "0.3.0"
+}

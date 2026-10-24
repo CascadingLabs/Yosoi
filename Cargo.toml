@@ -16,10 +16,10 @@ edition = "2024"
 license = "Apache-2.0"
 # Also supplies Clippy's MSRV; rust-toolchain.toml pins the development compiler.
 rust-version = "1.99"
-version = "0.2.1"
+version = "0.3.0"
 
 [workspace.dependencies]
-yosoi-dev-support = { version = "=0.2.1", path = "benchmarks/support" }
+yosoi-dev-support = { version = "=0.3.0", path = "benchmarks/support" }
 anyhow = "1"
 async-compression = { version = "0.4", default-features = false, features = ["tokio", "gzip", "brotli", "zlib"] }
 bytes = "1"
@@ -50,8 +50,8 @@ wreq = { version = "=0.16.1", default-features = false, features = ["stream", "t
 uuid = { version = "1", features = ["v4"] }
 which = "8"
 windows-registry = "0.6"
-yosoi = { version = "=0.2.1", path = "crates/yosoi" }
-yosoi-contracts-derive = { version = "=0.2.1", path = "crates/yosoi-contracts-derive" }
+yosoi = { version = "=0.3.0", path = "crates/yosoi" }
+yosoi-contracts-derive = { version = "=0.3.0", path = "crates/yosoi-contracts-derive" }
 
 base64 = "0.22"
 async-tungstenite = { version = "0.32", features = ["tokio-runtime"] }

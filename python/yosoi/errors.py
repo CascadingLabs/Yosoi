@@ -8,6 +8,9 @@ from types import MappingProxyType
 from typing import Any
 
 from ._native import (
+    ArchiveError as ArchiveError,
+)
+from ._native import (
     ClosedResourceError as ClosedResourceError,
 )
 from ._native import (

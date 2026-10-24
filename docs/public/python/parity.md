@@ -8,7 +8,7 @@ order: 7
 
 Python Contracts use Rust to locate and group raw candidate evidence, then use
 Pydantic to construct and validate Python records. The package also has Python
-surfaces for documents, locators, policy, Requests, Map, and Search. The
+surfaces for documents, locators, policy, Requests, Map, Search, and local Archive workflows. Documents, compiled Plans, and automation records can be saved and restored; bounded View pages inspect retained observations. The local Archive backend currently supports Unix only. The
 machine-readable parity report tracks SDK mappings and executed capability
 checks. Its full Rust inventory remains available as a separate audit.
 

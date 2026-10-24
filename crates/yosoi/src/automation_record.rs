@@ -145,6 +145,40 @@ pub struct AutomationRecord {
 }
 
 impl AutomationRecord {
+    /// Retains one Flow outcome, including cleanup and failure-capture receipts.
+    ///
+    /// Observations are deduplicated by identity only when their evidence agrees.
+    /// Rejected and unknown operations remain unchanged. Returns a record error
+    /// for inconsistent identities, invalid outcomes or excessive retained data.
+    pub fn from_flow(
+        id: impl Into<String>,
+        outcome: FlowOutcome,
+    ) -> Result<Self, AutomationRecordError> {
+        let operations: Vec<_> = outcome
+            .steps
+            .iter()
+            .map(|step| step.receipt.clone())
+            .chain(outcome.cleanup.iter().cloned())
+            .chain(outcome.failure_capture.iter().cloned())
+            .collect();
+        let mut observations: Vec<Observation> = Vec::new();
+        for observation in operations
+            .iter()
+            .filter_map(|operation| operation.observation.as_ref())
+        {
+            if let Some(prior) = observations.iter().find(|prior| prior.id == observation.id) {
+                if prior != observation {
+                    return Err(AutomationRecordError::DuplicateIdentity {
+                        field: "observation",
+                    });
+                }
+            } else {
+                observations.push(observation.clone());
+            }
+        }
+        Self::new(id, observations, operations)?.with_flow_outcome(outcome)
+    }
+
     /// Creates a record after validating its stable identity and retained size.
     pub fn new(
         id: impl Into<String>,

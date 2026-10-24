@@ -17,158 +17,312 @@ use crate::internal::archive::{
 #[derive(Debug, Error)]
 pub enum ArchiveError {
     #[error("local Archive format 1 is not certified on platform {platform}")]
-    UnsupportedPlatform { platform: &'static str },
+    /// Local Archive format 1 is not certified on platform `platform`.
+    UnsupportedPlatform {
+        /// Operating system on which certification is unavailable.
+        platform: &'static str,
+    },
     #[error("an Archive root path cannot be empty")]
+    /// An Archive root path cannot be empty.
     EmptyRoot,
     #[error(transparent)]
+    /// The reference fails its typed parsing contract.
     InvalidReference(#[from] ArchiveRefError),
     #[error("Archive {operation} failed at {path}")]
+    /// Archive `operation` failed at `path`.
     Io {
+        /// Filesystem operation that failed.
         operation: &'static str,
+        /// Owned path involved in the failure.
         path: PathBuf,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: io::Error,
     },
     #[error("Archive filesystem task failed during {operation}")]
+    /// Archive filesystem task failed during `operation`.
     FilesystemTask {
+        /// Filesystem operation that failed.
         operation: &'static str,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: JoinError,
     },
     #[error("Archive-owned path {path} is unsafe: {reason}")]
-    UnsafeArchivePath { path: PathBuf, reason: &'static str },
+    /// Archive-owned path `path` is unsafe: `reason`.
+    UnsafeArchivePath {
+        /// Owned path involved in the failure.
+        path: PathBuf,
+        /// Specific violated safety or layout condition.
+        reason: &'static str,
+    },
     #[error("Archive-owned path {path} has insecure permissions {mode:#o}")]
-    InsecurePermissions { path: PathBuf, mode: u32 },
+    /// Archive-owned path `path` has insecure permissions `mode:#o`.
+    InsecurePermissions {
+        /// Owned path involved in the failure.
+        path: PathBuf,
+        /// Observed filesystem permission bits.
+        mode: u32,
+    },
     #[error("Archive {kind} record {key} does not exist")]
-    RecordNotFound { kind: &'static str, key: String },
+    /// Archive `kind` record `key` does not exist.
+    RecordNotFound {
+        /// Record category involved in this operation.
+        kind: &'static str,
+        /// Exact immutable record key.
+        key: String,
+    },
     #[error("Archive record at {path} is not a regular file")]
-    NotRegularFile { path: PathBuf },
+    /// Archive record at `path` is not a regular file.
+    NotRegularFile {
+        /// Owned path involved in the failure.
+        path: PathBuf,
+    },
     #[error("Archive record is too large: maximum {maximum} bytes, observed {observed}")]
-    RecordTooLarge { maximum: u64, observed: u64 },
+    /// Archive record is too large: maximum `maximum` bytes, observed `observed`.
+    RecordTooLarge {
+        /// Largest supported count or byte length.
+        maximum: u64,
+        /// Actual count or byte length encountered.
+        observed: u64,
+    },
     #[error("invalid Policy value")]
+    /// Invalid Policy value.
     InvalidPolicy(#[source] PolicyError),
     #[error("invalid request run record")]
+    /// Invalid request run record.
     InvalidRequestRun(#[source] RequestRunRecordError),
     #[error("invalid archived Document")]
+    /// Invalid archived Document.
     InvalidDocument(#[source] DocumentError),
     #[error("invalid EvaluationRunRecord")]
+    /// Invalid EvaluationRunRecord.
     InvalidEvaluationRun(#[source] EvaluationRunError),
     #[error("invalid LocatorRunRecord")]
+    /// Invalid LocatorRunRecord.
     InvalidLocatorRun(#[source] LocatorRunRecordError),
     #[error("invalid ContractRunRecord")]
+    /// Invalid ContractRunRecord.
     InvalidContractRun(#[source] ContractRunRecordError),
     #[error("archived Document exceeds {maximum} bytes: observed {observed}")]
-    DocumentTooLarge { maximum: u64, observed: u64 },
+    /// Archived Document exceeds `maximum` bytes: observed `observed`.
+    DocumentTooLarge {
+        /// Largest supported count or byte length.
+        maximum: u64,
+        /// Actual count or byte length encountered.
+        observed: u64,
+    },
     #[error("archived Document {key} payload does not exist")]
-    DocumentPayloadMissing { key: String },
+    /// Archived Document `key` payload does not exist.
+    DocumentPayloadMissing {
+        /// Exact immutable record key.
+        key: String,
+    },
     #[error(
         "archived Document {key} payload has the wrong length: expected {expected}, observed {observed}"
     )]
+    /// Archived Document `key` payload has the wrong length: expected `expected`, observed `observed`.
     DocumentPayloadLengthMismatch {
+        /// Exact immutable record key.
         key: String,
+        /// Identity, category or length required by the reference.
         expected: u64,
+        /// Actual count or byte length encountered.
         observed: u64,
     },
     #[error("archived Document {key} payload has the wrong SHA-256 digest")]
-    DocumentPayloadDigestMismatch { key: String },
+    /// Archived Document `key` payload has the wrong SHA-256 digest.
+    DocumentPayloadDigestMismatch {
+        /// Exact immutable record key.
+        key: String,
+    },
     #[error("immutable archived Document {key} already contains other bytes")]
-    DocumentPayloadConflict { key: String },
+    /// Immutable archived Document `key` already contains other bytes.
+    DocumentPayloadConflict {
+        /// Exact immutable record key.
+        key: String,
+    },
     #[error("archived Document {key} payload may be committed but durability confirmation failed")]
+    /// Archived Document `key` payload may be committed but durability confirmation failed.
     DocumentPayloadCommitUncertain {
+        /// Exact immutable record key.
         key: String,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: io::Error,
     },
     #[error("EvaluationRun source artifact {artifact:?} has no retained payload in its Capture")]
-    EvaluationSourcePayloadUnavailable { artifact: WebArtifactRef },
+    /// EvaluationRun source artifact `artifact:?` has no retained payload in its Capture.
+    EvaluationSourcePayloadUnavailable {
+        /// Exact captured artifact reference.
+        artifact: WebArtifactRef,
+    },
     #[error("invalid Web Capture wire value")]
+    /// Invalid Web Capture wire value.
     InvalidWebCapture(#[source] WebCaptureWireError),
     #[error("invalid CaptureBundle payload association")]
+    /// Invalid CaptureBundle payload association.
     InvalidCaptureBundle(#[source] CaptureBundleError),
     #[error("failed to package canonical Web Capture JSON")]
+    /// Failed to package canonical Web Capture JSON.
     CaptureRecordJson(#[source] serde_json::Error),
     #[error("Capture record identity {found} does not match reference {expected}")]
+    /// Capture record identity `found` does not match reference `expected`.
     CaptureIdentityMismatch {
+        /// Identity, category or length required by the reference.
         expected: CaptureId,
+        /// Identity, category or version stored in the rejected value.
         found: CaptureId,
     },
     #[error("Capture contains too many retained payloads: maximum {maximum}, observed {observed}")]
-    CapturePayloadCountExceeded { maximum: u64, observed: u64 },
+    /// Capture contains too many retained payloads: maximum `maximum`, observed `observed`.
+    CapturePayloadCountExceeded {
+        /// Largest supported count or byte length.
+        maximum: u64,
+        /// Actual count or byte length encountered.
+        observed: u64,
+    },
     #[error(
         "Capture payload materialization exceeds {maximum} bytes: observed at least {observed}"
     )]
-    CaptureMaterializationTooLarge { maximum: u64, observed: u64 },
+    /// Capture payload materialization exceeds `maximum` bytes: observed at least `observed`.
+    CaptureMaterializationTooLarge {
+        /// Largest supported count or byte length.
+        maximum: u64,
+        /// Actual count or byte length encountered.
+        observed: u64,
+    },
     #[error("Capture {capture_id} payload {artifact_id} does not exist")]
+    /// Capture `capture_id` payload `artifact_id` does not exist.
     CapturePayloadMissing {
+        /// Capture occurrence whose payload was requested.
         capture_id: CaptureId,
+        /// Artifact identity within the capture.
         artifact_id: ArtifactId,
     },
     #[error(
         "Capture payload {artifact:?} has the wrong length: expected {expected}, observed {observed}"
     )]
+    /// Capture payload `artifact:?` has the wrong length: expected `expected`, observed `observed`.
     CapturePayloadLengthMismatch {
+        /// Exact captured artifact reference.
         artifact: WebArtifactRef,
+        /// Identity, category or length required by the reference.
         expected: u64,
+        /// Actual count or byte length encountered.
         observed: u64,
     },
     #[error("Capture payload {artifact:?} has the wrong SHA-256 digest")]
-    CapturePayloadDigestMismatch { artifact: WebArtifactRef },
+    /// Capture payload `artifact:?` has the wrong SHA-256 digest.
+    CapturePayloadDigestMismatch {
+        /// Exact captured artifact reference.
+        artifact: WebArtifactRef,
+    },
     #[error("immutable Capture {capture_id} payload {artifact_id} already contains other bytes")]
+    /// Immutable Capture `capture_id` payload `artifact_id` already contains other bytes.
     CapturePayloadConflict {
+        /// Capture occurrence whose payload was requested.
         capture_id: CaptureId,
+        /// Artifact identity within the capture.
         artifact_id: ArtifactId,
     },
     #[error(
         "Capture {capture_id} payload {artifact_id} may be committed but durability confirmation failed"
     )]
+    /// Capture `capture_id` payload `artifact_id` may be committed but durability confirmation failed.
     CapturePayloadCommitUncertain {
+        /// Capture occurrence whose payload was requested.
         capture_id: CaptureId,
+        /// Artifact identity within the capture.
         artifact_id: ArtifactId,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: io::Error,
     },
     #[error("failed to encode Archive {kind} record")]
+    /// Failed to encode Archive `kind` record.
     EncodeRecord {
+        /// Record category involved in this operation.
         kind: &'static str,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: serde_json::Error,
     },
     #[error("malformed Archive envelope")]
+    /// Malformed Archive envelope.
     MalformedEnvelope(#[source] serde_json::Error),
     #[error("invalid Archive {kind} record value")]
+    /// Invalid Archive `kind` record value.
     InvalidRecordValue {
+        /// Record category involved in this operation.
         kind: &'static str,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: serde_json::Error,
     },
     #[error("invalid internal Archive layout: {reason}")]
-    InvalidLayout { reason: &'static str },
+    /// Invalid internal Archive layout: `reason`.
+    InvalidLayout {
+        /// Specific violated safety or layout condition.
+        reason: &'static str,
+    },
     #[error("Archive format {found} is unsupported; this build supports {supported}")]
-    UnsupportedFormat { found: u32, supported: u32 },
+    /// Archive format `found` is unsupported; this build supports `supported`.
+    UnsupportedFormat {
+        /// Identity, category or version stored in the rejected value.
+        found: u32,
+        /// Newest format version accepted by this build.
+        supported: u32,
+    },
     #[error(
         "{kind} schema {found_schema} written by {writer_package} {writer_version} requires migration to schema {supported_schema}"
     )]
+    /// `kind` schema `found_schema` written by `writer_package` `writer_version` requires migration to schema `supported_schema`.
     MigrationRequired {
+        /// Record category involved in this operation.
         kind: &'static str,
+        /// Schema version stored in the record.
         found_schema: u32,
+        /// Schema version accepted by this build.
         supported_schema: u32,
+        /// Package that originally encoded the record.
         writer_package: String,
+        /// Original writer package version.
         writer_version: String,
     },
     #[error("Archive record kind {found} cannot be read as {expected}")]
+    /// Archive record kind `found` cannot be read as `expected`.
     WrongRecordKind {
+        /// Identity, category or version stored in the rejected value.
         found: String,
+        /// Identity, category or length required by the reference.
         expected: &'static str,
     },
     #[error("Archive record key {found} cannot be read as {expected}")]
-    WrongRecordKey { found: String, expected: String },
+    /// Archive record key `found` cannot be read as `expected`.
+    WrongRecordKey {
+        /// Identity, category or version stored in the rejected value.
+        found: String,
+        /// Identity, category or length required by the reference.
+        expected: String,
+    },
     #[error("immutable Archive {kind} identity {key} already contains another value")]
-    IdentityConflict { kind: &'static str, key: String },
-    #[error("Archive {kind} record {key} may be committed but durability confirmation failed")]
-    CommitUncertain {
+    /// Immutable Archive `kind` identity `key` already contains another value.
+    IdentityConflict {
+        /// Record category involved in this operation.
         kind: &'static str,
+        /// Exact immutable record key.
+        key: String,
+    },
+    #[error("Archive {kind} record {key} may be committed but durability confirmation failed")]
+    /// Archive `kind` record `key` may be committed but durability confirmation failed.
+    CommitUncertain {
+        /// Record category involved in this operation.
+        kind: &'static str,
+        /// Exact immutable record key.
         key: String,
         #[source]
+        /// Underlying failure retained for diagnosis.
         source: io::Error,
     },
 }

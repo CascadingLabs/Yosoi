@@ -6,7 +6,7 @@
     {
       "title": "Getting Started",
       "directory": "getting-started",
-      "order": ["what-is-yosoi.md", "install.md", "docker.md"]
+      "order": ["what-is-yosoi.md", "install.md", "docker.md"],
     },
     {
       "title": "Concepts",
@@ -26,8 +26,8 @@
         "concepts/policy-and-budgets.md",
         "concepts/sharing-browser-capacity.md",
         "concepts/yielding-while-waiting.md",
-        "concepts/keeping-the-evidence.md"
-      ]
+        "concepts/keeping-the-evidence.md",
+      ],
     },
     {
       "title": "CLI",
@@ -38,27 +38,27 @@
         "cli/locate.md",
         "cli/policy.md",
         "cli/map.md",
-        "cli/search.md"
-      ]
+        "cli/search.md",
+      ],
     },
 
     {
       "title": "Release Notes",
       "directory": "releases",
-      "order": ["index.md"]
+      "order": ["index.md"],
     },
     {
       "title": "References",
       "sections": [
         {
           "title": "Rust",
-          "generated": "rust-api"
+          "generated": "rust-api",
         },
         {
           "title": "Python",
-          "directory": "python-api"
-        }
-      ]
-    }
-  ]
+          "directory": "python-api",
+        },
+      ],
+    },
+  ],
 }

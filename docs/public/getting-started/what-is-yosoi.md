@@ -83,7 +83,7 @@ class Product(ys.Contract):
     name: str = ys.Field("Product name", locator=ys.css("h2"), min_length=1)
     price: str = ys.Field("Advertised price", locator=ys.css(".price"))
 
-    # callout: This validator receives raw text before Money parses it
+    # callout: This validator inspects the extracted price before string validation
     @field_validator("price", mode="before")
     @classmethod
     def prepare_price(cls, value: Any) -> Any:
@@ -118,6 +118,6 @@ for product in products:
 
 ```
 
-The Python Contract is a Pydantic model. `CustomMoney` parses the extracted price into a decimal amount and currency. The name validator trims whitespace before the length constraint runs; the price validator adds the rule that a product must cost more than zero. `Product.extract(document)` runs those validators automatically and returns accepted products or raises an error. It prints `Desk lamp costs $29.00`.
+The Python Contract is a Pydantic model. Each article supplies one product, and `Product.extract(document)` runs validation automatically. Here the price stays a string. The validator prints a diagnostic for the notebook's negative price and still accepts it; raising `ValueError` instead would reject that record. The program then prints both products and their advertised prices.
 
 These selectors match the HTML supplied in the example. Field descriptions explain the record; they do not automatically discover selectors. See [Contracts](../sdk/contracts.md) for optional fields and repeated records.

@@ -33,6 +33,7 @@ create_exception!(_native, RequestError, YosoiError);
 create_exception!(_native, MapError, YosoiError);
 create_exception!(_native, SearchError, YosoiError);
 create_exception!(_native, ContractError, YosoiError);
+create_exception!(_native, ArchiveError, YosoiError);
 
 /// Attaches Rust error identity and payload to the existing exception category
 /// without changing its Display message or Python inheritance. Opaque public
@@ -158,5 +159,6 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("RequestError", py.get_type::<RequestError>())?;
     module.add("MapError", py.get_type::<MapError>())?;
     module.add("SearchError", py.get_type::<SearchError>())?;
-    module.add("ContractError", py.get_type::<ContractError>())
+    module.add("ContractError", py.get_type::<ContractError>())?;
+    module.add("ArchiveError", py.get_type::<ArchiveError>())
 }

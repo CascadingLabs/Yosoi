@@ -79,4 +79,4 @@ Use the [typed assertion programs](../sdk/assertions.md) to check a current obse
 
 Pass a caller-owned cancellation token when another task decides when invocation should stop. Cancellation preserves execution facts and does not undo dispatched effects. Retain unknown receipts and inspect domain state before repeating a potentially irreversible operation.
 
-The current Python bridge exposes the initial tab and borrowed Work. Rust's explicit tab creation, Watcher stream and Archive/View controls are not exposed through this bridge.
+The Python bridge exposes the initial tab and borrowed Work. Rust's explicit tab creation and Watcher stream remain unavailable. Archive, AutomationRecord and bounded offline View inspection are available; see [Keeping the evidence](../concepts/keeping-the-evidence.md).
