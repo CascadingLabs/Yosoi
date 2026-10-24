@@ -1,6 +1,14 @@
 #![allow(clippy::panic_in_result_fn)]
 
 use crate::internal::test_support::direct_http_fixture as fixture;
+use crate::policy::{
+    Acquisition as SdkAcquisition, AddressableByteLimit as SdkAddressableByteLimit,
+    Policy as SdkPolicy,
+};
+use crate::request::{
+    self as sdk_request, AttemptDocument as SdkAttemptDocument,
+    DocumentOutcome as SdkDocumentOutcome, UnprojectableReason as SdkUnprojectableReason,
+};
 
 use std::{error::Error, fmt::Write as _, io, num::NonZeroU32, str};
 
@@ -33,18 +41,16 @@ async fn binary_response_retains_ico_bytes_without_fabricating_a_document() -> T
         )],
     )
     .await;
-    let response = crate::request::new(service.url("/favicon.ico"))
-        .send()
-        .await;
+    let response = sdk_request::new(service.url("/favicon.ico")).send().await;
     service.shutdown().await;
     let response = response?;
     let attempt = response.attempts().next().ok_or("missing attempt")?;
     assert_eq!(attempt.content_type(), Some("image/x-icon"));
     assert_eq!(attempt.body_bytes(), Some(icon.as_slice()));
     assert!(matches!(
-        attempt.documents().next().map(|item| item.outcome()),
-        Some(crate::request::DocumentOutcome::Unprojectable(
-            crate::request::UnprojectableReason::UnsupportedSourceFormat
+        attempt.documents().next().map(SdkAttemptDocument::outcome),
+        Some(SdkDocumentOutcome::Unprojectable(
+            SdkUnprojectableReason::UnsupportedSourceFormat
         ))
     ));
     assert!(!format!("{attempt:?}").contains("favicon.ico"));
@@ -62,7 +68,7 @@ async fn binary_response_body_preserves_original_character_encoding() -> TestRes
         )],
     )
     .await;
-    let response = crate::request::new(service.url("/latin1")).send().await;
+    let response = sdk_request::new(service.url("/latin1")).send().await;
     service.shutdown().await;
     let response = response?;
     let attempt = response.attempts().next().ok_or("missing attempt")?;
@@ -85,10 +91,9 @@ async fn binary_response_truncated_body_is_not_exposed_as_complete() -> TestResu
         )],
     )
     .await;
-    let mut policy = crate::policy::Policy::default();
-    policy.request.source.representation_bytes =
-        crate::policy::AddressableByteLimit::try_from(3_u64)?;
-    let response = crate::request::new(service.url("/oversized.ico"))
+    let mut policy = SdkPolicy::default();
+    policy.request.source.representation_bytes = SdkAddressableByteLimit::try_from(3_u64)?;
+    let response = sdk_request::new(service.url("/oversized.ico"))
         .bind(&policy)
         .send()
         .await;
@@ -111,10 +116,10 @@ async fn binary_response_distinguishes_empty_body_from_omitted_selection() -> Te
         )],
     )
     .await;
-    let response = crate::request::new(service.url("/empty")).send().await?;
-    let mut policy = crate::policy::Policy::default();
-    policy.page.acquisitions = vec![crate::policy::Acquisition::DirectHttp.documents([])];
-    let omitted = crate::request::new(service.url("/empty"))
+    let response = sdk_request::new(service.url("/empty")).send().await?;
+    let mut policy = SdkPolicy::default();
+    policy.page.acquisitions = vec![SdkAcquisition::DirectHttp.documents([])];
+    let omitted = sdk_request::new(service.url("/empty"))
         .bind(&policy)
         .send()
         .await;

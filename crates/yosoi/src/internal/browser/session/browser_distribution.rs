@@ -53,17 +53,17 @@ pub(super) async fn browser_identity(executable: &Path) -> Result<String> {
     Ok(version)
 }
 
-// Regular Linux Stable release history, reviewed 2026-10-10 UTC. Only the
+// Regular Linux Stable release history, reviewed 2026-10-24 UTC. Only the
 // current and preceding milestones are eligible. The snapshot expires after
 // 30 days; each superseded release has its own 30-day deadline.
 // Source: https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases
 const STABLE_RELEASES: &[(&str, u64)] = &[
-    ("155.0.8059.39", 1_791_590_400),
-    ("154.0.8037.97", 1_791_306_547),
-    ("154.0.8037.92", 1_790_902_579),
-    ("154.0.8037.57", 1_790_706_629),
+    ("156.0.8078.47", 1_792_800_000),
+    ("155.0.8059.84", 1_792_526_230),
+    ("155.0.8059.79", 1_792_096_815),
+    ("155.0.8059.39", 1_791_924_291),
 ];
-const REVIEWED_AT: u64 = 1_791_590_400; // 2026-10-10 UTC
+const REVIEWED_AT: u64 = 1_792_800_000; // 2026-10-24 UTC
 const MAX_AGE: u64 = 30 * 24 * 60 * 60;
 
 pub(super) fn supported_version(identity: &str) -> Result<&str> {
@@ -127,14 +127,16 @@ mod tests {
         for identity in [
             "Google Chrome 155.0.8059.39",
             "Chromium 155.0.8059.39 Arch Linux",
-            "Google Chrome 154.0.8037.97",
-            "Chromium 154.0.8037.97 Arch Linux",
-            "Chromium 154.0.8037.92 built on Debian GNU/Linux 13 (trixie)",
+            "Google Chrome 156.0.8078.47",
+            "Chromium 156.0.8078.47 Arch Linux",
+            "Google Chrome 155.0.8059.84",
+            "Chromium 155.0.8059.79 built on Debian GNU/Linux 13 (trixie)",
         ] {
             assert!(supported_version_at(identity, REVIEWED_AT).is_ok());
         }
         for identity in [
             "Google Chrome 152.0.7977.82",
+            "Google Chrome 154.0.8037.97",
             "Google Chrome 153.0.8010.52",
             "Google Chrome 155.0.8059.26",
             "Google Chrome 154.0.8037.97 beta",
@@ -148,7 +150,7 @@ mod tests {
             );
         }
         assert!(
-            supported_version_at("Google Chrome 154.0.8037.57", 1_790_706_629 + MAX_AGE + 1)
+            supported_version_at("Google Chrome 155.0.8059.39", 1_791_924_291 + MAX_AGE + 1)
                 .is_err()
         );
         assert!(
