@@ -112,4 +112,4 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 For application-owned storage, keep `id()`, `profile()`, and `bytes()` together. Restore them with `Document::from_profile(...)`. This preserves the distinction between source HTML, rendered DOM, and accessibility evidence.
 
-`DocumentEpoch` is a positive identity for a browser document generation. Coordinates from one epoch should not be interpreted against another. See the [save and reuse recipe](../cookbook/save-and-reuse.md) for a complete example.
+`DocumentEpoch` is a positive identity for a browser document generation. Coordinates from one epoch should not be interpreted against another.

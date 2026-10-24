@@ -1,17 +1,17 @@
 ---
 title: Python SDK
-description: Author documents, locators, Contracts, and operations with Pydantic while Rust owns processing.
+description: Author Python Contract models while the native SDK gathers their evidence.
 order: 2
 ---
 
 # Python SDK
 
-The `yosoi` package provides Pydantic authoring models and typed outcomes over
-the public Rust SDK. Its current surface includes immutable documents, locator
-plans, typed Contracts, Policy, asynchronous Requests, Map, Search, and caller
-cancellation. Python describes inputs and views results; Rust owns parsing,
-locator compilation and evaluation, Contract extraction and validation,
-acquisition, discovery, and policy validation.
+The `yosoi` package provides Pydantic models and operations over the public Rust
+SDK. Its current surface includes immutable documents, locator plans, typed
+Contracts, Policy, asynchronous Requests, Map, Search, and caller cancellation.
+Rust parses and locates documents, groups raw Contract evidence, acquires and
+discovers URLs, and validates Policy. Python constructs Contract records and
+runs their normal Pydantic validation.
 
 Start with the [Python SDK overview](../python/index.md), then follow the
 [installation guide](../python/installation.md). The topic pages cover
@@ -34,12 +34,20 @@ class Greeting(ys.Contract):
     title: str = ys.Field("Page title", locator=ys.css("h1"))
 
 document = ys.Document.html("page", "<h1>Hello</h1>")
-outcome = ys.extract(document, Greeting).validate()
+greetings = ys.extract(document, Greeting)
+assert greetings[0].title == "Hello"
 ```
 
-Contracts expose named Pydantic fields while Rust decides field cardinality,
-conversion, and outcome semantics. The supported scalar and collection shapes
-are intentionally bounded; see [Contracts](../python/contracts.md).
+`ys.extract` returns validated Python models. Use
+`ys.extract_report(document, Greeting)` to retain candidates, accepted records,
+and Pydantic validation issues. See [Python Contracts](../python/contracts.md)
+for the report and the separate native `RuntimeContract` API.
+
+> [!NOTE]
+> **Python**
+>
+> Pydantic validators and defaults affect Python Contract records. They are not
+> part of `Contract.identity()`, which describes the native transport schema.
 
 ## Interpreter and native capabilities
 

@@ -1,9 +1,9 @@
 ---
 title: 'Choose a locator'
-description: 'Find the consolidated locator guide in the Cookbook.'
+description: 'Understand locators and findings.'
 order: 0
 ---
 
 # Choose a locator
 
-This guide now lives in the [Cookbook](../cookbook/choose-a-locator.md). It explains how to choose evidence, retain repeated rows and interpret query outcomes.
+Read [Locators and findings](../concepts/locators.md) to understand queries, projections and repeated regions. See [Locators](../sdk/locators.md) for Rust and Python examples.

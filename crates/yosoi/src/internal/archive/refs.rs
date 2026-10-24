@@ -13,19 +13,30 @@ const CAPTURE_PREFIX: &str = "capture";
 /// Invalid textual or logical Archive reference.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum ArchiveRefError {
+    /// Text does not follow the kind, version and key reference grammar.
     #[error("an Archive reference must have the form <kind>:v<format>:<key>")]
     InvalidSyntax,
+    /// The physical format version is absent, zero or not an integer.
     #[error("an Archive reference format version must be a positive integer")]
     InvalidFormat,
+    /// The reference names a different category than the requested typed reference.
     #[error("expected an Archive {expected} reference, found {found}")]
     WrongKind {
+        /// Record category required by the typed reference.
         expected: &'static str,
+        /// Category supplied by the rejected text.
         found: String,
     },
+    /// The key contains unsafe path characters, traversal or an invalid length.
     #[error("an Archive record key must be 2-128 lowercase path-safe characters without '..'")]
     InvalidKey,
+    /// The category requires a canonical lowercase version-4 UUID key.
     #[error("an Archive {kind} reference key must be a canonical lowercase UUID v4")]
-    InvalidUuidKey { kind: &'static str },
+    InvalidUuidKey {
+        /// Record category whose key was rejected.
+        kind: &'static str,
+    },
+    /// Capture occurrence parsing rejected the supplied UUID key.
     #[error("a Capture Archive reference key must be a canonical lowercase UUID v4")]
     InvalidCaptureKey(#[source] OccurrenceIdParseError),
 }

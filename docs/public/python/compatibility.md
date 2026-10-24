@@ -6,7 +6,7 @@ order: 6
 
 # Python compatibility status
 
-This page retains source-pinned development receipts. They apply to the named snapshots, not automatically to the current release. For installation, use [Get Started](../quickstart.md).
+This page retains source-pinned development receipts. They apply to the named snapshots, not automatically to the current release. For installation, use [Install](../getting-started/install.md).
 
 The package declares `>=3.12,<3.16` and requires Pydantic `>=2.14,<3`.
 The current CI configuration selects CPython 3.12, 3.13, 3.14, and 3.15.0,

@@ -149,6 +149,6 @@ Use `send_cancellable(&token)` with the same `CancellationToken` type as Request
 
 Map normally discards captured documents after inspection. Set `policy.map.documents = DiscoveryDocuments::RetainWithinBudget` to keep responses within `max_retained_document_bytes`.
 
-`outcome.captures()` then yields borrowed captures. Each has `url()` and `response()`. Reuse that response's documents to extract data without fetching the same URL again. Retention is bounded, so a discovered page may have no retained capture. The [discovery recipe](../cookbook/discover-and-fetch.md) shows the full workflow.
+`outcome.captures()` then yields borrowed captures. Each has `url()` and `response()`. Reuse that response's documents to extract data without fetching the same URL again. Retention is bounded, so a discovered page may have no retained capture. See [Responses](responses.md) for how to inspect retained documents.
 
 See [Limits](limits.md) for the default discovery budgets and [CLI Map](../cli/map.md) for terminal use.

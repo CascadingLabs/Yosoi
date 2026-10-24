@@ -65,7 +65,7 @@ export async function copyPublicTree(source, target, prefix = '') {
   }
 }
 
-export function rewriteMarkdownLinks(tree, file, pages, assets) {
+export function rewriteMarkdownLinks(tree, file, pages, assets, missingPage) {
   const href = (route) => `/yosoi/${route ? `${route}/` : ''}`;
   function visit(node) {
     if (
@@ -80,8 +80,11 @@ export function rewriteMarkdownLinks(tree, file, pages, assets) {
       if (page) node.url = `${href(page.route)}${url.search}${url.hash}`;
       else if (assets.has(asset))
         node.url = `/yosoi/assets/${asset.slice('assets/'.length)}${url.search}${url.hash}`;
-      else if (!node.url.startsWith('/'))
-        throw new Error(`${file}: local link has no published target: ${node.url}`);
+      else if (!node.url.startsWith('/')) {
+        const route = missingPage?.({ file, href: node.url, target });
+        if (route !== undefined) node.url = `${href(route)}${url.search}${url.hash}`;
+        else throw new Error(`${file}: local link has no published target: ${node.url}`);
+      }
     }
     for (const child of node.children || []) visit(child);
   }

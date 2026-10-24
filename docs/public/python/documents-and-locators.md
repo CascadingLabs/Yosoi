@@ -90,6 +90,13 @@ within it. Regions are one level deep. A matched region stays in the result
 even when none of its child outputs produce a finding, so a later Contract can
 report missing data for that record.
 
+> [!NOTE]
+> **Python**
+>
+> A required Pydantic Contract field with no finding is reported as a rejected
+> candidate. Give an optional field an explicit default, such as
+> `default=None`, when absence should produce a value.
+
 XML queries can declare namespace bindings on the query. The prefix in the
 document is not automatically a query binding:
 

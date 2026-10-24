@@ -5,6 +5,7 @@ from __future__ import annotations
 from importlib.metadata import version as _distribution_version
 
 from . import _native as _native
+from . import archive as archive
 from . import browser as browser
 from . import contracts as contracts
 from . import documents as documents
@@ -13,6 +14,9 @@ from . import map as map
 from . import policy as policy
 from . import request as request
 from . import search as search
+from . import view as view
+from .archive import Archive as Archive
+from .archive import AutomationRecord as AutomationRecord
 from .browser import (
     BoundFlow as BoundFlow,
 )
@@ -114,9 +118,11 @@ from .browser import (
 )
 from .cancellation import CancellationToken as CancellationToken
 from .contracts import Contract as Contract
+from .contracts import ExtractionPolicy as ExtractionPolicy
 from .contracts import Field as Field
 from .contracts import Money as Money
 from .contracts import extract as extract
+from .contracts import extract_report as extract_report
 from .documents import Document as Document
 from .locators import (
     Plan as Plan,
@@ -163,10 +169,16 @@ from .policy import FlowPolicy as FlowPolicy
 from .policy import Policy as Policy
 from .policy import Stop as Stop
 from .policy import StopScope as StopScope
+from .view import View as View
 
 __version__ = _distribution_version("yosoi")
 
 __all__ = [
+    "archive",
+    "view",
+    "Archive",
+    "AutomationRecord",
+    "View",
     "__version__",
     "CancellationToken",
     "BoundFlow",
@@ -203,9 +215,11 @@ __all__ = [
     "wait",
     "wait_until",
     "Contract",
+    "ExtractionPolicy",
     "Field",
     "Money",
     "extract",
+    "extract_report",
     "contracts",
     "browser",
     "documents",

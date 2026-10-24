@@ -15,7 +15,7 @@ pub use crate::internal::engine::ParseError;
 /// An immutable SDK document. Storage and engine handles remain private.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Document {
-    inner: internal_engine::Document,
+    pub(crate) inner: internal_engine::Document,
 }
 
 impl Document {

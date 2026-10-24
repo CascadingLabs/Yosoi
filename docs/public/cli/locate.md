@@ -49,4 +49,4 @@ The explicit frame format preserves Document identity and profile between comman
 
 Matched, no match, indeterminate and failed outcomes preserve different facts. An unsupported Plan or incompatible projection is a configuration error, while complete evidence with no matching node can produce no match.
 
-Use `--full` to expand human-readable values and `--stats` for operation statistics on stderr. See [Choose a locator](../cookbook/choose-a-locator.md) or `yosoi locate --help`.
+Use `--full` to expand human-readable values and `--stats` for operation statistics on stderr. See [Locators and findings](../concepts/locators.md) or `yosoi locate --help`.

@@ -5,7 +5,7 @@
   "testModule": "python/tests/test_browser_beta.py",
   "browser": {
     "distribution": "Google Chrome Stable",
-    "admittedStableMajorVersion": 155,
+    "admittedStableMajorVersion": 156,
     "versionPattern": "Google Chrome <major>.<minor>.<build>.<patch>"
   },
   "modeProfiles": {

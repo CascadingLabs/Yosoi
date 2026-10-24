@@ -244,9 +244,7 @@ def test_live_borrowed_cross_site_pagination_and_typed_requests() -> None:
                     _record(f"books-response-{iteration}", response)
                     assert response.termination == "completed"
                     assert response.documents
-                    books = (
-                        ys.extract(response.documents[0], Book).validate().require_all()
-                    )
+                    books = ys.extract(response.documents[0], Book)
                     assert len(books) == 20
                     assert all(
                         book.title.strip() and book.price.startswith("£")

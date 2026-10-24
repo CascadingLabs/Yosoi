@@ -8,7 +8,7 @@ order: 0
 
 Construct or acquire a document, locate values, and validate a typed record. Add browser work or discovery when needed.
 
-Install through [Get Started](../quickstart.md). Rust uses the public `yosoi` facade; Python uses `import yosoi as ys`.
+Install through [Install](../getting-started/install.md). Rust uses the public `yosoi` facade; Python uses `import yosoi as ys`.
 
 ## Example: locate a local heading
 
@@ -79,8 +79,18 @@ The same Plan uses typed Python models. `values` is convenient for this small ch
 
 ## Interface differences
 
-Shared behavior does not require identical method names, field access or ownership syntax. Python models describe inputs and inspect results while Rust executes the shared operations.
+Shared behavior does not require identical method names, field access or
+ownership syntax. Python models describe inputs and inspect results while Rust
+executes native document, locator, acquisition, discovery, and Policy work.
+
+> [!NOTE]
+> **Python**
+>
+> Python Contract records are constructed and validated by Pydantic from
+> Rust-located evidence. Rust Contracts and `RuntimeContract` use Rust-owned
+> value validation. See [Packages and capabilities](packages.md) for the
+> boundary.
 
 Some browser and archive controls are Rust-only. Each affected page states its boundary. See [Packages and capabilities](packages.md) and the detailed [parity audit](../python/parity.md).
 
-Use the [Cookbook](../cookbook/index.md) for complete tasks and the reference for individual signatures.
+Continue with [Concepts](../concepts/index.md), or use the reference for individual signatures.

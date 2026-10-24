@@ -9,15 +9,17 @@
 - Teach through several small code examples and concrete walkthroughs. Start with a minimal useful task, show how to inspect the result, then cover a meaningful variation or failure. Explain conceptual sequences as numbered steps or short paragraphs. Do not put pseudocode, proposed APIs or invented helper calls in code fences.
 - Pair Rust and Python examples for the same input and intended outcome wherever both interfaces support the task. Do not invent parity or an API to fill a panel. Explain unsupported capabilities explicitly.
 - Author an H2 Example group with H3 Rust and Python sections containing code and short explanations. Repeat groups as needed. Use a separate H2 Install or Commands group with H3 Cargo and uv sections. These headings are readable without frontend enhancement.
+- Example, Install and Commands groups can use any two or more distinct H3 labels, such as Rust, Python, Shell or PowerShell. Each variant must contain a fenced code block tagged with its actual language. The frontend derives tabs from these Markdown headings; do not add frontend language wiring for new variants. Keep each variant's explanation with its code. Selecting a tab updates `?code=<label>` for examples or `?commands=<label>` for commands, preserving unrelated query parameters and the current section fragment.
+- Add optional code explanations with native comments containing `callout:`. Use `# callout: Explanation` in Python, shell and PowerShell, or `// callout: Explanation` in Rust and other languages with slash comments. Rust `/// callout:` is also recognized, but prefer `//` when a Rust doc comment would change semantics or cause warnings. A standalone annotation attaches to the next nonblank code line in the same fence; an inline annotation attaches to the preceding code on that line. Text may include inline Markdown such as backticks, emphasis and links. Do not put executable widgets or HTML in callouts. The frontend hides annotation comments, renders expandable markers and excludes annotation text from copied code. Keep explanations concise, and do not rely on optional callouts for instructions essential to completing the example. Without enhancement, the comments remain readable.
 - The frontend's clickable changer must select code and its explanation together, work for static and archived pages, and display both variants without JavaScript. Verify it in static and archived rendering.
 - Use Cargo for Rust project commands and uv for Python project commands. Use `uv add`, `uv run python` and project-appropriate `uv sync`. Do not give pip installation instructions. Development checks should use `uv run --no-sync` when the existing environment is synchronized.
 - Use simple words, short connected paragraphs and concrete names. Explain important calls, inputs and outcomes immediately below their code. Avoid jargon, repeated introductions and promotional language.
 - Do not use em dashes in authored prose. Use periods, commas, colons or parentheses. Ordinary hyphens in names and code remain valid.
 - Separate construction, execution, validation, evidence completeness and business completion. Explain missing data, partial results and unknown effects where the task can encounter them.
 - For browser tasks, explain Session lifetime, tab identity, Work authority, execution capacity and cleanup only to the depth the task needs. Preserve browser sandbox and isolation requirements.
-- Runnable examples use public APIs and real error propagation. Do not use panic-prone shortcuts in application code. Visible assertions are appropriate in self-contained demonstration checks.
+- Runnable examples use public APIs and real error propagation. Do not use panic-prone shortcuts in application code. Avoid assertions in public example code unless they are necessary to teach the concept or demonstrate the API being discussed. Prefer visible output and a short explanation of what to inspect; verify expected results in maintainer validation.
 - Natural-language field descriptions do not automatically discover elements unless the current API explicitly does so. Fixture selectors belong to controlled input; site recipes need supported discovery or explicit site bindings.
-- Concept pages explain meanings and boundaries. Cookbook contains focused guides and complete recipes with named steps, typed records and visible checks of the intended result.
+- Concepts develops a sequential, code-led teaching narrative with compatible Rust and Python examples and visible checks of the intended result. The Cookbook section has been removed; do not recreate it without an explicit request.
 - Keep new skeletons `draft: true` until required claims, examples and links pass review. Do not publish maintainer TODOs, proposed APIs or placeholders.
 - Keep existing public URLs and immutable historical bundles stable while consolidating pages. Only the integration owner changes live navigation. Reference and release-note work stays with its assigned owners.
 
@@ -30,6 +32,8 @@ A root `index.md` or `index.mdx` is required. Routes use lowercase kebab-case pa
 Legacy MDX fixtures stay draft-only. New learning pages use plain Markdown.
 
 ## Navigation metadata
+
+The optional top-level `homepage` in `_navigation.json` names a published Markdown file, for example `getting-started/what-is-yosoi.md`. Preparation validates and resolves it into the versioned navigation snapshot. The frontend redirects `/yosoi/` to that snapshot's homepage. Omit it to retain the root index. Missing, private, draft, generated reference, and root-index destinations are rejected.
 
 Numbered release candidates additionally accept version `0.MINOR.PATCH-rc.N`
 with positive, unpadded N. Their filenames replace dots with hyphens, for example

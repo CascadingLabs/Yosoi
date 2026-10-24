@@ -8,6 +8,7 @@
 mod internal;
 
 pub mod action;
+pub mod archive;
 pub mod assertions;
 pub mod automation_record;
 pub mod contracts;

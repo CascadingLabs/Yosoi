@@ -40,7 +40,11 @@ Check namespace URIs and bind prefixes on each query. XML names are case sensiti
 
 ## A Contract rejects good-looking data
 
-Inspect the raw candidate values and field issues. A scalar accepts exactly one value; an optional scalar accepts at most one. Money requires an exact supported string format. A JSON string is still a JSON projection and is not automatically converted to a Contract `String`.
+Inspect the raw candidate values and field issues. A Rust scalar accepts
+exactly one value; an optional scalar accepts at most one. Rust Money requires
+an exact supported string format. A JSON string is still a JSON projection
+and is not automatically converted to a `RuntimeContract` String. Python
+Contracts can validate compatible JSON projections through Pydantic.
 
 ## Extraction stops near 64 records
 
@@ -57,3 +61,14 @@ Check the `browser` Cargo feature, a regular Stable browser installation, sandbo
 ## Keep absence meaningful
 
 Treat `NoMatch` as no matching evidence in a completed evaluation. Treat `Indeterminate`, `Failed`, partial documents, and rejected records separately. Turning every one of these into an empty vector makes missing data hard to explain.
+
+> [!NOTE]
+> **Python**
+>
+> `ys.extract_report` returns a report with structural issues and Pydantic
+> validation errors. `ys.extract` returns accepted models or raises according
+> to its policy. A lone rejected Pydantic candidate can raise
+> `pydantic.ValidationError`; combined issues and terminal failures use
+> `ys.contracts.ContractIssues`. An incomplete or terminal native result
+> cannot become an ordinary empty success through
+> `on_rejected_record="collect"`.

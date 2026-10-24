@@ -6,7 +6,7 @@ order: 0
 
 # Installation
 
-[Get Started](../quickstart.md) runs a first local example. Add Yosoi to your existing project.
+[Install](../getting-started/install.md) runs a first local example. Add Yosoi to your existing project.
 
 ## Install
 

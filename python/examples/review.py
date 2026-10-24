@@ -19,6 +19,8 @@ from yosoi.policy import Documents, Map, Policy, ProviderSelection, Request, Sea
 
 
 def json_payload(value: object) -> object:
+    if isinstance(value, BaseModel):
+        return value.model_dump(mode="json")
     if isinstance(value, Mapping):
         return {key: json_payload(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
@@ -147,7 +149,10 @@ def contracts_example() -> None:
     """,
     )
     show("Pydantic record schema", Book.model_json_schema())
-    show("Rust semantic schema", Book.contract_schema())
+    show(
+        "Native transport schema, separate from Python validation",
+        Book.contract_schema(),
+    )
     show(
         "Rust Contract value IDs",
         {
@@ -160,7 +165,7 @@ def contracts_example() -> None:
         TYPE_ID: ClassVar[str] = "review.scalar"
 
     show(
-        "Custom schema identity (extraction supports str and Money)",
+        "Custom native schema identity (portable runtime supports str and Money)",
         ys.contracts.FieldSchema(
             id="review",
             description="A custom schema value identity",
@@ -169,18 +174,29 @@ def contracts_example() -> None:
         ),
     )
     show("Rust locator plan", Book.plan().compiled())
-    extracted = ys.extract(document, Book)
-    show("Rust extraction, including empty roots", extracted.model_dump())
-    outcome = extracted.validate()
-    show("Rust validation, including field issues", outcome.model_dump())
-    show("Portable Rust Contract archive", outcome.to_archived().model_dump())
-    for record in outcome.records:
-        show("Named typed record", record.value)
-        show("Candidate provenance", record.candidate)
-    try:
-        outcome.require_all()
-    except ys.contracts.ContractIssues as error:
-        show("Rust require_all rejection", error.detail)
+    assembled = Book.assemble(document.locate(Book.plan()))
+    show("Rust-assembled candidates, including empty roots", assembled.model_dump())
+    report = ys.extract_report(document, Book)
+    show(
+        "Pydantic validation issues",
+        [
+            {
+                "kind": issue.kind,
+                "field_ids": issue.field_ids,
+                "errors": issue.errors,
+            }
+            for issue in report.issues
+        ],
+    )
+    for record in report.records:
+        show("Validated Python record", record.value)
+    for candidate in assembled.candidates:
+        show("Candidate provenance", candidate)
+    policy = ys.ExtractionPolicy(on_rejected_record="collect")
+    show(
+        "Ordinary extraction returns accepted Python records",
+        ys.extract(document, Book, policy=policy),
+    )
 
 
 def runtime_contracts_example() -> None:

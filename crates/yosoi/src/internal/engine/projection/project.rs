@@ -95,13 +95,13 @@ pub fn project_attempt(
         _ => return Err(ProjectionError::CaptureOutcomeMismatch),
     };
 
-    // Keep a complete unsupported representation for native metadata parsing.
-    // Move the original bounded payload; do not fabricate a Document.
+    // Retain the complete HTTP representation independently of Unicode document
+    // projection. Move the original bounded payload; do not fabricate a Document
+    // for binary media or substitute normalized UTF-8 for the original bytes.
     let raw_response = if attempt.kind() == AcquisitionKind::DirectHttp
         && attempt
             .documents()
             .contains(&DocumentRequest::ResponseDocument)
-        && documents.iter().all(|outcome| outcome.document().is_none())
     {
         capture_metadata
             .artifacts()

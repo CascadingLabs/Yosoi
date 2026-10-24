@@ -7,11 +7,11 @@ order: 1
 # Packages and capabilities
 
 Yosoi has one public Rust SDK package, a Python package, and an optional CLI
-binary. The Rust SDK owns processing and domain validation. Python uses
-Pydantic for authoring and inspecting values, then delegates operations to the
-same Rust SDK. Python
-Contracts are now bound to Rust; item-level parity is tracked separately, and
-the package does not claim complete verified parity.
+binary. Both SDKs use the Rust engine for document parsing, locator evaluation,
+acquisition, discovery, and policy validation. Python uses Pydantic to author
+values and to construct and validate records for its typed `Contract` API.
+Item-level parity is tracked separately, and the package does not claim
+complete verified parity.
 
 | Package            | Use it for                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------- |
@@ -20,12 +20,19 @@ the package does not claim complete verified parity.
 | `yosoi` with `cli` | Running Yosoi from a terminal or shell pipeline                                          |
 
 The CLI and Python bindings use the Rust SDK package. Its private modules own
-documents, policy, contracts, acquisition, and discovery; applications do not
-need to import implementation modules to use the SDK. The
-[Python Contracts guide](../python/contracts.md) covers the supported
-Pydantic annotations and Rust outcome model. The
+native document, policy, evidence-grouping, acquisition, and discovery work;
+applications do not need to import implementation modules to use the SDK. The
+[Python Contracts guide](../python/contracts.md) covers Pydantic record
+validation and the separate Rust-owned `RuntimeContract` API. The
 [machine-readable parity report](../python/parity.md) distinguishes a
 declared mapping from snapshot-matched conformance evidence.
+
+> [!NOTE]
+> **Python**
+>
+> `ys.Contract` uses Pydantic types, defaults, and validators to build business
+> records from Rust-located evidence. `RuntimeContract` retains Rust's portable
+> String and Money vocabulary and staged validation behavior.
 
 ## Optional capabilities
 

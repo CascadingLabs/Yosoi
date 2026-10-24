@@ -6,7 +6,7 @@
 //!
 //! `chisel 3` uses the same recipes for another product. The fixed destination
 //! is Qscrape's simulated shop; every checkout field below is synthetic.
-//! See docs/public/cookbook/qscrape-checkout.md for the walkthrough and limits.
+//! See docs/public/sdk/flows.md for Flow execution and failure behavior.
 
 use std::{env, error::Error, fs, io, path::Path};
 use yosoi::{

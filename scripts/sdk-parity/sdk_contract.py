@@ -31,16 +31,16 @@ DEFERRED_BETA_ROOTS = {
     "yosoi::Archive": {
         "issue": "CAS-566",
         "rationale": (
-            "The Rust Archive facade is outside the Python 0.2.0 surface; Flow "
-            "receipts remain inspectable. Archive exposure and stronger "
-            "guarantees belong to later release work."
+            "The full generic Rust Archive surface exceeds Python's supported "
+            "Document, Plan and AutomationRecord operations. These supported "
+            "journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
         ),
     },
     "yosoi::view": {
         "issue": "CAS-567",
         "rationale": (
-            "The Rust View facade is outside the Python 0.2.0 surface; structured "
-            "Flow outcomes remain inspectable. Dedicated View APIs belong to "
+            "Python exposes bounded offline DOM View pages and capture-bound "
+            "continuation cursors. The full Rust View API, including direct condition verification, belongs to "
             "later release work."
         ),
     },
@@ -51,6 +51,7 @@ BROWSER_NAMESPACE_ROOTS = {
     "yosoi::" + name
     for name in (
         "action",
+        "archive",
         "assertions",
         "automation_record",
         "expect",
@@ -365,9 +366,10 @@ def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
                 "Contract, rather than a separate processing engine."
             ),
             "equivalentCapability": (
-                "Python Contract.extract(...).validate() and typed assertion "
-                "callbacks use the same Rust extraction and validation pipeline, "
-                "verified by Contract and browser workflows."
+                "Python Contract extracts Rust-located values and validates business "
+                "records through Pydantic, so its record rules intentionally follow "
+                "Python model behavior. The parity workflow exercises Rust-owned "
+                "staging through Python RuntimeContract instead."
             ),
         }
     trait = item.get("trait")

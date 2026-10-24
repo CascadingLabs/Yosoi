@@ -1,6 +1,6 @@
 ---
 title: Python errors and limits
-description: Distinguish authoring exceptions from Rust operation outcomes and their budgets.
+description: Distinguish Pydantic model errors from native operation outcomes and budgets.
 order: 5
 ---
 
@@ -90,30 +90,60 @@ if reason.kind == "browser_artifact_truncated":
 
 ## Contract outcomes
 
-`ys.contracts.ContractSchemaFailure` is a typed view of schema-error variants
-and their payloads. Invalid-schema failure views accept a nested
-`schema_error` while retaining `kind` and `message`. The current runtime
-Contract constructor validates schemas before extraction; its schema failures
-are raised during authoring rather than emitted as extraction outcomes.
+`ys.contracts.ContractSchemaFailure` is a typed view of portable schema-error
+variants and their payloads. Invalid-schema failure views accept a nested
+`schema_error` while retaining `kind` and `message`. `RuntimeContract` validates
+that native schema before extraction, so schema failures are raised during
+authoring rather than emitted as extraction outcomes.
 
-Contract extraction and validation return outcomes that preserve each stage:
+Ordinary `ys.extract(document, Product)` returns a list of validated Product
+models. By default, a rejected candidate raises an error. Use a report when
+you need both the accepted values and every rejection:
 
-| Status or issue                                                          | Interpretation                                                                                     |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `evaluated`                                                              | Rust checked every extracted candidate; inspect `records`, `issues`, and `extraction_diagnostics`. |
-| `no_match`                                                               | Location completed and found no Contract candidate. `require_all()` returns an empty list.         |
-| `indeterminate`                                                          | Evidence is partial or unknown, so absence cannot be concluded.                                    |
-| `locate_failed`                                                          | The input plan or locator evaluation failed before Contract extraction.                            |
-| `extraction_rejected`                                                    | A Rust Contract extraction budget was exceeded or extraction could not proceed.                    |
-| `validation_rejected`                                                    | A Rust validation budget was exceeded or validation could not proceed.                             |
-| `missing_required`, `excess_candidates`                                  | A scalar has zero or multiple findings.                                                            |
-| `incomplete_evidence`, `conversion_failed`, `semantic_validation_failed` | A finding cannot produce a validated field value.                                                  |
+```python
+import yosoi as ys
 
-Field issues retain the candidate and source `Finding` evidence. `require_all()`
-returns values only when there are no record issues or extraction diagnostics;
-otherwise it raises `ys.contracts.ContractIssues` with Rust's structured
-rejection detail. `NoMatch` is the one terminal status that returns an empty
-list.
+report = ys.extract_report(document, Product)
+for record in report.records:
+    print(record.value, record.candidate.document_id)
+for issue in report.issues:
+    print(issue.kind, issue.field_ids, issue.errors)
+```
+
+`report.records` contains immutable evidence wrappers. Their `.value` is the
+mutable Pydantic model and `.candidate` retains its original findings;
+`report.accepted_records` gives the models directly. An issue exposes
+`.field_ids`, a `.kind`, the original Pydantic `ValidationError` in `.error`,
+and safe `.errors` details without input values. `report.require_all()` returns
+the models only when all candidates and extraction diagnostics pass. A lone
+Pydantic rejection from ordinary extraction can raise `ValidationError`;
+combined issues and terminal failures use `ys.contracts.ContractIssues`.
+
+| Status                | Interpretation                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `evaluated`           | Location completed. Inspect accepted records, rejected candidates, and issues.                   |
+| `no_match`            | Complete location found no candidate; ordinary extraction returns `[]` when the minimum is zero. |
+| `indeterminate`       | Evidence is partial or unknown, so absence cannot be concluded.                                  |
+| `locate_failed`       | The plan or locator evaluation failed before record validation.                                  |
+| `extraction_rejected` | Native candidate assembly exceeded an extraction budget or could not proceed.                    |
+| `validation_rejected` | Native validation preflight exceeded a work budget or could not proceed.                         |
+
+Record issue kinds include `missing_required`, `excess_candidates`,
+`incomplete_evidence`, and `validation_error`. The last kind retains Pydantic
+field and model validation details. `on_rejected_record="collect"` returns only
+accepted models from ordinary extraction; use `extract_report` if rejected
+evidence must remain available. Incomplete, failed, and budget-rejected reports
+never become ordinary extraction successes, even with `collect`.
+
+`ExtractionPolicy.minimum_records` defaults to zero. Set it to one or higher
+when ordinary extraction should fail on an empty result. An optional Pydantic
+field still needs an explicit default such as `default=None`; Pydantic does not
+invent that default.
+
+Python Contract outcomes cannot be converted into the portable Rust archive
+format because Python models can have custom types and validation behavior.
+`ContractOutcome.to_archived()` raises `TypeError`; use `RuntimeContract` when
+the Rust String/Money value format and archive are required.
 
 ## Separate budgets
 
@@ -133,21 +163,21 @@ bytes, and UTF-8 bytes. They are separate because decoding or decompression can
 change payload size. The Rust [Policy and Limits references](../sdk/policy.md)
 list current defaults.
 
-Contract extraction has its own counters for scanned regions and findings,
-matching findings, candidates, values per field, retained evidence, and
-diagnostics. By default it uses the Rust locator policy's `max_matches` value
-for match/evidence counters and `max_regions` for candidate records. A
-repeated Contract can therefore hit its candidate bound independently of
-another locator or parser budget.
+`ys.ExtractionPolicy` supplies optional `extraction_limits` and
+`validation_limits` to `Product.extract(document, policy=...)`,
+`ys.extract(document, Product, policy=...)`, or `ys.extract_report(...)`.
+`ExtractionLimits.uniform(n)` sets all seven extraction counters to the same
+bound. `minimum_records` and `on_rejected_record` control result acceptance,
+not native work.
 
-`ys.contracts.ExtractionLimits` can set those extraction counters explicitly;
-`ExtractionLimits.uniform(n)` sets all seven to the same bound.
-`ys.contracts.ValidationLimits` controls validation fields, records,
-conversions, issues, and retained provenance. Its Rust defaults allow 1,024
-fields and 100,000 records, conversions, issues, and provenance items in their
-respective domains. Pass limits to `Contract.extract(..., limits=...)` or
-`Extracted.validate(limits=...)` when the application needs a different bound.
+For explicit stages, `Product.assemble(located, limits=...)` groups the raw
+findings. `extracted.validate(limits=...)` returns the Python report. Python preflight bounds candidate counts, schema work, field inputs and retained provenance before user Pydantic hooks run. Its conversion-work budget also charges default slots and alias-container expansion, so an authored AliasPath cannot allocate an unbounded list. Field and record budgets also bound
+the validation domain. A global validation-budget rejection withholds accepted records and over-budget issue collections while retaining raw candidates and failure facts. The issue budget is charged after Pydantic errors have
+been collected, so it does not interrupt arbitrary work inside a custom
+validator.
 
-An exhausted budget remains a typed failure with the relevant limit, maximum,
-and observed count. Inspect the stage that stopped and adjust only that
-operation's budget.
+`RuntimeContract` keeps the Rust-owned staged path and accepts the same
+`ExtractionLimits` and `ValidationLimits`. It supports Rust String and Money
+conversions. An exhausted native budget remains a typed terminal report with
+the relevant limit, maximum, and observed count. Inspect its stage before
+adjusting that operation's budget.

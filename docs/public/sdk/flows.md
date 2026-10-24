@@ -79,4 +79,4 @@ A terminal success proves the checks you authored. For a checkout, add typed che
 
 Use [Sessions](sessions/index.md) and borrowed Work when tasks need the same tab state. Managed invocation owns temporary resources; borrowed invocation leaves ownership and cleanup with the caller.
 
-See [Assertions](assertions.md), [Concepts](../concepts/actions-and-flows.md), and the [checkout recipe](../cookbook/qscrape-checkout.md).
+See [Assertions](assertions.md) and [Actions and Flows](../concepts/actions-and-flows.md).

@@ -3,6 +3,31 @@
 Status date: 2026-09-15. CAS-373 is the accepted milestone-5 compatibility
 baseline and is ready for Final Boss review.
 
+## Stable launch eligibility review, 2026-10-24 UTC
+
+Google promoted regular Chrome 156 to Stable on October 20. The current Linux
+package is 156.0.8078.47. CI installed it successfully, then browser tests failed
+before launch because the October 10 eligibility snapshot did not name it.
+
+The refreshed snapshot admits exact reviewed M156 and M155 releases, retaining
+the 30-day review expiry and each superseded release's own 30-day deadline.
+M154 is now two milestones behind and is ineligible. Unknown releases and
+testing-only distributions still fail closed. Sandbox and isolation settings,
+controller patches, generated CDP schema and protocol error handling do not change.
+
+This permits regression testing of the current security-updated executable. It
+is not a promotion of a new certified browser/controller/CDP tuple. The M153
+certification below is historical; current full-stack certification, including
+native/headful/container and benchmark evidence, remains separate follow-up.
+
+CI package SHA-256 for regular Chrome 156.0.8078.47:
+`6c92cd22e90c6e3e255d782991543fa2091db8614e8536a971a7433a5c4d7ac8`.
+Local package/executable identity and focused results are recorded separately
+in `.generated/030-closeout`; hosted regressions must validate the release head.
+
+Sources: [Google Linux Stable version history](https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases)
+and [Chrome 156 Stable announcement](https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html).
+
 ## Stable launch eligibility review, 2026-10-10 UTC
 
 Google's Linux Stable release history now serves Chrome 155.0.8059.39, released

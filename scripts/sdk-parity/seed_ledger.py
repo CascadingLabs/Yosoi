@@ -318,6 +318,8 @@ MEMBER_TARGETS = {
     "yosoi::Policy::validate": "yosoi.policy.Policy.check",
     "yosoi::EffectivePolicyIdentity::digest": "yosoi.policy.PolicyIdentity.sha256",
     "yosoi::request::Attempt::status": "yosoi.request.Attempt.http_status",
+    "yosoi::request::Attempt::body_bytes": "yosoi.request.Attempt.body",
+    "yosoi::request::Attempt::content_type": "yosoi.request.Attempt.content_type",
     "yosoi::contracts::Contract::schema": "yosoi.contracts.Contract.contract_schema",
     "yosoi::contracts::CandidateField::id": "yosoi.contracts.CandidateField.field_id",
     "yosoi::contracts::CandidateField::len": "yosoi.contracts.CandidateField.__len__",

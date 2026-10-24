@@ -16,7 +16,7 @@ Versions use `MAJOR.MINOR.PATCH`. For example, `0.2.1` has major `0`, minor `2`,
 | Minor | New features compatible with the existing API, such as `1.4.2` → `1.5.0`. Patch resets to `0`. |
 | Patch | Compatible bug fixes and hotfixes, such as `1.4.2` → `1.4.3`. |
 
-These are the [Semantic Versioning](https://semver.org/) conventions for a stable API. A minor version does not itself mean beta.
+These are the [Semantic Versioning](https://semver.org/) conventions for a stable API.
 
 A suffix such as `-rc.1` means **release candidate**: a version being evaluated before its final numbered release. Candidate notes remain accessible by direct link but are omitted from the release list, sidebar, and version picker.
 
@@ -24,12 +24,13 @@ A suffix such as `-rc.1` means **release candidate**: a version being evaluated 
 
 ## Releases
 
+- [0.3.0](0-3-0.md) · 2026-10-24: Validated Python Contracts, durable browser evidence, binary response bodies, and a worked Concepts series.
 - [0.2.1](0-2-1.md) · 2026-10-11: Prebuilt CLI installation through PyPI and native scripts, with clearer Rust and Python documentation.
 - [0.2.0](0-2-0.md) · 2026-10-11: Rust and Python browser workflows with reusable Flows, typed assertions, and explicit ownership.
 - [0.1.2](0-1-2.md) · 2026-10-11: An internal browser controller and release checks that validate wheels before publication.
 - [0.1.1](0-1-1.md) · 2026-10-11: One modular runtime crate, an optional CLI, and unchanged Rust and Python SDK calls.
 - [0.1.0](0-1-0.md) · 2026-10-10: The first public Rust and Python SDK beta, with versioned docs and Chromium runtime images.
 
-<!-- release-history:generated-end sha256=891e59dcb65933b1e5035c87d0aef8496b16e786ca15ad283a3fb2f8f3ff1b45 -->
+<!-- release-history:generated-end sha256=f4b9cda054c881c5b1b15f5077cfd7484d64c4cdcd7d3e6ec454001e158eec84 -->
 
 <!-- prettier-ignore-end -->

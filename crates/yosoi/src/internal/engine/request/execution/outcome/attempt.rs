@@ -77,6 +77,16 @@ impl AttemptResult {
         self.response_facts.as_deref()
     }
     pub(in crate::internal::engine) fn raw_response(&self) -> Option<&[u8]> {
+        // Existing Map fallbacks consume raw bytes only when no Document exists.
+        self.documents
+            .iter()
+            .all(|document| document.outcome().document().is_none())
+            .then_some(())
+            .and(self.raw_response.as_deref())
+    }
+
+    /// Complete HTTP representation bytes, independent of document projection.
+    pub fn response_body(&self) -> Option<&[u8]> {
         self.raw_response.as_deref()
     }
 

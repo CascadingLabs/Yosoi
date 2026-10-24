@@ -46,6 +46,37 @@ impl<'response> Attempt<'response> {
     pub fn status(self) -> Option<u16> {
         self.inner.status()
     }
+    /// Borrows the complete retained Direct HTTP body after content decoding.
+    ///
+    /// Bytes are independent of document projection and character decoding, so
+    /// ICO, PNG and other binary media do not require a searchable Document.
+    /// The response-document selection must have retained the source. Returns
+    /// `None` for incomplete or unavailable bodies, failed/unstarted attempts,
+    /// browser acquisitions, or an omitted response-document selection. A retained
+    /// empty body is `Some(&[])`. Inspect status separately: an HTTP error response
+    /// can still have a complete body. Source byte limits continue to apply.
+    pub fn body_bytes(self) -> Option<&'response [u8]> {
+        self.inner
+            .result()
+            .and_then(|result| result.response_body())
+    }
+    /// Returns the bounded declared Content-Type, including any parameters.
+    ///
+    /// This is the observed Direct HTTP header, not a verified file format.
+    /// Returns `None` for absent, invalid, duplicate or oversized declarations,
+    /// and for acquisitions without retained Direct HTTP response-head facts.
+    pub fn content_type(self) -> Option<&'response str> {
+        use crate::internal::direct_http::ObservedHeaderValue;
+
+        let facts = self.inner.result()?.response_facts()?;
+        match facts.content_type() {
+            ObservedHeaderValue::Value(value) => Some(value.as_str()),
+            ObservedHeaderValue::Absent
+            | ObservedHeaderValue::InvalidEncoding
+            | ObservedHeaderValue::TooLong
+            | ObservedHeaderValue::Duplicate => None,
+        }
+    }
     /// Returns the outcome without exposing an execution or archive object.
     pub const fn state(self) -> AttemptState {
         match self.inner {

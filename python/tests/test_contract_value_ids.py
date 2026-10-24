@@ -41,8 +41,12 @@ def test_custom_contract_value_protocol_supplies_schema_identity_only():
         model_config = ConfigDict(arbitrary_types_allowed=True)
         value: CustomScalar = ys.Field("Custom scalar", locator=ys.css(".custom"))
 
-    with pytest.raises(ys._native.ContractError, match="Rust Contracts support"):
-        CustomContract.contract_schema()
+    # Python custom types receive raw string evidence for Pydantic validation.
+    # Their TYPE_ID does not register another conversion in the Rust runtime.
+    schema = CustomContract.contract_schema()
+    assert schema.fields[0].value_type == "string"
+    with pytest.raises(ys._native.ContractError, match="unsupported value type"):
+        ys.contracts.RuntimeContract.new(schema.model_copy(update={"fields": (field,)}))
 
 
 def test_custom_contract_value_type_id_shape_is_checked_but_empty_id_is_rust_checked():

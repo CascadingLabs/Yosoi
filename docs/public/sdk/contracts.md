@@ -8,6 +8,10 @@ order: 12
 
 A Contract describes the record you want: fields, types and evidence bindings. Locate, extract and validate to produce records or inspect rejected candidates.
 
+> [!NOTE]
+> **Python**
+> Python Contracts use Pydantic for model construction, custom field types and validators. `Product.extract(document)` validates automatically. Rust keeps its explicit locate, extract, validate and acceptance stages.
+
 ## Example: contracts
 
 ### Rust
@@ -32,6 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         "catalog.html",
         b"<article><h2>Tea</h2><span class='price'>$4.50</span></article>".to_vec(),
     )?;
+    // callout: Rust locates first, then extracts and validates explicitly.
     let located = Product::locate(&document)?;
     let products = Product::extract(&located).validate().require_all()?;
 
@@ -55,13 +60,14 @@ class Product(ys.Contract):
     root = ys.css("article")
     name: str = ys.Field("Product name", locator=ys.css("h2"))
     price: ys.Money = ys.Field("Price in USD", locator=ys.css(".price"))
-    href: str | None = ys.Field("Optional product link", locator=ys.css("a").attribute("href"))
+    href: str | None = ys.Field("Optional product link", locator=ys.css("a").attribute("href"), default=None)
 
 document = ys.Document.html(
     "catalog.html",
     "<article><h2>Tea</h2><span class='price'>$4.50</span></article>",
 )
-products = ys.extract(document, Product).validate().require_all()
+# callout: Python constructs the Product through Pydantic and runs its validators automatically.
+products = Product.extract(document)
 for product in products:
     assert product.name == "Tea"
     assert product.price.minor_units == 450
@@ -69,7 +75,7 @@ for product in products:
     print(f"{product.name} costs {product.price}")
 ```
 
-The model defines the same fields and cardinality. Rust validates the candidates, then Python exposes typed records. The checks show a 450-cent price and an absent optional link.
+The model defines the same fields and cardinality. Python constructs and validates each Product through Pydantic automatically. The checks show a 450-cent price and an absent optional link.
 
 ## Walk through the result
 
@@ -89,11 +95,11 @@ There are no separate `page` or `repeated` attributes. Scope follows from whethe
 | `Option<T>`         | `T \| None`         | Zero or one value   |
 | `Vec<T>`            | `list[T]`           | Zero or more values |
 
-Missing required values and multiple values for a scalar are field issues. Nested wrappers such as `Option<Vec<String>>` or `list[list[str]]` are unsupported.
+Missing required values and multiple values for a scalar are field issues. Rust does not support nested wrappers such as `Option<Vec<String>>`. Python supports Pydantic-compatible field types; a list collects one projected value per finding. A nullable Python scalar still needs an explicit `default=None` when complete absence should be accepted.
 
-Runtime conversion currently supports `String` and `Money`. Strings accept text, text-with-captures, and attribute values. Money accepts the strict USD text form described in [Validation](validation.md). Other scalar types and custom runtime converters are outside this Contract slice.
+Rust runtime conversion currently supports `String` and `Money`. Strings accept text, text-with-captures, and attribute values. Money accepts the strict USD text form described in [Validation](validation.md). Other scalar types and custom runtime converters are outside the Rust Contract slice. Python supports Pydantic-compatible custom field types without extending the Rust converter registry.
 
-## Static locators
+## Rust static locators
 
 Contract attributes use `ys::locator::css(...)` and `ys::locator::text_literal(...)`. These create static declarations, so they do not use `?`. They support `.text()` and `.attribute(...)` where compatible. The regular `ys::css(...)` and other dynamic query constructors are used when authoring a Plan yourself.
 
@@ -135,7 +141,7 @@ For a repeated Contract with a manually authored Plan, give the region the Contr
 
 For pinned Contracts, evaluate `MyContract::plan()?` through `document.bind(&policy).locate(...)`, then pass that outcome to `MyContract::extract(...)`. The generated `MyContract::locate(&document)` convenience method uses the default document Policy.
 
-## Inspect the schema and candidates
+## Rust schema and candidates
 
 `MyContract::schema()?` exposes its ID, description, scope, and field metadata. `schema.identity()?` describes the schema's structure; changing descriptions alone does not change that identity. It does not fingerprint the selector plan. `MyContract::root_locator()` returns the static root declaration, or `None` for a page-level Contract. When every field is pinned, `plan()` returns the cached Plan and `locate()` provides the document convenience method.
 

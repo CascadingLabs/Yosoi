@@ -205,7 +205,7 @@ export function referenceNavigation(pages, title = 'Reference') {
 
 export function resolveNavigation(pages, metadata) {
   if (!object(metadata)) fail('must be an object');
-  keys(metadata, ['schemaVersion', 'collapsed', 'sections']);
+  keys(metadata, ['schemaVersion', 'homepage', 'collapsed', 'sections']);
   if (metadata.schemaVersion !== 1) fail('unsupported schemaVersion');
   if (metadata.collapsed !== undefined && typeof metadata.collapsed !== 'boolean')
     fail('collapsed must be boolean');
@@ -223,6 +223,8 @@ export function resolveNavigation(pages, metadata) {
     if (!page || isReference(page)) fail(`missing published Markdown page: ${file}`);
     return page;
   };
+  const homepage = metadata.homepage === undefined ? undefined : lookup(metadata.homepage).route;
+  if (homepage === '') fail('homepage must select a page other than the root index');
   const sections = [];
   const labels = new Set();
   for (const [index, section] of metadata.sections.entries()) {
@@ -314,6 +316,7 @@ export function resolveNavigation(pages, metadata) {
     route: '',
     order: -1,
     collapsed: metadata.collapsed ?? true,
+    ...(homepage === undefined ? {} : { homepage }),
     children: sections,
   };
 }

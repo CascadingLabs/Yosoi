@@ -1,19 +1,19 @@
 ---
 title: Python SDK
-description: Author documents, locators, and typed Contracts with Pydantic and run them in Rust.
+description: Author Python Contract models and run evidence collection through the native SDK.
 order: 0
 ---
 
 # Python SDK
 
-The `yosoi` package gives Python applications a Pydantic authoring surface over
-the public Rust SDK. Python models describe documents, locator plans, policies,
-Contracts, and requests. The native extension passes those declarations to
-Rust, which parses, locates, extracts, converts, validates, fetches, and
-discovers within the same bounded runtime used by the Rust SDK.
+The `yosoi` package gives Python applications Pydantic models for documents,
+locator plans, policies, Contracts, and requests. The native extension uses
+Rust to parse documents, compile and evaluate locators, group raw Contract
+evidence, acquire URLs, discover candidates, and validate Policies. Python
+Contract records are then constructed and checked by Pydantic.
 
 Use `import yosoi as ys` for the package-level authoring surface. For example,
-a Contract is a Pydantic model whose annotations define Rust cardinality:
+a Contract is a Pydantic model whose fields bind names to explicit locators:
 
 ```python
 import yosoi as ys
@@ -29,13 +29,23 @@ document = ys.Document.html(
     "catalog",
     "<article class='product'><h2>Tea</h2><span class='price'>$4.50</span></article>",
 )
-outcome = ys.extract(document, Product).validate()
+products = ys.extract(document, Product)
+assert len(products) == 1
+assert products[0].name == "Tea"
+assert products[0].price.minor_units == 450
 ```
 
-Rust owns the Contract schema identity, candidate grouping, field conversion,
-semantic validation, evidence retention, and `require_all()` decision. Python
-models provide named fields and inspectable typed views; they do not re-run
-Pydantic validators or defaults to change a Rust-validated record.
+Ordinary extraction returns `list[Product]`. Pydantic applies the model's field
+types, constraints, aliases, defaults, validators, and serializers. Use
+`ys.extract_report(document, Product)` when you need rejected candidates,
+validation errors, or the source evidence retained beside each record.
+
+> [!NOTE]
+> **Python**
+>
+> A Python Contract's identity covers its native transport schema, not its
+> Pydantic types or validators. Use `RuntimeContract` when the Rust-owned
+> string and Money conversion rules and portable Rust archive format are needed.
 
 ## Pages
 
@@ -73,5 +83,5 @@ uv run --no-sync python python/examples/review.py local
 
 These commands describe the source-checkout review surface. The recorded wheel
 matrix applies to named earlier SDK snapshots. See [compatibility](compatibility.md)
-for that historical evidence boundary and [Get Started](../quickstart.md) for
+for that historical evidence boundary and [Install](../getting-started/install.md) for
 the shared current learning path.
