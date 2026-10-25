@@ -24,6 +24,7 @@ ROOT_MODULES = {
     "policy": "policy",
     "request": "request",
     "search": "search",
+    "surface": "surface",
 }
 
 MAPPING_RUST_CRATE = "yosoi"

@@ -31,3 +31,5 @@ The examples use Rust and Python with the same inputs and intended results where
 | [Surfaces](surfaces.md)                                           | Read documents and video, then drive an agent task through the CLI.       |
 
 Begin with [Making sense of HTML](documents-and-evidence.md).
+
+| [Archiving a surface](archiving-a-surface.md) | Save a portable policy outcome and reload it in a later process. |

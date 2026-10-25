@@ -192,7 +192,11 @@ impl NativeDecodedFrame {
 }
 
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<NativeVideoSession>()?;
     module.add("VideoError", module.py().get_type::<VideoError>())?;
     module.add_class::<NativeVideoSurface>()?;
     module.add_class::<NativeDecodedFrame>()
 }
+
+use super::connection::connection;
+connection!(video_connection, NativeVideoSession, "VideoSession", yosoi::surface::video::VideoSession, path: PathBuf, max_side: u32);

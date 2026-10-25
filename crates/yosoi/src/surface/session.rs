@@ -1,4 +1,8 @@
-use super::{Budget, Continuation, Inspection, Page, Reference, Surface, SurfaceError};
+use super::{
+    ArchiveLimits, ArchivePolicy, Budget, Continuation, Inspection, Page, Reference, Surface,
+    SurfaceError,
+};
+use crate::automation_record::OperationStatus;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -10,6 +14,10 @@ use std::{
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SessionPolicy {
+    /// Evidence retention for explicit Archive persistence; disabled by default.
+    pub archive: ArchivePolicy,
+    /// Retained outcome bounds, independent of cursor history and reply budgets.
+    pub archive_limits: ArchiveLimits,
     /// Total logical cursors, including the hot owner. Defaults to one.
     pub cursors: usize,
     /// Maximum region watches across all cursors.
@@ -22,6 +30,8 @@ pub struct SessionPolicy {
 impl Default for SessionPolicy {
     fn default() -> Self {
         Self {
+            archive: ArchivePolicy::Off,
+            archive_limits: ArchiveLimits::default(),
             cursors: 1,
             watches: 8,
             captures: 2,
@@ -195,6 +205,8 @@ struct Watch {
     pending: bool,
 }
 struct State {
+    outcome: Option<super::Outcome>,
+    closed: bool,
     policy: SessionPolicy,
     live: bool,
     uncertain: bool,
@@ -249,6 +261,13 @@ impl State {
             after,
             note: note.chars().take(512).collect(),
         });
+        if let Some(outcome) = &mut self.outcome {
+            let status = match kind {
+                EventKind::Unknown => OperationStatus::Unknown,
+                _ => OperationStatus::Observed,
+            };
+            outcome.receipt("surface.event", status, serde_json::json!({"kind":kind,"cursor":cursor,"watch":watch,"note":note.chars().take(512).collect::<String>()}));
+        }
         while self.events.len() > self.policy.events {
             self.events.pop_front();
         }
@@ -270,6 +289,7 @@ impl Debug for Session {
 impl Session {
     /// Creates a detached session with bounded history and no implicit cursors.
     pub fn new(index: Surface, policy: SessionPolicy) -> Result<Self, SurfaceError> {
+        policy.archive_limits.validate()?;
         if policy.cursors == 0
             || policy.cursors > 256
             || policy.watches > 1024
@@ -282,8 +302,20 @@ impl Session {
                 "invalid session policy bounds".into(),
             ));
         }
+        let outcome = if policy.archive == ArchivePolicy::Enabled {
+            let mut outcome = super::Outcome::new(
+                format!("surface-{}", uuid::Uuid::new_v4()),
+                policy.archive_limits,
+            )?;
+            outcome.retain(super::ArchivedSource::capture(index.identity(), &index)?)?;
+            Some(outcome)
+        } else {
+            None
+        };
         Ok(Self {
             state: Arc::new(Mutex::new(State {
+                outcome,
+                closed: false,
                 policy,
                 live: false,
                 uncertain: false,
@@ -300,7 +332,85 @@ impl Session {
         })
     }
     fn lock(&self) -> Result<MutexGuard<'_, State>, SurfaceError> {
-        self.state.lock().map_err(|_| SurfaceError::Poisoned)
+        let state = self.state.lock().map_err(|_| SurfaceError::Poisoned)?;
+        if state.closed {
+            return Err(SurfaceError::Unknown);
+        }
+        Ok(state)
+    }
+    /// Returns retained evidence without closing this session, or `None` when policy is off.
+    /// An in-flight action makes the snapshot unsealed; saved data never grants live authority.
+    pub fn outcome(&self) -> Result<Option<super::Outcome>, SurfaceError> {
+        Ok(self
+            .state
+            .lock()
+            .map_err(|_| SurfaceError::Poisoned)?
+            .outcome
+            .clone())
+    }
+    /// Closes logical readers and revokes authority, preserving a final policy outcome.
+    /// The caller still owns external browser/provider cleanup. Outstanding effects remain unknown.
+    /// Repeated close calls are harmless; closed sessions cannot be attached again.
+    pub fn close(&self) -> Result<Option<super::Outcome>, SurfaceError> {
+        let mut state = self.state.lock().map_err(|_| SurfaceError::Poisoned)?;
+        if !state.closed {
+            let pending = state.flight.take().is_some();
+            if pending {
+                state.emit(
+                    EventKind::Unknown,
+                    None,
+                    None,
+                    None,
+                    None,
+                    "closed with an outstanding action; effect unknown",
+                )?;
+            }
+            state.emit(
+                EventKind::Detached,
+                None,
+                None,
+                None,
+                None,
+                "logical session closed; external cleanup remains adapter-owned",
+            )?;
+            state.live = false;
+            state.hot = None;
+            state.readers.clear();
+            state.watches.clear();
+            state.closed = true;
+            if let Some(outcome) = &mut state.outcome {
+                outcome.sealed = true;
+            }
+        }
+        Ok(state.outcome.clone())
+    }
+
+    fn record_read<T: Serialize>(
+        &self,
+        command: &serde_json::Value,
+        result: &Result<T, SurfaceError>,
+    ) -> Result<(), SurfaceError> {
+        let mut state = self.lock()?;
+        if let Some(outcome) = &mut state.outcome {
+            let (status, value) = match result {
+                Ok(value) => (
+                    OperationStatus::Observed,
+                    serde_json::to_value(value)
+                        .map_err(|error| SurfaceError::Parse(error.to_string()))?,
+                ),
+                Err(error) => (
+                    OperationStatus::Rejected,
+                    serde_json::json!({"error":error.to_string()}),
+                ),
+            };
+            outcome.receipt(
+                "surface.read",
+                status,
+                serde_json::json!({"command":command,"outcome":value}),
+            );
+        }
+        drop(state);
+        Ok(())
     }
     /// Opens another independent reader, subject to the session cursor limit.
     pub fn cursor(&self) -> Result<Cursor, SurfaceError> {
@@ -384,6 +494,15 @@ impl Session {
             .checked_add(1)
             .ok_or(SurfaceError::Limit("session revision"))?;
         let changed = state.current()?.identity() != index.identity();
+        if let Some(outcome) = &mut state.outcome {
+            let retained = super::ArchivedSource::capture(index.identity(), &index)
+                .and_then(|source| outcome.retain(source));
+            if let Err(error) = retained {
+                outcome.complete = false;
+                state.uncertain = true;
+                return Err(error);
+            }
+        }
         state.uncertain = false;
         if changed {
             state.captures.push_back(index);
@@ -492,7 +611,12 @@ impl Cursor {
         budget: Budget,
     ) -> Result<Page, SurfaceError> {
         let index = self.session.current()?;
-        let page = index.overview(token, budget)?;
+        let result = index.overview(token, budget);
+        self.session.record_read(
+            &serde_json::json!({"op":"overview","token":token,"budget":budget}),
+            &result,
+        )?;
+        let page = result?;
         self.save(None, None, page.next.clone())?;
         Ok(page)
     }
@@ -504,7 +628,12 @@ impl Cursor {
         budget: Budget,
     ) -> Result<Page, SurfaceError> {
         let index = self.session.current()?;
-        let page = index.find(query, token, budget)?;
+        let result = index.find(query, token, budget);
+        self.session.record_read(
+            &serde_json::json!({"op":"find","query":query,"token":token,"budget":budget}),
+            &result,
+        )?;
+        let page = result?;
         self.save(None, None, page.next.clone())?;
         Ok(page)
     }
@@ -515,7 +644,14 @@ impl Cursor {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Page, SurfaceError> {
-        let page = self.index(reference)?.expand(reference, token, budget)?;
+        let result = self
+            .index(reference)
+            .and_then(|index| index.expand(reference, token, budget));
+        self.session.record_read(
+            &serde_json::json!({"op":"expand","reference":reference,"token":token,"budget":budget}),
+            &result,
+        )?;
+        let page = result?;
         self.save(Some(reference.clone()), None, page.next.clone())?;
         Ok(page)
     }
@@ -526,7 +662,14 @@ impl Cursor {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Inspection, SurfaceError> {
-        let detail = self.index(reference)?.inspect(reference, token, budget)?;
+        let result = self
+            .index(reference)
+            .and_then(|index| index.inspect(reference, token, budget));
+        self.session.record_read(
+            &serde_json::json!({"op":"inspect","reference":reference,"token":token,"budget":budget}),
+            &result,
+        )?;
+        let detail = result?;
         self.save(None, Some(reference.clone()), detail.next.clone())?;
         Ok(detail)
     }
@@ -811,6 +954,13 @@ impl ActionLease {
             ));
         }
         self.dispatched = true;
+        if let Some(outcome) = &mut self.session.lock()?.outcome {
+            outcome.receipt(
+                "surface.dispatch",
+                OperationStatus::Unknown,
+                serde_json::json!({"target":self.target,"cursor":self.cursor,"dispatched":true}),
+            );
+        }
         Ok(())
     }
     /// Finishes with an adapter-reported outcome. A dispatched action cannot become `Rejected`.
@@ -836,6 +986,19 @@ impl ActionLease {
             after_capture: state.current().ok().map(|index| index.identity().into()),
             note: note.clone(),
         };
+        if let Some(outcome) = &mut state.outcome {
+            let certainty = match status {
+                ActionStatus::Confirmed => OperationStatus::Observed,
+                ActionStatus::Rejected => OperationStatus::Rejected,
+                ActionStatus::Unconfirmed => OperationStatus::Unknown,
+            };
+            outcome.receipt(
+                "surface.action",
+                certainty,
+                serde_json::to_value(&receipt)
+                    .map_err(|error| SurfaceError::Parse(error.to_string()))?,
+            );
+        }
         if state.flight == Some((self.cursor, self.action)) {
             state.flight = None;
         }
@@ -866,6 +1029,14 @@ impl Drop for ActionLease {
             } else {
                 "lease abandoned before recorded dispatch"
             };
+            if let Some(outcome) = &mut state.outcome {
+                let certainty = if self.dispatched {
+                    OperationStatus::Unknown
+                } else {
+                    OperationStatus::Rejected
+                };
+                outcome.receipt("surface.action", certainty, serde_json::json!({"target":self.target,"cursor":self.cursor,"dispatched":self.dispatched,"note":note}));
+            }
             let _ = state.emit(
                 EventKind::ActionFinished,
                 Some(self.cursor),

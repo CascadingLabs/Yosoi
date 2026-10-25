@@ -211,6 +211,11 @@ from .view import View as View
 __version__ = _distribution_version("yosoi")
 
 __all__ = [
+    "BrowserSurface",
+    "VideoSession",
+    "SurfaceConnection",
+    "SurfacePolicy",
+    "ExecutionError",
     "Surface",
     "SurfaceError",
     "SurfaceBudget",
@@ -299,3 +304,9 @@ __all__ = [
     "tree_text_contains",
     "xpath",
 ]
+
+from .surface import BrowserSurface as BrowserSurface
+from .surface import ExecutionError as ExecutionError
+from .surface import SurfaceConnection as SurfaceConnection
+from .surface import SurfacePolicy as SurfacePolicy
+from .surface import VideoSession as VideoSession

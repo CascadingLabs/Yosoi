@@ -14,6 +14,8 @@ use yosoi::{
     view::{View, ViewCursor},
 };
 
+use yosoi::surface::{Outcome, OutcomeRef};
+
 use crate::{
     async_runtime,
     documents::{DocumentSource, NativeDocument},
@@ -42,6 +44,10 @@ fn failure<E: Error + 'static>(error: E, rust_type: &str, variant: Option<&str>)
 
 fn archive_error(error: ArchiveError) -> PyErr {
     let (variant, details) = match &error {
+        ArchiveError::InvalidSurfaceOutcome(message) => (
+            "InvalidSurfaceOutcome",
+            serde_json::json!({"message":message}),
+        ),
         ArchiveError::UnsupportedPlatform { platform, .. } => (
             "UnsupportedPlatform",
             serde_json::json!({"platform": platform}),
@@ -369,6 +375,41 @@ pub struct NativeArchive {
 
 #[pymethods]
 impl NativeArchive {
+    fn write_surface<'py>(&self, py: Python<'py>, value: &str) -> PyResult<Bound<'py, PyAny>> {
+        let value: Outcome = decode(value)?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(&archive.write(&value).await.map_err(archive_error)?)
+        })
+    }
+    fn read_surface<'py>(&self, py: Python<'py>, reference: &str) -> PyResult<Bound<'py, PyAny>> {
+        let reference: OutcomeRef = decode(reference)?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(&archive.read(&reference).await.map_err(archive_error)?)
+        })
+    }
+    fn export_file<'py>(
+        &self,
+        py: Python<'py>,
+        reference: &str,
+        path: PathBuf,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let reference: OutcomeRef = decode(reference)?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            archive
+                .export_file(&reference, path)
+                .await
+                .map_err(archive_error)
+        })
+    }
+    fn import_file<'py>(&self, py: Python<'py>, path: PathBuf) -> PyResult<Bound<'py, PyAny>> {
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(&archive.import_file(path).await.map_err(archive_error)?)
+        })
+    }
     #[staticmethod]
     fn open(py: Python<'_>, root: PathBuf) -> PyResult<Bound<'_, PyAny>> {
         async_runtime::bridge(py, None, move |_| async move {

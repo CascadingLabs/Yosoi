@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "a408de85a8d2f22fef001f3a11d454bdc8fcbf2a",
-    "inventorySignature": "6e4e7a7a3a6f42bb0dad5a0d0ebc26a3dba96486e5720fecf3d24f3d835e99fa",
+    "sourceRevision": "c7300bb405526c93c3fb85a23d24da530d2f659f",
+    "inventorySignature": "69f7bc09bc06937ee7fe3b957f1b85513605c8aa21ac34e7e4d44296de4eafef",
     "featureProfileDigest": "dd606b421310c411411880703eaf78a68536b25ba84ceff7f685207eed12cb69"
   },
   "pythonPin": {
-    "surfaceDigest": "def50fe51f6495814ee7dd47362438cdc09a13ffda3172d721e115b49bc828e2",
-    "implementationDigest": "8d0b6280b31cc0a17c1213cae810e84faaf184c4b5b4066ddbe72f36e4a5d28c"
+    "surfaceDigest": "9662853b8492bac7859e8e4fdba107e4588fc3780495fe537154bf8c7b0efc23",
+    "implementationDigest": "6dec53587bfb0131de997e520cb59068ee09e35b393c1cd1ae22b6566a173cc7"
   },
   "entries": [
     {
@@ -23,8 +23,30 @@
       "rationale": "The live Python surface exposes the corresponding public target yosoi.Archive."
     },
     {
+      "rustPath": "yosoi::Archive::export_file",
+      "symbolKey": "member:function:yosoi::Archive::export_file@signature:3ff029a2275c60bb2d87ec31f347ca341958ba25c2601f94ba3d966b959f50a8@source:c9e7915b36c607eb1de89dc37305426a69d560a8abc71d7ce1c3b1764a25e439",
+      "decision": "mapped",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTarget": "yosoi.Archive.export_file"
+    },
+    {
       "rustPath": "yosoi::Archive::fmt",
-      "symbolKey": "member:function:yosoi::Archive::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:d53c29bb234889135288347554e65c91aba34a144368ec91d497538edd794c96",
+      "symbolKey": "member:function:yosoi::Archive::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:4cae9852192a875ca3f650d6fd757a1373508bd608f4af8c74fcc909d9cb113d",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -46,8 +68,25 @@
       "pythonTarget": "yosoi.Archive"
     },
     {
+      "rustPath": "yosoi::Archive::import_file",
+      "symbolKey": "member:function:yosoi::Archive::import_file@signature:2140df9a23a440af0306d5c068e3b033c27495dffbf65b9d12a50b135b7e7246@source:b8ad225eed8af484ff1269b2066b6895d74add05266ac896a304d1f97f87816e",
+      "decision": "mapped",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTarget": "yosoi.Archive.import_file"
+    },
+    {
       "rustPath": "yosoi::Archive::open",
-      "symbolKey": "member:function:yosoi::Archive::open@signature:ade860564d8a21f1338fe36efc38c4e34156f0f4f03cc86172e33d70dd52b68f@source:ed2864b8d8e5161464804b7d7defe5b2e57236b930f0691628ba674a20ae5dbb",
+      "symbolKey": "member:function:yosoi::Archive::open@signature:ade860564d8a21f1338fe36efc38c4e34156f0f4f03cc86172e33d70dd52b68f@source:f4cc05c5d7f94e47f9aeaf8576367258e75d61b42f982333703facf00a09f6f5",
       "decision": "mapped",
       "pythonTarget": "yosoi.Archive.open",
       "argumentMappings": [
@@ -64,7 +103,7 @@
     },
     {
       "rustPath": "yosoi::Archive::read",
-      "symbolKey": "member:function:yosoi::Archive::read@signature:ad398015afa4564c49cfa5126a4031687756838cfc5af79bc2ac3d2baa56fceb@source:5955e604df8c842f221836aa75551590db48d9fc00e2c816976c49d98875b37c",
+      "symbolKey": "member:function:yosoi::Archive::read@signature:ad398015afa4564c49cfa5126a4031687756838cfc5af79bc2ac3d2baa56fceb@source:8fd76e884a75d67bb8397a85bbddae99d550148cea19c936b66194e3d57700a9",
       "decision": "mapped",
       "pythonTarget": "yosoi.Archive.read",
       "argumentMappings": [
@@ -81,7 +120,7 @@
     },
     {
       "rustPath": "yosoi::Archive::root",
-      "symbolKey": "member:function:yosoi::Archive::root@signature:ab2007a539c4db028ef17ab69b0a7b491ad15aae0a956bacd06521382545b606@source:fc46da752f7871875304171ec4280b103ebbc23990af9ce07576fbd6db30d7e3",
+      "symbolKey": "member:function:yosoi::Archive::root@signature:ab2007a539c4db028ef17ab69b0a7b491ad15aae0a956bacd06521382545b606@source:bb765a2c98cddd68c371f8c0376417984d02e1f2e1b808fe8a556073b8c3817c",
       "decision": "mapped",
       "pythonTarget": "yosoi.Archive.root",
       "argumentMappings": [],
@@ -92,7 +131,7 @@
     },
     {
       "rustPath": "yosoi::Archive::write",
-      "symbolKey": "member:function:yosoi::Archive::write@signature:2cb764cf777171e59d16d6d8460d5906a4b5b74c1ab990866e32245b15721d4c@source:4b7cf0ddfec10ce7d951b1e729aad17ea8305edbdb276496cf849cd16f639277",
+      "symbolKey": "member:function:yosoi::Archive::write@signature:2cb764cf777171e59d16d6d8460d5906a4b5b74c1ab990866e32245b15721d4c@source:6406d193e492d0c4f1fb42cafe1338c55e312499c1d11a734ddc2f2b0e1e488b",
       "decision": "mapped",
       "pythonTarget": "yosoi.Archive.write",
       "argumentMappings": [

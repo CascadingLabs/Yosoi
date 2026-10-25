@@ -1,5 +1,5 @@
 //! Bounded command protocol and state shared by source-specific connections.
-use super::{ArchiveReceipt, Budget, Continuation, ExecutionError, PixelRect, Reference, model};
+use super::{Budget, Continuation, ExecutionError, Outcome, PixelRect, Reference, model};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
@@ -22,30 +22,6 @@ pub(super) struct Trace {
     pub(super) output: PathBuf,
 }
 impl Trace {
-    fn reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
-        if matches!(
-            operation,
-            Operation::Read { .. }
-                | Operation::Overview
-                | Operation::Find { .. }
-                | Operation::Expand { .. }
-                | Operation::Inspect { .. }
-        ) && let Ok(value) = result
-        {
-            self.read_bytes = self
-                .read_bytes
-                .saturating_add(serde_json::to_vec(value)?.len());
-        }
-        match result {
-            Ok(value) => self.event("cli.reply", value.clone()),
-            Err(error) => self.event(
-                "cli.error",
-                json!({"error":error.to_string().chars().take(512).collect::<String>()}),
-            ),
-        }
-        Ok(())
-    }
-
     pub(super) fn new(output: &Path) -> Self {
         Self {
             start: Instant::now(),
@@ -198,17 +174,15 @@ pub(super) enum Expectation {
 pub(super) trait AgentSurface: Send {
     fn ready(&mut self) -> Result<Value>;
     fn command(&mut self, request: &Request) -> impl Future<Output = Result<Value>> + Send;
-    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
-        self.trace().reply(operation, result)
-    }
+    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()>;
     fn persist_command(
         &mut self,
         operation: &Operation,
         result: Result<Value>,
     ) -> impl Future<Output = Result<Value>> + Send;
     fn trace(&mut self) -> &mut Trace;
-    fn outcome(&self) -> Option<ArchiveReceipt>;
-    fn close(self) -> impl Future<Output = (Option<ArchiveReceipt>, Result<()>)> + Send;
+    fn outcome(&self) -> Option<Outcome>;
+    fn close(self) -> impl Future<Output = (Option<Outcome>, Result<()>)> + Send;
 }
 
 /// Common lifecycle for one bound source, without assuming its modality or OS.
@@ -222,18 +196,16 @@ pub trait SurfaceConnection: Send {
         command: Value,
     ) -> impl Future<Output = StdResult<Value, ExecutionError>> + Send;
     /// Returns retained evidence, including partial attempts, when archive policy is enabled.
-    fn outcome(&self) -> Option<ArchiveReceipt>;
+    fn outcome(&self) -> Option<Outcome>;
     /// Awaits source-specific cleanup and preserves evidence even if cleanup fails.
     /// Repeated calls return the last retained outcome without reacquiring authority.
-    fn close(
-        &mut self,
-    ) -> impl Future<Output = StdResult<Option<ArchiveReceipt>, ExecutionError>> + Send;
+    fn close(&mut self) -> impl Future<Output = StdResult<Option<Outcome>, ExecutionError>> + Send;
 }
 
 pub(super) struct Connection<D> {
     driver: Option<D>,
     output: PathBuf,
-    saved: Option<ArchiveReceipt>,
+    saved: Option<Outcome>,
     _temporary: tempfile::TempDir,
 }
 impl<D: AgentSurface> Connection<D> {
@@ -307,13 +279,13 @@ impl<D: AgentSurface> Connection<D> {
         }
         Ok(value)
     }
-    pub(super) fn outcome(&self) -> Option<ArchiveReceipt> {
+    pub(super) fn outcome(&self) -> Option<Outcome> {
         self.driver
             .as_ref()
             .and_then(AgentSurface::outcome)
             .or_else(|| self.saved.clone())
     }
-    pub(super) async fn close(&mut self) -> StdResult<Option<ArchiveReceipt>, ExecutionError> {
+    pub(super) async fn close(&mut self) -> StdResult<Option<Outcome>, ExecutionError> {
         if let Some(driver) = self.driver.take() {
             let (outcome, result) = driver.close().await;
             self.saved = outcome;
@@ -331,10 +303,10 @@ macro_rules! connection {
             async fn execute(&mut self, command: Value) -> StdResult<Value, ExecutionError> {
                 self.inner.execute(command).await
             }
-            fn outcome(&self) -> Option<ArchiveReceipt> {
+            fn outcome(&self) -> Option<Outcome> {
                 self.inner.outcome()
             }
-            async fn close(&mut self) -> StdResult<Option<ArchiveReceipt>, ExecutionError> {
+            async fn close(&mut self) -> StdResult<Option<Outcome>, ExecutionError> {
                 self.inner.close().await
             }
         }

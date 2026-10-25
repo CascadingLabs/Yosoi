@@ -337,7 +337,7 @@ async fn malformed_sources_and_processing_limits_fail_explicitly() -> TestResult
     clippy::panic_in_result_fn,
     reason = "Assertions verify runtime authority and lifecycle."
 )]
-async fn connections_execute_without_terminal_and_closes_idempotently() -> TestResult {
+async fn runtime_executes_without_terminal_and_closes_idempotently() -> TestResult {
     use yosoi::surface::{SurfaceConnection, SurfacePolicy, video::VideoSession};
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("source.mp4");

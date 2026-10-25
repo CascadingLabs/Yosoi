@@ -29,6 +29,8 @@ Have a URL? Send a [Request](sdk/requests.md).
 
 Need to interact with a page? Start with [Flows](sdk/flows.md). Keep a [Session](sdk/sessions/index.md) when dependent operations need shared browser state.
 
+Need to save an explored surface and reload it later? Follow [Archiving a surface](concepts/archiving-a-surface.md).
+
 Need URLs? Use [Map](sdk/map.md) for a site inventory or [Search](sdk/search.md) for provider candidates.
 
 The reference describes individual symbols. These pages explain how to compose a useful task.

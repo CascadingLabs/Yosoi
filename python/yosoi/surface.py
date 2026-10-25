@@ -24,18 +24,25 @@ from pydantic import (
     StrictBool,
     StrictStr,
     TypeAdapter,
+    field_serializer,
+    field_validator,
+    model_serializer,
+    model_validator,
 )
 
 from . import _native
 from ._models import ImmutableModel
-from .archive import Archive, DocumentArchiveRef
-from .documents import Document
-from .scalars import ValidatedString
+from .archive import Archive, AutomationRecord, DocumentArchiveRef, _rust_json
+from .documents import Document, DocumentProfile
+from .locators import Plan
+from .scalars import DocumentId, ValidatedString
 
 SurfaceError = _native.SurfaceError
 """Rust preparation, reference, budget or authority failure with Rust metadata."""
 VideoError = getattr(_native, "VideoError", SurfaceError)
 """Native video I/O, decoder, timeout, bounds or missing-frame failure."""
+ExecutionError = getattr(_native, "SurfaceExecutionError", SurfaceError)
+"""Shared runtime preparation, execution, retention or cleanup failure."""
 
 
 def _require_video() -> None:
@@ -858,8 +865,384 @@ class VideoSurface:
         )
 
 
+ArchivePolicy = Literal["off", "enabled"]
+"""Whether a session retains a bounded portable outcome for explicit Archive saving."""
+
+
+class ArchiveLimits(ImmutableModel):
+    """Retention bounds separate from live history and response budgets."""
+
+    bytes: int = Field(
+        default=64 * 1024 * 1024,
+        strict=True,
+        ge=1,
+        le=128 * 1024 * 1024,
+        description="Combined original evidence byte limit.",
+    )
+    observations: int = Field(
+        default=256,
+        strict=True,
+        ge=1,
+        le=4096,
+        description="Maximum retained sources and artifacts.",
+    )
+    operations: int = Field(
+        default=4096,
+        strict=True,
+        ge=1,
+        le=4096,
+        description="Maximum retained receipts.",
+    )
+
+
+class SourceInterpretation(ImmutableModel):
+    """Interpreter for an exact document, image or named observation bundle."""
+
+    kind: Literal["document", "image", "bundle"] = Field(
+        default="document", description="Interpreter category."
+    )
+    tile_side: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        le=2**32 - 1,
+        description="Original image tile size, used only for images.",
+    )
+
+    @model_validator(mode="after")
+    def _interpretation(self) -> Self:
+        if (self.kind == "image") != (self.tile_side is not None):
+            raise ValueError("only image interpretations require tile_side")
+        return self
+
+    @model_serializer(mode="plain")
+    def _wire(self) -> dict[str, object]:
+        return {
+            "kind": self.kind,
+            **({"tile_side": self.tile_side} if self.kind == "image" else {}),
+        }
+
+
+class ArchivedSource(ImmutableModel):
+    """Exact source bytes and interpretation, independent of a source file path."""
+
+    key: StrictStr = Field(description="Unique outcome-local source key.")
+    document: DocumentId = Field(description="Original SDK document identity.")
+    profile: DocumentProfile = Field(description="Exact document profile and epoch.")
+    sha256: StrictStr = Field(description="SHA-256 of decoded original bytes.")
+    content_base64: StrictStr = Field(description="Retained original bytes as base64.")
+    surface: StrictStr | None = Field(
+        default=None,
+        description="Prepared identity; absent for raw evidence envelopes.",
+    )
+    interpretation: SourceInterpretation = Field(
+        default_factory=SourceInterpretation,
+        description="Interpreter used for restoring this source.",
+    )
+
+    @classmethod
+    def from_document(
+        cls, key: str, document: Document, surface: Surface | None = None
+    ) -> Self:
+        """Freeze exact document bytes and optionally bind a prepared interpretation."""
+        return cls.model_validate_json(
+            _native.surface_source_new(
+                key, document._handle, None if surface is None else surface._handle
+            )
+        )
+
+    @classmethod
+    def capture(cls, key: str, surface: Surface) -> Self:
+        """Retain a prepared document, image or bundle with its exact identity."""
+        return cls.model_validate_json(
+            _native.surface_source_capture(key, surface._handle)
+        )
+
+    def restore(self, maximum: int = 64 * 1024 * 1024) -> Document:
+        """Verify and restore original bytes within a byte limit, without source I/O."""
+        return Document._from_native(
+            _native.surface_source_restore(_rust_json(self), maximum)
+        )
+
+    def restore_surface(self, limits: Limits | None = None) -> Surface:
+        """Restore immutable evidence and reject an interpretation identity mismatch."""
+        return Surface._from_native(
+            _native.surface_source_restore_surface(
+                _rust_json(self), (limits or Limits()).model_dump_json()
+            )
+        )
+
+
+class OutcomeRef(ImmutableModel):
+    """Typed immutable reference selecting an outcome through Archive.read."""
+
+    document: StrictStr = Field(description="Existing Archive Document reference.")
+    version: int = Field(
+        default=1,
+        strict=True,
+        ge=0,
+        le=2**32 - 1,
+        description="Logical version, checked for support during Archive.read.",
+    )
+
+    @field_validator("document")
+    @classmethod
+    def _reference(cls, value: str) -> str:
+        return _native.validate_archive_ref("document", value)
+
+
+class Outcome(ImmutableModel):
+    """Portable evidence and receipts, without live session or action authority."""
+
+    version: Literal[1] = Field(
+        default=1, description="Logical outcome schema version."
+    )
+    record: AutomationRecord = Field(
+        description="Ordered original operation certainty and observations."
+    )
+    sources: tuple[ArchivedSource, ...] = Field(
+        default=(), description="Retained original sources and materialized evidence."
+    )
+    plans: tuple[Plan, ...] = Field(
+        default=(), description="Existing compiled locator Plans."
+    )
+    sealed: StrictBool = Field(
+        default=False,
+        description="Logical finalization observed; caller owns provider cleanup.",
+    )
+    complete: StrictBool = Field(
+        default=True, description="All evidence requested by policy was retained."
+    )
+    limits: ArchiveLimits = Field(
+        default_factory=ArchiveLimits, description="Limits governing this outcome."
+    )
+
+    @classmethod
+    def new(cls, id: str, limits: ArchiveLimits | None = None) -> Self:
+        """Start a bounded outcome for an adapter-managed execution."""
+        return cls.model_validate_json(
+            _native.surface_outcome_new(
+                id, (limits or ArchiveLimits()).model_dump_json()
+            )
+        )
+
+    def with_source(self, source: ArchivedSource) -> Self:
+        """Return a validated copy retaining one exact source.
+
+        Sealed, conflicting, corrupt or excessive input raises SurfaceError.
+        This immutable original remains unchanged when validation fails.
+        """
+        return type(self).model_validate_json(
+            _native.surface_outcome_with_source(_rust_json(self), _rust_json(source))
+        )
+
+    def validate_outcome(self) -> None:
+        """Check schema, record, source integrity, limits and compiled Plans in Rust."""
+        _native.surface_outcome_validate(_rust_json(self))
+
+    @field_validator("plans", mode="before")
+    @classmethod
+    def _plans(cls, value: object) -> object:
+        if isinstance(value, (tuple, list)):
+            return tuple(
+                item if isinstance(item, Plan) else Plan.from_compiled(item)
+                for item in value
+            )
+        return value
+
+    @field_serializer("plans")
+    def _compiled_plans(self, value: tuple[Plan, ...]) -> list[dict[str, object]]:
+        return [plan.compiled() for plan in value]
+
+    @model_validator(mode="after")
+    def _validate(self) -> Self:
+        _native.surface_outcome_validate(_rust_json(self))
+        return self
+
+    def surface(self, key: str, limits: Limits | None = None) -> Surface:
+        """Restore immutable evidence without opening a browser or granting control."""
+        return Surface._from_native(
+            _native.surface_outcome_restore(
+                _rust_json(self), key, (limits or Limits()).model_dump_json()
+            )
+        )
+
+    async def rerun(self, policy: SurfacePolicy, count: int = 1) -> tuple[Outcome, ...]:
+        """Execute a supported recipe against fresh isolated live sessions.
+
+        Requires complete, sealed evidence and enabled archive policy. Rust
+        preflights supported operations before effects and resolves new targets
+        uniquely with live eligibility checks. Each run returns separate evidence.
+        Failed attempts remain in the selected policy output directory.
+        """
+        _require_browser()
+        values = json.loads(
+            await _native.surface_outcome_rerun(
+                _rust_json(self), policy.model_dump_json(), count
+            )
+        )
+        return tuple(Outcome.model_validate(value) for value in values)
+
+
+def _require_browser() -> None:
+    if not _native.surface_browser_enabled:
+        raise SurfaceError("this wheel was built without browser surface support")
+
+
+class SurfacePolicy(ImmutableModel):
+    """Evidence retention and output bounds shared across source connections."""
+
+    archive: ArchivePolicy = Field(
+        default="off", description="Portable outcome retention, disabled by default."
+    )
+    archive_limits: ArchiveLimits = Field(
+        default_factory=ArchiveLimits,
+        description="Evidence limits independent of response budgets.",
+    )
+    archive_root: Path | None = Field(
+        default=None,
+        description="Durable checkpoint store; otherwise owned temporary storage.",
+    )
+    output: Path | None = Field(
+        default=None,
+        description="Durable trace directory; otherwise owned temporary files.",
+    )
+
+
+class SurfaceConnection:
+    """Shared lifecycle for a source-specific browser or video connection.
+
+    Use a source's open factory, then await close or use async with. Cancellation
+    stops waiting; it does not prove that a dispatched effect was undone.
+    """
+
+    def __init__(self, handle: _native.BrowserSurface | _native.VideoSession) -> None:
+        """Wrap a native source connection; prefer its asynchronous factory."""
+        self._handle = handle
+
+    async def __aenter__(self) -> Self:
+        """Keep source resources alive until context cleanup."""
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        """Await source cleanup even when the context body raises."""
+        await self.close()
+
+    async def ready(self) -> dict[str, object]:
+        """Return capabilities and bounded initial evidence without granting control."""
+        return json.loads(await self._handle.ready())
+
+    async def execute(self, command: Mapping[str, object]) -> dict[str, object]:
+        """Execute one bounded Surface command through the source implementation.
+
+        Use serialized references from current evidence. Browser effects require
+        live attachment, hot ownership and eligibility. An error can follow a
+        dispatched effect; inspect retained evidence before retrying.
+        """
+        return json.loads(await self._handle.execute(json.dumps(dict(command))))
+
+    async def outcome(self) -> Outcome | None:
+        """Snapshot retained evidence, including partial attempts, when enabled."""
+        value = await self._handle.outcome()
+        return None if value == "null" else Outcome.model_validate_json(value)
+
+    async def close(self) -> Outcome | None:
+        """Await source cleanup and final retention; repeated calls are harmless.
+
+        Retained certainty and gaps remain available through outcome on failure.
+        """
+        value = await self._handle.close()
+        return None if value == "null" else Outcome.model_validate_json(value)
+
+
+class BrowserSurface(SurfaceConnection):
+    """An isolated live browser with source-specific actions and archive support."""
+
+    @classmethod
+    async def open(
+        cls, url: str, policy: SurfacePolicy | None = None, headless: bool = True
+    ) -> Self:
+        """Open a supported regular browser, initially detached from live authority."""
+        _require_browser()
+        return cls(
+            await _native.BrowserSurface.open(
+                url, (policy or SurfacePolicy()).model_dump_json(), headless
+            )
+        )
+
+
+class VideoSession(SurfaceConnection):
+    """Read-only stateful exploration around a frozen VideoSurface."""
+
+    @classmethod
+    async def open(
+        cls, path: str | Path, policy: SurfacePolicy | None = None, max_side: int = 1920
+    ) -> Self:
+        """Freeze local video and open a detached reader with bounded frame pixels."""
+        _require_video()
+        return cls(
+            await _native.VideoSession.open(
+                str(path), (policy or SurfacePolicy()).model_dump_json(), max_side
+            )
+        )
+
+
+async def rerun_browser(
+    outcome: Outcome,
+    policy: SurfacePolicy,
+    count: int = 1,
+    headless: bool = True,
+) -> tuple[Outcome, ...]:
+    """Rerun a sealed browser recipe with explicit source display selection.
+
+    Each iteration resolves fresh references and retains its own outcome.
+    Errors preserve partial evidence; they never imply rollback of dispatched effects.
+    """
+    _require_browser()
+    values = json.loads(
+        await _native.surface_browser_rerun(
+            _rust_json(outcome), policy.model_dump_json(), count, headless
+        )
+    )
+    return tuple(Outcome.model_validate(value) for value in values)
+
+
+async def replay(
+    path: str | Path,
+    repeat: int = 1,
+    query: str | None = None,
+    output: str | Path | None = None,
+) -> dict[str, object]:
+    """Reconstruct a saved handle or portable file without live source processes.
+
+    Materialized video pixels need no decoder. Incomplete outcomes are rejected.
+    """
+    if not _native.surface_archive_enabled:
+        raise SurfaceError("this wheel was built without Surface archive replay")
+    return json.loads(
+        await _native.surface_replay(
+            str(path), repeat, query, None if output is None else str(output)
+        )
+    )
+
+
+async def export(path: str | Path, output: str | Path) -> None:
+    """Package a saved handle into one immutable portable flat file through Rust."""
+    if not _native.surface_archive_enabled:
+        raise SurfaceError("this wheel was built without Surface archive export")
+    await _native.surface_export(str(path), str(output))
+
+
 class SessionPolicy(ImmutableModel):
     """Bounds for in-memory readers, subscriptions, history and one hot owner."""
+
+    archive: ArchivePolicy = Field(
+        default="off", description="Explicit evidence retention for Archive saving."
+    )
+    archive_limits: ArchiveLimits = Field(
+        default_factory=ArchiveLimits,
+        description="Portable outcome bounds independent of live history.",
+    )
 
     cursors: int = Field(
         default=1, strict=True, ge=0, description="Logical cursor cap."
@@ -1013,6 +1396,20 @@ class Session:
     def publish(self, index: Surface) -> None:
         """Publish a new immutable capture, invalidating stale focused evidence."""
         self._handle.publish(index._handle)
+
+    def outcome(self) -> Outcome | None:
+        """Snapshot retained evidence, or return None when archive policy is off."""
+        value = self._handle.outcome()
+        return None if value == "null" else Outcome.model_validate_json(value)
+
+    def close(self) -> Outcome | None:
+        """Close logical readers and return the final policy outcome.
+
+        This revokes authority and preserves pending effects as unknown. External
+        provider cleanup remains caller-owned. Repeated calls return the same data.
+        """
+        value = self._handle.close()
+        return None if value == "null" else Outcome.model_validate_json(value)
 
     @property
     def current(self) -> Surface:

@@ -48,15 +48,18 @@ Use describe and the shared read protocol to explore its lazy timeline. `seek` s
 
 ## Replay or run again
 
-An archived session writes an immutable handle at the output's `record.json`. Close the session to seal it before using a confirmed action recipe for a live repeat.
+Archive policy is enabled by `--archive`. Each command checkpoints immutable evidence and updates `record.json`. Normal close also exports `surface.yosoi`, a self-contained portable file. Move that file to another directory or machine without keeping the original Archive. Close the session to seal it before using a confirmed action recipe for a live repeat.
 
 ```sh
-yosoi surface replay --record ./surface-run/record.json --repeat 3
-yosoi surface repeat --record ./surface-run/record.json --count 3 --headless --output ./surface-repeat
-yosoi surface replay --record ./video-run/record.json --repeat 3 --output ./saved-pixels
+yosoi surface replay --record ./surface-run/surface.yosoi --repeat 3
+yosoi surface repeat --record ./surface-run/surface.yosoi --count 3 --headless --output ./surface-repeat
+yosoi surface replay --record ./video-run/surface.yosoi --repeat 3 --output ./saved-pixels
+yosoi surface export --record ./surface-run/record.json --file ./portable-copy.yosoi
 ```
 
-Replay reads saved evidence without opening a browser. Saved video frames replay without a decoder. Repeat performs new effects in a fresh browser session on each iteration, resolving targets against new evidence. It requires a sealed confirmed recipe with explicit targets and postconditions; it does not reuse old references as action permits.
+Replay reads saved evidence without opening a browser. Saved video frames replay without a decoder. Repeat performs new effects in a fresh browser session on each iteration, resolving targets against new evidence. It requires a sealed confirmed recipe with explicit targets and postconditions; it does not reuse old references as action permits. Existing `record.json` handles remain readable while their original directory exists. `export` can package those older runs into a portable file. Export destinations must not exist.
+
+Incomplete portable outcomes remain inspectable through the SDK, but CLI replay rejects them rather than claiming a complete reconstruction. Portable files preserve rejected and unknown operation receipts. See [Archiving a surface](../concepts/archiving-a-surface.md) for Rust and Python save/reload examples and retention limits.
 
 Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 16,384 bytes, and reject oversized input lines above 64 KiB.
 

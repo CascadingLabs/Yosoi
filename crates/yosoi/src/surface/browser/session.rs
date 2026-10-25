@@ -1,10 +1,9 @@
-use super::{
-    archive::{Recording, resolve},
-    process::{Browser, ELEMENT},
-};
+use super::archive::repeating;
+use super::process::{Browser, ELEMENT};
 use crate::surface::{
-    ActionStatus, ArchivePolicy, ArchiveReceipt, Budget, Cursor, ExecutionError, Reference,
-    Session, SessionPolicy, SurfaceConnection, SurfacePolicy,
+    ActionStatus, ArchivePolicy, Budget, Cursor, ExecutionError, Outcome, Reference, Session,
+    SessionPolicy, SurfaceConnection, SurfacePolicy,
+    archive::Recording,
     browser::WebSurface,
     connection::{
         AgentSurface, Connection, Expectation, Operation, Request, Result, Trace, connection,
@@ -16,7 +15,6 @@ use std::{
     error::Error,
     fmt::{self, Debug, Formatter},
     fs, io,
-    path::PathBuf,
     result::Result as StdResult,
 };
 pub(super) struct Driver {
@@ -29,25 +27,13 @@ pub(super) struct Driver {
     pub(super) recording: Option<Recording>,
 }
 impl Driver {
-    pub(super) async fn finish(&mut self) -> Result<()> {
-        let detached = self.session.detach();
-        let closed = self.browser.close().await;
-        let archived = if let Some(recording) = self.recording.as_mut() {
-            recording.close(&closed).await
-        } else {
-            Ok(())
-        };
-        archived?;
-        detached?;
-        closed
-    }
-    fn web_view(&self) -> Result<WebSurface> {
+    pub(super) fn web_view(&self) -> Result<WebSurface> {
         Ok(WebSurface::new(
             self.session.current()?,
             model::SourceId::new(format!("browser:{}", self.browser.session_key()))?,
         )?)
     }
-    fn describe(&self) -> Result<Value> {
+    pub(super) fn describe(&self) -> Result<Value> {
         let view = self.web_view()?;
         let mut descriptor = view.descriptor().clone();
         descriptor.controllable = true;
@@ -63,14 +49,14 @@ impl Driver {
             json!({"descriptor":descriptor,"observation":view.observation(),"root":view.root_reference()}),
         )
     }
-    fn status(&self) -> Result<Value> {
+    pub(super) fn status(&self) -> Result<Value> {
         let current = self.session.current()?;
         Ok(
             json!({"capture":current.identity(),"root":current.root(),"nodes":current.node_count(),
             "cursor":self.cursor.status()?,"surface_read_bytes":self.trace.read_bytes,"recording":self.recording.as_ref().map_or_else(||json!({"mode":"off"}),Recording::status),"recording_fault":self.recording_fault,"controllable":true,"observation":"explicit captures; refresh to publish new evidence"}),
         )
     }
-    async fn refresh(&mut self) -> Result<Value> {
+    pub(super) async fn refresh(&mut self) -> Result<Value> {
         self.epoch = self
             .epoch
             .checked_add(1)
@@ -78,7 +64,15 @@ impl Driver {
         self.session
             .invalidate("explicit browser capture requested")?;
         let (surface, document, snapshot) =
-            self.browser.capture(self.epoch, &mut self.trace).await?;
+            match self.browser.capture(self.epoch, &mut self.trace).await {
+                Ok(value) => value,
+                Err(error) => {
+                    if let Some(recording) = &mut self.recording {
+                        recording.fault();
+                    }
+                    return Err(error);
+                }
+            };
         if let Some(recording) = self.recording.as_mut()
             && let Err(error) = recording
                 .capture(&document, &surface, &snapshot, self.epoch)
@@ -100,7 +94,7 @@ impl Driver {
         }
         Ok(coordinate.value.parse()?)
     }
-    async fn command(&mut self, request: &Request) -> Result<Value> {
+    pub(super) async fn command(&mut self, request: &Request) -> Result<Value> {
         let budget = Budget {
             bytes: request.budget.saturating_sub(256),
             items: request.items.min(100),
@@ -193,7 +187,35 @@ impl Driver {
             Operation::Close => Ok(json!({"closing":true})),
         }
     }
-    async fn persist_command(
+    pub(super) fn record_reply(
+        &mut self,
+        operation: &Operation,
+        result: &Result<Value>,
+    ) -> Result<()> {
+        if matches!(
+            operation,
+            Operation::Read { .. }
+                | Operation::Overview
+                | Operation::Find { .. }
+                | Operation::Expand { .. }
+                | Operation::Inspect { .. }
+        ) && let Ok(value) = result
+        {
+            self.trace.read_bytes = self
+                .trace
+                .read_bytes
+                .saturating_add(serde_json::to_vec(value)?.len());
+        }
+        match result {
+            Ok(value) => self.trace.event("cli.reply", value.clone()),
+            Err(error) => self.trace.event(
+                "cli.error",
+                json!({"error":error.to_string().chars().take(512).collect::<String>()}),
+            ),
+        }
+        Ok(())
+    }
+    pub(super) async fn persist_command(
         &mut self,
         operation: &Operation,
         result: Result<Value>,
@@ -231,8 +253,16 @@ impl Driver {
         if let Operation::Click {
             target: Some(target),
             ..
+        }
+        | Operation::Fill {
+            target: Some(target),
+            ..
+        }
+        | Operation::Key {
+            target: Some(target),
+            ..
         } = operation
-            && resolve(self, target).await? != *reference
+            && repeating::resolve(self, target).await? != *reference
         {
             return Err(io::Error::other(
                 "recorded intention does not identify the selected reference",
@@ -306,6 +336,13 @@ impl Driver {
         }
         self.trace.event("action.revalidated", guard);
         lease.revalidate()?;
+        if let Some(recording) = &mut self.recording
+            && let Err(error) = recording.dispatch(serde_json::to_value(operation)?).await
+        {
+            self.recording_fault = true;
+            self.session.detach()?;
+            return Err(error);
+        }
         lease.mark_dispatched()?;
         self.session
             .invalidate("native effect dispatched; outcome pending")?;
@@ -340,7 +377,7 @@ impl Driver {
         self.trace.event("action.receipt", result.clone());
         Ok(result)
     }
-    async fn execute(
+    pub(super) async fn execute(
         &self,
         operation: &Operation,
         element: Option<&str>,
@@ -353,34 +390,7 @@ impl Driver {
                 self.browser
                     .post(&format!("/element/{element}/click"), json!({}))
                     .await?;
-                let expectation = match expect {
-                    Some(Expectation::Text { text, present }) => {
-                        json!({"kind":"text","text":text,"present":present})
-                    }
-                    Some(Expectation::Article) => json!({"kind":"article"}),
-                    Some(Expectation::Navigation) => json!({"kind":"navigation"}),
-                    None => {
-                        return Ok(
-                            json!({"confirmed":false,"note":"native click dispatched without an explicit postcondition"}),
-                        );
-                    }
-                };
-                let mut input = expectation;
-                if let Some(fields) = input.as_object_mut() {
-                    fields.insert(
-                        "before_url".into(),
-                        before.get("url").cloned().unwrap_or(Value::Null),
-                    );
-                    fields.insert(
-                        "expected_url".into(),
-                        before.get("href").cloned().unwrap_or(Value::Null),
-                    );
-                    fields.insert("timeout_ms".into(), json!(15000));
-                }
-                let observed = self.browser.script("watch", input).await?;
-                Ok(
-                    json!({"confirmed":observed.get("state").and_then(Value::as_str).is_some_and(|s|s!="timeout"),"postcondition":observed}),
-                )
+                self.postcondition(expect.as_ref(), before).await
             }
             Operation::Fill { text, .. } => {
                 let element =
@@ -402,7 +412,7 @@ impl Driver {
                     json!({"confirmed":observed.get("matches")==Some(&Value::Bool(true)),"value":observed}),
                 )
             }
-            Operation::Key { key, .. } => {
+            Operation::Key { key, expect, .. } => {
                 let element = element.ok_or_else(|| io::Error::other("key requires an element"))?;
                 self.browser
                     .post(
@@ -410,17 +420,16 @@ impl Driver {
                         json!({"text":key_code(key)?}),
                     )
                     .await?;
-                Ok(
-                    json!({"confirmed":false,"note":"key dispatched; inspect the resulting capture"}),
-                )
+                self.postcondition(expect.as_ref(), before).await
             }
             Operation::Scroll {
-                delta_x, delta_y, ..
+                delta_x,
+                delta_y,
+                expect,
+                ..
             } => {
                 self.browser.post("/actions",json!({"actions":[{"type":"wheel","id":"surface-wheel","actions":[{"type":"scroll","x":300,"y":300,"deltaX":delta_x,"deltaY":delta_y,"duration":0,"origin":"viewport"}]}]})).await?;
-                Ok(
-                    json!({"confirmed":false,"note":"wheel dispatched; inspect the resulting viewport"}),
-                )
+                self.postcondition(expect.as_ref(), before).await
             }
             Operation::Navigate { url, .. } => {
                 self.browser.post("/url", json!({"url":url})).await?;
@@ -431,6 +440,40 @@ impl Driver {
             }
             _ => Err(io::Error::other("operation is not an effect").into()),
         }
+    }
+    pub(super) async fn postcondition(
+        &self,
+        expect: Option<&Expectation>,
+        before: &Value,
+    ) -> Result<Value> {
+        let expectation = match expect {
+            Some(Expectation::Text { text, present }) => {
+                json!({"kind":"text","text":text,"present":present})
+            }
+            Some(Expectation::Article) => json!({"kind":"article"}),
+            Some(Expectation::Navigation) => json!({"kind":"navigation"}),
+            None => {
+                return Ok(
+                    json!({"confirmed":false,"note":"native effect dispatched without an explicit postcondition"}),
+                );
+            }
+        };
+        let mut input = expectation;
+        if let Some(fields) = input.as_object_mut() {
+            fields.insert(
+                "before_url".into(),
+                before.get("url").cloned().unwrap_or(Value::Null),
+            );
+            fields.insert(
+                "expected_url".into(),
+                before.get("href").cloned().unwrap_or(Value::Null),
+            );
+            fields.insert("timeout_ms".into(), json!(15000));
+        }
+        let observed = self.browser.script("watch", input).await?;
+        Ok(
+            json!({"confirmed":observed.get("state").and_then(Value::as_str).is_some_and(|s|s!="timeout"),"postcondition":observed}),
+        )
     }
 }
 fn key_code(key: &str) -> Result<&'static str> {
@@ -449,7 +492,23 @@ pub(super) fn validate_url(value: &str) -> Result<()> {
     }
     Ok(())
 }
-fn validate_effect(operation: &Operation) -> Result<()> {
+pub(super) fn validate_effect(operation: &Operation) -> Result<()> {
+    if let Operation::Click {
+        expect: Some(Expectation::Text { text, .. }),
+        ..
+    }
+    | Operation::Key {
+        expect: Some(Expectation::Text { text, .. }),
+        ..
+    }
+    | Operation::Scroll {
+        expect: Some(Expectation::Text { text, .. }),
+        ..
+    } = operation
+        && (text.is_empty() || text.len() > 512)
+    {
+        return Err(io::Error::other("expected text must be 1..512 bytes").into());
+    }
     match operation {
         Operation::Navigate { url, .. } => validate_url(url),
         Operation::Key { key, .. } => {
@@ -461,22 +520,29 @@ fn validate_effect(operation: &Operation) -> Result<()> {
         } if delta_x.unsigned_abs() > 10000 || delta_y.unsigned_abs() > 10000 => {
             Err(io::Error::other("scroll deltas must be within 10000 pixels").into())
         }
-        Operation::Click {
-            expect: Some(Expectation::Text { text, .. }),
-            ..
-        } if text.is_empty() || text.len() > 512 => {
-            Err(io::Error::other("expected text must be 1..512 bytes").into())
-        }
         _ => Ok(()),
     }
 }
+
 impl AgentSurface for Driver {
-    fn outcome(&self) -> Option<ArchiveReceipt> {
-        self.recording.as_ref().and_then(Recording::receipt)
+    fn outcome(&self) -> Option<Outcome> {
+        self.recording.as_ref().map(Recording::outcome)
     }
-    async fn close(mut self) -> (Option<ArchiveReceipt>, Result<()>) {
-        let closed = Self::finish(&mut self).await;
-        (self.recording.as_ref().and_then(Recording::receipt), closed)
+    async fn close(mut self) -> (Option<Outcome>, Result<()>) {
+        let detached = self.session.detach();
+        let closed = self.browser.close().await;
+        let archived = if let Some(recording) = &mut self.recording {
+            recording.close(&closed).await
+        } else {
+            Ok(())
+        };
+        let outcome = self.recording.as_ref().map(Recording::outcome);
+        (
+            outcome,
+            archived
+                .and_then(|()| detached.map_err(Into::into))
+                .and(closed),
+        )
     }
 
     fn ready(&mut self) -> Result<Value> {
@@ -491,6 +557,9 @@ impl AgentSurface for Driver {
     async fn command(&mut self, request: &Request) -> Result<Value> {
         Self::command(self, request).await
     }
+    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
+        Self::record_reply(self, operation, result)
+    }
     async fn persist_command(
         &mut self,
         operation: &Operation,
@@ -502,74 +571,116 @@ impl AgentSurface for Driver {
         &mut self.trace
     }
 }
-pub(super) async fn open_web(
-    url: &str,
-    headless: bool,
-    output_dir: PathBuf,
-    archive: Option<PathBuf>,
-) -> Result<Driver> {
-    validate_url(url)?;
-    fs::create_dir_all(&output_dir)?;
-    let mut trace = Trace::new(&output_dir);
-    let mut recording = match archive {
-        Some(root) => Some(Recording::open(&root, &output_dir, url).await?),
-        None => None,
-    };
-    let mut browser = Browser::open(headless).await?;
-    let initialized = async {
-        browser.post("/url", json!({"url":url})).await?;
-        let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
-        if let Some(recording) = recording.as_mut() {
-            recording.capture(&document, &surface, &snapshot, 1).await?;
-        }
-        let session = Session::new(surface, SessionPolicy::default())?;
-        let cursor = session.cursor()?;
-        Ok::<_, Box<dyn Error + Send + Sync>>((session, cursor))
-    }
-    .await;
-    let (session, cursor) = match initialized {
-        Ok(value) => value,
-        Err(error) => {
-            let _ = browser.close().await;
-            return Err(error);
-        }
-    };
-    Ok(Driver {
-        browser,
-        session,
-        cursor,
-        epoch: 1,
-        trace,
-        recording_fault: false,
-        recording,
-    })
-}
-/// Isolated browser connection, initially detached; close explicitly after use.
+
+/// An isolated live browser source, initially detached from observation and control.
+/// Call `close` even after failure; cancellation does not prove an effect was undone.
 pub struct BrowserSurface {
     inner: Connection<Driver>,
 }
 impl BrowserSurface {
-    /// Opens a supported regular browser. Display mode belongs to this browser,
-    /// while archive and output selection come from the shared Surface policy.
+    /// Opens a supported regular Chrome/Chromium source under explicit archive policy.
+    /// `headless` selects this browser's display mode and is not a generic Surface policy.
     pub async fn open(
         url: &str,
         policy: SurfacePolicy,
         headless: bool,
     ) -> StdResult<Self, ExecutionError> {
-        let temporary = tempfile::tempdir().map_err(|e| ExecutionError::Operation(e.into()))?;
+        Self::open_inner(url, policy, headless)
+            .await
+            .map_err(super::archive::error)
+    }
+    async fn open_inner(url: &str, policy: SurfacePolicy, headless: bool) -> Result<Self> {
+        validate_url(url)?;
+        policy.archive_limits.validate()?;
+        let temporary = tempfile::tempdir()?;
         let output = policy
             .output
+            .clone()
             .unwrap_or_else(|| temporary.path().join("artifacts"));
-        let archive = (policy.archive == ArchivePolicy::Enabled).then(|| {
-            policy
-                .archive_root
-                .unwrap_or_else(|| temporary.path().join("archive"))
-        });
-        let driver = open_web(url, headless, output.clone(), archive)
-            .await
-            .map_err(ExecutionError::Operation)?;
+        fs::create_dir_all(&output)?;
+        let mut trace = Trace::new(&output);
+        let root = policy
+            .archive_root
+            .clone()
+            .unwrap_or_else(|| temporary.path().join("archive"));
+        let mut recording = if policy.archive == ArchivePolicy::Enabled {
+            let mut recording = Recording::open(&root, &output, url).await?;
+            recording.set_limits(policy.archive_limits);
+            Some(recording)
+        } else {
+            None
+        };
+        let mut browser = match Browser::open(headless).await {
+            Ok(browser) => browser,
+            Err(source) => {
+                if let Some(recording) = &mut recording {
+                    recording.fault();
+                    let _ = recording
+                        .command(
+                            json!({"op":"open"}),
+                            &Err(io::Error::other(source.to_string()).into()),
+                        )
+                        .await;
+                    let _ = recording
+                        .close(&Err(io::Error::other(
+                            "browser initialization did not confirm cleanup",
+                        )
+                        .into()))
+                        .await;
+                    return Err(Box::new(repeating::RunFailure {
+                        outcomes: vec![recording.outcome()],
+                        source,
+                    }));
+                }
+                return Err(source);
+            }
+        };
+        let initial = async {
+            browser.post("/url", json!({"url":url})).await?;
+            let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
+            if let Some(recording) = &mut recording {
+                recording.capture(&document, &surface, &snapshot, 1).await?;
+            }
+            let session = Session::new(surface, SessionPolicy::default())?;
+            let cursor = session.cursor()?;
+            Ok::<_, Box<dyn Error + Send + Sync>>((session, cursor))
+        }
+        .await;
+        let (session, cursor) = match initial {
+            Ok(value) => value,
+            Err(error) => {
+                let closed = browser.close().await;
+                if let Some(recording) = &mut recording {
+                    recording.fault();
+                    let _ = recording
+                        .command(
+                            json!({"op":"open"}),
+                            &Err(io::Error::other(error.to_string()).into()),
+                        )
+                        .await;
+                    let _ = recording.close(&closed).await;
+                    return Err(Box::new(repeating::RunFailure {
+                        outcomes: vec![recording.outcome()],
+                        source: error,
+                    }));
+                }
+                return Err(error);
+            }
+        };
         Ok(Self {
-            inner: Connection::new(driver, output, temporary),
+            inner: Connection::new(
+                Driver {
+                    browser,
+                    session,
+                    cursor,
+                    epoch: 1,
+                    trace,
+                    recording_fault: false,
+                    recording,
+                },
+                output,
+                temporary,
+            ),
         })
     }
 }

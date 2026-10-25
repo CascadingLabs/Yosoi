@@ -49,3 +49,11 @@ extern crate self as yosoi;
 #[doc(hidden)]
 #[path = "macro_support.rs"]
 pub mod __macro;
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+pub use surface::SurfaceConnection;
+#[cfg(feature = "browser")]
+pub use surface::browser::BrowserSurface;
+#[cfg(feature = "surface-video")]
+pub use surface::video::VideoSession;
+pub use surface::{ExecutionError, SurfacePolicy};
