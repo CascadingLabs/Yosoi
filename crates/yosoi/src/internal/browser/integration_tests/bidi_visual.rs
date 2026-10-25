@@ -7,6 +7,7 @@
 use super::active_navigation::Fixture;
 use crate::browser::{BrowserConfig, BrowserEngine, MoliProfile};
 use crate::internal::browser::bidi::session::{Page, Session, SessionError};
+use crate::internal::browser::selector::{BrowserTarget, BrowserTargetKind};
 use crate::internal::browser::{Bbox, ScreenshotOptions, Viewport, viewport::ScrollTarget};
 use serde_json::{Value, json};
 use std::{env, error::Error, time::Duration};
@@ -16,7 +17,7 @@ use tokio_util::sync::CancellationToken;
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
 const STATE: &str =
     "({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,x:scrollX,y:scrollY})";
-const FIXTURE: &str = "(()=>{const node=document.createElement('div');node.style.cssText='position:absolute;left:0;top:0;width:1800px;height:3000px;z-index:99999';node.innerHTML='<div style=\"position:absolute;top:0;width:1800px;height:300px;background:rgb(255,0,0)\"></div><div style=\"position:absolute;top:300px;width:1800px;height:2700px;background:rgb(0,255,0)\"></div>';document.body.append(node);return true})()";
+const FIXTURE: &str = "(()=>{const node=document.createElement('div');node.style.cssText='position:absolute;left:0;top:0;width:1800px;height:3000px;z-index:99999';node.innerHTML='<div style=\"position:absolute;top:0;width:1800px;height:300px;background:rgb(255,0,0)\"></div><div style=\"position:absolute;top:300px;width:1800px;height:2700px;background:rgb(0,255,0)\"></div><div id=\"visual-a\" class=\"visual-choice\" style=\"position:absolute;left:20px;top:650px;width:50px;height:40px;background:rgb(0,0,255)\"></div><div id=\"visual-b\" class=\"visual-choice\" style=\"position:absolute;left:100px;top:650px;width:30px;height:20px;background:rgb(255,255,0)\"></div><div id=\"visual-hidden\" class=\"visual-choice\" style=\"display:none;width:50px;height:40px\"></div>';document.body.append(node);return true})()";
 
 async fn state(
     page: &Page,
@@ -91,6 +92,10 @@ async fn exercise(engine: BrowserEngine) -> TestResult {
         assert_eq!(state(&page, &token, deadline).await?, before, "capture errors must restore both viewport and scroll");
         page.ensure_owned().await?;
 
+        selector_crops(&page, &token, deadline).await?;
+        rejected_targets(&page, &token, deadline).await?;
+        bounded_targets(&page, &token, deadline).await?;
+
         if engine == BrowserEngine::Firefox {
             // Drain earlier resize events, then hold the renderer only after
             // this capture's viewport mutation has dispatched.
@@ -128,4 +133,234 @@ async fn bidi_firefox_visual_transactions_restore_and_fence() -> TestResult {
 #[ignore = "requires the pinned Moli layout executable"]
 async fn bidi_moli_visual_transactions_restore() -> TestResult {
     exercise(BrowserEngine::Moli).await
+}
+
+async fn selector_crops(page: &Page, token: &CancellationToken, deadline: Instant) -> TestResult {
+    let before = state(page, token, deadline).await?;
+    let mut temporary = Viewport::custom(640, 480);
+    temporary.device_scale_factor = 2.0;
+    let image = page
+        .visual_snapshot(
+            ScreenshotOptions::default()
+                .with_viewport(temporary)
+                .with_scroll(ScrollTarget::Pixels(600))
+                .with_selector(target(BrowserTargetKind::Css, "#visual-a", None)),
+            token,
+            deadline,
+        )
+        .await?;
+    assert_eq!(
+        (image.image_width_pixels, image.image_height_pixels),
+        (100, 80)
+    );
+    let pixels = image::load_from_memory(image.bytes())?.to_rgba8();
+    assert_eq!(
+        pixels
+            .get_pixel_checked(0, 0)
+            .ok_or("empty target image")?
+            .0,
+        [0, 0, 255, 255]
+    );
+    drop(pixels);
+    drop(image);
+    assert_eq!(state(page, token, deadline).await?, before);
+    for (kind, value) in [
+        (BrowserTargetKind::Xpath, "//*[@id='visual-a']"),
+        (BrowserTargetKind::Attr, "#visual-a"),
+    ] {
+        let image = page
+            .visual_snapshot(
+                ScreenshotOptions::default()
+                    .with_scroll(ScrollTarget::Pixels(600))
+                    .with_selector(target(kind, value, None)),
+                token,
+                deadline,
+            )
+            .await?;
+        assert_eq!(
+            (image.image_width_pixels, image.image_height_pixels),
+            (75, 60)
+        );
+    }
+    let mut by_id = target(BrowserTargetKind::GlobalId, ".visual-choice", None);
+    by_id.name = Some("visual-b".to_owned());
+    for selector in [
+        target(BrowserTargetKind::Css, ".visual-choice", Some(1)),
+        by_id,
+    ] {
+        let image = page
+            .visual_snapshot(
+                ScreenshotOptions::default().with_selector(selector),
+                token,
+                deadline,
+            )
+            .await?;
+        assert_eq!(
+            (image.image_width_pixels, image.image_height_pixels),
+            (45, 30)
+        );
+        let pixels = image::load_from_memory(image.bytes())?.to_rgba8();
+        assert_eq!(
+            pixels.get_pixel_checked(0, 0).ok_or("empty nth image")?.0,
+            [255, 255, 0, 255]
+        );
+    }
+    let mut point = target(BrowserTargetKind::Visual, "", None);
+    point.x = Some(150.0);
+    point.y = Some(30.0);
+    let image = page
+        .visual_snapshot(
+            ScreenshotOptions::default().with_selector(point),
+            token,
+            deadline,
+        )
+        .await?;
+    let pixels = image::load_from_memory(image.bytes())?.to_rgba8();
+    assert_eq!(
+        pixels.get_pixel_checked(0, 0).ok_or("empty point image")?.0,
+        [255, 0, 0, 255]
+    );
+    drop(pixels);
+    drop(image);
+    assert_eq!(state(page, token, deadline).await?, before);
+    Ok(())
+}
+
+async fn rejected_targets(page: &Page, token: &CancellationToken, deadline: Instant) -> TestResult {
+    use crate::internal::browser::{VoidCrawlError, controller::Page as ControllerPage};
+    let before = state(page, token, deadline).await?;
+    let temporary = Viewport::custom(640, 480);
+    let adapter = ControllerPage::Bidi(page.clone());
+    let ambiguous = adapter
+        .visual_snapshot(
+            ScreenshotOptions::default()
+                .with_viewport(temporary)
+                .with_scroll(ScrollTarget::Pixels(600))
+                .with_selector(target(BrowserTargetKind::Css, ".visual-choice", None)),
+        )
+        .await;
+    assert!(matches!(
+        ambiguous,
+        Err(VoidCrawlError::AmbiguousSelector(_))
+    ));
+    drop(adapter);
+    assert_eq!(
+        state(page, token, deadline).await?,
+        before,
+        "ambiguous crops must restore capture state"
+    );
+    for value in ["#visual-hidden", "#missing"] {
+        let result = page
+            .visual_snapshot(
+                ScreenshotOptions::default().with_selector(target(
+                    BrowserTargetKind::Css,
+                    value,
+                    None,
+                )),
+                token,
+                deadline,
+            )
+            .await;
+        assert!(matches!(result, Err(SessionError::TargetNotVisible)));
+    }
+    let role = page
+        .visual_snapshot(
+            ScreenshotOptions::default().with_selector(target(
+                BrowserTargetKind::Role,
+                "button",
+                None,
+            )),
+            token,
+            deadline,
+        )
+        .await;
+    assert!(matches!(
+        role,
+        Err(SessionError::Unsupported("BiDi AX-exposed role geometry"))
+    ));
+    let structured = page
+        .visual_snapshot(
+            ScreenshotOptions::default().with_selector(target(
+                BrowserTargetKind::Jsonld,
+                "Product",
+                None,
+            )),
+            token,
+            deadline,
+        )
+        .await;
+    assert!(matches!(
+        structured,
+        Err(SessionError::UnsupportedVisualTarget)
+    ));
+    assert_eq!(state(page, token, deadline).await?, before);
+    Ok(())
+}
+
+fn target(kind: BrowserTargetKind, value: &str, nth: Option<u32>) -> BrowserTarget {
+    BrowserTarget {
+        kind,
+        value: value.to_owned(),
+        regex: None,
+        name: None,
+        nth,
+        x: None,
+        y: None,
+    }
+}
+
+async fn bounded_targets(page: &Page, token: &CancellationToken, deadline: Instant) -> TestResult {
+    let before = state(page, token, deadline).await?;
+    let mut outside = target(BrowserTargetKind::Visual, "", None);
+    outside.x = Some(100_000.0);
+    outside.y = Some(1.0);
+    assert!(matches!(
+        page.visual_snapshot(
+            ScreenshotOptions::default().with_selector(outside),
+            token,
+            deadline
+        )
+        .await,
+        Err(SessionError::TargetNotVisible)
+    ));
+    let incompatible = page
+        .visual_snapshot(
+            ScreenshotOptions::default()
+                .with_bbox(Bbox {
+                    x: 0,
+                    y: 0,
+                    width: 10,
+                    height: 10,
+                })
+                .with_selector(target(BrowserTargetKind::Css, "#visual-a", None)),
+            token,
+            deadline,
+        )
+        .await;
+    assert!(matches!(
+        incompatible,
+        Err(SessionError::InvalidArgument { .. })
+    ));
+    page.evaluate("(()=>{const root=document.createElement('div');root.id='bounded-targets';root.style.display='none';for(let i=0;i<4097;i++){const node=document.createElement('span');node.className='bounded-target';root.append(node)}document.body.append(root);return true})()",token,deadline).await?;
+    assert!(matches!(
+        page.visual_snapshot(
+            ScreenshotOptions::default().with_selector(target(
+                BrowserTargetKind::Css,
+                ".bounded-target",
+                None
+            )),
+            token,
+            deadline
+        )
+        .await,
+        Err(SessionError::Capacity)
+    ));
+    page.evaluate(
+        "document.querySelector('#bounded-targets').remove();true",
+        token,
+        deadline,
+    )
+    .await?;
+    assert_eq!(state(page, token, deadline).await?, before);
+    Ok(())
 }

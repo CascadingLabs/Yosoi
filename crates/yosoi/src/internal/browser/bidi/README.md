@@ -82,7 +82,8 @@ command offered by CDP. Shared types do not establish equivalent engine support.
 | Layout metrics | CSSOM, with provenance | Standalone rejected: requires raster refresh |
 | Viewport/full-page/explicit-box visual capture | Native PNG | Native PNG, layout profile |
 | Temporary viewport/DPR and scroll capture options | Native, with acknowledged restoration | Native layout, with acknowledged restoration |
-| Visual selector options | Not implemented | Not implemented |
+| CSS/XPath/attribute/ID-prefix/coordinate crops | Native | Native layout |
+| AX-exposed role crops | Unsupported | Unsupported |
 | Desktop viewport/DPR, locale, timezone | Native commands | Native commands |
 | Mobile/touch/device identity | Unsupported | Unsupported |
 | Rendering preferences | Command wired; qualified release rejects it | Command wired; not qualified |
@@ -95,3 +96,5 @@ service-worker provenance remains unknown. Remote-service process identity and
 egress are operator-owned facts, not inferred from a Chrome-like user agent.
 
 Temporary visual capture serializes viewport changes on the owned page. It restores the prior explicit override, or resets an absent override, and restores the prior scroll position after success or returned error. Crop offsets include the actual post-scroll position. A cancelled mutated capture or uncertain restoration fences the connection rather than exposing a modified page for reuse. Native qualification checks pixels, default/explicit state, error restoration and cancellation; the Firefox case also runs headful under an explicit Xvfb/X11 fixture. Headful viewport sizing requires a window system that can honor the requested resize; the fixture does not inherit a desktop Wayland backend.
+
+DOM target crops share the CDP visibility and nth-disambiguation rules. They reject hidden/missing and ambiguous targets with the common typed outcomes, include current document scroll in native clipping, and reject more than 4096 candidates before extracting or returning their rectangles. Native accessibility locators do not establish the non-ignored AX membership required by role crops, so those remain explicitly unsupported.

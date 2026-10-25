@@ -9,5 +9,6 @@ mod layout;
 mod page;
 pub mod process;
 pub mod session;
+mod targets;
 pub mod transport;
 pub(super) mod watch;

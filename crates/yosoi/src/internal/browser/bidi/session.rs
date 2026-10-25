@@ -39,6 +39,12 @@ pub enum SessionError {
         operation: &'static str,
         reason: &'static str,
     },
+    #[error("visual target has no visible rectangle")]
+    TargetNotVisible,
+    #[error("visual target has multiple visible rectangles")]
+    TargetAmbiguous,
+    #[error("target kind has no visual geometry")]
+    UnsupportedVisualTarget,
     #[error("native keyboard target was lost before typing")]
     InputTargetLost,
     #[error("browser state exceeded its bounded context/realm capacity")]

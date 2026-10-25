@@ -638,6 +638,13 @@ pub(super) fn map_bidi(error: super::bidi::session::SessionError) -> VoidCrawlEr
             operation: "type_into",
             reason: "target_lost_before_typing",
         },
+        SessionError::TargetNotVisible => VoidCrawlError::ElementNotVisible(
+            "native visual target has no visible rectangle".to_owned(),
+        ),
+        SessionError::TargetAmbiguous => VoidCrawlError::AmbiguousSelector(
+            "native visual target has multiple visible rectangles".to_owned(),
+        ),
+        SessionError::UnsupportedVisualTarget => VoidCrawlError::UnsupportedVisualTarget,
         SessionError::Unsupported(operation) => unsupported(operation),
         SessionError::Script => VoidCrawlError::JsEvalError("BiDi script failed".into()),
         SessionError::Transport(BidiError::Deadline | BidiError::Cancelled)

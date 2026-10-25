@@ -9,6 +9,7 @@ use tokio_util::sync::CancellationToken;
 use super::{
     emulation::validate_viewport,
     session::{Page, SessionError},
+    targets::validate_visual_target,
 };
 use crate::{
     browser::{BrowserEngine, MoliProfile},
@@ -112,8 +113,14 @@ impl Page {
                 reason: "filesystem output paths are not accepted",
             });
         }
-        if options.selector.is_some() {
-            return Err(SessionError::Unsupported("BiDi screenshot target"));
+        if options.bbox.is_some() && options.selector.is_some() {
+            return Err(SessionError::InvalidArgument {
+                operation: "visual_snapshot",
+                reason: "bbox and selector are mutually exclusive",
+            });
+        }
+        if let Some(target) = options.selector.as_ref() {
+            validate_visual_target(target)?;
         }
         if options
             .bbox
@@ -176,7 +183,7 @@ impl Page {
             restore.armed = true;
             self.apply_viewport(Some(viewport), token, deadline).await?;
         }
-        let shift = if let Some(target) = options.scroll {
+        let mut shift = if let Some(target) = options.scroll {
             let y = match target {
                 ScrollTarget::Pixels(y) => serde_json::Number::from(y)
                     .as_f64()
@@ -220,7 +227,17 @@ impl Page {
             return Err(SessionError::Serialization);
         }
         let mut params = json!({"context":self.context,"origin":if options.full_page {"document"}else{"viewport"},"format":{"type":"image/png"}});
-        let region = if let Some(bbox) = options.bbox {
+        let target_bbox = if let Some(target) = options.selector.as_ref() {
+            let bbox = self.visual_target(target, realm, token, deadline).await?;
+            let (position, _) = self
+                .evaluate_realm("({x:scrollX,y:scrollY})", realm, token, deadline)
+                .await?;
+            shift = (number(&position, "x")?, number(&position, "y")?);
+            Some(bbox)
+        } else {
+            None
+        };
+        let region = if let Some(bbox) = options.bbox.or(target_bbox) {
             let object = params.as_object_mut().ok_or(SessionError::Serialization)?;
             object.insert(
                 "clip".to_owned(),
@@ -228,7 +245,14 @@ impl Page {
             );
             // Crops use document coordinates, independent of full_page.
             object.insert("origin".to_owned(), json!("document"));
-            VisualCaptureRegion::BoundingBox { bbox }
+            options
+                .selector
+                .as_ref()
+                .map_or(VisualCaptureRegion::BoundingBox { bbox }, |target| {
+                    VisualCaptureRegion::BrowserTarget {
+                        target_kind: target.kind,
+                    }
+                })
         } else if options.full_page {
             VisualCaptureRegion::FullPage
         } else {
