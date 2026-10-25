@@ -1,100 +1,56 @@
 //! Surface recording uses existing immutable Documents and AutomationRecords.
-use super::Result;
+use super::connection::Result;
 use crate::{
     Archive,
     archive::DocumentArchiveRef,
     automation_record::{
         AutomationRecord, AutomationRecordRef, Observation, OperationReceipt, OperationStatus,
     },
-    documents::Document,
     surface::{Budget, Limits, Surface},
     view::View,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::result::Result as StdResult;
 use std::{
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
 };
-use uuid::Uuid;
 
+/// Reference to retained evidence; reopening never grants live authority.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Handle {
+pub struct ArchiveReceipt {
+    /// Persisted receipt format.
     pub schema: String,
+    /// Directory containing immutable archive values.
     pub archive: PathBuf,
+    /// Exact retained operation record.
     pub record: AutomationRecordRef,
 }
 #[derive(Debug)]
-pub struct Recording {
-    archive: Archive,
-    record: AutomationRecord,
-    output: PathBuf,
-    handle: Option<Handle>,
-    sequence: u64,
+pub(super) struct Recording {
+    pub(super) archive: Archive,
+    pub(super) record: AutomationRecord,
+    pub(super) output: PathBuf,
+    pub(super) handle: Option<ArchiveReceipt>,
+    pub(super) sequence: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Capture {
+pub(super) struct Capture {
     pub schema: String,
     pub document: DocumentArchiveRef,
     pub surface: String,
     pub normalized_strings: Value,
 }
 impl Recording {
-    pub async fn open(root: &Path, output: &Path, url: &str) -> Result<Self> {
-        let archive = Archive::open(root).await?;
-        let mut recording = Self {
-            archive,
-            record: AutomationRecord::new(
-                format!("surface-{}", Uuid::new_v4()),
-                Vec::new(),
-                Vec::new(),
-            )?,
-            output: output.to_owned(),
-            handle: None,
-            sequence: 0,
-        };
-        recording.push("surface.run",OperationStatus::Observed,json!({"schema":"yosoi.surface.run.v1","url":url,"recording_policy":{"mode":"archive","captures":"rendered_dom_and_html","checkpoint":"each_command"}}),None,None)?;
-        Ok(recording)
+    pub(super) fn receipt(&self) -> Option<ArchiveReceipt> {
+        self.handle.clone()
     }
-    pub async fn open_video(root: &Path, output: &Path, descriptor: Value) -> Result<Self> {
-        let archive = Archive::open(root).await?;
-        let mut recording = Self {
-            archive,
-            record: AutomationRecord::new(
-                format!("surface-{}", Uuid::new_v4()),
-                Vec::new(),
-                Vec::new(),
-            )?,
-            output: output.to_owned(),
-            handle: None,
-            sequence: 0,
-        };
-        recording.push("surface.video.run",OperationStatus::Observed,json!({"schema":"yosoi.surface.video-run.v1","descriptor":descriptor,"recording_policy":{"mode":"archive","source_and_pixels":true}}),None,None)?;
-        Ok(recording)
-    }
-    pub const fn archive(&self) -> &Archive {
-        &self.archive
-    }
-    pub async fn evidence(&mut self, kind: &str, value: Value) -> Result<()> {
-        self.push(kind, OperationStatus::Observed, value, None, None)?;
-        self.checkpoint().await?;
-        Ok(())
-    }
-    pub async fn close_video(&mut self) -> Result<()> {
-        self.push(
-            "surface.closed",
-            OperationStatus::Observed,
-            json!({"resources_released":true,"browser_started":false}),
-            None,
-            None,
-        )?;
-        self.checkpoint().await?;
-        Ok(())
-    }
-    fn push(
+
+    pub(super) fn push(
         &mut self,
         kind: &str,
         status: OperationStatus,
@@ -116,49 +72,7 @@ impl Recording {
         })?;
         Ok(())
     }
-    pub async fn capture(
-        &mut self,
-        document: &Document,
-        surface: &Surface,
-        snapshot: &Value,
-        epoch: u64,
-    ) -> Result<()> {
-        let reference = self.archive.write_document(document).await?;
-        let observation = Observation {
-            id: format!("{}:capture:{epoch}", self.record.id()),
-            session_id: self.record.id().into(),
-            tab_id: "primary".into(),
-            document_epoch: epoch,
-            html: snapshot
-                .get("html")
-                .and_then(Value::as_str)
-                .map(str::to_owned),
-            url: snapshot
-                .get("url")
-                .and_then(Value::as_str)
-                .map(str::to_owned),
-            screenshot: None,
-        };
-        self.record.push_observation(observation.clone())?;
-        let capture = Capture {
-            schema: "yosoi.surface.capture.v1".into(),
-            document: reference,
-            surface: surface.identity().into(),
-            normalized_strings: snapshot
-                .get("normalized_strings")
-                .cloned()
-                .unwrap_or_else(|| json!([])),
-        };
-        self.push(
-            "surface.capture",
-            OperationStatus::Observed,
-            serde_json::to_value(capture)?,
-            Some(observation),
-            None,
-        )?;
-        self.checkpoint().await?;
-        Ok(())
-    }
+
     pub async fn command(&mut self, command: Value, result: &Result<Value>) -> Result<()> {
         let (status, outcome, error) = match result {
             Ok(value) => {
@@ -189,8 +103,8 @@ impl Recording {
         self.checkpoint().await?;
         Ok(())
     }
-    pub async fn checkpoint(&mut self) -> Result<Handle> {
-        let handle = Handle {
+    pub async fn checkpoint(&mut self) -> Result<ArchiveReceipt> {
+        let handle = ArchiveReceipt {
             schema: "yosoi.surface.record-handle.v1".into(),
             archive: self.archive.root().to_owned(),
             record: self.record.write_to(&self.archive).await?,
@@ -202,26 +116,12 @@ impl Recording {
         self.handle = Some(handle.clone());
         Ok(handle)
     }
-    pub async fn close(&mut self, closed: &Result<()>) -> Result<()> {
-        self.push(
-            "surface.closed",
-            if closed.is_ok() {
-                OperationStatus::Observed
-            } else {
-                OperationStatus::Unknown
-            },
-            json!({"browser_closed":closed.is_ok()}),
-            None,
-            closed.as_ref().err().map(ToString::to_string),
-        )?;
-        self.checkpoint().await?;
-        Ok(())
-    }
+
     pub fn status(&self) -> Value {
         json!({"mode":"archive","archive":self.archive.root(),"handle_file":self.output.join("record.json"),"handle":self.handle})
     }
 }
-pub async fn load(path: &Path) -> Result<(Archive, AutomationRecord)> {
+pub(super) async fn load(path: &Path) -> Result<(Archive, AutomationRecord)> {
     if fs::metadata(path)?.len() > 64 * 1024 {
         return Err(io::Error::other("record handle exceeds 64 KiB").into());
     }
@@ -229,7 +129,7 @@ pub async fn load(path: &Path) -> Result<(Archive, AutomationRecord)> {
     if bytes.len() > 64 * 1024 {
         return Err(io::Error::other("record handle exceeds 64 KiB").into());
     }
-    let handle: Handle = serde_json::from_slice(&bytes)?;
+    let handle: ArchiveReceipt = serde_json::from_slice(&bytes)?;
     if handle.schema != "yosoi.surface.record-handle.v1" {
         return Err(io::Error::other("unsupported surface record handle").into());
     }
@@ -240,7 +140,7 @@ pub async fn load(path: &Path) -> Result<(Archive, AutomationRecord)> {
     let record = AutomationRecord::read_from(&archive, &handle.record).await?;
     Ok((archive, record))
 }
-pub fn capture_descriptors(record: &AutomationRecord) -> Result<Vec<Capture>> {
+pub(super) fn capture_descriptors(record: &AutomationRecord) -> Result<Vec<Capture>> {
     record
         .operations()
         .iter()
@@ -258,7 +158,7 @@ pub fn capture_descriptors(record: &AutomationRecord) -> Result<Vec<Capture>> {
         })
         .collect()
 }
-pub async fn replay(
+pub(super) async fn replay_raw(
     path: &Path,
     repeat: usize,
     query: Option<&str>,
@@ -273,7 +173,8 @@ pub async fn replay(
         .iter()
         .any(|op| op.kind == "surface.video.source")
     {
-        return super::video::replay_loaded(&archive, &record, repeat, query, output).await;
+        return super::video::archive::replay_loaded(&archive, &record, repeat, query, output)
+            .await;
     }
     let captures = capture_descriptors(&record)?;
     if captures.is_empty() {
@@ -334,4 +235,16 @@ pub async fn replay(
     Ok(
         json!({"mode":"offline","browser_started":false,"controllable":false,"record":record.id(),"iterations":repeat,"captures":captures.len(),"offline_views":record.observations().len(),"last_capture":last.identity(),"last_url":record.observations().last().and_then(|observation|observation.url.as_ref()),"actions":actions,"actions_omitted":actions_omitted,"matches":matches}),
     )
+}
+
+/// Reconstructs retained evidence offline without starting a browser or decoder.
+pub async fn replay(
+    path: &Path,
+    repeat: usize,
+    query: Option<&str>,
+    output: Option<&Path>,
+) -> StdResult<Value, super::ExecutionError> {
+    replay_raw(path, repeat, query, output)
+        .await
+        .map_err(super::ExecutionError::Operation)
 }

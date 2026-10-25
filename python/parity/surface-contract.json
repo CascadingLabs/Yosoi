@@ -5245,9 +5245,9 @@
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
     },
     {
-      "rustPath": "yosoi::surface::web",
+      "rustPath": "yosoi::surface::browser",
       "kind": "module",
-      "signatureSha256": "ec69b8ca3d3eef6a7244e03f88549236a29e39320b78a600bef383b35c3155d1",
+      "signatureSha256": "855991a0f01a78e70eb78dbea76091c2126fd7b2c2cd73cca4a7b8872785b72a",
       "pythonTarget": "yosoi.surface",
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",

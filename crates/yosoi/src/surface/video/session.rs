@@ -1,18 +1,17 @@
-//! Video is a read-only source behind the same JSON-lines front end as live web.
-use super::{AgentSurface, Operation, Request, Result, Trace, recording::Recording};
-use crate::{
-    Archive,
-    automation_record::AutomationRecord,
-    surface::{
-        Budget,
-        model::{self, ReadOperation, ReadRequest, SurfaceRead},
-        video::{DecodedFrame, FrameArchiveRef, VideoArchiveRef, VideoPolicy, VideoSurface},
-    },
+//! Read-only stateful exploration; decoding and archive storage belong to video.
+use super::{DecodedFrame, VideoPolicy, VideoSurface};
+use crate::surface::{
+    ArchivePolicy, ArchiveReceipt, Budget, ExecutionError, SurfaceConnection, SurfacePolicy,
+    archive::Recording,
+    connection::{AgentSurface, Connection, Operation, Request, Result, Trace, connection},
+    model::{self, ReadOperation, ReadRequest, SurfaceRead},
 };
 use serde_json::{Value, json};
 use std::{
+    fmt::{self, Debug, Formatter},
     fs, io,
     path::{Path, PathBuf},
+    result::Result as StdResult,
 };
 pub(super) struct VideoDriver {
     surface: VideoSurface,
@@ -23,7 +22,7 @@ pub(super) struct VideoDriver {
     recording_fault: bool,
 }
 impl VideoDriver {
-    pub(super) async fn close(&mut self) -> Result<()> {
+    pub(super) async fn finish(&mut self) -> Result<()> {
         self.attached = false;
         if let Some(recording) = self.recording.as_mut() {
             recording.close_video().await?;
@@ -69,6 +68,14 @@ impl VideoDriver {
     }
 }
 impl AgentSurface for VideoDriver {
+    fn outcome(&self) -> Option<ArchiveReceipt> {
+        self.recording.as_ref().and_then(Recording::receipt)
+    }
+    async fn close(mut self) -> (Option<ArchiveReceipt>, Result<()>) {
+        let result = Self::finish(&mut self).await;
+        (self.recording.as_ref().and_then(Recording::receipt), result)
+    }
+
     fn ready(&mut self) -> Result<Value> {
         let page = self.surface.read(&ReadRequest {
             operation: ReadOperation::Overview,
@@ -159,74 +166,32 @@ pub(super) async fn open(
         recording_fault: false,
     })
 }
-pub async fn replay_loaded(
-    archive: &Archive,
-    record: &AutomationRecord,
-    repeat: usize,
-    query: Option<&str>,
-    output: Option<&Path>,
-) -> Result<Value> {
-    if query.is_some() {
-        return Err(io::Error::other(
-            "video does not advertise text search; use saved frame evidence",
-        )
-        .into());
-    }
-    let source = record
-        .operations()
-        .iter()
-        .find(|op| op.kind == "surface.video.source")
-        .and_then(|op| op.result.as_ref())
-        .ok_or_else(|| io::Error::other("archived video source reference absent"))?;
-    let reference: VideoArchiveRef = serde_json::from_value(source.clone())?;
-    let frames = record
-        .operations()
-        .iter()
-        .filter(|op| op.kind == "surface.video.frame")
-        .map(|op| {
-            serde_json::from_value::<FrameArchiveRef>(
-                op.result
-                    .clone()
-                    .ok_or_else(|| io::Error::other("frame reference absent"))?,
-            )
-            .map_err(Into::into)
-        })
-        .collect::<Result<Vec<_>>>()?;
-    if let Some(directory) = output {
-        fs::create_dir_all(directory)?;
-    }
-    let mut summaries = Vec::new();
-    let mut observation = None;
-    for iteration in 0..repeat {
-        let video = VideoSurface::read_from(archive, &reference).await?;
-        video.read(&ReadRequest {
-            operation: ReadOperation::Overview,
-            budget: Budget::default(),
-            continuation: None,
-        })?;
-        for (index, reference) in frames.iter().enumerate() {
-            let frame = DecodedFrame::read_from(archive, reference).await?;
-            if frame.info.reference.observation != video.observation().id {
-                return Err(io::Error::other(
-                    "frame belongs to a different archived video observation",
-                )
-                .into());
-            }
-            if iteration == 0 {
-                let path = output.map(|directory| {
-                    directory.join(format!("frame-{}.png", frame.info.png_sha256))
-                });
-                if let Some(path) = &path {
-                    fs::write(path, &frame.png)?;
-                }
-                if index < 8 {
-                    summaries.push(json!({"frame":frame.info,"path":path}));
-                }
-            }
-        }
-        observation = Some(video.observation().clone());
-    }
-    Ok(
-        json!({"mode":"offline","representation":"yosoi.video.timeline.v1","controllable":false,"browser_started":false,"decoder_started":false,"record":record.id(),"iterations":repeat,"observation":observation,"frames_verified":frames.len(),"frames":summaries,"frames_omitted":frames.len().saturating_sub(8)}),
-    )
+/// Detached, read-only connection over frozen video evidence; close explicitly.
+pub struct VideoSession {
+    inner: Connection<VideoDriver>,
 }
+impl VideoSession {
+    /// Opens a frozen source. Frame dimensions are bounded by this video's max_side.
+    pub async fn open(
+        path: &Path,
+        policy: SurfacePolicy,
+        max_side: u32,
+    ) -> StdResult<Self, ExecutionError> {
+        let temporary = tempfile::tempdir().map_err(|e| ExecutionError::Operation(e.into()))?;
+        let output = policy
+            .output
+            .unwrap_or_else(|| temporary.path().join("artifacts"));
+        let archive = (policy.archive == ArchivePolicy::Enabled).then(|| {
+            policy
+                .archive_root
+                .unwrap_or_else(|| temporary.path().join("archive"))
+        });
+        let driver = open(path, output.clone(), archive, max_side)
+            .await
+            .map_err(ExecutionError::Operation)?;
+        Ok(Self {
+            inner: Connection::new(driver, output, temporary),
+        })
+    }
+}
+connection!(VideoSession);

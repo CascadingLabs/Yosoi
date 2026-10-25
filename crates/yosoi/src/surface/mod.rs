@@ -6,15 +6,25 @@
 //! session coordinates readers, scoped watches, and one hot owner.
 //! External adapters still own capture, final live eligibility, and effects.
 
+#[cfg(feature = "surface-connections")]
+pub mod archive;
+#[cfg(feature = "surface-connections")]
+mod connection;
 mod images;
 pub mod model;
+#[cfg(feature = "surface-connections")]
+mod policy;
 mod prepare;
-#[cfg(feature = "surface-runtime")]
-pub mod runtime;
+#[cfg(feature = "surface-connections")]
+pub use archive::ArchiveReceipt;
+#[cfg(feature = "surface-connections")]
+pub use connection::SurfaceConnection;
+#[cfg(feature = "surface-connections")]
+pub use policy::{ArchivePolicy, ExecutionError, SurfacePolicy};
+pub mod browser;
 mod session;
 #[cfg(feature = "surface-video")]
 pub mod video;
-pub mod web;
 
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use images::ImageCrop;

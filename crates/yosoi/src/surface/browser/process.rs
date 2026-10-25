@@ -1,6 +1,6 @@
 //! ChromeDriver transport; platform discovery uses the shared Stable admission gate.
-use super::{Result, Trace};
 use crate::internal::browser::session::browser_distribution::supported_chrome_executable;
+use crate::surface::connection::{Result, Trace};
 use crate::{
     documents::{Document, DocumentEpoch},
     surface::{Limits, Surface},
@@ -14,7 +14,7 @@ use tokio::{
     process::{Child, Command},
     time::timeout,
 };
-const SCRIPT: &str = include_str!("browser.js");
+const SCRIPT: &str = include_str!("extract.js");
 pub(super) const ELEMENT: &str = "element-6066-11e4-a52e-4f735466cecf";
 #[derive(Debug)]
 pub struct Browser {

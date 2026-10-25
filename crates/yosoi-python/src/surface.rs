@@ -160,7 +160,7 @@ impl NativeSurface {
 
     fn web(&self, source: &str) -> PyResult<NativeWebSurface> {
         let source = surface::model::SourceId::new(source).map_err(failure)?;
-        surface::web::WebSurface::new(self.inner.clone(), source)
+        surface::browser::WebSurface::new(self.inner.clone(), source)
             .map(|inner| NativeWebSurface { inner })
             .map_err(failure)
     }
@@ -224,7 +224,7 @@ impl NativeSurface {
 #[pyclass(frozen, module = "yosoi._native", name = "WebSurface")]
 #[derive(Debug)]
 pub struct NativeWebSurface {
-    inner: surface::web::WebSurface,
+    inner: surface::browser::WebSurface,
 }
 
 #[pymethods]

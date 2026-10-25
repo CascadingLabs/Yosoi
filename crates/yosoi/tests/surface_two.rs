@@ -8,12 +8,12 @@ use yosoi::{
     documents::Document,
     surface::{
         Budget, PixelRect, Surface,
+        browser::WebSurface,
         model::{
             AddressToken, ObservationId, ReadOperation, ReadRequest, ReadResult,
             Reference as EvidenceReference, SourceId, SurfaceRead,
         },
         video::{DecodedFrame, VideoPolicy, VideoSurface},
-        web::WebSurface,
     },
 };
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
@@ -331,19 +331,27 @@ async fn malformed_sources_and_processing_limits_fail_explicitly() -> TestResult
     Ok(())
 }
 
-#[cfg(feature = "surface-runtime")]
+#[cfg(feature = "surface-connections")]
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::panic_in_result_fn,
     reason = "Assertions verify runtime authority and lifecycle."
 )]
-async fn runtime_executes_without_terminal_and_closes_idempotently() -> TestResult {
-    use yosoi::surface::runtime::Runtime;
+async fn connections_execute_without_terminal_and_closes_idempotently() -> TestResult {
+    use yosoi::surface::{SurfaceConnection, SurfacePolicy, video::VideoSession};
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("source.mp4");
     fixture(&path).await?;
     let output = directory.path().join("output");
-    let mut runtime = Runtime::open_video(&path, output.clone(), None, 160).await?;
+    let mut runtime = VideoSession::open(
+        &path,
+        SurfacePolicy {
+            output: Some(output.clone()),
+            ..SurfacePolicy::default()
+        },
+        160,
+    )
+    .await?;
     let ready = runtime.ready()?;
     assert_eq!(ready["representation"], "yosoi.video.timeline.v1");
     let description = runtime.execute(json!({"op":"describe"})).await?;

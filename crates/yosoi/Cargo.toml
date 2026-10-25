@@ -46,8 +46,8 @@ browser = [
     "dep:windows-registry",
     "tokio/full",
 ]
-surface-runtime = ["browser", "surface-video"]
-cli = ["surface-runtime", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "dep:toml", "tokio/signal"]
+surface-connections = ["browser", "surface-video"]
+cli = ["surface-connections", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "dep:toml", "tokio/signal"]
 scanner = ["browser", "dep:infer"]
 encode-gif = ["browser", "image/gif"]
 encode-ffmpeg = ["browser"]

@@ -1,5 +1,5 @@
 //! Web evidence adapter over the existing immutable document index.
-use super::{
+use crate::surface::{
     Budget, Continuation, Reference as NativeReference, Surface, SurfaceError,
     model::{
         self, Access, AddressToken, Capability, ContinuationToken, Descriptor, Observation,

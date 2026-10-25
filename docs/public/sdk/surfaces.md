@@ -7,6 +7,8 @@ description: Reference scopes, budgets, cursor ownership, and provider capabilit
 
 Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. Start with [Surfaces](../concepts/surfaces.md) for documents, video and an agent-driven CLI task.
 
+The Rust `surface::browser` and `surface::video` modules own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI enables it automatically. Browser display mode and video frame bounds remain source-specific rather than generic Surface policy fields.
+
 ## Choose the reader
 
 | Reader       | Input                           | Supported operations                                         |

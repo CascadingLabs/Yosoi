@@ -15,7 +15,7 @@ provider is implemented by this change.
 ```text
 CLI arguments / JSON-lines / signals
                   |
-          Surface runtime
+          Surface connection
           /
    web execution     video execution
         |                  |
@@ -24,15 +24,15 @@ CLI arguments / JSON-lines / signals
       shared read DTOs and budgets
 ```
 
-The CLI calls the executor; the executor does not read stdin, write stdout or
-install process signal handlers. This lets a caller own cancellation and transport.
+The CLI dispatches browser and video connections. Shared connection code does not
+read stdin, write stdout or install process signal handlers. This lets a caller own cancellation and transport.
 Live repetition reports each confirmed iteration through a callback, preserving
 progress if a later iteration fails.
 
 The index is pure and independent of browser launch and OS APIs. Providers own
 capture, addresses, eligibility, side effects and resource cleanup. A new modality
 implements the existing read boundary and advertises its actual capabilities.
-It need not support search, parents, pixels or control. Add execution dispatch only
+It need not support search, parents, pixels or control. Add source dispatch only
 when a real provider exists; do not add speculative device enums or a plugin registry.
 
 ## Why each implementation file exists
@@ -44,20 +44,23 @@ Paths below are relative to `crates/yosoi/src/surface/`.
 | `mod.rs` | Document index, native document references, resource bounds and bounded navigation. No live browser ownership. |
 | `prepare.rs` | Parses supported Document representations and applies consistent structural reduction. One normalization boundary for every document input. |
 | `model.rs` | Representation-neutral identities, descriptors, read requests/results and `SurfaceRead`. Addresses stay opaque. |
-| `web.rs` | Projects the document index onto the shared read contract and translates exact native references. An immutable reader, with no action authority. |
+| `browser/document.rs` | Projects the document index onto the shared read contract and translates exact native references. An immutable reader, with no action authority. |
 | `session.rs` | Shared capture history, independent cursors, region watches and the single hot action lease. Owns revocation and freshness, not browser commands. |
 | `images.rs` | Checked pixel rectangles and bounded image materialization. Pixel coordinates never become document references. |
 | `video/mod.rs` | Frozen video ownership, metadata, decode policy and frame/crop materialization. No browser dependency for standalone video reads. |
 | `video/timeline.rs` | Lazy temporal addresses, interval subdivision and bounded read continuations. Isolates timeline semantics from native processes. |
 | `video/process.rs` | Bounded FFmpeg/FFprobe subprocess output, deadlines, kill and reap. This is the native processing boundary. |
 | `video/archive.rs` | Existing Archive integration for frozen source and decoded PNG evidence. Loading evidence never launches a browser or restores hot authority. |
-| `runtime/mod.rs` | Command validation, concrete provider dispatch, trace checkpoints and explicit cleanup. Shared JSON command contract; no terminal or OS signal ownership. |
-| `runtime/web.rs` | Live web command handling, exact-reference validation, action leases and observed postconditions. |
-| `runtime/adapter.rs` | ChromeDriver transport and isolated profile lifecycle. Reuses shared platform discovery and Stable browser admission. |
-| `runtime/browser.js` | In-page DOM capture, eligibility/hit testing and postcondition observation. Browser-only code stays at this boundary. |
-| `runtime/video.rs` | Read-only video execution using the shared command protocol. Rejects live web/control commands. |
-| `runtime/recording.rs` | Existing Document/AutomationRecord checkpoints and offline reconstruction. The dependent Archive PR replaces private handles with first-class policy archives. |
-| `runtime/repeating.rs` | Fresh-session execution of saved intentions, including complete search and unique eligible target resolution. Separate from offline replay. |
+| `browser/mod.rs` | Browser reader and connection entry points. |
+| `policy.rs` | Source-independent archive selection, output paths and execution errors. |
+| `connection.rs` | Generic connection lifecycle, command bounds and trace checkpoints; no provider enum or process code. Shared JSON command contract; no terminal or OS signal ownership. |
+| `browser/session.rs` | Live web command handling, exact-reference validation, action leases and observed postconditions. |
+| `browser/process.rs` | ChromeDriver transport and isolated profile lifecycle. Reuses shared platform discovery and Stable browser admission. |
+| `browser/extract.js` | In-page DOM capture, eligibility/hit testing and postcondition observation. Browser-only code stays at this boundary. |
+| `video/session.rs` | Read-only video execution using the shared command protocol. Rejects live web/control commands. |
+| `archive.rs` | Existing Document/AutomationRecord checkpoints and offline reconstruction. The dependent Archive PR replaces private handles with first-class policy archives. |
+| `browser/archive.rs` | Browser-specific capture, finalization and procedure replay. |
+| `browser/archive/repeating.rs` | Fresh-session execution of saved intentions, including complete search and unique eligible target resolution. Separate from offline replay. |
 
 These files correspond to distinct evidence, authority, process or persistence
 boundaries. Further splitting should follow ownership, not the number of methods.

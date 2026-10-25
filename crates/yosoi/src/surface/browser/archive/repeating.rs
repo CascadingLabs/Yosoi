@@ -1,6 +1,10 @@
 //! Live repetition resolves recorded intentions against newly captured surfaces.
-use super::{Driver, Operation, Result, Target, recording};
+use super::super::session::Driver;
 use crate::surface::{Budget, Reference};
+use crate::surface::{
+    archive::{self as recording},
+    connection::{Operation, Result, Target},
+};
 use serde_json::{Value, json};
 use std::{fs, io, path::Path};
 
@@ -111,7 +115,7 @@ pub async fn run(
         .and_then(Value::as_str)
         .ok_or_else(|| io::Error::other("record lacks initial URL"))?
         .to_owned();
-    super::web::validate_url(&url)?;
+    super::super::session::validate_url(&url)?;
     let mut clicks = Vec::new();
     for receipt in record
         .operations()
@@ -168,7 +172,7 @@ pub async fn run(
     for iteration in 1..=count {
         let directory = output.join(format!("run-{iteration}"));
         fs::create_dir_all(&directory)?;
-        let mut driver = super::web::open_web(
+        let mut driver = super::super::session::open_web(
             &url,
             headless,
             directory.clone(),
@@ -221,7 +225,7 @@ pub async fn run(
             driver.browser.script("location", json!({})).await
         }
         .await;
-        let closed = driver.close().await;
+        let closed = driver.finish().await;
         let location = execution?;
         closed?;
         on_iteration(

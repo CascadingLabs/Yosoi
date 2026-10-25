@@ -16,7 +16,11 @@ use tokio::{
     signal,
     sync::mpsc::{Receiver, channel},
 };
-use yosoi::surface::runtime::Runtime;
+use yosoi::surface::{
+    ArchivePolicy, SurfaceConnection, SurfacePolicy, archive as surface_archive,
+    browser::{BrowserSurface, archive as browser_archive},
+    video::VideoSession,
+};
 type Result<T> = StdResult<T, Box<dyn Error + Send + Sync>>;
 #[derive(Debug, Args)]
 pub struct SurfaceArgs {
@@ -96,7 +100,7 @@ async fn reply(output: &mut Stdout, id: Value, result: Result<Value>, budget: us
     output.flush().await?;
     Ok(())
 }
-async fn control_loop(driver: &mut Runtime) -> Result<()> {
+async fn control_loop(driver: &mut impl SurfaceConnection) -> Result<()> {
     let mut output = stdout();
     reply(
         &mut output,
@@ -184,12 +188,23 @@ async fn interruption() -> io::Result<()> {
     #[cfg(not(unix))]
     signal::ctrl_c().await
 }
-async fn drive(mut runtime: Runtime) -> Result<()> {
-    let result = control_loop(&mut runtime).await;
-    let closed = runtime.close().await;
+async fn drive(mut surface: impl SurfaceConnection) -> Result<()> {
+    let result = control_loop(&mut surface).await;
+    let closed = surface.close().await;
     result?;
     closed?;
     Ok(())
+}
+const fn policy(output: PathBuf, archive: Option<PathBuf>) -> SurfacePolicy {
+    SurfacePolicy {
+        archive: if archive.is_some() {
+            ArchivePolicy::Enabled
+        } else {
+            ArchivePolicy::Off
+        },
+        archive_root: archive,
+        output: Some(output),
+    }
 }
 pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
     let result = match args.command {
@@ -198,19 +213,21 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             headless,
             output,
             archive,
-        } => drive(Runtime::open_web(&url, headless, output, archive).await?).await,
+        } => drive(BrowserSurface::open(&url, policy(output, archive), headless).await?).await,
         SurfaceCommand::Video {
             file,
             output,
             archive,
             max_side,
-        } => drive(Runtime::open_video(&file, output, archive, max_side).await?).await,
+        } => drive(VideoSession::open(&file, policy(output, archive), max_side).await?).await,
         SurfaceCommand::Replay {
             record,
             repeat,
             query,
             output,
-        } => match Runtime::replay(&record, repeat, query.as_deref(), output.as_deref()).await {
+        } => match surface_archive::replay(&record, repeat, query.as_deref(), output.as_deref())
+            .await
+        {
             Ok(value) => {
                 println!("{}", serde_json::to_string(&value)?);
                 Ok(())
@@ -223,7 +240,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             headless,
             output,
         } => {
-            Runtime::repeat(&record, count, headless, &output, |result| {
+            browser_archive::repeat(&record, count, headless, &output, |result| {
                 println!("{result}");
             })
             .await?;

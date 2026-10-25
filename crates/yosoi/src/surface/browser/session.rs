@@ -1,17 +1,24 @@
-//! Web actions, exact-reference validation and live session ownership.
 use super::{
-    AgentSurface, Expectation, Operation, Request, Result, Trace,
-    adapter::{Browser, ELEMENT},
-    recording::Recording,
-    repeating,
+    archive::{Recording, resolve},
+    process::{Browser, ELEMENT},
 };
 use crate::surface::{
-    ActionStatus, Budget, Cursor, Reference, Session, SessionPolicy,
+    ActionStatus, ArchivePolicy, ArchiveReceipt, Budget, Cursor, ExecutionError, Reference,
+    Session, SessionPolicy, SurfaceConnection, SurfacePolicy,
+    browser::WebSurface,
+    connection::{
+        AgentSurface, Connection, Expectation, Operation, Request, Result, Trace, connection,
+    },
     model::{self, SurfaceRead},
-    web::WebSurface,
 };
 use serde_json::{Value, json};
-use std::{error::Error, fs, io, path::PathBuf};
+use std::{
+    error::Error,
+    fmt::{self, Debug, Formatter},
+    fs, io,
+    path::PathBuf,
+    result::Result as StdResult,
+};
 pub(super) struct Driver {
     pub(super) browser: Browser,
     pub(super) session: Session,
@@ -22,7 +29,7 @@ pub(super) struct Driver {
     pub(super) recording: Option<Recording>,
 }
 impl Driver {
-    pub(super) async fn close(&mut self) -> Result<()> {
+    pub(super) async fn finish(&mut self) -> Result<()> {
         let detached = self.session.detach();
         let closed = self.browser.close().await;
         let archived = if let Some(recording) = self.recording.as_mut() {
@@ -225,7 +232,7 @@ impl Driver {
             target: Some(target),
             ..
         } = operation
-            && repeating::resolve(self, target).await? != *reference
+            && resolve(self, target).await? != *reference
         {
             return Err(io::Error::other(
                 "recorded intention does not identify the selected reference",
@@ -463,6 +470,38 @@ fn validate_effect(operation: &Operation) -> Result<()> {
         _ => Ok(()),
     }
 }
+impl AgentSurface for Driver {
+    fn outcome(&self) -> Option<ArchiveReceipt> {
+        self.recording.as_ref().and_then(Recording::receipt)
+    }
+    async fn close(mut self) -> (Option<ArchiveReceipt>, Result<()>) {
+        let closed = Self::finish(&mut self).await;
+        (self.recording.as_ref().and_then(Recording::receipt), closed)
+    }
+
+    fn ready(&mut self) -> Result<Value> {
+        self.trace.read(
+            "surface.open",
+            &self.cursor.overview(None, Budget::default())?,
+        )?;
+        Ok(
+            json!({"event":"ready","sdk":"ys::surface","state":self.status()?,"browser":self.browser.capabilities.get("browserVersion"),"representation":"yosoi.web.document.v1","controllable":true,"protocol":"JSON lines; describe and read share the video protocol; close or EOF releases resources"}),
+        )
+    }
+    async fn command(&mut self, request: &Request) -> Result<Value> {
+        Self::command(self, request).await
+    }
+    async fn persist_command(
+        &mut self,
+        operation: &Operation,
+        result: Result<Value>,
+    ) -> Result<Value> {
+        Self::persist_command(self, operation, result).await
+    }
+    fn trace(&mut self) -> &mut Trace {
+        &mut self.trace
+    }
+}
 pub(super) async fn open_web(
     url: &str,
     headless: bool,
@@ -505,27 +544,33 @@ pub(super) async fn open_web(
         recording,
     })
 }
-impl AgentSurface for Driver {
-    fn ready(&mut self) -> Result<Value> {
-        self.trace.read(
-            "surface.open",
-            &self.cursor.overview(None, Budget::default())?,
-        )?;
-        Ok(
-            json!({"event":"ready","sdk":"ys::surface","state":self.status()?,"browser":self.browser.capabilities.get("browserVersion"),"representation":"yosoi.web.document.v1","controllable":true,"protocol":"JSON lines; describe and read share the video protocol; close or EOF releases resources"}),
-        )
-    }
-    async fn command(&mut self, request: &Request) -> Result<Value> {
-        Self::command(self, request).await
-    }
-    async fn persist_command(
-        &mut self,
-        operation: &Operation,
-        result: Result<Value>,
-    ) -> Result<Value> {
-        Self::persist_command(self, operation, result).await
-    }
-    fn trace(&mut self) -> &mut Trace {
-        &mut self.trace
+/// Isolated browser connection, initially detached; close explicitly after use.
+pub struct BrowserSurface {
+    inner: Connection<Driver>,
+}
+impl BrowserSurface {
+    /// Opens a supported regular browser. Display mode belongs to this browser,
+    /// while archive and output selection come from the shared Surface policy.
+    pub async fn open(
+        url: &str,
+        policy: SurfacePolicy,
+        headless: bool,
+    ) -> StdResult<Self, ExecutionError> {
+        let temporary = tempfile::tempdir().map_err(|e| ExecutionError::Operation(e.into()))?;
+        let output = policy
+            .output
+            .unwrap_or_else(|| temporary.path().join("artifacts"));
+        let archive = (policy.archive == ArchivePolicy::Enabled).then(|| {
+            policy
+                .archive_root
+                .unwrap_or_else(|| temporary.path().join("archive"))
+        });
+        let driver = open_web(url, headless, output.clone(), archive)
+            .await
+            .map_err(ExecutionError::Operation)?;
+        Ok(Self {
+            inner: Connection::new(driver, output, temporary),
+        })
     }
 }
+connection!(BrowserSurface);
