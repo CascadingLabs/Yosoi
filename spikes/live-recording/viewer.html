@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Yosoi live display lab</title>
+<style>
+body {font:16px system-ui;background:#10151e;color:#edf1f8;max-width:1100px;margin:30px auto;padding:0 20px}
+button,input {font:inherit;padding:9px;margin:4px;border-radius:6px;border:1px solid #62748d}
+button {cursor:pointer;background:#d6e6ff} video {width:100%;background:black;cursor:crosshair}
+#status,#stats {white-space:pre-wrap;color:#aecaed} a {color:#aecaed} iframe {width:100%;height:650px;border:0}
+</style>
+<h1>Yosoi live display lab</h1>
+<p>One browser, one private display. Video and saved recordings use OS capture.</p>
+<button id="connect">Connect WebRTC</button>
+<button id="human">Take human control</button><button id="automation">Return control</button>
+<button id="record">Start recording</button><button id="stop">Save recording</button>
+<p id="status">Connecting control channel…</p>
+<video id="video" autoplay playsinline muted tabindex="0"></video>
+<p><input id="text" placeholder="Text for focused remote field"><button id="send">Send text</button></p>
+<p id="stats">Video metrics appear after connection. Input acknowledgements measure server execution, not visible response.</p>
+<h2>Saved recordings</h2><div id="files"></div>
+<details id="comparison" hidden><summary>noVNC comparison (view only)</summary>
+<p>A VNC server captures this same X display. Input stays on the gated lab channel above.</p>
+<iframe title="noVNC comparison" id="vnc"></iframe></details>
+<script type="module">
+const $ = id => document.getElementById(id);
+const control = new WebSocket(`ws://${location.host}/control`);
+let peer, owner = 'automation', timer, previous;
+function send(value) { if (control.readyState === WebSocket.OPEN) control.send(JSON.stringify(value)); }
+function render(state) {
+  if (state.error) { $('status').textContent = state.error; return; }
+  owner = state.owner;
+  $('status').textContent = `${state.engine} · ${state.capture} · control: ${owner} · recording: ${state.recording || 'off'}`;
+  $('files').replaceChildren(...state.recordings.map(name => {
+    const p = document.createElement('p'), a = document.createElement('a');
+    a.href = `/recordings/${encodeURIComponent(name)}`; a.textContent = name; p.append(a); return p;
+  }));
+}
+control.onopen = async () => {
+  const state = await (await fetch('/status')).json(); render(state);
+  if (state.novnc) {
+    $('comparison').hidden = false;
+    $('vnc').src = `/novnc/vnc.html?autoconnect=true&resize=scale&view_only=true&path=vnc`;
+  }
+};
+control.onmessage = event => render(JSON.parse(event.data));
+control.onclose = () => { $('status').textContent = 'Control disconnected'; };
+for (const name of ['human','automation']) $(name).onclick = () => send({action:'owner',owner:name});
+for (const name of ['record','stop']) $(name).onclick = () => send({action:name});
+$('send').onclick = () => send({action:'input',kind:'text',text:$('text').value});
+$('video').onclick = event => {
+  const rect = event.target.getBoundingClientRect();
+  send({action:'input',kind:'click',x:Math.floor((event.clientX-rect.left)*event.target.videoWidth/rect.width),
+    y:Math.floor((event.clientY-rect.top)*event.target.videoHeight/rect.height)});
+  event.target.focus();
+};
+$('video').onwheel = event => { event.preventDefault(); send({action:'input',kind:'scroll',delta:event.deltaY}); };
+$('video').onkeydown = event => {
+  const keys = {Enter:'Return',Backspace:'BackSpace',ArrowLeft:'Left',ArrowRight:'Right',ArrowUp:'Up',ArrowDown:'Down'};
+  if (event.ctrlKey || event.altKey || event.metaKey) return;
+  event.preventDefault();
+  if (event.key.length === 1) send({action:'input',kind:'text',text:event.key});
+  else send({action:'input',kind:'key',key:keys[event.key] || event.key});
+};
+$('connect').onclick = async () => {
+  $('connect').disabled = true;
+  try {
+    peer = new RTCPeerConnection({iceServers:[]});
+    peer.addTransceiver('video',{direction:'recvonly'});
+    peer.ontrack = event => { $('video').srcObject = new MediaStream([event.track]); };
+    await peer.setLocalDescription(await peer.createOffer());
+    if (peer.iceGatheringState !== 'complete') await new Promise((resolve,reject) => {
+      const timeout = setTimeout(() => reject(new Error('ICE gathering timed out')),10000);
+      peer.addEventListener('icegatheringstatechange',() => {
+        if (peer.iceGatheringState === 'complete') { clearTimeout(timeout); resolve(); }
+      });
+    });
+    const response = await fetch('/offer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(peer.localDescription)});
+    if (!response.ok) throw new Error(await response.text());
+    await peer.setRemoteDescription(await response.json());
+    timer = setInterval(async () => {
+      const stats = await peer.getStats();
+      for (const stat of stats.values()) if (stat.type === 'inbound-rtp' && stat.kind === 'video') {
+        const elapsed = previous ? (stat.timestamp-previous.timestamp)/1000 : 0;
+        const fps = elapsed ? (stat.framesDecoded-previous.framesDecoded)/elapsed : 0;
+        const kbps = elapsed ? 8*(stat.bytesReceived-previous.bytesReceived)/elapsed/1000 : 0;
+        const delay = stat.jitterBufferEmittedCount ? 1000*stat.jitterBufferDelay/stat.jitterBufferEmittedCount : 0;
+        $('stats').textContent = `Decoded ${fps.toFixed(1)} fps · received ${kbps.toFixed(0)} kbit/s · average jitter buffer ${delay.toFixed(1)} ms · lost ${stat.packetsLost} packets\nThese are receiver metrics, not capture-to-display or input-to-visible latency.`;
+        previous = stat;
+      }
+    },1000);
+  } catch (error) { $('status').textContent = String(error); await peer?.close(); $('connect').disabled = false; }
+};
+window.addEventListener('pagehide',() => { clearInterval(timer); peer?.close(); control.close(); });
+</script>
+</html>
