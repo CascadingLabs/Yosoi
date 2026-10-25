@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["schemaVersion", "kind", "sourcePin", "pythonPin", "entries"],
   "properties": {
+    "surfaceContract": {"const": "surface-contract.json"},
     "schemaVersion": {"const": 1},
     "kind": {"const": "python-rust-sdk-parity-ledger"},
     "sourcePin": {
@@ -125,7 +126,7 @@
         },
         "allOf": [
           {
-            "if": {"properties": {"mappingDirection": {"const": "output"}}},
+            "if": {"required": ["mappingDirection"], "properties": {"mappingDirection": {"const": "output"}}},
             "then": {"required": ["outputBinding"]}
           },
           {

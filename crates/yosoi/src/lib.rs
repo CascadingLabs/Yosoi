@@ -35,6 +35,12 @@ pub use policy::{
     StopScope,
 };
 pub use request::{CancellationToken, ResponseTermination};
+#[cfg(feature = "surface-video")]
+pub use surface::video::{DecodedFrame, VideoError, VideoPolicy, VideoSurface};
+pub use surface::{
+    Budget as SurfaceBudget, Limits as SurfaceLimits, PixelRect, Session as SurfaceSession,
+    SessionPolicy as SurfaceSessionPolicy, Surface, SurfaceError, web::WebSurface,
+};
 
 extern crate self as yosoi;
 

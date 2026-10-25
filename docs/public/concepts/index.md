@@ -28,7 +28,6 @@ The examples use Rust and Python with the same inputs and intended results where
 | [Yielding while waiting](yielding-while-waiting.md)               | Let another tab use execution capacity while a wait retains control.      |
 | [Keeping browser windows in Docker](browser-windows-in-docker.md) | Give a headful browser its own display and optional viewer.               |
 | [Keeping the evidence](keeping-the-evidence.md)                   | Restore saved input and inspect retained automation records.              |
-| [Exploring a surface](exploring-a-surface.md)                     | Read bounded structural views and drill into exact document evidence.     |
-| [Exploring video evidence](exploring-video.md)                    | Navigate a frozen timeline and keep actual frames and crops.              |
+| [Surfaces](surfaces.md)                                           | Read documents and video, then drive an agent task through the CLI.       |
 
 Begin with [Making sense of HTML](documents-and-evidence.md).

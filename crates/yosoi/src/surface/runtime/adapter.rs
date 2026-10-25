@@ -1,68 +1,21 @@
-//! Experimental ChromeDriver transport shared by the surface CLI and article example.
+//! ChromeDriver transport; platform discovery uses the shared Stable admission gate.
+use super::{Result, Trace};
+use crate::internal::browser::session::browser_distribution::supported_chrome_executable;
+use crate::{
+    documents::{Document, DocumentEpoch},
+    surface::{Limits, Surface},
+};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rustls::crypto::{CryptoProvider, ring};
 use serde_json::{Value, json};
-use std::{
-    collections::VecDeque,
-    env,
-    error::Error,
-    fs, io,
-    path::{Path, PathBuf},
-    process::Stdio,
-    result::Result as StdResult,
-    time::{Duration, Instant},
-};
+use std::{env, fs, io, path::Path, process::Stdio, time::Duration};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
     time::timeout,
 };
-use yosoi::{
-    documents::{Document, DocumentEpoch},
-    surface::{Budget, Limits, Surface},
-};
-pub type Result<T> = StdResult<T, Box<dyn Error + Send + Sync>>;
 const SCRIPT: &str = include_str!("browser.js");
-pub const ELEMENT: &str = "element-6066-11e4-a52e-4f735466cecf";
-#[derive(Debug)]
-pub struct Trace {
-    pub start: Instant,
-    pub events: VecDeque<Value>,
-    pub read_bytes: usize,
-    pub dropped_events: usize,
-    pub output: PathBuf,
-}
-impl Trace {
-    pub fn new(output: &Path) -> Self {
-        Self {
-            start: Instant::now(),
-            events: VecDeque::new(),
-            read_bytes: 0,
-            dropped_events: 0,
-            output: output.to_owned(),
-        }
-    }
-    pub fn event(&mut self, operation: &str, evidence: Value) {
-        let mut event = json!({"at_ms":self.start.elapsed().as_millis(),"operation":operation});
-        if let Some(fields) = event.as_object_mut() {
-            fields.insert("evidence".into(), evidence);
-        }
-        if self.events.len() >= 1024 {
-            self.events.pop_front();
-            self.dropped_events = self.dropped_events.saturating_add(1);
-        }
-        self.events.push_back(event);
-    }
-    pub fn read(&mut self, operation: &str, value: &impl serde::Serialize) -> Result<()> {
-        let bytes = serde_json::to_vec(value)?.len();
-        if bytes > Budget::default().bytes {
-            return Err(io::Error::other("SDK read exceeded its byte budget").into());
-        }
-        self.read_bytes = self.read_bytes.saturating_add(bytes);
-        self.event(operation, json!({"response_bytes":bytes,"response":value}));
-        Ok(())
-    }
-}
+pub(super) const ELEMENT: &str = "element-6066-11e4-a52e-4f735466cecf";
 #[derive(Debug)]
 pub struct Browser {
     client: reqwest::Client,
@@ -84,8 +37,7 @@ impl Browser {
         }
         let profile = tempfile::tempdir()?;
         let driver_bin = env::var("CHROMEDRIVER").unwrap_or_else(|_| "chromedriver".into());
-        let browser_bin =
-            env::var("CHROME").unwrap_or_else(|_| "/usr/lib/chromium/chromium".into());
+        let browser_bin = supported_chrome_executable(env::var("CHROME").ok().as_deref()).await?;
         let mut driver = Command::new(driver_bin)
             .args(["--port=0", "--allowed-ips=127.0.0.1"])
             .stdout(Stdio::piped())
@@ -128,8 +80,6 @@ impl Browser {
         ];
         if headless {
             flags.push("--headless=new".into());
-        } else {
-            flags.push("--ozone-platform=x11".into());
         }
         let created = browser.command(reqwest::Method::POST, "/session", Some(json!({"capabilities":{"alwaysMatch":{
             "browserName":"chrome","pageLoadStrategy":"eager","goog:chromeOptions":{"binary":browser_bin,"args":flags}}}}))).await?;

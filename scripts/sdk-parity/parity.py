@@ -1123,6 +1123,19 @@ def load_ledger(path: Path) -> dict[str, Any]:
         or ledger.get("kind") != "python-rust-sdk-parity-ledger"
     ):
         raise ParityError("unsupported parity ledger schema or kind")
+    if "surfaceContract" in ledger:
+        if not isinstance(ledger.get("entries"), list):
+            raise ParityError("parity ledger must contain an entries array")
+        from sdk_contract import load_surface_contract, surface_contract_path
+
+        try:
+            source = surface_contract_path(ledger, path.parent)
+            if source is not None:
+                _, surface_entries = load_surface_contract(source)
+                ledger["entries"].extend(surface_entries)
+                ledger.pop("surfaceContract")
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            raise ParityError(f"invalid Surface contract: {error}") from error
     entries = ledger.get("entries")
     if not isinstance(entries, list):
         raise ParityError("parity ledger must contain an entries array")

@@ -1,16 +1,6 @@
 //! Video is a read-only source behind the same JSON-lines front end as live web.
-use super::{
-    AgentSurface, Operation, Request,
-    adapter::{Result, Trace},
-    control_loop,
-    recording::Recording,
-};
-use serde_json::{Value, json};
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-};
-use yosoi::{
+use super::{AgentSurface, Operation, Request, Result, Trace, recording::Recording};
+use crate::{
     Archive,
     automation_record::AutomationRecord,
     surface::{
@@ -19,7 +9,12 @@ use yosoi::{
         video::{DecodedFrame, FrameArchiveRef, VideoArchiveRef, VideoPolicy, VideoSurface},
     },
 };
-struct VideoDriver {
+use serde_json::{Value, json};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
+pub(super) struct VideoDriver {
     surface: VideoSurface,
     attached: bool,
     focus: model::Reference,
@@ -28,6 +23,13 @@ struct VideoDriver {
     recording_fault: bool,
 }
 impl VideoDriver {
+    pub(super) async fn close(&mut self) -> Result<()> {
+        self.attached = false;
+        if let Some(recording) = self.recording.as_mut() {
+            recording.close_video().await?;
+        }
+        Ok(())
+    }
     fn describe(&self) -> Value {
         json!({"descriptor":self.surface.descriptor(),"observation":self.surface.observation(),"root":self.surface.root_reference()})
     }
@@ -99,24 +101,6 @@ impl AgentSurface for VideoDriver {
             _=>Err(io::Error::other("capability unavailable on read-only video; use describe and the shared read protocol").into()),
         }
     }
-    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
-        match result {
-            Ok(value) => {
-                if matches!(operation, Operation::Read { .. }) {
-                    self.trace.read_bytes = self
-                        .trace
-                        .read_bytes
-                        .saturating_add(serde_json::to_vec(value)?.len());
-                }
-                self.trace.event("cli.reply", value.clone());
-            }
-            Err(error) => self.trace.event(
-                "cli.error",
-                json!({"error":error.to_string().chars().take(512).collect::<String>()}),
-            ),
-        }
-        Ok(())
-    }
     async fn persist_command(
         &mut self,
         operation: &Operation,
@@ -137,12 +121,12 @@ impl AgentSurface for VideoDriver {
         &mut self.trace
     }
 }
-pub async fn drive(
+pub(super) async fn open(
     path: &Path,
     output: PathBuf,
     archive: Option<PathBuf>,
     max_side: u32,
-) -> Result<()> {
+) -> Result<VideoDriver> {
     fs::create_dir_all(&output)?;
     let surface = VideoSurface::open(
         path,
@@ -166,25 +150,14 @@ pub async fn drive(
             .await?;
     }
     let focus = surface.root_reference();
-    let mut driver = VideoDriver {
+    Ok(VideoDriver {
         surface,
         attached: false,
         focus,
         trace: Trace::new(&output),
         recording,
         recording_fault: false,
-    };
-    let control = control_loop(&mut driver, &output).await;
-    driver.attached = false;
-    drop(driver.surface);
-    let archived = if let Some(recording) = driver.recording.as_mut() {
-        recording.close_video().await
-    } else {
-        Ok(())
-    };
-    control?;
-    archived?;
-    Ok(())
+    })
 }
 pub async fn replay_loaded(
     archive: &Archive,

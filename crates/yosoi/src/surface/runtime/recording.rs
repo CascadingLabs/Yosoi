@@ -1,14 +1,6 @@
 //! Surface recording uses existing immutable Documents and AutomationRecords.
-use super::adapter::Result;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
-use std::{
-    fs,
-    io::{self, Write},
-    path::{Path, PathBuf},
-};
-use uuid::Uuid;
-use yosoi::{
+use super::Result;
+use crate::{
     Archive,
     archive::DocumentArchiveRef,
     automation_record::{
@@ -18,6 +10,14 @@ use yosoi::{
     surface::{Budget, Limits, Surface},
     view::View,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use std::{
+    fs,
+    io::{self, Write},
+    path::{Path, PathBuf},
+};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -273,7 +273,7 @@ pub async fn replay(
         .iter()
         .any(|op| op.kind == "surface.video.source")
     {
-        return super::video_cli::replay_loaded(&archive, &record, repeat, query, output).await;
+        return super::video::replay_loaded(&archive, &record, repeat, query, output).await;
     }
     let captures = capture_descriptors(&record)?;
     if captures.is_empty() {

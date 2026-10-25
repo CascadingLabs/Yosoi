@@ -1,12 +1,8 @@
 //! Live repetition resolves recorded intentions against newly captured surfaces.
-use super::{
-    Driver, Operation, Target,
-    adapter::{Browser, Result, Trace},
-    recording::{self, Recording},
-};
+use super::{Driver, Operation, Result, Target, recording};
+use crate::surface::{Budget, Reference};
 use serde_json::{Value, json};
-use std::{error::Error, fs, io, path::Path};
-use yosoi::surface::{Budget, Reference, Session, SessionPolicy};
+use std::{fs, io, path::Path};
 
 pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
     if target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty() {
@@ -72,7 +68,13 @@ pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
         .next()
         .ok_or_else(|| io::Error::other("target absent").into())
 }
-pub async fn run(path: &Path, count: usize, headless: bool, output: &Path) -> Result<()> {
+pub async fn run(
+    path: &Path,
+    count: usize,
+    headless: bool,
+    output: &Path,
+    mut on_iteration: impl FnMut(Value),
+) -> Result<()> {
     if !(1..=100).contains(&count) {
         return Err(io::Error::other("count must be 1..100").into());
     }
@@ -109,7 +111,7 @@ pub async fn run(path: &Path, count: usize, headless: bool, output: &Path) -> Re
         .and_then(Value::as_str)
         .ok_or_else(|| io::Error::other("record lacks initial URL"))?
         .to_owned();
-    super::validate_url(&url)?;
+    super::web::validate_url(&url)?;
     let mut clicks = Vec::new();
     for receipt in record
         .operations()
@@ -166,37 +168,16 @@ pub async fn run(path: &Path, count: usize, headless: bool, output: &Path) -> Re
     for iteration in 1..=count {
         let directory = output.join(format!("run-{iteration}"));
         fs::create_dir_all(&directory)?;
-        let mut trace = Trace::new(&directory);
-        let mut recording = Recording::open(archive.root(), &directory, &url).await?;
-        let mut browser = Browser::open(headless).await?;
-        let initial = async {
-            browser.post("/url", json!({"url":url})).await?;
-            let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
-            recording.capture(&document, &surface, &snapshot, 1).await?;
-            Ok::<_, Box<dyn Error + Send + Sync>>(surface)
-        }
-        .await;
-        let surface = match initial {
-            Ok(value) => value,
-            Err(error) => {
-                let _ = browser.close().await;
-                return Err(error);
-            }
-        };
-        let session = Session::new(surface, SessionPolicy::default())?;
-        session.attach()?;
-        let cursor = session.cursor()?;
-        cursor.promote()?;
-        let mut driver = Driver {
-            browser,
-            session,
-            cursor,
-            epoch: 1,
-            trace,
-            recording_fault: false,
-            recording: Some(recording),
-        };
+        let mut driver = super::web::open_web(
+            &url,
+            headless,
+            directory.clone(),
+            Some(archive.root().to_owned()),
+        )
+        .await?;
         let execution = async {
+            driver.session.attach()?;
+            driver.cursor.promote()?;
             for click in &clicks {
                 let Operation::Click {
                     target: Some(target),
@@ -240,22 +221,11 @@ pub async fn run(path: &Path, count: usize, headless: bool, output: &Path) -> Re
             driver.browser.script("location", json!({})).await
         }
         .await;
-        let detached = driver.session.detach();
-        let closed = driver.browser.close().await;
-        let archived = if let Some(recording) = driver.recording.as_mut() {
-            recording.close(&closed).await
-        } else {
-            Ok(())
-        };
+        let closed = driver.close().await;
         let location = execution?;
-        archived?;
-        detached?;
         closed?;
-        println!(
-            "{}",
-            serde_json::to_string(
-                &json!({"iteration":iteration,"confirmed_clicks":clicks.len(),"record":directory.join("record.json"),"mode":"live","fresh_session":true,"final_url":location.get("url")})
-            )?
+        on_iteration(
+            json!({"iteration":iteration,"confirmed_clicks":clicks.len(),"record":directory.join("record.json"),"mode":"live","fresh_session":true,"final_url":location.get("url")}),
         );
     }
     Ok(())

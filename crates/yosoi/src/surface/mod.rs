@@ -9,6 +9,8 @@
 mod images;
 pub mod model;
 mod prepare;
+#[cfg(feature = "surface-runtime")]
+pub mod runtime;
 mod session;
 #[cfg(feature = "surface-video")]
 pub mod video;

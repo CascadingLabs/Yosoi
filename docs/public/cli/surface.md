@@ -34,13 +34,7 @@ Before a click, the adapter checks that the current target still belongs to the 
 
 For the docs version story, search for `Documentation release`, focus its `summary` element, acquire `hot`, and click with a text expectation for `v0.1.0`. Search again after that capture, focus the `v0.1.0` link, and click with a text expectation for the archived page's version notice. Verify that the observed destination is the v0.1.0 archive route.
 
-The repository includes a complete agent driver for this story. With Node and a Surface-enabled CLI installed, run it from the Yosoi checkout:
-
-```sh
-node crates/yosoi/examples/surface_cli_versions.mjs yosoi docs-version-run
-```
-
-It follows returned references, checks complete search coverage and unique eligible targets, performs the two clicks, and saves `example.json` alongside the sealed Archive handle. Failed runs retain their transcript too. This task uses the version notice and destination version as its completion criteria; an exact navigation expectation would also require all query parameters to match.
+For a complete agent task on QScrape’s synthetic shop, follow [Surfaces](../concepts/surfaces.md).
 
 An effect without an observed postcondition remains unconfirmed. A successful transport call alone does not establish that the requested task succeeded. Other web operations include fill, key, scroll, navigate, article inspection, screenshots, refresh, cool, and detach.
 
@@ -66,4 +60,4 @@ Replay reads saved evidence without opening a browser. Saved video frames replay
 
 Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 16,384 bytes, and reject oversized input lines above 64 KiB.
 
-Use `yosoi surface --help` for command options. Continue with [Exploring a surface](../concepts/exploring-a-surface.md) and [Exploring video evidence](../concepts/exploring-video.md).
+Use `yosoi surface --help` for command options. Continue with [Exploring a surface](../concepts/surfaces.md) and [Exploring video evidence](../concepts/surfaces.md).

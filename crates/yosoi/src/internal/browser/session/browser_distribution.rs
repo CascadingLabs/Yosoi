@@ -13,7 +13,7 @@ use crate::internal::browser::error::{Result, VoidCrawlError};
 
 const BROWSER_IDENTITY_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub(super) async fn supported_chrome_executable(explicit: Option<&str>) -> Result<PathBuf> {
+pub async fn supported_chrome_executable(explicit: Option<&str>) -> Result<PathBuf> {
     let executable = explicit.map_or_else(
         || {
             default_executable(DetectionOptions::default()).map_err(|_| {

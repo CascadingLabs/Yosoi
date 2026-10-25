@@ -330,3 +330,42 @@ async fn malformed_sources_and_processing_limits_fail_explicitly() -> TestResult
     );
     Ok(())
 }
+
+#[cfg(feature = "surface-runtime")]
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions verify runtime authority and lifecycle."
+)]
+async fn runtime_executes_without_terminal_and_closes_idempotently() -> TestResult {
+    use yosoi::surface::runtime::Runtime;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("source.mp4");
+    fixture(&path).await?;
+    let output = directory.path().join("output");
+    let mut runtime = Runtime::open_video(&path, output.clone(), None, 160).await?;
+    let ready = runtime.ready()?;
+    assert_eq!(ready["representation"], "yosoi.video.timeline.v1");
+    let description = runtime.execute(json!({"op":"describe"})).await?;
+    assert_eq!(description["descriptor"]["controllable"], false);
+    assert!(runtime.execute(json!({"op":"hot"})).await.is_err());
+    assert!(
+        runtime
+            .execute(json!({"op":"attach","budget":1}))
+            .await
+            .is_err()
+    );
+    let before = runtime.execute(json!({"op":"status"})).await?;
+    assert_eq!(before["cursor"]["mode"], "detached");
+    runtime.execute(json!({"op":"attach"})).await?;
+    let read = runtime
+        .execute(json!({"op":"read","request":{"operation":{"kind":"overview"}}}))
+        .await?;
+    assert_eq!(read["kind"], "page");
+    assert!(output.join("trace.json").is_file());
+    runtime.close().await?;
+    runtime.close().await?;
+    assert!(runtime.ready().is_err());
+    assert!(runtime.execute(json!({"op":"status"})).await.is_err());
+    Ok(())
+}

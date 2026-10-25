@@ -1,81 +1,50 @@
-# Surface documentation review
+# Surface review handoff
 
-Workspace: `/home/andrew/Desktop/cl/yosoi-observation-index-spike`.
-Delivery: draft PR #164, `andberg9/cas-616-surfaces`.
-Rust API artifact: `a408de85a8d2f22fef001f3a11d454bdc8fcbf2a`, features
-`browser,surface-video`, verified unsigned preview. The current SDK source and
-manifest have zero changes from that artifact's SDK source. Python references
-are regenerated from the working package by the normal docs pipeline.
+Workspace: `/home/andrew/Desktop/cl/yosoi-review-164-examples`.
+JJ working change: `rxnkynwu`, above PR #164 head `d331cb45`.
+These review changes are local. The remote PR and dependent stack are unchanged.
 
-## Reader claims and evidence
+## Review entry points
 
-| Page | Reader task | Implementing evidence |
-| --- | --- | --- |
-| `concepts/exploring-a-surface.md` | Find a region, inspect exact evidence, follow bounded continuations | Rust Surface; installed Python tests; six shared Rust/Python document vectors |
-| `concepts/exploring-video.md` | Select media time, obtain actual pixels, restore archived PNG evidence | Rust VideoSurface/DecodedFrame; installed Python video tests; both supplied MP4s |
-| `sdk/surfaces.md` | Distinguish references, capabilities, cursor ownership and adapter lifecycle | Shared model, Session/Cursor/ActionLease and native Python bindings |
-| `cli/surface.md` | Drive JSON lines, confirm a version switch, replay evidence or repeat effects | Installed CLI, public version driver, normal Archive/AutomationRecord |
+- `concepts/surfaces.md` combines document/video exploration, root SDK examples,
+  a coding-agent task and a complete QScrape eShop CLI driver.
+- `docs/documentation/surfaces.md` explains every Surface implementation file,
+  provider/OS boundaries and parity inputs.
+- `python/parity/surface-contract.json` replaces duplicated Surface inventory
+  snapshots with one reviewed input for both parity checks.
+- `surface/runtime/` owns provider execution. The CLI owns terminal transport.
+  Acceptance drivers and conformance binaries live under test fixtures.
 
-The immutable web SDK reader is non-controllable. Session coordinates an
-external adapter; attachment is not an automatic DOM subscription. CLI web
-captures are explicit and actions attempt fresh evidence. No live-streaming,
-OCR, audio decoding or additional device provider is claimed.
+## Local evidence
 
-## Executed examples
+- 23 Rust Surface tests, including direct executor lifecycle and authority checks.
+- SDK all-features library check; strict Clippy for library and CLI.
+- 130 parity tooling tests. Added/removed declarations, changed signatures,
+  changed Python shapes and changed mappings still fail validation.
+- Compaction preserved all existing Rust signature and SDK mapping/shape pins.
+  Root export updates were separately compared with the prior compiler inventory:
+  Rust signature differences are alias substitutions; Python shape differences
+  are canonical aliases only. Fresh compiler inventory comparison has zero drift.
+- All three source contracts and both expanded inputs validate against JSON Schema.
+- 18 current Python facade tests using the existing Surface-enabled native wheel.
+  No PyO3 sources changed; this is not a freshly built wheel acceptance claim.
+- Exact Rust and Python document/video guide programs executed. Both restored
+  440,661 PNG bytes from the supplied recording at source timestamp 3,500,000 us.
+- Exact CLI guide driver passed live QScrape with one Confirmed cart action.
+- Browser acceptance: 39 replies; three offline replays; three fresh-browser
+  iterations; shared driver passed 17 web and 16 video replies using the recording.
+- Public docs gate: 25 tooling tests; reference generator: nine tests; Python
+  reference generator: two tests. SDK Ruff passes. The legacy seed script has
+  pre-existing E501 lines; scoped lint otherwise passes without changing its rules.
 
-The exact Rust and Python fences from both concept pages were extracted to
-`.local/surface-doc-snippets/src`. Both languages' document programs printed
-`Arc desk lamp`; both video programs measured source PTS 3,500,000 and restored
-a 440,661-byte PNG. Scoped formatting did not change any executed fence.
+## Preview and delivery boundary
 
-The installed free-threaded CPython 3.14 wheel passed 18 Surface checks.
-The wheel's Python files match the working source. Shared conformance compares
-HTML, XML, JSON, text, rendered DOM and partial accessibility evidence across
-Rust and Python, retaining reference, overview, find and inspection values.
-Surface is included in the parity inventory; its previous deferral is removed.
+Astro remains open at `http://localhost:4321/yosoi/concepts/surfaces/`.
+It uses the isolated full-stack docs overlay and its matching verified local API
+artifact `2177a453ef72d27156e14b810b05f65ad19225b1`.
+The rendered Surfaces, CLI and Archive pages were checked; portable Archive
+instructions remain present. This preview is not a deployment.
 
-`surface_read` and `python/examples/surface_read.py` acquired the live QScrape
-lamp page: 82 indexed nodes, six literal matches, and the same index identity
-after normal Archive restoration. Both SDKs processed each supplied recording;
-timeline/metadata/frame/crop values and actual PNG bytes matched. Fresh Python
-processes restored the saved crops with both video tool paths unavailable.
-
-The installed CLI completed the public docs version driver with two confirmed
-clicks. Offline replay ran three iterations with no browser. Three fresh live
-repetitions each confirmed both clicks and reached the v0.1.0 archive URL.
-The installed two-provider CLI verifier passed 17 web and 16 video replies,
-including archived pixels with its source copy deleted and decoder disabled.
-
-The first public version-driver run intentionally retained an unconfirmed
-receipt: the site removed its theme query parameter, so exact navigation did
-not match. The completed driver instead checks the observed version notice and
-the destination's origin, path and version. The generic exact navigation check
-was preserved. Failed driver runs now retain transcripts too.
-
-## Rendered review
-
-The existing CascadingLabsFE pipeline ran on port 4321 with
-`YOSOI_REPO_ROOT` explicitly selecting this workspace and the verified Rust API
-artifact explicitly overriding its older local configuration. The serving
-process's working directory and environment were checked. Actual HTTP pages
-contained all four current guides.
-
-The initial guide rendered correctly. Through the installed Surface CLI, a
-6,481-node rendered document was navigated structurally to its Python tab.
-The native click was confirmed and the resulting URL included `code=python`.
-Both selected-language screenshots were inspected. No frontend source was
-changed and no documentation was deployed.
-
-## Checks and delivery boundary
-
-Passed locally: SDK all-feature library check; strict native/library/example
-Clippy; public-source Ruff and Python typing; reference tooling tests; docs
-validation and native Markdown rendering; 25 docs-tooling tests; 123 parity
-tooling tests; focused release-matrix tests. The full docs gate validated 673
-Markdown pages and four assets. Hosted checks must validate the final PR head
-before handoff; older green checks are separate evidence.
-
-Private recordings, screenshots, raw archives and reports stay in `.local`.
-The browser adapter's production integration/certification and recording
-storage optimizations remain separately tracked. No merge or release is
-authorized by these local results.
+The dependent Archive PR already has its own public executor. Carry this review
+through that stack before pushing; local results do not establish hosted CI on
+new PR heads. No merge, release or deployment has occurred.

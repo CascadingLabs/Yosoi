@@ -5,7 +5,7 @@ description: Reference scopes, budgets, cursor ownership, and provider capabilit
 
 # Surfaces
 
-Use `yosoi::surface` in Rust and `ys.surface` in Python. Both use the Rust index and providers. Start with [Exploring a surface](../concepts/exploring-a-surface.md) for documents or [Exploring video evidence](../concepts/exploring-video.md) for media.
+Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. Start with [Surfaces](../concepts/surfaces.md) for documents, video and an agent-driven CLI task.
 
 ## Choose the reader
 

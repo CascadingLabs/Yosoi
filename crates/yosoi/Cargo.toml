@@ -20,13 +20,7 @@ required-features = ["cli"]
 name = "generate-cdp"
 path = "src/internal/browser/vendor/chromiumoxide_cdp/examples/generate.rs"
 
-[[example]]
-name = "surface_walkthrough"
-required-features = ["surface-images"]
 
-[[example]]
-name = "surface_video"
-required-features = ["surface-video"]
 
 [features]
 default = []
@@ -52,7 +46,8 @@ browser = [
     "dep:windows-registry",
     "tokio/full",
 ]
-cli = ["browser", "surface-video", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "dep:toml", "tokio/signal"]
+surface-runtime = ["browser", "surface-video"]
+cli = ["surface-runtime", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "dep:toml", "tokio/signal"]
 scanner = ["browser", "dep:infer"]
 encode-gif = ["browser", "image/gif"]
 encode-ffmpeg = ["browser"]
@@ -175,6 +170,7 @@ required-features = ["browser"]
 name = "until_live"
 required-features = ["browser"]
 
+
 [[example]]
-name = "surface_article"
-required-features = ["browser"]
+name = "surface_conformance"
+path = "tests/fixtures/surface_conformance.rs"

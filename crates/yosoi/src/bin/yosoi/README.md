@@ -15,5 +15,5 @@ For manual compilation, install from a checkout with
 
 The experimental `yosoi surface drive` command keeps a live browser open for
 coding agents to control through bounded JSON lines. See the
-[surface driver protocol](surface_command/README.md) for commands, references,
+[public Surface guide](../../../../../docs/public/cli/surface.md) for commands, references,
 hot cursor authority, action receipts, and native verification.

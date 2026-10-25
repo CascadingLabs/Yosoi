@@ -39,7 +39,6 @@ def load_vectors(path: Path) -> list[dict[str, str]]:
 
 def main() -> None:
     import yosoi as ys
-    from yosoi import surface as sf
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rust-binary", "--rust-executable", type=Path, required=True)
@@ -73,7 +72,7 @@ def main() -> None:
         ),
     }
     for case in vectors:
-        index = sf.Surface(constructors[case["format"]](case["name"], case["content"]))
+        index = ys.Surface(constructors[case["format"]](case["name"], case["content"]))
         found = index.find(case["query"])
         python.append(
             {
@@ -148,7 +147,7 @@ def write_evidence(
     for entry in ledger["entries"]:
         path = entry["rustPath"]
         if (
-            not path.startswith("yosoi::surface::Surface::")
+            not path.startswith("yosoi::Surface::")
             or path.rsplit("::", 1)[-1] not in methods
             or entry.get("trait") is not None
             or entry.get("decision") != "mapped"

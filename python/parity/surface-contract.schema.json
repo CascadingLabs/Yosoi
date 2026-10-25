@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/surface-sdk-contract-v1.json",
+  "title": "Reviewed Surface SDK mappings and API pins",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "declarations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "yosoi-surface-sdk-contract"
+    },
+    "declarations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rustPath",
+          "kind",
+          "signatureSha256"
+        ],
+        "properties": {
+          "rustPath": {
+            "type": "string",
+            "pattern": "^yosoi::(?:surface|Surface|SurfaceBudget|SurfaceLimits|SurfaceSession|SurfaceSessionPolicy|SurfaceError|WebSurface|PixelRect|VideoSurface|VideoPolicy|VideoError|DecodedFrame)(?:::|$)"
+          },
+          "kind": {
+            "enum": [
+              "struct",
+              "enum",
+              "trait",
+              "module",
+              "function",
+              "struct_field",
+              "variant",
+              "assoc_type"
+            ]
+          },
+          "signatureSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "trait": {
+            "type": "string",
+            "minLength": 1
+          },
+          "occurrence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mechanic": {
+            "const": true
+          },
+          "decision": {
+            "enum": [
+              "mapped",
+              "language-specific"
+            ]
+          },
+          "pythonTargetSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "rationale": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/rationale"
+          },
+          "pythonTarget": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/pythonTarget"
+          },
+          "argumentMappings": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/argumentMappings"
+          },
+          "semanticEquivalent": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/semanticEquivalent"
+          },
+          "mappingDirection": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/mappingDirection"
+          },
+          "outputBinding": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/outputBinding"
+          },
+          "fixedArguments": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/fixedArguments"
+          },
+          "review": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/review"
+          },
+          "defaults": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/defaults"
+          },
+          "units": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/units"
+          },
+          "cardinality": {
+            "$ref": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json#/properties/entries/items/properties/cardinality"
+          }
+        },
+        "if": {
+          "required": [
+            "mechanic"
+          ]
+        },
+        "else": {
+          "required": [
+            "pythonTarget",
+            "pythonTargetSha256",
+            "rationale"
+          ]
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

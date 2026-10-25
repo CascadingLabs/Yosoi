@@ -170,11 +170,59 @@ from .policy import FlowPolicy as FlowPolicy
 from .policy import Policy as Policy
 from .policy import Stop as Stop
 from .policy import StopScope as StopScope
+from .surface import (
+    Budget as SurfaceBudget,
+)
+from .surface import (
+    DecodedFrame as DecodedFrame,
+)
+from .surface import (
+    Limits as SurfaceLimits,
+)
+from .surface import (
+    PixelRect as PixelRect,
+)
+from .surface import (
+    Session as SurfaceSession,
+)
+from .surface import (
+    SessionPolicy as SurfaceSessionPolicy,
+)
+from .surface import (
+    Surface as Surface,
+)
+from .surface import (
+    SurfaceError as SurfaceError,
+)
+from .surface import (
+    VideoError as VideoError,
+)
+from .surface import (
+    VideoPolicy as VideoPolicy,
+)
+from .surface import (
+    VideoSurface as VideoSurface,
+)
+from .surface import (
+    WebSurface as WebSurface,
+)
 from .view import View as View
 
 __version__ = _distribution_version("yosoi")
 
 __all__ = [
+    "Surface",
+    "SurfaceError",
+    "SurfaceBudget",
+    "SurfaceLimits",
+    "SurfaceSession",
+    "SurfaceSessionPolicy",
+    "WebSurface",
+    "VideoSurface",
+    "VideoPolicy",
+    "VideoError",
+    "DecodedFrame",
+    "PixelRect",
     "archive",
     "view",
     "Archive",
