@@ -802,7 +802,8 @@
       "signatureSha256": "87b171ee46f481c0c8bfb35c7b27c337421f7ff6f19370b78edcd370bd2c94ed",
       "pythonTarget": "yosoi.SurfaceConnection",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.SurfaceConnection.",
-      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702"
+      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702",
+      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait."
     },
     {
       "rustPath": "yosoi::SurfaceError::ActionInFlight",
