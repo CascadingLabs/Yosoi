@@ -9,6 +9,10 @@ use super::{
     clippy::cognitive_complexity,
     reason = "shutdown keeps retry and provider ownership order explicit"
 )]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "The state guard protects the complete closing-slot transition and is dropped at the block boundary."
+)]
 pub(super) async fn shutdown_inner(
     manager: Arc<ManagerInner>,
 ) -> Result<(), BrowserExecutionManagerError> {

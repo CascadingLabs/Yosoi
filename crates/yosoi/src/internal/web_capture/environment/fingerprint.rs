@@ -1,3 +1,4 @@
+use crate::browser as browser_config;
 use crate::internal::types::Producer;
 use serde::Serialize;
 
@@ -28,6 +29,7 @@ impl CaptureEnvironment {
                 EnvironmentFingerprintInputs::Browser(BrowserEnvironmentFingerprintInputs {
                     controller: environment.controller(),
                     renderer: environment.renderer(),
+                    backend: environment.backend(),
                     mode: FingerprintValue::from_environment_value(environment.mode()),
                     viewport: FingerprintValue::from_environment_value(rendering.viewport()),
                     device_scale_factor: FingerprintValue::from_environment_value(
@@ -73,7 +75,9 @@ pub struct HttpEnvironmentFingerprintInputs<'a> {
 #[derive(Clone, Debug, Serialize)]
 pub struct BrowserEnvironmentFingerprintInputs<'a> {
     controller: &'a Producer,
-    renderer: &'a Producer,
+    renderer: Option<&'a Producer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    backend: Option<&'a browser_config::BrowserExecutionIdentity>,
     mode: FingerprintValue<'a, BrowserMode>,
     viewport: FingerprintValue<'a, Viewport>,
     device_scale_factor: FingerprintValue<'a, DeviceScaleFactor>,

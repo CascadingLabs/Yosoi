@@ -436,6 +436,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
         }],
         cleanup: vec![
             OperationReceipt {
+                browser: None,
                 id: "release-success".to_owned(),
                 kind: "session.release".to_owned(),
                 status: OperationStatus::Observed,
@@ -444,6 +445,7 @@ async fn archived_outcome_retains_failure_cause_and_scoped_skips() -> Result<(),
                 error: None,
             },
             OperationReceipt {
+                browser: None,
                 id: "close-failure".to_owned(),
                 kind: "session.close".to_owned(),
                 status: OperationStatus::Rejected,
@@ -781,6 +783,7 @@ async fn legacy_failed_cancelled_and_unknown_outcomes_archive_without_new_causes
 
 fn receipt(id: &str, status: OperationStatus) -> OperationReceipt {
     OperationReceipt {
+        browser: None,
         id: id.to_owned(),
         kind: "screenshot".to_owned(),
         status,

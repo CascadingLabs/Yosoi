@@ -57,6 +57,7 @@ BROWSER_NAMESPACE_ROOTS = {
         "archive",
         "assertions",
         "automation_record",
+        "browser",
         "expect",
         "flow",
         "session",

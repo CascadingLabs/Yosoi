@@ -1,7 +1,7 @@
 use super::super::{VoidCrawlAdapterError, config, conversions};
 use super::termination::{caller_cancelled, candidate};
 use super::{Phase, bounded};
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 use tokio::time::Instant as TokioInstant;
 use tokio_util::sync::CancellationToken;

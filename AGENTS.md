@@ -16,7 +16,8 @@
 
 Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) before changing Chromiumoxide, generated bindings, browser selection, launch arguments, or stealth. It owns the certification procedure, version matrix, monthly review, and release evidence.
 
-- Use regular Chrome/Chromium Stable only. Testing-only distributions are forbidden, including diagnostics. More than one Stable milestone or 30 days behind is uncertified.
+- The default Chrome/CDP path uses regular Chrome/Chromium Stable only. Testing-only distributions are forbidden, including diagnostics. More than one Stable milestone or 30 days behind is uncertified.
+- The optional `browser-bidi` path explicitly supports regular Firefox releases and pinned Moli releases once qualified. Admit these through their own executable/protocol/profile identities, never through Chrome-compatible banners. Moli is headless-only; DOM and layout capabilities are distinct. Apply the same ownership, policy, uncertainty and evidence requirements, and record unsupported capabilities explicitly.
 - Preserve sandboxing and site/process isolation. Security exceptions require explicit, typed, measured justification and separate approval.
 - Record VoidCrawl, Chromiumoxide, CDP schema, and browser identities separately. Investigate every invalid/dropped CDP message; never treat `ignore_invalid_messages` as compatibility evidence or claim speed/stealth gains without measurement.
 - Keep Chromiumoxide and a small documented patch queue; a replacement requires a concrete issue proving bounded patches insufficient.

@@ -15,6 +15,7 @@ crate-type = ["cdylib", "rlib"]
 default = []
 browser = ["yosoi/browser"]
 surface-video = ["yosoi/surface-video"]
+browser-bidi = ["browser", "yosoi/browser-bidi"]
 
 [dependencies]
 pyo3 = "=0.29.2"

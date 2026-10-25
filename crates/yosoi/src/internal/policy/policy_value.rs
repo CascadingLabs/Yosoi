@@ -1,4 +1,5 @@
 use super::policy::Network;
+use crate::browser as browser_config;
 use std::time::{Duration, Instant};
 
 use crate::internal::policy::{
@@ -17,6 +18,8 @@ use crate::internal::policy::{
 pub struct Policy {
     /// Opt-in outbound routing bound to requests and owned browser lifetimes.
     pub network: Network,
+    /// Browser implementation and launch/profile settings; defaults to Chrome/CDP.
+    pub browser: browser_config::BrowserConfig,
     /// Fallback execution budget for an action without a nearer Flow or action
     /// timeout, measured in milliseconds.
     pub default_action_timeout_ms: u64,
@@ -42,6 +45,7 @@ impl Default for Policy {
     fn default() -> Self {
         Self {
             network: Network::default(),
+            browser: browser_config::BrowserConfig::default(),
             default_action_timeout_ms: 10_000,
             page: Page::default(),
             request: Request::default(),
@@ -59,7 +63,14 @@ impl Policy {
     /// Validates nested page choices and all typed policy bounds.
     pub fn validate(&self) -> Result<(), PolicyError> {
         self.network.validate()?;
+        self.browser.validate()?;
         self.page.validate()?;
+        for acquisition in &self.page.acquisitions {
+            if let super::policy::AcquisitionKind::Browser { mode } = acquisition.kind() {
+                self.browser
+                    .validate_headful(matches!(mode, super::policy::BrowserMode::Headful))?;
+            }
+        }
         self.request.validate()?;
         if self.default_action_timeout_ms == 0
             || Instant::now()
@@ -82,6 +93,7 @@ impl Policy {
         self.validate()?;
         Ok(EffectivePolicy {
             network: self.network.clone(),
+            browser: self.browser.clone(),
             page: self.page.effective(),
             request: self.request,
             default_action_timeout_ms: self.default_action_timeout_ms,
@@ -111,6 +123,7 @@ impl Policy {
         self.validate()?;
         effective.search.validate()?;
         if effective.network != self.network
+            || effective.browser != self.browser
             || effective.request != self.request
             || effective.default_action_timeout_ms != self.default_action_timeout_ms
             || effective.documents != self.documents

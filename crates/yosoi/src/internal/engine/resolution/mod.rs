@@ -4,6 +4,7 @@ mod direct_http;
 mod error;
 mod inputs;
 
+use crate::browser as browser_config;
 use std::fmt;
 
 pub use applied::{AppliedPolicy, AppliedPolicyLimit, PolicyDecision};
@@ -56,6 +57,7 @@ impl fmt::Debug for ResolvedPolicySpec {
 pub struct ResolvedPolicyAttempt {
     spec: ResolvedPolicySpec,
     applied_policy: AppliedPolicy,
+    browser: browser_config::BrowserConfig,
 }
 
 impl fmt::Debug for ResolvedPolicyAttempt {
@@ -64,6 +66,7 @@ impl fmt::Debug for ResolvedPolicyAttempt {
             .debug_struct("ResolvedPolicyAttempt")
             .field("spec", &self.spec)
             .field("applied_policy", &self.applied_policy)
+            .field("browser", &self.browser)
             .finish()
     }
 }
@@ -72,16 +75,24 @@ impl ResolvedPolicyAttempt {
     pub(in crate::internal::engine) const fn new(
         spec: ResolvedPolicySpec,
         applied_policy: AppliedPolicy,
+        browser: browser_config::BrowserConfig,
     ) -> Self {
         Self {
             spec,
             applied_policy,
+            browser,
         }
     }
 
     /// Returns the canonical spec ready for its selected capture engine.
     pub const fn spec(&self) -> &ResolvedPolicySpec {
         &self.spec
+    }
+
+    /// Returns the selected browser launch declaration, independent of capture artifacts.
+    /// Direct HTTP execution does not launch this browser.
+    pub const fn browser_config(&self) -> &browser_config::BrowserConfig {
+        &self.browser
     }
 
     /// Returns identity and content-free decisions for the resolved policy.

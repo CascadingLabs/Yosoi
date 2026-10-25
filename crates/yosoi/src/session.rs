@@ -1,8 +1,11 @@
 //! Explicit browser authority; the managed APIs compose this same substrate.
 use crate::assertions;
 use crate::automation_record;
+use crate::browser as browser_config;
 #[cfg(feature = "browser")]
 use crate::documents;
+#[cfg(feature = "browser")]
+use crate::internal::browser::VoidCrawlError;
 use crate::internal::engine as internal_engine;
 #[cfg(feature = "browser")]
 use crate::internal::engine::execution as internal_engine_execution;
@@ -474,6 +477,16 @@ impl<'scope> SessionRequest<'scope> {
             .validate()
             .map_err(|_| SessionError::InvalidPolicy)?;
         work.validate_network(&self.policy)?;
+        self.policy
+            .browser
+            .validate_headful(matches!(work.session.settings().mode, BrowserMode::Headful))
+            .map_err(|_| SessionError::InvalidPolicy)?;
+        if self.policy.browser != work.session.policy().browser {
+            return Err(SessionError::Unsupported(
+                "request browser differs from its leased Session",
+            )
+            .into());
+        }
         if self.policy.page.acquisitions.is_empty() {
             return Err(SessionError::InvalidPolicy.into());
         }
@@ -617,6 +630,7 @@ impl<'scope> SessionRequest<'scope> {
                 .map(|attempt| attempt.capture_id().to_string())
                 .collect::<Vec<_>>();
             let receipt = OperationReceipt {
+                browser: work.browser_identity(),
                 id: new_operation_id(),
                 kind: "request".into(),
                 status: if succeeded {
@@ -742,6 +756,24 @@ impl SessionBuilder {
         self.policy
             .validate()
             .map_err(|_| SessionError::InvalidPolicy)?;
+        self.policy
+            .browser
+            .validate_headful(matches!(self.settings.mode, BrowserMode::Headful))
+            .map_err(|_| SessionError::InvalidPolicy)?;
+        if self.policy.browser.engine != browser_config::BrowserEngine::Chrome
+            && !cfg!(feature = "browser-bidi")
+        {
+            return Err(SessionError::Unsupported(
+                "browser-bidi feature is disabled",
+            ));
+        }
+        if self.policy.browser.engine != browser_config::BrowserEngine::Chrome
+            && !self.policy.network.is_default()
+        {
+            return Err(SessionError::Unsupported(
+                "custom network routing is supported only by Chrome sessions",
+            ));
+        }
         #[cfg(feature = "browser")]
         {
             let acquiring = cancellation.child_token();
@@ -752,6 +784,7 @@ impl SessionBuilder {
             let backend = tokio_time::timeout(
                 maximum,
                 internal_engine_session::BrowserSession::acquire(
+                    self.policy.browser.clone(),
                     self.settings.mode,
                     self.settings.maximum_tabs,
                     false,
@@ -1049,6 +1082,16 @@ impl Work {
         Ok(())
     }
 
+    pub(crate) fn browser_identity(&self) -> Option<browser_config::BrowserExecutionIdentity> {
+        #[cfg(feature = "browser")]
+        {
+            self.control.execution_identity()
+        }
+        #[cfg(not(feature = "browser"))]
+        {
+            None
+        }
+    }
     pub(crate) fn session_cancelled(&self) -> bool {
         #[cfg(feature = "browser")]
         {
@@ -1156,6 +1199,19 @@ impl Work {
         {
             return Err(SessionError::Denied);
         }
+        if matches!(kind, ActionKind::Click | ActionKind::EnterText)
+            && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
+            && self.session.policy().browser.moli_profile == browser_config::MoliProfile::Layout
+            && !self
+                .session
+                .settings()
+                .allowed_actions
+                .contains(&ActionKind::Screenshot)
+        {
+            // The qualified Moli adapter uses discarded raster observations to
+            // refresh layout. A capability cannot override screenshot denial.
+            return Err(SessionError::Denied);
+        }
         Ok(())
     }
     #[cfg(feature = "browser")]
@@ -1226,6 +1282,7 @@ impl Work {
                 |result| {
                     dispatch.unresolved = result.as_ref().err().is_some_and(internal_web_capture::BrowserControlError::requires_fence);
                     result.map_err(|error| match error {
+                        internal_web_capture::BrowserControlError::Provider(VoidCrawlError::UnsupportedCapability { operation }) => SessionError::Unsupported(operation),
                         internal_web_capture::BrowserControlError::InputTargetLost => SessionError::InputTargetLost,
                         internal_web_capture::BrowserControlError::InvalidInput => SessionError::InvalidInput,
                         error => SessionError::Execution(error.execution_message()),
@@ -1261,6 +1318,7 @@ impl Work {
             };
             let url = self.call(self.control.url()).await?;
             Ok(Observation {
+                browser: self.browser_identity(),
                 id: new_operation_id(),
                 session_id: self.session.inner.backend.id(),
                 tab_id: self.tab_id.clone(),
@@ -1305,6 +1363,7 @@ impl Work {
             }
         };
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: kind.into(),
             status,
@@ -1422,6 +1481,7 @@ impl Work {
                 });
             }
             let receipt = OperationReceipt {
+                browser: self.browser_identity(),
                 id: new_operation_id(),
                 kind: "assert_all".into(),
                 status: if passed {
@@ -1510,6 +1570,7 @@ impl Work {
             let bytes = self.call(self.control.screenshot()).await?;
             if bytes.len() > automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES {
                 let receipt = OperationReceipt {
+                    browser: self.browser_identity(),
                     id: new_operation_id(),
                     kind: "screenshot".into(),
                     status: OperationStatus::Rejected,
@@ -1528,6 +1589,7 @@ impl Work {
             let mut observation = self.observe_inner().await?;
             observation.screenshot = Some(bytes);
             let receipt = OperationReceipt {
+                browser: self.browser_identity(),
                 id: new_operation_id(),
                 kind: "screenshot".into(),
                 status: OperationStatus::Observed,
@@ -1650,7 +1712,7 @@ impl Work {
             let deadline = timing::deadline()
                 .or_else(|| timing::checked_deadline(self.timeout()))
                 .ok_or(SessionError::InvalidInput)?;
-            timing::scope(deadline, async {
+            Box::pin(timing::scope(deadline, async {
                 let original_epoch = self.call(self.control.document_epoch()).await?;
                 let mut waiting = self.call(self.control.start_condition_wait(
                     &expression, Duration::from_millis(timeout_ms).min(self.timeout()),
@@ -1677,7 +1739,7 @@ impl Work {
                 ).await?;
                 settlement.unresolved = receipt.status == OperationStatus::Unknown || receipt.observation.is_none();
                 Ok(receipt)
-            }).await
+            })).await
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -1723,6 +1785,7 @@ impl Work {
         });
         let complete = capture.is_ok() && !invalidated;
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: kind.into(),
             status: if invalidated {

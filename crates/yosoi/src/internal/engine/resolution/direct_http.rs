@@ -105,6 +105,7 @@ pub(super) fn resolve(
             redirect_targets,
         },
         AppliedPolicy::new(identity, decisions, limits),
+        policy.browser.clone(),
     ))
 }
 

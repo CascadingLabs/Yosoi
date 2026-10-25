@@ -240,6 +240,10 @@ impl RuntimeBrowserLease {
     }
 
     /// Captures the admitted lease's validated, provider-neutral accounting state.
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Slot references borrow the manager state; the state guard is explicitly dropped after copying counters."
+    )]
     pub async fn accounting_receipt(
         &self,
     ) -> Result<yosoi::BrowserExecutionAccountingReceipt, BrowserExecutionManagerError> {
@@ -293,6 +297,10 @@ impl RuntimeBrowserLease {
     }
 
     /// Captures manager accounting after this lease's bounded release has terminated.
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Slot references borrow the manager state; the state guard is explicitly dropped after copying counters."
+    )]
     pub(in crate::internal::web_capture) async fn terminal_accounting_receipt(
         &self,
     ) -> Result<yosoi::BrowserExecutionAccountingReceipt, BrowserExecutionManagerError> {
@@ -378,10 +386,6 @@ impl RuntimeBrowserLease {
 }
 
 impl Drop for RuntimeBrowserLease {
-    #[expect(
-        clippy::significant_drop_tightening,
-        reason = "Ownership is moved into a task or consumed by async release; the nursery follows Drop fields after that move."
-    )]
     fn drop(&mut self) {
         let resource = Arc::clone(&self.resource);
         let manager = resource.manager.upgrade();

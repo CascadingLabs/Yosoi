@@ -142,10 +142,6 @@ impl RuntimeBrowserTabLease {
         Err(BrowserExecutionManagerError::TabCloseFailed)
     }
 
-    #[expect(
-        clippy::significant_drop_tightening,
-        reason = "Borrowed tab entries have no owned Drop; the state guard is explicitly released after cloning routing facts."
-    )]
     pub(in crate::internal::web_capture) async fn page(
         &self,
     ) -> Result<Arc<provider::Page>, BrowserExecutionManagerError> {
@@ -188,10 +184,6 @@ impl RuntimeBrowserTabLease {
         })
     }
 
-    #[expect(
-        clippy::significant_drop_tightening,
-        reason = "Borrowed tab entries have no owned Drop; the state guard is explicitly released after cloning routing facts."
-    )]
     pub(super) async fn navigation_parts(
         &self,
     ) -> Result<NavigationTabParts, BrowserExecutionManagerError> {

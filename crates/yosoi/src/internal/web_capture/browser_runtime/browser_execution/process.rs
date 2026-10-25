@@ -18,8 +18,9 @@ impl BrowserExecutionManager {
         let managed_profile_generation = managed_profile_launch
             .as_ref()
             .map(|profile| profile.generation);
-        let mut builder =
-            provider::BrowserSession::builder().cdp_mode(if self.inner.config.minimal_cdp {
+        let mut builder = provider::BrowserSession::builder()
+            .browser(self.inner.config.browser.clone())
+            .cdp_mode(if self.inner.config.minimal_cdp {
                 provider::CdpMode::Minimal
             } else {
                 provider::CdpMode::Normal

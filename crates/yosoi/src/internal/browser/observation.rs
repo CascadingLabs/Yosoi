@@ -45,6 +45,9 @@ use crate::internal::browser::{
     BrowserByteSpec, BrowserLimitScope, MeasuredBrowserBytes, Result, VoidCrawlError,
 };
 
+#[cfg(feature = "browser-bidi")]
+mod bidi;
+
 /// Collectors and hard bounds for one observation scope.
 ///
 /// A scope watches its owned page for a renderer crash when the controller is

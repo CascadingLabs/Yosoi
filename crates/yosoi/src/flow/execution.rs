@@ -820,6 +820,7 @@ fn error_receipt(step: &Step, index: u64, error: &SessionError) -> OperationRece
         OperationStatus::Rejected
     };
     OperationReceipt {
+        browser: None,
         id: session::new_operation_id(),
         kind: format!(
             "{}:{}",
@@ -839,6 +840,7 @@ fn error_receipt(step: &Step, index: u64, error: &SessionError) -> OperationRece
 
 fn failure_capture_error_receipt(error: &SessionError) -> OperationReceipt {
     OperationReceipt {
+        browser: None,
         id: session::new_operation_id(),
         kind: "failure_capture:screenshot".to_owned(),
         status: if error.is_unknown() {
@@ -855,6 +857,7 @@ fn failure_capture_error_receipt(error: &SessionError) -> OperationReceipt {
 fn cleanup_receipt(kind: &'static str, result: Result<(), SessionError>) -> OperationReceipt {
     match result {
         Ok(()) => OperationReceipt {
+            browser: None,
             id: session::new_operation_id(),
             kind: kind.to_owned(),
             status: OperationStatus::Observed,
@@ -863,6 +866,7 @@ fn cleanup_receipt(kind: &'static str, result: Result<(), SessionError>) -> Oper
             error: None,
         },
         Err(error) => OperationReceipt {
+            browser: None,
             id: session::new_operation_id(),
             kind: kind.to_owned(),
             status: if error.is_unknown() {

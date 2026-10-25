@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 use thiserror::Error;
 use tokio::{

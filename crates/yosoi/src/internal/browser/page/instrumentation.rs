@@ -96,7 +96,8 @@ impl Page {
 
         Ok(BrowserEnvironmentSnapshot {
             controller: ControllerVersion::current(),
-            renderer,
+            renderer: Some(renderer),
+            backend: None,
             mode: self.browser_mode.clone(),
             rendering: rendering_environment(&value),
             instrumentation,

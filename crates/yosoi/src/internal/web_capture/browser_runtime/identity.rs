@@ -21,6 +21,16 @@ pub fn void_crawl_adapter_producer() -> Result<Producer, VoidCrawlAdapterProduce
     Ok(Producer::new(id, version))
 }
 
+/// Identity of Yosoi's native BiDi controller, separate from the engine release.
+pub fn bidi_adapter_producer() -> Result<Producer, VoidCrawlAdapterProducerError> {
+    Ok(Producer::new(
+        ProducerId::new("com.cascadinglabs.yosoi.bidi")
+            .map_err(VoidCrawlAdapterProducerError::InvalidId)?,
+        ProducerVersion::new(env!("CARGO_PKG_VERSION"))
+            .map_err(VoidCrawlAdapterProducerError::InvalidVersion)?,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use std::error::Error;

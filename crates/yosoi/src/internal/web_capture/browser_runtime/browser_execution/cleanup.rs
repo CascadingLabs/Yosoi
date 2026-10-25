@@ -83,6 +83,10 @@ pub(super) async fn restart_release_on_current(resource: Arc<LeaseResource>, dea
     start_release(resource, deadline, ReleaseExecutor::Current).await;
 }
 
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "The context is consumed by async disposal; dropping it earlier would skip cleanup."
+)]
 pub(super) async fn release_resource_attempt(resource: Arc<LeaseResource>, deadline: Instant) {
     let pending_tab_creations = cancel_pending_tab_creations(&resource).await;
     let managed_profile_context = matches!(

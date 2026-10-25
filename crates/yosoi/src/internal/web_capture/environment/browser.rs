@@ -1,3 +1,4 @@
+use crate::browser as browser_config;
 use crate::internal::types::Producer;
 pub use crate::internal::types::{BrowserMode, ColorScheme, ReducedMotion, Viewport};
 use serde::{Deserialize, Serialize};
@@ -9,7 +10,10 @@ use super::{DeviceScaleFactor, EnvironmentValue, Locale, TimeZone, UserAgent};
 #[serde(deny_unknown_fields)]
 pub struct BrowserCaptureEnvironment {
     controller: Producer,
-    renderer: Producer,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    renderer: Option<Producer>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    backend: Option<browser_config::BrowserExecutionIdentity>,
     mode: EnvironmentValue<BrowserMode>,
     rendering: BrowserRenderingContext,
 }
@@ -24,7 +28,8 @@ impl BrowserCaptureEnvironment {
     ) -> Self {
         Self {
             controller,
-            renderer,
+            renderer: Some(renderer),
+            backend: None,
             mode,
             rendering,
         }
@@ -35,9 +40,32 @@ impl BrowserCaptureEnvironment {
         &self.controller
     }
 
-    /// Returns the browser implementation that rendered content.
-    pub const fn renderer(&self) -> &Producer {
-        &self.renderer
+    /// Returns the renderer producer when its version was available.
+    /// External engines may omit their version during session negotiation.
+    pub const fn renderer(&self) -> Option<&Producer> {
+        self.renderer.as_ref()
+    }
+
+    /// Creates an environment with explicit optional-engine provenance.
+    pub const fn with_backend(
+        controller: Producer,
+        renderer: Option<Producer>,
+        backend: browser_config::BrowserExecutionIdentity,
+        mode: EnvironmentValue<BrowserMode>,
+        rendering: BrowserRenderingContext,
+    ) -> Self {
+        Self {
+            controller,
+            renderer,
+            backend: Some(backend),
+            mode,
+            rendering,
+        }
+    }
+
+    /// Returns native engine provenance; legacy Chrome observations omit it.
+    pub const fn backend(&self) -> Option<&browser_config::BrowserExecutionIdentity> {
+        self.backend.as_ref()
     }
 
     /// Returns whether headless or headful mode was effective, if known.

@@ -25,6 +25,7 @@
 //! `docs/chromium-cdp-baseline.md` for the monthly policy and current inventory.
 
 #[cfg(feature = "browser")]
+use crate::browser as browser_config;
 use crate::internal::browser as void_crawl_core;
 
 use crate::internal::browser::vendor::chromiumoxide::{
@@ -326,7 +327,8 @@ impl BrowserCaptureCapabilities {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct BrowserEnvironmentSnapshot {
     pub controller: ControllerVersion,
-    pub renderer: RendererVersion,
+    pub renderer: Option<RendererVersion>,
+    pub backend: Option<browser_config::BrowserExecutionIdentity>,
     pub mode: EnvironmentObservation<BrowserMode>,
     pub rendering: BrowserRenderingEnvironment,
     pub instrumentation: InstrumentationSnapshot,

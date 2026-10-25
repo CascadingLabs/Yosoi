@@ -24,6 +24,7 @@ path = "src/internal/browser/vendor/chromiumoxide_cdp/examples/generate.rs"
 default = []
 surface-images = ["dep:image"]
 surface-video = ["surface-images", "dep:tempfile", "tokio/process"]
+browser-bidi = ["browser", "async-tungstenite/tokio-rustls-native-certs", "rustix/process"]
 browser = [
     "dep:async-tungstenite",
     "dep:chromiumoxide_types",

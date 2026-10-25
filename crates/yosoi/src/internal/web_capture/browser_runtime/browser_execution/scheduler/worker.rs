@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use tokio::{
     sync::{mpsc, oneshot},
     time::Instant,

@@ -201,6 +201,7 @@ fn embedded_trigger_identity_cannot_collide_with_a_later_flow_receipt() -> Resul
                 index: 1,
                 flow_path: vec![1],
                 receipt: OperationReceipt {
+                    browser: None,
                     id: "later-flow-receipt".to_owned(),
                     kind: "click".to_owned(),
                     status: OperationStatus::Observed,
@@ -566,6 +567,7 @@ fn contract_until_record(
 
 fn contract_observation() -> Observation {
     Observation {
+        browser: None,
         id: CONTRACT_DOCUMENT_ID.to_owned(),
         session_id: "session-1".to_owned(),
         tab_id: "tab-1".to_owned(),
@@ -588,6 +590,7 @@ fn valid_report() -> UntilReport {
             loader_id: Some("loader-raw-23".to_owned()),
         },
         trigger: Some(OperationReceipt {
+            browser: None,
             id: "trigger-receipt".to_owned(),
             kind: "click".to_owned(),
             status: OperationStatus::Observed,
@@ -676,6 +679,7 @@ fn record_with_outcome(
 
 fn until_receipt(id: &str, result: serde_json::Value) -> OperationReceipt {
     OperationReceipt {
+        browser: None,
         id: id.to_owned(),
         kind: "until".to_owned(),
         status: OperationStatus::Observed,
@@ -706,6 +710,7 @@ fn accessibility_report(
             loader_id: Some("loader-raw-23".to_owned()),
         },
         trigger: Some(OperationReceipt {
+            browser: None,
             id: "ax-trigger".to_owned(),
             kind: "click".to_owned(),
             status: OperationStatus::Observed,
@@ -763,6 +768,7 @@ fn network_report(attempt: &str) -> UntilReport {
             loader_id: Some("loader-raw-23".to_owned()),
         },
         trigger: Some(OperationReceipt {
+            browser: None,
             id: format!("network-trigger-{attempt}"),
             kind: "click".to_owned(),
             status: OperationStatus::Observed,
@@ -838,6 +844,7 @@ fn set_network_padding(report: &mut UntilReport, padding: String) -> Result<(), 
 
 fn observation() -> Observation {
     Observation {
+        browser: None,
         id: "observation-1".to_owned(),
         session_id: "session-1".to_owned(),
         tab_id: "tab-1".to_owned(),

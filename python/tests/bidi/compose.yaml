@@ -1,0 +1,57 @@
+# Test-only private-network exception. Runtime defaults remain in docker/moli.
+name: yosoi-bidi-tests
+x-moli: &moli
+  extends:
+    file: ../../../docker/moli/compose.yaml
+    service: moli
+  networks: [default, redirect]
+  environment: &environment
+    MOLI_PROFILE: layout
+    MOLI_RESOURCES: "1"
+    MOLI_ALLOW_PRIVATE_NETWORKS: "1"
+services:
+  moli:
+    <<: *moli
+    networks:
+      default: {}
+      redirect: {ipv6_address: "2001:2:0:b1d1::3"}
+  blocked:
+    <<: *moli
+    environment:
+      <<: *environment
+      MOLI_ALLOW_PRIVATE_NETWORKS: "0"
+      HTTP_PROXY: http://fixture:8080/forbidden-proxy
+      HTTPS_PROXY: http://fixture:8080/forbidden-proxy
+      ALL_PROXY: http://fixture:8080/forbidden-proxy
+      NO_PROXY: "*"
+      http_proxy: http://fixture:8080/forbidden-proxy
+      https_proxy: http://fixture:8080/forbidden-proxy
+      all_proxy: http://fixture:8080/forbidden-proxy
+      no_proxy: "*"
+    networks:
+      default: {}
+      redirect: {ipv6_address: "2001:2:0:b1d1::4"}
+  fixture:
+    image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 0.25
+    mem_limit: 32m
+    pids_limit: 16
+    tmpfs: ["/state:rw,nosuid,nodev,noexec,size=8m,uid=10001,gid=10001,mode=0700"]
+    volumes: [../fixtures:/www:ro]
+    command: [httpd, -f, -p, "8080", -h, /www]
+    networks:
+      default: {}
+      redirect: {ipv6_address: "2001:2:0:b1d1::2"}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/optional-browser.html]
+      interval: 2s
+      timeout: 2s
+networks:
+  redirect:
+    enable_ipv6: true
+    ipam:
+      config: [{subnet: "2001:2:0:b1d1::/64"}]

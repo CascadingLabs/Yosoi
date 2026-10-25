@@ -155,7 +155,7 @@ impl ManagedProfileWarmService {
 
         let Ok(manager) = BrowserExecutionManager::new_staged_managed_profile(
             self.manager_limits,
-            self.manager_config,
+            self.manager_config.clone(),
             self.registry.clone(),
             spec.profile_id().clone(),
             spec.owner_id(),

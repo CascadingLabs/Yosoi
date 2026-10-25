@@ -109,3 +109,7 @@
 //! # Ok(()) }
 //! ```
 pub mod internal;
+
+/// Shared engine/profile declaration used by the embedded SDK component sources.
+#[path = "../../../crates/yosoi/src/browser.rs"]
+pub mod browser;

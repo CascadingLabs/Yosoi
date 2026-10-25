@@ -18,6 +18,7 @@ use tokio::{
     time::{Instant as TokioInstant, timeout_at},
 };
 use tokio_util::sync::CancellationToken;
+use yosoi_dev_support::browser::BrowserConfig;
 use yosoi_dev_support::internal::types::{
     CaptureId, OperationId, Producer, ProducerId, ProducerVersion, ReasonCode, Schema, SchemaId,
     SchemaVersion,
@@ -471,6 +472,7 @@ pub fn warm_manager(
                 headful: mode.headful(),
                 minimal_cdp: false,
                 proxy: None,
+                browser: BrowserConfig::default(),
             },
         ),
     )

@@ -26,7 +26,9 @@ pub use capture::{
     capture_attempt_on_control_started,
 };
 pub use error::{VoidCrawlAdapterError, VoidCrawlAdapterErrorCategory};
-pub use identity::{VoidCrawlAdapterProducerError, void_crawl_adapter_producer};
+pub use identity::{
+    VoidCrawlAdapterProducerError, bidi_adapter_producer, void_crawl_adapter_producer,
+};
 pub use profile_fork::{
     BrowserProfileChildLeaseContract, BrowserProfileForkServiceError, ManagedProfileForkOutcome,
     ManagedProfileForkService, ManagedProfileForkSourceLease,

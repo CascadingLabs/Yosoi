@@ -29,6 +29,11 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
     match error {
         E::NetworkSourceFamilyMismatch => ("NetworkSourceFamilyMismatch", json!({})),
         E::InvalidProxyUrl => ("InvalidProxyUrl", json!({})),
+        E::BrowserConfiguration(error) => (
+            "BrowserConfiguration",
+            json!({"reason":browser_configuration_code(*error)}),
+        ),
+        E::LegacyIdentityCannotIncludeBrowser => ("LegacyIdentityCannotIncludeBrowser", json!({})),
         E::ZeroCountLimit => ("ZeroCountLimit", json!({})),
         E::ZeroStepLimit => ("ZeroStepLimit", json!({})),
         E::ZeroByteLimit => ("ZeroByteLimit", json!({})),
@@ -83,6 +88,18 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
         E::ArchivedIdentityMismatch => ("ArchivedIdentityMismatch", json!({})),
         E::ArchivedSnapshotMismatch => ("ArchivedSnapshotMismatch", json!({})),
         E::Serialization(message) => ("Serialization", json!({"message": message})),
+    }
+}
+
+const fn browser_configuration_code(error: BrowserConfigurationError) -> &'static str {
+    use yosoi::browser::BrowserConfigurationError as E;
+    match error {
+        E::ConflictingLaunchSources => "conflicting_launch_sources",
+        E::RelativeExecutable => "relative_executable",
+        E::InvalidEndpoint => "invalid_endpoint",
+        E::EndpointRequiresBidi => "endpoint_requires_bidi",
+        E::MoliOptionsRequireMoli => "moli_options_require_moli",
+        E::MoliHeadfulUnsupported => "moli_headful_unsupported",
     }
 }
 
@@ -193,3 +210,4 @@ const fn provider_name(value: Provider) -> &'static str {
         Provider::DuckDuckGo => "duck_duck_go",
     }
 }
+use yosoi::browser::BrowserConfigurationError;

@@ -108,7 +108,7 @@ pub use browser_runtime::{
     ObservationChange, ObservationResponseBody, ObservationResponseFilter, ObservationWatch,
     ObservationWatchOptions, ProfileWarmServiceError, RuntimeBrowserControl, RuntimeBrowserLease,
     RuntimeBrowserTabLease, VoidCrawlAdapterError, VoidCrawlAdapterErrorCategory,
-    VoidCrawlAdapterProducerError, capture_attempt, capture_attempt_managed,
+    VoidCrawlAdapterProducerError, bidi_adapter_producer, capture_attempt, capture_attempt_managed,
     capture_attempt_on_control, capture_attempt_on_control_started, void_crawl_adapter_producer,
 };
 mod browser_spec;

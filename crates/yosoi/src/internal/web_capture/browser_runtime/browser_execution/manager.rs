@@ -3,13 +3,16 @@ use super::{
     Mutex, Notify, ProcessSlot, ProcessStatus, SchedulerInner, VecDeque, Weak, fmt, shutdown_inner,
     yosoi,
 };
-use crate::internal::browser as provider;
+use crate::browser as browser_config;
+use crate::internal::browser::controller as provider;
 use provider::managed_profile::ManagedProfileLeaseRelease;
 use std::{net::SocketAddr, sync::Mutex as SyncMutex, time::Duration};
 
 /// Launch settings shared by the warm processes owned by one manager.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct BrowserExecutionManagerConfig {
+    /// Engine and owned/external launch declaration for this manager.
+    pub browser: browser_config::BrowserConfig,
     /// Run Chromium with a visible browser window.
     pub headful: bool,
     /// Use VoidCrawl's reduced CDP-domain mode.
@@ -291,7 +294,7 @@ impl BrowserExecutionManager {
     }
 
     pub fn config(&self) -> BrowserExecutionManagerConfig {
-        self.inner.config
+        self.inner.config.clone()
     }
 
     /// Reports whether this manager is bound to a persistent managed profile.

@@ -4,7 +4,7 @@ use super::settlement::{push_quiet_failure, settlement_evidence, wait_for_quiet}
 use super::snapshots::snapshot_requested;
 use super::termination::{caller_cancelled, candidate};
 use super::{Phase, ProviderOutput, bounded, provider_stop};
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 use std::num::NonZeroUsize;
 use tokio::{

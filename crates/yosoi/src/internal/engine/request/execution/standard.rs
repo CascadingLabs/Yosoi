@@ -1,6 +1,7 @@
 //! Package-owned standard execution contexts for authored page requests.
 
 #[cfg(feature = "browser")]
+use crate::browser as browser_config;
 use crate::internal::web_capture as yosoi_web_capture;
 
 use std::num::NonZeroU32;
@@ -50,6 +51,9 @@ pub enum StandardExecutionSetupError {
     #[cfg(not(feature = "browser"))]
     #[error("browser execution requires the yosoi browser feature")]
     BrowserFeatureDisabled,
+    #[cfg(feature = "browser")]
+    #[error("Firefox and Moli execution require the yosoi browser-bidi feature")]
+    BidiFeatureDisabled,
 }
 
 pub(super) fn for_prepared(
@@ -69,6 +73,7 @@ pub(super) fn for_prepared(
                     executor = executor.with_browser(
                         mode,
                         browser_inputs(
+                            &prepared.effective_policy().browser,
                             mode,
                             attempt.capture_id().activity_id(),
                             browser_completion(prepared, mode),
@@ -149,6 +154,7 @@ fn schema(value: &'static str) -> Result<Schema, StandardExecutionSetupError> {
 
 #[cfg(feature = "browser")]
 fn browser_inputs(
+    browser: &browser_config::BrowserConfig,
     mode: BrowserMode,
     activity_id: ActivityId,
     completion: yosoi_web_capture::NavigationCompletionPolicy,
@@ -162,8 +168,16 @@ fn browser_inputs(
         SettlementPolicy, WebArtifactCapabilitySet, WebProviderCapabilityProfile,
     };
 
-    let producer = yosoi_web_capture::void_crawl_adapter_producer()
-        .map_err(StandardExecutionSetupError::BrowserProducer)?;
+    let bidi = browser.engine != browser_config::BrowserEngine::Chrome;
+    if bidi && !cfg!(feature = "browser-bidi") {
+        return Err(StandardExecutionSetupError::BidiFeatureDisabled);
+    }
+    let producer = if bidi {
+        yosoi_web_capture::bidi_adapter_producer()
+    } else {
+        yosoi_web_capture::void_crawl_adapter_producer()
+    }
+    .map_err(StandardExecutionSetupError::BrowserProducer)?;
     let unsupported_reason = ReasonCode::new("voidcrawl.capability.not-implemented")
         .map_err(StandardExecutionSetupError::Identity)?;
     let supported = || ArtifactCapability::Supported {
@@ -172,42 +186,64 @@ fn browser_inputs(
     let unsupported = || ArtifactCapability::Unsupported {
         reason: unsupported_reason.clone(),
     };
+    let capability = |available| {
+        if available {
+            supported()
+        } else {
+            unsupported()
+        }
+    };
+    // Session PNG operations do not implement the Request visual artifact's
+    // coordinate metadata and staging contract. Do not certify that family
+    // until its native adapter is implemented and qualified.
+    let visual = !bidi;
     let profile = WebProviderCapabilityProfile::new(
         producer.clone(),
         AcquisitionCapabilityProfile::DocumentNavigation(BrowserNavigationCapabilityProfile::new(
             mode,
         )),
         WebArtifactCapabilitySet::new(
+            capability(!bidi),
             supported(),
-            supported(),
-            supported(),
-            supported(),
-            supported(),
+            capability(!bidi),
+            capability(!bidi),
+            capability(!bidi),
             unsupported(),
-            supported(),
-            supported(),
-            supported(),
+            capability(!bidi),
+            capability(visual),
+            capability(!bidi),
         ),
     )
     .map_err(StandardExecutionSetupError::BrowserProfile)?;
     let unsupported_status = || BrowserCapabilityStatus::Unsupported {
         reason: unsupported_reason.clone(),
     };
+    let status = |available| {
+        if available {
+            BrowserCapabilityStatus::Supported
+        } else {
+            unsupported_status()
+        }
+    };
     let capabilities = yosoi_web_capture::CertifiedBrowserCapabilities::new(
         profile,
         &producer,
         mode,
-        BrowserInstrumentationMode::Normal,
+        if bidi {
+            BrowserInstrumentationMode::Bidi
+        } else {
+            BrowserInstrumentationMode::Normal
+        },
         BrowserFamilyCapabilities::new(
+            status(!bidi),
             BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
+            status(!bidi),
+            status(!bidi),
+            status(!bidi),
             unsupported_status(),
-            BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
-            BrowserCapabilityStatus::Supported,
+            status(!bidi),
+            status(visual),
+            status(!bidi),
         ),
     )
     .map_err(StandardExecutionSetupError::BrowserCertification)?;

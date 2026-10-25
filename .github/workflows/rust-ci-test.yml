@@ -180,6 +180,10 @@ jobs:
       - name: Run all-feature doctests
         # Correctness checked without claiming doctest coverage instrumentation.
         run: xvfb-run -a cargo test --locked --workspace --all-features --doc -- --test-threads=1
+      - name: Exercise the Chrome safety contract
+        env:
+          YOSOI_BROWSER_TESTS: '1'
+        run: xvfb-run -a cargo test --locked -p yosoi --all-features --test session_safety -- --test-threads=1
 
   coverage:
     name: Merge complete Rust coverage

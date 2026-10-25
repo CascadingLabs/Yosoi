@@ -4,7 +4,7 @@
 use crate::internal::browser as internal_browser;
 use std::{
     fmt::Write as FmtWrite,
-    io::{ErrorKind, Read, Write as IoWrite},
+    io::{BufRead, BufReader, ErrorKind, Read, Write as IoWrite},
     net::{SocketAddr, TcpListener, TcpStream},
     sync::{
         Arc,
@@ -44,16 +44,9 @@ impl Fixture {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
                         let _ = stream.set_read_timeout(Some(Duration::from_millis(250)));
-                        let mut request = [0_u8; 4_096];
-                        let read = stream.read(&mut request).unwrap_or(0);
-                        let request =
-                            String::from_utf8_lossy(request.get(..read).unwrap_or_default());
-                        let path = request
-                            .lines()
-                            .next()
-                            .and_then(|line| line.split_whitespace().nth(1))
-                            .unwrap_or("/");
-                        respond(&mut stream, path);
+                        if let Some(path) = read_request_path(&mut stream) {
+                            respond(&mut stream, &path);
+                        }
                     }
                     Err(error) if error.kind() == ErrorKind::WouldBlock => {
                         thread::sleep(Duration::from_millis(2));
@@ -71,6 +64,33 @@ impl Fixture {
 
     fn url(&self, path: &str) -> String {
         format!("http://{}{}", self.address, path)
+    }
+}
+
+fn read_request_path(reader: impl Read) -> Option<String> {
+    let mut reader = BufReader::new(reader.take(4_096));
+    let mut first_line = String::new();
+    reader.read_line(&mut first_line).ok()?;
+    if !first_line.ends_with("\r\n") {
+        return None;
+    }
+    let mut parts = first_line.split_whitespace();
+    if parts.next()? != "GET" {
+        return None;
+    }
+    let path = parts.next()?;
+    if !matches!(parts.next()?, "HTTP/1.0" | "HTTP/1.1") {
+        return None;
+    }
+    let mut line = String::new();
+    loop {
+        line.clear();
+        if reader.read_line(&mut line).ok()? == 0 {
+            return None;
+        }
+        if line == "\r\n" {
+            return Some(path.to_owned());
+        }
     }
 }
 
@@ -169,6 +189,38 @@ async fn session() -> BrowserSession {
         .launch()
         .await
         .expect("launch Chromium")
+}
+
+#[test]
+fn idle_connection_does_not_receive_a_synthetic_document() {
+    let fixture = Fixture::start();
+    let mut stream = TcpStream::connect(fixture.address).expect("connect idle client");
+    stream
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .expect("bound idle read");
+    let mut byte = [0_u8; 1];
+    assert!(
+        !matches!(stream.read(&mut byte), Ok(count) if count > 0),
+        "the fixture must not synthesize a document before receiving a request"
+    );
+}
+
+#[test]
+fn fixture_requires_a_complete_bounded_request_before_routing() {
+    assert_eq!(read_request_path(&b"GET /redirect"[..]), None);
+    assert_eq!(
+        read_request_path(&b"GET /redirect HTTP/1.1\r\nHost: fixture"[..]),
+        None
+    );
+    assert_eq!(
+        read_request_path(&b"GET /redirect HTTP/1.1\r\nHost: fixture\r\n\r\n"[..]),
+        Some("/redirect".to_owned())
+    );
+    let oversized = format!(
+        "GET /redirect HTTP/1.1\r\nHeader: {}\r\n\r\n",
+        "x".repeat(4_096)
+    );
+    assert_eq!(read_request_path(oversized.as_bytes()), None);
 }
 
 async fn capture(

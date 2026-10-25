@@ -218,6 +218,7 @@ impl Work {
             }
         }
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: "until".into(),
             status,
@@ -350,6 +351,7 @@ impl Work {
             ),
         };
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: kind.into(),
             status,
@@ -485,6 +487,7 @@ impl Work {
             self.observe_inner().await?
         } else {
             Observation {
+                browser: None,
                 id: new_operation_id(),
                 session_id: self.session.inner.backend.id(),
                 tab_id: self.tab_id.clone(),

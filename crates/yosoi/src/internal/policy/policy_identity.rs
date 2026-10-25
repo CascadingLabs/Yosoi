@@ -1,13 +1,14 @@
 use super::policy::Network;
+use crate::browser as browser_config;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
 use crate::internal::policy::{
     EffectivePolicyIdentity, PolicyError,
     policy::{
-        AcquisitionKind, DiscoveryDocuments, DocumentRequest, Documents, EffectivePage,
-        EffectiveSearch, Filters, FlowPolicy, Limits, Locators, Map, PageDiscovery, Request,
-        Robots, Scope, Subdomains, Tuning,
+        AcquisitionKind, BrowserMode, DiscoveryDocuments, DocumentRequest, Documents,
+        EffectivePage, EffectiveSearch, Filters, FlowPolicy, Limits, Locators, Map, PageDiscovery,
+        Request, Robots, Scope, Subdomains, Tuning,
     },
     policy_value::Policy,
 };
@@ -50,6 +51,7 @@ impl Policy {
         }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
@@ -89,6 +91,7 @@ impl Policy {
         }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
@@ -127,6 +130,7 @@ impl Policy {
         }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
@@ -178,6 +182,12 @@ pub struct EffectivePolicy {
     /// Routing behavior included in identity when explicitly configured.
     #[serde(default, skip_serializing_if = "Network::is_default")]
     pub network: Network,
+    /// Resolved browser engine/profile declaration; absent historical values use Chrome.
+    #[serde(
+        default,
+        skip_serializing_if = "browser_config::BrowserConfig::is_default"
+    )]
+    pub browser: browser_config::BrowserConfig,
     /// Ordered acquisitions with exact effective document requests.
     pub page: EffectivePage,
     /// Shared deadline, domain-specific bounds, and Direct HTTP redirects.
@@ -204,7 +214,14 @@ impl EffectivePolicy {
     /// Validates the stored effective behavior and computes its versioned identity.
     pub fn effective_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.network.validate()?;
+        self.browser.validate()?;
         self.page.validate()?;
+        for acquisition in &self.page.acquisitions {
+            if let AcquisitionKind::Browser { mode } = acquisition.acquisition {
+                self.browser
+                    .validate_headful(matches!(mode, BrowserMode::Headful))?;
+            }
+        }
         self.request.validate()?;
         validate_default_action_timeout(self.default_action_timeout_ms)?;
         self.map.validate()?;
@@ -219,9 +236,14 @@ impl EffectivePolicy {
             })
             .collect();
         let json = serde_json::to_string(&EffectivePolicyIdentityEnvelopeRef {
-            schema_version: POLICY_SCHEMA_VERSION,
+            schema_version: if self.browser.is_default() {
+                POLICY_SCHEMA_VERSION
+            } else {
+                8
+            },
             policy: EffectivePolicyIdentityBodyRef {
                 network: &self.network,
+                browser: &self.browser,
                 page: EffectivePageIdentityRef { acquisitions },
                 request: &self.request,
                 default_action_timeout_ms: self.default_action_timeout_ms,
@@ -234,7 +256,11 @@ impl EffectivePolicy {
             },
         })
         .map_err(|error| PolicyError::Serialization(error.to_string()))?;
-        Ok(EffectivePolicyIdentity::from_canonical_json(&json))
+        Ok(if self.browser.is_default() {
+            EffectivePolicyIdentity::from_canonical_json(&json)
+        } else {
+            EffectivePolicyIdentity::from_browser_json(&json)
+        })
     }
 
     /// Recomputes the v6 identity for snapshots archived before Flow behavior.
@@ -249,6 +275,7 @@ impl EffectivePolicy {
         self.map.validate()?;
         self.search.validate()?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         let acquisitions = self
             .page
             .acquisitions
@@ -289,6 +316,7 @@ impl EffectivePolicy {
         self.search.validate()?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         let acquisitions = self
             .page
             .acquisitions
@@ -328,6 +356,7 @@ impl EffectivePolicy {
         self.map.validate()?;
         self.search.validate()?;
         ensure_legacy_flow(self.flow)?;
+        ensure_legacy_browser(&self.browser)?;
         if self.map.robots != Robots::Ignore {
             return Err(PolicyError::LegacyIdentityCannotIncludeRobots);
         }
@@ -375,6 +404,14 @@ const fn default_action_timeout_ms() -> u64 {
     10_000
 }
 
+fn ensure_legacy_browser(browser: &browser_config::BrowserConfig) -> Result<(), PolicyError> {
+    if browser.is_default() {
+        Ok(())
+    } else {
+        Err(PolicyError::LegacyIdentityCannotIncludeBrowser)
+    }
+}
+
 const fn ensure_legacy_flow(flow: FlowPolicy) -> Result<(), PolicyError> {
     if flow.is_default() {
         Ok(())
@@ -412,6 +449,8 @@ struct EffectivePolicyIdentityEnvelopeRef<'a> {
 struct EffectivePolicyIdentityBodyRef<'a> {
     #[serde(skip_serializing_if = "Network::is_default")]
     network: &'a Network,
+    #[serde(skip_serializing_if = "browser_config::BrowserConfig::is_default")]
+    browser: &'a browser_config::BrowserConfig,
     page: EffectivePageIdentityRef<'a>,
     request: &'a Request,
     default_action_timeout_ms: u64,

@@ -9,10 +9,13 @@ pub const VOID_CRAWL_PACKAGE_NAME: &str = "yosoi-browser-core";
 
 pub mod active_navigation;
 pub mod ax;
+#[cfg(feature = "browser-bidi")]
+pub mod bidi;
 pub mod byte_control;
 pub mod captcha;
 pub mod challenge;
 pub mod context_isolation;
+pub mod controller;
 pub mod cookie_jar;
 pub mod document_snapshot;
 pub mod environment;

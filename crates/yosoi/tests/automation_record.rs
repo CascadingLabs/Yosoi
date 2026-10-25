@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::process as std_process;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
+use yosoi::browser as browser_config;
 use yosoi::flow as yosoi_flow;
 use yosoi::session as yosoi_session;
 
@@ -18,8 +19,83 @@ use yosoi::flow::{Flow, FlowOutcome, FlowTermination, Step, StepOutcome};
 const CHILD_ROOT_ENV: &str = "YOSOI_AUTOMATION_RECORD_CHILD_ROOT";
 const CHILD_REFERENCE_ENV: &str = "YOSOI_AUTOMATION_RECORD_CHILD_REFERENCE";
 
+#[tokio::test]
+#[expect(clippy::panic_in_result_fn, reason = "archive contract assertions")]
+async fn optional_engine_identity_and_unknown_effect_survive_offline_round_trip()
+-> Result<(), Box<dyn Error>> {
+    let identity: browser_config::BrowserExecutionIdentity = serde_json::from_value(
+        serde_json::json!({
+            "engine":"moli","protocol":"bidi","process_owned":false,
+            "controller_version":"0.4.0","capability_profile":"com.cascadinglabs.yosoi.bidi.moli.layout.v1",
+            "reported_name":null,"reported_version":null,"executable_version":null,"executable_sha256":null,
+            "moli_profile":"layout","moli_resources":true,"owned_moli_private_network_blocking":null
+        }),
+    )?;
+    let mut captured = observation();
+    captured.browser = Some(identity.clone());
+    let receipt = OperationReceipt {
+        browser: Some(identity.clone()),
+        id: "native-unknown-1".to_owned(),
+        kind: "click".to_owned(),
+        status: OperationStatus::Unknown,
+        result: None,
+        observation: Some(captured.clone()),
+        error: Some("connection lost after possible dispatch".to_owned()),
+    };
+    let record = AutomationRecord::new(
+        "native-evidence",
+        vec![captured.clone()],
+        vec![receipt.clone()],
+    )?;
+    let directory = unique_temp_path("yosoi-bidi-record")?;
+    let archive = Archive::open(&directory).await?;
+    let reference = record.write_to(&archive).await?;
+    drop(archive);
+    let reopened = Archive::open(&directory).await?;
+    let restored = AutomationRecord::read_from(&reopened, &reference).await?;
+    assert_eq!(
+        restored
+            .observations()
+            .first()
+            .ok_or("missing observation")?
+            .browser
+            .as_ref(),
+        Some(&identity)
+    );
+    let operation = restored.operations().first().ok_or("missing receipt")?;
+    assert_eq!(operation.browser.as_ref(), Some(&identity));
+    assert_eq!(operation.status, OperationStatus::Unknown);
+    assert!(operation.browser.as_ref().is_some_and(
+        |browser| browser.reported_version.is_none() && browser.executable_sha256.is_none()
+    ));
+    let mut contradictory = receipt;
+    contradictory.browser = Some(browser_config::BrowserExecutionIdentity {
+        engine: browser_config::BrowserEngine::Firefox,
+        ..identity
+    });
+    assert!(matches!(
+        AutomationRecord::new("contradictory", vec![captured], vec![contradictory]),
+        Err(AutomationRecordError::BrowserProvenanceMismatch)
+    ));
+    drop(reopened);
+    fs::remove_dir_all(directory)?;
+    Ok(())
+}
+
+#[test]
+#[expect(clippy::panic_in_result_fn, reason = "legacy serialization assertions")]
+fn legacy_observations_do_not_gain_an_invented_browser() -> Result<(), Box<dyn Error>> {
+    let legacy = serde_json::to_value(observation())?;
+    assert!(legacy.get("browser").is_none());
+    let decoded: Observation = serde_json::from_value(legacy.clone())?;
+    assert!(decoded.browser.is_none());
+    assert_eq!(serde_json::to_value(decoded)?, legacy);
+    Ok(())
+}
+
 fn observation() -> Observation {
     Observation {
+        browser: None,
         id: "observation-1".to_owned(),
         session_id: "session-1".to_owned(),
         tab_id: "tab-1".to_owned(),
@@ -55,6 +131,7 @@ async fn archived_record_reference_reopens_in_a_fresh_process() -> Result<(), Bo
             index: 0,
             flow_path: vec![0, 0],
             receipt: OperationReceipt {
+                browser: None,
                 id: "flow-operation-1".to_owned(),
                 kind: "navigate".to_owned(),
                 status: OperationStatus::Observed,
@@ -76,6 +153,7 @@ async fn archived_record_reference_reopens_in_a_fresh_process() -> Result<(), Bo
         "record-1",
         vec![observation()],
         vec![OperationReceipt {
+            browser: None,
             id: "operation-1".to_owned(),
             kind: "navigate".to_owned(),
             status: OperationStatus::Observed,
@@ -119,6 +197,7 @@ async fn archived_record_read_reports_missing_and_corrupt_artifacts() -> Result<
             index: 0,
             flow_path: Vec::new(),
             receipt: OperationReceipt {
+                browser: None,
                 id: "negative-flow-operation-1".to_owned(),
                 kind: "navigate".to_owned(),
                 status: OperationStatus::Observed,
@@ -141,6 +220,7 @@ async fn archived_record_read_reports_missing_and_corrupt_artifacts() -> Result<
         "negative-record-1",
         vec![observation()],
         vec![OperationReceipt {
+            browser: None,
             id: "negative-operation-1".to_owned(),
             kind: "navigate".to_owned(),
             status: OperationStatus::Observed,
@@ -304,6 +384,7 @@ fn nested_outcome(flow: Flow, paths: Vec<Vec<u64>>, terminal: FlowTermination) -
                     index: result_index,
                     flow_path,
                     receipt: OperationReceipt {
+                        browser: None,
                         id: format!("nested-operation-{index}"),
                         kind: "mock".to_owned(),
                         status: if terminal == FlowTermination::Failed && index == last {

@@ -58,7 +58,9 @@ const fn validate_instrumentation(
 ) -> Result<(), VoidCrawlAdapterError> {
     let exact = match instrumentation {
         yosoi::BrowserInstrumentationMode::Normal => true,
-        yosoi::BrowserInstrumentationMode::Minimal => !needs.network && !needs.runtime,
+        yosoi::BrowserInstrumentationMode::Bidi | yosoi::BrowserInstrumentationMode::Minimal => {
+            !needs.network && !needs.runtime
+        }
         yosoi::BrowserInstrumentationMode::MinimalNetworkEscalated => {
             needs.network && !needs.runtime
         }
@@ -89,7 +91,9 @@ pub fn validate(spec: &yosoi::ResolvedBrowserCaptureSpec) -> Result<(), VoidCraw
 
 pub const fn cdp_mode(spec: &yosoi::ResolvedBrowserCaptureSpec) -> provider::CdpMode {
     match spec.capabilities().instrumentation() {
-        yosoi::BrowserInstrumentationMode::Normal => provider::CdpMode::Normal,
+        yosoi::BrowserInstrumentationMode::Bidi | yosoi::BrowserInstrumentationMode::Normal => {
+            provider::CdpMode::Normal
+        }
         yosoi::BrowserInstrumentationMode::Minimal
         | yosoi::BrowserInstrumentationMode::MinimalNetworkEscalated
         | yosoi::BrowserInstrumentationMode::MinimalRuntimeEscalated

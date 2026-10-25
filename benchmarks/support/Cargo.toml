@@ -13,6 +13,7 @@ bench = false
 
 [features]
 default = []
+browser-bidi = ["browser", "rustix/process", "async-tungstenite/tokio-rustls-native-certs"]
 browser = [
     "dep:async-tungstenite",
     "dep:chromiumoxide_types",

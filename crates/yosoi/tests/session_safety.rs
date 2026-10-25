@@ -58,6 +58,12 @@ fn settings(maximum_tabs: u32, operation_timeout_ms: u64) -> SessionPolicy {
     }
 }
 
+fn allow_javascript(mut settings: SessionPolicy) -> SessionPolicy {
+    settings.allow_arbitrary_js = true;
+    settings.allowed_actions.push(session::ActionKind::Evaluate);
+    settings
+}
+
 async fn close(session: &session::Session) -> Result<(), Box<dyn Error>> {
     timeout(Duration::from_secs(10), session.close())
         .await
@@ -288,9 +294,9 @@ async fn tabs_share_session_cookies_while_fresh_sessions_are_isolated() -> Resul
     // Distinct URLs avoid Chrome's identical-resource request coalescing.
     let first_url = fixture.url("/rendezvous?tab=first");
     let second_url = fixture.url("/rendezvous?tab=second");
-    let concurrent_navigations = timeout(Duration::from_secs(5), async {
+    let concurrent_navigations = Box::pin(timeout(Duration::from_secs(5), async {
         tokio::join!(first.navigate(&first_url), second.navigate(&second_url),)
-    })
+    }))
     .await;
     let first_observation = first.observe().await;
     let second_observation = second.observe().await;
@@ -614,10 +620,13 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
         .acquire()
         .await?;
     let flow_work = flow_session.work().await?;
-    let flow_policy = browser_policy(50_000)?;
+    let mut flow_policy = browser_policy(50_000)?;
+    // Flow action bounds are explicit and independent of Request acquisition bounds.
+    flow_policy.default_action_timeout_ms = 50;
     let delayed_flow = Flow::new([Step::Navigate {
         url: fixture.url("/delay/500"),
     }]);
+    let flow_started = tokio_time::Instant::now();
     let flow_result = timeout(
         Duration::from_secs(3),
         delayed_flow
@@ -626,6 +635,7 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
             .invoke(),
     )
     .await;
+    let flow_elapsed = flow_started.elapsed();
     let flow_not_completed =
         matches!(flow_result, Ok(Ok(outcome)) if outcome.terminal != FlowTermination::Completed);
 
@@ -646,6 +656,10 @@ async fn request_and_flow_bind_limits_intersect_with_session_deadlines()
         "a partial or failed browser Request was reported as successful to its watcher"
     );
     assert!(flow_not_completed, "Flow ignored its stricter bound policy");
+    assert!(
+        flow_elapsed < Duration::from_millis(400),
+        "Flow did not respect its bounded action margin: {flow_elapsed:?}"
+    );
     assert!(
         request_tab_fenced,
         "timed-out Request control remained available for new work"
@@ -824,10 +838,7 @@ async fn json_unsupported_javascript_result_is_not_observed_as_null() -> Result<
 
     let fixture = session_fixture::SessionFixture::start().await?;
     let policy = browser_policy(5_000_000)?;
-    let javascript_settings = SessionPolicy {
-        allow_arbitrary_js: true,
-        ..settings(1, 5_000)
-    };
+    let javascript_settings = allow_javascript(settings(1, 5_000));
     let session = session::new()
         .bind(&policy)
         .configure(javascript_settings)
@@ -868,10 +879,7 @@ async fn targeted_evaluation_rejects_stale_missing_and_unsupported_targets_befor
 
     let fixture = session_fixture::SessionFixture::start().await?;
     let policy = browser_policy(5_000_000)?;
-    let javascript_settings = SessionPolicy {
-        allow_arbitrary_js: true,
-        ..settings(1, 5_000)
-    };
+    let javascript_settings = allow_javascript(settings(1, 5_000));
     let session = session::new()
         .bind(&policy)
         .configure(javascript_settings)
@@ -1005,10 +1013,7 @@ async fn targeted_evaluation_reads_a_uniquely_selected_srcdoc_frame() -> Result<
 
     let fixture = session_fixture::SessionFixture::start().await?;
     let policy = browser_policy(5_000_000)?;
-    let javascript_settings = SessionPolicy {
-        allow_arbitrary_js: true,
-        ..settings(1, 5_000)
-    };
+    let javascript_settings = allow_javascript(settings(1, 5_000));
     let session = session::new()
         .bind(&policy)
         .configure(javascript_settings)
@@ -1139,11 +1144,10 @@ async fn javascript_result_errors_are_truthful_and_unresolved_dispatch_fences_on
 
     let fixture = session_fixture::SessionFixture::start().await?;
     let policy = browser_policy(5_000_000)?;
-    let javascript_settings = SessionPolicy {
+    let javascript_settings = allow_javascript(SessionPolicy {
         maximum_result_bytes: 64,
-        allow_arbitrary_js: true,
         ..settings(2, 1_000)
-    };
+    });
     let session = session::new()
         .bind(&policy)
         .configure(javascript_settings)

@@ -36,6 +36,67 @@ use yosoi::{
 
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
 
+#[test]
+fn stacked_network_and_engine_declarations_keep_distinct_roundtrip_identities() -> TestResult {
+    use yosoi::browser::{BrowserConfig, BrowserEngine};
+    let default = Policy::default();
+    let routed = Policy {
+        network: Network {
+            ip_family: IpFamily::Ipv4Only,
+            ..Network::default()
+        },
+        ..default.clone()
+    };
+    let optional = Policy {
+        browser: BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        ..default.clone()
+    };
+    let combined = Policy {
+        network: routed.network.clone(),
+        ..optional.clone()
+    };
+    let cases = [default, routed, optional, combined];
+    for (index, policy) in cases.iter().enumerate() {
+        let restored: Policy = serde_json::from_str(&serde_json::to_string(policy)?)?;
+        assert_eq!(policy.effective_identity()?, restored.effective_identity()?);
+        for other in cases.iter().skip(index.saturating_add(1)) {
+            assert_ne!(policy.effective_identity()?, other.effective_identity()?);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test]
+async fn stacked_optional_engine_rejects_custom_network_before_launch() -> TestResult {
+    use yosoi::browser::{BrowserConfig, BrowserEngine};
+    for engine in [BrowserEngine::Firefox, BrowserEngine::Moli] {
+        let policy = Policy {
+            browser: BrowserConfig {
+                engine,
+                ..BrowserConfig::default()
+            },
+            network: Network {
+                ip_family: IpFamily::Ipv4Only,
+                ..Network::default()
+            },
+            ..Policy::default()
+        };
+        let result = session::new().bind(&policy).acquire().await;
+        assert!(matches!(
+            result,
+            Err(session::SessionError::Unsupported(
+                "custom network routing is supported only by Chrome sessions"
+            ))
+        ));
+        drop(result);
+    }
+    Ok(())
+}
+
 async fn fixture(
     bind: &str,
     response: Vec<u8>,

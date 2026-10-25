@@ -1,3 +1,4 @@
+use crate::browser as browser_config;
 use crate::internal::types as yosoi_types;
 
 use std::num::NonZeroU64;
@@ -28,6 +29,12 @@ pub(super) fn resolve(
     mode: BrowserMode,
     inputs: BrowserResolutionInputs,
 ) -> Result<super::ResolvedPolicyAttempt, PolicyResolutionError> {
+    let instrumentation = inputs.capabilities.instrumentation();
+    if (policy.browser.engine != browser_config::BrowserEngine::Chrome)
+        != (instrumentation == BrowserInstrumentationMode::Bidi)
+    {
+        return Err(PolicyResolutionError::BrowserInstrumentationMismatch { instrumentation });
+    }
     let completion = inputs.navigation_policy.completion();
     if !matches!(
         completion,
@@ -139,6 +146,7 @@ pub(super) fn resolve(
     Ok(super::ResolvedPolicyAttempt::new(
         ResolvedPolicySpec::Browser(Box::new(spec)),
         AppliedPolicy::new(identity, decisions, limits),
+        policy.browser.clone(),
     ))
 }
 
@@ -201,7 +209,7 @@ fn validate_instrumentation(
     let instrumentation = spec.capabilities().instrumentation();
     let supported = match instrumentation {
         BrowserInstrumentationMode::Normal => true,
-        BrowserInstrumentationMode::Minimal => !network,
+        BrowserInstrumentationMode::Bidi | BrowserInstrumentationMode::Minimal => !network,
         BrowserInstrumentationMode::MinimalNetworkEscalated => network,
         BrowserInstrumentationMode::MinimalRuntimeEscalated
         | BrowserInstrumentationMode::MinimalBothEscalated => false,

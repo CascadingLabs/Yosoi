@@ -14,6 +14,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use yosoi::{
     CountLimit, DocumentId, Policy, StepLimit,
+    browser::{BrowserConfig, BrowserEngine, MoliProfile},
     contracts::{Money, RuntimeFieldValue, RuntimeValue},
     documents::DocumentEpoch,
     locators::{
@@ -330,6 +331,30 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         json!({"absentPaths":["proxy"]}),
     )?);
 
+    for (name, engine, profile) in [
+        ("firefox-policy", BrowserEngine::Firefox, MoliProfile::Dom),
+        ("moli-dom-policy", BrowserEngine::Moli, MoliProfile::Dom),
+        (
+            "moli-layout-policy",
+            BrowserEngine::Moli,
+            MoliProfile::Layout,
+        ),
+    ] {
+        output.push(constructed_case(
+            name,
+            "yosoi::Policy",
+            "Rust explicit browser declaration",
+            Policy {
+                browser: BrowserConfig {
+                    engine,
+                    moli_profile: profile,
+                    ..BrowserConfig::default()
+                },
+                ..Policy::default()
+            },
+            json!({}),
+        )?);
+    }
     default_case::<Page>(&mut output, "default-policy-page", "yosoi::policy::Page")?;
     default_case::<Request>(
         &mut output,
