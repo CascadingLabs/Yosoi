@@ -1,0 +1,177 @@
+{
+  "result": "No inter-tab A/V bleed observed in this run",
+  "browser_process_count": 1,
+  "browser_pid": 918546,
+  "browser_contexts": 2,
+  "isolation_checks": [
+    {
+      "binding": "isolated_browser_context",
+      "id": 0,
+      "initial_state": {
+        "cookie": "",
+        "storage": null
+      },
+      "target": "2DA6D87A8D3D3BE3C7202DEEE27F4262"
+    },
+    {
+      "binding": "isolated_browser_context",
+      "id": 1,
+      "initial_state": {
+        "cookie": "",
+        "storage": null
+      },
+      "target": "DE01F3D77C33D0314E93BEFC972C2D51"
+    }
+  ],
+  "distinct_capture_sources": [
+    "web-contents-media-stream://18:14",
+    "web-contents-media-stream://38:14"
+  ],
+  "start_difference_ms": 5,
+  "simultaneous_overlap_seconds": 25.999,
+  "clips": [
+    {
+      "tab": "A",
+      "file": "yosoi-tab-a-big-buck-bunny.mp4",
+      "sha256": "6cd580a3149782ab2f8346ba136a3bb11d810e8b49ebbe81633c10052045b112",
+      "source_url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ&t=30s",
+      "source_title": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film - YouTube",
+      "started_at_unix_ms": 1792952672367,
+      "stopped_at_unix_ms": 1792952698376,
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "26.012000",
+          "size": "2357886"
+        }
+      },
+      "url": "https://uploads.linear.app/7a9c5ed5-af54-43ad-a9ba-eb5cbc638eb6/37c9eaf5-f70a-4d4e-a8cb-83ae1565148a/0a812832-0277-4c0e-b4c9-764a5c5186ef"
+    },
+    {
+      "tab": "B",
+      "file": "yosoi-tab-b-sintel.mp4",
+      "sha256": "f0af62756718d82a1b0135e9c597c83ded2c750d602c9d8e228f6d59cbe8afd1",
+      "source_url": "https://www.youtube.com/watch?v=eRsGyueVLvQ&t=60s",
+      "source_title": "Sintel - Open Movie by Blender Foundation - YouTube",
+      "started_at_unix_ms": 1792952672362,
+      "stopped_at_unix_ms": 1792952698366,
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "format": {
+          "duration": "25.986000",
+          "size": "1365445"
+        }
+      },
+      "url": "https://uploads.linear.app/7a9c5ed5-af54-43ad-a9ba-eb5cbc638eb6/27251318-bf2f-4e6c-86af-ca3c6e083d83/6f31f497-a6b7-408e-aa55-ceb3791d98fb"
+    }
+  ],
+  "pause_checks": [
+    {
+      "paused_tab": "A",
+      "pause_interval_in_own_clip_seconds": [
+        6.002,
+        11.009
+      ],
+      "measurement_interval_unix_ms": [
+        1792952679169,
+        1792952682876
+      ],
+      "audio": [
+        {
+          "tab": "A",
+          "rms": 0.0,
+          "all_samples_zero": true,
+          "samples": 177936,
+          "dbfs": null
+        },
+        {
+          "tab": "B",
+          "rms": 0.07994341069411669,
+          "all_samples_zero": false,
+          "samples": 177936,
+          "dbfs": -21.94
+        }
+      ],
+      "result": "paused capture is digitally silent while other capture remains audible"
+    },
+    {
+      "paused_tab": "B",
+      "pause_interval_in_own_clip_seconds": [
+        14.007,
+        19.017
+      ],
+      "measurement_interval_unix_ms": [
+        1792952687169,
+        1792952690879
+      ],
+      "audio": [
+        {
+          "tab": "A",
+          "rms": 0.05609746037649008,
+          "all_samples_zero": false,
+          "samples": 178080,
+          "dbfs": -25.02
+        },
+        {
+          "tab": "B",
+          "rms": 0.0,
+          "all_samples_zero": true,
+          "samples": 178080,
+          "dbfs": null
+        }
+      ],
+      "result": "paused capture is digitally silent while other capture remains audible"
+    }
+  ],
+  "picture_difference_mean_gray": 61.47,
+  "conditions": {
+    "tabs": 2,
+    "mode": "youtube",
+    "origin": "http://127.0.0.1:34395",
+    "display": ":0",
+    "cpu_affinity": [
+      0
+    ],
+    "resolution_requested": "640x360",
+    "fps_requested": 30,
+    "duration_requested_ms": 26000,
+    "capture_grant": "auto-accept-this-tab-capture",
+    "scope": "two explicitly requested YouTube videos in isolated anonymous contexts; no microphone/camera"
+  },
+  "limits": "Two chosen YouTube videos in disposable browser contexts, not OS/VM security certification. Pause windows are intentional. Browser media streams were cropped to the actual video elements; MP4 conversion preserves timestamps and letterboxes. One logical CPU was used; no guaranteed 30-fps capture claim.",
+  "recorded_source_base": "44928628df764a34b40447aed296d5c4cbf0edfa",
+  "delivery_base": "6f4e8fa75f395412edbedca20d51b04deb39e7de",
+  "human_review": "Andrew reviewed both clips and accepted the audio/video separation.",
+  "method": "Native Yosoi browser-provider harness; getDisplayMedia self-tab A/V; Chrome Region Capture; MediaRecorder VP8/Opus; MP4 compatibility transcode.",
+  "attribution": "Big Buck Bunny (2008) and Sintel (2010), Blender Foundation, CC BY 3.0. Excerpts include deliberate pauses and compatibility transcoding."
+}
