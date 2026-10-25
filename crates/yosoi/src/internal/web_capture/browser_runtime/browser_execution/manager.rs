@@ -5,7 +5,7 @@ use super::{
 };
 use crate::internal::browser as provider;
 use provider::managed_profile::ManagedProfileLeaseRelease;
-use std::{sync::Mutex as SyncMutex, time::Duration};
+use std::{net::SocketAddr, sync::Mutex as SyncMutex, time::Duration};
 
 /// Launch settings shared by the warm processes owned by one manager.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -14,6 +14,8 @@ pub struct BrowserExecutionManagerConfig {
     pub headful: bool,
     /// Use VoidCrawl's reduced CDP-domain mode.
     pub minimal_cdp: bool,
+    /// Owned local networking relay, applied to every browser web request.
+    pub proxy: Option<SocketAddr>,
 }
 
 /// Secret-safe failure from concrete browser execution management.

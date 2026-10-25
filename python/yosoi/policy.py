@@ -7,7 +7,13 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import AfterValidator, Field, model_serializer, model_validator
+from pydantic import (
+    AfterValidator,
+    ConfigDict,
+    Field,
+    model_serializer,
+    model_validator,
+)
 
 from . import _native
 from ._models import ImmutableModel, Model
@@ -1115,10 +1121,19 @@ class _SnapshotFlowPolicy(ImmutableModel):
     on_cancellation: Continuation = Field(default_factory=Continue)
 
 
+def _network_is_default(value: Network | _SnapshotNetwork) -> bool:
+    return (
+        value.ip_family == "system_default"
+        and value.source_address is None
+        and value.proxy is None
+    )
+
+
 class EffectivePolicy(ImmutableModel):
     """Rust-resolved behavior view, separate from caller authoring intent.
 
     Attributes:
+        network: Opt-in IP family, local source binding, and upstream proxy.
         default_action_timeout_ms: Positive fallback action duration in milliseconds,
             distinct from request startup budgets.
         flow: Resolved independent failure/cancellation fallback policies.
@@ -1131,6 +1146,9 @@ class EffectivePolicy(ImmutableModel):
         search: Resolved provider routes and shared budgets.
     """
 
+    network: Network = Field(
+        default_factory=lambda: Network(), exclude_if=_network_is_default
+    )
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: EffectivePage
@@ -1142,10 +1160,46 @@ class EffectivePolicy(ImmutableModel):
     search: EffectiveSearch
 
 
+IpFamily = Literal["system_default", "ipv4_only", "ipv6_only"]
+"""Permitted outbound TCP family; an upstream proxy owns its destination family."""
+
+
+def _source_address(value: str) -> str:
+    declaration = json.loads(_native.default_policy())
+    declaration["network"] = {"source_address": value}
+    try:
+        normalized = json.loads(_native.validate_policy(json.dumps(declaration)))
+    except _native.PolicyError as error:
+        raise ValueError(str(error)) from error
+    return normalized["network"]["source_address"]
+
+
+class Network(Model):
+    """Opt-in TCP routing retained by Requests and owned browser Sessions.
+
+    Attributes:
+        ip_family: Permitted socket family, including the connection to a proxy.
+        source_address: Already-assigned local IP; does not select a NAT public IP.
+        proxy: HTTP(S) CONNECT or SOCKS5 URL. Credentials persist in serialized policy.
+            The upstream proxy controls destination DNS and egress family.
+    """
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+    ip_family: IpFamily = "system_default"
+    source_address: Annotated[str, AfterValidator(_source_address)] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    proxy: str | None = Field(
+        default=None, repr=False, exclude_if=lambda value: value is None
+    )
+
+
 class Policy(Model):
     """Editable complete declaration with Rust-owned defaults and validation.
 
     Attributes:
+        network: Opt-in IP family, local source binding, and upstream proxy.
         default_action_timeout_ms: Positive fallback action duration in milliseconds;
             explicit action/Flow budgets can override it.
         flow: Independent failure/cancellation continuation defaults.
@@ -1159,6 +1213,9 @@ class Policy(Model):
             rechecked by check, to_json, or snapshot.
     """
 
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+    network: Network = Field(default_factory=Network, exclude_if=_network_is_default)
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: FlowPolicy = Field(default_factory=FlowPolicy)
     page: Page = _field("page")
@@ -1354,7 +1411,20 @@ class _SnapshotSearch(ImmutableModel):
     maximum_elapsed: MaximumElapsed
 
 
+class _SnapshotNetwork(ImmutableModel):
+    ip_family: IpFamily = "system_default"
+    source_address: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    proxy: str | None = Field(
+        default=None, repr=False, exclude_if=lambda value: value is None
+    )
+
+
 class _SnapshotPolicy(ImmutableModel):
+    network: _SnapshotNetwork = Field(
+        default_factory=_SnapshotNetwork, exclude_if=_network_is_default
+    )
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotPage
@@ -1406,6 +1476,9 @@ class _SnapshotEffectiveSearch(ImmutableModel):
 
 
 class _SnapshotEffectivePolicy(ImmutableModel):
+    network: _SnapshotNetwork = Field(
+        default_factory=_SnapshotNetwork, exclude_if=_network_is_default
+    )
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotEffectivePage
@@ -1445,3 +1518,6 @@ class PolicySnapshot(ImmutableModel):
             PolicyError: Complete declaration or Current selection resolution fails.
         """
         return cls.model_validate_json(_native.policy_snapshot(policy.to_json()))
+
+
+EffectivePolicy.model_rebuild()

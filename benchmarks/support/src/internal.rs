@@ -17,6 +17,8 @@ pub mod engine;
 pub mod extractor;
 #[path = "../../../crates/yosoi/src/internal/map/mod.rs"]
 pub mod map;
+#[path = "../../../crates/yosoi/src/internal/network.rs"]
+pub mod network;
 #[path = "../../../crates/yosoi/src/internal/policy/mod.rs"]
 pub mod policy;
 #[path = "../../../crates/yosoi/src/internal/types/mod.rs"]

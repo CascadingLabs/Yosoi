@@ -333,6 +333,7 @@ def compare_fixture(fixture: dict[str, Any], python_target: str) -> dict[str, An
         "pythonOperation": python_observation.get("operation"),
         "pythonUnitObservation": python_observation.get("unitObservation"),
         "pythonFieldObservations": python_observation.get("fieldObservations", {}),
+        "rustFieldObservations": fixture.get("field_observations", {}),
         "rustRoundTripPassed": fixture.get("round_trip_passed"),
         "rustShape": rust_shape,
         "pythonShape": python_shape,
@@ -609,8 +610,46 @@ def struct_field_evidence_cases(
                         rust_keys.append(key)
             rust_present = len(rust_keys) == 1
             if not rust_keys and not python_present and item.get("equal") is True:
-                # A field omitted by both serializers supplies no observation
-                # of its typed value. Other fixtures can verify its accessor.
+                # Omission alone never establishes the typed value. A Rust
+                # fixture may independently read the field before serialization,
+                # which can be compared with the live Python model attribute.
+                typed = item.get("rustFieldObservations", {})
+                if isinstance(typed, dict) and rust_field_name in typed:
+                    rust_value = typed[rust_field_name]
+                    python_attribute_present = (
+                        observation.get("pythonAttributePresent") is True
+                    )
+                    python_value = observation.get("pythonAttributeValue")
+                    equal = (
+                        item.get("rustFixturePassed") is True
+                        and item.get("pythonError") is None
+                        and python_attribute_present
+                        and rust_value == python_value
+                    )
+                    field_checks.append(
+                        {
+                            "name": item.get("name"),
+                            "construction": item.get("construction"),
+                            "rustField": rust_field_name,
+                            "rustWireKey": None,
+                            "rustPresent": False,
+                            "rustObservationSource": "typed_field",
+                            "pythonField": python_field_name,
+                            "pythonSerializationAlias": python_alias,
+                            "pythonAttributePresent": python_attribute_present,
+                            "pythonPresent": False,
+                            "rustSha256": parity.digest_json(rust_value),
+                            "pythonSha256": (
+                                parity.digest_json(python_value)
+                                if python_attribute_present
+                                else None
+                            ),
+                            "equal": equal,
+                            "reason": (
+                                None if equal else "independent typed values differ"
+                            ),
+                        }
+                    )
                 continue
             rust_wire_key = rust_keys[0] if rust_present else None
             rust_value = rust_output.get(rust_wire_key) if rust_present else None

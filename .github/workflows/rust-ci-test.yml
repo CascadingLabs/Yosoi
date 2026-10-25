@@ -186,6 +186,9 @@ jobs:
     needs: tests
     runs-on: ubuntu-22.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -194,9 +197,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends lcov
+      - name: Verify coverage artifact selection
+        run: node --test scripts/ci/select-coverage-artifacts.test.mjs
+      - name: Select newest upload for both coverage partitions
+        id: coverage-parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            | node scripts/ci/select-coverage-artifacts.mjs >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
-          pattern: rust-ci-coverage-all-features-*
+          artifact-ids: ${{ steps.coverage-parts.outputs.ids }}
           path: parts
       - name: Require both parts and merge coverage counters
         run: |

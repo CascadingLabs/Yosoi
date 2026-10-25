@@ -1,3 +1,5 @@
+use crate::internal::network::Relay;
+
 mod outcome;
 pub(in crate::internal::direct_http) use outcome::publish;
 use outcome::unavailable;
@@ -36,11 +38,11 @@ pub async fn consume_response_body(
     Box<ResponseBodyFailure>,
 > {
     let limit = pending.spec().content_limits().representation_bytes().get();
-    consume_with_sink(
+    Box::pin(consume_with_sink(
         pending,
         cancellation,
         Box::new(BoundedMemorySink::new(limit)),
-    )
+    ))
     .await
 }
 
@@ -58,7 +60,12 @@ pub(in crate::internal::direct_http) async fn consume_with_sink(
     ),
     Box<ResponseBodyFailure>,
 > {
-    consume_with_sink_inner(pending, cancellation, sink, false).await
+    let relay = pending.spec().relay.clone();
+    let result = consume_with_sink_inner(pending, cancellation, sink, false).await;
+    if let Some(relay) = relay {
+        relay.shutdown().await;
+    }
+    result
 }
 
 #[cfg(test)]
@@ -94,6 +101,7 @@ async fn consume_with_sink_inner(
     ),
     Box<ResponseBodyFailure>,
 > {
+    let _relay_cleanup = pending.spec().relay.as_ref().map(Relay::cleanup);
     let codings = match parse_content_encoding(pending.facts().content_encoding()) {
         Ok(value) => value,
         Err(error) => {

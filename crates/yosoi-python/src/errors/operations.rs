@@ -27,6 +27,8 @@ pub fn policy_error(py: Python<'_>, error: &SdkPolicyError) -> PyErr {
 fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
     use SdkPolicyError as E;
     match error {
+        E::NetworkSourceFamilyMismatch => ("NetworkSourceFamilyMismatch", json!({})),
+        E::InvalidProxyUrl => ("InvalidProxyUrl", json!({})),
         E::ZeroCountLimit => ("ZeroCountLimit", json!({})),
         E::ZeroStepLimit => ("ZeroStepLimit", json!({})),
         E::ZeroByteLimit => ("ZeroByteLimit", json!({})),

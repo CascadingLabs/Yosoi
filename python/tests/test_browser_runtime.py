@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,8 +11,10 @@ from pathlib import Path
 
 import pytest
 
+from yosoi import request
 from yosoi.browser import (
     Assert,
+    BrowserError,
     Click,
     CountAtLeast,
     EnterText,
@@ -27,11 +30,74 @@ from yosoi.browser import (
     action,
 )
 from yosoi.cancellation import CancellationToken
+from yosoi.errors import RequestError
+from yosoi.policy import Acquisition, Network, Page, Policy
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("YOSOI_BROWSER_TESTS") != "1",
     reason="requires an explicitly selected regular Stable browser",
 )
+
+
+def test_network_session_binds_ipv6_source_and_rejects_route_changes() -> None:
+    async def run() -> None:
+        observed = asyncio.get_running_loop().create_future()
+
+        async def handle(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            try:
+                await reader.readuntil(b"\r\n\r\n")
+                if not observed.done():
+                    observed.set_result(writer.get_extra_info("peername")[0])
+                writer.write(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n"
+                    b"Content-Length: 15\r\nConnection: close\r\n\r\n<h1>route</h1>\n"
+                )
+                await writer.drain()
+            finally:
+                writer.close()
+                await writer.wait_closed()
+
+        server = await asyncio.start_server(handle, "::1", 0)
+        try:
+            port = server.sockets[0].getsockname()[1]
+            policy = Policy(
+                network=Network(ip_family="ipv6_only", source_address="::1"),
+                page=Page(acquisitions=[Acquisition.browser()]),
+            )
+            async with Session(policy=policy) as session:
+                response = (
+                    await request.new(f"http://[::1]:{port}/route")
+                    .in_session(session)
+                    .send()
+                )
+                assert response.attempts[0].state == "completed"
+                document = response.attempts[0].documents[0].outcome.document
+                assert document is not None
+                tree = json.loads(document.data)
+                assert any(
+                    node.get("kind") == "text" and node.get("value") == "route"
+                    for node in tree["nodes"]
+                )
+                assert await asyncio.wait_for(observed, 5) == "::1"
+                changed = Policy.model_validate_json(policy.to_json())
+                changed.network = Network(ip_family="ipv4_only")
+                with pytest.raises(RequestError, match="network policy differs"):
+                    await (
+                        request.new("http://127.0.0.1/")
+                        .bind(changed)
+                        .in_session(session)
+                        .send()
+                    )
+                with pytest.raises(BrowserError) as rejected:
+                    await session.run(Flow(steps=()), policy=changed)
+                assert rejected.value.rust_variant == "session"
+        finally:
+            server.close()
+            await server.wait_closed()
+
+    asyncio.run(asyncio.wait_for(run(), 30))
 
 
 FIXTURE_PATH = (

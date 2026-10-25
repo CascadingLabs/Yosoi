@@ -1,3 +1,4 @@
+use super::policy::Network;
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer, de::Error as _, ser::Error as SerError,
 };
@@ -14,6 +15,7 @@ impl Serialize for Policy {
     {
         self.validate().map_err(SerError::custom)?;
         PolicyRef {
+            network: &self.network,
             default_action_timeout_ms: self.default_action_timeout_ms,
             flow: self.flow,
             page: &self.page,
@@ -35,6 +37,7 @@ impl<'de> Deserialize<'de> for Policy {
     {
         let values = PolicyValues::deserialize(deserializer)?;
         let policy = Self {
+            network: values.network,
             default_action_timeout_ms: values.default_action_timeout_ms,
             page: values.page,
             request: values.request,
@@ -52,6 +55,8 @@ impl<'de> Deserialize<'de> for Policy {
 
 #[derive(Serialize)]
 struct PolicyRef<'a> {
+    #[serde(skip_serializing_if = "Network::is_default")]
+    network: &'a Network,
     default_action_timeout_ms: u64,
     flow: FlowPolicy,
     page: &'a Page,
@@ -67,6 +72,8 @@ struct PolicyRef<'a> {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PolicyValues {
+    #[serde(default)]
+    network: Network,
     #[serde(default = "default_action_timeout_ms")]
     default_action_timeout_ms: u64,
     page: Page,

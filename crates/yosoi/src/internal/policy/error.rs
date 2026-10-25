@@ -4,6 +4,14 @@ use thiserror::Error;
 /// Errors found while constructing or validating policy values.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum PolicyError {
+    /// Local source address does not match the selected TCP family.
+    #[error("network source address does not match the selected IP family")]
+    NetworkSourceFamilyMismatch,
+    /// Proxy URL is malformed or uses an unsupported scheme or URL component.
+    #[error(
+        "proxy URL must use http, https, socks5, or socks5h with a host and no path, query, or fragment"
+    )]
+    InvalidProxyUrl,
     /// A positive document or locator count was given zero.
     #[error("count limit must be greater than zero")]
     ZeroCountLimit,

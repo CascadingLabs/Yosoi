@@ -1,3 +1,5 @@
+mod network;
+pub use network::{IpFamily, Network};
 mod count;
 mod documents;
 mod flow;

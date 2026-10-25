@@ -30676,6 +30676,215 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.View.total_rows."
+    },
+    {
+      "rustPath": "yosoi::Policy::network",
+      "symbolKey": "member:struct_field:yosoi::Policy::network@signature:58913fc0f7f3f83d38c7e0d4605c808da30f30aa8622895dea4f5ccd16cbab80@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Policy.network",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field network maps to Python field network."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::InvalidProxyUrl",
+      "symbolKey": "member:variant:yosoi::PolicyError::InvalidProxyUrl@signature:a6f33a9aa961ff2ff32fb97623cb909ada13f0ec4f4367a59fa66b241d54ab44@source:d62ffcee255c42886ba41d5bc966abe65c9c59e25f92b5d5232aa5237b860ecc",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidProxyUrl maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::NetworkSourceFamilyMismatch",
+      "symbolKey": "member:variant:yosoi::PolicyError::NetworkSourceFamilyMismatch@signature:79fc156f49332f2cad055e366ccdcfa47375296488e8929e0e6e83a2ede43a85@source:13517b16101ec1d2f50308995ad45689e57c5d545f5c3c02a203abfbebe8d971",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant NetworkSourceFamilyMismatch maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily",
+      "symbolKey": "page:enum:yosoi::policy::IpFamily",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.IpFamily."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::Ipv4Only",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv4Only@signature:ef8f163260859428bf9a8796278f004f80bf501b1cee4f0c7a399620c0939a53@source:11faef2b7d6d38f961622d43b0216adc07fc988b3fb4323cb8f592bb6c713f21",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Ipv4Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv4_only'."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::Ipv6Only",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv6Only@signature:c489da845271aeda21911a228da8e79da12d6fd94127b6eae892546807d370b5@source:0c46c44e6d64acb6d465f204bbd35305918d5d8f365ea3b16b375cf4fe5e2e46",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Ipv6Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv6_only'."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::SystemDefault",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::SystemDefault@signature:c80a3a626033bd80a9264ebefb875e4f5b97101fc2d620e1d022306471b20677@source:993222d31b5e55d299b6a6a3271827b2b8bd9d16eb2b590b57a737f2eb0478f7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant SystemDefault maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'system_default'."
+    },
+    {
+      "rustPath": "yosoi::policy::Network",
+      "symbolKey": "page:struct:yosoi::policy::Network",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Network."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::clone",
+      "symbolKey": "member:function:yosoi::policy::Network::clone@signature:9e131f5dade461d34e125714bf242f14b07f6fed7cba57f15b0fb70fe6ea5f9d@trait:Clone@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::default",
+      "symbolKey": "member:function:yosoi::policy::Network::default@signature:73b2816f6ebb82a0729572dd4ad719bd5a932b71c20951f78f88b656c52ecaef@trait:Default@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "language-specific",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Rust and Python defaults are system_default with no source or upstream proxy; the Rust-authored default-network wire case compares every field.",
+        "pythonEquivalent": "Construct the Python model with its declared Pydantic defaults."
+      },
+      "trait": "Default",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::eq",
+      "symbolKey": "member:function:yosoi::policy::Network::eq@signature:945cd3ea427c0991ad15a03f9b785ef45feda84debb42d5357fa72c96246dfb7@trait:PartialEq@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Both Network values compare the three authored fields; source snapshots preserve route values across later mutations.",
+        "pythonEquivalent": "Python value equality on Network fields."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::fmt",
+      "symbolKey": "member:function:yosoi::policy::Network::fmt@signature:516d23faec68d547b6717cba8a51f8cc72b4ffb5e6be7abd9b21178f16539420@trait:Debug@source:203fef8de854d0ad08decfc55407dc9982973a6abfb21df990cc1ccb9ed27416",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Both diagnostic representations suppress proxy credentials; Rust/Python redaction tests verify secret absence without requiring identical formatting.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::ip_family",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::ip_family@signature:0b290bda4e29f3f44206090caeb9d1b5ae0ce038be36c31daa23551135eb33d8@source:d2217982df5d62b043914f30e1920ebc258f6a7d719843d0b9878f9a96306cbb",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.ip_family",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field ip_family maps to Python field ip_family."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::proxy",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::proxy@signature:f889b0c3639fdc36240725c344139d8a49b52dfc76d995f452fa992bfc5edefc@source:876027d9b6c7f5ef56006543fafa9dd721c7446c1b9f49d28cedcc6407a3f004",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.proxy",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:proxy",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field proxy maps to Python field proxy."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::source_address",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::source_address@signature:4939396952b2b443d241144ab31f73eb2a6915a27bf90cd0fbfda601e58d93d8@source:becf6d3711cc9b70b56cbadae887c1eeda10307592b954db9d9d88ece90faf03",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.source_address",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:source_address",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field source_address maps to Python field source_address."
     }
   ],
   "surfaceContract": "surface-contract.json"

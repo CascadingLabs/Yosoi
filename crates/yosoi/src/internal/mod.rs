@@ -19,6 +19,7 @@ pub mod documents;
 pub mod engine;
 pub mod extractor;
 pub mod map;
+pub mod network;
 pub mod policy;
 pub mod types;
 pub mod web_capture;

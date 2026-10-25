@@ -1,4 +1,7 @@
 use crate::internal::direct_http as yosoi_web_capture_direct_http;
+use crate::internal::direct_http::DirectHttpTransportErrorKind;
+use crate::internal::network::Relay;
+use tokio::time::timeout;
 
 mod request_loop;
 
@@ -49,11 +52,53 @@ pub async fn execute_direct_http_at_with_redirect_policy(
     started_at: DateTime<Utc>,
     redirect_target_policy: DirectHttpRedirectTargetPolicy,
 ) -> Result<PendingDirectHttpResponse, DirectHttpFailure> {
-    let client = match hardened_client(Duration::from_micros(
-        spec.maximum_elapsed().as_microseconds(),
-    )) {
+    let setup_started = Instant::now();
+    let mut spec = spec;
+    if !spec.network.is_default() {
+        let starting = Relay::start(&spec.network);
+        let relay = tokio::select! {
+            biased;
+            () = cancellation.cancelled() => Err(DirectHttpTransportError::cancelled()),
+            result = timeout(Duration::from_micros(spec.maximum_elapsed().as_microseconds()), starting) => result.map_or_else(
+                |_| Err(DirectHttpTransportError::timeout()),
+                |result| result.map_err(DirectHttpTransportError::identity),
+            ),
+        };
+        match relay {
+            Ok(relay) => spec.relay = Some(relay),
+            Err(error) => {
+                let lifecycle = lifecycle::start(&spec, started_at);
+                return Err(match error.kind() {
+                    DirectHttpTransportErrorKind::Cancelled => termination::caller(
+                        spec,
+                        lifecycle,
+                        CaptureOffset::from_microseconds(0),
+                        None,
+                        error,
+                    ),
+                    DirectHttpTransportErrorKind::Timeout => {
+                        termination::deadline(spec, lifecycle, None, error)
+                    }
+                    _ => termination::provider(
+                        spec,
+                        lifecycle,
+                        CaptureOffset::from_microseconds(0),
+                        None,
+                        error,
+                    ),
+                });
+            }
+        }
+    }
+    let client = match hardened_client(
+        Duration::from_micros(spec.maximum_elapsed().as_microseconds()),
+        spec.relay.as_deref(),
+    ) {
         Ok(client) => client,
         Err(error) => {
+            if let Some(relay) = &spec.relay {
+                relay.shutdown().await;
+            }
             let lifecycle = lifecycle::start(&spec, started_at);
             return Err(termination::provider(
                 spec,
@@ -64,18 +109,30 @@ pub async fn execute_direct_http_at_with_redirect_policy(
             ));
         }
     };
-    execute_direct_http_with_client_at(
+    let relay = spec.relay.clone();
+    let result = execute_with_client_started_at(
         spec,
         cancellation,
         started_at,
         client,
         redirect_target_policy,
+        setup_started,
     )
-    .await
+    .await;
+    if result.is_err()
+        && let Some(relay) = relay
+    {
+        relay.shutdown().await;
+    }
+    result
 }
 
-fn hardened_client(timeout: Duration) -> Result<wreq::Client, wreq::Error> {
-    wreq::Client::builder()
+fn hardened_client(timeout: Duration, relay: Option<&Relay>) -> Result<wreq::Client, wreq::Error> {
+    let mut builder = wreq::Client::builder();
+    if let Some(relay) = relay {
+        builder = builder.no_proxy().proxy(wreq::Proxy::all(relay.url())?);
+    }
+    builder
         .redirect(Policy::none())
         .referer(false)
         .no_gzip()
@@ -94,7 +151,25 @@ pub async fn execute_direct_http_with_client_at(
     client: wreq::Client,
     redirect_target_policy: DirectHttpRedirectTargetPolicy,
 ) -> Result<PendingDirectHttpResponse, DirectHttpFailure> {
-    let started = Instant::now();
+    execute_with_client_started_at(
+        spec,
+        cancellation,
+        started_at,
+        client,
+        redirect_target_policy,
+        Instant::now(),
+    )
+    .await
+}
+
+async fn execute_with_client_started_at(
+    spec: ResolvedDirectHttpCaptureSpec,
+    cancellation: &CancellationToken,
+    started_at: DateTime<Utc>,
+    client: wreq::Client,
+    redirect_target_policy: DirectHttpRedirectTargetPolicy,
+    started: Instant,
+) -> Result<PendingDirectHttpResponse, DirectHttpFailure> {
     let lifecycle = lifecycle::start(&spec, started_at);
     let boundary = match AttemptBoundary::new(started, spec.maximum_elapsed().duration()) {
         Ok(boundary) => boundary,

@@ -74,7 +74,7 @@ pub(super) fn resolve(
         ArtifactRequest::NotRequested,
         ArtifactRequest::NotRequested,
     );
-    let spec = ResolvedDirectHttpCaptureSpec::new(
+    let mut spec = ResolvedDirectHttpCaptureSpec::new(
         request_value,
         artifacts,
         observation,
@@ -87,6 +87,8 @@ pub(super) fn resolve(
         inputs.operation,
         output_schemas,
     )?;
+
+    spec.network = policy.network.clone();
 
     let limits = vec![
         AppliedPolicyLimit::MaximumElapsed {

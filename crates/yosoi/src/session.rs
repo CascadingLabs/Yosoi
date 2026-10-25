@@ -377,6 +377,7 @@ impl<'scope> SessionRequest<'scope> {
         }
     }
     /// Snapshots a complete request Policy without transferring ownership of the browser owner.
+    /// Network choices must match the acquired Session; send rejects a different route.
     pub fn bind(mut self, policy: &Policy) -> Self {
         self.policy = policy.clone();
         self
@@ -472,6 +473,7 @@ impl<'scope> SessionRequest<'scope> {
         self.policy
             .validate()
             .map_err(|_| SessionError::InvalidPolicy)?;
+        work.validate_network(&self.policy)?;
         if self.policy.page.acquisitions.is_empty() {
             return Err(SessionError::InvalidPolicy.into());
         }
@@ -753,6 +755,7 @@ impl SessionBuilder {
                     self.settings.mode,
                     self.settings.maximum_tabs,
                     false,
+                    &self.policy.network,
                     &acquiring,
                 ),
             )
@@ -1037,6 +1040,15 @@ impl std_fmt::Debug for Work {
     }
 }
 impl Work {
+    fn validate_network(&self, policy: &Policy) -> Result<(), SessionError> {
+        if policy.network != self.session.policy().network {
+            return Err(SessionError::Unsupported(
+                "network policy differs from acquired Session",
+            ));
+        }
+        Ok(())
+    }
+
     pub(crate) fn session_cancelled(&self) -> bool {
         #[cfg(feature = "browser")]
         {
@@ -1054,6 +1066,7 @@ impl Work {
         future: impl std_future::Future<Output = T>,
     ) -> Result<T, SessionError> {
         policy.validate().map_err(|_| SessionError::InvalidPolicy)?;
+        self.validate_network(policy)?;
         if policy
             .page
             .acquisitions

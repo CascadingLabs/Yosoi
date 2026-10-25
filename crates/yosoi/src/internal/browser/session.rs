@@ -701,7 +701,7 @@ impl BrowserSession {
                 builder = builder.window_size(window_width, window_height);
 
                 if let Some(ref p) = proxy {
-                    builder = builder.arg(format!("--proxy-server={p}"));
+                    builder = builder.arg(("proxy-server", p.as_str()));
                 }
 
                 // VoidCrawl's default Chrome flags merged with the caller's

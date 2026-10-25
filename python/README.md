@@ -31,6 +31,48 @@ network outcomes. The [browser beta example](examples/browser_beta.py) shows
 Flows built from caller-supplied site actions, Contract plans, and typed
 expectations without embedding site selectors.
 
+## Networking from Python
+
+`yosoi.policy.Network` configures the native route used by a Request or an owned
+browser Session. Networking overrides are opt-in. Select `"ipv4_only"` or
+`"ipv6_only"`, optionally bind an available `source_address`, and supply an
+HTTP, HTTPS, SOCKS5, or SOCKS5h proxy URL through `proxy`.
+
+```python
+import asyncio
+from yosoi import request
+from yosoi.policy import Network, Policy
+
+
+async def main() -> None:
+    policy = Policy(network=Network(ip_family="ipv4_only"))
+    response = (
+        await request.new("https://qscrape.dev/eshop/html/product/obj-001/")
+        .bind(policy)
+        .send()
+    )
+    for attempt in response.attempts:
+        print(attempt.state, attempt.http_status)
+
+
+asyncio.run(main())
+```
+
+For an upstream proxy, use `Network(proxy=os.environ["YOSOI_PROXY_URL"])` after
+importing `os`. Family and source selection apply to the connection to that
+proxy; the proxy controls its destination connection. Proxy credentials remain
+in serialized policies and are redacted from diagnostic representations.
+
+For browser acquisition, pass the same policy to `async with ys.session(...)`
+after selecting a browser acquisition in `policy.page`. Requests sent through
+that Session inherit its route. Requests and Flows cannot rebind an acquired
+Session to a different network policy.
+
+The [networking example](examples/networking.py) provides runnable direct and
+Session commands with proxy credentials read from the environment. See
+[choosing a network route](../docs/public/concepts/network-routing.md) for paired
+Rust/Python programs and routing boundaries.
+
 ## Browser beta API
 
 Build immutable action sequences with `ys.flow([...])`, then call

@@ -1,4 +1,6 @@
 //! Browser scopes shared by retained Sessions and ephemeral Requests.
+use crate::internal::network::Relay;
+use crate::internal::policy::policy::Network;
 use crate::internal::web_capture as capture;
 use std::fmt;
 use std::mem as std_mem;
@@ -38,6 +40,7 @@ struct Inner {
     closing: AtomicBool,
     cancellation: CancellationToken,
     budget: std_sync::Mutex<Option<BudgetGuard>>,
+    relay: Option<Arc<Relay>>,
 }
 
 struct BudgetGuard {
@@ -78,6 +81,7 @@ impl BrowserSession {
         mode: capture::BrowserMode,
         tabs: u32,
         minimal_cdp: bool,
+        network: &Network,
         cancellation: &CancellationToken,
     ) -> Result<Self, capture::VoidCrawlAdapterError> {
         let executor = tokio_runtime::Handle::try_current()
@@ -113,11 +117,21 @@ impl BrowserSession {
             capture::BrowserRecycleThreshold::new(NonZeroU32::MIN),
         )
         .map_err(|_| capture::VoidCrawlAdapterError::InvalidResolvedSpec)?;
+        let relay = if network.is_default() {
+            None
+        } else {
+            Some(tokio::select! {
+                biased;
+                () = cancellation.cancelled() => return Err(capture::VoidCrawlAdapterError::CancelledBeforeOwnership),
+                result = Relay::start(network) => result.map_err(|_| capture::VoidCrawlAdapterError::InvalidResolvedSpec)?,
+            })
+        };
         let manager = capture::BrowserExecutionManager::new(
             limits,
             capture::BrowserExecutionManagerConfig {
                 headful: matches!(mode, capture::BrowserMode::Headful),
                 minimal_cdp,
+                proxy: relay.as_ref().map(|relay| relay.address()),
             },
         );
         let mut budget = BudgetGuard {
@@ -131,6 +145,9 @@ impl BrowserSession {
                 if manager.shutdown().await.is_ok() {
                     budget.released();
                 }
+                if let Some(relay) = &relay {
+                    relay.shutdown().await;
+                }
                 return Err(error.into());
             }
         };
@@ -143,6 +160,7 @@ impl BrowserSession {
                 closing: AtomicBool::new(false),
                 cancellation: CancellationToken::new(),
                 budget: std_sync::Mutex::new(Some(budget)),
+                relay,
             }),
         })
     }
@@ -186,6 +204,9 @@ impl BrowserSession {
         self.inner.cancellation.cancel();
         let release = self.inner.lease.release().await;
         let shutdown = self.inner.manager.shutdown().await;
+        if let Some(relay) = &self.inner.relay {
+            relay.shutdown().await;
+        }
         if shutdown.is_ok()
             && let Some(mut budget) = self
                 .inner

@@ -470,6 +470,7 @@ pub fn warm_manager(
             yosoi_dev_support::internal::web_capture::BrowserExecutionManagerConfig {
                 headful: mode.headful(),
                 minimal_cdp: false,
+                proxy: None,
             },
         ),
     )
