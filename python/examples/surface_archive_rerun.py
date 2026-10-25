@@ -5,8 +5,8 @@ import asyncio
 import json
 from pathlib import Path
 
-from yosoi import Archive
 import yosoi as ys
+from yosoi import Archive
 from yosoi.errors import rust_error_details
 
 
@@ -22,7 +22,9 @@ async def main() -> None:
     failure = None
     try:
         outcomes = await saved.rerun(
-            ys.surface.SurfacePolicy(archive="enabled", output=args.output / "executions"),
+            ys.surface.SurfacePolicy(
+                archive="enabled", output=args.output / "executions"
+            ),
             count=1,
         )
     except ys.surface.ExecutionError as error:
@@ -30,7 +32,8 @@ async def main() -> None:
         if details is None or details.variant != "Execution":
             raise
         outcomes = tuple(
-            ys.surface.Outcome.model_validate(value) for value in details.details["outcomes"]
+            ys.surface.Outcome.model_validate(value)
+            for value in details.details["outcomes"]
         )
         failure = error
     files = []

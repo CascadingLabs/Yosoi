@@ -415,27 +415,22 @@ mod tests {
     use crate::automation_record::{AutomationRecord, OperationReceipt, OperationStatus};
     use serde_json::{Value, json};
     fn record(commands: Vec<Value>) -> Result<AutomationRecord> {
-        let mut receipts = vec![OperationReceipt {
-            browser: None,
-            id: "run".into(),
-            kind: "surface.run".into(),
-            status: OperationStatus::Observed,
-            result: Some(json!({"schema":"yosoi.surface.run.v1","url":"https://example.invalid/"})),
-            observation: None,
-            error: None,
-        }];
+        let mut receipts: Vec<OperationReceipt> = vec![serde_json::from_value(json!({
+            "id":"run", "kind":"surface.run", "status":OperationStatus::Observed,
+            "result":{"schema":"yosoi.surface.run.v1","url":"https://example.invalid/"},
+            "observation":null,"error":null
+        }))?];
         for (index, command) in commands.into_iter().enumerate() {
-            receipts.push(OperationReceipt { browser: None,id:format!("command-{index}"),kind:"surface.command".into(),status:OperationStatus::Observed,result:Some(json!({"command":command,"outcome":{"receipt":{"status":"Confirmed"},"condition":{"state":"matched"}}})),observation:None,error:None});
+            receipts.push(serde_json::from_value(json!({
+                "id":format!("command-{index}"),"kind":"surface.command","status":OperationStatus::Observed,
+                "result":{"command":command,"outcome":{"receipt":{"status":"Confirmed"},"condition":{"state":"matched"}}},
+                "observation":null,"error":null
+            }))?);
         }
-        receipts.push(OperationReceipt {
-            browser: None,
-            id: "closed".into(),
-            kind: "surface.closed".into(),
-            status: OperationStatus::Observed,
-            result: Some(json!({"browser_closed":true})),
-            observation: None,
-            error: None,
-        });
+        receipts.push(serde_json::from_value(json!({
+            "id":"closed","kind":"surface.closed","status":OperationStatus::Observed,
+            "result":{"browser_closed":true},"observation":null,"error":null
+        }))?);
         Ok(AutomationRecord::new("recipe", Vec::new(), receipts)?)
     }
     #[test]

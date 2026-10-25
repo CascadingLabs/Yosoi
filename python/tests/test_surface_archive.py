@@ -224,9 +224,7 @@ def test_failed_runtime_open_carries_an_archivable_partial_outcome(
         archive = await Archive.open(tmp_path / "store")
         reference = await archive.write(outcomes[0])
         await archive.export_file(reference, tmp_path / "failed.yosoi")
-        await sf.export(
-            tmp_path / "failed.yosoi", tmp_path / "failed-copy.yosoi"
-        )
+        await sf.export(tmp_path / "failed.yosoi", tmp_path / "failed-copy.yosoi")
         copied = await archive.read(
             await archive.import_file(tmp_path / "failed-copy.yosoi")
         )

@@ -5,8 +5,8 @@ import asyncio
 import json
 from pathlib import Path
 
-from yosoi import Archive, Document
 import yosoi as ys
+from yosoi import Archive, Document
 
 
 async def main() -> None:
@@ -20,7 +20,9 @@ async def main() -> None:
         document = Document.html(
             "versions", "<main><h1>Documentation</h1><button>v0.1.0</button></main>"
         )
-        session = ys.SurfaceSession(ys.Surface(document), ys.SurfaceSessionPolicy(archive="enabled"))
+        session = ys.SurfaceSession(
+            ys.Surface(document), ys.SurfaceSessionPolicy(archive="enabled")
+        )
         with session.cursor() as cursor:
             page = cursor.find("v0.1.0")
             if not page.entries:
