@@ -351,6 +351,40 @@ pub(super) async fn replay_raw(
     }
     super::browser::archive::replay_loaded(&loaded, repeat, query).await
 }
+/// Verifies and reconstructs saved observations without starting source processes.
+/// Saved video pixels require neither a browser nor a decoder.
+pub async fn replay(
+    path: impl AsRef<Path>,
+    repeat: usize,
+    query: Option<&str>,
+    output: Option<&Path>,
+) -> StdResult<Value, ExecutionError> {
+    replay_raw(path.as_ref(), repeat, query, output)
+        .await
+        .map_err(ExecutionError::Operation)
+}
+/// Exports a persisted handle or portable outcome into one immutable flat file.
+pub async fn export(
+    path: impl AsRef<Path>,
+    output: impl AsRef<Path>,
+) -> StdResult<(), ExecutionError> {
+    export_raw(path.as_ref(), output.as_ref())
+        .await
+        .map_err(ExecutionError::Operation)
+}
+#[cfg(feature = "browser")]
+impl Outcome {
+    /// Reruns a confirmed browser procedure with fresh evidence and default isolated headless sessions.
+    /// Each attempt retains its own outcome, including failed or incomplete executions.
+    pub async fn rerun(
+        &self,
+        policy: SurfacePolicy,
+        count: usize,
+    ) -> StdResult<Vec<Self>, ExecutionError> {
+        super::browser::archive::rerun(self, policy, count, true).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{OperationStatus, Recording, Result, load};
@@ -406,39 +440,5 @@ mod tests {
             Some(&command)
         );
         Ok(())
-    }
-}
-
-/// Verifies and reconstructs saved observations without starting source processes.
-/// Saved video pixels require neither a browser nor a decoder.
-pub async fn replay(
-    path: impl AsRef<Path>,
-    repeat: usize,
-    query: Option<&str>,
-    output: Option<&Path>,
-) -> StdResult<Value, ExecutionError> {
-    replay_raw(path.as_ref(), repeat, query, output)
-        .await
-        .map_err(ExecutionError::Operation)
-}
-/// Exports a persisted handle or portable outcome into one immutable flat file.
-pub async fn export(
-    path: impl AsRef<Path>,
-    output: impl AsRef<Path>,
-) -> StdResult<(), ExecutionError> {
-    export_raw(path.as_ref(), output.as_ref())
-        .await
-        .map_err(ExecutionError::Operation)
-}
-#[cfg(feature = "browser")]
-impl Outcome {
-    /// Reruns a confirmed browser procedure with fresh evidence and default isolated headless sessions.
-    /// Each attempt retains its own outcome, including failed or incomplete executions.
-    pub async fn rerun(
-        &self,
-        policy: SurfacePolicy,
-        count: usize,
-    ) -> StdResult<Vec<Self>, ExecutionError> {
-        super::browser::archive::rerun(self, policy, count, true).await
     }
 }
