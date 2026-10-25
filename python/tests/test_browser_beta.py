@@ -40,7 +40,7 @@ class Cart(ys.Contract):
 
     sku: str = ys.Field("Product SKU", locator=ys.css('[data-field="sku"]'))
     quantity: str = ys.Field("Quantity", locator=ys.css('[data-field="quantity"]'))
-    total: ys.Money = ys.Field("Cart total", locator=ys.css('[data-field="total"]'))
+    total: str = ys.Field("Cart total", locator=ys.css('[data-field="total"]'))
 
 
 def test_installed_wheel_is_used_when_requested() -> None:
@@ -364,7 +364,7 @@ def _cart_check() -> Any:
                 lambda cart: (
                     cart.sku == "SKU-74"
                     and cart.quantity == "2"
-                    and cart.total == ys.Money(minor_units=2400)
+                    and cart.total == "$24.00"
                 ),
             )
         ],
@@ -396,7 +396,7 @@ def _assert_cart_response(response: Any) -> None:
     assert len(records) == 1
     assert records[0].sku == "SKU-74"
     assert records[0].quantity == "2"
-    assert records[0].total == ys.Money(minor_units=2400)
+    assert records[0].total == "$24.00"
 
 
 async def _assert_no_later_posts(state: _FixtureState) -> None:

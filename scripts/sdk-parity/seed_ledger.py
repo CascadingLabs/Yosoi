@@ -158,11 +158,9 @@ VALUE_TARGETS = {
     "yosoi::contracts::ContractSchemaError": "yosoi.contracts.ContractSchemaFailure",
     "yosoi::contracts::ExtractionFailure": "yosoi.contracts.RuntimeExtractionFailure",
     "yosoi::contracts::ValidationFailure": "yosoi.contracts.RuntimeValidationFailure",
-    "yosoi::contracts::Currency": "yosoi.contracts.Money.currency",
     "yosoi::contracts::FieldId": "yosoi.scalars.FieldId",
     "yosoi::contracts::ExtractionLimit": "yosoi.runtime_contracts.ExtractionLimitName",
     "yosoi::contracts::RecordScope": "yosoi.contracts.ContractSchema.scope",
-    "yosoi::contracts::ValidationCode": "yosoi.contracts.FieldIssueKind.code",
     "yosoi::locators::AccessibilityCoordinate": "yosoi.outcomes.AccessibilityCoordinate",
     "yosoi::locators::ByteRange": "yosoi.outcomes.ByteRange",
     "yosoi::locators::Completeness": "yosoi.outcomes.Completeness",
@@ -417,7 +415,6 @@ VARIANT_MODEL_PARENTS = {
 
 VARIANT_MEMBER_ALIASES = {
     ("yosoi::contracts::RuntimeValue", "String"): "RuntimeString",
-    ("yosoi::contracts::RuntimeValue", "MoneyUsd"): "RuntimeMoneyUsd",
     ("yosoi::contracts::RuntimeFieldValue", "ExactlyOne"): "RuntimeExactlyOne",
     ("yosoi::contracts::RuntimeFieldValue", "ZeroOrOne"): "RuntimeZeroOrOne",
     ("yosoi::contracts::RuntimeFieldValue", "Many"): "RuntimeMany",
@@ -441,7 +438,6 @@ VARIANT_ARGUMENT_ALIASES = {
     ("yosoi::request::DocumentOutcome::Unavailable", "0"): "reason",
     ("yosoi::request::DocumentOutcome::Unprojectable", "0"): "reason",
     ("yosoi::contracts::RuntimeValue::String", "0"): "value",
-    ("yosoi::contracts::RuntimeValue::MoneyUsd", "0"): "value",
     ("yosoi::contracts::RuntimeFieldValue::ExactlyOne", "0"): "value",
     ("yosoi::contracts::RuntimeFieldValue::ZeroOrOne", "0"): "value",
     ("yosoi::contracts::RuntimeFieldValue::Many", "0"): "values",
@@ -481,7 +477,6 @@ SERDE_EQUIVALENTS = {
 ENUM_VALUE_FIELDS = {
     "yosoi::ResponseTermination": "yosoi.request.Response.termination",
     "yosoi::contracts::Cardinality": "yosoi.contracts.FieldSchema.cardinality",
-    "yosoi::contracts::Currency": "yosoi.contracts.Money.currency",
     "yosoi::contracts::RecordScope": "yosoi.contracts.ContractSchema.scope",
     "yosoi::documents::DocumentClass": "yosoi.documents.DocumentProfile.document_class",
     "yosoi::documents::DocumentRepresentation": "yosoi.documents.DocumentProfile.representation",
@@ -1190,7 +1185,7 @@ def seed_entries(
             if leaf == "ContractValue":
                 entries_by_identity[item["symbolKey"]] = _language_proposal(
                     item,
-                    "Python Contract fields use str or yosoi.Money annotations.",
+                    "Python Contract fields use Pydantic annotations; native transport retains raw strings.",
                     "The Rust value trait has no named Python union; Python field annotations select the supported scalar values. Owner review is required.",
                 )
             continue

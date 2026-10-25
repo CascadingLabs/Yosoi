@@ -11,7 +11,7 @@ use yosoi::{
 #[ys(id = "cart", description = "Observed cart")]
 struct Cart {
     #[ys(description="Cart total",locator=ys::locator::css(".total").text())]
-    total: ys::Money,
+    total: String,
     #[ys(description="Product names",locator=ys::locator::css(".item").text())]
     items: Vec<String>,
 }
@@ -20,12 +20,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         "cart-example",
         b"<b class=total>$4.50</b><span class=item>Tea</span>".to_vec(),
     )?;
-    let expected_minor_units = 450;
+    let expected_total = "$4.50";
     // A local group may borrow values. Every check sees this same validated Cart.
     let report = AssertionGroup::<Cart>::new(
         Cart::plan()?.clone(),
         [
-            check(|cart: &Cart| cart.total.minor_units() == expected_minor_units),
+            check(|cart: &Cart| cart.total == expected_total),
             check(|cart: &Cart| cart.items.len() == 1),
             check(|cart: &Cart| cart.items.iter().any(|name| name == "Tea")),
         ],
@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         action::assert_all::<Cart>(
             Cart::plan()?,
             [
-                check(move |cart: &Cart| cart.total.minor_units() == expected_minor_units),
+                check(move |cart: &Cart| cart.total == expected_total),
                 check(|cart: &Cart| cart.items.len() == 1),
             ],
         )

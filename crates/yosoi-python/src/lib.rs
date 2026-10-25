@@ -64,7 +64,6 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<contracts::NativeContract>()?;
     module.add_class::<contracts::NativeExtracted>()?;
     module.add_class::<contracts::NativeContractOutcome>()?;
-    module.add_function(wrap_pyfunction!(contracts::validate_money, module)?)?;
     module.add_function(wrap_pyfunction!(
         contracts::validation_limits_defaults,
         module

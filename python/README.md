@@ -22,7 +22,7 @@ extension is part of the package.
 >
 > A typed `Contract` record follows its Pydantic model behavior. Its native
 > schema identity covers only the transport shape. `RuntimeContract` is the
-> separate API for Rust-owned String and Money conversion, validation, and
+> separate API for Rust-owned string projection validation, and
 > portable archives.
 
 Start with the [runnable review examples](examples/README.md) to inspect Rust

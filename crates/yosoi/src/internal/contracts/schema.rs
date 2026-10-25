@@ -32,7 +32,7 @@ pub enum Cardinality {
 
 /// Stable semantic identity for a Contract field value type.
 pub trait ContractValue {
-    /// Stable scalar type identifier included in schema identity, such as `string` or `money.usd`.
+    /// Stable scalar type identifier included in schema identity, such as `string`.
     const TYPE_ID: &'static str;
 }
 

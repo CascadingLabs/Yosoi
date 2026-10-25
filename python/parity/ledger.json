@@ -4044,53 +4044,6 @@
       "semanticEquivalent": "Associated type identity maps to value_type_id(type)."
     },
     {
-      "rustPath": "yosoi::contracts::Currency",
-      "symbolKey": "page:enum:yosoi::contracts::Currency",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.currency",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.Money.currency."
-    },
-    {
-      "rustPath": "yosoi::contracts::Currency::Usd",
-      "symbolKey": "member:variant:yosoi::contracts::Currency::Usd@signature:4b75b43fc85ca16029cc1ccb248c09531de1b3170dad47c2b0254d330383e3d6@source:67e845fb11d49781bdbc25d9f4e8480c480cbbaf90db7f30c79529b3f2fd15d8",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.currency",
-      "argumentMappings": [],
-      "defaults": [
-        {
-          "id": "variant-tag:currency",
-          "rust": "variant Usd",
-          "python": "currency=usd"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant Usd maps to the corresponding Python tagged value yosoi.contracts.Money.currency. The Python discriminator value is 'usd'."
-    },
-    {
-      "rustPath": "yosoi::contracts::Currency::fmt",
-      "symbolKey": "member:function:yosoi::contracts::Currency::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "trait": "Debug",
-      "decision": "language-specific",
-      "pythonTarget": "yosoi.contracts.Money.currency",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-      "review": {
-        "status": "reviewed",
-        "reviewer": "Codex owner",
-        "reviewedAt": "2026-10-05T04:14:55.667019+00:00",
-        "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "pythonEquivalent": "repr(value); explicit access: public fields/properties, model_dump() for Pydantic models, union tag and payload fields"
-      }
-    },
-    {
       "rustPath": "yosoi::contracts::Extracted",
       "symbolKey": "page:type_alias:yosoi::contracts::Extracted",
       "decision": "mapped",
@@ -4783,34 +4736,6 @@
       "rationale": "Rust variant MissingRequired maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=missing_required'."
     },
     {
-      "rustPath": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed",
-      "symbolKey": "member:variant:yosoi::contracts::FieldIssueKind::SemanticValidationFailed@signature:5c6448f548a490fbffc118aa4a3b7cecf1dbe7b6b602e4db910b18b07b25d157@source:cc9b703fa51546e442824e5a1f030f8e0002a1df458d2f5105330ee36b243f61",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.FieldIssueKind",
-      "argumentMappings": [
-        {
-          "rustArgument": "code",
-          "pythonArgument": "code",
-          "conversion": "Python Union[Literal['negative_money'], NoneType] converts to the Rust parameter type"
-        }
-      ],
-      "defaults": [
-        {
-          "id": "python-default:code",
-          "rust": "no explicit default on this Rust parameter",
-          "python": "Python default None"
-        },
-        {
-          "id": "variant-tag:kind",
-          "rust": "variant SemanticValidationFailed",
-          "python": "kind=semantic_validation_failed"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant SemanticValidationFailed maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=semantic_validation_failed'."
-    },
-    {
       "rustPath": "yosoi::contracts::FieldIssueKind::UnsupportedProjectedValue",
       "symbolKey": "member:variant:yosoi::contracts::FieldIssueKind::UnsupportedProjectedValue@signature:738137959058bf2106549248973501e22665eb9e67b32c3ac231231e61c22bbb@source:6897ca59ef694434028f94f48ad3cc1c6c393eaee13b68f14fd6fefa7da0ef2e",
       "decision": "mapped",
@@ -5023,129 +4948,6 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.contracts.FieldSchema.value_type."
-    },
-    {
-      "rustPath": "yosoi::contracts::Money",
-      "symbolKey": "page:struct:yosoi::contracts::Money",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.Money."
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::TYPE_ID",
-      "symbolKey": "member:assoc_const:yosoi::contracts::Money::TYPE_ID@signature:05b8a2334379e1ba7cbb070501e4c7b934ad6250a2f8b45ba499799d3750c62b@trait:ContractValue@source:1b37da7a2a624cbacbbb6f14ad10afab6040cba57fdb282c5368a4802006473e",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.TYPE_ID",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust associated constant maps to the Rust-backed Python class constant.",
-      "trait": "ContractValue"
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::clone",
-      "symbolKey": "member:function:yosoi::contracts::Money::clone@signature:e907628318498a998bff5140803aba96ef211cf9ce9a891ce4746b8f432d6449@trait:Clone@source:d737e649f4d0a3b5278d641e2d325579baf40908a7478e9cca58ae7a764a6241",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.clone",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
-      "trait": "Clone",
-      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::currency",
-      "symbolKey": "member:function:yosoi::contracts::Money::currency@signature:2cf5edf63efab0e3742a185dfc155564ba8bdc4413c3f5ceb9637bfb11770cf9@source:e382c9827675cac168d8b5b8c14d7c1c3ee32c124b784f6aa10a4a36c922761d",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.currency",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust method maps to the matching Python method/property yosoi.contracts.Money.currency."
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::eq",
-      "symbolKey": "member:function:yosoi::contracts::Money::eq@signature:61acd248b2679c5e17000cc7e219e08e2ae90fe38bb7e0922d2800f4a2af9df5@trait:PartialEq@source:d737e649f4d0a3b5278d641e2d325579baf40908a7478e9cca58ae7a764a6241",
-      "decision": "language-specific",
-      "argumentMappings": [
-        {
-          "rustArgument": "other",
-          "pythonArgument": "other",
-          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
-        }
-      ],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
-      "review": {
-        "status": "proposed",
-        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
-        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
-      },
-      "trait": "PartialEq",
-      "pythonTarget": "yosoi.contracts.Money"
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::fmt",
-      "symbolKey": "member:function:yosoi::contracts::Money::fmt@signature:9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9@trait:Debug@source:8857c8e863b953376d95d7e065f80215e7e037a0fcd9912b26f8d08b7b87a9c8",
-      "trait": "Debug",
-      "decision": "language-specific",
-      "pythonTarget": "yosoi.contracts.Money",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-      "review": {
-        "status": "reviewed",
-        "reviewer": "Codex owner",
-        "reviewedAt": "2026-10-05T04:14:55.667625+00:00",
-        "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "pythonEquivalent": "repr(value); explicit access: currency, minor_units, str(value)"
-      }
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::fmt",
-      "symbolKey": "member:function:yosoi::contracts::Money::fmt@signature:9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9@trait:Display@source:ad1769bb110cafd5ef96b2ea632aeeefe096584f3962c7d2e96d8e39a93b5042",
-      "decision": "language-specific",
-      "argumentMappings": [
-        {
-          "rustArgument": "formatter",
-          "pythonArgument": "formatter",
-          "conversion": "Language-specific Display input formatter needs owner-reviewed semantics"
-        }
-      ],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
-      "review": {
-        "status": "proposed",
-        "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
-        "pythonEquivalent": "Python str(value) for the corresponding public value."
-      },
-      "trait": "Display",
-      "pythonTarget": "yosoi.contracts.Money"
-    },
-    {
-      "rustPath": "yosoi::contracts::Money::minor_units",
-      "symbolKey": "member:function:yosoi::contracts::Money::minor_units@signature:675d6a8038a699e888684a3fc5f7ed537c66dd77e7752dfceb93ea84331f2d71@source:45735bf57e371771602789b2fe94f8f2d41bf32d8d7ab783e242a943322c0db4",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.Money.minor_units",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust method maps to the matching Python method/property yosoi.contracts.Money.minor_units."
     },
     {
       "rustPath": "yosoi::contracts::RecordIssue",
@@ -6222,29 +6024,6 @@
       "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.RuntimeValue."
     },
     {
-      "rustPath": "yosoi::contracts::RuntimeValue::MoneyUsd",
-      "symbolKey": "member:variant:yosoi::contracts::RuntimeValue::MoneyUsd@signature:300b7728a43b1ba7d85d5c1b2d5c0edf7d91fdd0706750036307e0a35728e15f@source:5109443fabb4f545e3d17fcadfb30959c7fae3de6cf8dccd4fcddf5001863e82",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.runtime_contracts.RuntimeMoneyUsd",
-      "argumentMappings": [
-        {
-          "rustArgument": "0",
-          "pythonArgument": "value",
-          "conversion": "Python Money converts to the Rust parameter type"
-        }
-      ],
-      "defaults": [
-        {
-          "id": "variant-tag:type",
-          "rust": "variant MoneyUsd",
-          "python": "type=money_usd"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant MoneyUsd maps to the corresponding Python tagged value yosoi.runtime_contracts.RuntimeMoneyUsd. The Python discriminator value is 'type=money_usd'."
-    },
-    {
       "rustPath": "yosoi::contracts::RuntimeValue::String",
       "symbolKey": "member:variant:yosoi::contracts::RuntimeValue::String@signature:749c22b377b62b3e6cf756b2ff94d4c50561d61d5649102c8c001731c9f9092e@source:a501fc95da7753949c886734d3745c8f051703c5055a34edf9664f50fb23471c",
       "decision": "mapped",
@@ -6337,56 +6116,6 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust field value maps to Python field value."
-    },
-    {
-      "rustPath": "yosoi::contracts::ValidationCode",
-      "symbolKey": "page:enum:yosoi::contracts::ValidationCode",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.FieldIssueKind.code",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.FieldIssueKind.code."
-    },
-    {
-      "rustPath": "yosoi::contracts::ValidationCode::NegativeMoney",
-      "symbolKey": "member:variant:yosoi::contracts::ValidationCode::NegativeMoney@signature:fd1f24e5df097957de1ffdd274e74831d444d3ca932c82493efc8121f3395bc2@source:b2ebec0d12c8677288e9e824a8240608975df035daef56841897c14b60156f23",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.contracts.FieldIssueKind",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "mappingDirection": "output",
-      "outputBinding": {
-        "kind": "outcome-view",
-        "schemaTarget": "yosoi.contracts.FieldIssueKind",
-        "discriminator": "code",
-        "tag": "negative_money",
-        "pythonFields": []
-      },
-      "semanticEquivalent": "The Rust ValidationCode scalar is exposed at ContractOutcome.issues[*].fields[*].kind.code.",
-      "rationale": "NegativeMoney is a returned literal code on the existing typed FieldIssueKind view, not a constructor."
-    },
-    {
-      "rustPath": "yosoi::contracts::ValidationCode::fmt",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "trait": "Debug",
-      "decision": "language-specific",
-      "pythonTarget": "yosoi.contracts.FieldIssueKind.code",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-      "review": {
-        "status": "reviewed",
-        "reviewer": "Codex owner",
-        "reviewedAt": "2026-10-05T04:14:55.668428+00:00",
-        "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "pythonEquivalent": "repr(value); explicit access: public fields/properties, model_dump() for Pydantic models, union tag and payload fields"
-      }
     },
     {
       "rustPath": "yosoi::contracts::ValidationFailure",

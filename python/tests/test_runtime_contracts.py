@@ -108,7 +108,7 @@ def test_runtime_contract_preserves_schema_ids_grouping_and_typed_values() -> No
 
 
 def test_runtime_outcome_to_archived_uses_portable_schema() -> None:
-    schema = runtime_schema("money.usd")
+    schema = runtime_schema()
     contract = ys.contracts.RuntimeContract.new(schema)
     document = ys.Document.html(
         "runtime-archive",
@@ -129,7 +129,7 @@ def test_runtime_outcome_to_archived_uses_portable_schema() -> None:
             "id": "title_id",
             "value": {
                 "cardinality": "exactly_one",
-                "value": {"type": "money_usd", "minor_units": 0},
+                "value": {"type": "string", "value": "$0.00"},
             },
         },
         {

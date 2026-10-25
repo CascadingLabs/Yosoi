@@ -1,7 +1,7 @@
 pub use crate::internal::archive::Archive;
 pub use crate::internal::contract_validation::{
-    ContractIssues, ContractOutcome, Currency, Extracted, FieldIssue, FieldIssueKind, Money,
-    RecordIssue, RuntimeValueIssue, ValidatedRecord, ValidationCode, ValidationFailure,
+    ContractIssues, ContractOutcome, Extracted, FieldIssue, FieldIssueKind, RecordIssue,
+    RuntimeValueIssue, ValidatedRecord, ValidationFailure,
 };
 pub use crate::internal::contracts::{
     CONTRACT_SCHEMA_VERSION, CandidateField, Cardinality, Contract, ContractId, ContractIdentity,

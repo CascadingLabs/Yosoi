@@ -22,7 +22,6 @@ pub use portable::{
     PortableExtractionLimit as ArchivedExtractionLimit, PortableFieldIssue as ArchivedFieldIssue,
     PortableFieldIssueKind as ArchivedFieldIssueKind,
     PortableValidatedContractRecord as ArchivedValidatedContractRecord,
-    PortableValidationCode as ArchivedValidationCode,
     PortableValidationFailure as ArchivedValidationFailure,
 };
 

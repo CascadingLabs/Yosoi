@@ -7,7 +7,7 @@ use crate::internal::contract_validation::validation::{
     read_many_evidence, read_optional_evidence, read_required_evidence,
 };
 use crate::internal::contract_validation::{
-    ContractIssues, FieldIssue, FieldIssueDraft, FieldIssueKind, Money, RuntimeContractValue,
+    ContractIssues, FieldIssue, FieldIssueDraft, FieldIssueKind, RuntimeContractValue,
     ValidationBudget, ValidationFailure, ValidationLimits,
 };
 use crate::internal::contracts::{
@@ -35,13 +35,13 @@ pub struct RuntimeContract {
 impl RuntimeContract {
     /// Creates a runtime Contract for the supported scalar vocabulary.
     ///
-    /// Owns an already validated schema. Only `string` and `money.usd` value
+    /// Owns an already validated schema. Only `string` value
     /// types are supported; any other field type returns
     /// [`RuntimeContractError::UnsupportedValueType`]. No document acquisition,
     /// candidate extraction, or value conversion occurs during construction.
     pub fn new(schema: ContractSchema) -> Result<Self, RuntimeContractError> {
         for field in schema.fields() {
-            if !matches!(field.value_type(), "string" | "money.usd") {
+            if !matches!(field.value_type(), "string") {
                 return Err(RuntimeContractError::UnsupportedValueType {
                     field: field.id().clone(),
                     value_type: field.value_type().to_owned(),
@@ -61,7 +61,7 @@ impl RuntimeContract {
     ///
     /// Borrows located evidence and returns owned candidates or a typed terminal
     /// extraction state. This does not enforce field cardinality, convert values,
-    /// or validate semantics; call [`RuntimeExtracted::validate`] explicitly.
+    /// or validate field shape; call [`RuntimeExtracted::validate`] explicitly.
     pub fn extract(&self, located: &LocateOutcome, limits: ExtractionLimits) -> RuntimeExtracted {
         RuntimeExtracted {
             schema: self.schema.clone(),
@@ -75,7 +75,7 @@ impl RuntimeContract {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RuntimeContractError {
     #[error("runtime Contract field {field} has unsupported value type {value_type}")]
-    /// A schema field requests a type other than `string` or `money.usd`.
+    /// A schema field requests a type other than `string`.
     UnsupportedValueType {
         /// Authored identifier of the unsupported field.
         field: FieldId,
@@ -136,7 +136,7 @@ impl RuntimeExtracted {
     /// Validates using the same default validation budget as generated
     /// `Extracted<T>::validate()`.
     /// Consumes candidate evidence and performs cardinality, conversion,
-    /// completeness, and semantic checks without acquiring any documents.
+    /// completeness, and projection checks without acquiring any documents.
     pub fn validate(self) -> RuntimeContractOutcome {
         self.validate_with_limits(ValidationLimits::default())
     }
@@ -224,8 +224,6 @@ impl RuntimeExtracted {
 pub enum RuntimeValue {
     /// Owned decoded string accepted by field conversion and validation.
     String(String),
-    /// USD monetary value accepted by supported money conversion and semantics.
-    MoneyUsd(Money),
 }
 
 /// Converted field value retaining its authored cardinality distinction.
@@ -357,9 +355,6 @@ fn validate_runtime_field<'a>(
         value_type if value_type == <String as ContractValue>::TYPE_ID => {
             validate_typed_field::<String>(field.id(), field.cardinality(), evidence)
         }
-        value_type if value_type == <Money as ContractValue>::TYPE_ID => {
-            validate_typed_field::<Money>(field.id(), field.cardinality(), evidence)
-        }
         _ => Err(FieldIssueDraft::all(
             field.id().clone(),
             FieldIssueKind::UnsupportedProjectedValue,
@@ -405,11 +400,5 @@ trait IntoRuntimeValue: RuntimeContractValue {
 impl IntoRuntimeValue for String {
     fn into_runtime_value(self) -> RuntimeValue {
         RuntimeValue::String(self)
-    }
-}
-
-impl IntoRuntimeValue for Money {
-    fn into_runtime_value(self) -> RuntimeValue {
-        RuntimeValue::MoneyUsd(self)
     }
 }

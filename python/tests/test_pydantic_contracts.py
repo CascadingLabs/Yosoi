@@ -31,7 +31,7 @@ class Product(ys.Contract):
         locator=ys.css(".sku"),
         alias="productSku",
     )
-    price: ys.Money = ys.Field("Price", locator=ys.css(".price"))
+    price: str = ys.Field("Price", locator=ys.css(".price"))
     quantity: int = ys.Field(
         "Available quantity", id="quantity_id", locator=ys.css(".quantity"), ge=1
     )
@@ -50,7 +50,7 @@ class Product(ys.Contract):
         return self
 
     @field_serializer("price")
-    def _serialize_price(self, value: ys.Money) -> str:
+    def _serialize_price(self, value: str) -> str:
         return str(value)
 
     @computed_field
@@ -76,10 +76,7 @@ def _document() -> ys.Document:
     )
 
 
-def test_contract_is_mutable_pydantic_and_money_accepts_text() -> None:
-    class CartLine(BaseModel):
-        price: ys.Money
-
+def test_contract_is_mutable_pydantic_and_preserves_price_text() -> None:
     product = Product(
         name="  Tea  ",
         price=cast(Any, "$29.00"),
@@ -88,7 +85,6 @@ def test_contract_is_mutable_pydantic_and_money_accepts_text() -> None:
         **cast(Any, {"productSku": "tea-1"}),
     )
     assert isinstance(product, BaseModel)
-    assert CartLine(price=cast(Any, "$29.00")).price.minor_units == 2900
     assert product.name == "Tea"
     assert product.labels == [2, 5]
     assert product.model_dump()["productSku"] == "tea-1"
@@ -121,7 +117,7 @@ def test_extract_report_keeps_accepted_models_errors_and_candidate_evidence() ->
     assert report.issues[0].errors
     assert all("input" not in detail for detail in report.issues[0].errors)
     assert "unavailable" not in repr(report.issues[0])
-    assert report.accepted_records[0].price.minor_units == 2900
+    assert report.accepted_records[0].price == "$29.00"
 
     assert ys.extract(_document(), Product, policy=policy)[0].name == "Tea"
     with pytest.raises(ValidationError):

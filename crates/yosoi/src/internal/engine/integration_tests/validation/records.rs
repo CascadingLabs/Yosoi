@@ -21,9 +21,7 @@ fn explicit_validation_builds_simple_products_and_retains_candidates() -> Result
 
     let first = records.first().ok_or("missing first product")?;
     assert_eq!(first.value.name, "Tea");
-    assert_eq!(first.value.price.minor_units(), 450);
-    assert_eq!(first.value.price.currency(), ys::Currency::Usd);
-    assert_eq!(first.value.price.to_string(), "$4.50");
+    assert_eq!(first.value.price, "$4.50");
     assert_eq!(first.value.subtitle, None);
     assert_eq!(first.value.categories, vec!["drinks", "pantry"]);
     assert_eq!(first.candidate.price.evidence().len(), 1);
@@ -41,8 +39,8 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
     let valid = region(0)?;
     let missing = region(1)?;
     let excess = region(2)?;
-    let conversion = region(3)?;
-    let semantic = region(4)?;
+    let unparsed = region(3)?;
+    let negative = region(4)?;
     let incomplete = region(5)?;
     let findings = vec![
         finding(
@@ -104,18 +102,18 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
             "name",
             6,
             "/3/name",
-            "Bad money",
+            "Unparsed price",
             ys::Completeness::Complete,
-            conversion.clone(),
+            unparsed.clone(),
         )?,
         finding(
             &document,
             "price",
             7,
             "/3/price",
-            "not-money",
+            "price on request",
             ys::Completeness::Complete,
-            conversion,
+            unparsed,
         )?,
         finding(
             &document,
@@ -124,7 +122,7 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
             "/4/name",
             "Negative",
             ys::Completeness::Complete,
-            semantic.clone(),
+            negative.clone(),
         )?,
         finding(
             &document,
@@ -133,7 +131,7 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
             "/4/price",
             "$-1.00",
             ys::Completeness::Complete,
-            semantic,
+            negative,
         )?,
         finding(
             &document,
@@ -167,8 +165,8 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
     else {
         return Err("expected evaluated outcome".into());
     };
-    assert_eq!(records.len(), 1);
-    assert_eq!(issues.len(), 5);
+    assert_eq!(records.len(), 3);
+    assert_eq!(issues.len(), 3);
     let kinds = issues
         .iter()
         .flat_map(|issue| issue.fields.iter().map(|field| &field.kind))
@@ -179,19 +177,12 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
             .iter()
             .any(|kind| matches!(kind, ys::FieldIssueKind::ExcessCandidates { observed: 2 }))
     );
-    assert!(kinds.contains(&&ys::FieldIssueKind::ConversionFailed));
-    assert!(kinds.iter().any(|kind| matches!(
-        kind,
-        ys::FieldIssueKind::SemanticValidationFailed {
-            code: ys::ValidationCode::NegativeMoney
-        }
-    )));
     assert!(kinds.contains(&&ys::FieldIssueKind::IncompleteEvidence));
     assert!(issues.iter().flat_map(|issue| &issue.fields).all(|field| {
         !field.evidence.is_empty() || field.kind == ys::FieldIssueKind::MissingRequired
     }));
     let debug = format!("{issues:?}");
-    assert!(!debug.contains("not-money"));
+    assert!(!debug.contains("price on request"));
     assert!(!debug.contains("Partial"));
 
     let ordered = issues
@@ -204,7 +195,6 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
                 ys::FieldIssueKind::IncompleteEvidence => "incomplete",
                 ys::FieldIssueKind::UnsupportedProjectedValue => "unsupported",
                 ys::FieldIssueKind::ConversionFailed => "conversion",
-                ys::FieldIssueKind::SemanticValidationFailed { .. } => "semantic",
             };
             (field.field.as_str(), kind)
         })
@@ -214,8 +204,6 @@ fn invalid_siblings_report_distinct_runtime_issues() -> Result<(), Box<dyn Error
         vec![
             ("price", "missing"),
             ("name", "excess"),
-            ("price", "conversion"),
-            ("price", "semantic"),
             ("name", "incomplete"),
         ]
     );

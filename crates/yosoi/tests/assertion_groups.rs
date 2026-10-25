@@ -18,7 +18,7 @@ use yosoi::{
 #[ys(id = "cart", description = "Cart observation", root = ys::locator::css("article"))]
 struct Cart {
     #[ys(description = "Price", locator = ys::locator::css(".price").text())]
-    price: ys::Money,
+    price: String,
     #[ys(description = "Items", locator = ys::locator::css(".item").text())]
     items: Vec<String>,
 }
@@ -37,14 +37,14 @@ const CART: &str =
     reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
 )]
 fn normal_operators_borrowed_captures_and_all_results() -> Result<(), Box<dyn Error>> {
-    let expected = 450i64;
+    let expected = "$4.50";
     let calls = AtomicUsize::new(0);
     let group = AssertionGroup::<Cart>::new(
         Cart::plan()?.clone(),
         [
             check(|cart: &Cart| {
                 calls.fetch_add(1, Ordering::SeqCst);
-                cart.price.minor_units() == expected
+                cart.price == expected
             }),
             check(|cart: &Cart| {
                 calls.fetch_add(1, Ordering::SeqCst);
@@ -57,7 +57,7 @@ fn normal_operators_borrowed_captures_and_all_results() -> Result<(), Box<dyn Er
             }),
             check(|cart: &Cart| {
                 calls.fetch_add(1, Ordering::SeqCst);
-                (400..=500).contains(&cart.price.minor_units())
+                (2..=3).contains(&cart.items.len())
             }),
         ],
     );
@@ -99,7 +99,6 @@ fn invalid_contract_never_runs_predicates() -> Result<(), Box<dyn Error>> {
     );
     for html in [
         "<article><i class=item>A</i></article>",
-        "<article><b class=price>bad</b></article>",
         "<article><b class=price>$4.50</b><b class=price>$5.00</b></article>",
     ] {
         let report = group.evaluate(&document(html)?)?;

@@ -23,8 +23,8 @@ use yosoi::prelude as ys;
 struct Product {
     #[ys(description = "Product name", locator = ys::locator::css("h1").text())]
     name: String,
-    #[ys(description = "USD price", locator = ys::locator::css(".shop-detail-price").text())]
-    price: ys::Money,
+    #[ys(description = "Price text", locator = ys::locator::css(".shop-detail-price").text())]
+    price: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -41,10 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let products = Product::extract(&located).validate().require_all()?;
     for product in products {
         println!(
-            "{}: {} ({} cents)",
-            product.name,
-            product.price,
-            product.price.minor_units()
+            "{}: {}", product.name, product.price
         );
     }
 
@@ -54,9 +51,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 The derived Contract connects its field names to a locator Plan. Rust locates the evidence, extracts candidates, validates them, and then applies `require_all()` to obtain accepted values.
 
-`Product` is a Rust type, but the incoming HTML is still external data. Runtime validation establishes that the located fields have the required shape and can become the declared values. Here, the price becomes `Money` with 6,800 USD cents.
+`Product` is a Rust type, but the incoming HTML is still external data. Runtime validation establishes that the located fields have the required shape and can become the declared values. Here, the price remains the source text `$68.00`.
 
-Run `cargo run`. It prints `Arc desk lamp: $68.00 (6800 cents)`.
+Run `cargo run`. It prints `Arc desk lamp: $68.00`.
 
 ### Python
 
@@ -68,7 +65,7 @@ class Product(ys.Contract):
     """A shop product."""
 
     name: str = ys.Field("Product name", locator=ys.css("h1"))
-    price: ys.Money = ys.Field("USD price", locator=ys.css(".shop-detail-price"))
+    price: str = ys.Field("Price text", locator=ys.css(".shop-detail-price"))
 
 
 document = ys.Document.html(
@@ -81,14 +78,14 @@ document = ys.Document.html(
 # callout: Python extracts and constructs validated Pydantic models in this call.
 products = Product.extract(document)
 for product in products:
-    print(f"{product.name}: {product.price} ({product.price.minor_units} cents)")
+    print(f"{product.name}: {product.price}")
 ```
 
-The Contract is a Pydantic model. `Product.extract(document)` locates the evidence and constructs validated Product instances automatically. The price becomes `Money` with 6,800 USD cents.
+The Contract is a Pydantic model. `Product.extract(document)` locates the evidence and constructs validated Product instances automatically. The price remains the source text `$68.00`.
 
 Annotations give the record a readable shape and help static tools check how our code uses it. Pydantic performs the runtime construction and validation of the external values. An annotation on its own would not validate downloaded data.
 
-Run `uv run python main.py`. It prints `Arc desk lamp: $68.00 (6800 cents)`.
+Run `uv run python main.py`. It prints `Arc desk lamp: $68.00`.
 
 ## Keep each product together
 
@@ -109,8 +106,8 @@ use yosoi::prelude as ys;
 struct Product {
     #[ys(description = "Name", locator = ys::locator::css("h2").text())]
     name: String,
-    #[ys(description = "USD price", locator = ys::locator::css(".shop-price").text())]
-    price: ys::Money,
+    #[ys(description = "Price text", locator = ys::locator::css(".shop-price").text())]
+    price: String,
     #[ys(description = "Optional link", locator = ys::locator::css("h2 a").attribute("href"))]
     href: Option<String>,
 }
@@ -139,9 +136,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-Each `article` supplies one candidate. `String` and `Money` require one value each; `Option<String>` accepts an absent link. The mug's name remains attached to its own $24.00 price even though it has no link in this controlled input.
+Each `article` supplies one candidate. Both `String` fields require one value each; `Option<String>` accepts an absent link. The mug's name remains attached to its own $24.00 price even though it has no link in this controlled input.
 
-Run `cargo run`. It produces the lamp and mug, with a link for the lamp and `None` for the mug. Rust's native Contract conversion currently supports String and Money values; richer scalar types need a separately supported conversion path.
+Run `cargo run`. It produces the lamp and mug, with a link for the lamp and `None` for the mug. Rust's native Contract conversion currently supports String values; richer scalar types need a separately supported conversion path.
 
 ### Python
 
@@ -154,7 +151,7 @@ class Product(ys.Contract):
 
     root = ys.css("article")
     name: str = ys.Field("Name", locator=ys.css("h2"))
-    price: ys.Money = ys.Field("USD price", locator=ys.css(".shop-price"))
+    price: str = ys.Field("Price text", locator=ys.css(".shop-price"))
     href: str | None = ys.Field(
         "Optional link", locator=ys.css("h2 a").attribute("href"), default=None
     )

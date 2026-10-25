@@ -27,7 +27,7 @@ use yosoi::policy::{Continuation, StopScope};
 #[ys(id = "cart", description = "Observed cart")]
 struct Cart {
     #[ys(description = "Total", locator = ys::locator::css(".total").text())]
-    total: ys::Money,
+    total: String,
     #[ys(description = "Items", locator = ys::locator::css(".item").text())]
     items: Vec<String>,
 }
@@ -35,7 +35,7 @@ struct Cart {
 fn main() -> Result<(), Box<dyn Error>> {
     let checkout = flow::new([
         action::assert_all::<Cart>(Cart::plan()?, [
-            check(|cart: &Cart| cart.total.minor_units() == 450),
+            check(|cart: &Cart| cart.total == "$4.50"),
             check(|cart: &Cart| !cart.items.is_empty()),
             check(|cart: &Cart| cart.items.iter().any(|item| item == "Tea")),
         ]).into(),
@@ -57,13 +57,13 @@ import yosoi as ys
 class Cart(ys.Contract):
     """Observed cart."""
 
-    total: ys.Money = ys.Field("Total", locator=ys.css(".total"))
+    total: str = ys.Field("Total", locator=ys.css(".total"))
     items: list[str] = ys.Field("Items", locator=ys.css(".item"))
 
 checkout = ys.flow([
     # callout: Pydantic validates the observed Cart before the named checks run.
     ys.assert_all(Cart, checks=[
-        ys.check("expected total", lambda cart: cart.total.minor_units == 450),
+        ys.check("expected total", lambda cart: cart.total == "$4.50"),
         ys.check("nonempty cart", lambda cart: len(cart.items) > 0),
         ys.check("Tea is present", lambda cart: "Tea" in cart.items),
     ]),
@@ -122,7 +122,7 @@ use yosoi::{action::check, assertions::AssertionGroup, prelude as ys};
 #[ys(id = "cart", description = "Observed cart")]
 struct Cart {
     #[ys(description = "Total", locator = ys::locator::css(".total").text())]
-    total: ys::Money,
+    total: String,
     #[ys(description = "Items", locator = ys::locator::css(".item").text())]
     items: Vec<String>,
 }
@@ -133,11 +133,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         "cart",
         b"<b class='total'>$4.50</b><span class='item'>Tea</span>".to_vec(),
     )?;
-    let expected = 450;
+    let expected = "$4.50";
 
     // Each predicate reads the same validated Cart.
     let report = AssertionGroup::<Cart>::new(Cart::plan()?.clone(), [
-        check(|cart: &Cart| cart.total.minor_units() == expected).named("expected total"),
+        check(|cart: &Cart| cart.total == expected).named("expected total"),
         check(|cart: &Cart| cart.items.len() == 1).named("one item"),
     ]).evaluate(&document)?;
     println!("{report:?}");
@@ -159,7 +159,7 @@ import yosoi as ys
 class Cart(ys.Contract):
     """Observed cart."""
 
-    total: ys.Money = ys.Field("Total", locator=ys.css(".total"))
+    total: str = ys.Field("Total", locator=ys.css(".total"))
     items: list[str] = ys.Field("Items", locator=ys.css(".item"))
 
 # Keep the input local so this example needs no browser.
@@ -170,7 +170,7 @@ document = ys.Document.html(
 
 # Validate the record before checking the business rules.
 cart, = ys.extract(document, Cart)
-assert cart.total.minor_units == 450
+assert cart.total == "$4.50"
 assert len(cart.items) == 1
 print(cart)
 ```
@@ -231,8 +231,7 @@ actual completion while keeping its receipts available for inspection.
 
 `crates/yosoi/examples/qscrape_cart_assertion.rs` opens the live L2 shop, selects
 one pickaxe, validates its cart Contract, and compares the observed total in
-an anonymous check. Qscrape uses GS; the example reads its total as a String
-because the existing Money type supports USD.
+an anonymous check. The example retains Qscrape's GS total as text and compares it using application-owned rules.
 
 ```bash
 cargo run -p yosoi --features browser --example qscrape_cart_assertion -j 1 -- \

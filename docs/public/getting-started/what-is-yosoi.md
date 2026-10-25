@@ -44,8 +44,8 @@ use yosoi::prelude as ys;
 struct Product {
     #[ys(description = "Product name", locator = ys::locator::css("h1").text())]
     name: String,
-    #[ys(description = "Price in USD", locator = ys::locator::css(".price").text())]
-    price: ys::Money,
+    #[ys(description = "Price text", locator = ys::locator::css(".price").text())]
+    price: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -59,14 +59,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(products.len(), 1);
     for product in products {
         assert_eq!(product.name, "Desk lamp");
-        assert_eq!(product.price.minor_units(), 2900);
+        assert_eq!(product.price, "$29.00");
         println!("{} costs {}", product.name, product.price);
     }
     Ok(())
 }
 ```
 
-The Contract requires one name and one price field. `locate` finds the evidence from the HTML `document`, `extract` converts it into fields, and `validate` checks the record against the type and any constraints. `require_all` returns the products or reports the validation issues. The price becomes `Money`, with 2,900 cents rather than a text value.
+The Contract requires one name and one price field. `locate` finds the evidence from the HTML `document`, `extract` converts it into fields, and `validate` checks the record against the type and any constraints. `require_all` returns the products or reports the validation issues. The price remains the source text `$29.00`; application code owns numeric and currency interpretation.
 
 ### Python
 

@@ -22,7 +22,7 @@ const CHECKOUT_BUTTON: &str = "[data-slot='product-grid'] [data-fw]:not([hidden]
 #[derive(ys::Contract)]
 #[ys(id="qscrape_cart", description="One Qscrape cart", root=ys::locator::css("[data-slot='product-grid'][data-active-fw='react'] [data-fw='react'] [data-component='eshop-cart'], [data-slot='product-grid'][data-active-fw='vue'] [data-fw='vue'] [data-component='eshop-cart'], [data-slot='product-grid'][data-active-fw='svelte'] [data-fw='svelte'] [data-component='eshop-cart'], [data-slot='product-grid'][data-active-fw='solid'] [data-fw='solid'] [data-component='eshop-cart']"))]
 struct Cart {
-    // This shop uses GS. The existing USD Money type is not appropriate here.
+    // Retain the shop's price text; application code owns its currency semantics.
     #[ys(description="GS total", locator=ys::locator::css("[data-cart-total]").attribute("data-cart-total"))]
     total: String,
     #[ys(description="Product identities", locator=ys::locator::css("[data-sku]").attribute("data-sku"))]

@@ -12,14 +12,13 @@ from yosoi.contracts import ContractValue, FieldSchema, value_type_id
 def test_value_type_ids_match_contract_schema_fields():
     class Product(ys.Contract):
         title: str = ys.Field("Product title", locator=ys.css("h1"))
-        price: ys.Money = ys.Field("Price in USD", locator=ys.css(".price"))
+        price: str = ys.Field("Price in USD", locator=ys.css(".price"))
 
     fields = {
         str(field.id): field.value_type for field in Product.contract_schema().fields
     }
     assert fields["title"] == value_type_id(str)
-    assert fields["price"] == value_type_id(ys.Money) == ys.Money.TYPE_ID
-    assert ys.Money.TYPE_ID == "money.usd"
+    assert fields["price"] == value_type_id(str)
 
 
 def test_custom_contract_value_protocol_supplies_schema_identity_only():

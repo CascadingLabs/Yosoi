@@ -48,7 +48,6 @@ Baseline: `6f8c447199361213a4aaf26d0a621cd1fca3e5de` (current main when this wor
 | [crates/yosoi/src/internal/contract_validation/mod.rs](../../../crates/yosoi/src/internal/contract_validation/mod.rs) | 1 | `fn validate_contract(located: &internal_documents::LocateOutcome) -> ContractOutcome<Self>;` (line 55) |
 | [crates/yosoi/src/internal/contract_validation/outcome.rs](../../../crates/yosoi/src/internal/contract_validation/outcome.rs) | 25 | `pub struct ValidatedRecord<T: Contract> {` (line 7) |
 | [crates/yosoi/src/internal/contract_validation/runtime.rs](../../../crates/yosoi/src/internal/contract_validation/runtime.rs) | 41 | `pub enum RuntimeContractError {` (line 65) |
-| [crates/yosoi/src/internal/contract_validation/value.rs](../../../crates/yosoi/src/internal/contract_validation/value.rs) | 4 | `pub enum Currency {` (line 32) |
 | [crates/yosoi/src/internal/contracts/candidate.rs](../../../crates/yosoi/src/internal/contracts/candidate.rs) | 10 | `pub struct CandidateField<T> {` (line 56) |
 | [crates/yosoi/src/internal/contracts/ids.rs](../../../crates/yosoi/src/internal/contracts/ids.rs) | 21 | `pub struct $name(String);` (line 9) |
 | [crates/yosoi/src/internal/contracts/schema.rs](../../../crates/yosoi/src/internal/contracts/schema.rs) | 24 | `pub enum RecordScope {` (line 12) |

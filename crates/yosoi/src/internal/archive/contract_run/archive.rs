@@ -375,16 +375,6 @@ fn validate_scalar(
 ) -> Result<(), ArchiveError> {
     match (schema.value_type(), value) {
         ("string", PortableContractValue::String { .. }) => Ok(()),
-        ("money.usd", PortableContractValue::MoneyUsd { minor_units })
-            if !minor_units.is_negative() =>
-        {
-            Ok(())
-        }
-        ("money.usd", PortableContractValue::MoneyUsd { .. }) => {
-            invalid(ContractRunRecordError::InvalidArchivedScalar {
-                field: schema.id().clone(),
-            })
-        }
         _ => invalid(ContractRunRecordError::ValueTypeMismatch {
             field: schema.id().clone(),
             expected: schema.value_type().to_owned(),

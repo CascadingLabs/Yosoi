@@ -17,7 +17,7 @@ struct Product {
     name: String,
 
     #[ys(description = "The currently advertised purchase price")]
-    price: ys::Money,
+    price: String,
 
     #[ys(description = "Optional supporting copy shown with the product")]
     subtitle: Option<String>,
@@ -151,8 +151,8 @@ fn valid_located() -> Result<ys::LocateOutcome, Box<dyn Error>> {
 
 #[path = "validation/edges.rs"]
 mod edges;
-#[path = "validation/limits_privacy_money.rs"]
-mod limits_privacy_money;
+#[path = "validation/limits_privacy.rs"]
+mod limits_privacy;
 #[path = "validation/outcomes.rs"]
 mod outcomes;
 #[path = "validation/records.rs"]

@@ -8,10 +8,9 @@ use serde::Serialize;
 pub use crate::internal::engine::{
     CandidateField, CandidateInput, CandidateView, Cardinality, Contract, ContractId,
     ContractIdentity, ContractLocatorError, ContractOutcome, ContractSchema, ContractSchemaError,
-    ContractValue, Currency, Extracted, ExtractionDiagnostic, ExtractionFailure, ExtractionLimit,
-    ExtractionLimits, FieldId, FieldIssue, FieldIssueKind, FieldSchema, Money, RecordIssue,
-    RecordScope, ValidateContract, ValidatedRecord, ValidationCode, ValidationFailure,
-    ValidationLimits,
+    ContractValue, Extracted, ExtractionDiagnostic, ExtractionFailure, ExtractionLimit,
+    ExtractionLimits, FieldId, FieldIssue, FieldIssueKind, FieldSchema, RecordIssue, RecordScope,
+    ValidateContract, ValidatedRecord, ValidationFailure, ValidationLimits,
 };
 
 pub use crate::internal::contract_validation::archived::ContractOutcome as ArchivedContractOutcome;
@@ -30,7 +29,7 @@ pub struct RuntimeContract {
 }
 
 impl RuntimeContract {
-    /// Owns a validated runtime schema for supported string and USD-money fields. Returns RuntimeContractError for unsupported scalar types; no evidence is acquired.
+    /// Owns a validated runtime schema for supported string fields. Returns RuntimeContractError for unsupported scalar types; no evidence is acquired.
     pub fn new(schema: ContractSchema) -> Result<Self, RuntimeContractError> {
         Ok(Self {
             inner: internal_contract_validation::RuntimeContract::new(schema)?,

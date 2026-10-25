@@ -23,7 +23,7 @@ class Book(ys.Contract):
 
     root = ys.css("article")
     author: str = ys.Field("Author", locator=ys.css(".author"))
-    price: ys.Money = ys.Field("Price", locator=ys.css(".price"))
+    price: str = ys.Field("Price", locator=ys.css(".price"))
     link: str | None = ys.Field(
         "Link", locator=ys.css("a").attribute("href"), default=None
     )
@@ -62,16 +62,14 @@ def test_repeated_records_and_named_candidate_evidence():
         outcome.status = "no_match"
     records = outcome.require_all()
     assert [record.author for record in records] == ["Ada", "Grace"]
-    assert records[0].price.minor_units == 1234
-    assert str(records[0].price) == "$12.34"
-    assert "1234" not in repr(records[0].price)
+    assert records[0].price == "$12.34"
     assert "$12.34" not in repr(outcome.records[0])
     assert records[0].tags == ["a", "b"]
     records[0].tags.append("updated")
     assert records[0].tags == ["a", "b", "updated"]
     assert records[1].link is None
     assert records[1].tags == []
-    assert records[0].model_dump()["price"]["currency"] == "usd"
+    assert records[0].model_dump()["price"] == "$12.34"
     assert Book.model_json_schema()["properties"]["author"]["description"] == "Author"
     assert len(Book.identity()) == 64
     assert isinstance(Book.identity(), ys.contracts.ContractIdentity)
@@ -92,7 +90,7 @@ def test_explicit_stages_and_parse_reuse_match_convenience():
     assert direct == staged.validate().require_all() == reused
 
 
-def test_empty_roots_invalid_money_and_excess_scalar_preserve_issues():
+def test_empty_roots_and_excess_scalar_preserve_issues():
     document = ys.Document.html(
         "books",
         """
@@ -107,18 +105,17 @@ def test_empty_roots_invalid_money_and_excess_scalar_preserve_issues():
     assert len(extracted.candidates) == 4
     assert cast(Any, extracted.candidates[0]).author.is_absent
     outcome = extracted
-    assert len(outcome.records) == 1
-    assert len(outcome.issues) == 3
-    assert outcome.records[0].value.author == "C"
+    assert len(outcome.records) == 2
+    assert len(outcome.issues) == 2
+    assert [record.value.author for record in outcome.records] == ["A", "C"]
+    assert outcome.records[0].value.price == "$-1.00"
     assert [issue.field_ids for issue in outcome.issues] == [
         ("author", "price"),
-        ("price",),
         ("author",),
     ]
     assert all(isinstance(issue.error, ValidationError) for issue in outcome.issues)
     assert [issue.kind for issue in outcome.issues] == [
         "missing_required",
-        "validation_error",
         "excess_candidates",
     ]
     assert all(issue.errors for issue in outcome.issues)
@@ -186,7 +183,7 @@ def test_runtime_contract_archive_preserves_portable_values_and_evidence():
     ]
     assert second["fields"][1]["value"] == {
         "cardinality": "exactly_one",
-        "value": {"type": "money_usd", "minor_units": 0},
+        "value": {"type": "string", "value": "$0.00"},
     }
     assert second["fields"][2]["value"] == {
         "cardinality": "zero_or_one",
@@ -220,7 +217,7 @@ def test_partial_native_evidence_and_bad_pydantic_values_are_not_defaults():
         outcome.require_all()
 
     class Price(ys.Contract):
-        price: ys.Money | None = ys.Field("Price", locator=ys.css("b"), default=None)
+        price: int | None = ys.Field("Price", locator=ys.css("b"), default=None)
 
     outcome = ys.extract_report(ys.Document.html("bad", "<b>free</b>"), Price)
     assert outcome.records == ()
@@ -259,13 +256,6 @@ def test_contract_coerces_arbitrary_pydantic_field_types_from_text():
     [record] = ys.extract(document, TypedValues)
     assert record.count == 42
     assert record.values == [3, 8]
-
-    with pytest.raises((ys._native.ContractError, ValidationError)):
-        ys.Money(minor_units=-1)
-    with pytest.raises((ys._native.ContractError, ValidationError)):
-        ys.Money(minor_units=2**63)
-    with pytest.raises((ys._native.ContractError, ValidationError)):
-        ys.Money(minor_units=1).model_copy(update={"minor_units": -1})
 
 
 def test_contract_uses_pydantic_validators_serializers_and_computed_fields():

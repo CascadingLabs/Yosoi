@@ -20,7 +20,7 @@ struct CatalogProduct {
     #[ys(id = "byline", description = "Product name", locator = ys::locator::css(".name").text())]
     name: String,
     #[ys(id = "amount", description = "USD price", locator = ys::locator::css(".price").text())]
-    price: ys::Money,
+    price: String,
     #[ys(id = "subtitle", description = "Optional subtitle", locator = ys::locator::css(".subtitle").text())]
     subtitle: Option<String>,
     #[ys(id = "keywords", description = "Keywords", locator = ys::locator::css(".tag").text())]

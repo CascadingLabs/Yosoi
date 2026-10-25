@@ -16,7 +16,7 @@ struct Product {
     name: String,
 
     #[ys(description = "The currently advertised purchase price")]
-    price: ys::Money,
+    price: String,
 
     #[ys(description = "Optional supporting copy shown with the product")]
     subtitle: Option<String>,

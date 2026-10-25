@@ -47,7 +47,6 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             "name": "contract-value-identities",
             "result": {
                 "string": value_type_id(str),
-                "money": value_type_id(ys.Money),
                 "custom": value_type_id(CustomValue),
                 "empty": value_type_id(EmptyIdentity),
             },
@@ -56,7 +55,6 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     from yosoi.contracts import (
         RuntimeExactlyOne,
         RuntimeMany,
-        RuntimeMoneyUsd,
         RuntimeString,
         RuntimeZeroOrOne,
     )
@@ -370,11 +368,11 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         ),
         ("contract-empty-root", "<article></article>"),
         (
-            "contract-negative-money",
+            "contract-negative-price-text",
             "<article><b class=author>Ada</b><b class=price>$-1.00</b></article>",
         ),
         (
-            "contract-bad-money",
+            "contract-unparsed-price-text",
             "<article><b class=author>Ada</b><b class=price>free</b></article>",
         ),
         (
@@ -390,7 +388,7 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         "ConformanceBook",
         __base__=ys.Contract,
         author=(str, ys.Field("Author", id="byline", locator=ys.css(".author"))),
-        price=(ys.Money, ys.Field("Price", locator=ys.css(".price"))),
+        price=(str, ys.Field("Price", locator=ys.css(".price"))),
         link=(
             str | None,
             ys.Field("Link", locator=ys.css("a").attribute("href"), default=None),
@@ -408,8 +406,6 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             return None
         if isinstance(value, RuntimeString):
             return value.value
-        if isinstance(value, RuntimeMoneyUsd):
-            return value.value.model_dump(mode="json")
         raise TypeError(f"unsupported runtime scalar: {type(value).__name__}")
 
     for name, content in contract_specs:

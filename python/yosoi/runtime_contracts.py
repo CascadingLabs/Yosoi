@@ -17,7 +17,6 @@ from .contracts import (
     ExtractionDiagnostic,
     ExtractionLimits,
     FieldIssue,
-    Money,
     ValidationLimits,
 )
 from .documents import BoundDocument, Document, ParsedDocument
@@ -86,22 +85,8 @@ class RuntimeString(ImmutableModel):
     value: str
 
 
-class RuntimeMoneyUsd(ImmutableModel):
-    """Carry a USD amount accepted by runtime Contract validation.
-
-    Attributes:
-        type: Wire discriminator identifying USD money.
-        value: Typed Money value retaining its currency and minor-unit amount.
-    """
-
-    type: Literal["money_usd"]
-    value: Money
-
-
-type RuntimeValue = Annotated[
-    RuntimeString | RuntimeMoneyUsd, Field(discriminator="type")
-]
-"""String or USD Money value tagged by its runtime wire type."""
+type RuntimeValue = RuntimeString
+"""Raw string accepted by native structural validation."""
 
 
 class RuntimeExactlyOne(ImmutableModel):
@@ -220,25 +205,8 @@ class ArchivedContractString(ImmutableModel):
     value: str = Field(repr=False)
 
 
-class ArchivedContractMoneyUsd(ImmutableModel):
-    """Store USD money as a portable signed minor-unit amount.
-
-    Attributes:
-        type: Wire discriminator for archived USD values.
-        minor_units: Signed 64-bit count of cents; the DTO bounds the integer without
-            revalidating a Contract.
-    """
-
-    type: Literal["money_usd"]
-    minor_units: Annotated[
-        int, Field(strict=True, ge=-(2**63), le=2**63 - 1, repr=False)
-    ]
-
-
-type ArchivedContractValue = Annotated[
-    ArchivedContractString | ArchivedContractMoneyUsd, Field(discriminator="type")
-]
-"""Portable string or signed USD minor-unit value tagged by type."""
+type ArchivedContractValue = ArchivedContractString
+"""Portable string payload retained with its source evidence."""
 
 
 class _ArchivedExactlyOne(ImmutableModel):

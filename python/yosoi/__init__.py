@@ -121,7 +121,6 @@ from .cancellation import CancellationToken as CancellationToken
 from .contracts import Contract as Contract
 from .contracts import ExtractionPolicy as ExtractionPolicy
 from .contracts import Field as Field
-from .contracts import Money as Money
 from .contracts import extract as extract
 from .contracts import extract_report as extract_report
 from .documents import Document as Document
@@ -271,7 +270,6 @@ __all__ = [
     "Contract",
     "ExtractionPolicy",
     "Field",
-    "Money",
     "extract",
     "extract_report",
     "contracts",

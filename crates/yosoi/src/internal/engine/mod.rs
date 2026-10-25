@@ -105,13 +105,12 @@ pub mod archived {
         ArchivedExtractionFailure as ExtractionFailure, ArchivedExtractionLimit as ExtractionLimit,
         ArchivedFieldIssue as FieldIssue, ArchivedFieldIssueKind as FieldIssueKind,
         ArchivedValidatedContractRecord as ValidatedContractRecord,
-        ArchivedValidationCode as ValidationCode, ArchivedValidationFailure as ValidationFailure,
+        ArchivedValidationFailure as ValidationFailure,
     };
 }
 pub use crate::internal::contract_validation::{
-    ArchivedContract, ContractIssues, ContractOutcome, Currency, Extracted, FieldIssue,
-    FieldIssueKind, Money, RecordIssue, RuntimeValueIssue, ValidateContract, ValidatedRecord,
-    ValidationCode, ValidationFailure,
+    ArchivedContract, ContractIssues, ContractOutcome, Extracted, FieldIssue, FieldIssueKind,
+    RecordIssue, RuntimeValueIssue, ValidateContract, ValidatedRecord, ValidationFailure,
 };
 
 /// Implementation details used by Yosoi derive macros.
@@ -240,7 +239,7 @@ pub use crate::internal::extractor::{ExtractionDiagnostic, ExtractionFailure, Ex
 ///     #[ys(description = "Product name", locator = ys::locator::css("h2").text())]
 ///     name: String,
 ///     #[ys(description = "Product price")]
-///     price: ys::Money,
+///     price: String,
 /// }
 /// ```
 ///

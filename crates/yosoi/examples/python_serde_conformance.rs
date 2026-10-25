@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 use yosoi::{
     CountLimit, DocumentId, Policy, StepLimit,
     browser::{BrowserConfig, BrowserEngine, MoliProfile},
-    contracts::{Money, RuntimeFieldValue, RuntimeValue},
+    contracts::{RuntimeFieldValue, RuntimeValue},
     documents::DocumentEpoch,
     locators::{
         AccessibilityCoordinate, ByteRange, DecodedTextCoordinate, DomCoordinate, DomNodeId,
@@ -703,30 +703,11 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         )?);
     }
 
-    let money = Money::from_archived_usd_minor_units(1299)
-        .ok_or("nonnegative money fixture value did not construct")?;
-    output.push(constructed_case(
-        "runtime-money-usd",
-        "yosoi::contracts::Money",
-        "Rust Money::from_archived_usd_minor_units",
-        money,
-        json!({}),
-    )?);
     output.push(constructed_case(
         "runtime-value-string",
         "yosoi::contracts::RuntimeValue",
         "Rust RuntimeValue::String",
         RuntimeValue::String("sample".to_owned()),
-        json!({}),
-    )?);
-    output.push(constructed_case(
-        "runtime-value-money-usd",
-        "yosoi::contracts::RuntimeValue",
-        "Rust RuntimeValue::MoneyUsd",
-        RuntimeValue::MoneyUsd(
-            Money::from_archived_usd_minor_units(1299)
-                .ok_or("nonnegative money fixture value did not construct")?,
-        ),
         json!({}),
     )?);
     output.push(constructed_case(
@@ -752,10 +733,7 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         RuntimeFieldValue::Many {
             values: vec![
                 RuntimeValue::String("many".to_owned()),
-                RuntimeValue::MoneyUsd(
-                    Money::from_archived_usd_minor_units(1299)
-                        .ok_or("nonnegative money fixture value did not construct")?,
-                ),
+                RuntimeValue::String("another".to_owned()),
             ],
         },
         json!({}),

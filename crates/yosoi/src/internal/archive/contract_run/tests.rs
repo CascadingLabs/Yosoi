@@ -213,41 +213,6 @@ async fn contract_run_rejects_archived_values_outside_the_schema() -> TestResult
     let temporary = tempdir()?;
     let archive = Archive::open(temporary.path().join(".yosoi")).await?;
     let (locator_ref, schema_ref, document_id) = matched_fixture(&archive).await?;
-    let invalid_value = ArchivedValidatedContractRecord::new(
-        document_id.clone(),
-        None,
-        vec![ArchivedContractField::new(
-            FieldId::try_new("author")?,
-            ArchivedContractFieldValue::ExactlyOne {
-                value: ArchivedContractValue::MoneyUsd { minor_units: 1_200 },
-            },
-        )],
-        vec![ArchivedCandidateField::new(
-            FieldId::try_new("author")?,
-            Vec::new(),
-        )],
-    );
-    let mismatch = archived_record(
-        &archive,
-        locator_ref.clone(),
-        schema_ref.clone(),
-        ArchivedContractOutcome::Evaluated {
-            document_id: document_id.clone(),
-            records: vec![invalid_value],
-            issues: Vec::new(),
-            extraction_diagnostics: Vec::new(),
-        },
-    )
-    .await?;
-    if !matches!(
-        archive.write(&mismatch).await,
-        Err(ArchiveError::InvalidContractRun(
-            ContractRunRecordError::ValueTypeMismatch { .. }
-        ))
-    ) {
-        return Err("ContractRun accepted Money for a String schema field".into());
-    }
-
     let wrong_cardinality = ArchivedValidatedContractRecord::new(
         document_id.clone(),
         None,

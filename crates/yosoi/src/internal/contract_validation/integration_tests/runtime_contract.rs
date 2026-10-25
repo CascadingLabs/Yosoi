@@ -2,8 +2,8 @@
 
 use crate::internal::contract_validation as internal_contract_validation;
 use crate::internal::contract_validation::{
-    FieldIssueKind, Money, RuntimeContract, RuntimeContractOutcome, RuntimeFieldValue,
-    RuntimeValue, ValidationLimits, read_many, read_optional, read_required,
+    FieldIssueKind, RuntimeContract, RuntimeContractOutcome, RuntimeFieldValue, RuntimeValue,
+    ValidationLimits, read_many, read_optional, read_required,
 };
 use crate::internal::contracts::{
     CONTRACT_SCHEMA_VERSION, CandidateField, CandidateInput, CandidateView, Cardinality, Contract,
@@ -23,7 +23,7 @@ use std::{collections::BTreeMap, error::Error, io, sync::OnceLock};
 struct StaticCandidate {
     document_id: DocumentId,
     name: CandidateField<String>,
-    price: CandidateField<Money>,
+    price: CandidateField<String>,
     nickname: CandidateField<String>,
     tags: CandidateField<String>,
 }
@@ -77,7 +77,7 @@ impl Contract for StaticContract {
                             FieldId::try_new("price")?,
                             "Current USD price",
                             Cardinality::ExactlyOne,
-                            Money::TYPE_ID,
+                            String::TYPE_ID,
                         )?,
                         FieldSchema::try_new(
                             FieldId::try_new("nickname")?,
@@ -215,7 +215,7 @@ fn runtime_and_static_contracts_share_candidate_and_value_semantics() -> Result<
     assert_eq!(
         record.value.get(&FieldId::try_new("price")?),
         Some(&RuntimeFieldValue::ExactlyOne {
-            value: RuntimeValue::MoneyUsd(static_price),
+            value: RuntimeValue::String(static_price),
         })
     );
     assert_eq!(
@@ -271,7 +271,7 @@ fn runtime_outcome_archives_with_the_portable_contract_wire_shape() -> Result<()
     );
     assert_eq!(
         fields[1],
-        json!({"id":"price","value":{"cardinality":"exactly_one","value":{"type":"money_usd","minor_units":450}}})
+        json!({"id":"price","value":{"cardinality":"exactly_one","value":{"type":"string","value":"$4.50"}}})
     );
     assert_eq!(
         fields[2],

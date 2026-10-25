@@ -27,7 +27,7 @@ struct Product {
         description = "Current USD price",
         locator = ys::locator::css("span.price").text()
     )]
-    price: ys::Money,
+    price: String,
     #[ys(
         description = "Optional supporting copy",
         locator = ys::locator::css("span.subtitle").text()
@@ -52,7 +52,7 @@ struct ReferencedProduct {
     #[ys(description = "Product name", locator = PRODUCT_NAME)]
     name: String,
     #[ys(description = "Current USD price", locator = PRODUCT_PRICE)]
-    price: ys::Money,
+    price: String,
     #[ys(description = "Optional supporting copy", locator = PRODUCT_SUBTITLE)]
     subtitle: Option<String>,
     #[ys(description = "Product categories", locator = PRODUCT_CATEGORY)]
@@ -159,8 +159,8 @@ fn real_html_plan_locates_extracts_and_validates_products() -> Result<(), Box<dy
         Some("Tea")
     );
     assert_eq!(
-        products.first().map(|product| product.price.minor_units()),
-        Some(450)
+        products.first().map(|product| product.price.as_str()),
+        Some("$4.50")
     );
     assert_eq!(
         products

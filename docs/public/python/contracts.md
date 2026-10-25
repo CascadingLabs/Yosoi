@@ -23,7 +23,7 @@ class Book(ys.Contract):
 
     root = ys.css("article")
     author: str = ys.Field("Author", locator=ys.css(".author"), min_length=1)
-    price: ys.Money = ys.Field("USD price", locator=ys.css(".price"))
+    price: str = ys.Field("Price text", locator=ys.css(".price"))
     subtitle: str | None = ys.Field("Optional subtitle", locator=ys.css(".subtitle"), default=None)
     tags: list[str] = ys.Field("Book tags", locator=ys.css(".tag"))
 
@@ -43,7 +43,7 @@ for book in books:
     print(book.author, book.price, book.tags)
 ```
 
-The name validator trims the extracted text before Pydantic checks its length. The price becomes Money, the absent subtitle becomes None, and the tags remain an ordered list. These selectors are explicit bindings for the supplied HTML; descriptions alone do not discover elements.
+The name validator trims the extracted text before Pydantic checks its length. The price remains text, the absent subtitle becomes None, and the tags remain an ordered list. These selectors are explicit bindings for the supplied HTML; descriptions alone do not discover elements.
 
 ## Custom field types
 
@@ -164,9 +164,9 @@ schema = ys.contracts.ContractSchema(
         ),
         ys.contracts.FieldSchema(
             id="price",
-            description="USD price",
+            description="Price text",
             cardinality="zero_or_one",
-            value_type="money.usd",
+            value_type="string",
         ),
     ),
 )
@@ -182,13 +182,13 @@ plan = ys.Plan(outputs=[
     ys.output("price", region.find(ys.css(".price")).text()),
 ])
 located = document.locate(plan)
-# callout: RuntimeContract keeps the portable Rust string/Money pipeline. It does not run application-defined Python validators.
+# callout: RuntimeContract keeps the portable Rust string pipeline. It does not run application-defined Python validators.
 extracted = runtime.extract(located)
 outcome = extracted.validate()
 ```
 
-The schema-only path uses Rust field IDs directly and supports `string` and
-`money.usd` values with page or repeated scope. `runtime.contract_schema`
+The schema-only path uses Rust field IDs directly and supports
+`string` values with page or repeated scope. `runtime.contract_schema`
 returns the validated schema; `runtime.identity()` returns its Rust identity.
 The schema does not contain locator expressions: create an ordinary `Plan`
 whose output IDs match the field IDs, then pass its `LocateOutcome` to
@@ -204,8 +204,8 @@ also preserves its `candidate`. The class-based `Book` path instead constructs r
 
 Python model reports can contain arbitrary types, transformed values and application validators. They cannot be represented faithfully by the Rust portable Contract format; `to_archived()` directs callers to RuntimeContract instead. Use ordinary Pydantic serialization for your model values and retain the report's original evidence separately.
 
-`RuntimeContractOutcome.to_archived()` continues to use the Rust schema and wire format. Its string/Money conversion, validation and archive behavior remain unchanged. General Python custom types do not extend that portable Rust vocabulary.
+`RuntimeContractOutcome.to_archived()` continues to use the Rust schema and wire format. It checks string projections, cardinality and completeness before producing portable archive values. General Python custom types do not extend that portable Rust vocabulary.
 
 ## Python API migration
 
-`Product.extract` now accepts a document and returns validated Product instances. The former located-evidence method is `Product.assemble(located)`. `ys.extract` now returns model values; use `ys.extract_report` for validated outcomes and issues. Rust's public Contract API remains unchanged.
+`Product.extract` now accepts a document and returns validated Product instances. The former located-evidence method is `Product.assemble(located)`. `ys.extract` now returns model values; use `ys.extract_report` for validated outcomes and issues. Rust Contracts retain string fields and apply native structural validation.
