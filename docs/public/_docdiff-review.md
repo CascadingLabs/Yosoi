@@ -2,7 +2,8 @@
 
 Workspace: `/home/andrew/Desktop/cl/yosoi-review-164-examples`.
 JJ working change: `rxnkynwu`, above PR #164 head `d331cb45`.
-These review changes are local. The remote PR and dependent stack are unchanged.
+This receipt records local validation for the review update. Hosted checks and
+current PR heads are authoritative on GitHub.
 
 ## Review entry points
 
@@ -45,6 +46,6 @@ artifact `2177a453ef72d27156e14b810b05f65ad19225b1`.
 The rendered Surfaces, CLI and Archive pages were checked; portable Archive
 instructions remain present. This preview is not a deployment.
 
-The dependent Archive PR already has its own public executor. Carry this review
-through that stack before pushing; local results do not establish hosted CI on
-new PR heads. No merge, release or deployment has occurred.
+The dependent Archive PR has its own public executor; stack integration retains
+its policy and portable-file behavior. Local results do not establish hosted CI
+on new PR heads. No merge, release or deployment is included.
