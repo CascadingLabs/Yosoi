@@ -405,6 +405,7 @@ impl Session {
             document: Arc::new(Mutex::new((None, 0))),
             navigation_state: Arc::default(),
             active_watch: Arc::default(),
+            viewport: Arc::default(),
         })
     }
 
@@ -463,6 +464,8 @@ pub struct Page {
     pub context: String,
     pub frame_id: u64,
     pub document: Arc<Mutex<(Option<String>, u64)>>,
+    // Serializes viewport changes with temporary capture overrides.
+    pub(super) viewport: Arc<Mutex<Option<super::super::Viewport>>>,
     pub(in crate::internal::browser) navigation_state:
         Arc<super::super::active_navigation::NavigationState>,
     pub(in crate::internal::browser) active_watch: Arc<Mutex<Option<Weak<super::watch::Inner>>>>,

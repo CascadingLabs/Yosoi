@@ -55,30 +55,31 @@ impl Page {
         token: &CancellationToken,
         deadline: Instant,
     ) -> Result<(), SessionError> {
-        // BiDi viewport size/DPR does not imply CDP mobile or touch emulation.
-        // Reject composite requests before applying any part of the override.
-        if viewport.mobile || viewport.has_touch || viewport.user_agent.is_some() {
-            return Err(SessionError::Unsupported(
-                "BiDi mobile/touch/device identity",
-            ));
-        }
-        if viewport.width == 0
-            || viewport.height == 0
-            || !viewport.device_scale_factor.is_finite()
-            || viewport.device_scale_factor <= 0.0
-        {
-            return Err(SessionError::InvalidArgument {
-                operation: "set_viewport",
-                reason: "dimensions and finite device scale factor must be positive",
+        validate_viewport(&viewport)?;
+        let mut current = self.viewport.lock().await;
+        self.apply_viewport(Some(&viewport), token, deadline)
+            .await?;
+        *current = Some(viewport);
+        drop(current);
+        Ok(())
+    }
+
+    pub(super) async fn apply_viewport(
+        &self,
+        viewport: Option<&Viewport>,
+        token: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<(), SessionError> {
+        let (size, dpr) =
+            viewport.map_or((serde_json::Value::Null, serde_json::Value::Null), |v| {
+                (
+                    json!({"width":v.width,"height":v.height}),
+                    json!(v.device_scale_factor),
+                )
             });
-        }
         self.command(
             "browsingContext.setViewport",
-            json!({
-                "context":self.context,
-                "viewport":{"width":viewport.width,"height":viewport.height},
-                "devicePixelRatio":viewport.device_scale_factor,
-            }),
+            json!({"context":self.context,"viewport":size,"devicePixelRatio":dpr}),
             token,
             deadline,
         )
@@ -117,4 +118,25 @@ impl Page {
         .await?;
         Ok(())
     }
+}
+
+pub(super) fn validate_viewport(viewport: &Viewport) -> Result<(), SessionError> {
+    // BiDi viewport size/DPR does not imply CDP mobile or touch emulation.
+    // Reject composite requests before applying any part of the override.
+    if viewport.mobile || viewport.has_touch || viewport.user_agent.is_some() {
+        return Err(SessionError::Unsupported(
+            "BiDi mobile/touch/device identity",
+        ));
+    }
+    if viewport.width == 0
+        || viewport.height == 0
+        || !viewport.device_scale_factor.is_finite()
+        || viewport.device_scale_factor <= 0.0
+    {
+        return Err(SessionError::InvalidArgument {
+            operation: "set_viewport",
+            reason: "dimensions and finite device scale factor must be positive",
+        });
+    }
+    Ok(())
 }

@@ -81,7 +81,8 @@ command offered by CDP. Shared types do not establish equivalent engine support.
 | Runtime console/exception capture | Native logs | Console; uncaught-exception coverage incomplete |
 | Layout metrics | CSSOM, with provenance | Standalone rejected: requires raster refresh |
 | Viewport/full-page/explicit-box visual capture | Native PNG | Native PNG, layout profile |
-| Visual selector/temporary viewport/scroll options | Not implemented | Not implemented |
+| Temporary viewport/DPR and scroll capture options | Native, with acknowledged restoration | Native layout, with acknowledged restoration |
+| Visual selector options | Not implemented | Not implemented |
 | Desktop viewport/DPR, locale, timezone | Native commands | Native commands |
 | Mobile/touch/device identity | Unsupported | Unsupported |
 | Rendering preferences | Command wired; qualified release rejects it | Command wired; not qualified |
@@ -92,3 +93,5 @@ of that operation's contract. Chrome-specific instrumentation flags remain false
 on BiDi even when equivalent native collectors are active. Unknown cache and
 service-worker provenance remains unknown. Remote-service process identity and
 egress are operator-owned facts, not inferred from a Chrome-like user agent.
+
+Temporary visual capture serializes viewport changes on the owned page. It restores the prior explicit override, or resets an absent override, and restores the prior scroll position after success or returned error. Crop offsets include the actual post-scroll position. A cancelled mutated capture or uncertain restoration fences the connection rather than exposing a modified page for reuse. Native qualification checks pixels, default/explicit state, error restoration and cancellation; the Firefox case also runs headful under an explicit Xvfb/X11 fixture. Headful viewport sizing requires a window system that can honor the requested resize; the fixture does not inherit a desktop Wayland backend.

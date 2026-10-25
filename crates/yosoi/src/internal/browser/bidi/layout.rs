@@ -2,16 +2,20 @@
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
-use super::session::{Page, SessionError};
+use super::{
+    emulation::validate_viewport,
+    session::{Page, SessionError},
+};
 use crate::{
     browser::{BrowserEngine, MoliProfile},
     internal::{
         browser::{
-            LayoutSnapshot, ScreenshotOptions, VisualSnapshot,
+            DocumentScope, LayoutSnapshot, ScreenshotOptions, Viewport, VisualSnapshot,
+            viewport::ScrollTarget,
             visual_snapshot::{
                 self, ContentSizeMetrics, LayoutViewportMetrics, VisualCaptureRegion,
                 VisualViewportMetrics,
@@ -102,14 +106,32 @@ impl Page {
         token: &CancellationToken,
         deadline: Instant,
     ) -> Result<VisualSnapshot, SessionError> {
-        if options.path.is_some()
-            || options.selector.is_some()
-            || options.scroll.is_some()
-            || options.viewport.is_some()
+        if options.path.is_some() {
+            return Err(SessionError::InvalidArgument {
+                operation: "visual_snapshot",
+                reason: "filesystem output paths are not accepted",
+            });
+        }
+        if options.selector.is_some() {
+            return Err(SessionError::Unsupported("BiDi screenshot target"));
+        }
+        if options
+            .bbox
+            .is_some_and(|bbox| bbox.width == 0 || bbox.height == 0)
         {
-            return Err(SessionError::Unsupported(
-                "BiDi screenshot target, temporary viewport, scroll or file output",
-            ));
+            return Err(SessionError::InvalidArgument {
+                operation: "visual_snapshot",
+                reason: "crop dimensions must be positive",
+            });
+        }
+        if let Some(viewport) = options.viewport.as_ref() {
+            validate_viewport(viewport)?;
+        }
+        if matches!(options.scroll, Some(ScrollTarget::Viewports(n)) if !n.is_finite()) {
+            return Err(SessionError::InvalidArgument {
+                operation: "visual_snapshot",
+                reason: "scroll offset must be finite",
+            });
         }
         if self.session.config.engine == BrowserEngine::Moli
             && self.session.config.moli_profile != MoliProfile::Layout
@@ -118,12 +140,72 @@ impl Page {
                 "visual capture requires the Moli layout profile",
             ));
         }
+        let current = self.viewport.lock().await;
         let before = self.document_scope(token, deadline).await?;
+        let (window, realm) = self
+            .evaluate("({x:scrollX,y:scrollY})", token, deadline)
+            .await?;
+        let mut restore = RestoreVisual {
+            page: self,
+            scope: before.clone(),
+            realm: realm.clone(),
+            viewport: &current,
+            scroll: (number(&window, "x")?, number(&window, "y")?),
+            restore_viewport: options.viewport.is_some(),
+            armed: false,
+        };
+        let result = self
+            .capture_visual(options, before, &realm, &mut restore, token, deadline)
+            .await;
+        restore.restore().await?;
+        drop(restore);
+        drop(current);
+        result
+    }
+
+    async fn capture_visual(
+        &self,
+        options: ScreenshotOptions,
+        before: DocumentScope,
+        realm: &str,
+        restore: &mut RestoreVisual<'_>,
+        token: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<VisualSnapshot, SessionError> {
+        if let Some(viewport) = options.viewport.as_ref() {
+            restore.armed = true;
+            self.apply_viewport(Some(viewport), token, deadline).await?;
+        }
+        let shift = if let Some(target) = options.scroll {
+            let y = match target {
+                ScrollTarget::Pixels(y) => serde_json::Number::from(y)
+                    .as_f64()
+                    .ok_or(SessionError::Serialization)?,
+                ScrollTarget::Viewports(n) => {
+                    let (height, _) = self
+                        .evaluate_realm("innerHeight", realm, token, deadline)
+                        .await?;
+                    height.as_f64().ok_or(SessionError::Serialization)? * n
+                }
+            };
+            if !y.is_finite() {
+                return Err(SessionError::InvalidArgument {
+                    operation: "visual_snapshot",
+                    reason: "scroll offset exceeds finite coordinates",
+                });
+            }
+            restore.armed = true;
+            let (position, _) = self.evaluate_realm(&format!("window.scrollTo({{left:0,top:{y},behavior:'instant'}});({{x:scrollX,y:scrollY}})"), realm, token, deadline).await?;
+            (number(&position, "x")?, number(&position, "y")?)
+        } else {
+            (0.0, 0.0)
+        };
         // Screenshot coordinates cover the actual window viewport, including
         // native scrollbars. Layout metrics separately describe the scrollport.
         let (window, _) = self
-            .evaluate(
+            .evaluate_realm(
                 "({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})",
+                realm,
                 token,
                 deadline,
             )
@@ -139,16 +221,10 @@ impl Page {
         }
         let mut params = json!({"context":self.context,"origin":if options.full_page {"document"}else{"viewport"},"format":{"type":"image/png"}});
         let region = if let Some(bbox) = options.bbox {
-            if bbox.width == 0 || bbox.height == 0 {
-                return Err(SessionError::InvalidArgument {
-                    operation: "visual_snapshot",
-                    reason: "crop dimensions must be positive",
-                });
-            }
             let object = params.as_object_mut().ok_or(SessionError::Serialization)?;
             object.insert(
                 "clip".to_owned(),
-                json!({"type":"box","x":bbox.x,"y":bbox.y,"width":bbox.width,"height":bbox.height}),
+                json!({"type":"box","x":f64::from(bbox.x)+shift.0,"y":f64::from(bbox.y)+shift.1,"width":bbox.width,"height":bbox.height}),
             );
             // Crops use document coordinates, independent of full_page.
             object.insert("origin".to_owned(), json!("document"));
@@ -175,6 +251,53 @@ impl Page {
         }
         visual_snapshot::visual_snapshot(bytes, before, region, viewport, dpr)
             .ok_or(SessionError::Serialization)
+    }
+}
+
+struct RestoreVisual<'a> {
+    page: &'a Page,
+    scope: DocumentScope,
+    realm: String,
+    viewport: &'a Option<Viewport>,
+    scroll: (f64, f64),
+    restore_viewport: bool,
+    armed: bool,
+}
+
+impl Drop for RestoreVisual<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            // A cancelled capture cannot hand a modified page to another Work.
+            // Logical teardown owns recovery; never replay a mutation on drop.
+            self.page.session.connection.fence();
+        }
+    }
+}
+
+impl RestoreVisual<'_> {
+    async fn restore(&mut self) -> Result<(), SessionError> {
+        if !self.armed {
+            return Ok(());
+        }
+        let token = CancellationToken::new();
+        let deadline = Instant::now()
+            .checked_add(Duration::from_secs(2))
+            .ok_or(SessionError::Capacity)?;
+        if self.page.document_scope(&token, deadline).await? != self.scope {
+            return Err(SessionError::DocumentChanged);
+        }
+        if self.restore_viewport {
+            self.page
+                .apply_viewport(self.viewport.as_ref(), &token, deadline)
+                .await?;
+        }
+        let (x, y) = self.scroll;
+        let (position, _) = self.page.evaluate_realm(&format!("window.scrollTo({{left:{x},top:{y},behavior:'instant'}});({{x:scrollX,y:scrollY}})"), &self.realm, &token, deadline).await?;
+        if (number(&position, "x")? - x).abs() > 0.5 || (number(&position, "y")? - y).abs() > 0.5 {
+            return Err(SessionError::DocumentChanged);
+        }
+        self.armed = false;
+        Ok(())
     }
 }
 

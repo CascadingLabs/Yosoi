@@ -55,7 +55,11 @@ jobs:
       - name: Regular headful Firefox
         env:
           YOSOI_BIDI_MODE: headful
-        run: xvfb-run -a uv run --no-sync pytest -q 'python/tests/test_optional_browsers.py::test_native_python_session_and_requests[firefox]' 'python/tests/test_bidi_captures.py::test_native_until_body_and_protocol_scope_survive_archive[firefox]'
+          GDK_BACKEND: x11
+          MOZ_ENABLE_WAYLAND: '0'
+        run: |
+          xvfb-run -a -s '-screen 0 1280x1024x24' uv run --no-sync pytest -q 'python/tests/test_optional_browsers.py::test_native_python_session_and_requests[firefox]' 'python/tests/test_bidi_captures.py::test_native_until_body_and_protocol_scope_survive_archive[firefox]'
+          xvfb-run -a -s '-screen 0 1280x1024x24' cargo test --locked -p yosoi --lib --features browser-bidi bidi_firefox_visual_transactions_restore_and_fence -- --ignored --test-threads=1
       - name: Build portable headless image
         run: docker compose -f docker/moli/compose.yaml build
       - name: Start container test environment

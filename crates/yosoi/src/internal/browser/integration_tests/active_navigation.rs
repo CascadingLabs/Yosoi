@@ -81,7 +81,7 @@ impl Gate {
     }
 }
 
-struct Fixture {
+pub(super) struct Fixture {
     base_url: String,
     hold: Arc<Gate>,
     shutdown: Option<oneshot::Sender<()>>,
@@ -89,7 +89,7 @@ struct Fixture {
 }
 
 impl Fixture {
-    async fn start() -> Self {
+    pub(super) async fn start() -> Self {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("bind loopback fixture");
@@ -119,17 +119,17 @@ impl Fixture {
         }
     }
 
-    fn url(&self, path: &str) -> String {
+    pub(super) fn url(&self, path: &str) -> String {
         format!("{}{path}", self.base_url)
     }
 
-    async fn wait_until_held(&self) {
+    pub(super) async fn wait_until_held(&self) {
         timeout(FIXTURE_DEADLINE, self.hold.wait_for_arrival())
             .await
             .expect("held request never reached fixture");
     }
 
-    fn release_held_navigation(&self) {
+    pub(super) fn release_held_navigation(&self) {
         self.hold.open();
     }
 }
