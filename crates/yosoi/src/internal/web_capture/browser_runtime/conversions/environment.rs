@@ -86,9 +86,7 @@ pub(super) const fn capability_class(value: provider::CapabilityState) -> Capabi
         provider::CapabilityState::Disabled {
             reason: provider::CapabilityDisabledReason::MinimalCdpMode,
         } => CapabilityClass::Disabled,
-        provider::CapabilityState::Unsupported {
-            reason: provider::CapabilityUnsupportedReason::NotImplemented,
-        } => CapabilityClass::Unsupported,
+        provider::CapabilityState::Unsupported { .. } => CapabilityClass::Unsupported,
     }
 }
 

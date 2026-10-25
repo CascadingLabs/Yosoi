@@ -302,14 +302,19 @@ async fn headless_loopback_facts_survive_teardown() {
                 assert_eq!(redirect.redirect_from, None);
                 assert_eq!(redirect.status, Some(302));
                 assert_eq!(redirect.outcome, BrowserResourceOutcome::Redirected);
-                assert!(!redirect.from_cache && !redirect.from_service_worker);
+                assert!(
+                    redirect.from_cache == Some(false)
+                        && redirect.from_service_worker == Some(false)
+                );
                 assert_eq!(redirect.encoded_data_length, None);
                 assert!(shell.url.as_ref().unwrap().as_str().ends_with("/shell"));
                 assert_eq!(shell.id, BrowserResourceId(1));
                 assert_eq!(shell.redirect_from, Some(redirect.id));
                 assert_eq!(shell.status, Some(200));
                 assert_eq!(shell.outcome, BrowserResourceOutcome::Complete);
-                assert!(!shell.from_cache && !shell.from_service_worker);
+                assert!(
+                    shell.from_cache == Some(false) && shell.from_service_worker == Some(false)
+                );
                 assert_eq!(shell.encoded_data_length, Some(820));
                 if let Some(secondary) = secondary {
                     assert!(
@@ -328,7 +333,10 @@ async fn headless_loopback_facts_survive_teardown() {
                             | BrowserResourceOutcome::ResponseReceived
                             | BrowserResourceOutcome::Complete
                     ));
-                    assert!(!secondary.from_cache && !secondary.from_service_worker);
+                    assert!(
+                        secondary.from_cache == Some(false)
+                            && secondary.from_service_worker == Some(false)
+                    );
                 }
                 if let Some(favicon) = favicon {
                     assert!(
@@ -343,7 +351,10 @@ async fn headless_loopback_facts_survive_teardown() {
                     assert_eq!(favicon.redirect_from, None);
                     assert_eq!(favicon.status, Some(404));
                     assert_eq!(favicon.outcome, BrowserResourceOutcome::Complete);
-                    assert!(!favicon.from_cache && !favicon.from_service_worker);
+                    assert!(
+                        favicon.from_cache == Some(false)
+                            && favicon.from_service_worker == Some(false)
+                    );
                 }
                 let retained = u64::try_from(resources.len()).unwrap();
                 assert_eq!(resource_accounting.retained(), retained);

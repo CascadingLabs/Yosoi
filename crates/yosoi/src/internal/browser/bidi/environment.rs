@@ -108,33 +108,61 @@ impl Page {
             mode,
             rendering: rendering_environment(&value),
             instrumentation,
-            capabilities: capabilities(),
+            capabilities: capabilities(
+                self.session.config.engine,
+                self.session.config.moli_profile,
+            ),
         })
     }
 }
 
-pub const fn capabilities() -> BrowserCaptureCapabilities {
+pub const fn capabilities(
+    engine: BrowserEngine,
+    profile: MoliProfile,
+) -> BrowserCaptureCapabilities {
     let supported = CapabilityState::Supported;
     let unsupported = CapabilityState::Unsupported {
         reason: CapabilityUnsupportedReason::NotImplemented,
     };
+    let firefox = if matches!(engine, BrowserEngine::Firefox) {
+        supported
+    } else {
+        CapabilityState::Unsupported {
+            reason: CapabilityUnsupportedReason::EngineDoesNotReport,
+        }
+    };
     BrowserCaptureCapabilities {
         document_navigation: supported,
-        document_response_metadata: unsupported,
-        selected_response_bodies: unsupported,
-        document_source: unsupported,
+        document_response_metadata: firefox,
+        selected_response_bodies: supported,
+        document_source: firefox,
         rendered_dom: supported,
-        accessibility_tree: unsupported,
+        accessibility_tree: CapabilityState::Unsupported {
+            reason: CapabilityUnsupportedReason::ProtocolNotExposed,
+        },
         out_of_process_frame_routing: supported,
-        network_resource_graph: unsupported,
+        network_resource_graph: supported,
         cookies: unsupported,
         web_storage: unsupported,
-        // A layout artifact is a separate implementation from native hit testing.
-        element_geometry: unsupported,
-        // Raw Session PNG operations have a smaller contract than staged
-        // Request visual artifacts, whose coordinate metadata is unqualified.
-        screenshot: unsupported,
-        screencast: unsupported,
-        runtime_diagnostics: unsupported,
+        element_geometry: if matches!(engine, BrowserEngine::Firefox) {
+            supported
+        } else {
+            CapabilityState::Unsupported {
+                reason: CapabilityUnsupportedReason::RequiresRasterRefresh,
+            }
+        },
+        screenshot: if matches!(engine, BrowserEngine::Firefox)
+            || (matches!(engine, BrowserEngine::Moli) && matches!(profile, MoliProfile::Layout))
+        {
+            supported
+        } else {
+            CapabilityState::Unsupported {
+                reason: CapabilityUnsupportedReason::RequiresLayoutProfile,
+            }
+        },
+        screencast: CapabilityState::Unsupported {
+            reason: CapabilityUnsupportedReason::ProtocolNotExposed,
+        },
+        runtime_diagnostics: supported,
     }
 }

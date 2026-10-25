@@ -4,7 +4,7 @@
 )]
 use super::*;
 use crate::browser as browser_config;
-use crate::internal::browser::{CapabilityState, SnapshotState};
+use crate::internal::browser::{CapabilityState, SnapshotState, Viewport};
 use crate::policy;
 use crate::request;
 use crate::session;
@@ -109,7 +109,51 @@ async fn native(engine: BrowserEngine) -> Result<(), Box<dyn std_error::Error + 
         assert!(session.new_page("foreign-context", &cancellation, deadline).await.is_err());
         assert!(session.remove_user_context("foreign-context", &cancellation, deadline).await.is_err());
         let page = session.new_page(&owner, &cancellation, deadline).await?;
+        page.set_viewport(Viewport::custom(960, 640), &cancellation, deadline).await?;
+        page.set_locale("fr-FR", &cancellation, deadline).await?;
+        page.set_timezone("Asia/Tokyo", &cancellation, deadline).await?;
         page.navigate(&format!("{origin}/"), "complete", &cancellation, deadline).await?;
+        let environment = page.evaluate("({width:innerWidth,height:innerHeight,locale:new Intl.DateTimeFormat().resolvedOptions().locale,timezone:new Intl.DateTimeFormat().resolvedOptions().timeZone})", &cancellation, deadline).await?.0;
+        assert_eq!(environment, json!({"width":960,"height":640,"locale":"fr-FR","timezone":"Asia/Tokyo"}));
+        if engine == BrowserEngine::Firefox {
+            use crate::internal::browser::RenderingPreferences;
+            use crate::internal::types::{ColorScheme, ReducedMotion};
+            let media = "({dark:matchMedia('(prefers-color-scheme: dark)').matches,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})";
+            let before = page.evaluate(media, &cancellation, deadline).await?.0;
+            // Stock Firefox 158 does not implement this standard command yet.
+            assert!(matches!(page.set_rendering_preferences(RenderingPreferences::new(Some(ColorScheme::Dark), Some(ReducedMotion::Reduce)), &cancellation, deadline).await, Err(SessionError::Unsupported("emulation.setMediaFeaturesOverride"))));
+            assert_eq!(page.evaluate(media, &cancellation, deadline).await?.0, before);
+            let layout = page.layout_snapshot(&cancellation, deadline).await?;
+            assert_eq!(layout.layout_viewport.client_width, 960);
+            assert_eq!(layout.layout_viewport.client_height, 640);
+        }
+        {
+            use crate::internal::browser::{Bbox, ScreenshotOptions};
+            let visual = page.visual_snapshot(ScreenshotOptions::default().viewport_only(), &cancellation, deadline).await?;
+            assert_eq!((visual.image_width_pixels, visual.image_height_pixels),(960,640));
+            let cropped = page.visual_snapshot(ScreenshotOptions::default().with_bbox(Bbox {x:10,y:10,width:40,height:30}), &cancellation, deadline).await?;
+            assert_eq!((cropped.image_width_pixels,cropped.image_height_pixels),(40,30));
+            page.evaluate("document.body.style.height='2000px';document.body.style.width='1800px';true",&cancellation,deadline).await?;
+            let overflowing=page.visual_snapshot(ScreenshotOptions::default().viewport_only(),&cancellation,deadline).await?;
+            assert_eq!((overflowing.image_width_pixels,overflowing.image_height_pixels),(960,640));
+            assert_eq!(overflowing.capture_viewport.width_css_pixels().get(),960);
+            if engine==BrowserEngine::Firefox {
+                let layout=page.layout_snapshot(&cancellation,deadline).await?;
+                assert!(layout.layout_viewport.client_width<960);
+                assert!(layout.layout_viewport.client_height<640);
+                assert!(layout.content_size.width>=1800.0);
+                assert!(layout.content_size.height>=2000.0);
+            }
+            let full=page.visual_snapshot(ScreenshotOptions::default(),&cancellation,deadline).await?;
+            assert!(full.image_width_pixels>=1800 && full.image_height_pixels>=2000);
+            page.evaluate("document.body.style.height='';document.body.style.width='';true",&cancellation,deadline).await?;
+            let mut high=Viewport::custom(960,640);high.device_scale_factor=2.0;
+            page.set_viewport(high,&cancellation,deadline).await?;
+            let high=page.visual_snapshot(ScreenshotOptions::default().viewport_only(),&cancellation,deadline).await?;
+            assert_eq!((high.image_width_pixels,high.image_height_pixels),(1920,1280));
+            assert_eq!(high.device_scale_factor,2.0);
+            page.set_viewport(Viewport::custom(960,640),&cancellation,deadline).await?;
+        }
         let (value, realm) = page.evaluate("({title:document.title, values:[true,null,2]})", &cancellation, deadline).await?;
         assert_eq!(value, json!({"title":"native","values":[true,null,2]}));
         assert_ne!(realm, "");
@@ -142,7 +186,7 @@ async fn native(engine: BrowserEngine) -> Result<(), Box<dyn std_error::Error + 
         assert!(matches!(page.click_unique_element("iframe", &cancellation, deadline).await, Err(SessionError::Unsupported(_))));
         assert!(page.screenshot_png(&cancellation, deadline).await?.len() > 8);
         let environment = page.environment_snapshot(&cancellation, deadline).await?;
-        assert!(matches!(environment.capabilities.screenshot, CapabilityState::Unsupported { .. }));
+        assert_eq!(environment.capabilities.screenshot, CapabilityState::Supported);
         assert_eq!(page.evaluate_in_frame("/frame", "document.title", &cancellation, deadline).await?, json!("Child"));
         page.click_unique_element("#next", &cancellation, deadline).await?;
         let after = page.document_scope(&cancellation, deadline).await?;
@@ -314,8 +358,63 @@ async fn public_sdk(
                 .attempts()
                 .flat_map(request::Attempt::documents)
                 .all(|document| matches!(document.outcome(), DocumentOutcome::Produced(_))),
-            "Work-bound DOM request failed: {response:?}"
+            "Work-bound DOM request failed: {:?}",
+            response
+                .attempts()
+                .flat_map(request::Attempt::documents)
+                .map(request::AttemptDocument::outcome)
+                .collect::<Vec<_>>()
         );
+        let mut source_policy = policy.clone();
+        source_policy.page =
+            PagePolicy::new(vec![Acquisition::Browser(BrowserMode::Headless).documents(
+                [
+                    DocumentRequest::ResponseDocument,
+                    DocumentRequest::RenderedDom,
+                ],
+            )])?;
+        if engine == BrowserEngine::Firefox {
+            let source_response = request::new(origin)
+                .with_work(&work)
+                .bind(&source_policy)
+                .send()
+                .await?;
+            assert_eq!(
+                source_response
+                    .attempts()
+                    .flat_map(request::Attempt::documents)
+                    .count(),
+                2
+            );
+            assert!(
+                source_response
+                    .attempts()
+                    .all(|attempt| attempt.state() == request::AttemptState::Completed),
+                "{source_response:?}"
+            );
+            assert!(
+                source_response
+                    .attempts()
+                    .flat_map(request::Attempt::documents)
+                    .all(|document| matches!(document.outcome(), DocumentOutcome::Produced(_))),
+                "{source_response:?}"
+            );
+        } else {
+            let before = work.observe().await?.url;
+            let denied = request::new(format!("{origin}/source-denied"))
+                .with_work(&work)
+                .bind(&source_policy)
+                .send()
+                .await?;
+            assert!(
+                denied.attempts().all(|attempt| attempt.state()
+                    == request::AttemptState::Failed(
+                        request::AttemptFailureKind::PolicyResolution
+                    )),
+                "{denied:?}"
+            );
+            assert_eq!(work.observe().await?.url, before);
+        }
         let mut limited = policy.clone();
         limited.request.browser.dom_utf8_bytes = policy::AddressableByteLimit::try_from(16u64)?;
         let partial = request::new(origin)

@@ -537,6 +537,7 @@ fn contract_until_record(
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-1".to_owned(),
             tab_id: "tab-1".to_owned(),
             document_epoch: 7,
@@ -583,6 +584,7 @@ fn valid_report() -> UntilReport {
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-1".to_owned(),
             tab_id: "tab-1".to_owned(),
             document_epoch: 7,
@@ -645,6 +647,7 @@ fn record_with_step_and_observation(
 ) -> Result<AutomationRecord, Box<dyn Error + Send + Sync>> {
     let value = serde_json::to_value(report)?;
     let mut receipt = until_receipt(receipt_id, value);
+    receipt.browser.clone_from(&observation.browser);
     receipt.observation = Some(observation);
     let outcome = FlowOutcome {
         version: 3,
@@ -703,6 +706,7 @@ fn accessibility_report(
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-1".to_owned(),
             tab_id: "tab-1".to_owned(),
             document_epoch: 7,
@@ -761,6 +765,7 @@ fn network_report(attempt: &str) -> UntilReport {
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-1".to_owned(),
             tab_id: "tab-1".to_owned(),
             document_epoch: 7,
@@ -801,6 +806,65 @@ fn network_report(attempt: &str) -> UntilReport {
         }],
         error: None,
     }
+}
+
+#[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions are regression failures; setup errors propagate."
+)]
+fn bidi_until_scope_uses_epoch_without_fabricating_a_cdp_loader() -> Result<(), TestError> {
+    use yosoi::browser::{BrowserExecutionIdentity, BrowserProtocol};
+    let browser: BrowserExecutionIdentity = serde_json::from_value(
+        serde_json::json!({"engine":"firefox","protocol":"bidi","process_owned":false}),
+    )?;
+    let mut report = network_report("bidi");
+    report.scope.protocol = Some(BrowserProtocol::Bidi);
+    report.scope.loader_id = None;
+    if let Some(trigger) = report.trigger.as_mut() {
+        trigger.browser = Some(browser.clone());
+    }
+    set_check_evidence_value(&mut report, "loader_id", serde_json::Value::Null)?;
+    report.validate()?;
+    let mut observed = observation();
+    observed.browser = Some(browser);
+    assert!(
+        record_with_step_and_observation(
+            report.clone(),
+            network_step("bidi"),
+            "native-until",
+            observed.clone()
+        )
+        .is_ok()
+    );
+
+    // A marker alone cannot turn a loaderless legacy/CDP receipt into native evidence.
+    assert!(record_with_step(report.clone(), network_step("bidi"), "forged-protocol").is_err());
+    let mut invented = report.clone();
+    invented.scope.loader_id = Some("pretend-loader".to_owned());
+    assert!(invented.validate().is_err());
+    let mut missing_frame = report.clone();
+    missing_frame.scope.frame_id = None;
+    assert!(missing_frame.validate().is_err());
+    let mut legacy = report.clone();
+    legacy.scope.protocol = None;
+    assert!(legacy.validate().is_err());
+    let mut wrong_loader = report;
+    set_check_evidence_value(
+        &mut wrong_loader,
+        "loader_id",
+        serde_json::json!("pretend-loader"),
+    )?;
+    assert!(
+        record_with_step_and_observation(
+            wrong_loader,
+            network_step("bidi"),
+            "native-wrong-loader",
+            observed
+        )
+        .is_err()
+    );
+    Ok(())
 }
 
 fn set_check_evidence_value(

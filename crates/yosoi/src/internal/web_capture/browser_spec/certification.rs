@@ -144,14 +144,13 @@ impl CertifiedBrowserCapabilities {
                     WebArtifactFamily::RenderedDom => {
                         matches!(status, Some(BrowserCapabilityStatus::Supported))
                     }
-                    WebArtifactFamily::Visual => matches!(
+                    _ => matches!(
                         status,
                         Some(
                             BrowserCapabilityStatus::Supported
                                 | BrowserCapabilityStatus::Unsupported { .. }
                         )
                     ),
-                    _ => matches!(status, Some(BrowserCapabilityStatus::Unsupported { .. })),
                 }
             } else if family == WebArtifactFamily::Storage {
                 matches!(status, Some(BrowserCapabilityStatus::Unsupported { .. }))
@@ -164,12 +163,16 @@ impl CertifiedBrowserCapabilities {
                 return Err(BrowserCertificationError::FamilyMismatch { family });
             }
         }
-        if families
+        let source = families
             .get(WebArtifactFamily::Source)
-            .map(BrowserCapabilityStatus::is_supported)
-            != families
-                .get(WebArtifactFamily::Network)
-                .map(BrowserCapabilityStatus::is_supported)
+            .map(BrowserCapabilityStatus::is_supported);
+        let network = families
+            .get(WebArtifactFamily::Network)
+            .map(BrowserCapabilityStatus::is_supported);
+        if (instrumentation == BrowserInstrumentationMode::Bidi
+            && source == Some(true)
+            && network != Some(true))
+            || (instrumentation != BrowserInstrumentationMode::Bidi && source != network)
         {
             return Err(BrowserCertificationError::FamilyMismatch {
                 family: WebArtifactFamily::Network,

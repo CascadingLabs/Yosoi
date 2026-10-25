@@ -242,6 +242,14 @@ pub enum CapabilityDisabledReason {
 #[serde(rename_all = "snake_case")]
 pub enum CapabilityUnsupportedReason {
     NotImplemented,
+    /// The selected protocol has no native export for this representation.
+    ProtocolNotExposed,
+    /// The qualified engine omits the required facts in isolated contexts.
+    EngineDoesNotReport,
+    /// The selected Moli profile does not construct layout or paint output.
+    RequiresLayoutProfile,
+    /// Fresh geometry needs an additional raster observation and its permission.
+    RequiresRasterRefresh,
 }
 
 /// Exhaustive capabilities of the current VoidCrawl browser primitive set.

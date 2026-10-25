@@ -260,6 +260,120 @@ async fn finish(page: &Page, url: &str) -> (Vec<NavigationProgress>, NavigationR
     (progress, report)
 }
 
+#[cfg(feature = "browser-bidi")]
+#[tokio::test]
+#[ignore = "requires the qualified regular Firefox executable"]
+async fn bidi_firefox_navigation_preserves_lifecycle_loss_and_cancellation() {
+    use crate::browser::{BrowserConfig, BrowserEngine};
+    use crate::internal::browser::bidi::session::Session;
+    use tokio::time::Instant;
+    use tokio_util::sync::CancellationToken;
+
+    let fixture = Fixture::start().await;
+    let token = CancellationToken::new();
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(30))
+        .expect("bounded deadline");
+    let session = Session::launch(
+        BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        false,
+        &token,
+        deadline,
+    )
+    .await
+    .expect("launch stock Firefox");
+    let user = session
+        .new_user_context(&token, deadline)
+        .await
+        .expect("isolated context");
+    let page = session
+        .new_page(&user, &token, deadline)
+        .await
+        .expect("owned page");
+    let mut navigation = page
+        .start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("native navigation");
+    let progress = collect_progress(&mut navigation).await;
+    assert_strictly_ordered(&progress);
+    assert!(
+        progress
+            .iter()
+            .any(|event| event.kind == NavigationProgressKind::DomContentLoaded)
+    );
+    let report = navigation.wait().await.expect("native report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(report.cleanup_complete);
+    assert_loss_accounting_is_honest(&report);
+
+    let report = page
+        .start_navigation(
+            &fixture.url("/normal#fragment"),
+            options(128, NAVIGATION_DEADLINE),
+        )
+        .await
+        .expect("fragment navigation")
+        .wait()
+        .await
+        .expect("fragment report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(report.same_document && report.cleanup_complete);
+
+    // A caller that never drains progress must not stall or lose the loss fact.
+    let report = page
+        .start_navigation(
+            &fixture.url("/next"),
+            options(1, NAVIGATION_DEADLINE)
+                .with_provider_event_capacity(NonZeroUsize::new(128).expect("provider capacity")),
+        )
+        .await
+        .expect("bounded progress")
+        .wait()
+        .await
+        .expect("loss report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(matches!(report.progress.dropped, MeasuredCount::Known { value } if value > 0));
+    assert!(report.cleanup_complete);
+    assert_loss_accounting_is_honest(&report);
+
+    let navigation = page
+        .start_navigation(&fixture.url("/hold"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("pending navigation");
+    fixture.wait_until_held().await;
+    let report = navigation.cancel().await.expect("cancel report");
+    assert_eq!(report.termination, NavigationTermination::Cancelled);
+    assert!(
+        report.cleanup_complete,
+        "acknowledged native stop must settle cleanup"
+    );
+    fixture.release_held_navigation();
+    assert_eq!(
+        page.evaluate("document.readyState", &token, deadline)
+            .await
+            .expect("document remains usable after native stop")
+            .0,
+        serde_json::json!("complete")
+    );
+    let navigation = page
+        .start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("reuse after acknowledged cancellation");
+    drop(navigation);
+    assert!(
+        page.start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+            .await
+            .is_err(),
+        "dropping a dispatched owner must fence reuse"
+    );
+    drop(page);
+    let _ = session.close().await;
+    drop(session);
+}
+
 #[tokio::test]
 async fn top_frame_navigation_has_typed_ordered_progress_and_one_terminal_report() {
     let fixture = Fixture::start().await;

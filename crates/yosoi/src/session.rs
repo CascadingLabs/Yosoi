@@ -586,6 +586,19 @@ impl<'scope> SessionRequest<'scope> {
             // A returned Response has authoritative per-attempt finalization.
             // Dropping the future before this point leaves the tab fenced.
             let settled = response.attempts().all(|attempt| {
+                // These terminal slots prove that this acquisition never
+                // dispatched. A capability rejection must not poison retained
+                // Work; other attempts still need authoritative cleanup.
+                if matches!(
+                    attempt.state(),
+                    request::AttemptState::NotStarted(_)
+                        | request::AttemptState::Failed(
+                            request::AttemptFailureKind::PolicyResolution
+                                | request::AttemptFailureKind::MissingExecutionContext
+                        )
+                ) {
+                    return true;
+                }
                 attempt.inner.result().is_some_and(|result| {
                     matches!(
                         result.transport(),

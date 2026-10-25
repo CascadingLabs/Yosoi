@@ -55,6 +55,14 @@ const MAX_URL_BYTES: usize = 16 * 1024;
 const MAX_PROVIDER_EVENT_CAPACITY: usize = 256;
 
 static NEXT_WATCH_ID: AtomicU64 = AtomicU64::new(1);
+
+pub(in crate::internal::browser) fn next_watch_id() -> Result<u64> {
+    NEXT_WATCH_ID
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            current.checked_add(1)
+        })
+        .map_err(|_| watch_lost("observation watch identifier space exhausted"))
+}
 static ACTIVE_WATCHES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
 /// Selects event sources and bounds listener queues plus retained metadata.
@@ -100,7 +108,7 @@ impl Default for ObservationWatchOptions {
 }
 
 impl ObservationWatchOptions {
-    fn validate(&self) -> Result<usize> {
+    pub(in crate::internal::browser) fn validate(&self) -> Result<usize> {
         if !self.observe_dom && !self.observe_accessibility && self.response_filters.is_empty() {
             return Err(invalid_watch_input("at least one event source is required"));
         }
@@ -168,7 +176,7 @@ impl fmt::Debug for ObservationResponseFilter {
 }
 
 impl ObservationResponseFilter {
-    fn matches_request(&self, url: &str, method: &str) -> bool {
+    pub(in crate::internal::browser) fn matches_request(&self, url: &str, method: &str) -> bool {
         self.url == url
             && self
                 .method
@@ -176,7 +184,12 @@ impl ObservationResponseFilter {
                 .is_none_or(|expected| expected == method)
     }
 
-    fn matches_response(&self, url: &str, method: &str, status: u16) -> bool {
+    pub(in crate::internal::browser) fn matches_response(
+        &self,
+        url: &str,
+        method: &str,
+        status: u16,
+    ) -> bool {
         self.url == url
             && self
                 .method
@@ -215,16 +228,19 @@ pub enum ObservationChange {
 pub struct CompletedResponseCandidate {
     pub request_id: String,
     #[serde(skip)]
-    page_target_id: String,
+    pub(in crate::internal::browser) page_target_id: String,
     #[serde(skip)]
-    watch_id: u64,
+    pub(in crate::internal::browser) watch_id: u64,
+    #[serde(skip)]
+    pub(in crate::internal::browser) native: bool,
     pub url: String,
     pub method: String,
     pub status: u16,
     pub loader_id: Option<String>,
     pub frame_id: Option<String>,
     pub top_level: bool,
-    /// Request start time from Network.requestWillBeSent wallTime, in Unix microseconds.
+    /// Provider request-start time represented in Unix microseconds. BiDi's
+    /// millisecond timestamp is converted without claiming finer precision.
     pub started_at_unix_us: u64,
     pub epoch: DocumentEpoch,
 }
@@ -264,7 +280,7 @@ impl CompletedResponseCandidate {
 /// expectation because the caller can see that the source is incomplete.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ObservationResponseBody {
-    bytes: Vec<u8>,
+    pub(in crate::internal::browser) bytes: Vec<u8>,
     pub complete: bool,
 }
 
@@ -739,6 +755,7 @@ impl ObservationWatch {
             request_id: pending.request_id,
             page_target_id,
             watch_id: self.watch_id,
+            native: false,
             url: pending.url,
             method: pending.method,
             status,
@@ -1038,11 +1055,7 @@ impl Page {
         };
 
         let mut setup = SetupCleanup::new(self.inner.clone(), executor.clone(), reservation);
-        let watch_id = NEXT_WATCH_ID
-            .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .map_err(|_| watch_lost("observation watch identifier space exhausted"))?;
+        let watch_id = next_watch_id()?;
         setup.watch_id = Some(watch_id);
         if options.observe_dom {
             self.ensure_runtime_enabled().await?;
@@ -1150,7 +1163,8 @@ impl Page {
         max_bytes: usize,
     ) -> Result<ObservationResponseBody> {
         self.ensure_active().await?;
-        if candidate.page_target_id != self.inner.target_id().inner().as_str()
+        if candidate.native
+            || candidate.page_target_id != self.inner.target_id().inner().as_str()
             || candidate.watch_id == 0
         {
             return Err(watch_lost("response candidate belongs to another page"));

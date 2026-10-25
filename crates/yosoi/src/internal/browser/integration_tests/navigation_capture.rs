@@ -461,10 +461,15 @@ async fn browser_cache_provenance_is_explicit() {
     .await;
     let source = report.main_document.expect("cached main source");
     assert!(
-        source.from_cache,
+        source.from_cache == Some(true),
         "second navigation should use Chromium's HTTP cache"
     );
-    assert!(report.resources.iter().any(|resource| resource.from_cache));
+    assert!(
+        report
+            .resources
+            .iter()
+            .any(|resource| resource.from_cache == Some(true))
+    );
 
     page.close().await.expect("close page");
     browser.close().await.expect("close browser");
@@ -505,12 +510,12 @@ async fn service_worker_source_and_provenance_are_explicit() {
     )
     .await;
     let source = report.main_document.expect("service-worker main document");
-    if source.from_service_worker {
+    if source.from_service_worker == Some(true) {
         assert!(
             report
                 .resources
                 .iter()
-                .any(|resource| resource.from_service_worker)
+                .any(|resource| resource.from_service_worker == Some(true))
         );
     } else {
         // Some Chromium builds keep service-worker readiness unavailable in
@@ -525,7 +530,7 @@ async fn service_worker_source_and_provenance_are_explicit() {
             report
                 .resources
                 .iter()
-                .all(|resource| !resource.from_service_worker)
+                .all(|resource| resource.from_service_worker == Some(false))
         );
         if source.body_state == ResponseBodyState::Available {
             assert!(

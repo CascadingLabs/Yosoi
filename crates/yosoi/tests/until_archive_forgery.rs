@@ -177,6 +177,7 @@ fn network_report(attempt: &str) -> UntilReport {
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-archive".to_owned(),
             tab_id: "tab-archive".to_owned(),
             document_epoch: 7,

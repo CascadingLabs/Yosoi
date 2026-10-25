@@ -29,6 +29,13 @@ case "${QUERY_STRING:-}" in
 esac
 printf 'Access-Control-Allow-Origin: *\r\nCache-Control: no-store\r\n'
 case "${QUERY_STRING:-}" in
+    *kind=json*)
+        nonce=${QUERY_STRING#*nonce=}
+        nonce=${nonce%%&*}
+        case "$nonce" in ''|*[!0-9a-f]*) exit 64 ;; esac
+        printf 'Content-Type: application/json\r\n\r\n'
+        printf '{"nonce":"%s","status":"captured"}' "$nonce"
+        ;;
     *kind=image*)
         printf 'Content-Type: image/svg+xml\r\n\r\n'
         printf '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="red"/></svg>'

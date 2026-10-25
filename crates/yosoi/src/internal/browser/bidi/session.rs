@@ -3,7 +3,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
-    sync::Arc,
+    sync::{Arc, Weak},
     time::Duration,
 };
 
@@ -34,6 +34,11 @@ pub enum SessionError {
     Context,
     #[error("native input target or input value was rejected before dispatch")]
     InvalidInput,
+    #[error("invalid {operation} argument: {reason}")]
+    InvalidArgument {
+        operation: &'static str,
+        reason: &'static str,
+    },
     #[error("native keyboard target was lost before typing")]
     InputTargetLost,
     #[error("browser state exceeded its bounded context/realm capacity")]
@@ -300,7 +305,7 @@ impl Session {
         Ok(())
     }
 
-    async fn synchronize_events(
+    pub(in crate::internal::browser) async fn synchronize_events(
         &self,
         cancellation: &CancellationToken,
         deadline: Instant,
@@ -398,6 +403,8 @@ impl Session {
             context,
             frame_id,
             document: Arc::new(Mutex::new((None, 0))),
+            navigation_state: Arc::default(),
+            active_watch: Arc::default(),
         })
     }
 
@@ -456,6 +463,9 @@ pub struct Page {
     pub context: String,
     pub frame_id: u64,
     pub document: Arc<Mutex<(Option<String>, u64)>>,
+    pub(in crate::internal::browser) navigation_state:
+        Arc<super::super::active_navigation::NavigationState>,
+    pub(in crate::internal::browser) active_watch: Arc<Mutex<Option<Weak<super::watch::Inner>>>>,
 }
 
 impl fmt::Debug for Page {
@@ -465,6 +475,72 @@ impl fmt::Debug for Page {
 }
 
 impl Page {
+    pub(in crate::internal::browser) async fn stop_loading_native(
+        &self,
+        token: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<(), SessionError> {
+        if self.session.config.engine == BrowserEngine::Moli
+            && self.navigation_pending(token, deadline).await?
+        {
+            return Err(SessionError::Unsupported(
+                "Moli stopping an uncommitted navigation",
+            ));
+        }
+        self.session.synchronize_events(token, deadline).await?;
+        let pending_before_stop = self
+            .session
+            .state
+            .lock()
+            .await
+            .navigating
+            .get(&self.context)
+            .cloned();
+        // This fixed utility must bypass waits for the document being stopped.
+        let result = self
+            .command(
+                "script.evaluate",
+                json!({
+                    "expression":"window.stop()", "target":{"context":self.context},
+                    "awaitPromise":false, "resultOwnership":"none",
+                }),
+                token,
+                deadline,
+            )
+            .await?;
+        if result.get("type").and_then(Value::as_str) != Some("success") {
+            return Err(SessionError::Script);
+        }
+        {
+            let mut state = self.session.state.lock().await;
+            if let Some(pending) = state.navigating.get(&self.context) {
+                if pending_before_stop.as_ref() != Some(pending) {
+                    return Err(SessionError::DocumentChanged);
+                }
+                state.navigating.remove(&self.context);
+            }
+            drop(state);
+            self.session.changed.notify_waiters();
+        }
+        Ok(())
+    }
+
+    pub(in crate::internal::browser) async fn navigation_pending(
+        &self,
+        cancellation: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<bool, SessionError> {
+        self.session
+            .synchronize_events(cancellation, deadline)
+            .await?;
+        Ok(self
+            .session
+            .state
+            .lock()
+            .await
+            .navigating
+            .contains_key(&self.context))
+    }
     /// Wait only for an already-observed navigation on this owned context.
     async fn wait_document_ready(
         &self,
@@ -603,7 +679,15 @@ impl Page {
             .session
             .connection
             .command(method, params, cancellation, deadline)
-            .await?;
+            .await
+            .map_err(|error| match error {
+                BidiError::Protocol { ref code, .. }
+                    if matches!(code.as_str(), "unknown command" | "unsupported operation") =>
+                {
+                    SessionError::Unsupported(method)
+                }
+                error => SessionError::Transport(error),
+            })?;
         self.session
             .synchronize_events(cancellation, deadline)
             .await?;

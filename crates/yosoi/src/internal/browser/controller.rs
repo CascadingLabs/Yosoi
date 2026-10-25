@@ -12,6 +12,8 @@ use tokio_util::sync::CancellationToken;
 // Domain observations stay shared; the concrete process/page handles below do
 // not escape this internal boundary or masquerade as CDP handles.
 pub use super::*;
+mod watch;
+pub use watch::ObservationWatch;
 
 #[derive(Debug)]
 pub enum BrowserSession {
@@ -367,31 +369,170 @@ impl Page {
     native_method!(fn click_unique_element(selector: &str) -> (), |page, token, deadline| page.click_unique_element(selector, &token, deadline).await);
     native_method!(fn type_into_unique_element(selector: &str, text: &str) -> (), |page, token, deadline| page.type_into_unique_element(selector, text, &token, deadline).await);
     native_method!(fn frame_urls() -> Vec<String>, |page, token, deadline| page.frames(&token, deadline).await.map(|frames| frames.into_iter().map(|frame| frame.url).collect()));
-    native_method!(fn navigate_until_dom_content_loaded(url: &str, options: ActiveNavigationOptions) -> (), |page, token, deadline| {
-        let maximum = Instant::now().checked_add(options.max_duration()).ok_or(super::bidi::session::SessionError::Capacity);
-        match maximum {
-            Ok(maximum) => page.navigate(url, "interactive", &token, deadline.min(maximum)).await,
-            Err(error) => Err(error),
+    pub async fn navigate_until_dom_content_loaded(
+        &self,
+        url: &str,
+        options: ActiveNavigationOptions,
+    ) -> Result<()> {
+        match self {
+            Self::Chrome(page) => page.navigate_until_dom_content_loaded(url, options).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => {
+                if page.session.config.engine == BrowserEngine::Moli {
+                    let deadline = operation_deadline()?.min(
+                        Instant::now().checked_add(options.max_duration()).ok_or(
+                            VoidCrawlError::InvalidInput {
+                                operation: "navigate",
+                                reason: "deadline overflow",
+                            },
+                        )?,
+                    );
+                    let token = CancellationToken::new();
+                    page.navigate(url, "interactive", &token, deadline)
+                        .await
+                        .map_err(map_bidi)?;
+                    // Acknowledged readiness remains usable even though the
+                    // separate active-navigation reply ID is wrong.
+                    page.document_scope(&token, deadline)
+                        .await
+                        .map_err(map_bidi)?;
+                    page.stop_loading(&token, deadline).await
+                } else {
+                    page.start_navigation(url, options)
+                        .await?
+                        .until_dom_content_loaded()
+                        .await
+                }
+            }
         }
-    });
+    }
 
     native_method!(fn environment_snapshot() -> BrowserEnvironmentSnapshot, |page, token, deadline| page.environment_snapshot(&token, deadline).await);
     chrome_method!(fn accessibility_snapshot(options: AccessibilitySnapshotOptions) -> AccessibilitySnapshot);
     chrome_method!(fn get_full_ax_tree(depth: Option<i64>) -> serde_json::Value);
-    chrome_method!(fn layout_snapshot() -> LayoutSnapshot);
-    chrome_method!(fn visual_snapshot(options: ScreenshotOptions) -> VisualSnapshot);
-    chrome_method!(fn arm_navigation_capture(options: NavigationCaptureOptions) -> NavigationCapture);
-    chrome_method!(fn start_navigation(url: &str, options: ActiveNavigationOptions) -> ActiveNavigation);
-    chrome_method!(fn stop_loading() -> ());
-    chrome_method!(fn set_viewport(viewport: Viewport) -> ());
-    chrome_method!(fn set_locale(locale: &str) -> ());
-    chrome_method!(fn set_timezone(timezone: &str) -> ());
-    chrome_method!(fn set_rendering_preferences(preferences: RenderingPreferences) -> ());
-    chrome_method!(fn start_observation_watch(options: ObservationWatchOptions) -> ObservationWatch);
-    chrome_method!(fn capture_observation_response_body(candidate: &CompletedResponseCandidate, max_bytes: usize) -> ObservationResponseBody);
-    chrome_method!(fn evaluate_js_in_observation_scope(source: &str, watch: &ObservationWatch) -> serde_json::Value);
-    chrome_method!(fn click_element_in_scope(selector: &str, watch: &ObservationWatch) -> ());
-    chrome_method!(fn type_into_in_scope(selector: &str, text: &str, watch: &ObservationWatch) -> ());
+    native_method!(fn layout_snapshot() -> LayoutSnapshot, |page, token, deadline| page.layout_snapshot(&token, deadline).await);
+    native_method!(fn visual_snapshot(options: ScreenshotOptions) -> VisualSnapshot, |page, token, deadline| page.visual_snapshot(options, &token, deadline).await);
+    pub async fn arm_navigation_capture(
+        &self,
+        options: NavigationCaptureOptions,
+    ) -> Result<NavigationCapture> {
+        match self {
+            Self::Chrome(page) => page.arm_navigation_capture(options).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => NavigationCapture::arm_bidi(page.clone(), options).await,
+        }
+    }
+    pub async fn start_navigation(
+        &self,
+        url: &str,
+        options: ActiveNavigationOptions,
+    ) -> Result<ActiveNavigation> {
+        match self {
+            Self::Chrome(page) => page.start_navigation(url, options).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => page.start_navigation(url, options).await,
+        }
+    }
+    pub async fn stop_loading(&self) -> Result<()> {
+        match self {
+            Self::Chrome(page) => page.stop_loading().await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => {
+                page.stop_loading(&CancellationToken::new(), operation_deadline()?)
+                    .await
+            }
+        }
+    }
+    native_method!(fn set_viewport(viewport: Viewport) -> (), |page, token, deadline| page.set_viewport(viewport, &token, deadline).await);
+    native_method!(fn set_locale(locale: &str) -> (), |page, token, deadline| page.set_locale(locale, &token, deadline).await);
+    native_method!(fn set_timezone(timezone: &str) -> (), |page, token, deadline| page.set_timezone(timezone, &token, deadline).await);
+    native_method!(fn set_rendering_preferences(preferences: RenderingPreferences) -> (), |page, token, deadline| page.set_rendering_preferences(preferences, &token, deadline).await);
+    pub async fn start_observation_watch(
+        &self,
+        options: ObservationWatchOptions,
+    ) -> Result<ObservationWatch> {
+        match self {
+            Self::Chrome(page) => page
+                .start_observation_watch(options)
+                .await
+                .map(Box::new)
+                .map(ObservationWatch::Chrome),
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => page
+                .start_observation_watch(options)
+                .await
+                .map(ObservationWatch::Bidi),
+        }
+    }
+    pub async fn capture_observation_response_body(
+        &self,
+        candidate: &CompletedResponseCandidate,
+        max_bytes: usize,
+    ) -> Result<ObservationResponseBody> {
+        match self {
+            Self::Chrome(page) => {
+                page.capture_observation_response_body(candidate, max_bytes)
+                    .await
+            }
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(page) => {
+                page.capture_observation_response_body(candidate, max_bytes)
+                    .await
+            }
+        }
+    }
+    pub async fn evaluate_js_in_observation_scope(
+        &self,
+        source: &str,
+        watch: &ObservationWatch,
+    ) -> Result<serde_json::Value> {
+        match (self, watch) {
+            (Self::Chrome(page), ObservationWatch::Chrome(watch)) => {
+                page.evaluate_js_in_observation_scope(source, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            (Self::Bidi(page), ObservationWatch::Bidi(watch)) => {
+                page.evaluate_in_watch(source, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            _ => Err(VoidCrawlError::NavigationStateUncertain),
+        }
+    }
+    pub async fn click_element_in_scope(
+        &self,
+        selector: &str,
+        watch: &ObservationWatch,
+    ) -> Result<()> {
+        match (self, watch) {
+            (Self::Chrome(page), ObservationWatch::Chrome(watch)) => {
+                page.click_element_in_scope(selector, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            (Self::Bidi(page), ObservationWatch::Bidi(watch)) => {
+                page.click_in_watch(selector, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            _ => Err(VoidCrawlError::NavigationStateUncertain),
+        }
+    }
+    pub async fn type_into_in_scope(
+        &self,
+        selector: &str,
+        text: &str,
+        watch: &ObservationWatch,
+    ) -> Result<()> {
+        match (self, watch) {
+            (Self::Chrome(page), ObservationWatch::Chrome(watch)) => {
+                page.type_into_in_scope(selector, text, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            (Self::Bidi(page), ObservationWatch::Bidi(watch)) => {
+                page.type_in_watch(selector, text, watch).await
+            }
+            #[cfg(feature = "browser-bidi")]
+            _ => Err(VoidCrawlError::NavigationStateUncertain),
+        }
+    }
 
     pub async fn url(&self) -> Result<Option<String>> {
         match self {
@@ -483,9 +624,12 @@ fn operation_deadline() -> Result<Instant> {
     clippy::needless_pass_by_value,
     reason = "The owned error adapter is passed directly to Result::map_err."
 )]
-fn map_bidi(error: super::bidi::session::SessionError) -> VoidCrawlError {
+pub(super) fn map_bidi(error: super::bidi::session::SessionError) -> VoidCrawlError {
     use super::bidi::{session::SessionError, transport::BidiError};
     match error {
+        SessionError::InvalidArgument { operation, reason } => {
+            VoidCrawlError::InvalidInput { operation, reason }
+        }
         SessionError::InvalidInput => VoidCrawlError::InvalidInput {
             operation: "resolve_input",
             reason: "invalid native target or input",

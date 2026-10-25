@@ -37,7 +37,7 @@ pub use condition_wait::ConditionWait;
 mod navigation_capture;
 mod navigation_response;
 mod network;
-mod observation_watch;
+pub(in crate::internal::browser) mod observation_watch;
 mod screenshot;
 mod screenshot_types;
 mod shared;

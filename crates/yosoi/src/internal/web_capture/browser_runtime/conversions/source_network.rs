@@ -110,6 +110,12 @@ pub(super) fn source_unavailable_outcome(
             )?)
             .map_err(|_| VoidCrawlAdapterError::InvalidStaging)
         }
+        Some(provider::SourceBodyUnavailableReason::BidiBodyUnavailable) => {
+            yosoi::AcquiredPayloadOutcome::unavailable(reason(
+                "voidcrawl.source.bidi-body-unavailable",
+            )?)
+            .map_err(|_| VoidCrawlAdapterError::InvalidStaging)
+        }
         Some(provider::SourceBodyUnavailableReason::CaptureEndedBeforeBody) => {
             yosoi::AcquiredPayloadOutcome::unavailable(reason(
                 "voidcrawl.source.capture-ended-before-body",

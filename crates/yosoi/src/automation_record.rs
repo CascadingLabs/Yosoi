@@ -1190,6 +1190,30 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
         .validate()
         .map_err(|error| AutomationRecordError::InvalidUntilReport(error.to_string()))?;
     let satisfied = report.termination == session::UntilTermination::Satisfied;
+    let protocol = report
+        .scope
+        .protocol
+        .unwrap_or(browser_config::BrowserProtocol::Cdp);
+    if protocol
+        != receipt
+            .browser
+            .as_ref()
+            .map_or(browser_config::BrowserProtocol::Cdp, |identity| {
+                identity.protocol
+            })
+        || (satisfied
+            && protocol == browser_config::BrowserProtocol::Bidi
+            && receipt
+                .observation
+                .as_ref()
+                .and_then(|observation| observation.browser.as_ref())
+                .map(|identity| identity.protocol)
+                != Some(protocol))
+    {
+        return Err(AutomationRecordError::InvalidUntilReport(
+            "scope protocol differs from browser provenance".into(),
+        ));
+    }
     if satisfied != (receipt.status == OperationStatus::Observed)
         || (satisfied && receipt.error.is_some())
     {
@@ -1198,6 +1222,14 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
         ));
     }
     if let Some(trigger) = &report.trigger {
+        if protocol == browser_config::BrowserProtocol::Bidi
+            && trigger.status == OperationStatus::Observed
+            && trigger.browser.as_ref().map(|identity| identity.protocol) != Some(protocol)
+        {
+            return Err(AutomationRecordError::InvalidUntilReport(
+                "trigger protocol differs from confirmation scope".into(),
+            ));
+        }
         validate_identity("until trigger id", &trigger.id)?;
         if trigger.id == receipt.id {
             return Err(AutomationRecordError::DuplicateIdentity {
@@ -1271,12 +1303,18 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
                     evidence.get("frame_id").and_then(serde_json::Value::as_str)
                         != Some(frame.as_str())
                 })
-                || report.scope.loader_id.as_ref().is_none_or(|loader| {
+                || if protocol == browser_config::BrowserProtocol::Bidi {
                     evidence
                         .get("loader_id")
-                        .and_then(serde_json::Value::as_str)
-                        != Some(loader.as_str())
-                })
+                        .is_some_and(|value| !value.is_null())
+                } else {
+                    report.scope.loader_id.as_ref().is_none_or(|loader| {
+                        evidence
+                            .get("loader_id")
+                            .and_then(serde_json::Value::as_str)
+                            != Some(loader.as_str())
+                    })
+                }
             {
                 return Err(AutomationRecordError::InvalidUntilReport(
                     "response scope differs from original frame or loader".into(),

@@ -127,7 +127,26 @@ Moli 1.1.19 is headless-only. Its DOM profile supports reading and scripts witho
 
 The Moli input adapter refreshes layout through discarded raster observations, so its Click and EnterText operations also require Screenshot permission. Embedded browsing-surface input is unsupported. Frame scripts use a separately validated current realm. BiDi text entry accepts printable Unicode and rejects control characters and the reserved WebDriver key block.
 
-Viewport PNG is a retained Session operation. The native BiDi Request capture profile currently excludes visual artifacts and their coordinate metadata, HTTP response-source bodies, Chromium AX data, captured network graphs, cookie/storage artifacts, layout artifacts and advanced Until event watches. Cookie and localStorage state can still persist within the supported session boundary. Unsupported modalities remain explicit outcomes. A screenshot does not establish WebGL support or Chrome pixel parity.
+Firefox also supports a browser `response_document`: the retained HTTP response after content decoding, separate from the DOM changed by scripts. Moli can capture selected Fetch/XHR response bodies, but its isolated contexts omit the top-level navigation response body. Requesting that response document from Moli produces a policy-resolution failure before navigation. The caller's retained Work remains usable.
+
+Firefox's native text conversion can alter non-UTF-8 response bytes. Captures require a matching decoded byte extent, or the encoded body size when the response is uncompressed. Altered or unverifiable bodies remain unavailable, including compressed responses when Firefox omits their decoded size.
+
+Both engines support DOM and selected-response Until watches, including bounded JSON-body confirmation. BiDi confirmation records identify their protocol, frame and document epoch. They do not invent a CDP loader ID. Request-start timestamps retain BiDi's millisecond precision; a request whose start cannot be established after its trigger cannot confirm that trigger.
+
+| Capture or confirmation                   | Firefox/BiDi | Moli/BiDi      |
+| ----------------------------------------- | ------------ | -------------- |
+| Rendered DOM document                     | Supported    | Supported      |
+| HTTP response document                    | Supported    | Unsupported    |
+| DOM Until confirmation                    | Supported    | Supported      |
+| Selected response/JSON Until confirmation | Supported    | Supported      |
+| Full browser AX document or AX Until      | Unsupported  | Unsupported    |
+| Viewport Session PNG                      | Supported    | Layout profile |
+
+BiDi does not expose a full browser accessibility-tree export. An accessibility locator match is not equivalent to membership in the exposed AX tree. Choose Chrome/CDP when the workflow requires that representation. Yosoi does not replace AX evidence with a DOM-derived approximation or silently switch protocols.
+
+The controller also retains bounded network and runtime facts when the capture requests them. Moli's network graph is marked incomplete because its top-level document events are missing, and it cannot prove network quiet. Console messages are available on both engines; Moli's uncaught-exception coverage remains incomplete. A missing cache or service-worker fact stays unknown. The public `network_tree` Document view remains unavailable independently of these collectors.
+
+Cookie and localStorage state can persist within the supported Session boundary; cookie/storage artifact export remains unsupported. A screenshot does not establish WebGL support or Chrome pixel parity.
 
 ## Example: use a Moli service
 

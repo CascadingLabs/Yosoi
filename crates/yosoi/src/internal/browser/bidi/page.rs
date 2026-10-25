@@ -37,7 +37,11 @@ impl Page {
         self.scope_for(realm, url).await
     }
 
-    async fn scope_for(&self, realm: String, url: String) -> Result<DocumentScope, SessionError> {
+    pub(super) async fn scope_for(
+        &self,
+        realm: String,
+        url: String,
+    ) -> Result<DocumentScope, SessionError> {
         let mut document = self.document.lock().await;
         if document.0.as_ref() != Some(&realm) {
             document.1 = document.1.checked_add(1).ok_or(SessionError::Capacity)?;

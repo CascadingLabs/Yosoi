@@ -193,25 +193,25 @@ fn browser_inputs(
             unsupported()
         }
     };
-    // Session PNG operations do not implement the Request visual artifact's
-    // coordinate metadata and staging contract. Do not certify that family
-    // until its native adapter is implemented and qualified.
-    let visual = !bidi;
+    let firefox = browser.engine == browser_config::BrowserEngine::Firefox;
+    let source = !bidi || firefox;
+    let layout = !bidi || firefox;
+    let visual = !bidi || firefox || browser.moli_profile == browser_config::MoliProfile::Layout;
     let profile = WebProviderCapabilityProfile::new(
         producer.clone(),
         AcquisitionCapabilityProfile::DocumentNavigation(BrowserNavigationCapabilityProfile::new(
             mode,
         )),
         WebArtifactCapabilitySet::new(
+            capability(source),
+            supported(),
             capability(!bidi),
             supported(),
             capability(!bidi),
-            capability(!bidi),
-            capability(!bidi),
             unsupported(),
-            capability(!bidi),
+            capability(layout),
             capability(visual),
-            capability(!bidi),
+            supported(),
         ),
     )
     .map_err(StandardExecutionSetupError::BrowserProfile)?;
@@ -235,15 +235,15 @@ fn browser_inputs(
             BrowserInstrumentationMode::Normal
         },
         BrowserFamilyCapabilities::new(
+            status(source),
+            BrowserCapabilityStatus::Supported,
             status(!bidi),
             BrowserCapabilityStatus::Supported,
             status(!bidi),
-            status(!bidi),
-            status(!bidi),
             unsupported_status(),
-            status(!bidi),
+            status(layout),
             status(visual),
-            status(!bidi),
+            BrowserCapabilityStatus::Supported,
         ),
     )
     .map_err(StandardExecutionSetupError::BrowserCertification)?;
@@ -256,7 +256,11 @@ fn browser_inputs(
         producer,
         operation: operation("com.cascadinglabs.yosoi.request.browser-navigation")?,
         output_schemas: BrowserOutputSchemas::new(
-            Some(schema("com.cascadinglabs.yosoi.browser.cdp-source")?),
+            Some(schema(if bidi {
+                "com.cascadinglabs.yosoi.browser.bidi-source"
+            } else {
+                "com.cascadinglabs.yosoi.browser.cdp-source"
+            })?),
             Some(schema(
                 "com.cascadinglabs.yosoi.browser.source-representation",
             )?),

@@ -55,9 +55,31 @@ impl Drop for Target {
 }
 
 impl Page {
+    pub async fn click_unique_element(
+        &self,
+        selector: &str,
+        cancellation: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<(), SessionError> {
+        self.click_in_realm(selector, None, cancellation, deadline)
+            .await
+    }
+
+    pub async fn type_into_unique_element(
+        &self,
+        selector: &str,
+        text: &str,
+        cancellation: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<(), SessionError> {
+        self.type_in_realm(selector, text, None, cancellation, deadline)
+            .await
+    }
+
     async fn resolve_input(
         &self,
         selector: &str,
+        expected: Option<&str>,
         cancellation: &CancellationToken,
         deadline: Instant,
     ) -> Result<Target, SessionError> {
@@ -72,6 +94,9 @@ impl Page {
             ));
         }
         let (_, realm) = self.evaluate("0", cancellation, deadline).await?;
+        if expected.is_some_and(|expected| expected != realm) {
+            return Err(SessionError::DocumentChanged);
+        }
         let selector = serde_json::to_string(selector).map_err(|_| SessionError::Serialization)?;
         let expression = format!(
             "(()=>{{const nodes=document.querySelectorAll({selector});return nodes.length===1?nodes.item(0):null}})()"
@@ -324,13 +349,16 @@ impl Page {
         clippy::significant_drop_tightening,
         reason = "The target is consumed by bounded async release before returning."
     )]
-    pub async fn click_unique_element(
+    pub(super) async fn click_in_realm(
         &self,
         selector: &str,
+        expected: Option<&str>,
         cancellation: &CancellationToken,
         deadline: Instant,
     ) -> Result<(), SessionError> {
-        let mut target = self.resolve_input(selector, cancellation, deadline).await?;
+        let mut target = self
+            .resolve_input(selector, expected, cancellation, deadline)
+            .await?;
         let result = async {
             self.click_target(&mut target, cancellation, deadline)
                 .await?;
@@ -347,10 +375,11 @@ impl Page {
         clippy::significant_drop_tightening,
         reason = "The target is consumed by bounded async release before returning."
     )]
-    pub async fn type_into_unique_element(
+    pub(super) async fn type_in_realm(
         &self,
         selector: &str,
         text: &str,
+        expected: Option<&str>,
         cancellation: &CancellationToken,
         deadline: Instant,
     ) -> Result<(), SessionError> {
@@ -363,7 +392,9 @@ impl Page {
         {
             return Err(SessionError::InvalidInput);
         }
-        let mut target = self.resolve_input(selector, cancellation, deadline).await?;
+        let mut target = self
+            .resolve_input(selector, expected, cancellation, deadline)
+            .await?;
         let result = async {
             self.click_target(&mut target, cancellation, deadline).await?;
             if self.ready_realm(cancellation, deadline).await? != target.realm { return Err(SessionError::InputTargetLost); }

@@ -1,6 +1,7 @@
 //! Event-driven confirmation on the existing owned tab and worker pool.
 
 use crate::automation_record;
+use crate::browser::BrowserProtocol;
 use crate::expect;
 #[cfg(feature = "browser")]
 use crate::timing;
@@ -17,16 +18,21 @@ pub const MAX_UNTIL_REPORT_BYTES: usize = 1024 * 1024;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UntilScope {
+    /// Protocol supplying the document coordinates. Absent means legacy CDP.
+    /// BiDi scopes use their frame and document epoch and never invent a CDP loader.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<BrowserProtocol>,
     /// Owning browser Session identity shared by every confirmation source.
     pub session_id: String,
     /// Retained tab identity whose authority was used for confirmation.
     pub tab_id: String,
     /// Immutable document epoch to which retained confirmation evidence belongs.
     pub document_epoch: u64,
-    /// Browser frame identity when resolved; successful reports require it.
+    /// Frame coordinate when resolved; successful reports require it. BiDi
+    /// uses a capture-local identity rather than exposing its live context handle.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frame_id: Option<String>,
-    /// Navigation loader identity when resolved; successful reports require it.
+    /// Navigation loader identity when resolved; required for CDP success and absent for BiDi.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loader_id: Option<String>,
 }
@@ -123,6 +129,9 @@ impl UntilReport {
         {
             return Err(UntilReportError("frame or loader identity"));
         }
+        if self.scope.protocol == Some(BrowserProtocol::Bidi) && self.scope.loader_id.is_some() {
+            return Err(UntilReportError("BiDi scope cannot claim a CDP loader"));
+        }
         if self.checks.is_empty() || self.checks.len() > expect::MAX_EXPECTATIONS {
             return Err(UntilReportError("check count"));
         }
@@ -174,7 +183,9 @@ impl UntilReport {
         if self.termination == UntilTermination::Satisfied
             && (self.evaluations == 0
                 || self.scope.frame_id.is_none()
-                || self.scope.loader_id.is_none()
+                || self.scope.document_epoch == 0
+                || (self.scope.protocol != Some(BrowserProtocol::Bidi)
+                    && self.scope.loader_id.is_none())
                 || self.error.is_some()
                 || self
                     .checks

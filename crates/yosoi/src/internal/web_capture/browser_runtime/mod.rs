@@ -10,9 +10,10 @@ mod overrides;
 mod profile_fork;
 mod profile_warm;
 
+pub use crate::internal::browser::controller::ObservationWatch;
 pub use crate::internal::browser::{
     AccessibilityChangeKind, CompletedResponseCandidate, ObservationChange,
-    ObservationResponseBody, ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
+    ObservationResponseBody, ObservationResponseFilter, ObservationWatchOptions,
 };
 pub use browser_execution::{
     BrowserControlError, BrowserExecutionManager, BrowserExecutionManagerConfig,

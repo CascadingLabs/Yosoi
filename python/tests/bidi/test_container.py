@@ -18,10 +18,12 @@ from yosoi.browser import (
     BrowserError,
     Evaluate,
     Flow,
+    JsonMatch,
     Navigate,
     Screenshot,
     Session,
     SessionPolicy,
+    response,
 )
 from yosoi.cancellation import CancellationToken
 from yosoi.policy import Acquisition, Page, Policy
@@ -77,6 +79,51 @@ async def evaluate(work, source):
     outcome = await work.run(Flow(steps=(Evaluate(source=source),)))
     assert outcome.terminal == "completed"
     return outcome.steps[-1].receipt.result
+
+
+def test_selected_body_watch_cleanup_preserves_a_container_peer(tmp_path):
+    async def capture(work, marker):
+        url = f"http://fixture:8080/cgi-bin/request.cgi?nonce={marker}&kind=json"
+        source = (
+            "async function () { await new Promise(resolve=>setTimeout(resolve,20)); "
+            f"return fetch({json.dumps(url)}).then(r=>r.json()); }}"
+        )
+        outcome = await work.run(
+            Flow(
+                steps=(
+                    Evaluate(source=source).until(
+                        response(
+                            url,
+                            status=200,
+                            json_matches=(
+                                JsonMatch(pointer="/nonce", value=marker),
+                                JsonMatch(pointer="/status", value="captured"),
+                            ),
+                        )
+                    ),
+                )
+            )
+        )
+        assert outcome.terminal == "completed", outcome.steps[-1].receipt.model_dump()
+        report = outcome.steps[-1].receipt.until_report()
+        assert report is not None and report.termination == "satisfied"
+        assert report.scope.protocol == "bidi" and report.scope.loader_id is None
+        assert hits(marker) == 1
+        (tmp_path / f"body-{marker}.json").write_text(
+            outcome.model_dump_json(), encoding="utf-8"
+        )
+
+    async def run():
+        endpoint = os.environ["YOSOI_MOLI_ENDPOINT"]
+        url = os.environ["YOSOI_BIDI_FIXTURE_URL"]
+        async with client(endpoint) as peer:
+            await peer.run(Flow(steps=(Navigate(url=url),)))
+            async with client(endpoint) as first:
+                await first.run(Flow(steps=(Navigate(url=url),)))
+                await capture(first, uuid.uuid4().hex)
+            await capture(peer, uuid.uuid4().hex)
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize("allowed", [True, False])

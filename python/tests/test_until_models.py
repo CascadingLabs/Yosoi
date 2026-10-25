@@ -252,3 +252,41 @@ def test_until_report_bounds_total_retained_evidence() -> None:
             ),
             error=None,
         )
+
+
+def test_bidi_until_scope_requires_native_provenance_without_a_cdp_loader() -> None:
+    value = valid_satisfied_until_report()
+    value["scope"]["protocol"] = "bidi"
+    del value["scope"]["loader_id"]
+    identity = {"engine": "firefox", "protocol": "bidi", "process_owned": False}
+    value["trigger"]["browser"] = identity
+    report = UntilReport.model_validate(value)
+    assert report.scope.protocol == "bidi"
+    assert report.scope.loader_id is None
+    receipt = {
+        "id": "bidi-until",
+        "kind": "until",
+        "status": "observed",
+        "browser": identity,
+        "result": value,
+        "observation": {
+            "id": "dom-1",
+            "session_id": "session-1",
+            "tab_id": "tab-1",
+            "document_epoch": 5,
+            "html": None,
+            "url": None,
+            "screenshot": None,
+            "browser": identity,
+        },
+    }
+    assert OperationReceipt.model_validate(receipt).until_report() == report
+    with pytest.raises(ValidationError, match="scope protocol"):
+        OperationReceipt.model_validate({**receipt, "browser": None})
+    with pytest.raises(ValidationError, match="observation provenance"):
+        OperationReceipt.model_validate(
+            {**receipt, "observation": {**receipt["observation"], "browser": None}}
+        )
+    value["scope"]["loader_id"] = "pretend-loader"
+    with pytest.raises(ValidationError, match="cannot claim a CDP loader"):
+        UntilReport.model_validate(value)

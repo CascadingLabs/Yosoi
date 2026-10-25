@@ -441,7 +441,7 @@ async fn independent_contexts_isolate_cache_storage_http_cache_and_service_worke
         .main_document
         .expect("A cached main document observation");
     assert!(
-        cached_a_source.from_cache,
+        cached_a_source.from_cache == Some(true),
         "A HTTP cache was not observably available"
     );
     assert_eq!(fixture.cache_requests.load(Ordering::Acquire), 1);
@@ -451,10 +451,10 @@ async fn independent_contexts_isolate_cache_storage_http_cache_and_service_worke
         .main_document
         .expect("B main document observation");
     assert!(
-        !network_b_source.from_cache,
+        network_b_source.from_cache == Some(false),
         "B reused A's HTTP cache entry"
     );
-    assert!(!network_b_source.from_service_worker);
+    assert_eq!(network_b_source.from_service_worker, Some(false));
     assert_eq!(network_b_source.body_state, ResponseBodyState::Available);
     assert_eq!(
         network_b_source.body(),

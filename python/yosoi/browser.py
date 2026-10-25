@@ -984,6 +984,33 @@ class OperationReceipt(ImmutableModel):
             if not isinstance(self.result, Mapping):
                 raise ValueError("Until receipts require a typed result report")
             report = UntilReport.model_validate(self.result)
+            protocol = report.scope.protocol or "cdp"
+            if protocol != (self.browser.protocol if self.browser else "cdp"):
+                raise ValueError("Until scope protocol differs from browser provenance")
+            if (
+                report.termination == "satisfied"
+                and protocol == "bidi"
+                and (
+                    self.observation is None
+                    or self.observation.browser is None
+                    or self.observation.browser.protocol != protocol
+                )
+            ):
+                raise ValueError(
+                    "BiDi confirmation requires matching observation provenance"
+                )
+            if (
+                protocol == "bidi"
+                and report.trigger is not None
+                and report.trigger.status == "observed"
+                and (
+                    report.trigger.browser is None
+                    or report.trigger.browser.protocol != protocol
+                )
+            ):
+                raise ValueError(
+                    "Until trigger protocol differs from confirmation scope"
+                )
             if (self.status == "observed") != (report.termination == "satisfied"):
                 raise ValueError("Until receipt status disagrees with its report")
         return self
@@ -1002,13 +1029,20 @@ class UntilScope(ImmutableModel):
         session_id: Owning Session identity.
         tab_id: Observed tab identity.
         document_epoch: Document generation evaluated by the wait.
+        protocol: Coordinate protocol; omitted legacy reports use CDP.
         frame_id: Optional frame identity; required for a satisfied report.
-        loader_id: Optional document loader identity; required for a satisfied report.
+        loader_id: Document loader identity, required for CDP success and absent
+            for BiDi.
     """
 
     session_id: StrictStr = Field(min_length=1, max_length=4_096)
     tab_id: StrictStr = Field(min_length=1, max_length=4_096)
     document_epoch: U64
+    protocol: Literal["cdp", "bidi"] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Coordinate protocol; omitted legacy reports use CDP.",
+    )
     frame_id: StrictStr | None = Field(default=None, min_length=1, max_length=4_096)
     loader_id: StrictStr | None = Field(default=None, min_length=1, max_length=4_096)
 
@@ -1137,11 +1171,14 @@ class UntilReport(ImmutableModel):
             or any(check.state != "satisfied" for check in self.checks)
             or (self.trigger is not None and self.trigger.status != "observed")
             or not self.scope.frame_id
-            or not self.scope.loader_id
+            or self.scope.document_epoch == 0
+            or (self.scope.protocol != "bidi" and not self.scope.loader_id)
         ):
             raise ValueError(
                 "Until satisfaction claim is inconsistent with its evidence"
             )
+        if self.scope.protocol == "bidi" and self.scope.loader_id is not None:
+            raise ValueError("BiDi scope cannot claim a CDP loader")
         if self.termination == "trigger_failed" and (
             self.trigger is None or self.trigger.status == "observed"
         ):
