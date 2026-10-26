@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::Condition",
+  "publicPath": "yosoi::flow::Condition",
+  "kind": "enum",
+  "title": "yosoi::flow::Condition",
+  "signature": "pub enum Condition",
+  "docs": "A typed condition evaluated against the current tab state.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 645,
+    "lineEnd": 663,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L645-L663"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Condition",
+    "yosoi::prelude::flow::Condition"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::Condition::CountAtLeast",
+      "publicPath": "yosoi::flow::Condition::CountAtLeast",
+      "title": "yosoi::flow::Condition::CountAtLeast",
+      "kind": "variant",
+      "signature": "CountAtLeast { selector: String, count: u64 }",
+      "docs": "The number of matching elements meets or exceeds `count`.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 657,
+        "lineEnd": 662,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L657-L662"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Condition::CountAtLeast::selector",
+          "publicPath": "yosoi::flow::Condition::CountAtLeast::selector",
+          "title": "yosoi::flow::Condition::CountAtLeast::selector",
+          "kind": "struct_field",
+          "signature": "selector: String",
+          "docs": "CSS selector whose current matches are counted.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 659,
+            "lineEnd": 659,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L659-L659"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Condition::CountAtLeast::count",
+          "publicPath": "yosoi::flow::Condition::CountAtLeast::count",
+          "title": "yosoi::flow::Condition::CountAtLeast::count",
+          "kind": "struct_field",
+          "signature": "count: u64",
+          "docs": "Inclusive minimum matching-element count; zero is permitted.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 661,
+            "lineEnd": 661,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L661-L661"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Condition::Exists",
+      "publicPath": "yosoi::flow::Condition::Exists",
+      "title": "yosoi::flow::Condition::Exists",
+      "kind": "variant",
+      "signature": "Exists { selector: String }",
+      "docs": "At least one element matches the selector.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 647,
+        "lineEnd": 650,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L647-L650"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Condition::Exists::selector",
+          "publicPath": "yosoi::flow::Condition::Exists::selector",
+          "title": "yosoi::flow::Condition::Exists::selector",
+          "kind": "struct_field",
+          "signature": "selector: String",
+          "docs": "CSS selector whose current matching set must be nonempty.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 649,
+            "lineEnd": 649,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L649-L649"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Condition::Visible",
+      "publicPath": "yosoi::flow::Condition::Visible",
+      "title": "yosoi::flow::Condition::Visible",
+      "kind": "variant",
+      "signature": "Visible { selector: String }",
+      "docs": "At least one matching element is visible.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 652,
+        "lineEnd": 655,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L652-L655"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Condition::Visible::selector",
+          "publicPath": "yosoi::flow::Condition::Visible::selector",
+          "title": "yosoi::flow::Condition::Visible::selector",
+          "kind": "struct_field",
+          "signature": "selector: String",
+          "docs": "CSS selector with at least one currently visible match.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 654,
+            "lineEnd": 654,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L654-L654"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::flow::Condition::clone",
+      "publicPath": "yosoi::flow::Condition::clone",
+      "title": "yosoi::flow::Condition::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::Condition",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 643,
+        "lineEnd": 643,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L643-L643"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::deserialize",
+      "publicPath": "yosoi::flow::Condition::deserialize",
+      "title": "yosoi::flow::Condition::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 643,
+        "lineEnd": 643,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L643-L643"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::eq",
+      "publicPath": "yosoi::flow::Condition::eq",
+      "title": "yosoi::flow::Condition::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::Condition) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 643,
+        "lineEnd": 643,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L643-L643"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::fmt",
+      "publicPath": "yosoi::flow::Condition::fmt",
+      "title": "yosoi::flow::Condition::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 643,
+        "lineEnd": 643,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L643-L643"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::Condition::serialize",
+      "publicPath": "yosoi::flow::Condition::serialize",
+      "title": "yosoi::flow::Condition::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 643,
+        "lineEnd": 643,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L643-L643"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4b9f0a5d34be5424af3d3439d84d4918f35e7bd1d7dedfaab314bcd2f598201e",
+  "slug": "yosoi/flow/enum/condition",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4b9f0a5d34be5424af3d3439d84d4918f35e7bd1d7dedfaab314bcd2f598201e"
+}

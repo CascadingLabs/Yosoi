@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::FlowLimits",
+  "publicPath": "yosoi::flow::FlowLimits",
+  "kind": "struct",
+  "title": "yosoi::flow::FlowLimits",
+  "signature": "pub struct FlowLimits",
+  "docs": "Conservative limits applied to authored flow steps and string inputs.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 19,
+    "lineEnd": 30,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L19-L30"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowLimits"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::flow::FlowLimits::clone",
+      "publicPath": "yosoi::flow::FlowLimits::clone",
+      "title": "yosoi::flow::FlowLimits::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowLimits::default",
+      "publicPath": "yosoi::flow::FlowLimits::default",
+      "title": "yosoi::flow::FlowLimits::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 33,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L33-L41"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::flow::FlowLimits::eq",
+      "publicPath": "yosoi::flow::FlowLimits::eq",
+      "title": "yosoi::flow::FlowLimits::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowLimits) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowLimits::fmt",
+      "publicPath": "yosoi::flow::FlowLimits::fmt",
+      "title": "yosoi::flow::FlowLimits::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowLimits::max_depth",
+      "publicPath": "yosoi::flow::FlowLimits::max_depth",
+      "title": "yosoi::flow::FlowLimits::max_depth",
+      "kind": "struct_field",
+      "signature": "pub max_depth: u32",
+      "docs": "Maximum number of nested Flow levels below the root Flow.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowLimits::max_selector_bytes",
+      "publicPath": "yosoi::flow::FlowLimits::max_selector_bytes",
+      "title": "yosoi::flow::FlowLimits::max_selector_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_selector_bytes: usize",
+      "docs": "Maximum UTF-8 bytes allowed in any CSS selector.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowLimits::max_serialized_bytes",
+      "publicPath": "yosoi::flow::FlowLimits::max_serialized_bytes",
+      "title": "yosoi::flow::FlowLimits::max_serialized_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_serialized_bytes: usize",
+      "docs": "Maximum encoded JSON bytes for a complete Flow definition.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowLimits::max_source_bytes",
+      "publicPath": "yosoi::flow::FlowLimits::max_source_bytes",
+      "title": "yosoi::flow::FlowLimits::max_source_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_source_bytes: usize",
+      "docs": "Maximum UTF-8 bytes allowed in one Evaluate source string.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::FlowLimits::max_steps",
+      "publicPath": "yosoi::flow::FlowLimits::max_steps",
+      "title": "yosoi::flow::FlowLimits::max_steps",
+      "kind": "struct_field",
+      "signature": "pub max_steps: u64",
+      "docs": "Maximum number of step and wrapper nodes across the root and nested Flows.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/model.rs#L21-L21"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b3965dc741b2321ba1717c3bc79d8e27b10fe9ad0b225876e57974c146aa3b17",
+  "slug": "yosoi/flow/struct/flowlimits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b3965dc741b2321ba1717c3bc79d8e27b10fe9ad0b225876e57974c146aa3b17"
+}

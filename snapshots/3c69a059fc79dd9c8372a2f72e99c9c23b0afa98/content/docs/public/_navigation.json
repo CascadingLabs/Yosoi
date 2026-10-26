@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "homepage": "getting-started/what-is-yosoi.md",
+  "collapsed": true,
+  "sections": [
+    {
+      "title": "Getting Started",
+      "directory": "getting-started",
+      "order": ["what-is-yosoi.md", "install.md", "docker.md"],
+    },
+    {
+      "title": "Concepts",
+      "pages": [
+        "concepts/index.md",
+        "concepts/documents-and-evidence.md",
+        "concepts/discovery-and-acquisition.md",
+        "concepts/using-a-browser.md",
+        "concepts/waiting-for-the-page.md",
+        "concepts/contracts-and-validation.md",
+        "concepts/adding-to-the-cart.md",
+        "concepts/following-the-data.md",
+        "concepts/actions-and-flows.md",
+        "concepts/sessions-and-ownership.md",
+        "concepts/accessing-a-protected-page.md",
+        "concepts/finding-more-pages.md",
+        "concepts/policy-and-budgets.md",
+        "concepts/sharing-browser-capacity.md",
+        "concepts/yielding-while-waiting.md",
+        "concepts/keeping-the-evidence.md",
+        "concepts/surfaces.md",
+      ],
+    },
+    {
+      "title": "CLI",
+      "pages": [
+        "cli/index.md",
+        "cli/self.md",
+        "cli/request.md",
+        "cli/locate.md",
+        "cli/policy.md",
+        "cli/map.md",
+        "cli/search.md",
+        "cli/surface.md",
+      ],
+    },
+
+    {
+      "title": "Release Notes",
+      "directory": "releases",
+      "order": ["index.md"],
+    },
+    {
+      "title": "References",
+      "sections": [
+        {
+          "title": "Rust",
+          "generated": "rust-api",
+        },
+        {
+          "title": "Python",
+          "directory": "python-api",
+        },
+      ],
+    },
+  ],
+}

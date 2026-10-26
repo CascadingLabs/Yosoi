@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::run_module_from_root_with_export",
+  "publicPath": "yosoi::action::run_module_from_root_with_export",
+  "kind": "function",
+  "title": "yosoi::action::run_module_from_root_with_export",
+  "signature": "pub fn run_module_from_root_with_export(root: impl AsRef<std::path::Path>, entry: impl AsRef<std::path::Path>, export_name: impl Into<String>) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptModuleError>",
+  "docs": "Snapshots an entry module under an explicit filesystem root and selects a\ndefault or named export to return as JSON after evaluation. The export is\nread, never invoked.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 153,
+    "lineEnd": 165,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/action.rs#L153-L165"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::run_module_from_root_with_export"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "65ecad061beeb8dc054c11cf9fe9e21204b993c6837f8f805fdb9d23608dd997",
+  "slug": "yosoi/action/function/run-module-from-root-with-export",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "65ecad061beeb8dc054c11cf9fe9e21204b993c6837f8f805fdb9d23608dd997"
+}

@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::automation_record::OperationStatus",
+  "publicPath": "yosoi::automation_record::OperationStatus",
+  "kind": "enum",
+  "title": "yosoi::automation_record::OperationStatus",
+  "signature": "pub enum OperationStatus",
+  "docs": "The execution certainty attached to one attempted browser operation.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 68,
+    "lineEnd": 75,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L68-L75"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::automation_record::OperationStatus::Observed",
+      "publicPath": "yosoi::automation_record::OperationStatus::Observed",
+      "title": "yosoi::automation_record::OperationStatus::Observed",
+      "kind": "variant",
+      "signature": "Observed",
+      "docs": "The operation returned a supported observed result; business success needs its own check.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::OperationStatus::Rejected",
+      "publicPath": "yosoi::automation_record::OperationStatus::Rejected",
+      "title": "yosoi::automation_record::OperationStatus::Rejected",
+      "kind": "variant",
+      "signature": "Rejected",
+      "docs": "The operation or assertion returned a known rejection.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::OperationStatus::Unknown",
+      "publicPath": "yosoi::automation_record::OperationStatus::Unknown",
+      "title": "yosoi::automation_record::OperationStatus::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "Possible dispatch or incomplete evidence prevents establishing the effect.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 74,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L74-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationStatus::clone",
+      "publicPath": "yosoi::automation_record::OperationStatus::clone",
+      "title": "yosoi::automation_record::OperationStatus::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::OperationStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationStatus::deserialize",
+      "publicPath": "yosoi::automation_record::OperationStatus::deserialize",
+      "title": "yosoi::automation_record::OperationStatus::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationStatus::eq",
+      "publicPath": "yosoi::automation_record::OperationStatus::eq",
+      "title": "yosoi::automation_record::OperationStatus::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::OperationStatus) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationStatus::fmt",
+      "publicPath": "yosoi::automation_record::OperationStatus::fmt",
+      "title": "yosoi::automation_record::OperationStatus::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationStatus::serialize",
+      "publicPath": "yosoi::automation_record::OperationStatus::serialize",
+      "title": "yosoi::automation_record::OperationStatus::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ef7c2aad667502361231a9acce06b4cfb90d034f1076ed855983d8710d0578ce",
+  "slug": "yosoi/automation-record/enum/operationstatus",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ef7c2aad667502361231a9acce06b4cfb90d034f1076ed855983d8710d0578ce"
+}

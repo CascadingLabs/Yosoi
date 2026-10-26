@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::ActionStatus",
+  "publicPath": "yosoi::surface::ActionStatus",
+  "kind": "enum",
+  "title": "yosoi::surface::ActionStatus",
+  "signature": "pub enum ActionStatus",
+  "docs": "External adapter's reported action outcome.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 161,
+    "lineEnd": 168,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L161-L168"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::ActionStatus::Confirmed",
+      "publicPath": "yosoi::surface::ActionStatus::Confirmed",
+      "title": "yosoi::surface::ActionStatus::Confirmed",
+      "kind": "variant",
+      "signature": "Confirmed",
+      "docs": "Adapter reports its postcondition was observed after dispatch.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 165,
+        "lineEnd": 165,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L165-L165"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::ActionStatus::Rejected",
+      "publicPath": "yosoi::surface::ActionStatus::Rejected",
+      "title": "yosoi::surface::ActionStatus::Rejected",
+      "kind": "variant",
+      "signature": "Rejected",
+      "docs": "Rejected before an effect was dispatched.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 163,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L163-L163"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::ActionStatus::Unconfirmed",
+      "publicPath": "yosoi::surface::ActionStatus::Unconfirmed",
+      "title": "yosoi::surface::ActionStatus::Unconfirmed",
+      "kind": "variant",
+      "signature": "Unconfirmed",
+      "docs": "Dispatch or observation occurred without a confirmed postcondition.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 167,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L167-L167"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ActionStatus::clone",
+      "publicPath": "yosoi::surface::ActionStatus::clone",
+      "title": "yosoi::surface::ActionStatus::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::ActionStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L160-L160"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::ActionStatus::deserialize",
+      "publicPath": "yosoi::surface::ActionStatus::deserialize",
+      "title": "yosoi::surface::ActionStatus::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L160-L160"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::ActionStatus::eq",
+      "publicPath": "yosoi::surface::ActionStatus::eq",
+      "title": "yosoi::surface::ActionStatus::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::ActionStatus) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L160-L160"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::ActionStatus::fmt",
+      "publicPath": "yosoi::surface::ActionStatus::fmt",
+      "title": "yosoi::surface::ActionStatus::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L160-L160"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::ActionStatus::serialize",
+      "publicPath": "yosoi::surface::ActionStatus::serialize",
+      "title": "yosoi::surface::ActionStatus::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L160-L160"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f422ca8e7634777d9df4e6c5a6f804b43282597ff594a11341f55cfdf2d22167",
+  "slug": "yosoi/surface/enum/actionstatus",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f422ca8e7634777d9df4e6c5a6f804b43282597ff594a11341f55cfdf2d22167"
+}

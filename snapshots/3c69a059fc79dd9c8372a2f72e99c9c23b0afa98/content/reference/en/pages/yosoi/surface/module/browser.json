@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::browser",
+  "publicPath": "yosoi::surface::browser",
+  "kind": "module",
+  "title": "yosoi::surface::browser",
+  "signature": "pub mod browser",
+  "docs": "Document reading and live browser interaction; process details stay local.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/mod.rs",
+    "lineStart": 1,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/browser/mod.rs#L1-L11"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "c19b24df8194f831937f0931edfc2d5eab44ab429d5433ac46294fe16e90a80b",
+  "slug": "yosoi/surface/module/browser",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c19b24df8194f831937f0931edfc2d5eab44ab429d5433ac46294fe16e90a80b"
+}

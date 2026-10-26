@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::SourceReference",
+  "publicPath": "yosoi::surface::SourceReference",
+  "kind": "struct",
+  "title": "yosoi::surface::SourceReference",
+  "signature": "pub struct SourceReference",
+  "docs": "Origin of a reference projected into a named combined observation view.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 151,
+    "lineEnd": 156,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L151-L156"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::SourceReference::clone",
+      "publicPath": "yosoi::surface::SourceReference::clone",
+      "title": "yosoi::surface::SourceReference::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::SourceReference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L150-L150"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::SourceReference::fmt",
+      "publicPath": "yosoi::surface::SourceReference::fmt",
+      "title": "yosoi::surface::SourceReference::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L150-L150"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::SourceReference::reference",
+      "publicPath": "yosoi::surface::SourceReference::reference",
+      "title": "yosoi::surface::SourceReference::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::Reference",
+      "docs": "Exact original source reference, retaining its own capture provenance.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L155-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::SourceReference::serialize",
+      "publicPath": "yosoi::surface::SourceReference::serialize",
+      "title": "yosoi::surface::SourceReference::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L150-L150"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::SourceReference::view",
+      "publicPath": "yosoi::surface::SourceReference::view",
+      "title": "yosoi::surface::SourceReference::view",
+      "kind": "struct_field",
+      "signature": "pub view: String",
+      "docs": "Name of the constituent view, such as `document` or `screenshot`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L153-L153"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bd9d4b222a608e621d2ced4771f71cf25bd8c016925ea9977f1a895b67c7ec9f",
+  "slug": "yosoi/surface/struct/sourcereference",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bd9d4b222a608e621d2ced4771f71cf25bd8c016925ea9977f1a895b67c7ec9f"
+}

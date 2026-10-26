@@ -1,0 +1,539 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::SessionError",
+  "publicPath": "yosoi::session::SessionError",
+  "kind": "enum",
+  "title": "yosoi::session::SessionError",
+  "signature": "pub enum SessionError",
+  "docs": "Browser authority, execution, evidence, or cleanup failure.\n\nPost-dispatch uncertainty must not be treated as proof that no effect occurred.\nUse [`Self::is_unknown`] when deciding whether a dependent action can proceed.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 220,
+    "lineEnd": 287,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L220-L287"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::SessionError::AcquisitionDeadline",
+      "publicPath": "yosoi::session::SessionError::AcquisitionDeadline",
+      "title": "yosoi::session::SessionError::AcquisitionDeadline",
+      "kind": "variant",
+      "signature": "AcquisitionDeadline",
+      "docs": "Browser startup exceeded the bound Request acquisition deadline.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 250,
+        "lineEnd": 250,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L250-L250"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Admission",
+      "publicPath": "yosoi::session::SessionError::Admission",
+      "title": "yosoi::session::SessionError::Admission",
+      "kind": "variant",
+      "signature": "Admission",
+      "docs": "Browser or exclusive tab control could not be acquired.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 247,
+        "lineEnd": 247,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L247-L247"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::AssertionEvaluation",
+      "publicPath": "yosoi::session::SessionError::AssertionEvaluation",
+      "title": "yosoi::session::SessionError::AssertionEvaluation",
+      "kind": "variant",
+      "signature": "AssertionEvaluation(String)",
+      "docs": "An assertion evaluator failed rather than returning a supported confirmation result.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 274,
+        "lineEnd": 274,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L274-L274"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::AssertionEvaluation::0",
+          "publicPath": "yosoi::session::SessionError::AssertionEvaluation::0",
+          "title": "yosoi::session::SessionError::AssertionEvaluation::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 274,
+            "lineEnd": 274,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L274-L274"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::BrowserFeatureDisabled",
+      "publicPath": "yosoi::session::SessionError::BrowserFeatureDisabled",
+      "title": "yosoi::session::SessionError::BrowserFeatureDisabled",
+      "kind": "variant",
+      "signature": "BrowserFeatureDisabled",
+      "docs": "This build cannot acquire or execute browser-backed operations.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 226,
+        "lineEnd": 226,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L226-L226"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Cancelled",
+      "publicPath": "yosoi::session::SessionError::Cancelled",
+      "title": "yosoi::session::SessionError::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "Cancellation was observed before an operation could be dispatched.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 244,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L244-L244"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Cleanup",
+      "publicPath": "yosoi::session::SessionError::Cleanup",
+      "title": "yosoi::session::SessionError::Cleanup",
+      "kind": "variant",
+      "signature": "Cleanup",
+      "docs": "Browser or tab cleanup did not complete successfully.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 277,
+        "lineEnd": 277,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L277-L277"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Closed",
+      "publicPath": "yosoi::session::SessionError::Closed",
+      "title": "yosoi::session::SessionError::Closed",
+      "kind": "variant",
+      "signature": "Closed",
+      "docs": "Owning browser authority has closed or its receipt channel is no longer available.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 238,
+        "lineEnd": 238,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L238-L238"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Deadline",
+      "publicPath": "yosoi::session::SessionError::Deadline",
+      "title": "yosoi::session::SessionError::Deadline",
+      "kind": "variant",
+      "signature": "Deadline",
+      "docs": "The operation budget expired before dispatch, so this failure does not claim an effect.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L253-L253"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Denied",
+      "publicPath": "yosoi::session::SessionError::Denied",
+      "title": "yosoi::session::SessionError::Denied",
+      "kind": "variant",
+      "signature": "Denied",
+      "docs": "Session settings deny the selected action or required capability.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 241,
+        "lineEnd": 241,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L241-L241"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::EvidenceUnavailable",
+      "publicPath": "yosoi::session::SessionError::EvidenceUnavailable",
+      "title": "yosoi::session::SessionError::EvidenceUnavailable",
+      "kind": "variant",
+      "signature": "EvidenceUnavailable",
+      "docs": "Current browser evidence is missing or incomplete for the required observation.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 271,
+        "lineEnd": 271,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L271-L271"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Execution",
+      "publicPath": "yosoi::session::SessionError::Execution",
+      "title": "yosoi::session::SessionError::Execution",
+      "kind": "variant",
+      "signature": "Execution(String)",
+      "docs": "Execution failed after possible dispatch; the message does not establish absence of effects.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 262,
+        "lineEnd": 262,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L262-L262"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::Execution::0",
+          "publicPath": "yosoi::session::SessionError::Execution::0",
+          "title": "yosoi::session::SessionError::Execution::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 262,
+            "lineEnd": 262,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L262-L262"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::ExecutionCapacity",
+      "publicPath": "yosoi::session::SessionError::ExecutionCapacity",
+      "title": "yosoi::session::SessionError::ExecutionCapacity",
+      "kind": "variant",
+      "signature": "ExecutionCapacity(yosoi::session::ExecutionPoolError)",
+      "docs": "A shared or local worker pool could not admit execution within its capacity rules.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 223,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L223-L223"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::ExecutionCapacity::0",
+          "publicPath": "yosoi::session::SessionError::ExecutionCapacity::0",
+          "title": "yosoi::session::SessionError::ExecutionCapacity::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::session::ExecutionPoolError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 223,
+            "lineEnd": 223,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L223-L223"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::InputTargetLost",
+      "publicPath": "yosoi::session::SessionError::InputTargetLost",
+      "title": "yosoi::session::SessionError::InputTargetLost",
+      "kind": "variant",
+      "signature": "InputTargetLost",
+      "docs": "The editable typing target changed before keyboard dispatch could safely begin.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 235,
+        "lineEnd": 235,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L235-L235"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::InvalidInput",
+      "publicPath": "yosoi::session::SessionError::InvalidInput",
+      "title": "yosoi::session::SessionError::InvalidInput",
+      "kind": "variant",
+      "signature": "InvalidInput",
+      "docs": "Authored input or dispatch target failed pre-dispatch validation.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L232-L232"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::InvalidPolicy",
+      "publicPath": "yosoi::session::SessionError::InvalidPolicy",
+      "title": "yosoi::session::SessionError::InvalidPolicy",
+      "kind": "variant",
+      "signature": "InvalidPolicy",
+      "docs": "Bounded settings, complete policy, or browser mode agreement failed validation.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L229-L229"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::ResultLimit",
+      "publicPath": "yosoi::session::SessionError::ResultLimit",
+      "title": "yosoi::session::SessionError::ResultLimit",
+      "kind": "variant",
+      "signature": "ResultLimit { maximum: usize }",
+      "docs": "A dispatched script returned more encoded result bytes than can be retained.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 265,
+        "lineEnd": 268,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L265-L268"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::ResultLimit::maximum",
+          "publicPath": "yosoi::session::SessionError::ResultLimit::maximum",
+          "title": "yosoi::session::SessionError::ResultLimit::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum permitted encoded JavaScript result bytes.",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 267,
+            "lineEnd": 267,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L267-L267"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::TimeoutAfterDispatch",
+      "publicPath": "yosoi::session::SessionError::TimeoutAfterDispatch",
+      "title": "yosoi::session::SessionError::TimeoutAfterDispatch",
+      "kind": "variant",
+      "signature": "TimeoutAfterDispatch",
+      "docs": "The budget expired after possible dispatch; browser effects remain uncertain.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 256,
+        "lineEnd": 256,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L256-L256"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Unknown",
+      "publicPath": "yosoi::session::SessionError::Unknown",
+      "title": "yosoi::session::SessionError::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "Dispatch may have occurred without enough evidence to establish the outcome.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 259,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L259-L259"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::Unsupported",
+      "publicPath": "yosoi::session::SessionError::Unsupported",
+      "title": "yosoi::session::SessionError::Unsupported",
+      "kind": "variant",
+      "signature": "Unsupported(&'static str)",
+      "docs": "The named capability has no supported implementation for this Session.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 286,
+        "lineEnd": 286,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L286-L286"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::Unsupported::0",
+          "publicPath": "yosoi::session::SessionError::Unsupported::0",
+          "title": "yosoi::session::SessionError::Unsupported::0",
+          "kind": "struct_field",
+          "signature": "0: &'static str",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 286,
+            "lineEnd": 286,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L286-L286"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::WatchDeadline",
+      "publicPath": "yosoi::session::SessionError::WatchDeadline",
+      "title": "yosoi::session::SessionError::WatchDeadline",
+      "kind": "variant",
+      "signature": "WatchDeadline",
+      "docs": "No receipt arrived within the watcher's per-operation wait budget.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 283,
+        "lineEnd": 283,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L283-L283"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::SessionError::WatchLagged",
+      "publicPath": "yosoi::session::SessionError::WatchLagged",
+      "title": "yosoi::session::SessionError::WatchLagged",
+      "kind": "variant",
+      "signature": "WatchLagged(u64)",
+      "docs": "The bounded receipt channel dropped this many items before a watcher consumed them.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 280,
+        "lineEnd": 280,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L280-L280"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionError::WatchLagged::0",
+          "publicPath": "yosoi::session::SessionError::WatchLagged::0",
+          "title": "yosoi::session::SessionError::WatchLagged::0",
+          "kind": "struct_field",
+          "signature": "0: u64",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 280,
+            "lineEnd": 280,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L280-L280"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::session::SessionError::fmt",
+      "publicPath": "yosoi::session::SessionError::fmt",
+      "title": "yosoi::session::SessionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::SessionError::fmt",
+      "publicPath": "yosoi::session::SessionError::fmt",
+      "title": "yosoi::session::SessionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::session::SessionError::from",
+      "publicPath": "yosoi::session::SessionError::from",
+      "title": "yosoi::session::SessionError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::session::ExecutionPoolError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::session::SessionError::is_cancelled",
+      "publicPath": "yosoi::session::SessionError::is_cancelled",
+      "title": "yosoi::session::SessionError::is_cancelled",
+      "kind": "function",
+      "signature": "pub const fn is_cancelled(&self) -> bool",
+      "docs": "Returns whether the failure represents observed cancellation or revoked owning authority.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 290,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L290-L292"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionError::is_unknown",
+      "publicPath": "yosoi::session::SessionError::is_unknown",
+      "title": "yosoi::session::SessionError::is_unknown",
+      "kind": "function",
+      "signature": "pub const fn is_unknown(&self) -> bool",
+      "docs": "Returns whether possible dispatch prevents claiming the browser had no effect.\nIncludes post-dispatch timeouts, execution failures, and oversized script results.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 295,
+        "lineEnd": 303,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L295-L303"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionError::source",
+      "publicPath": "yosoi::session::SessionError::source",
+      "title": "yosoi::session::SessionError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "776ef0f5743f52d2f301d75e2cb5e000f08d76c82c88391172b2e1eaf7ea6c6a",
+  "slug": "yosoi/session/enum/sessionerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "776ef0f5743f52d2f301d75e2cb5e000f08d76c82c88391172b2e1eaf7ea6c6a"
+}

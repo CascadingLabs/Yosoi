@@ -1,0 +1,926 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowValidationError",
+  "publicPath": "yosoi::flow::FlowValidationError",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowValidationError",
+  "signature": "pub enum FlowValidationError",
+  "docs": "Authored recipe structure or value rejected before browser execution.",
+  "source": {
+    "file": "crates/yosoi/src/flow/error.rs",
+    "lineStart": 11,
+    "lineEnd": 126,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L11-L126"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/flow.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::flow::FlowValidationError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::Assertion",
+      "publicPath": "yosoi::flow::FlowValidationError::Assertion",
+      "title": "yosoi::flow::FlowValidationError::Assertion",
+      "kind": "variant",
+      "signature": "Assertion(yosoi::assertions::AssertionError)",
+      "docs": "An authored assertion contains an invalid condition or value.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L15-L15"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::Assertion::0",
+          "publicPath": "yosoi::flow::FlowValidationError::Assertion::0",
+          "title": "yosoi::flow::FlowValidationError::Assertion::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::assertions::AssertionError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 15,
+            "lineEnd": 15,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L15-L15"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::EmptyExpectation",
+      "publicPath": "yosoi::flow::FlowValidationError::EmptyExpectation",
+      "title": "yosoi::flow::FlowValidationError::EmptyExpectation",
+      "kind": "variant",
+      "signature": "EmptyExpectation { step_index: u64, field: &'static str }",
+      "docs": "A required Until expectation field contains no usable text.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 88,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L88-L93"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::EmptyExpectation::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::EmptyExpectation::step_index",
+          "title": "yosoi::flow::FlowValidationError::EmptyExpectation::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 90,
+            "lineEnd": 90,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L90-L90"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::EmptyExpectation::field",
+          "publicPath": "yosoi::flow::FlowValidationError::EmptyExpectation::field",
+          "title": "yosoi::flow::FlowValidationError::EmptyExpectation::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Name of the empty authored expectation field.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 92,
+            "lineEnd": 92,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L92-L92"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::EmptySelector",
+      "publicPath": "yosoi::flow::FlowValidationError::EmptySelector",
+      "title": "yosoi::flow::FlowValidationError::EmptySelector",
+      "kind": "variant",
+      "signature": "EmptySelector { step_index: u64 }",
+      "docs": "A step's locator selector contains no usable text.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L48-L51"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::EmptySelector::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::EmptySelector::step_index",
+          "title": "yosoi::flow::FlowValidationError::EmptySelector::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 50,
+            "lineEnd": 50,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L50-L50"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::EmptySource",
+      "publicPath": "yosoi::flow::FlowValidationError::EmptySource",
+      "title": "yosoi::flow::FlowValidationError::EmptySource",
+      "kind": "variant",
+      "signature": "EmptySource { step_index: u64 }",
+      "docs": "A JavaScript action contains no usable source text.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 67,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L67-L70"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::EmptySource::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::EmptySource::step_index",
+          "title": "yosoi::flow::FlowValidationError::EmptySource::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 69,
+            "lineEnd": 69,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L69-L69"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::ExpectationTooDeep",
+      "publicPath": "yosoi::flow::FlowValidationError::ExpectationTooDeep",
+      "title": "yosoi::flow::FlowValidationError::ExpectationTooDeep",
+      "kind": "variant",
+      "signature": "ExpectationTooDeep { actual: u32, maximum: u32 }",
+      "docs": "Nested boolean Until expectations exceed the permitted expression depth.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 113,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L113-L118"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationTooDeep::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationTooDeep::actual",
+          "title": "yosoi::flow::FlowValidationError::ExpectationTooDeep::actual",
+          "kind": "struct_field",
+          "signature": "actual: u32",
+          "docs": "Boolean expression depth measured during validation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 115,
+            "lineEnd": 115,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L115-L115"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationTooDeep::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationTooDeep::maximum",
+          "title": "yosoi::flow::FlowValidationError::ExpectationTooDeep::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u32",
+          "docs": "Maximum permitted expectation depth.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 117,
+            "lineEnd": 117,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L117-L117"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::ExpectationValueTooLong",
+      "publicPath": "yosoi::flow::FlowValidationError::ExpectationValueTooLong",
+      "title": "yosoi::flow::FlowValidationError::ExpectationValueTooLong",
+      "kind": "variant",
+      "signature": "ExpectationValueTooLong { step_index: u64, field: &'static str, actual: usize, maximum: usize }",
+      "docs": "An authored Until expectation field exceeds its byte budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 95,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L95-L104"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationValueTooLong::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::step_index",
+          "title": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 97,
+            "lineEnd": 97,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L97-L97"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationValueTooLong::field",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::field",
+          "title": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Name of the oversized expectation field.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 99,
+            "lineEnd": 99,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L99-L99"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationValueTooLong::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::actual",
+          "title": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "UTF-8 bytes in the authored field value.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 101,
+            "lineEnd": 101,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L101-L101"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ExpectationValueTooLong::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::maximum",
+          "title": "yosoi::flow::FlowValidationError::ExpectationValueTooLong::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted bytes for that field.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 103,
+            "lineEnd": 103,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L103-L103"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::InvalidExpectation",
+      "publicPath": "yosoi::flow::FlowValidationError::InvalidExpectation",
+      "title": "yosoi::flow::FlowValidationError::InvalidExpectation",
+      "kind": "variant",
+      "signature": "InvalidExpectation { step_index: u64, reason: String }",
+      "docs": "An Until expectation fails value or structural checks not covered by a specific variant.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 120,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L120-L125"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::InvalidExpectation::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::InvalidExpectation::step_index",
+          "title": "yosoi::flow::FlowValidationError::InvalidExpectation::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 122,
+            "lineEnd": 122,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L122-L122"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::InvalidExpectation::reason",
+          "publicPath": "yosoi::flow::FlowValidationError::InvalidExpectation::reason",
+          "title": "yosoi::flow::FlowValidationError::InvalidExpectation::reason",
+          "kind": "struct_field",
+          "signature": "reason: String",
+          "docs": "Explanation of the rejected expectation; it can include authored details.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 124,
+            "lineEnd": 124,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L124-L124"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::InvalidTimeout",
+      "publicPath": "yosoi::flow::FlowValidationError::InvalidTimeout",
+      "title": "yosoi::flow::FlowValidationError::InvalidTimeout",
+      "kind": "variant",
+      "signature": "InvalidTimeout",
+      "docs": "A timeout is zero or cannot fit a monotonic deadline on this platform.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::InvalidUntilTrigger",
+      "publicPath": "yosoi::flow::FlowValidationError::InvalidUntilTrigger",
+      "title": "yosoi::flow::FlowValidationError::InvalidUntilTrigger",
+      "kind": "variant",
+      "signature": "InvalidUntilTrigger { step_index: u64, kind: String }",
+      "docs": "An Until step requests a trigger kind unsupported by this recipe vocabulary.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 81,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L81-L86"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::InvalidUntilTrigger::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::InvalidUntilTrigger::step_index",
+          "title": "yosoi::flow::FlowValidationError::InvalidUntilTrigger::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 83,
+            "lineEnd": 83,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L83-L83"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::InvalidUntilTrigger::kind",
+          "publicPath": "yosoi::flow::FlowValidationError::InvalidUntilTrigger::kind",
+          "title": "yosoi::flow::FlowValidationError::InvalidUntilTrigger::kind",
+          "kind": "struct_field",
+          "signature": "kind: String",
+          "docs": "Trigger kind label rejected during validation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 85,
+            "lineEnd": 85,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L85-L85"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::JavaScript",
+      "publicPath": "yosoi::flow::FlowValidationError::JavaScript",
+      "title": "yosoi::flow::FlowValidationError::JavaScript",
+      "kind": "variant",
+      "signature": "JavaScript(String)",
+      "docs": "JavaScript parsing or action validation rejected the authored source.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L13-L13"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::JavaScript::0",
+          "publicPath": "yosoi::flow::FlowValidationError::JavaScript::0",
+          "title": "yosoi::flow::FlowValidationError::JavaScript::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 13,
+            "lineEnd": 13,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L13-L13"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::NestedFailureCaptureUnsupported",
+      "publicPath": "yosoi::flow::FlowValidationError::NestedFailureCaptureUnsupported",
+      "title": "yosoi::flow::FlowValidationError::NestedFailureCaptureUnsupported",
+      "kind": "variant",
+      "signature": "NestedFailureCaptureUnsupported",
+      "docs": "A nested Flow requests failure capture without supported child-capture provenance.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::NestedTimeout",
+      "publicPath": "yosoi::flow::FlowValidationError::NestedTimeout",
+      "title": "yosoi::flow::FlowValidationError::NestedTimeout",
+      "kind": "variant",
+      "signature": "NestedTimeout",
+      "docs": "An action has overlapping nested timeout wrappers, whose semantics are unsupported.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::SelectorTooLong",
+      "publicPath": "yosoi::flow::FlowValidationError::SelectorTooLong",
+      "title": "yosoi::flow::FlowValidationError::SelectorTooLong",
+      "kind": "variant",
+      "signature": "SelectorTooLong { step_index: u64, actual: usize, maximum: usize }",
+      "docs": "An authored locator selector exceeds its byte budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 53,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L53-L60"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SelectorTooLong::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::SelectorTooLong::step_index",
+          "title": "yosoi::flow::FlowValidationError::SelectorTooLong::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 55,
+            "lineEnd": 55,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L55-L55"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SelectorTooLong::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::SelectorTooLong::actual",
+          "title": "yosoi::flow::FlowValidationError::SelectorTooLong::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "UTF-8 bytes in the authored selector.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 57,
+            "lineEnd": 57,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L57-L57"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SelectorTooLong::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::SelectorTooLong::maximum",
+          "title": "yosoi::flow::FlowValidationError::SelectorTooLong::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted selector bytes.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 59,
+            "lineEnd": 59,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L59-L59"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::Serialization",
+      "publicPath": "yosoi::flow::FlowValidationError::Serialization",
+      "title": "yosoi::flow::FlowValidationError::Serialization",
+      "kind": "variant",
+      "signature": "Serialization(String)",
+      "docs": "The authored recipe could not be serialized for structural validation.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L46-L46"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::Serialization::0",
+          "publicPath": "yosoi::flow::FlowValidationError::Serialization::0",
+          "title": "yosoi::flow::FlowValidationError::Serialization::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 46,
+            "lineEnd": 46,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L46-L46"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::SerializedInputTooLarge",
+      "publicPath": "yosoi::flow::FlowValidationError::SerializedInputTooLarge",
+      "title": "yosoi::flow::FlowValidationError::SerializedInputTooLarge",
+      "kind": "variant",
+      "signature": "SerializedInputTooLarge { actual: usize, maximum: usize }",
+      "docs": "Serialized recipe bytes exceed the input validation budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 39,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L39-L44"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SerializedInputTooLarge::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::SerializedInputTooLarge::actual",
+          "title": "yosoi::flow::FlowValidationError::SerializedInputTooLarge::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "Byte length of the serialized authored recipe.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 41,
+            "lineEnd": 41,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L41-L41"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SerializedInputTooLarge::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::SerializedInputTooLarge::maximum",
+          "title": "yosoi::flow::FlowValidationError::SerializedInputTooLarge::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted serialized bytes.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 43,
+            "lineEnd": 43,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L43-L43"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::SourceTooLong",
+      "publicPath": "yosoi::flow::FlowValidationError::SourceTooLong",
+      "title": "yosoi::flow::FlowValidationError::SourceTooLong",
+      "kind": "variant",
+      "signature": "SourceTooLong { step_index: u64, actual: usize, maximum: usize }",
+      "docs": "Authored JavaScript source exceeds the action-source byte budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 72,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L72-L79"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SourceTooLong::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::SourceTooLong::step_index",
+          "title": "yosoi::flow::FlowValidationError::SourceTooLong::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 74,
+            "lineEnd": 74,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L74-L74"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SourceTooLong::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::SourceTooLong::actual",
+          "title": "yosoi::flow::FlowValidationError::SourceTooLong::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "UTF-8 bytes in the authored source.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 76,
+            "lineEnd": 76,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L76-L76"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::SourceTooLong::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::SourceTooLong::maximum",
+          "title": "yosoi::flow::FlowValidationError::SourceTooLong::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted action-source bytes.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 78,
+            "lineEnd": 78,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L78-L78"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::TooDeep",
+      "publicPath": "yosoi::flow::FlowValidationError::TooDeep",
+      "title": "yosoi::flow::FlowValidationError::TooDeep",
+      "kind": "variant",
+      "signature": "TooDeep { actual: u32, maximum: u32 }",
+      "docs": "Nested Flow depth exceeds the recipe validation budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 32,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L32-L37"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooDeep::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::TooDeep::actual",
+          "title": "yosoi::flow::FlowValidationError::TooDeep::actual",
+          "kind": "struct_field",
+          "signature": "actual: u32",
+          "docs": "Nested depth measured during validation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 34,
+            "lineEnd": 34,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L34-L34"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooDeep::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::TooDeep::maximum",
+          "title": "yosoi::flow::FlowValidationError::TooDeep::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u32",
+          "docs": "Maximum permitted nested Flow depth.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 36,
+            "lineEnd": 36,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L36-L36"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::TooManyExpectations",
+      "publicPath": "yosoi::flow::FlowValidationError::TooManyExpectations",
+      "title": "yosoi::flow::FlowValidationError::TooManyExpectations",
+      "kind": "variant",
+      "signature": "TooManyExpectations { actual: u128, maximum: usize }",
+      "docs": "The aggregate number of Until expectation clauses exceeds its budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 106,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L106-L111"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooManyExpectations::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::TooManyExpectations::actual",
+          "title": "yosoi::flow::FlowValidationError::TooManyExpectations::actual",
+          "kind": "struct_field",
+          "signature": "actual: u128",
+          "docs": "Number of expectation clauses found during recipe validation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 108,
+            "lineEnd": 108,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L108-L108"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooManyExpectations::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::TooManyExpectations::maximum",
+          "title": "yosoi::flow::FlowValidationError::TooManyExpectations::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum permitted expectation-clause count.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 110,
+            "lineEnd": 110,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L110-L110"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::TooManySteps",
+      "publicPath": "yosoi::flow::FlowValidationError::TooManySteps",
+      "title": "yosoi::flow::FlowValidationError::TooManySteps",
+      "kind": "variant",
+      "signature": "TooManySteps { actual: u128, maximum: u64 }",
+      "docs": "The total authored step count exceeds the recipe validation budget.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 25,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L25-L30"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooManySteps::actual",
+          "publicPath": "yosoi::flow::FlowValidationError::TooManySteps::actual",
+          "title": "yosoi::flow::FlowValidationError::TooManySteps::actual",
+          "kind": "struct_field",
+          "signature": "actual: u128",
+          "docs": "Count of authored steps found during validation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 27,
+            "lineEnd": 27,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L27-L27"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::TooManySteps::maximum",
+          "publicPath": "yosoi::flow::FlowValidationError::TooManySteps::maximum",
+          "title": "yosoi::flow::FlowValidationError::TooManySteps::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted step count.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 29,
+            "lineEnd": 29,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L29-L29"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::UnboundCancellation",
+      "publicPath": "yosoi::flow::FlowValidationError::UnboundCancellation",
+      "title": "yosoi::flow::FlowValidationError::UnboundCancellation",
+      "kind": "variant",
+      "signature": "UnboundCancellation",
+      "docs": "A deserialized step-local cancellation token has not been rebound by the caller.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowValidationError::ZeroTimeout",
+      "publicPath": "yosoi::flow::FlowValidationError::ZeroTimeout",
+      "title": "yosoi::flow::FlowValidationError::ZeroTimeout",
+      "kind": "variant",
+      "signature": "ZeroTimeout { step_index: u64 }",
+      "docs": "An Until step has no positive wait duration.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 62,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L62-L65"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowValidationError::ZeroTimeout::step_index",
+          "publicPath": "yosoi::flow::FlowValidationError::ZeroTimeout::step_index",
+          "title": "yosoi::flow::FlowValidationError::ZeroTimeout::step_index",
+          "kind": "struct_field",
+          "signature": "step_index: u64",
+          "docs": "Zero-based index of the affected step in its containing Flow.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 64,
+            "lineEnd": 64,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L64-L64"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::flow::FlowValidationError::clone",
+      "publicPath": "yosoi::flow::FlowValidationError::clone",
+      "title": "yosoi::flow::FlowValidationError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowValidationError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowValidationError::eq",
+      "publicPath": "yosoi::flow::FlowValidationError::eq",
+      "title": "yosoi::flow::FlowValidationError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowValidationError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowValidationError::fmt",
+      "publicPath": "yosoi::flow::FlowValidationError::fmt",
+      "title": "yosoi::flow::FlowValidationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowValidationError::fmt",
+      "publicPath": "yosoi::flow::FlowValidationError::fmt",
+      "title": "yosoi::flow::FlowValidationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 129,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/flow/error.rs#L129-L212"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "da7327741fd5d849da0b40e0b18e2564966113b5aa8887c591295bc0bfc227ac",
+  "slug": "yosoi/flow/enum/flowvalidationerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "da7327741fd5d849da0b40e0b18e2564966113b5aa8887c591295bc0bfc227ac"
+}

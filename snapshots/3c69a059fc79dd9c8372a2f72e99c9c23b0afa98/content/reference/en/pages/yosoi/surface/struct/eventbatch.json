@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::EventBatch",
+  "publicPath": "yosoi::surface::EventBatch",
+  "kind": "struct",
+  "title": "yosoi::surface::EventBatch",
+  "signature": "pub struct EventBatch",
+  "docs": "One reader's independently consumed event window.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 152,
+    "lineEnd": 157,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L152-L157"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::EventBatch::clone",
+      "publicPath": "yosoi::surface::EventBatch::clone",
+      "title": "yosoi::surface::EventBatch::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::EventBatch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L151-L151"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::EventBatch::events",
+      "publicPath": "yosoi::surface::EventBatch::events",
+      "title": "yosoi::surface::EventBatch::events",
+      "kind": "struct_field",
+      "signature": "pub events: Vec<yosoi::surface::Event>",
+      "docs": "Available events belonging to this cursor or the whole session.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L154-L154"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::EventBatch::fmt",
+      "publicPath": "yosoi::surface::EventBatch::fmt",
+      "title": "yosoi::surface::EventBatch::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L151-L151"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::EventBatch::lost",
+      "publicPath": "yosoi::surface::EventBatch::lost",
+      "title": "yosoi::surface::EventBatch::lost",
+      "kind": "struct_field",
+      "signature": "pub lost: bool",
+      "docs": "Whether bounded history discarded events since this cursor last read it.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 156,
+        "lineEnd": 156,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L156-L156"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::EventBatch::serialize",
+      "publicPath": "yosoi::surface::EventBatch::serialize",
+      "title": "yosoi::surface::EventBatch::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L151-L151"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "6085b8bfd1dc8560727e477f6d795d9e6bb148e7bfc13e66529881bdba0e4911",
+  "slug": "yosoi/surface/struct/eventbatch",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6085b8bfd1dc8560727e477f6d795d9e6bb148e7bfc13e66529881bdba0e4911"
+}

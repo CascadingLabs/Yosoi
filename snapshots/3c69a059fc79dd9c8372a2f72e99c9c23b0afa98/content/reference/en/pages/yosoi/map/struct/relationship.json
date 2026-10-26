@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::Relationship",
+  "publicPath": "yosoi::map::Relationship",
+  "kind": "struct",
+  "title": "yosoi::map::Relationship",
+  "signature": "pub struct Relationship",
+  "docs": "One directed relationship retained as discovery evidence, without merging its endpoints.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 175,
+    "lineEnd": 182,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L175-L182"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Relationship"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::Relationship::clone",
+      "publicPath": "yosoi::map::Relationship::clone",
+      "title": "yosoi::map::Relationship::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::Relationship",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::Relationship::cmp",
+      "publicPath": "yosoi::map::Relationship::cmp",
+      "title": "yosoi::map::Relationship::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::map::Relationship) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::Relationship::eq",
+      "publicPath": "yosoi::map::Relationship::eq",
+      "title": "yosoi::map::Relationship::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::Relationship) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::Relationship::fmt",
+      "publicPath": "yosoi::map::Relationship::fmt",
+      "title": "yosoi::map::Relationship::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::Relationship::from",
+      "publicPath": "yosoi::map::Relationship::from",
+      "title": "yosoi::map::Relationship::from",
+      "kind": "struct_field",
+      "signature": "pub from: url::Url",
+      "docs": "Page from which the relationship was observed.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 177,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L177-L177"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::Relationship::kind",
+      "publicPath": "yosoi::map::Relationship::kind",
+      "title": "yosoi::map::Relationship::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: yosoi::map::RelationshipKind",
+      "docs": "Whether this is a hyperlink, redirect, or canonical hint.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 181,
+        "lineEnd": 181,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L181-L181"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Relationship::partial_cmp",
+      "publicPath": "yosoi::map::Relationship::partial_cmp",
+      "title": "yosoi::map::Relationship::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::map::Relationship) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::Relationship::serialize",
+      "publicPath": "yosoi::map::Relationship::serialize",
+      "title": "yosoi::map::Relationship::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 174,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L174-L174"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::Relationship::to",
+      "publicPath": "yosoi::map::Relationship::to",
+      "title": "yosoi::map::Relationship::to",
+      "kind": "struct_field",
+      "signature": "pub to: url::Url",
+      "docs": "Admitted normalized destination of the relationship.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/map/mod.rs#L179-L179"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1ff84f91aa9b460a1153991646d0b1aa7a663cc1f46b73d3d0de7bc2a0f23575",
+  "slug": "yosoi/map/struct/relationship",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1ff84f91aa9b460a1153991646d0b1aa7a663cc1f46b73d3d0de7bc2a0f23575"
+}

@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::SessionRequestError",
+  "publicPath": "yosoi::session::SessionRequestError",
+  "kind": "enum",
+  "title": "yosoi::session::SessionRequestError",
+  "signature": "pub enum SessionRequestError",
+  "docs": "Borrowed-owner request could not acquire authority or prepare/settle its acquisition.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 334,
+    "lineEnd": 341,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L334-L341"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionRequestError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::SessionRequestError::Request",
+      "publicPath": "yosoi::session::SessionRequestError::Request",
+      "title": "yosoi::session::SessionRequestError::Request",
+      "kind": "variant",
+      "signature": "Request(yosoi::request::RequestSendError)",
+      "docs": "Request preparation or adapter setup failed before a typed response was available.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 340,
+        "lineEnd": 340,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L340-L340"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionRequestError::Request::0",
+          "publicPath": "yosoi::session::SessionRequestError::Request::0",
+          "title": "yosoi::session::SessionRequestError::Request::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::request::RequestSendError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 340,
+            "lineEnd": 340,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L340-L340"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::session::SessionRequestError::Session",
+      "publicPath": "yosoi::session::SessionRequestError::Session",
+      "title": "yosoi::session::SessionRequestError::Session",
+      "kind": "variant",
+      "signature": "Session(yosoi::session::SessionError)",
+      "docs": "Session or Work authority acquisition, execution capacity, or cleanup failed.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 337,
+        "lineEnd": 337,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L337-L337"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::SessionRequestError::Session::0",
+          "publicPath": "yosoi::session::SessionRequestError::Session::0",
+          "title": "yosoi::session::SessionRequestError::Session::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::session::SessionError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 337,
+            "lineEnd": 337,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L337-L337"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::session::SessionRequestError::fmt",
+      "publicPath": "yosoi::session::SessionRequestError::fmt",
+      "title": "yosoi::session::SessionRequestError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 333,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L333-L333"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequestError::fmt",
+      "publicPath": "yosoi::session::SessionRequestError::fmt",
+      "title": "yosoi::session::SessionRequestError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 333,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L333-L333"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequestError::from",
+      "publicPath": "yosoi::session::SessionRequestError::from",
+      "title": "yosoi::session::SessionRequestError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::session::SessionError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 333,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L333-L333"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequestError::from",
+      "publicPath": "yosoi::session::SessionRequestError::from",
+      "title": "yosoi::session::SessionRequestError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::request::RequestSendError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 333,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L333-L333"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequestError::source",
+      "publicPath": "yosoi::session::SessionRequestError::source",
+      "title": "yosoi::session::SessionRequestError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 333,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L333-L333"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ec0d4c829f065a9494aaa735308f745cef9075fabd80fd18f3515d801193623e",
+  "slug": "yosoi/session/enum/sessionrequesterror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ec0d4c829f065a9494aaa735308f745cef9075fabd80fd18f3515d801193623e"
+}

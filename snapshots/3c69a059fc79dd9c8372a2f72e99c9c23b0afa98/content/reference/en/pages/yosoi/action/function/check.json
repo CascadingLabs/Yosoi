@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::check",
+  "publicPath": "yosoi::action::check",
+  "kind": "function",
+  "title": "yosoi::action::check",
+  "signature": "pub fn check<'a, C>(predicate: impl Fn(&C) -> bool + Send + Sync + 'a) -> yosoi::assertions::Check<'a, C>",
+  "docs": "Captures a synchronous local predicate without evaluating it or performing browser I/O.\nThe predicate can borrow caller state for `'a`; naming and evaluation are explicit.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 47,
+    "lineEnd": 52,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/assertions.rs#L47-L52"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 25,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/action.rs#L25-L25"
+  },
+  "aliases": [
+    "yosoi::assertions::check",
+    "yosoi::prelude::action::check"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "cc39837038bc5108ff8a5da84925f2be77aae77d149c1a4b590913338454dd18",
+  "slug": "yosoi/action/function/check",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "cc39837038bc5108ff8a5da84925f2be77aae77d149c1a4b590913338454dd18"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::json_path",
+  "publicPath": "yosoi::locators::json_path",
+  "kind": "function",
+  "title": "yosoi::locators::json_path",
+  "signature": "pub fn json_path(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Validates the supported JSONPath subset and declares JSON-value selection.\n\nReturns [`QueryError`] for blank expressions, invalid syntax, or unsupported\npath features. Construction performs no document acquisition or matching.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 52,
+    "lineEnd": 62,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/query_builders.rs#L52-L62"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::json_path",
+    "yosoi::prelude::locators::json_path"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "3518439a12ba854da35878eb27cfe281d51c134c2996429c232685de5efdb1ab",
+  "slug": "yosoi/locators/function/json-path",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "3518439a12ba854da35878eb27cfe281d51c134c2996429c232685de5efdb1ab"
+}

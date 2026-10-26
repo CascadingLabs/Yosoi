@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::View",
+  "publicPath": "yosoi::view::View",
+  "kind": "struct",
+  "title": "yosoi::view::View",
+  "signature": "pub struct View",
+  "docs": "One bounded page of deterministic DOM element references from an observation.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 155,
+    "lineEnd": 162,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L155-L162"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::View"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::View::capture_token",
+      "publicPath": "yosoi::view::View::capture_token",
+      "title": "yosoi::view::View::capture_token",
+      "kind": "function",
+      "signature": "pub const fn capture_token(&self) -> &yosoi::view::ViewCaptureToken",
+      "docs": "Borrows the source binding used to reject foreign or stale continuation cursors.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 191,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L191-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::clone",
+      "publicPath": "yosoi::view::View::clone",
+      "title": "yosoi::view::View::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::View",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L153-L153"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::View::continue_from",
+      "publicPath": "yosoi::view::View::continue_from",
+      "title": "yosoi::view::View::continue_from",
+      "kind": "function",
+      "signature": "pub fn continue_from(observation: &yosoi::automation_record::Observation, cursor: &yosoi::view::ViewCursor) -> Result<Self, yosoi::view::ViewError>",
+      "docs": "Builds the next page after validating the cursor against its source capture.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 175,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L175-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::deserialize",
+      "publicPath": "yosoi::view::View::deserialize",
+      "title": "yosoi::view::View::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L153-L153"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::View::eq",
+      "publicPath": "yosoi::view::View::eq",
+      "title": "yosoi::view::View::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::View) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L153-L153"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::View::fmt",
+      "publicPath": "yosoi::view::View::fmt",
+      "title": "yosoi::view::View::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L153-L153"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::View::from_observation",
+      "publicPath": "yosoi::view::View::from_observation",
+      "title": "yosoi::view::View::from_observation",
+      "kind": "function",
+      "signature": "pub fn from_observation(observation: &yosoi::automation_record::Observation, page_size: usize) -> Result<Self, yosoi::view::ViewError>",
+      "docs": "Builds the first offline DOM page for captured HTML evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 166,
+        "lineEnd": 172,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L166-L172"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::next_cursor",
+      "publicPath": "yosoi::view::View::next_cursor",
+      "title": "yosoi::view::View::next_cursor",
+      "kind": "function",
+      "signature": "pub const fn next_cursor(&self) -> Option<&yosoi::view::ViewCursor>",
+      "docs": "Borrows a bound cursor when captured rows remain, or `None` after the final page.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 211,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L211-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::page_size",
+      "publicPath": "yosoi::view::View::page_size",
+      "title": "yosoi::view::View::page_size",
+      "kind": "function",
+      "signature": "pub const fn page_size(&self) -> u64",
+      "docs": "Returns the requested maximum rows per page; the final page can contain fewer.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 206,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L206-L208"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::rows",
+      "publicPath": "yosoi::view::View::rows",
+      "title": "yosoi::view::View::rows",
+      "kind": "function",
+      "signature": "pub fn rows(&self) -> &[yosoi::view::DomElementRow]",
+      "docs": "Borrows retained bounded DOM rows in deterministic source order.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 196,
+        "lineEnd": 198,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L196-L198"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::serialize",
+      "publicPath": "yosoi::view::View::serialize",
+      "title": "yosoi::view::View::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L153-L153"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::view::View::source",
+      "publicPath": "yosoi::view::View::source",
+      "title": "yosoi::view::View::source",
+      "kind": "function",
+      "signature": "pub const fn source(&self) -> &yosoi::view::ViewSource",
+      "docs": "Borrows the exact observation provenance used to build this offline page.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 186,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L186-L188"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::total_rows",
+      "publicPath": "yosoi::view::View::total_rows",
+      "title": "yosoi::view::View::total_rows",
+      "kind": "function",
+      "signature": "pub const fn total_rows(&self) -> u64",
+      "docs": "Returns the complete captured-document element count, not a live DOM count.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 201,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L201-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::View::verify_condition",
+      "publicPath": "yosoi::view::View::verify_condition",
+      "title": "yosoi::view::View::verify_condition",
+      "kind": "function",
+      "signature": "pub fn verify_condition(&self, observation: &yosoi::automation_record::Observation, condition: &yosoi::flow::Condition) -> Result<bool, yosoi::view::ViewError>",
+      "docs": "Verifies a supported assertion against the same immutable observation.\n\nExists and CountAtLeast use only the captured HTML and Yosoi's CSS\nlocator. Visible requires live layout state and returns an explicit\nunsupported error for this offline view.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 220,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L220-L239"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "acaafd595594c652804490bc5b25031ca8fe710455f3f35c5bdc5227d8995d0c",
+  "slug": "yosoi/view/struct/view",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "acaafd595594c652804490bc5b25031ca8fe710455f3f35c5bdc5227d8995d0c"
+}

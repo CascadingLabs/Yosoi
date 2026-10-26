@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::RuntimeFieldValue",
+  "publicPath": "yosoi::contracts::RuntimeFieldValue",
+  "kind": "enum",
+  "title": "yosoi::contracts::RuntimeFieldValue",
+  "signature": "pub enum RuntimeFieldValue",
+  "docs": "Converted field value retaining its authored cardinality distinction.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+    "lineStart": 234,
+    "lineEnd": 250,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L234-L250"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/contracts.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeFieldValue"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "title": "yosoi::contracts::RuntimeFieldValue::ExactlyOne",
+      "kind": "variant",
+      "signature": "ExactlyOne { value: yosoi::contracts::RuntimeValue }",
+      "docs": "A required field whose candidate evidence yielded exactly one accepted value.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 236,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L236-L239"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::RuntimeFieldValue::ExactlyOne::value",
+          "publicPath": "yosoi::contracts::RuntimeFieldValue::ExactlyOne::value",
+          "title": "yosoi::contracts::RuntimeFieldValue::ExactlyOne::value",
+          "kind": "struct_field",
+          "signature": "value: yosoi::contracts::RuntimeValue",
+          "docs": "Single converted field value.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+            "lineStart": 238,
+            "lineEnd": 238,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L238-L238"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::Many",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::Many",
+      "title": "yosoi::contracts::RuntimeFieldValue::Many",
+      "kind": "variant",
+      "signature": "Many { values: Vec<yosoi::contracts::RuntimeValue> }",
+      "docs": "A collection field retaining every accepted value in evidence order.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 246,
+        "lineEnd": 249,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L246-L249"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::RuntimeFieldValue::Many::values",
+          "publicPath": "yosoi::contracts::RuntimeFieldValue::Many::values",
+          "title": "yosoi::contracts::RuntimeFieldValue::Many::values",
+          "kind": "struct_field",
+          "signature": "values: Vec<yosoi::contracts::RuntimeValue>",
+          "docs": "Converted collection, which can be empty under many cardinality.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+            "lineStart": 248,
+            "lineEnd": 248,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L248-L248"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "title": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne",
+      "kind": "variant",
+      "signature": "ZeroOrOne { value: Option<yosoi::contracts::RuntimeValue> }",
+      "docs": "An optional field whose cardinality allows one accepted value or no value.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 241,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L241-L244"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::RuntimeFieldValue::ZeroOrOne::value",
+          "publicPath": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne::value",
+          "title": "yosoi::contracts::RuntimeFieldValue::ZeroOrOne::value",
+          "kind": "struct_field",
+          "signature": "value: Option<yosoi::contracts::RuntimeValue>",
+          "docs": "Converted optional value; `None` retains the missing-field distinction.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+            "lineStart": 243,
+            "lineEnd": 243,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L243-L243"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::clone",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::clone",
+      "title": "yosoi::contracts::RuntimeFieldValue::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::RuntimeFieldValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L232-L232"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::deserialize",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::deserialize",
+      "title": "yosoi::contracts::RuntimeFieldValue::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L232-L232"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::eq",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::eq",
+      "title": "yosoi::contracts::RuntimeFieldValue::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::RuntimeFieldValue) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L232-L232"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::fmt",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::fmt",
+      "title": "yosoi::contracts::RuntimeFieldValue::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L232-L232"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeFieldValue::serialize",
+      "publicPath": "yosoi::contracts::RuntimeFieldValue::serialize",
+      "title": "yosoi::contracts::RuntimeFieldValue::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L232-L232"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d2ed143be2c4ad58c28f35a9b104b8788b52e9ff0b14e05b2ad1c2ee57a0cc43",
+  "slug": "yosoi/contracts/enum/runtimefieldvalue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d2ed143be2c4ad58c28f35a9b104b8788b52e9ff0b14e05b2ad1c2ee57a0cc43"
+}

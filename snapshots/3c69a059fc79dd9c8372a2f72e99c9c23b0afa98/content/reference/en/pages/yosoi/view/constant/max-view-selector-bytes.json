@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::view::MAX_VIEW_SELECTOR_BYTES",
+  "publicPath": "yosoi::view::MAX_VIEW_SELECTOR_BYTES",
+  "kind": "constant",
+  "title": "yosoi::view::MAX_VIEW_SELECTOR_BYTES",
+  "signature": "pub const MAX_VIEW_SELECTOR_BYTES: usize = _;",
+  "docs": "Maximum UTF-8 bytes accepted for an offline CSS assertion selector.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L22-L22"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::MAX_VIEW_SELECTOR_BYTES"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "ff877ad6f464944258983ec602cca13ee725b6b77bc9d681b858cbdbc00e2e5c",
+  "slug": "yosoi/view/constant/max-view-selector-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ff877ad6f464944258983ec602cca13ee725b6b77bc9d681b858cbdbc00e2e5c"
+}

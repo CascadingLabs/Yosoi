@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::CursorState",
+  "publicPath": "yosoi::surface::CursorState",
+  "kind": "struct",
+  "title": "yosoi::surface::CursorState",
+  "signature": "pub struct CursorState",
+  "docs": "Inspectable cursor state for debugging, demos, and external harnesses.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 91,
+    "lineEnd": 110,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L91-L110"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::CursorState::action_in_flight",
+      "publicPath": "yosoi::surface::CursorState::action_in_flight",
+      "title": "yosoi::surface::CursorState::action_in_flight",
+      "kind": "struct_field",
+      "signature": "pub action_in_flight: bool",
+      "docs": "Whether this cursor has an effect lease outstanding.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L109-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::CursorState::clone",
+      "publicPath": "yosoi::surface::CursorState::clone",
+      "title": "yosoi::surface::CursorState::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::CursorState",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::current_capture",
+      "publicPath": "yosoi::surface::CursorState::current_capture",
+      "title": "yosoi::surface::CursorState::current_capture",
+      "kind": "struct_field",
+      "signature": "pub current_capture: String",
+      "docs": "Exact current session capture.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L99-L99"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::CursorState::fmt",
+      "publicPath": "yosoi::surface::CursorState::fmt",
+      "title": "yosoi::surface::CursorState::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::focus_freshness",
+      "publicPath": "yosoi::surface::CursorState::focus_freshness",
+      "title": "yosoi::surface::CursorState::focus_freshness",
+      "kind": "struct_field",
+      "signature": "pub focus_freshness: yosoi::surface::Freshness",
+      "docs": "Freshness of inspected/selected evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 103,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L103-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::hot",
+      "publicPath": "yosoi::surface::CursorState::hot",
+      "title": "yosoi::surface::CursorState::hot",
+      "kind": "struct_field",
+      "signature": "pub hot: bool",
+      "docs": "Whether this cursor owns the single hot capability.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::id",
+      "publicPath": "yosoi::surface::CursorState::id",
+      "title": "yosoi::surface::CursorState::id",
+      "kind": "struct_field",
+      "signature": "pub id: yosoi::surface::CursorId",
+      "docs": "Cursor identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L93-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::live",
+      "publicPath": "yosoi::surface::CursorState::live",
+      "title": "yosoi::surface::CursorState::live",
+      "kind": "struct_field",
+      "signature": "pub live: bool",
+      "docs": "Whether an external observation provider is attached.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L95-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::position",
+      "publicPath": "yosoi::surface::CursorState::position",
+      "title": "yosoi::surface::CursorState::position",
+      "kind": "struct_field",
+      "signature": "pub position: yosoi::surface::Position",
+      "docs": "Independent navigation state.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L101-L101"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::scope_freshness",
+      "publicPath": "yosoi::surface::CursorState::scope_freshness",
+      "title": "yosoi::surface::CursorState::scope_freshness",
+      "kind": "struct_field",
+      "signature": "pub scope_freshness: yosoi::surface::Freshness",
+      "docs": "Freshness of the expanded region.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 105,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L105-L105"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::CursorState::serialize",
+      "publicPath": "yosoi::surface::CursorState::serialize",
+      "title": "yosoi::surface::CursorState::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::CursorState::subscriptions",
+      "publicPath": "yosoi::surface::CursorState::subscriptions",
+      "title": "yosoi::surface::CursorState::subscriptions",
+      "kind": "struct_field",
+      "signature": "pub subscriptions: Vec<yosoi::surface::WatchState>",
+      "docs": "Subscriptions, which do not move when scope/focus moves.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 107,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L107-L107"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ea894c31ee200c426aea8ea14e2f2ea33f1002e6c07b2ad904b23807e1d4d3ed",
+  "slug": "yosoi/surface/struct/cursorstate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ea894c31ee200c426aea8ea14e2f2ea33f1002e6c07b2ad904b23807e1d4d3ed"
+}

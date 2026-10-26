@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::ViewCursor",
+  "publicPath": "yosoi::view::ViewCursor",
+  "kind": "struct",
+  "title": "yosoi::view::ViewCursor",
+  "signature": "pub struct ViewCursor",
+  "docs": "Opaque position for requesting the next bounded View page.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 129,
+    "lineEnd": 133,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L129-L133"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::ViewCursor"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::ViewCursor::capture_token",
+      "publicPath": "yosoi::view::ViewCursor::capture_token",
+      "title": "yosoi::view::ViewCursor::capture_token",
+      "kind": "function",
+      "signature": "pub const fn capture_token(&self) -> &yosoi::view::ViewCaptureToken",
+      "docs": "Borrows observation provenance binding this cursor to one immutable capture.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 147,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L147-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::clone",
+      "publicPath": "yosoi::view::ViewCursor::clone",
+      "title": "yosoi::view::ViewCursor::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::ViewCursor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L127-L127"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::deserialize",
+      "publicPath": "yosoi::view::ViewCursor::deserialize",
+      "title": "yosoi::view::ViewCursor::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L127-L127"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::eq",
+      "publicPath": "yosoi::view::ViewCursor::eq",
+      "title": "yosoi::view::ViewCursor::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::ViewCursor) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L127-L127"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::fmt",
+      "publicPath": "yosoi::view::ViewCursor::fmt",
+      "title": "yosoi::view::ViewCursor::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L127-L127"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::offset",
+      "publicPath": "yosoi::view::ViewCursor::offset",
+      "title": "yosoi::view::ViewCursor::offset",
+      "kind": "function",
+      "signature": "pub const fn offset(&self) -> u64",
+      "docs": "Returns the zero-based element offset requested for the next bounded page.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 137,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L137-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::page_size",
+      "publicPath": "yosoi::view::ViewCursor::page_size",
+      "title": "yosoi::view::ViewCursor::page_size",
+      "kind": "function",
+      "signature": "pub const fn page_size(&self) -> u64",
+      "docs": "Returns the retained requested row bound, validated before continuation.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 142,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L142-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewCursor::serialize",
+      "publicPath": "yosoi::view::ViewCursor::serialize",
+      "title": "yosoi::view::ViewCursor::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/view.rs#L127-L127"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bbacee182ef233722a840a4b0eb831ea1711cde268f5093587e590dcebf998bb",
+  "slug": "yosoi/view/struct/viewcursor",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bbacee182ef233722a840a4b0eb831ea1711cde268f5093587e590dcebf998bb"
+}

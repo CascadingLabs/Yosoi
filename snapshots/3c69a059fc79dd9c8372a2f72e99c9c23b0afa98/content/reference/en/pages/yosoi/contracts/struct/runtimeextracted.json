@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::RuntimeExtracted",
+  "publicPath": "yosoi::contracts::RuntimeExtracted",
+  "kind": "struct",
+  "title": "yosoi::contracts::RuntimeExtracted",
+  "signature": "pub struct RuntimeExtracted",
+  "docs": "Runtime candidate extraction awaiting explicit validation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+    "lineStart": 89,
+    "lineEnd": 92,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L89-L92"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/contracts.rs#L19-L19"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeExtracted"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::candidates",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::candidates",
+      "title": "yosoi::contracts::RuntimeExtracted::candidates",
+      "kind": "function",
+      "signature": "pub fn candidates(&self) -> &[CandidateInput]",
+      "docs": "Borrows grouped candidates, or an empty slice for a noncandidate terminal state.\n\nAn empty slice alone cannot distinguish complete absence, indeterminate\nevidence, or extraction failure. Validation retains those distinctions\nin its returned outcome.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 118,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L118-L123"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::clone",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::clone",
+      "title": "yosoi::contracts::RuntimeExtracted::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::RuntimeExtracted",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L88-L88"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::diagnostics",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::diagnostics",
+      "title": "yosoi::contracts::RuntimeExtracted::diagnostics",
+      "kind": "function",
+      "signature": "pub fn diagnostics(&self) -> &[yosoi::contracts::ExtractionDiagnostic]",
+      "docs": "Borrows nonfatal extraction diagnostics when candidates were assembled.\n\nReturns an empty slice for other terminal states; it does not imply\nsuccessful extraction or an all-accepted validation outcome.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 129,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L129-L134"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::fmt",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::fmt",
+      "title": "yosoi::contracts::RuntimeExtracted::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 95,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L95-L100"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::serialize",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::serialize",
+      "title": "yosoi::contracts::RuntimeExtracted::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 104,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L104-L109"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::validate",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::validate",
+      "title": "yosoi::contracts::RuntimeExtracted::validate",
+      "kind": "function",
+      "signature": "pub fn validate(self) -> yosoi::contracts::RuntimeContractOutcome",
+      "docs": "Validates using the same default validation budget as generated\n`Extracted<T>::validate()`.\nConsumes candidate evidence and performs cardinality, conversion,\ncompleteness, and semantic checks without acquiring any documents.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 140,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L140-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeExtracted::validate_with_limits",
+      "publicPath": "yosoi::contracts::RuntimeExtracted::validate_with_limits",
+      "title": "yosoi::contracts::RuntimeExtracted::validate_with_limits",
+      "kind": "function",
+      "signature": "pub fn validate_with_limits(self, limits: ValidationLimits) -> yosoi::contracts::RuntimeContractOutcome",
+      "docs": "Consumes extraction evidence and validates with caller-supplied resource budgets.\n\nAccepted and rejected records remain separate in `Evaluated`. Locator,\nextraction, and indeterminate states are preserved rather than converted\ninto empty successful results. Budget failures return `ValidationRejected`\ninstead of presenting partly processed records as fully validated.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/runtime.rs",
+        "lineStart": 150,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/contract_validation/runtime.rs#L150-L218"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1d68750047665ac7f8f858a171e63d9c0c75bff657bd1a97ccd7438456643285",
+  "slug": "yosoi/contracts/struct/runtimeextracted",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1d68750047665ac7f8f858a171e63d9c0c75bff657bd1a97ccd7438456643285"
+}

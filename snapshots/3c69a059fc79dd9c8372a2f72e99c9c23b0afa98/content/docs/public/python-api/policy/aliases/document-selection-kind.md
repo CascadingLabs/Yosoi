@@ -1,0 +1,16 @@
+---
+title: "DocumentSelectionKind"
+description: "yosoi.policy.DocumentSelectionKind Python API reference."
+order: 0
+---
+
+`yosoi.policy.DocumentSelectionKind`
+
+```python
+DocumentSelectionKind = Literal['current', 'exact']
+```
+
+Current selection resolves package output defaults; exact selection preserves
+authored outputs, including an intentionally empty selection.
+
+[Source: python/yosoi/policy.py:52](https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/python/yosoi/policy.py#L52-L52)

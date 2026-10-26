@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::SurfaceSessionPolicy",
+  "publicPath": "yosoi::SurfaceSessionPolicy",
+  "kind": "struct",
+  "title": "yosoi::SurfaceSessionPolicy",
+  "signature": "pub struct SurfaceSessionPolicy",
+  "docs": "Policy bounds shared across all cursors in one surface session.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 12,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L12-L21"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 42,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/lib.rs#L42-L42"
+  },
+  "aliases": [
+    "yosoi::surface::SessionPolicy"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::SurfaceSessionPolicy::captures",
+      "publicPath": "yosoi::SurfaceSessionPolicy::captures",
+      "title": "yosoi::SurfaceSessionPolicy::captures",
+      "kind": "struct_field",
+      "signature": "pub captures: usize",
+      "docs": "Number of immutable captures retained for historical inspection.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSessionPolicy::clone",
+      "publicPath": "yosoi::SurfaceSessionPolicy::clone",
+      "title": "yosoi::SurfaceSessionPolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::SurfaceSessionPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::SurfaceSessionPolicy::cursors",
+      "publicPath": "yosoi::SurfaceSessionPolicy::cursors",
+      "title": "yosoi::SurfaceSessionPolicy::cursors",
+      "kind": "struct_field",
+      "signature": "pub cursors: usize",
+      "docs": "Total logical cursors, including the hot owner. Defaults to one.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSessionPolicy::default",
+      "publicPath": "yosoi::SurfaceSessionPolicy::default",
+      "title": "yosoi::SurfaceSessionPolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 23,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L23-L30"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::SurfaceSessionPolicy::deserialize",
+      "publicPath": "yosoi::SurfaceSessionPolicy::deserialize",
+      "title": "yosoi::SurfaceSessionPolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::SurfaceSessionPolicy::events",
+      "publicPath": "yosoi::SurfaceSessionPolicy::events",
+      "title": "yosoi::SurfaceSessionPolicy::events",
+      "kind": "struct_field",
+      "signature": "pub events: usize",
+      "docs": "Bounded event history; readers are told when they missed events.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSessionPolicy::fmt",
+      "publicPath": "yosoi::SurfaceSessionPolicy::fmt",
+      "title": "yosoi::SurfaceSessionPolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::SurfaceSessionPolicy::serialize",
+      "publicPath": "yosoi::SurfaceSessionPolicy::serialize",
+      "title": "yosoi::SurfaceSessionPolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L10-L10"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::SurfaceSessionPolicy::watches",
+      "publicPath": "yosoi::SurfaceSessionPolicy::watches",
+      "title": "yosoi::SurfaceSessionPolicy::watches",
+      "kind": "struct_field",
+      "signature": "pub watches: usize",
+      "docs": "Maximum region watches across all cursors.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L16-L16"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ef8e2d15506f9f33ad423faf70055d266714a3b2b327cc747fd47681173c170f",
+  "slug": "yosoi/struct/surfacesessionpolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ef8e2d15506f9f33ad423faf70055d266714a3b2b327cc747fd47681173c170f"
+}

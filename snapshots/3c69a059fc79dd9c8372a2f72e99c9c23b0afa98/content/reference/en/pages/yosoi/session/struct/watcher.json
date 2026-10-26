@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::Watcher",
+  "publicPath": "yosoi::session::Watcher",
+  "kind": "struct",
+  "title": "yosoi::session::Watcher",
+  "signature": "pub struct Watcher",
+  "docs": "Passive bounded subscription to future operation receipts from one shared Session.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 969,
+    "lineEnd": 972,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L969-L972"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::Watcher"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::Watcher::close",
+      "publicPath": "yosoi::session::Watcher::close",
+      "title": "yosoi::session::Watcher::close",
+      "kind": "function",
+      "signature": "pub fn close(self)",
+      "docs": "Drops only this subscription; it does not close or cancel the owning Session.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 1001,
+        "lineEnd": 1003,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L1001-L1003"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::Watcher::fmt",
+      "publicPath": "yosoi::session::Watcher::fmt",
+      "title": "yosoi::session::Watcher::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 974,
+        "lineEnd": 976,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L974-L976"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::Watcher::next",
+      "publicPath": "yosoi::session::Watcher::next",
+      "title": "yosoi::session::Watcher::next",
+      "kind": "function",
+      "signature": "pub async fn next(&mut self) -> Result<Arc<yosoi::automation_record::OperationReceipt>, yosoi::session::SessionError>",
+      "docs": "Bounded evidence delivery; no mutation/control handles are exposed.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 980,
+        "lineEnd": 999,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/session.rs#L980-L999"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "68036fd9557bd05fb2c3c7102aacfdd4f3fa7693dbb22ae5d85e69d7bfd35bda",
+  "slug": "yosoi/session/struct/watcher",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "68036fd9557bd05fb2c3c7102aacfdd4f3fa7693dbb22ae5d85e69d7bfd35bda"
+}

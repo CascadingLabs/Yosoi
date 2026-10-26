@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::AutomationRecord",
+  "publicPath": "yosoi::automation_record::AutomationRecord",
+  "kind": "struct",
+  "title": "yosoi::automation_record::AutomationRecord",
+  "signature": "pub struct AutomationRecord",
+  "docs": "A bounded versioned set of observations and operation receipts.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 136,
+    "lineEnd": 145,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L136-L145"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::clone",
+      "publicPath": "yosoi::automation_record::AutomationRecord::clone",
+      "title": "yosoi::automation_record::AutomationRecord::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::AutomationRecord",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::context",
+      "publicPath": "yosoi::automation_record::AutomationRecord::context",
+      "title": "yosoi::automation_record::AutomationRecord::context",
+      "kind": "function",
+      "signature": "pub const fn context(&self) -> Option<&yosoi::automation_record::AutomationContext>",
+      "docs": "Borrows optional run provenance without reopening browser resources.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 226,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L226-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::deserialize",
+      "publicPath": "yosoi::automation_record::AutomationRecord::deserialize",
+      "title": "yosoi::automation_record::AutomationRecord::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::flow_outcome",
+      "publicPath": "yosoi::automation_record::AutomationRecord::flow_outcome",
+      "title": "yosoi::automation_record::AutomationRecord::flow_outcome",
+      "kind": "function",
+      "signature": "pub const fn flow_outcome(&self) -> Option<&yosoi::flow::FlowOutcome>",
+      "docs": "Returns the recorded flow definition and ordered step outcomes, if present.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 221,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L221-L223"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::fmt",
+      "publicPath": "yosoi::automation_record::AutomationRecord::fmt",
+      "title": "yosoi::automation_record::AutomationRecord::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::from_flow",
+      "publicPath": "yosoi::automation_record::AutomationRecord::from_flow",
+      "title": "yosoi::automation_record::AutomationRecord::from_flow",
+      "kind": "function",
+      "signature": "pub fn from_flow(id: impl Into<String>, outcome: yosoi::flow::FlowOutcome) -> Result<Self, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Retains one Flow outcome, including cleanup and failure-capture receipts.\n\nObservations are deduplicated by identity only when their evidence agrees.\nRejected and unknown operations remain unchanged. Returns a record error\nfor inconsistent identities, invalid outcomes or excessive retained data.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 153,
+        "lineEnd": 180,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L153-L180"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::id",
+      "publicPath": "yosoi::automation_record::AutomationRecord::id",
+      "title": "yosoi::automation_record::AutomationRecord::id",
+      "kind": "function",
+      "signature": "pub fn id(&self) -> &str",
+      "docs": "Returns the caller-authored stable record identity.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 206,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L206-L208"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::new",
+      "publicPath": "yosoi::automation_record::AutomationRecord::new",
+      "title": "yosoi::automation_record::AutomationRecord::new",
+      "kind": "function",
+      "signature": "pub fn new(id: impl Into<String>, observations: Vec<yosoi::automation_record::Observation>, operations: Vec<yosoi::automation_record::OperationReceipt>) -> Result<Self, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Creates a record after validating its stable identity and retained size.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 183,
+        "lineEnd": 198,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L183-L198"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::observations",
+      "publicPath": "yosoi::automation_record::AutomationRecord::observations",
+      "title": "yosoi::automation_record::AutomationRecord::observations",
+      "kind": "function",
+      "signature": "pub fn observations(&self) -> &[yosoi::automation_record::Observation]",
+      "docs": "Returns observations in their recorded order.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 211,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L211-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::operations",
+      "publicPath": "yosoi::automation_record::AutomationRecord::operations",
+      "title": "yosoi::automation_record::AutomationRecord::operations",
+      "kind": "function",
+      "signature": "pub fn operations(&self) -> &[yosoi::automation_record::OperationReceipt]",
+      "docs": "Returns operation receipts in their recorded order.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 216,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L216-L218"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::push_observation",
+      "publicPath": "yosoi::automation_record::AutomationRecord::push_observation",
+      "title": "yosoi::automation_record::AutomationRecord::push_observation",
+      "kind": "function",
+      "signature": "pub fn push_observation(&mut self, observation: yosoi::automation_record::Observation) -> Result<(), yosoi::automation_record::AutomationRecordError>",
+      "docs": "Adds an observation while preserving unique observation identities.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 268,
+        "lineEnd": 294,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L268-L294"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::push_operation",
+      "publicPath": "yosoi::automation_record::AutomationRecord::push_operation",
+      "title": "yosoi::automation_record::AutomationRecord::push_operation",
+      "kind": "function",
+      "signature": "pub fn push_operation(&mut self, operation: yosoi::automation_record::OperationReceipt) -> Result<(), yosoi::automation_record::AutomationRecordError>",
+      "docs": "Adds one operation receipt in recorded order.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 297,
+        "lineEnd": 327,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L297-L327"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::read_from",
+      "publicPath": "yosoi::automation_record::AutomationRecord::read_from",
+      "title": "yosoi::automation_record::AutomationRecord::read_from",
+      "kind": "function",
+      "signature": "pub async fn read_from(archive: &yosoi::Archive, reference: &yosoi::automation_record::AutomationRecordRef) -> Result<Self, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Reads and validates one archived record without browser or network work.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 350,
+        "lineEnd": 390,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L350-L390"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::serialize",
+      "publicPath": "yosoi::automation_record::AutomationRecord::serialize",
+      "title": "yosoi::automation_record::AutomationRecord::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::version",
+      "publicPath": "yosoi::automation_record::AutomationRecord::version",
+      "title": "yosoi::automation_record::AutomationRecord::version",
+      "kind": "function",
+      "signature": "pub const fn version(&self) -> u32",
+      "docs": "Returns the logical record schema version.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 201,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L201-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::with_context",
+      "publicPath": "yosoi::automation_record::AutomationRecord::with_context",
+      "title": "yosoi::automation_record::AutomationRecord::with_context",
+      "kind": "function",
+      "signature": "pub fn with_context(self, context: yosoi::automation_record::AutomationContext) -> Result<Self, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Attaches owned run provenance after validating bounded context fields and the record.\nReturns [`AutomationRecordError`] for invalid record shape or excessive retained bytes.\nCaller-supplied browser and source identities remain provenance claims, not live authority.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 233,
+        "lineEnd": 255,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L233-L255"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::with_flow_outcome",
+      "publicPath": "yosoi::automation_record::AutomationRecord::with_flow_outcome",
+      "title": "yosoi::automation_record::AutomationRecord::with_flow_outcome",
+      "kind": "function",
+      "signature": "pub fn with_flow_outcome(self, flow_outcome: yosoi::flow::FlowOutcome) -> Result<Self, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Attaches a typed flow definition and its recorded step outcomes.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 258,
+        "lineEnd": 265,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L258-L265"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecord::write_to",
+      "publicPath": "yosoi::automation_record::AutomationRecord::write_to",
+      "title": "yosoi::automation_record::AutomationRecord::write_to",
+      "kind": "function",
+      "signature": "pub async fn write_to(&self, archive: &yosoi::Archive) -> Result<yosoi::automation_record::AutomationRecordRef, yosoi::automation_record::AutomationRecordError>",
+      "docs": "Writes this record as an immutable text Document and returns its handle.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 330,
+        "lineEnd": 347,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/automation_record.rs#L330-L347"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4283c243d3a039db62a51a1c3d544ac11ea9579c9f5e49c0a4069c9616e74dc9",
+  "slug": "yosoi/automation-record/struct/automationrecord",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4283c243d3a039db62a51a1c3d544ac11ea9579c9f5e49c0a4069c9616e74dc9"
+}

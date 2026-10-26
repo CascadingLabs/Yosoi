@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::NativeCoordinate",
+  "publicPath": "yosoi::locators::NativeCoordinate",
+  "kind": "enum",
+  "title": "yosoi::locators::NativeCoordinate",
+  "signature": "pub enum NativeCoordinate",
+  "docs": "Exact representation-native location of a finding.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+    "lineStart": 173,
+    "lineEnd": 184,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L173-L184"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/locators.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::NativeCoordinate"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::NativeCoordinate::Accessibility",
+      "publicPath": "yosoi::locators::NativeCoordinate::Accessibility",
+      "title": "yosoi::locators::NativeCoordinate::Accessibility",
+      "kind": "variant",
+      "signature": "Accessibility(yosoi::locators::AccessibilityCoordinate)",
+      "docs": "Node identity scoped to one immutable accessibility-tree snapshot epoch.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 181,
+        "lineEnd": 181,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L181-L181"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::NativeCoordinate::Accessibility::0",
+          "publicPath": "yosoi::locators::NativeCoordinate::Accessibility::0",
+          "title": "yosoi::locators::NativeCoordinate::Accessibility::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::AccessibilityCoordinate",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+            "lineStart": 181,
+            "lineEnd": 181,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L181-L181"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::NativeCoordinate::DecodedText",
+      "publicPath": "yosoi::locators::NativeCoordinate::DecodedText",
+      "title": "yosoi::locators::NativeCoordinate::DecodedText",
+      "kind": "variant",
+      "signature": "DecodedText(yosoi::locators::DecodedTextCoordinate)",
+      "docs": "Paired owned-source byte offsets and decoded-text Unicode-scalar offsets.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 183,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L183-L183"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::NativeCoordinate::DecodedText::0",
+          "publicPath": "yosoi::locators::NativeCoordinate::DecodedText::0",
+          "title": "yosoi::locators::NativeCoordinate::DecodedText::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::DecodedTextCoordinate",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+            "lineStart": 183,
+            "lineEnd": 183,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L183-L183"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::NativeCoordinate::Json",
+      "publicPath": "yosoi::locators::NativeCoordinate::Json",
+      "title": "yosoi::locators::NativeCoordinate::Json",
+      "kind": "variant",
+      "signature": "Json(yosoi::locators::JsonCoordinate)",
+      "docs": "Validated JSON Pointer spelling, not a proof of resolution in a document.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 177,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L177-L177"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::NativeCoordinate::Json::0",
+          "publicPath": "yosoi::locators::NativeCoordinate::Json::0",
+          "title": "yosoi::locators::NativeCoordinate::Json::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::JsonCoordinate",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+            "lineStart": 177,
+            "lineEnd": 177,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L177-L177"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::NativeCoordinate::RenderedDom",
+      "publicPath": "yosoi::locators::NativeCoordinate::RenderedDom",
+      "title": "yosoi::locators::NativeCoordinate::RenderedDom",
+      "kind": "variant",
+      "signature": "RenderedDom(yosoi::locators::DomCoordinate)",
+      "docs": "Node identity scoped to one immutable rendered-DOM snapshot epoch.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L179-L179"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::NativeCoordinate::RenderedDom::0",
+          "publicPath": "yosoi::locators::NativeCoordinate::RenderedDom::0",
+          "title": "yosoi::locators::NativeCoordinate::RenderedDom::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::DomCoordinate",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+            "lineStart": 179,
+            "lineEnd": 179,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L179-L179"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::NativeCoordinate::SourceTree",
+      "publicPath": "yosoi::locators::NativeCoordinate::SourceTree",
+      "title": "yosoi::locators::NativeCoordinate::SourceTree",
+      "kind": "variant",
+      "signature": "SourceTree(yosoi::locators::TreeCoordinate)",
+      "docs": "Child path and optional exact-byte or expanded-name evidence in HTML/XML source.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 175,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L175-L175"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::NativeCoordinate::SourceTree::0",
+          "publicPath": "yosoi::locators::NativeCoordinate::SourceTree::0",
+          "title": "yosoi::locators::NativeCoordinate::SourceTree::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::TreeCoordinate",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+            "lineStart": 175,
+            "lineEnd": 175,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L175-L175"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::clone",
+      "publicPath": "yosoi::locators::NativeCoordinate::clone",
+      "title": "yosoi::locators::NativeCoordinate::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::NativeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::deserialize",
+      "publicPath": "yosoi::locators::NativeCoordinate::deserialize",
+      "title": "yosoi::locators::NativeCoordinate::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::eq",
+      "publicPath": "yosoi::locators::NativeCoordinate::eq",
+      "title": "yosoi::locators::NativeCoordinate::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::NativeCoordinate) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::fmt",
+      "publicPath": "yosoi::locators::NativeCoordinate::fmt",
+      "title": "yosoi::locators::NativeCoordinate::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::hash",
+      "publicPath": "yosoi::locators::NativeCoordinate::hash",
+      "title": "yosoi::locators::NativeCoordinate::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::NativeCoordinate::serialize",
+      "publicPath": "yosoi::locators::NativeCoordinate::serialize",
+      "title": "yosoi::locators::NativeCoordinate::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome_native_coordinates.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/internal/documents/outcome_native_coordinates.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "744bf5dfae355a609922332886fcdc10637969228a32fb46c8abe7fa526989af",
+  "slug": "yosoi/locators/enum/nativecoordinate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "744bf5dfae355a609922332886fcdc10637969228a32fb46c8abe7fa526989af"
+}

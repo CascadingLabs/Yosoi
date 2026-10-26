@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::Freshness",
+  "publicPath": "yosoi::surface::Freshness",
+  "kind": "enum",
+  "title": "yosoi::surface::Freshness",
+  "signature": "pub enum Freshness",
+  "docs": "Freshness of a saved position relative to the session's current evidence.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 65,
+    "lineEnd": 76,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L65-L76"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::Freshness::Current",
+      "publicPath": "yosoi::surface::Freshness::Current",
+      "title": "yosoi::surface::Freshness::Current",
+      "kind": "variant",
+      "signature": "Current",
+      "docs": "The exact complete capture is current.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::Freshness::Evicted",
+      "publicPath": "yosoi::surface::Freshness::Evicted",
+      "title": "yosoi::surface::Freshness::Evicted",
+      "kind": "variant",
+      "signature": "Evicted",
+      "docs": "The saved capture has left bounded history.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L73-L73"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::Freshness::Stale",
+      "publicPath": "yosoi::surface::Freshness::Stale",
+      "title": "yosoi::surface::Freshness::Stale",
+      "kind": "variant",
+      "signature": "Stale",
+      "docs": "The saved position belongs to a retained older capture.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L71-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::Freshness::Unfocused",
+      "publicPath": "yosoi::surface::Freshness::Unfocused",
+      "title": "yosoi::surface::Freshness::Unfocused",
+      "kind": "variant",
+      "signature": "Unfocused",
+      "docs": "No position is selected.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L67-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::Freshness::Unknown",
+      "publicPath": "yosoi::surface::Freshness::Unknown",
+      "title": "yosoi::surface::Freshness::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "Capture is pending, observation failed, or source coverage is incomplete.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 75,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L75-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Freshness::clone",
+      "publicPath": "yosoi::surface::Freshness::clone",
+      "title": "yosoi::surface::Freshness::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Freshness",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Freshness::eq",
+      "publicPath": "yosoi::surface::Freshness::eq",
+      "title": "yosoi::surface::Freshness::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::Freshness) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::Freshness::fmt",
+      "publicPath": "yosoi::surface::Freshness::fmt",
+      "title": "yosoi::surface::Freshness::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::Freshness::serialize",
+      "publicPath": "yosoi::surface::Freshness::serialize",
+      "title": "yosoi::surface::Freshness::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/session.rs#L64-L64"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a794792194f8ec37f27b7bd5fef3374d24af0bb53cb407454f5943be5627ca5b",
+  "slug": "yosoi/surface/enum/freshness",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a794792194f8ec37f27b7bd5fef3374d24af0bb53cb407454f5943be5627ca5b"
+}

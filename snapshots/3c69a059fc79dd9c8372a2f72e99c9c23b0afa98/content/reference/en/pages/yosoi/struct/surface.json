@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::Surface",
+  "publicPath": "yosoi::Surface",
+  "kind": "struct",
+  "title": "yosoi::Surface",
+  "signature": "pub struct Surface",
+  "docs": "Reusable immutable index, safe to share between concurrent Rust readers.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 289,
+    "lineEnd": 291,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L289-L291"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 42,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/lib.rs#L42-L42"
+  },
+  "aliases": [
+    "yosoi::surface::Surface"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::Surface::clone",
+      "publicPath": "yosoi::Surface::clone",
+      "title": "yosoi::Surface::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::Surface",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 288,
+        "lineEnd": 288,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L288-L288"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::Surface::combine",
+      "publicPath": "yosoi::Surface::combine",
+      "title": "yosoi::Surface::combine",
+      "kind": "function",
+      "signature": "pub fn combine(scope: &str, views: Vec<(String, Self)>, limits: yosoi::SurfaceLimits) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Combines named document/image views into one address space without claiming atomic capture.\nEach original source keeps its identity. Nested bundles are intentionally unsupported.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 307,
+        "lineEnd": 426,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L307-L426"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::coordinate",
+      "publicPath": "yosoi::Surface::coordinate",
+      "title": "yosoi::Surface::coordinate",
+      "kind": "function",
+      "signature": "pub fn coordinate(&self, reference: &yosoi::surface::Reference) -> Result<yosoi::surface::Coordinate, yosoi::SurfaceError>",
+      "docs": "Returns native evidence coordinates without granting effect authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 480,
+        "lineEnd": 482,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L480-L482"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::coverage",
+      "publicPath": "yosoi::Surface::coverage",
+      "title": "yosoi::Surface::coverage",
+      "kind": "function",
+      "signature": "pub fn coverage(&self) -> &yosoi::surface::Coverage",
+      "docs": "Returns declared source coverage.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 453,
+        "lineEnd": 455,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L453-L455"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::expand",
+      "publicPath": "yosoi::Surface::expand",
+      "title": "yosoi::Surface::expand",
+      "kind": "function",
+      "signature": "pub fn expand(&self, reference: &yosoi::surface::Reference, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Returns direct members of one region, independently of the overview budget.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 703,
+        "lineEnd": 721,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L703-L721"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::find",
+      "publicPath": "yosoi::Surface::find",
+      "title": "yosoi::Surface::find",
+      "kind": "function",
+      "signature": "pub fn find(&self, query: &str, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Finds literal text in leaf/scalar evidence and attributes without a model.\nSearch is task-directed; index construction is not. Results retain source order.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 724,
+        "lineEnd": 751,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L724-L751"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::fmt",
+      "publicPath": "yosoi::Surface::fmt",
+      "title": "yosoi::Surface::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 293,
+        "lineEnd": 301,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L293-L301"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::Surface::identity",
+      "publicPath": "yosoi::Surface::identity",
+      "title": "yosoi::Surface::identity",
+      "kind": "function",
+      "signature": "pub fn identity(&self) -> &str",
+      "docs": "Returns the exact immutable capture identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 437,
+        "lineEnd": 439,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L437-L439"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::inspect",
+      "publicPath": "yosoi::Surface::inspect",
+      "title": "yosoi::Surface::inspect",
+      "kind": "function",
+      "signature": "pub fn inspect(&self, reference: &yosoi::surface::Reference, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Inspection, yosoi::SurfaceError>",
+      "docs": "Reads exact XML/text ranges or normalized HTML/JSON/snapshot evidence.\nContinuation chunks are UTF-8 aligned; concatenation reconstructs the serialization.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 754,
+        "lineEnd": 799,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L754-L799"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::new",
+      "publicPath": "yosoi::Surface::new",
+      "title": "yosoi::Surface::new",
+      "kind": "function",
+      "signature": "pub fn new(document: &yosoi::Document) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Prepares any of Yosoi's six supported document classes with default limits.\nThis performs no network, model, browser, or task-specific operation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 429,
+        "lineEnd": 431,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L429-L431"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::node_count",
+      "publicPath": "yosoi::Surface::node_count",
+      "title": "yosoi::Surface::node_count",
+      "kind": "function",
+      "signature": "pub fn node_count(&self) -> usize",
+      "docs": "Returns indexed nodes, including text/scalar nodes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 449,
+        "lineEnd": 451,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L449-L451"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::overview",
+      "publicPath": "yosoi::Surface::overview",
+      "title": "yosoi::Surface::overview",
+      "kind": "function",
+      "signature": "pub fn overview(&self, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Returns a structural overview, collapsing homogeneous repeated siblings.\nOmitted entries remain reachable through continuation or root expansion.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 695,
+        "lineEnd": 701,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L695-L701"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::parent",
+      "publicPath": "yosoi::Surface::parent",
+      "title": "yosoi::Surface::parent",
+      "kind": "function",
+      "signature": "pub fn parent(&self, reference: &yosoi::surface::Reference) -> Result<Option<yosoi::surface::Reference>, yosoi::SurfaceError>",
+      "docs": "Returns the selected node's parent, or `None` at the root.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 531,
+        "lineEnd": 533,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L531-L533"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::project",
+      "publicPath": "yosoi::Surface::project",
+      "title": "yosoi::Surface::project",
+      "kind": "function",
+      "signature": "pub fn project(&self, name: &str, reference: &yosoi::surface::Reference) -> Result<yosoi::surface::Reference, yosoi::SurfaceError>",
+      "docs": "Projects an exact constituent reference into this combined observation.\nThis does not rebind a reference from another capture or infer entity identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 510,
+        "lineEnd": 529,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L510-L529"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::representation",
+      "publicPath": "yosoi::Surface::representation",
+      "title": "yosoi::Surface::representation",
+      "kind": "function",
+      "signature": "pub fn representation(&self) -> &str",
+      "docs": "Returns the input representation, not a claim about live visibility.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 441,
+        "lineEnd": 443,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L441-L443"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::root",
+      "publicPath": "yosoi::Surface::root",
+      "title": "yosoi::Surface::root",
+      "kind": "function",
+      "signature": "pub fn root(&self) -> yosoi::surface::Reference",
+      "docs": "Returns the document/root evidence reference.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 457,
+        "lineEnd": 459,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L457-L459"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::source_bytes",
+      "publicPath": "yosoi::Surface::source_bytes",
+      "title": "yosoi::Surface::source_bytes",
+      "kind": "function",
+      "signature": "pub fn source_bytes(&self) -> usize",
+      "docs": "Returns original retained input bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 445,
+        "lineEnd": 447,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L445-L447"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::source_reference",
+      "publicPath": "yosoi::Surface::source_reference",
+      "title": "yosoi::Surface::source_reference",
+      "kind": "function",
+      "signature": "pub fn source_reference(&self, reference: &yosoi::surface::Reference) -> Result<Option<yosoi::surface::SourceReference>, yosoi::SurfaceError>",
+      "docs": "Resolves a combined-view projection to its exact original evidence reference.\n`None` means this reference is not a projected source node.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 485,
+        "lineEnd": 499,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L485-L499"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::validate",
+      "publicPath": "yosoi::Surface::validate",
+      "title": "yosoi::Surface::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self, reference: &yosoi::surface::Reference) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Validates exact capture membership and node existence, not live eligibility.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 476,
+        "lineEnd": 478,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L476-L478"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::view",
+      "publicPath": "yosoi::Surface::view",
+      "title": "yosoi::Surface::view",
+      "kind": "function",
+      "signature": "pub fn view(&self, name: &str) -> Option<Self>",
+      "docs": "Borrows a constituent prepared view by cheaply cloning its immutable handle.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 501,
+        "lineEnd": 507,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L501-L507"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Surface::with_limits",
+      "publicPath": "yosoi::Surface::with_limits",
+      "title": "yosoi::Surface::with_limits",
+      "kind": "function",
+      "signature": "pub fn with_limits(document: &yosoi::Document, limits: yosoi::SurfaceLimits) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Prepares evidence with explicit resource limits and interpreter-bound identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 433,
+        "lineEnd": 435,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/mod.rs#L433-L435"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1f386f4d57e2aa93a84a7984b5ebd33d92c7e8cafb423b1cc9fa0cd0eb8464c6",
+  "slug": "yosoi/struct/surface",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1f386f4d57e2aa93a84a7984b5ebd33d92c7e8cafb423b1cc9fa0cd0eb8464c6"
+}

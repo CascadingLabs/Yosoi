@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::model::ReadOperation",
+  "publicPath": "yosoi::surface::model::ReadOperation",
+  "kind": "enum",
+  "title": "yosoi::surface::model::ReadOperation",
+  "signature": "pub enum ReadOperation",
+  "docs": "Bounded evidence navigation; adapters may reject operations they do not advertise.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 122,
+    "lineEnd": 145,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L122-L145"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::model::ReadOperation::Expand",
+      "publicPath": "yosoi::surface::model::ReadOperation::Expand",
+      "title": "yosoi::surface::model::ReadOperation::Expand",
+      "kind": "variant",
+      "signature": "Expand { reference: yosoi::surface::model::Reference }",
+      "docs": "Retrieve finer structural or temporal regions.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 126,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L126-L129"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadOperation::Expand::reference",
+          "publicPath": "yosoi::surface::model::ReadOperation::Expand::reference",
+          "title": "yosoi::surface::model::ReadOperation::Expand::reference",
+          "kind": "struct_field",
+          "signature": "reference: yosoi::surface::model::Reference",
+          "docs": "Region to explore within its exact observation.",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 128,
+            "lineEnd": 128,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L128-L128"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadOperation::Inspect",
+      "publicPath": "yosoi::surface::model::ReadOperation::Inspect",
+      "title": "yosoi::surface::model::ReadOperation::Inspect",
+      "kind": "variant",
+      "signature": "Inspect { reference: yosoi::surface::model::Reference }",
+      "docs": "Retrieve source-backed detail; chunks need not be standalone JSON.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 131,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L131-L134"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadOperation::Inspect::reference",
+          "publicPath": "yosoi::surface::model::ReadOperation::Inspect::reference",
+          "title": "yosoi::surface::model::ReadOperation::Inspect::reference",
+          "kind": "struct_field",
+          "signature": "reference: yosoi::surface::model::Reference",
+          "docs": "Exact evidence to inspect.",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 133,
+            "lineEnd": 133,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L133-L133"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadOperation::Overview",
+      "publicPath": "yosoi::surface::model::ReadOperation::Overview",
+      "title": "yosoi::surface::model::ReadOperation::Overview",
+      "kind": "variant",
+      "signature": "Overview",
+      "docs": "Discover a bounded set of regions.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L124-L124"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadOperation::Parent",
+      "publicPath": "yosoi::surface::model::ReadOperation::Parent",
+      "title": "yosoi::surface::model::ReadOperation::Parent",
+      "kind": "variant",
+      "signature": "Parent { reference: yosoi::surface::model::Reference }",
+      "docs": "Structural parent when the representation supports that relation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 141,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L141-L144"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadOperation::Parent::reference",
+          "publicPath": "yosoi::surface::model::ReadOperation::Parent::reference",
+          "title": "yosoi::surface::model::ReadOperation::Parent::reference",
+          "kind": "struct_field",
+          "signature": "reference: yosoi::surface::model::Reference",
+          "docs": "Evidence whose parent is requested.",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 143,
+            "lineEnd": 143,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L143-L143"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadOperation::Search",
+      "publicPath": "yosoi::surface::model::ReadOperation::Search",
+      "title": "yosoi::surface::model::ReadOperation::Search",
+      "kind": "variant",
+      "signature": "Search { query: String }",
+      "docs": "Literal search when the representation advertises it.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 136,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L136-L139"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadOperation::Search::query",
+          "publicPath": "yosoi::surface::model::ReadOperation::Search::query",
+          "title": "yosoi::surface::model::ReadOperation::Search::query",
+          "kind": "struct_field",
+          "signature": "query: String",
+          "docs": "Literal query; this is not a universal query language.",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 138,
+            "lineEnd": 138,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L138-L138"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadOperation::clone",
+      "publicPath": "yosoi::surface::model::ReadOperation::clone",
+      "title": "yosoi::surface::model::ReadOperation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::ReadOperation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 120,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L120-L120"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadOperation::deserialize",
+      "publicPath": "yosoi::surface::model::ReadOperation::deserialize",
+      "title": "yosoi::surface::model::ReadOperation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 120,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L120-L120"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadOperation::fmt",
+      "publicPath": "yosoi::surface::model::ReadOperation::fmt",
+      "title": "yosoi::surface::model::ReadOperation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 120,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L120-L120"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadOperation::serialize",
+      "publicPath": "yosoi::surface::model::ReadOperation::serialize",
+      "title": "yosoi::surface::model::ReadOperation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 120,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3c69a059fc79dd9c8372a2f72e99c9c23b0afa98/crates/yosoi/src/surface/model.rs#L120-L120"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ef8b263c879ff48aff3fb53ff8d1bbb3915a91c11c528d00e511b082dbca4720",
+  "slug": "yosoi/surface/model/enum/readoperation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ef8b263c879ff48aff3fb53ff8d1bbb3915a91c11c528d00e511b082dbca4720"
+}
