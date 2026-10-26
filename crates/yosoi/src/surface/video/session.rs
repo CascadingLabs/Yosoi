@@ -1,13 +1,15 @@
-//! Read-only stateful exploration; decoding and archive storage belong to video.
+//! Stateful, read-only exploration of a frozen video source.
 use super::{DecodedFrame, VideoPolicy, VideoSurface};
 use crate::surface::{
-    ArchivePolicy, ArchiveReceipt, Budget, ExecutionError, SurfaceConnection, SurfacePolicy,
+    ArchiveLimits, ArchivePolicy, Budget, ExecutionError, Outcome, SurfaceConnection,
+    SurfacePolicy,
     archive::Recording,
     connection::{AgentSurface, Connection, Operation, Request, Result, Trace, connection},
     model::{self, ReadOperation, ReadRequest, SurfaceRead},
 };
 use serde_json::{Value, json};
 use std::{
+    error::Error,
     fmt::{self, Debug, Formatter},
     fs, io,
     path::{Path, PathBuf},
@@ -22,13 +24,6 @@ pub(super) struct VideoDriver {
     recording_fault: bool,
 }
 impl VideoDriver {
-    pub(super) async fn finish(&mut self) -> Result<()> {
-        self.attached = false;
-        if let Some(recording) = self.recording.as_mut() {
-            recording.close_video().await?;
-        }
-        Ok(())
-    }
     fn describe(&self) -> Value {
         json!({"descriptor":self.surface.descriptor(),"observation":self.surface.observation(),"root":self.surface.root_reference()})
     }
@@ -68,12 +63,11 @@ impl VideoDriver {
     }
 }
 impl AgentSurface for VideoDriver {
-    fn outcome(&self) -> Option<ArchiveReceipt> {
-        self.recording.as_ref().and_then(Recording::receipt)
+    fn outcome(&self) -> Option<Outcome> {
+        outcome(self)
     }
-    async fn close(mut self) -> (Option<ArchiveReceipt>, Result<()>) {
-        let result = Self::finish(&mut self).await;
-        (self.recording.as_ref().and_then(Recording::receipt), result)
+    async fn close(self) -> (Option<Outcome>, Result<()>) {
+        close(self).await
     }
 
     fn ready(&mut self) -> Result<Value> {
@@ -108,6 +102,24 @@ impl AgentSurface for VideoDriver {
             _=>Err(io::Error::other("capability unavailable on read-only video; use describe and the shared read protocol").into()),
         }
     }
+    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
+        match result {
+            Ok(value) => {
+                if matches!(operation, Operation::Read { .. }) {
+                    self.trace.read_bytes = self
+                        .trace
+                        .read_bytes
+                        .saturating_add(serde_json::to_vec(value)?.len());
+                }
+                self.trace.event("cli.reply", value.clone());
+            }
+            Err(error) => self.trace.event(
+                "cli.error",
+                json!({"error":error.to_string().chars().take(512).collect::<String>()}),
+            ),
+        }
+        Ok(())
+    }
     async fn persist_command(
         &mut self,
         operation: &Operation,
@@ -133,6 +145,7 @@ pub(super) async fn open(
     output: PathBuf,
     archive: Option<PathBuf>,
     max_side: u32,
+    limits: ArchiveLimits,
 ) -> Result<VideoDriver> {
     fs::create_dir_all(&output)?;
     let surface = VideoSurface::open(
@@ -151,47 +164,76 @@ pub(super) async fn open(
         None => None,
     };
     if let Some(recording) = recording.as_mut() {
+        recording.set_limits(limits);
         let source = surface.write_to(recording.archive()).await?;
         recording
             .evidence("surface.video.source", serde_json::to_value(source)?)
             .await?;
     }
     let focus = surface.root_reference();
-    Ok(VideoDriver {
+    let driver = VideoDriver {
         surface,
         attached: false,
         focus,
         trace: Trace::new(&output),
         recording,
         recording_fault: false,
-    })
+    };
+    Ok(driver)
 }
-/// Detached, read-only connection over frozen video evidence; close explicitly.
+pub(super) async fn close(mut driver: VideoDriver) -> (Option<Outcome>, Result<()>) {
+    driver.attached = false;
+    drop(driver.surface);
+    let result = if let Some(recording) = driver.recording.as_mut() {
+        recording.close_video().await
+    } else {
+        Ok(())
+    };
+    (driver.recording.as_ref().map(Recording::outcome), result)
+}
+pub(super) fn outcome(driver: &VideoDriver) -> Option<Outcome> {
+    driver.recording.as_ref().map(Recording::outcome)
+}
+
+/// Read-only video connection with its own cursor, bounded processing and archive collection.
+/// It never starts a browser or acquires action authority. Await `close` for finalization.
 pub struct VideoSession {
     inner: Connection<VideoDriver>,
 }
 impl VideoSession {
-    /// Opens a frozen source. Frame dimensions are bounded by this video's max_side.
+    /// Freezes a local source and opens a detached reader. `max_side` bounds decoded pixels.
     pub async fn open(
-        path: &Path,
+        path: impl AsRef<Path> + Send + Sync,
         policy: SurfacePolicy,
         max_side: u32,
     ) -> StdResult<Self, ExecutionError> {
-        let temporary = tempfile::tempdir().map_err(|e| ExecutionError::Operation(e.into()))?;
-        let output = policy
-            .output
-            .unwrap_or_else(|| temporary.path().join("artifacts"));
-        let archive = (policy.archive == ArchivePolicy::Enabled).then(|| {
-            policy
-                .archive_root
-                .unwrap_or_else(|| temporary.path().join("archive"))
-        });
-        let driver = open(path, output.clone(), archive, max_side)
-            .await
-            .map_err(ExecutionError::Operation)?;
-        Ok(Self {
-            inner: Connection::new(driver, output, temporary),
-        })
+        let result = async {
+            policy.archive_limits.validate()?;
+            let temporary = tempfile::tempdir()?;
+            let output = policy
+                .output
+                .clone()
+                .unwrap_or_else(|| temporary.path().join("artifacts"));
+            let root = (policy.archive == ArchivePolicy::Enabled).then(|| {
+                policy
+                    .archive_root
+                    .clone()
+                    .unwrap_or_else(|| temporary.path().join("archive"))
+            });
+            let driver = open(
+                path.as_ref(),
+                output.clone(),
+                root,
+                max_side,
+                policy.archive_limits,
+            )
+            .await?;
+            Ok::<_, Box<dyn Error + Send + Sync>>(Self {
+                inner: Connection::new(driver, output, temporary),
+            })
+        }
+        .await;
+        result.map_err(ExecutionError::Operation)
     }
 }
 connection!(VideoSession);

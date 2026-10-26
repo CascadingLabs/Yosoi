@@ -389,7 +389,7 @@ impl AutomationRecord {
         Ok(record)
     }
 
-    fn validate(&self) -> Result<(), AutomationRecordError> {
+    pub(crate) fn validate(&self) -> Result<(), AutomationRecordError> {
         if self.version != AUTOMATION_RECORD_VERSION {
             return Err(AutomationRecordError::UnsupportedVersion {
                 observed: self.version,

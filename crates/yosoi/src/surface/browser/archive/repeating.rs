@@ -1,12 +1,28 @@
 //! Live repetition resolves recorded intentions against newly captured surfaces.
-use super::super::session::Driver;
-use crate::surface::{Budget, Reference};
-use crate::surface::{
-    archive::{self as recording},
-    connection::{Operation, Result, Target},
+use super::super::{
+    process::Browser,
+    session::{Driver, validate_effect, validate_url},
 };
+use crate::surface::{Budget, Reference, Session, SessionPolicy};
+use crate::surface::{
+    SurfacePolicy,
+    archive::Recording,
+    connection::{Operation, Request, Result, Target, Trace},
+};
+use crate::{
+    automation_record::{AutomationRecord, OperationStatus},
+    surface::Outcome,
+};
+
+#[derive(Debug, thiserror::Error)]
+#[error("rerun failed: {source}")]
+pub(in crate::surface::browser) struct RunFailure {
+    pub outcomes: Vec<Outcome>,
+    #[source]
+    pub source: Box<dyn Error + Send + Sync>,
+}
 use serde_json::{Value, json};
-use std::{fs, io, path::Path};
+use std::{error::Error, fs, io, path::Path};
 
 pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
     if target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty() {
@@ -72,17 +88,17 @@ pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
         .next()
         .ok_or_else(|| io::Error::other("target absent").into())
 }
-pub async fn run(
-    path: &Path,
-    count: usize,
-    headless: bool,
-    output: &Path,
-    mut on_iteration: impl FnMut(Value),
-) -> Result<()> {
-    if !(1..=100).contains(&count) {
-        return Err(io::Error::other("count must be 1..100").into());
+fn procedure(record: &AutomationRecord) -> Result<(String, Vec<Operation>)> {
+    if record
+        .operations()
+        .iter()
+        .any(|receipt| receipt.kind == "surface.failure")
+    {
+        return Err(io::Error::other(
+            "a prior procedure failed; inspect its retained failure before authoring another run",
+        )
+        .into());
     }
-    let (archive, record) = recording::load(path).await?;
     if record
         .operations()
         .iter()
@@ -115,7 +131,7 @@ pub async fn run(
         .and_then(Value::as_str)
         .ok_or_else(|| io::Error::other("record lacks initial URL"))?
         .to_owned();
-    super::super::session::validate_url(&url)?;
+    validate_url(&url)?;
     let mut clicks = Vec::new();
     for receipt in record
         .operations()
@@ -132,6 +148,43 @@ pub async fn run(
                 .cloned()
                 .ok_or_else(|| io::Error::other("missing recorded command input"))?,
         )?;
+        validate_effect(&command)?;
+        if serde_json::to_vec(&command)?.len() > 65536 {
+            return Err(io::Error::other("procedure command exceeds 64 KiB").into());
+        }
+        if let Operation::Click {
+            target: Some(target),
+            ..
+        }
+        | Operation::Fill {
+            target: Some(target),
+            ..
+        }
+        | Operation::Key {
+            target: Some(target),
+            ..
+        } = &command
+            && (target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty())
+        {
+            return Err(io::Error::other("invalid target intention").into());
+        }
+        if let Operation::Wait { text, .. } = &command
+            && (text.is_empty() || text.len() > 512)
+        {
+            return Err(io::Error::other("invalid wait text").into());
+        }
+        if matches!(command, Operation::Wait { .. }) {
+            if receipt.status != OperationStatus::Observed
+                || value
+                    .pointer("/outcome/condition/state")
+                    .and_then(Value::as_str)
+                    .is_none_or(|state| state == "timeout")
+            {
+                return Err(io::Error::other("cannot repeat an unconfirmed wait").into());
+            }
+            clicks.push(command);
+            continue;
+        }
         if matches!(
             command,
             Operation::Click { .. }
@@ -146,9 +199,19 @@ pub async fn run(
                     target: Some(_),
                     expect: Some(_),
                     ..
-                }
+                } | Operation::Fill {
+                    target: Some(_),
+                    ..
+                } | Operation::Key {
+                    target: Some(_),
+                    expect: Some(_),
+                    ..
+                } | Operation::Scroll {
+                    expect: Some(_),
+                    ..
+                } | Operation::Navigate { .. }
             ) {
-                return Err(io::Error::other("live repetition currently requires explicit click intentions and postconditions for every recorded effect").into());
+                return Err(io::Error::other("live repetition requires target intentions for element effects and postconditions for every effect").into());
             }
             if value
                 .get("outcome")
@@ -166,58 +229,152 @@ pub async fn run(
         }
     }
     if clicks.is_empty() {
-        return Err(io::Error::other("record has no repeatable clicks").into());
+        return Err(io::Error::other("record has no repeatable procedure").into());
     }
+    Ok((url, clicks))
+}
+pub(super) async fn run(
+    record: &AutomationRecord,
+    count: usize,
+    policy: SurfacePolicy,
+    headless: bool,
+    output: &Path,
+) -> Result<Vec<Outcome>> {
+    if !(1..=100).contains(&count) {
+        return Err(io::Error::other("count must be 1..100").into());
+    }
+    let (url, clicks) = procedure(record)?;
     fs::create_dir_all(output)?;
+    for iteration in 1..=count {
+        if output.join(format!("run-{iteration}")).exists() {
+            return Err(io::Error::other("rerun destination already exists").into());
+        }
+    }
+    let mut outcomes = Vec::new();
     for iteration in 1..=count {
         let directory = output.join(format!("run-{iteration}"));
         fs::create_dir_all(&directory)?;
-        let mut driver = super::super::session::open_web(
-            &url,
-            headless,
-            directory.clone(),
-            Some(archive.root().to_owned()),
-        )
-        .await?;
-        let execution = async {
-            driver.session.attach()?;
-            driver.cursor.promote()?;
-            for click in &clicks {
-                let Operation::Click {
-                    target: Some(target),
-                    expect,
-                    ..
-                } = click
-                else {
-                    return Err(io::Error::other("invalid click recipe").into());
-                };
-                let reference = resolve(&driver, target).await?;
-                let operation = Operation::Click {
-                    reference,
-                    expect: expect.clone(),
-                    target: Some(target.clone()),
-                };
-                let result = driver
-                    .effect(
-                        match &operation {
-                            Operation::Click { reference, .. } => reference,
-                            _ => return Err(io::Error::other("invalid click recipe").into()),
-                        },
-                        &operation,
+        let mut trace = Trace::new(&directory);
+        let root = policy
+            .archive_root
+            .clone()
+            .unwrap_or_else(|| output.join("archive"));
+        let mut recording = Recording::open(&root, &directory, &url).await?;
+        recording.set_limits(policy.archive_limits);
+        let mut browser = match Browser::open(headless).await {
+            Ok(browser) => browser,
+            Err(error) => {
+                recording.fault();
+                let _ = recording
+                    .command(
+                        json!({"op":"open"}),
+                        &Err(io::Error::other(error.to_string()).into()),
                     )
                     .await;
-                if let Some(recording) = driver.recording.as_mut() {
-                    recording
-                        .command(serde_json::to_value(&operation)?, &result)
-                        .await?;
+                let _ = recording
+                    .close(&Err(io::Error::other(
+                        "browser initialization did not confirm cleanup",
+                    )
+                    .into()))
+                    .await;
+                outcomes.push(recording.outcome());
+                return Err(Box::new(RunFailure {
+                    outcomes,
+                    source: error,
+                }));
+            }
+        };
+        let initial = async {
+            browser.post("/url", json!({"url":url})).await?;
+            let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
+            recording.capture(&document, &surface, &snapshot, 1).await?;
+            Ok::<_, Box<dyn Error + Send + Sync>>(surface)
+        }
+        .await;
+        let surface = match initial {
+            Ok(value) => value,
+            Err(error) => {
+                recording.fault();
+                let closed = browser.close().await;
+                let _ = recording
+                    .command(
+                        json!({"op":"open"}),
+                        &Err(io::Error::other(error.to_string()).into()),
+                    )
+                    .await;
+                let _ = recording.close(&closed).await;
+                outcomes.push(recording.outcome());
+                return Err(Box::new(RunFailure {
+                    outcomes,
+                    source: error,
+                }));
+            }
+        };
+        let session = Session::new(surface, SessionPolicy::default())?;
+        session.attach()?;
+        let cursor = session.cursor()?;
+        cursor.promote()?;
+        let mut driver = Driver {
+            browser,
+            session,
+            cursor,
+            epoch: 1,
+            trace,
+            recording_fault: false,
+            recording: Some(recording),
+        };
+        let execution = async {
+            for click in &clicks {
+                let reference = match click {
+                    Operation::Click {
+                        target: Some(target),
+                        ..
+                    }
+                    | Operation::Fill {
+                        target: Some(target),
+                        ..
+                    }
+                    | Operation::Key {
+                        target: Some(target),
+                        ..
+                    } => Some(resolve(&driver, target).await?),
+                    Operation::Scroll { .. } | Operation::Navigate { .. } => {
+                        Some(driver.session.current()?.root())
+                    }
+                    Operation::Wait { .. } => None,
+                    _ => return Err(io::Error::other("unsupported procedure operation").into()),
+                };
+                let mut value = serde_json::to_value(click)?;
+                if let Some(reference) = reference {
+                    value
+                        .as_object_mut()
+                        .ok_or_else(|| io::Error::other("invalid procedure object"))?
+                        .insert("reference".into(), serde_json::to_value(reference)?);
                 }
-                let result = result?;
-                if result
-                    .get("receipt")
-                    .and_then(|r| r.get("status"))
-                    .and_then(Value::as_str)
-                    != Some("Confirmed")
-                {
+                let operation: Operation = serde_json::from_value(value)?;
+                let request = Request {
+                    id: Value::Null,
+                    budget: 4096,
+                    items: 20,
+                    continuation: None,
+                    operation: operation.clone(),
+                };
+                let result = driver.command(&request).await;
+                driver.record_reply(&operation, &result)?;
+                let result = driver.persist_command(&operation, result).await?;
+                let confirmed = if matches!(operation, Operation::Wait { .. }) {
+                    result
+                        .pointer("/condition/state")
+                        .and_then(Value::as_str)
+                        .is_some_and(|state| state != "timeout")
+                } else {
+                    result
+                        .get("receipt")
+                        .and_then(|r| r.get("status"))
+                        .and_then(Value::as_str)
+                        == Some("Confirmed")
+                };
+                if !confirmed {
                     return Err(io::Error::other("repeated effect was not confirmed").into());
                 }
             }
@@ -225,12 +382,96 @@ pub async fn run(
             driver.browser.script("location", json!({})).await
         }
         .await;
-        let closed = driver.finish().await;
-        let location = execution?;
-        closed?;
-        on_iteration(
-            json!({"iteration":iteration,"confirmed_clicks":clicks.len(),"record":directory.join("record.json"),"mode":"live","fresh_session":true,"final_url":location.get("url")}),
-        );
+        if let Err(error) = &execution
+            && let Some(recording) = &mut driver.recording
+        {
+            let _ = recording.failure(&error.to_string()).await;
+        }
+        let detached = driver.session.detach();
+        let closed = driver.browser.close().await;
+        let archived = if let Some(recording) = driver.recording.as_mut() {
+            recording.close(&closed).await
+        } else {
+            Ok(())
+        };
+        if let Some(recording) = &driver.recording {
+            outcomes.push(recording.outcome());
+        }
+        let settled = execution
+            .map(|_| ())
+            .and(archived)
+            .and_then(|()| detached.map_err(Into::into))
+            .and(closed);
+        if let Err(source) = settled {
+            return Err(Box::new(RunFailure { outcomes, source }));
+        }
     }
-    Ok(())
+    Ok(outcomes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Result, procedure};
+    use crate::automation_record::{AutomationRecord, OperationReceipt, OperationStatus};
+    use serde_json::{Value, json};
+    fn record(commands: Vec<Value>) -> Result<AutomationRecord> {
+        let mut receipts: Vec<OperationReceipt> = vec![serde_json::from_value(json!({
+            "id":"run", "kind":"surface.run", "status":OperationStatus::Observed,
+            "result":{"schema":"yosoi.surface.run.v1","url":"https://example.invalid/"},
+            "observation":null,"error":null
+        }))?];
+        for (index, command) in commands.into_iter().enumerate() {
+            receipts.push(serde_json::from_value(json!({
+                "id":format!("command-{index}"),"kind":"surface.command","status":OperationStatus::Observed,
+                "result":{"command":command,"outcome":{"receipt":{"status":"Confirmed"},"condition":{"state":"matched"}}},
+                "observation":null,"error":null
+            }))?);
+        }
+        receipts.push(serde_json::from_value(json!({
+            "id":"closed","kind":"surface.closed","status":OperationStatus::Observed,
+            "result":{"browser_closed":true},"observation":null,"error":null
+        }))?);
+        Ok(AutomationRecord::new("recipe", Vec::new(), receipts)?)
+    }
+    #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Regression assertions; fixture errors propagate."
+    )]
+    fn supported_effects_and_wait_preflight_as_one_procedure() -> Result<()> {
+        let reference = json!({"capture":"old-capture","node":0});
+        let target = json!({"query":"Go","tag":"button"});
+        let expect = json!({"kind":"text","text":"Done","present":true});
+        let record = record(vec![
+            json!({"op":"click","reference":reference,"target":target,"expect":expect}),
+            json!({"op":"fill","reference":reference,"target":target,"text":"text"}),
+            json!({"op":"key","reference":reference,"target":target,"key":"Enter","expect":expect}),
+            json!({"op":"scroll","reference":reference,"delta_y":300,"expect":expect}),
+            json!({"op":"navigate","reference":reference,"url":"https://example.invalid/next"}),
+            json!({"op":"wait","text":"Done","present":true}),
+        ])?;
+        let (_, commands) = procedure(&record)?;
+        assert_eq!(commands.len(), 6);
+        Ok(())
+    }
+    #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Regression assertions; fixture errors propagate."
+    )]
+    fn invalid_later_operation_rejects_the_whole_procedure() -> Result<()> {
+        let reference = json!({"capture":"old-capture","node":0});
+        for command in [
+            json!({"op":"key","reference":reference,"key":"Enter"}),
+            json!({"op":"navigate","reference":reference,"url":"file:///tmp/file"}),
+            json!({"op":"invented_action"}),
+        ] {
+            let record = record(vec![
+                json!({"op":"navigate","reference":reference,"url":"https://example.invalid/valid"}),
+                command,
+            ])?;
+            assert!(procedure(&record).is_err());
+        }
+        Ok(())
+    }
 }

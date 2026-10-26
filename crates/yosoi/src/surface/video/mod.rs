@@ -3,7 +3,7 @@
 //! FFprobe reads metadata; FFmpeg materializes individual frames with one worker.
 //! Timeline navigation never grants browser/device control and does not imply OCR,
 //! transcription, audio inspection, or that unsampled frames have been observed.
-pub(super) mod archive;
+pub mod archive;
 mod process;
 mod timeline;
 use super::{
@@ -574,7 +574,5 @@ fn seconds_us(value: &str) -> Result<i64, VideoError> {
     }
 }
 
-#[cfg(feature = "surface-connections")]
 mod session;
-#[cfg(feature = "surface-connections")]
 pub use session::VideoSession;

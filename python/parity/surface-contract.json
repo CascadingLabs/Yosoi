@@ -3,6 +3,101 @@
   "kind": "yosoi-surface-sdk-contract",
   "declarations": [
     {
+      "rustPath": "yosoi::BrowserSurface::close",
+      "kind": "function",
+      "signatureSha256": "45c403899abdbcda2c573674a1ec9765b423cea31c20736b14a665929ad374f5",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.BrowserSurface.close",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "0eb1607373131b035fbc1a5b2b678989277b9adae1c95db164831bddaaa9e8dc"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::execute",
+      "kind": "function",
+      "signatureSha256": "43cde4575cf58a3cb4150a56a68eedd1615c3292730f16d4d61354b4fbd2125d",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.BrowserSurface.execute",
+      "argumentMappings": [
+        {
+          "rustArgument": "command",
+          "pythonArgument": "command",
+          "conversion": "Python Mapping[str, object] converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "e1330afc2e72d1db1be77807de1e79d75f4aa595d56172d95fb2f27107d9d5b3"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::fmt",
+      "kind": "function",
+      "signatureSha256": "f3ac10c72c779b025da70462a9c61f9129ccc4e4a1f0d02f0b419dfcb81efb6b",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::open",
+      "kind": "function",
+      "signatureSha256": "ebef499440216e913f1c3a24a364fe2a8c3227e1943587dc41d2ad8397a9be2a",
+      "pythonTarget": "yosoi.BrowserSurface.open",
+      "argumentMappings": [
+        {
+          "rustArgument": "url",
+          "pythonArgument": "url",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "headless",
+          "pythonArgument": "headless",
+          "conversion": "Python bool converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:headless",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default True"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.BrowserSurface.open.",
+      "pythonTargetSha256": "22bda3bb1a5319c7137c43e6c99e3461719f6d74ac2c697aac0a9e9ceaa5db66"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::outcome",
+      "kind": "function",
+      "signatureSha256": "7b1d8faf003980ceb71f3fc334ffd002dcad6c1b5cc25e80160a66aad7660b15",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.BrowserSurface.outcome",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "261555ac3b70086db441696ed04c780c832d5b316644476470054450bf4e2f09"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::ready",
+      "kind": "function",
+      "signatureSha256": "d87d12bd8eb00a73b6b09dc8b697182c30a632c35d4c0032b92b03074566a2d0",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.BrowserSurface.ready",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "a7f52b010e792ae9d1512d471b7be3594a2ad5448997338c05b9ab2c9c020f33"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface",
+      "kind": "struct",
+      "signatureSha256": "fc96b358ccec68f271411f737f31812dcdeae351369f131c082e41c046808cc2",
+      "pythonTarget": "yosoi.BrowserSurface",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.BrowserSurface.",
+      "pythonTargetSha256": "55ad1d1a39b30415333243bf6ad98a6afe2656803de2759f8a3c45c364983060"
+    },
+    {
       "rustPath": "yosoi::DecodedFrame::clone",
       "kind": "function",
       "signatureSha256": "54bdd9e39d0789abd09c54b56cd6a871461b42912a5e05cc046749f3ac40801b",
@@ -20,23 +115,23 @@
       "rustPath": "yosoi::DecodedFrame::info",
       "kind": "struct_field",
       "signatureSha256": "fef12883f83ebaec60519c480fc413b1ad51615a34d92ab53d109542a89cca6d",
-      "pythonTarget": "yosoi.surface.DecodedFrame.info",
+      "pythonTarget": "yosoi.DecodedFrame.info",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "4a66339ef0c8fa230f91bf2411262d6380691477d4706d3458e8ff7b53768944"
+      "pythonTargetSha256": "42f7edefa04e62a10d7cc3def16754be7d4eb9097bf489b5f2564ec734a58a0e"
     },
     {
       "rustPath": "yosoi::DecodedFrame::png",
       "kind": "struct_field",
       "signatureSha256": "59cc765b13def68ae123de0680377395b78ff257654efc807690c68a339345d7",
-      "pythonTarget": "yosoi.surface.DecodedFrame.png",
+      "pythonTarget": "yosoi.DecodedFrame.png",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "3bfc6e472b903f24b8d342f5cc2169470341ae8457c789995d3b0ad3e88d21c3"
+      "pythonTargetSha256": "2fb814118c282435be3f03d7efdfd1e8c85182499f3a5c1d33dfe82e44132d52"
     },
     {
       "rustPath": "yosoi::DecodedFrame::read_from",
       "kind": "function",
       "signatureSha256": "8b67bbcae7615da91538c334cffcffe217d5b32421d28aaf5f9e00c203461fc2",
-      "pythonTarget": "yosoi.surface.DecodedFrame.read_from",
+      "pythonTarget": "yosoi.DecodedFrame.read_from",
       "argumentMappings": [
         {
           "rustArgument": "archive",
@@ -50,13 +145,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "b9140690072a029dde59955a6c1bb1fba6b9d561dafd3f627ebd319e2c7a43b4"
+      "pythonTargetSha256": "b1858abec17c459cca487d517af6f93a69e7018f150cd514ad90e31896da1714"
     },
     {
       "rustPath": "yosoi::DecodedFrame::write_to",
       "kind": "function",
       "signatureSha256": "b21fa12ab911295a850905843211ff08b5d233da94dbbea41462455c7a2c89f0",
-      "pythonTarget": "yosoi.surface.DecodedFrame.write_to",
+      "pythonTarget": "yosoi.DecodedFrame.write_to",
       "argumentMappings": [
         {
           "rustArgument": "archive",
@@ -65,7 +160,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "b84a244734d695ae76f7cdb75360f062162c93c4b77677fe31c1d59614e8def3"
+      "pythonTargetSha256": "28553ce55ff51bc546190f556b2f09222debb8e7d3c69422303ae64ca9150657"
     },
     {
       "rustPath": "yosoi::DecodedFrame",
@@ -74,6 +169,88 @@
       "pythonTarget": "yosoi.DecodedFrame",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "e8651117d56e1c4bc4ef5d27af276027a64cf9fc37cc51da32abe7721d753763"
+    },
+    {
+      "rustPath": "yosoi::ExecutionError::Execution",
+      "kind": "variant",
+      "signatureSha256": "afd8e18c12023e51688c07389b18f1ae31298a4f147b3345d049f6b137ce6b10",
+      "pythonTarget": "yosoi.ExecutionError",
+      "semanticEquivalent": "The native exception preserves the original Rust variant and retained partial outcomes without reconstructing live authority.",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Execution",
+        "rustType": "yosoi::surface::ExecutionError",
+        "pythonFields": [
+          {
+            "rustArgument": "outcomes",
+            "pythonFieldPath": "details.outcomes",
+            "conversion": "Retained outcomes remain exact wire values reconstructable with Outcome.model_validate; boxed source errors retain their ordered display chain."
+          },
+          {
+            "rustArgument": "source",
+            "pythonFieldPath": "source_chain",
+            "conversion": "Retained outcomes remain exact wire values reconstructable with Outcome.model_validate; boxed source errors retain their ordered display chain."
+          }
+        ]
+      },
+      "pythonTargetSha256": "4db3a34f30abae8c3b5de66b65277ede70a60d064e578a949865b3a1dc85ad1d"
+    },
+    {
+      "rustPath": "yosoi::ExecutionError::Operation",
+      "kind": "variant",
+      "signatureSha256": "48e35ed3ba75d46717830cc9053252f4fb04d43b53c5318cc60c4692aa891ddd",
+      "pythonTarget": "yosoi.ExecutionError",
+      "semanticEquivalent": "The native exception preserves the original Rust variant and retained partial outcomes without reconstructing live authority.",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Operation",
+        "rustType": "yosoi::surface::ExecutionError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "source_chain",
+            "conversion": "Retained outcomes remain exact wire values reconstructable with Outcome.model_validate; boxed source errors retain their ordered display chain."
+          }
+        ]
+      },
+      "pythonTargetSha256": "4db3a34f30abae8c3b5de66b65277ede70a60d064e578a949865b3a1dc85ad1d"
+    },
+    {
+      "rustPath": "yosoi::ExecutionError::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ExecutionError::fmt",
+      "kind": "function",
+      "signatureSha256": "2653e7ab50af9f961a708d2db3b3bd062e8f00d17290d0a8127aa19b81156c7d",
+      "trait": "Display",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ExecutionError::source",
+      "kind": "function",
+      "signatureSha256": "1dcf3d70095830d97ebde0706192b3b1175999b3a6b327bb148a6cfabee9e761",
+      "trait": "Error",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ExecutionError",
+      "kind": "enum",
+      "signatureSha256": "071d219649e9b16bd9078c1d87ad197b3452af3e74b67d7d073dc15fc2144a9e",
+      "pythonTarget": "yosoi.ExecutionError",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "4db3a34f30abae8c3b5de66b65277ede70a60d064e578a949865b3a1dc85ad1d"
     },
     {
       "rustPath": "yosoi::PixelRect::clone",
@@ -107,9 +284,9 @@
       "rustPath": "yosoi::PixelRect::height",
       "kind": "struct_field",
       "signatureSha256": "775272dbfbe503348873d5f5c3a00a6d3111eda4bbaf316d35ce4bfcd736cead",
-      "pythonTarget": "yosoi.surface.PixelRect.height",
+      "pythonTarget": "yosoi.PixelRect.height",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "70afa6767f68a5de92f558489d2307ce23549ff9d122f9c55bbbf6b9ac95f259"
+      "pythonTargetSha256": "38065a9f52b9c8b2019b6039d114631b1a50b6a1e0515a6a71d2aad5ee4b8739"
     },
     {
       "rustPath": "yosoi::PixelRect::serialize",
@@ -122,25 +299,25 @@
       "rustPath": "yosoi::PixelRect::width",
       "kind": "struct_field",
       "signatureSha256": "5c2897acc40ced249c415847deed6c47961e9045901cc19b509d918e73585eb7",
-      "pythonTarget": "yosoi.surface.PixelRect.width",
+      "pythonTarget": "yosoi.PixelRect.width",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "73916805f19e02ec47d06c72c125dee84aef95929dd16175fcfb53a598c6d0a7"
+      "pythonTargetSha256": "35d2e5e56869d95fa1834c7bad0aa1978db7513ffcfff35895f3b89cad2ff499"
     },
     {
       "rustPath": "yosoi::PixelRect::x",
       "kind": "struct_field",
       "signatureSha256": "89d0026492b144df30b916c35fde106a271004d5b61c85c141112565bbbf4f33",
-      "pythonTarget": "yosoi.surface.PixelRect.x",
+      "pythonTarget": "yosoi.PixelRect.x",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "2beaf55f1ec6036ea6802e9fcb0e060f73c9d35fbd9de7d8ce31a5e3573d6bce"
+      "pythonTargetSha256": "ec23dc00a845635bce37fa5efbf1742c0c2751d103e88954be55a4130d3326ab"
     },
     {
       "rustPath": "yosoi::PixelRect::y",
       "kind": "struct_field",
       "signatureSha256": "f13c2ca7f2972da4dda8863b80a039b8179cb6890ee010fb7e8acc8642d26377",
-      "pythonTarget": "yosoi.surface.PixelRect.y",
+      "pythonTarget": "yosoi.PixelRect.y",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "c2209032554e52fc84d93a805a87fc3a0a0f09dacc2d0d83117bd658eaecc4b1"
+      "pythonTargetSha256": "1084fcac8d2ae60f975ebf73713abe48ddbeb269e98e5479b69411ed33707893"
     },
     {
       "rustPath": "yosoi::PixelRect",
@@ -161,7 +338,7 @@
       "rustPath": "yosoi::Surface::combine",
       "kind": "function",
       "signatureSha256": "18083e1ea2ba3e11d284ab3d5ed7fcd75dc58c8c1110f26acf826490dc72490f",
-      "pythonTarget": "yosoi.surface.Surface.combine",
+      "pythonTarget": "yosoi.Surface.combine",
       "argumentMappings": [
         {
           "rustArgument": "scope",
@@ -180,13 +357,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "17b4b2bde82cfe937a690911969898406aa5a77800aa695d7a54562c5389faa8"
+      "pythonTargetSha256": "6732b72364e9a7578834413d5f5babc8385e3441484dc11017e9d411e48785eb"
     },
     {
       "rustPath": "yosoi::Surface::coordinate",
       "kind": "function",
       "signatureSha256": "14d433ee410c3f0da480c9ef07ea78ca9cb1d3d265896b6233445d6847cb926f",
-      "pythonTarget": "yosoi.surface.Surface.coordinate",
+      "pythonTarget": "yosoi.Surface.coordinate",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -195,21 +372,21 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "c95e3475dd702601a19f77b5ef40d836663d4c3b801fafa30df41bf04aca12ff"
+      "pythonTargetSha256": "1ed84c625eb26d1ff43ed069e6ad3c15a3687b32eeea467fb0e4985784bc1f61"
     },
     {
       "rustPath": "yosoi::Surface::coverage",
       "kind": "function",
       "signatureSha256": "e337468a6b41561a29814f378ba7d9789e0ab90f70de5fe05ab6d708d479e807",
-      "pythonTarget": "yosoi.surface.Surface.coverage",
+      "pythonTarget": "yosoi.Surface.coverage",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "2d579e33daf9489691c1bb3ff3f0877eaa31d7f66ef262cf29c48ab55d20dbdf"
+      "pythonTargetSha256": "b0aaeae51c6438512e0f1189d82b12756b824d1d642079afcc26362c11a5b11b"
     },
     {
       "rustPath": "yosoi::Surface::crop",
       "kind": "function",
       "signatureSha256": "6a17325afbb92ab0a9d3fb58a53b901fbb2478b355e7e4537244a0136d5b0c66",
-      "pythonTarget": "yosoi.surface.Surface.crop",
+      "pythonTarget": "yosoi.Surface.crop",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -230,13 +407,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "011c0aa76fec05f3a9665591c8fc3b815000f710f5acede30ec7fad9d9c06f14"
+      "pythonTargetSha256": "6c1be959e36c1649acca539552d10ca4597eb00a105235a1c6c61eb739691f77"
     },
     {
       "rustPath": "yosoi::Surface::expand",
       "kind": "function",
       "signatureSha256": "8695753fa83de66b44e5d4c7b611e233b5739ee21634a6befdbf8d73f5343bb2",
-      "pythonTarget": "yosoi.surface.Surface.expand",
+      "pythonTarget": "yosoi.Surface.expand",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -255,13 +432,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "00beae0f4d1df3ae3e552d9fe635331b82634b15b3029175ac34304964cb53cc"
+      "pythonTargetSha256": "24d6a31c3a5b289599c004ac0f54d1b1d1f6c3af0dd83c86463abc4949b3862c"
     },
     {
       "rustPath": "yosoi::Surface::find",
       "kind": "function",
       "signatureSha256": "5a09be0562f471280552bdfc65e11f8979c5adb24c9cf111d462da2357108063",
-      "pythonTarget": "yosoi.surface.Surface.find",
+      "pythonTarget": "yosoi.Surface.find",
       "argumentMappings": [
         {
           "rustArgument": "query",
@@ -280,7 +457,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "bd2a34773b4d846a63058c2ad63da17b7549807cf8678bbaffbab4ebd4b20288"
+      "pythonTargetSha256": "07758496af37875533173eaf23171ad8442fb95eff64b7f5daea82e55ba2387c"
     },
     {
       "rustPath": "yosoi::Surface::fmt",
@@ -293,7 +470,7 @@
       "rustPath": "yosoi::Surface::from_image",
       "kind": "function",
       "signatureSha256": "fcc22ec951923fa0906d0831d211795c62d0a58e8d751c3caea014d0aa357cd8",
-      "pythonTarget": "yosoi.surface.Surface.from_image",
+      "pythonTarget": "yosoi.Surface.from_image",
       "argumentMappings": [
         {
           "rustArgument": "bytes",
@@ -319,21 +496,21 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "404df91e77f164c1d98f401c273baa7d1c22608060199dd6d42752db5aa15b8c"
+      "pythonTargetSha256": "3dd0e97d75386dfb4f76871e433831b763129dc5c103c3f4260713596a654007"
     },
     {
       "rustPath": "yosoi::Surface::identity",
       "kind": "function",
       "signatureSha256": "19e4fc288142b8aa9d1f321cdffed19350bdd4045aca29964b51c18ad9cc7e2f",
-      "pythonTarget": "yosoi.surface.Surface.identity",
+      "pythonTarget": "yosoi.Surface.identity",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a45bbc83f62d8f6b4845596a8993ae9e559b12ccddaf43996530b9115a350647"
+      "pythonTargetSha256": "967e35238236a6231c084203a8941a5ff34db57897a34acf7a83b9bc8911cd52"
     },
     {
       "rustPath": "yosoi::Surface::inspect",
       "kind": "function",
       "signatureSha256": "e32b64b81853818c96bbd522546c1ed6ba41460018c1dd0d3cf68f20eb5582e1",
-      "pythonTarget": "yosoi.surface.Surface.inspect",
+      "pythonTarget": "yosoi.Surface.inspect",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -352,7 +529,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "5a2030630ade2e0c84d57521a0fb1051051b7d9bc2acd6354193752f74cb0cf8"
+      "pythonTargetSha256": "74da4b1662470b1f50e158b0d33358ac3eebfe18241f296da8795043dee543de"
     },
     {
       "rustPath": "yosoi::Surface::new",
@@ -373,15 +550,15 @@
       "rustPath": "yosoi::Surface::node_count",
       "kind": "function",
       "signatureSha256": "34839e4f2eee5e41053b8aac7d02113ddbaf3d919a2aa2534e2a2f58480a512f",
-      "pythonTarget": "yosoi.surface.Surface.node_count",
+      "pythonTarget": "yosoi.Surface.node_count",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "68836f45685820a65406496f92d2b5603c25b32becbe29b740617f39c51f8af5"
+      "pythonTargetSha256": "2d5b6fea0d7267b003d6a1df3d3d1d8a3fdac8cb0c2c2970ddb59f5419a3e3d8"
     },
     {
       "rustPath": "yosoi::Surface::overview",
       "kind": "function",
       "signatureSha256": "df0893645d55fc9791dca5f35a44efb9fd098439d140931c2895e86cc6c43751",
-      "pythonTarget": "yosoi.surface.Surface.overview",
+      "pythonTarget": "yosoi.Surface.overview",
       "argumentMappings": [
         {
           "rustArgument": "token",
@@ -395,13 +572,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "3080ebfe6e2b507d7e6cd72043b2fa7db19f325e02032274fc18b62d04aa95d4"
+      "pythonTargetSha256": "5e86d9483d8b2b141fbab677b82990af3e6aef9f8d9adefa4a488582031b8716"
     },
     {
       "rustPath": "yosoi::Surface::parent",
       "kind": "function",
       "signatureSha256": "be20b31bb80782b6af15eea8a5eb33005e452a3d8775baa3329c36ea93f4753a",
-      "pythonTarget": "yosoi.surface.Surface.parent",
+      "pythonTarget": "yosoi.Surface.parent",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -410,13 +587,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "437e01547a0ea4fe291d5ecfc4ab3cea1b8eb224155a2609e814486a3a298eb1"
+      "pythonTargetSha256": "6b10d028745f6cbf1e5a1a8deea45fd65f0fe84a7ff48b06a317db65e2d1927a"
     },
     {
       "rustPath": "yosoi::Surface::project",
       "kind": "function",
       "signatureSha256": "70d545bc75e64fa3c4e01ce216152a8d734c068c235d75fbdf01672c477af2ed",
-      "pythonTarget": "yosoi.surface.Surface.project",
+      "pythonTarget": "yosoi.Surface.project",
       "argumentMappings": [
         {
           "rustArgument": "name",
@@ -430,37 +607,37 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "63aa090e4ae3935f0d9496d5f3b85b002ce409b12304406124d2fe523199d196"
+      "pythonTargetSha256": "fe1018d4c633acab24a26d312c208df62032c8e5fd07ce5b929b5d67400b6018"
     },
     {
       "rustPath": "yosoi::Surface::representation",
       "kind": "function",
       "signatureSha256": "8e89fa7dc9aaf7c3a43664625cc557c98a222e2737afad13b6a450bdbe8ca056",
-      "pythonTarget": "yosoi.surface.Surface.representation",
+      "pythonTarget": "yosoi.Surface.representation",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "19474a2f3fcd2b91e511dcb9b93e5cb3052d2cdbb42e0390d4d2d054f6a920c5"
+      "pythonTargetSha256": "5f81c91c59eace6a8123442eed7d4c4345c4685c1340b8ba6c4f0018ab3e31f7"
     },
     {
       "rustPath": "yosoi::Surface::root",
       "kind": "function",
       "signatureSha256": "4f0fe18385b9c88391782d97bcff78e38d90dfed43940c00d08bf6d6ffdf2a33",
-      "pythonTarget": "yosoi.surface.Surface.root",
+      "pythonTarget": "yosoi.Surface.root",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "98a7f741961ac610aa9ec0ed26d8f6065631ebb222f46fc0ab5f8a3caf16576b"
+      "pythonTargetSha256": "af788b76ac3c93b9b565f7f16efa76d1ae52abf10d8504e5429fa31e578fb181"
     },
     {
       "rustPath": "yosoi::Surface::source_bytes",
       "kind": "function",
       "signatureSha256": "e527f9d9b5d783dc2185538fba1a374f60ce197c428559e66b9677710a2ac899",
-      "pythonTarget": "yosoi.surface.Surface.source_bytes",
+      "pythonTarget": "yosoi.Surface.source_bytes",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a3980cb1a9c829f60321bf92b7c00baec4cbbe96f80af28809fb0acc700e7077"
+      "pythonTargetSha256": "fface5df37db35a04b4d446cbd9e0f7d3b3fb7ff92f4d69bdd4295a7fb4f3b5d"
     },
     {
       "rustPath": "yosoi::Surface::source_reference",
       "kind": "function",
       "signatureSha256": "d24012453b72f832559bc53190bd1feb0b55051aa82c629fdff31c1a1d01b5e7",
-      "pythonTarget": "yosoi.surface.Surface.source_reference",
+      "pythonTarget": "yosoi.Surface.source_reference",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -469,13 +646,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "3c0cd8cfdb2ebeccf78a0fc2958625b4a6dec2309ea18ff25e0f5433ef544825"
+      "pythonTargetSha256": "493da56836eb28bb4cce90d49244335f7fba890b5055ba90970949c57492cf14"
     },
     {
       "rustPath": "yosoi::Surface::validate",
       "kind": "function",
       "signatureSha256": "c791f4b13b2145b6ffe738f241163c547a21d1828f52dbdf82190ff578189620",
-      "pythonTarget": "yosoi.surface.Surface.validate",
+      "pythonTarget": "yosoi.Surface.validate",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -484,13 +661,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "de007277351f7b985105c189585ebce4db4e47ccde09877d99f3132adcd842af"
+      "pythonTargetSha256": "1cbd40615250f5ca3629057b0f7afb6456494bafddbb560454b89c9755b1442d"
     },
     {
       "rustPath": "yosoi::Surface::view",
       "kind": "function",
       "signatureSha256": "c1bd88de48b953c2223359d8d2ded8948db17644fe268d44a33d67cc7e1463b4",
-      "pythonTarget": "yosoi.surface.Surface.view",
+      "pythonTarget": "yosoi.Surface.view",
       "argumentMappings": [
         {
           "rustArgument": "name",
@@ -499,7 +676,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "9ae77e8822ee8f37f00fb2cc87390296a6df4bb6635505b56fbfac67d2271914"
+      "pythonTargetSha256": "b672681b77db76272115902e0bb4c5c776abb81f02e13295502a42c653e2a043"
     },
     {
       "rustPath": "yosoi::Surface::with_limits",
@@ -525,9 +702,9 @@
       "rustPath": "yosoi::SurfaceBudget::bytes",
       "kind": "struct_field",
       "signatureSha256": "20bb5f60bacbdce775cb8320d546843ad2572993c3ab4d224f9bc75b6d1d5030",
-      "pythonTarget": "yosoi.surface.Budget.bytes",
+      "pythonTarget": "yosoi.SurfaceBudget.bytes",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "a8e12c499a3881e67501341511b45c995b8f38ade243503a08f8cd1dd963b7a1"
+      "pythonTargetSha256": "326dc2378ee2a4c1563bb3cb7f350cc084f32eee77e3e92959d6cc6a70c610f7"
     },
     {
       "rustPath": "yosoi::SurfaceBudget::clone",
@@ -561,9 +738,9 @@
       "rustPath": "yosoi::SurfaceBudget::items",
       "kind": "struct_field",
       "signatureSha256": "54dd8abc31b9b5deb793ad037772c756d67bb8bcbb7dd3aa676272c39c2d4eb3",
-      "pythonTarget": "yosoi.surface.Budget.items",
+      "pythonTarget": "yosoi.SurfaceBudget.items",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "10118a3c3f5554898311cb051876db523a284cb7f9866b6d7896d1ccb4986383"
+      "pythonTargetSha256": "ae512da7ad540960e9e5b9620cf117b525cbd27b80421dac51147a2b26dae0ae"
     },
     {
       "rustPath": "yosoi::SurfaceBudget::serialize",
@@ -579,6 +756,54 @@
       "pythonTarget": "yosoi.SurfaceBudget",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "f13969c68e8f8f03eb0f9e67eb36385fd30e53bd339f8dcd489ed1b86a0b3d7e"
+    },
+    {
+      "rustPath": "yosoi::SurfaceConnection::close",
+      "kind": "function",
+      "signatureSha256": "73a6346eb32e2aeeac117e4dbd3006fe38f944c3e24ad108a129627c930a57df",
+      "pythonTarget": "yosoi.SurfaceConnection.close",
+      "rationale": "Rust method maps to the matching Python method/property yosoi.SurfaceConnection.close.",
+      "pythonTargetSha256": "05e70f909b6ae0953467a4f85a9cf7df7f62c1ee489a400f4655d42253745c43"
+    },
+    {
+      "rustPath": "yosoi::SurfaceConnection::execute",
+      "kind": "function",
+      "signatureSha256": "4425e8b134f90074ea28f7ee8da4efe745e56f19d15bf21882aa45145d3517df",
+      "pythonTarget": "yosoi.SurfaceConnection.execute",
+      "argumentMappings": [
+        {
+          "rustArgument": "command",
+          "pythonArgument": "command",
+          "conversion": "Python Mapping[str, object] converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.SurfaceConnection.execute.",
+      "pythonTargetSha256": "51c8b3563934886064b1225da7a6fe453137b5935ac8ee5257f0f02c7c31c239"
+    },
+    {
+      "rustPath": "yosoi::SurfaceConnection::outcome",
+      "kind": "function",
+      "signatureSha256": "7b1d8faf003980ceb71f3fc334ffd002dcad6c1b5cc25e80160a66aad7660b15",
+      "pythonTarget": "yosoi.SurfaceConnection.outcome",
+      "rationale": "Rust method maps to the matching Python method/property yosoi.SurfaceConnection.outcome.",
+      "pythonTargetSha256": "033b70e5a4f0e60d9eb9ec0f766176284725d741a5fa0d5c694f0c817c29dbb6"
+    },
+    {
+      "rustPath": "yosoi::SurfaceConnection::ready",
+      "kind": "function",
+      "signatureSha256": "d87d12bd8eb00a73b6b09dc8b697182c30a632c35d4c0032b92b03074566a2d0",
+      "pythonTarget": "yosoi.SurfaceConnection.ready",
+      "rationale": "Rust method maps to the matching Python method/property yosoi.SurfaceConnection.ready.",
+      "pythonTargetSha256": "342aa0c864d799b191d904ba52644539e42cff5aa7a49fcd4afb59147c45df73"
+    },
+    {
+      "rustPath": "yosoi::SurfaceConnection",
+      "kind": "trait",
+      "signatureSha256": "87b171ee46f481c0c8bfb35c7b27c337421f7ff6f19370b78edcd370bd2c94ed",
+      "pythonTarget": "yosoi.SurfaceConnection",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.SurfaceConnection.",
+      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702",
+      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait."
     },
     {
       "rustPath": "yosoi::SurfaceError::ActionInFlight",
@@ -872,9 +1097,9 @@
       "rustPath": "yosoi::SurfaceLimits::depth",
       "kind": "struct_field",
       "signatureSha256": "8abe0e1b21c6c7bb9b59d2b5f7544d4927e084288bae6088fdb2df9a478ed39b",
-      "pythonTarget": "yosoi.surface.Limits.depth",
+      "pythonTarget": "yosoi.SurfaceLimits.depth",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "310e80477aa73eb220f663f54e66eb8e81ea4250f2dd381dcb8cfc892f3c9bbc"
+      "pythonTargetSha256": "cd759448bff581476abef1b0bb1e4b2b664e551782010ba16dacad1113eec522"
     },
     {
       "rustPath": "yosoi::SurfaceLimits::deserialize",
@@ -894,25 +1119,25 @@
       "rustPath": "yosoi::SurfaceLimits::input_bytes",
       "kind": "struct_field",
       "signatureSha256": "9d8420e54d647aded0f45b48e3b66579f7b35bc2737770931da93c2c161310f1",
-      "pythonTarget": "yosoi.surface.Limits.input_bytes",
+      "pythonTarget": "yosoi.SurfaceLimits.input_bytes",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "62427063a46cc086cd89618d9423c660a77bf57a0dd2162ecc55d87214aa0853"
+      "pythonTargetSha256": "70a017bfbf0d92a7120c3420599efd8bffe566e90a990ca5568311f43eea4f09"
     },
     {
       "rustPath": "yosoi::SurfaceLimits::nodes",
       "kind": "struct_field",
       "signatureSha256": "38ff724c39cc9cd896c6445dc5dd595e68e58386cce2aafb0f6ae2326fd290c5",
-      "pythonTarget": "yosoi.surface.Limits.nodes",
+      "pythonTarget": "yosoi.SurfaceLimits.nodes",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "db0a132e18cd176167f29ced6d471f7e1c431096fbbb5eb0be5637aa586ac394"
+      "pythonTargetSha256": "be328ccd96f1f32cf256bb6ad88543f5a98cc5cca86d561ac54ad51b86698f32"
     },
     {
       "rustPath": "yosoi::SurfaceLimits::overview_depth",
       "kind": "struct_field",
       "signatureSha256": "cea828d4102d6115addd8ca12d3b2d1c9ab6d0151095f24fad9a568941c92654",
-      "pythonTarget": "yosoi.surface.Limits.overview_depth",
+      "pythonTarget": "yosoi.SurfaceLimits.overview_depth",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "6ded559931b75e58116f079be55c175e880981c807ecd907a2ceb678993976f9"
+      "pythonTargetSha256": "eaed2e8098ea8daae5776eabcd464af488b99714a37611c7b67b7c92a91a2c6d"
     },
     {
       "rustPath": "yosoi::SurfaceLimits::serialize",
@@ -930,12 +1155,87 @@
       "pythonTargetSha256": "eff53ed03c13fa81261e47bc919b15d97e63a75356c5d2b9fa2d1c0476c3fd93"
     },
     {
+      "rustPath": "yosoi::SurfacePolicy::archive_limits",
+      "kind": "struct_field",
+      "signatureSha256": "ad26a24338541da545efe8940eee133b4a2ade93075746c556b539a7f8feb66b",
+      "pythonTarget": "yosoi.SurfacePolicy.archive_limits",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "f2bb682de10d65e4b675f4977bb95107ff744a0a8960b93ed8e3b6715df22793"
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::archive_root",
+      "kind": "struct_field",
+      "signatureSha256": "acc873c0a7b9b36f823683b8f7d3e5cc60ea5085d83017ab474315e36821e836",
+      "pythonTarget": "yosoi.SurfacePolicy.archive_root",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "74ddbbed461d62a2f95c1133a7faea69a6a63bc07cf36a5f82530913f3e2adf1"
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::archive",
+      "kind": "struct_field",
+      "signatureSha256": "03efcc3b676ae0b239a996a8fb74daf8d8b740bb0ab1aef16d684d78e588539b",
+      "pythonTarget": "yosoi.SurfacePolicy.archive",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "c854778e35780b05b9a5836a75e8a9e1ec5abfc0df4d3895dc861fdb0034c492"
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::clone",
+      "kind": "function",
+      "signatureSha256": "9a3f76d0b540ae19695e75a3e8a8c5ad11baa388c28c6ce1ed41a0bec00b837a",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::output",
+      "kind": "struct_field",
+      "signatureSha256": "63d52533819599783f17a4283606548e90e6b1c4fd007b78da5cddf2cc8dac21",
+      "pythonTarget": "yosoi.SurfacePolicy.output",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "1a67c96c05b7fcaf64650be8540635d23dbf1a6054446b9e6026f43cfadc08b6"
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::SurfacePolicy",
+      "kind": "struct",
+      "signatureSha256": "ac219bb17fd465659e38003aa2c8797fe645af7c065d51ad6bee88e20905e822",
+      "pythonTarget": "yosoi.SurfacePolicy",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "35325108f5c6eb60bc445a9c09db94fd4659c7c590f9a9c31a8b20b84d1a7cf3"
+    },
+    {
       "rustPath": "yosoi::SurfaceSession::attach",
       "kind": "function",
       "signatureSha256": "fe66b49967c651805c41e28b9268e5a2414a1ab90002c27ec31112397091736f",
-      "pythonTarget": "yosoi.surface.Session.attach",
+      "pythonTarget": "yosoi.SurfaceSession.attach",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "b12dcbd5583595b6fb628001246833e5b4cbd6089da908e06387b882d82b216f"
+      "pythonTargetSha256": "be8f8251f5a0624a125f3346cd2781e0dabcf7565aeaf89e45f53410ce9895cd"
     },
     {
       "rustPath": "yosoi::SurfaceSession::clone",
@@ -945,28 +1245,36 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::SurfaceSession::close",
+      "kind": "function",
+      "signatureSha256": "caa8957531dcef3a742b869bf2878d9f53e625816a83078ae86afdbc9e33f895",
+      "pythonTarget": "yosoi.SurfaceSession.close",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "a99d47095abfae69914bd63f27b9fe40fc15fbcf58d0dd377a1115e75c7aa0d6"
+    },
+    {
       "rustPath": "yosoi::SurfaceSession::current",
       "kind": "function",
       "signatureSha256": "897fea73faffbb033f5b888a5779b11c507aa629a56b35349991c7474cf8db10",
-      "pythonTarget": "yosoi.surface.Session.current",
+      "pythonTarget": "yosoi.SurfaceSession.current",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "0d078ff03263357bfd52872dc769212bb86af8c325e57cad549254481f92b9fd"
+      "pythonTargetSha256": "e6015accdb744f1203bf05b606534e94181df89b9bda808604ffa7d862c65073"
     },
     {
       "rustPath": "yosoi::SurfaceSession::cursor",
       "kind": "function",
       "signatureSha256": "6590bca092ec93e360dbe558a6044cd6114eedca0eef33a38bb54333357a6ab3",
-      "pythonTarget": "yosoi.surface.Session.cursor",
+      "pythonTarget": "yosoi.SurfaceSession.cursor",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "9815eca32c962639069f114978270b9c3e985c92e6c2f837569309407fb91fd2"
+      "pythonTargetSha256": "d1d470184cd603598cd1b9f53d01b2108b9753e5ad65c128ec8b3c2918e006b4"
     },
     {
       "rustPath": "yosoi::SurfaceSession::detach",
       "kind": "function",
       "signatureSha256": "f2ce42ee419ee956994de6e1ea37d641719a56ddf5b974f3e56339684c928437",
-      "pythonTarget": "yosoi.surface.Session.detach",
+      "pythonTarget": "yosoi.SurfaceSession.detach",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "3d681982a3d499c5d77fb18b34308963dc965de817451ad2a57b8f944e5b0c9a"
+      "pythonTargetSha256": "6a20dab636cbb067265d26f6f31590ce91a2fdf084aba40bb9ce42a76210b15b"
     },
     {
       "rustPath": "yosoi::SurfaceSession::fmt",
@@ -979,15 +1287,15 @@
       "rustPath": "yosoi::SurfaceSession::hot_owner",
       "kind": "function",
       "signatureSha256": "0c7f62bcfc41fc3e5b72331e9c56b0b9b8672899d20a45b7fc8892cafc230df4",
-      "pythonTarget": "yosoi.surface.Session.hot_owner",
+      "pythonTarget": "yosoi.SurfaceSession.hot_owner",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "9a73ecbd06d96dff8b73f0f74634af80b7fdedf46330ea96bb7283f460d63d09"
+      "pythonTargetSha256": "abec710a1e065932dd8ee0861e4ba3a3e8c065ceb66103f4997b0252d1af1b11"
     },
     {
       "rustPath": "yosoi::SurfaceSession::invalidate",
       "kind": "function",
       "signatureSha256": "36bd72dbf5660c366d90045bb3440fc553f4f8e4fe25393031e954a9ed7644cf",
-      "pythonTarget": "yosoi.surface.Session.invalidate",
+      "pythonTarget": "yosoi.SurfaceSession.invalidate",
       "argumentMappings": [
         {
           "rustArgument": "reason",
@@ -996,7 +1304,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "f010ea614cfe7d1f2b4e64640a7ef87f786eff500766fee5c8fd86df314b064c"
+      "pythonTargetSha256": "81662ddbc2d7f3068abb999d63999b1d09b011df1b9c4f4bcea79aaea30b9d45"
     },
     {
       "rustPath": "yosoi::SurfaceSession::new",
@@ -1019,10 +1327,18 @@
       "pythonTargetSha256": "4721efab3aff5f9a8a64d525dcddaa53c927ee89a745e58e996c31e55e201637"
     },
     {
+      "rustPath": "yosoi::SurfaceSession::outcome",
+      "kind": "function",
+      "signatureSha256": "0f2b77b4f8e2906765b374fd5080019a2a6649c91ddd57190f2368c190c8210e",
+      "pythonTarget": "yosoi.SurfaceSession.outcome",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "45240c27e7a833a376f95d846888cf57db8fdc59d0db9a62626f8de24dba81fd"
+    },
+    {
       "rustPath": "yosoi::SurfaceSession::publish",
       "kind": "function",
       "signatureSha256": "a9cd553b0ea6d8cb6212080ad354fce2e0b6756f2afbe0b5f421e2b88fa37d7a",
-      "pythonTarget": "yosoi.surface.Session.publish",
+      "pythonTarget": "yosoi.SurfaceSession.publish",
       "argumentMappings": [
         {
           "rustArgument": "index",
@@ -1031,15 +1347,31 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "4e4a146be530b1ccd28ae5105ec5ddde5c625a188a73c0a952324d5eafdcc6db"
+      "pythonTargetSha256": "5d361bd3ed6f3c606667d30b933ca8241b6ca57a0a5a826738a300ba65fe88d6"
+    },
+    {
+      "rustPath": "yosoi::SurfaceSessionPolicy::archive_limits",
+      "kind": "struct_field",
+      "signatureSha256": "ad26a24338541da545efe8940eee133b4a2ade93075746c556b539a7f8feb66b",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.archive_limits",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "5b7feb47f351050aa664b83fd5bb96f4af925e73ec1c9b43bc4a363541c91c8b"
+    },
+    {
+      "rustPath": "yosoi::SurfaceSessionPolicy::archive",
+      "kind": "struct_field",
+      "signatureSha256": "03efcc3b676ae0b239a996a8fb74daf8d8b740bb0ab1aef16d684d78e588539b",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.archive",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "8127cfb26a525955af887b9493b61450226d34fd501ffd8556069216ada791dc"
     },
     {
       "rustPath": "yosoi::SurfaceSessionPolicy::captures",
       "kind": "struct_field",
       "signatureSha256": "4db2308e6bd767f50aa8de282f271689d1001c925ac4ab6db28dc00869bf6847",
-      "pythonTarget": "yosoi.surface.SessionPolicy.captures",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.captures",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "2a93e1cbcdaa74e11c60fc41e5a5d3dd35b74b1d3926ec25d7f28dd07bb30a89"
+      "pythonTargetSha256": "b7b67f162c9b39581db67e20b16c08bea98ca5678f13eca38c5834e744828746"
     },
     {
       "rustPath": "yosoi::SurfaceSessionPolicy::clone",
@@ -1052,9 +1384,9 @@
       "rustPath": "yosoi::SurfaceSessionPolicy::cursors",
       "kind": "struct_field",
       "signatureSha256": "6f816803e5854fd88aa5d5c1a6d7b26dd7d5777f1494484978e7abd4d00015de",
-      "pythonTarget": "yosoi.surface.SessionPolicy.cursors",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.cursors",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "eaaad16d0c0f0513bc38e2a251a577156c52d09747e3cfdb435951a03d248464"
+      "pythonTargetSha256": "5741320eff5755f63da08a600260c645e965c7c16978e4811c4c83683e5cd349"
     },
     {
       "rustPath": "yosoi::SurfaceSessionPolicy::default",
@@ -1074,9 +1406,9 @@
       "rustPath": "yosoi::SurfaceSessionPolicy::events",
       "kind": "struct_field",
       "signatureSha256": "8ae9db5060d52523ed73abe0bdbec7bd5904b4f6e9f6d4e0fe8eebffdfa1f4cb",
-      "pythonTarget": "yosoi.surface.SessionPolicy.events",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.events",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "b767829df786d09ec9525125f019dfbb0b24ea6e86178aa8ab31e2490f70b2f2"
+      "pythonTargetSha256": "7bcecdc9894377f9a43658c808b02cfc930847244f6fc0d6b96af4ad0111335a"
     },
     {
       "rustPath": "yosoi::SurfaceSessionPolicy::fmt",
@@ -1096,9 +1428,9 @@
       "rustPath": "yosoi::SurfaceSessionPolicy::watches",
       "kind": "struct_field",
       "signatureSha256": "e932d08248608a5140f8d59f846acfc63f1cdb56e4ea84681588caf529544018",
-      "pythonTarget": "yosoi.surface.SessionPolicy.watches",
+      "pythonTarget": "yosoi.SurfaceSessionPolicy.watches",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "773100bcdb4a1c209e69ee5332c9125499a9717d03fccbec8dbbff1a6d1b8487"
+      "pythonTargetSha256": "a312b3be328148f99e7387748e222187ec5584236addc687ecc8020cffeaf765"
     },
     {
       "rustPath": "yosoi::SurfaceSessionPolicy",
@@ -1106,7 +1438,7 @@
       "signatureSha256": "57a9e2cbeaf34035f4b623ec1477ecc1ecfbf2e766d51b5afa1e98da45ea27ac",
       "pythonTarget": "yosoi.SurfaceSessionPolicy",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "21594095affc3e20aca6f5684e5eafd8bc1c56c626623195d64933c552b6b9d7"
+      "pythonTargetSha256": "dd277f9c801144ead5432d21e396e9ac00eeeb36e13f8b0dc874c3e3c740f966"
     },
     {
       "rustPath": "yosoi::SurfaceSession",
@@ -1362,41 +1694,41 @@
       "rustPath": "yosoi::VideoPolicy::frame_max_side",
       "kind": "struct_field",
       "signatureSha256": "5d34c57e2358037b61b2b1ac81911a569b9ed6a6c340f24f3b608e9ce339c6aa",
-      "pythonTarget": "yosoi.surface.VideoPolicy.frame_max_side",
+      "pythonTarget": "yosoi.VideoPolicy.frame_max_side",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "6a3c232059b6e4610c3c19938a42417df3521d03102924addeb90e3e81551ea9"
+      "pythonTargetSha256": "befb40bfe904457d52f8e368d9bcd49deb120900f905f92d55cc31b4175fcbe2"
     },
     {
       "rustPath": "yosoi::VideoPolicy::max_duration_us",
       "kind": "struct_field",
       "signatureSha256": "7bfdb34ece3cd7467df2efb2f8d64b427dea77f193a9cfea29e7e5da2b0a05d5",
-      "pythonTarget": "yosoi.surface.VideoPolicy.max_duration_us",
+      "pythonTarget": "yosoi.VideoPolicy.max_duration_us",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "61445d8a70fda0e3132a3353af4cb8e91c76b18fdc5b1d732cddbe51a4ba8a22"
+      "pythonTargetSha256": "7360be5c25e6272a37e55150937ba835479d7bf70f66991313e4b064a6c3b695"
     },
     {
       "rustPath": "yosoi::VideoPolicy::max_frame_bytes",
       "kind": "struct_field",
       "signatureSha256": "e32ca7b7b404c71996874ca3e330eb63a05cbb46a3c7fc546dd18dd83de2ff1b",
-      "pythonTarget": "yosoi.surface.VideoPolicy.max_frame_bytes",
+      "pythonTarget": "yosoi.VideoPolicy.max_frame_bytes",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "5135e9ee30a1073e358c729ea6c1c3e00574ba1980fd03c1167c422be967dbf7"
+      "pythonTargetSha256": "4b86c2918a4a5f64100f2b3c694e441d48bda9392429dcd34dd85b89c2c08482"
     },
     {
       "rustPath": "yosoi::VideoPolicy::max_source_bytes",
       "kind": "struct_field",
       "signatureSha256": "2415b571644ef025757f6141609088c07a9b556587e9ac4b5114733679cca83f",
-      "pythonTarget": "yosoi.surface.VideoPolicy.max_source_bytes",
+      "pythonTarget": "yosoi.VideoPolicy.max_source_bytes",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "6c6be63ed8274bfaef517b18319c15224409570d93eff110b04d4cc0f7cc2377"
+      "pythonTargetSha256": "ad3505c298f2e34ca69cdc376d82b34437e39af979378c57253e433d7111e108"
     },
     {
       "rustPath": "yosoi::VideoPolicy::min_interval_us",
       "kind": "struct_field",
       "signatureSha256": "943482bdcc982e95fe9d86f8374589f58a1637eea3a5186f449618d2b7166629",
-      "pythonTarget": "yosoi.surface.VideoPolicy.min_interval_us",
+      "pythonTarget": "yosoi.VideoPolicy.min_interval_us",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "931e400a834350fe49f6a664ffc9d3d10b048a3144705ae42e3db7d441414c13"
+      "pythonTargetSha256": "d56e42121f3706d1965752e47176d87861d19754ba551478668f9e7aaaaaaf00"
     },
     {
       "rustPath": "yosoi::VideoPolicy::serialize",
@@ -1409,9 +1741,9 @@
       "rustPath": "yosoi::VideoPolicy::tool_timeout_ms",
       "kind": "struct_field",
       "signatureSha256": "a6956c934016155b36365422797e909a14f03fec36f156a37a736fba568c1298",
-      "pythonTarget": "yosoi.surface.VideoPolicy.tool_timeout_ms",
+      "pythonTarget": "yosoi.VideoPolicy.tool_timeout_ms",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "5c5e1b1c2c6786b4856f2a7e8ffd98b4f7d0acf998bfb323ba389f17a97e6866"
+      "pythonTargetSha256": "97392e35c1d3102763264ab228173bef5390dd673b7dce527bf984d879e8771c"
     },
     {
       "rustPath": "yosoi::VideoPolicy",
@@ -1422,10 +1754,105 @@
       "pythonTargetSha256": "1db0e732f67fafc6e42290dd44b5bab43866507734d57c0e8312887bdd9b3ce3"
     },
     {
+      "rustPath": "yosoi::VideoSession::close",
+      "kind": "function",
+      "signatureSha256": "45c403899abdbcda2c573674a1ec9765b423cea31c20736b14a665929ad374f5",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.VideoSession.close",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "0f83a680b7df813a9b914fd17411f0890929bf40af659b912afc12c740a80f47"
+    },
+    {
+      "rustPath": "yosoi::VideoSession::execute",
+      "kind": "function",
+      "signatureSha256": "43cde4575cf58a3cb4150a56a68eedd1615c3292730f16d4d61354b4fbd2125d",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.VideoSession.execute",
+      "argumentMappings": [
+        {
+          "rustArgument": "command",
+          "pythonArgument": "command",
+          "conversion": "Python Mapping[str, object] converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "c089a1bc66f39bf432a0a1590ea906bb9572c60ae8caa62e28e7003f1e2efbc6"
+    },
+    {
+      "rustPath": "yosoi::VideoSession::fmt",
+      "kind": "function",
+      "signatureSha256": "f3ac10c72c779b025da70462a9c61f9129ccc4e4a1f0d02f0b419dfcb81efb6b",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::VideoSession::open",
+      "kind": "function",
+      "signatureSha256": "e9d2df028db4306ab96f71afd6f74dff2fb9398980e54177cb4fe1a275e47f84",
+      "pythonTarget": "yosoi.VideoSession.open",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "max_side",
+          "pythonArgument": "max_side",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:max_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 1920"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.VideoSession.open.",
+      "pythonTargetSha256": "a77d779f123653d985e838eb0bec351900566483ba219114961bf8c99317601e"
+    },
+    {
+      "rustPath": "yosoi::VideoSession::outcome",
+      "kind": "function",
+      "signatureSha256": "7b1d8faf003980ceb71f3fc334ffd002dcad6c1b5cc25e80160a66aad7660b15",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.VideoSession.outcome",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "6a1ff884bc3b11fb63fd38c63e856af01da66ce59e7d55ada4fdfb3af461067c"
+    },
+    {
+      "rustPath": "yosoi::VideoSession::ready",
+      "kind": "function",
+      "signatureSha256": "d87d12bd8eb00a73b6b09dc8b697182c30a632c35d4c0032b92b03074566a2d0",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.VideoSession.ready",
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "1c59b8dd2b9d73dc29b8833c343a8a9a22899bc62dcf9bae1f1113c25cc9a413"
+    },
+    {
+      "rustPath": "yosoi::VideoSession",
+      "kind": "struct",
+      "signatureSha256": "4e00f885d0c2bf00701ced0d52f4a2f7996d197547feb541259c7cb6ed4b99ab",
+      "pythonTarget": "yosoi.VideoSession",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.VideoSession.",
+      "pythonTargetSha256": "72600183ccf18954c5425b2ca39d3364fcc03a250ceaa7cb26e5f036adda3549"
+    },
+    {
       "rustPath": "yosoi::VideoSurface::at",
       "kind": "function",
       "signatureSha256": "14e28b1ec11ff7b0adf42a250685a8f40950323ddcce83be03143851c607d7ba",
-      "pythonTarget": "yosoi.surface.VideoSurface.at",
+      "pythonTarget": "yosoi.VideoSurface.at",
       "argumentMappings": [
         {
           "rustArgument": "position_us",
@@ -1441,7 +1868,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "03961c0c00fe84d60807df6a154cfe35fbb1c6aba8560d1b813577a4b0e2323e"
+      "pythonTargetSha256": "c35cd0c57cb341c605f1e7d651571f74ecc034f8755d228df74fa3517446fbea"
     },
     {
       "rustPath": "yosoi::VideoSurface::clone",
@@ -1454,7 +1881,7 @@
       "rustPath": "yosoi::VideoSurface::crop",
       "kind": "function",
       "signatureSha256": "32de726ee665bc25c052dbb2fe1f94d5552b7614b5ed25937618f8a341b5e6db",
-      "pythonTarget": "yosoi.surface.VideoSurface.crop",
+      "pythonTarget": "yosoi.VideoSurface.crop",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -1468,16 +1895,16 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "6e63505fc6accca7f54e47073c1a1968de9ba4c0d61470f6fc9080c48d0803f3"
+      "pythonTargetSha256": "02ededccbd526014984cbba9050446df21625a03415b8061a4ff95fe0c50c83e"
     },
     {
       "rustPath": "yosoi::VideoSurface::descriptor",
       "kind": "function",
       "signatureSha256": "5dad61995d32e42cd85f1b2b06ad89b738162d3da075c03c64da073aa6a315a5",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.VideoSurface.descriptor",
+      "pythonTarget": "yosoi.VideoSurface.descriptor",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "b0b1db34c58cfe00e35f0329ea2186c39744ede8b36b73262f21fb3c0e78d3df"
+      "pythonTargetSha256": "9429a13c3b64a666f35c67764666c377f92f4568c38bb0c45747c9f4c47c706a"
     },
     {
       "rustPath": "yosoi::VideoSurface::fmt",
@@ -1490,7 +1917,7 @@
       "rustPath": "yosoi::VideoSurface::frame",
       "kind": "function",
       "signatureSha256": "cb85fa70fc6522e955c8e2cbf1667ad777fbbd84bd87f4b9579dae87c24265bb",
-      "pythonTarget": "yosoi.surface.VideoSurface.frame",
+      "pythonTarget": "yosoi.VideoSurface.frame",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -1499,30 +1926,30 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "46795026980bedff8c19c6943d6e1291ed1dcad6d826908d1429007da3596475"
+      "pythonTargetSha256": "9406578f0640ab105c3e5951792089c68e62eac75287e604e874af6406bae2d6"
     },
     {
       "rustPath": "yosoi::VideoSurface::metadata",
       "kind": "function",
       "signatureSha256": "1b408dd3fc47f87dae5592e127b6d09f0a32e997dbfc3037e27bef64ddcdfbe4",
-      "pythonTarget": "yosoi.surface.VideoSurface.metadata",
+      "pythonTarget": "yosoi.VideoSurface.metadata",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "2e6a201cdc687f8ed6680a31e57b00018bec33b9206847ff67e657bfc054aea1"
+      "pythonTargetSha256": "cd85e08f8ea01f3200d19294b5e8ce7ab26160c4e5e1aa00079e878e85968083"
     },
     {
       "rustPath": "yosoi::VideoSurface::observation",
       "kind": "function",
       "signatureSha256": "9e1496d3a2977d531bbbf3e49ef985499d53e92676012f7d1d7567519ec08930",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.VideoSurface.observation",
+      "pythonTarget": "yosoi.VideoSurface.observation",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "ff441bc10153dc2d34ae02079633ce465cc663b906fc090dfa4dfe44913e45dc"
+      "pythonTargetSha256": "ae7e7885fc43178473cd6e232b1957e2d63a2f227b5c89ad2226ebbc55271339"
     },
     {
       "rustPath": "yosoi::VideoSurface::open",
       "kind": "function",
       "signatureSha256": "780c3118b066f85538fb8a116dc38e23aee8f838e6e494a1eccba63a28bee676",
-      "pythonTarget": "yosoi.surface.VideoSurface.open",
+      "pythonTarget": "yosoi.VideoSurface.open",
       "argumentMappings": [
         {
           "rustArgument": "path",
@@ -1536,21 +1963,21 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "126125270fc4fbf0c4048969ad18e4a91db82874b2cd7758e17de24f3c5b4b48"
+      "pythonTargetSha256": "377d65b35ccf28fbce52fddbdd3d3cc2c663382ef6673847b80118f7ac65b833"
     },
     {
       "rustPath": "yosoi::VideoSurface::policy",
       "kind": "function",
       "signatureSha256": "14ea7549cd713890172f535dc666d28a7ac5f8680740a4df369a22a8ffd75e23",
-      "pythonTarget": "yosoi.surface.VideoSurface.policy",
+      "pythonTarget": "yosoi.VideoSurface.policy",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "ac7bd02159b3520178020e07cde35b02a5d23dd58728a2a828ea76607d90d8b9"
+      "pythonTargetSha256": "e0d94e8e1f14e24a1e6c59813593738e69b689745204466910bdaa627fa0c2cf"
     },
     {
       "rustPath": "yosoi::VideoSurface::read_from",
       "kind": "function",
       "signatureSha256": "a5ec178a09bf52b84875892daa748b0d8a1003853f9a63ded72115d1ac4da3de",
-      "pythonTarget": "yosoi.surface.VideoSurface.read_from",
+      "pythonTarget": "yosoi.VideoSurface.read_from",
       "argumentMappings": [
         {
           "rustArgument": "archive",
@@ -1564,14 +1991,14 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a5db1dbb4b56d938a609a331703ba21501543a7909d476cdd7f85ae8a1fd4b64"
+      "pythonTargetSha256": "9c652e112e752be169e448c985610cf311bed930552edb3c18ff696d9b224461"
     },
     {
       "rustPath": "yosoi::VideoSurface::read",
       "kind": "function",
       "signatureSha256": "19d3fd4ee77265cf94de6c647eae253e01337d11cd313d70d0a9650a74b1492f",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.VideoSurface.read",
+      "pythonTarget": "yosoi.VideoSurface.read",
       "argumentMappings": [
         {
           "rustArgument": "request",
@@ -1580,22 +2007,22 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "bd9f434f74a8bba4d67364d0830fe7d571f679a81b93f11b3300c5f9e752b062"
+      "pythonTargetSha256": "8accb6a4e1c69d89d9a7e6915013b211d93a745d61d4276dfaeb261fd7754560"
     },
     {
       "rustPath": "yosoi::VideoSurface::root_reference",
       "kind": "function",
       "signatureSha256": "f7e3493bffa7991ccb4df81dd2cffe99150117854cb35c5eb65dea8533467813",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.VideoSurface.root_reference",
+      "pythonTarget": "yosoi.VideoSurface.root_reference",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "fbb7709e91d88ff77177241deff9123dca94df4ee41615bef3128d484d15b6bf"
+      "pythonTargetSha256": "8c0d4c0ecd439809e2bf44e50efab39d7c7b19336f0714d68c3cebc3bf5633ef"
     },
     {
       "rustPath": "yosoi::VideoSurface::write_to",
       "kind": "function",
       "signatureSha256": "a62c6b3f52cc99eebb8c440e6a8532f67bf09c2c455c5a989ee589ec84b013c5",
-      "pythonTarget": "yosoi.surface.VideoSurface.write_to",
+      "pythonTarget": "yosoi.VideoSurface.write_to",
       "argumentMappings": [
         {
           "rustArgument": "archive",
@@ -1604,7 +2031,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "287e6c6fd6de88862d1ef88398ffe1464e69283f15fa8ec091d0dfb4ba02e4c0"
+      "pythonTargetSha256": "5cb43124fd1507dc76f4e3ce5b8665f0006147625b208acd10db376654f1bb92"
     },
     {
       "rustPath": "yosoi::VideoSurface",
@@ -1626,9 +2053,9 @@
       "kind": "function",
       "signatureSha256": "5dad61995d32e42cd85f1b2b06ad89b738162d3da075c03c64da073aa6a315a5",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.WebSurface.descriptor",
+      "pythonTarget": "yosoi.WebSurface.descriptor",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "3cf0b3e0bcb5a3b683a8dfba044873bdb75a8958ebf7364d945d7fcdf92724fb"
+      "pythonTargetSha256": "ee180f0e1aa4d1ecbebde3b5f40902c6257031b2749781a7683718dfa830a83f"
     },
     {
       "rustPath": "yosoi::WebSurface::fmt",
@@ -1641,7 +2068,7 @@
       "rustPath": "yosoi::WebSurface::native_reference",
       "kind": "function",
       "signatureSha256": "4fc071d54176600d694865ef7086f38a1f93404623084fa8092dca54efbdc269",
-      "pythonTarget": "yosoi.surface.WebSurface.native_reference",
+      "pythonTarget": "yosoi.WebSurface.native_reference",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -1650,7 +2077,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a9f868c305d24a1daf6b8a532e2146cc3ebca041b7976b5c7aa8a3719aad5c1a"
+      "pythonTargetSha256": "bb3a657c3a7db8d735f39fc6211c0452b4fcba0afc602fe0fe17b8db1856b4dc"
     },
     {
       "rustPath": "yosoi::WebSurface::new",
@@ -1677,16 +2104,16 @@
       "kind": "function",
       "signatureSha256": "9e1496d3a2977d531bbbf3e49ef985499d53e92676012f7d1d7567519ec08930",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.WebSurface.observation",
+      "pythonTarget": "yosoi.WebSurface.observation",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "c9a7388b24e136689fb8af6c8369e7495940817d898eed8f0715da16a6da79cc"
+      "pythonTargetSha256": "4ce0e196a5af4860dc08dc3f203910204ee9e3249f2bf2b66024061a9243ccb8"
     },
     {
       "rustPath": "yosoi::WebSurface::read",
       "kind": "function",
       "signatureSha256": "19d3fd4ee77265cf94de6c647eae253e01337d11cd313d70d0a9650a74b1492f",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.WebSurface.read",
+      "pythonTarget": "yosoi.WebSurface.read",
       "argumentMappings": [
         {
           "rustArgument": "request",
@@ -1695,13 +2122,13 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "e5d37da08b981f3510a95f3b96197896e891ab43eb9a90049d7e86d101e0e84e"
+      "pythonTargetSha256": "9be46659c4681632a3ec4f2c4e5b1ef9979ae758fc92edef1b7a2f6d40ce351f"
     },
     {
       "rustPath": "yosoi::WebSurface::reference",
       "kind": "function",
       "signatureSha256": "08123426fc2d5c1e7c22f5a321934b86f4dfa656fbe626049bc74e3ebbb7e071",
-      "pythonTarget": "yosoi.surface.WebSurface.reference",
+      "pythonTarget": "yosoi.WebSurface.reference",
       "argumentMappings": [
         {
           "rustArgument": "reference",
@@ -1710,16 +2137,16 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "6fd601353b5e3cb36bde326191246e4ea68f817e1a137cc7ad0fa162fceacedc"
+      "pythonTargetSha256": "e88a02dc184ee4b8c96c14428428707522865d3f51f5bf895edb1d0c696cb720"
     },
     {
       "rustPath": "yosoi::WebSurface::root_reference",
       "kind": "function",
       "signatureSha256": "f7e3493bffa7991ccb4df81dd2cffe99150117854cb35c5eb65dea8533467813",
       "trait": "SurfaceRead",
-      "pythonTarget": "yosoi.surface.WebSurface.root_reference",
+      "pythonTarget": "yosoi.WebSurface.root_reference",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "c4317a60a58d948f7629cf5a333535691c276c96c969d748bf9e26dfaf13ccab"
+      "pythonTargetSha256": "422be4033e7b1d5837b9cf603aef7a986b11830bf01e3a2afed9546120061320"
     },
     {
       "rustPath": "yosoi::WebSurface",
@@ -1940,6 +2367,343 @@
       "pythonTarget": "yosoi.surface.ActionStatus",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "287f399086464cf6fc71f763e645f444e6e107917649ad0c242b66506eee8387"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::bytes",
+      "kind": "struct_field",
+      "signatureSha256": "47278be897315fc7bdc41a546837d455e9dddc3de376b54fc8428874e35e2ab2",
+      "pythonTarget": "yosoi.surface.ArchiveLimits.bytes",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "198330862c5790ce16f8d277b70303e6c3f397f1e60bfdce091a524025a1a3eb"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::clone",
+      "kind": "function",
+      "signatureSha256": "e480467e3e9c06f07c4bce9e81b5e365c20f7174dae5fa979b8a29f782d91e59",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::eq",
+      "kind": "function",
+      "signatureSha256": "9fc7456fcd90dcf7c0edc998f4012aecae72d4155a8a61e44849b26ecb4ef75c",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::observations",
+      "kind": "struct_field",
+      "signatureSha256": "c254f72ae6e315dc6bd4841565c7e6d5efc950bdc25e31cc5a3735f1412a1639",
+      "pythonTarget": "yosoi.surface.ArchiveLimits.observations",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "af308907f86cb3a50ade397a3bc3cfb54b5004f55cfc65f71e410eb608c9cb5f"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::operations",
+      "kind": "struct_field",
+      "signatureSha256": "5880ab44cb9c6e2cfc61cd12e30f0fcb5a5e46c06d3869fefe372c7e6b733eb3",
+      "pythonTarget": "yosoi.surface.ArchiveLimits.operations",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "ecdfd7e668e1aca72063a9111d49ccab50a838577163cd4f4b60662555b93b40"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchiveLimits",
+      "kind": "struct",
+      "signatureSha256": "a818e2a938e89473bac504bb22420035be5107d29e617b65c112d642e55dde22",
+      "pythonTarget": "yosoi.surface.ArchiveLimits",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "d1d266981c4c51325320aede36eb77095629f5cdca9997f8011b47de1f7b3aaf"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::Enabled",
+      "kind": "variant",
+      "signatureSha256": "92c1cdfdf4cb9cf6fcca962f206de36fd5d60db1178bc9461052f8de703a0e06",
+      "pythonTarget": "yosoi.surface.ArchivePolicy",
+      "semanticEquivalent": "The Python literal is the identical lowercase serde wire value: enabled.",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "b3770ca803b2ed7b4d89e3f50f05642427f38d22a8c1c15f1267e26ec996e2ba"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::Off",
+      "kind": "variant",
+      "signatureSha256": "ca7981b46ecf2c1787b6d76d81d9fd7fa0ca95842e2fcc2a452869891a9334d1",
+      "pythonTarget": "yosoi.surface.ArchivePolicy",
+      "semanticEquivalent": "The Python literal is the identical lowercase serde wire value: off.",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "b3770ca803b2ed7b4d89e3f50f05642427f38d22a8c1c15f1267e26ec996e2ba"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::clone",
+      "kind": "function",
+      "signatureSha256": "54523c645aede17c349ace0506b056101e033fa984522627226cefeba9403400",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::default",
+      "kind": "function",
+      "signatureSha256": "4f2f834d4123eef520f491e0ee6035b4669a22295087a00d1b3c928de4515732",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::eq",
+      "kind": "function",
+      "signatureSha256": "3d0b4d3a6526d22a2540244f762048f1f4012d695bb8382e8eddcca5f5f7e4f4",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivePolicy",
+      "kind": "enum",
+      "signatureSha256": "f2d722d2eb9e2daab0ab8334e2fc5883d1b699bf88b23bc43913cfe95adcc078",
+      "pythonTarget": "yosoi.surface.ArchivePolicy",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "b3770ca803b2ed7b4d89e3f50f05642427f38d22a8c1c15f1267e26ec996e2ba"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::capture",
+      "kind": "function",
+      "signatureSha256": "246f0aaa0c8f76b4afbf332d53933a6a82d8c1ab8039a63ba15cb5134605aa04",
+      "pythonTarget": "yosoi.surface.ArchivedSource.capture",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "surface",
+          "pythonArgument": "surface",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "951ac414ae294ca66a1a76ba757d276bb8ce94a080fa5419727e04750e61fc93"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::clone",
+      "kind": "function",
+      "signatureSha256": "7f27a4b8acb8a1feb102524e98ee22936f7b23f9de32d9ab5b357c311f3902f1",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::content_base64",
+      "kind": "struct_field",
+      "signatureSha256": "a448aa40e9bfb62ad932af07599130e133d2b1710bef92e5839ed6627e76581d",
+      "pythonTarget": "yosoi.surface.ArchivedSource.content_base64",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "a4ce4dcedad6afb9bce6324f7990e52f81b50429842ebdaf083717313803b589"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::document",
+      "kind": "struct_field",
+      "signatureSha256": "f9155f1ae326674f4f0a0bc1076eb0bc91bdcc5f7d62c0ff75aea1113bfdb5cc",
+      "pythonTarget": "yosoi.surface.ArchivedSource.document",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "4cc94117185b0a1a8f8d21a9cde4265ffa4bd402889a433ef69d19d87d217c34"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::eq",
+      "kind": "function",
+      "signatureSha256": "3eb7d77cb83c3ddb92a06514a685f3009063a31cb1be52344a6bf4d8e11b730f",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::interpretation",
+      "kind": "struct_field",
+      "signatureSha256": "54d3940c7d2ecd3b9c3e552c87acffcff58ce84aba8f57aee00fe496d9a1754d",
+      "pythonTarget": "yosoi.surface.ArchivedSource.interpretation",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "695a73582348035866f89604d052b78058532f92252e62a81c39661be50856ac"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::key",
+      "kind": "struct_field",
+      "signatureSha256": "be435b3a07a26ec8b5978d808d768312078894313db18bdd8077c00808c6f8dc",
+      "pythonTarget": "yosoi.surface.ArchivedSource.key",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "c6c57ad156ecac8989a3d8ff3f4d6ad8b67bc17dbcfbabba5db3c694a4c7e282"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::new",
+      "kind": "function",
+      "signatureSha256": "051102a89546577645fe0fac7f489db65c8434d967c9a5204ca934dcf72ba70b",
+      "pythonTarget": "yosoi.surface.ArchivedSource.from_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "surface",
+          "pythonArgument": "surface",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "surface",
+          "rust": "Explicit optional prepared Surface",
+          "python": "Defaults to None for an unprepared document"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "41ccbc7b5c14aa6f6043b082f309431e691b5af2480dd5b4da71d468e3f9a094"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::profile",
+      "kind": "struct_field",
+      "signatureSha256": "6f9a2577abf80755b00ac875d630b6950fc7fdc9c78a132b64d2d203cb2abf31",
+      "pythonTarget": "yosoi.surface.ArchivedSource.profile",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "6b6554f2c5f5dac423ac36d6eb042ecddff4fb3b23f0800348e994c5d938afa2"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::restore_surface",
+      "kind": "function",
+      "signatureSha256": "600597ae03101a9c2102b2d34cb78f2a9a08ddb873b1335936cda73905bf415a",
+      "pythonTarget": "yosoi.surface.ArchivedSource.restore_surface",
+      "argumentMappings": [
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "limits",
+          "rust": "Explicit Limits",
+          "python": "None selects Rust Limits defaults"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "1beca44b0c86c0344671bd2ceafb8e8b4a243f6eab44b7f5e40e3622c62499ce"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::restore",
+      "kind": "function",
+      "signatureSha256": "58649718773e90a5496e55d149606a92250f0e40901e8ae3eca138717a61bfe7",
+      "pythonTarget": "yosoi.surface.ArchivedSource.restore",
+      "argumentMappings": [
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "maximum",
+          "rust": "Explicit byte ceiling",
+          "python": "Defaults to 67108864 bytes"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "ba4609d0ad177dd79172b77c820d439eb17063cf965d5e9a3b2d66168131dd65"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::sha256",
+      "kind": "struct_field",
+      "signatureSha256": "666fa289babd53843ac428cf6ee1bcd4dd39ee9b907838e0fa8fa1f551a4bae9",
+      "pythonTarget": "yosoi.surface.ArchivedSource.sha256",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "2077ad32164e01fc7d4b5611c9577f3cd52f43027e68cb177c4506995e7495de"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::surface",
+      "kind": "struct_field",
+      "signatureSha256": "04c909814952d45f4fce6e9cdbeaa37c99b0e1539afcdb76c95ea1b6d4bf15d6",
+      "pythonTarget": "yosoi.surface.ArchivedSource.surface",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "00987a60a127b0e5017a299fa9ef470815616870c0ee3b437af00b997a4e1df8"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource",
+      "kind": "struct",
+      "signatureSha256": "b119ee34f890137788c5ad0802064c5150ebeefa7216819235980847085f4c56",
+      "pythonTarget": "yosoi.surface.ArchivedSource",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "d0af810dcf424793e57c58d3b469d372c09746521a288effa267652d1ce206a1"
     },
     {
       "rustPath": "yosoi::surface::Continuation::clone",
@@ -3067,6 +3831,255 @@
       "pythonTargetSha256": "15c305489b10198d51dada7d473d60efcd45735b1573481f2ec11a30d4d7d298"
     },
     {
+      "rustPath": "yosoi::surface::Outcome::clone",
+      "kind": "function",
+      "signatureSha256": "9d041b512990af63dd0d99d2337a01295429763de0e4f224ae123c2b19ec1dc2",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::complete",
+      "kind": "struct_field",
+      "signatureSha256": "f60b3eeffffe76339bf1502556c76c4d134f0e8f9cd329013bc77c6b15d78b29",
+      "pythonTarget": "yosoi.surface.Outcome.complete",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "24b80bf0a32d389b1049390120ac877cdb82f814f43352ffa448817b1865cadf"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::limits",
+      "kind": "struct_field",
+      "signatureSha256": "300dda650ca961c2b3073a3dd0fabac8daa742ce63c9454b6d7b890d2a7342b2",
+      "pythonTarget": "yosoi.surface.Outcome.limits",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "7278a62a18fc6d49f5db6b114f16201d84c94e98e7293d8cdc05a163482cea77"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::new",
+      "kind": "function",
+      "signatureSha256": "64178e90d1d0b8c8913d48b62b3bd5b6ed7e768631b7f861a7febab55161bbb2",
+      "pythonTarget": "yosoi.surface.Outcome.new",
+      "argumentMappings": [
+        {
+          "rustArgument": "id",
+          "pythonArgument": "id",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "limits",
+          "rust": "Explicit ArchiveLimits",
+          "python": "None selects Rust ArchiveLimits defaults"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "691a6d0aaaac5329911f29d84ba93822aae1edfb3b1b198377894f4455f23e9f"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::plans",
+      "kind": "struct_field",
+      "signatureSha256": "fb3e97a41bfd3a23a3d3ebfd384ba6bf8f63f299e36d3e9d6a0b582807975bea",
+      "pythonTarget": "yosoi.surface.Outcome.plans",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "783416f0018205ff2550ac0805b7e33b1d673ac109ee803593d652010cfe8898"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::record",
+      "kind": "struct_field",
+      "signatureSha256": "781ce7f3c07ab70d68816ebee86edd7297dd4235ff3e70959c8de3b90baeb6d6",
+      "pythonTarget": "yosoi.surface.Outcome.record",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "7aa845bce81bc6b6eed3f507d586e8d3b1d572ef24e84f7675ffe462fffb6330"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::rerun",
+      "kind": "function",
+      "signatureSha256": "7ff883b431653d504953abed2291869f0ba65d04569c6ad6693be741675a6daa",
+      "pythonTarget": "yosoi.surface.Outcome.rerun",
+      "argumentMappings": [
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "count",
+          "pythonArgument": "count",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "count",
+          "rust": "Explicit iteration count",
+          "python": "Defaults to one iteration"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "10763e765f2acea28853e4cea0c2e673c1eabe29285439f92ef27518b01d7e49"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::sealed",
+      "kind": "struct_field",
+      "signatureSha256": "29e586dedec18007f3026c6de3ad9e47940438c4c731044d7b58d5e0175e3028",
+      "pythonTarget": "yosoi.surface.Outcome.sealed",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "0b7e183a9764562091d2db47363bc170ca6c0fca90f98302596a923f86f54c9d"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::sources",
+      "kind": "struct_field",
+      "signatureSha256": "97fc5a5636c564b5bbd41eb9f6a47d938487d2cc092dd8727a4699d1de707430",
+      "pythonTarget": "yosoi.surface.Outcome.sources",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "517b0e4309a3f2e83dc151b8c901689f2faef438fca4cb5c87492fb478f51de2"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::surface",
+      "kind": "function",
+      "signatureSha256": "f5d79c5ea9ebadb063f04b7a66f0f558c9e42a4ccd674496aed1599e674f3c02",
+      "pythonTarget": "yosoi.surface.Outcome.surface",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "limits",
+          "rust": "Explicit Limits",
+          "python": "None selects Rust Limits defaults"
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "841c0dee8c9ca08b8053825829bf4c0d5c05b7a44a8243db386f5865e3037c36"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::validate",
+      "kind": "function",
+      "signatureSha256": "d60eeb9c5921cb667dad6f236ff5fd0d8ab3612f83bacea3c747a2e627fd7f35",
+      "pythonTarget": "yosoi.surface.Outcome.validate_outcome",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "a242258285305af4eff7474d48f9c8be65ec85b1c20350bf2e2da74f17e274ea"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::version",
+      "kind": "struct_field",
+      "signatureSha256": "f9dec046bcd7f7ca6223af8b7ce92bf45df4c6df9a90527cb0fb37d97eb987b2",
+      "pythonTarget": "yosoi.surface.Outcome.version",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "fef557107572b1bfdb7eee01b4a5931282a5f2a92d9bf3de6d5748c306c5ff77"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::with_source",
+      "kind": "function",
+      "signatureSha256": "02d1c23513ea83a76a79361cc8b2ccfe38ad0f7d7f8e223aa687260d78d2757a",
+      "pythonTarget": "yosoi.surface.Outcome.with_source",
+      "semanticEquivalent": "Rust consumes an owned outcome and returns a new value; Python validates a copy of its immutable value. Failed input does not alter the original Python value; Rust callers clone before consuming when they need the old value.",
+      "argumentMappings": [
+        {
+          "rustArgument": "source",
+          "pythonArgument": "source",
+          "conversion": "Preserve the typed value, byte units, exact evidence identity and policy meaning through the native binding; filesystem paths select local files and never grant control."
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "bfdc1779ee38ef2fff8b76a82ae7f51714d16171dd3614255b2d70af170c17d2"
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::clone",
+      "kind": "function",
+      "signatureSha256": "47c9f257359dd7bf65a39721ebc8589df63936fe7fdac51ad44c5d45ef6fd607",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::document",
+      "kind": "struct_field",
+      "signatureSha256": "0aacb4648800448287527837b1ff14dd43d774ab59620871def50f4a01fc7fcd",
+      "pythonTarget": "yosoi.surface.OutcomeRef.document",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "9a2caf6b669be2f860432aee789f0b57de0e63115b1ab0487f603fd17f9cf972"
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef::version",
+      "kind": "struct_field",
+      "signatureSha256": "f9dec046bcd7f7ca6223af8b7ce92bf45df4c6df9a90527cb0fb37d97eb987b2",
+      "pythonTarget": "yosoi.surface.OutcomeRef.version",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "850a4d2bc015b393a51d0cebf50b3c9c267c200de99f7172489435cf19a7825d"
+    },
+    {
+      "rustPath": "yosoi::surface::OutcomeRef",
+      "kind": "struct",
+      "signatureSha256": "1cfcbc3e249cd98cd59db1cb357dc13a54c219f2c11a2e76d072f1b0b6957fee",
+      "pythonTarget": "yosoi.surface.OutcomeRef",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "691abb1f27ad342a9e87221c2a4928de2a2d3e175a749f0af1304dbd13180b66"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome",
+      "kind": "struct",
+      "signatureSha256": "648d751a6863a05de60e9f2b6c2a9ee549feacc2b00192b34373555e4ac81bda",
+      "pythonTarget": "yosoi.surface.Outcome",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "cc3f765756f4d6fc02966e72acb2205f1ef1f573b745e500cf72f8f0897e4182"
+    },
+    {
       "rustPath": "yosoi::surface::Page::capture",
       "kind": "struct_field",
       "signatureSha256": "a779032fc4bf72e35223364aec87b86e87b7cd4e71754e42cfbfaefdf71d2b06",
@@ -3300,6 +4313,99 @@
       "pythonTargetSha256": "cf39fd81abe93f38693b668897a226f79fb92dd33986f4b0c72a7b92ed65dcc8"
     },
     {
+      "rustPath": "yosoi::surface::SourceInterpretation::Bundle",
+      "kind": "variant",
+      "signatureSha256": "f2daa18861b5c952ff3f26d8a4afb31058606710eb161c875fec41ba89ebd5ff",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "semanticEquivalent": "The tagged immutable model retains the same document/image/bundle interpretation. Only image carries tile_side; Rust verifies exact reconstruction.",
+      "fixedArguments": {
+        "kind": "bundle"
+      },
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::Document",
+      "kind": "variant",
+      "signatureSha256": "d6bd8c0aeee80fedb2dbf05c973100c3db04be90c072a88572533f2684131a36",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "semanticEquivalent": "The tagged immutable model retains the same document/image/bundle interpretation. Only image carries tile_side; Rust verifies exact reconstruction.",
+      "fixedArguments": {
+        "kind": "document"
+      },
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::Image",
+      "kind": "variant",
+      "signatureSha256": "5beb7d38e01c416ff34225963015249b69b6de4eef4c95416758c67faae295b5",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "semanticEquivalent": "The tagged immutable model retains the same document/image/bundle interpretation. Only image carries tile_side; Rust verifies exact reconstruction.",
+      "fixedArguments": {
+        "kind": "image"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "Preserve the unsigned pixel tiling size."
+        }
+      ],
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::clone",
+      "kind": "function",
+      "signatureSha256": "819b374a278557b98ba2cc8c1d5115f76e154316e56e9bc3d959320ddc3e5170",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::default",
+      "kind": "function",
+      "signatureSha256": "f0431dd2f57b028398b80c0ad7186d70bf126a96a4d234d222bbcefee05b03f9",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::eq",
+      "kind": "function",
+      "signatureSha256": "e92d44259e3ac2cbcae416b5b10b85dccbbb6329342c9ae52a6ace05b140f3a5",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation",
+      "kind": "enum",
+      "signatureSha256": "68b603bb70f680f742b8c51336b7b40e7f7a999856883bd05e219e7bbf0bb059",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
+      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+    },
+    {
       "rustPath": "yosoi::surface::SourceReference::clone",
       "kind": "function",
       "signatureSha256": "74bffc46847f67ed5f0720c787ba5b87f524cdc84372870de6ffc74df9117f99",
@@ -3469,6 +4575,147 @@
       "pythonTarget": "yosoi.surface.WatchState",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "357db3ddc5305831367041cb6531f286bab50c4c75337a83c28306c52bbef763"
+    },
+    {
+      "rustPath": "yosoi::surface::archive::export",
+      "kind": "function",
+      "signatureSha256": "41a380c13a4e464265f60e7b3517b9c0fae419a8f953e5d40c2ce10097ecd758",
+      "pythonTarget": "yosoi.surface.export",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "output",
+          "pythonArgument": "output",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        }
+      ],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.export.",
+      "pythonTargetSha256": "c1cb52fda32e932f9edf853f155c3f5d699ffb8be938f85f1c7b526e5ae0a8a8"
+    },
+    {
+      "rustPath": "yosoi::surface::archive::replay",
+      "kind": "function",
+      "signatureSha256": "6a6e5b20042c0e1198650a95df24d2aeb2af44f42f62ab7e7c4767e3af941290",
+      "pythonTarget": "yosoi.surface.replay",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "repeat",
+          "pythonArgument": "repeat",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "query",
+          "pythonArgument": "query",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "output",
+          "pythonArgument": "output",
+          "conversion": "Python str | Path | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:repeat",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 1"
+        },
+        {
+          "id": "python-default:query",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:output",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.replay.",
+      "pythonTargetSha256": "6fb3422083b7364c0defe57e8063860e7efa6fdccdbff41fa71d046f59342a13"
+    },
+    {
+      "rustPath": "yosoi::surface::archive",
+      "kind": "module",
+      "signatureSha256": "b7b1c3ddd3fe2e24aed5efc328dfb576fa29d62b6fe017b83089056a3f5704a1",
+      "pythonTarget": "yosoi.surface",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.",
+      "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::archive::rerun",
+      "kind": "function",
+      "signatureSha256": "6c90b63befe36ac259384e080993f51aa8bf60dd2a55b0d02064c3f644d3e776",
+      "pythonTarget": "yosoi.surface.rerun_browser",
+      "argumentMappings": [
+        {
+          "rustArgument": "value",
+          "pythonArgument": "outcome",
+          "conversion": "Python Outcome converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "count",
+          "pythonArgument": "count",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "headless",
+          "pythonArgument": "headless",
+          "conversion": "Python bool converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:count",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 1"
+        },
+        {
+          "id": "python-default:headless",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default True"
+        }
+      ],
+      "cardinality": [
+        {
+          "id": "sequence:rerun",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
+      "pythonTargetSha256": "f3f8ebbad8d34fa00f7eafe0b8891986dcc610588ecb69df0f6bf7d860481732"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::archive",
+      "kind": "module",
+      "signatureSha256": "b7b1c3ddd3fe2e24aed5efc328dfb576fa29d62b6fe017b83089056a3f5704a1",
+      "pythonTarget": "yosoi.surface",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.",
+      "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::browser",
+      "kind": "module",
+      "signatureSha256": "855991a0f01a78e70eb78dbea76091c2126fd7b2c2cd73cca4a7b8872785b72a",
+      "pythonTarget": "yosoi.surface",
+      "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
+      "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
     },
     {
       "rustPath": "yosoi::surface::model::Access::Control",
@@ -4894,7 +6141,7 @@
       "kind": "struct_field",
       "signatureSha256": "0aacb4648800448287527837b1ff14dd43d774ab59620871def50f4a01fc7fcd",
       "pythonTarget": "yosoi.surface.FrameArchiveRef.document",
-      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
+      "rationale": "Rust field document maps to Python field document.",
       "pythonTargetSha256": "b890aa0a7d9a812e6f2ee97fdcaaa6dd385f10179e378c5403d610efff0b475a"
     },
     {
@@ -4916,7 +6163,7 @@
       "kind": "struct",
       "signatureSha256": "03b07c1ae210a227cba588d5523331b63c6d2ab688b7019a0543c6289501e01c",
       "pythonTarget": "yosoi.surface.FrameArchiveRef",
-      "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.FrameArchiveRef.",
       "pythonTargetSha256": "daa5a27210cae1d41f66864c966ed881aa362ada3f1784876d003e3947e9a90a"
     },
     {
@@ -5062,7 +6309,7 @@
       "kind": "struct_field",
       "signatureSha256": "0aacb4648800448287527837b1ff14dd43d774ab59620871def50f4a01fc7fcd",
       "pythonTarget": "yosoi.surface.VideoArchiveRef.document",
-      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
+      "rationale": "Rust field document maps to Python field document.",
       "pythonTargetSha256": "b052179641bd180f40c23c06f7be8d2a1ca00e7c2f47ebbad2bf4cf95bd8faf4"
     },
     {
@@ -5077,7 +6324,7 @@
       "kind": "struct_field",
       "signatureSha256": "738313dd24ca9e76dfd5048a1f2c47ee465d3867a5af3031677086a9eb32eb46",
       "pythonTarget": "yosoi.surface.VideoArchiveRef.observation",
-      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
+      "rationale": "Rust field observation maps to Python field observation.",
       "pythonTargetSha256": "5152a5e76f524cec086359ac51fdbb7d95f76c2ad5784946e731859080648979"
     },
     {
@@ -5092,7 +6339,7 @@
       "kind": "struct",
       "signatureSha256": "5d4bf8df66bb84744316848971da3ec7d51f72e17971d433851f91b2ca94683d",
       "pythonTarget": "yosoi.surface.VideoArchiveRef",
-      "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.VideoArchiveRef.",
       "pythonTargetSha256": "fc09c121724e3ba77e25ea2c3a48e2e8415f8b5484d5d2b4904d45442b50f8cd"
     },
     {
@@ -5236,18 +6483,17 @@
       "pythonTargetSha256": "e8d997bef34b29b07ff0fe29d3fc59e783a331f7fe1c707fca51b007bbc2ec91"
     },
     {
-      "rustPath": "yosoi::surface::video",
+      "rustPath": "yosoi::surface::video::archive",
       "kind": "module",
-      "signatureSha256": "abfccfd30b14a6f24299dfcf4af6893d190db078dd203b63ef3717f4b8ee1563",
+      "signatureSha256": "b7b1c3ddd3fe2e24aed5efc328dfb576fa29d62b6fe017b83089056a3f5704a1",
       "pythonTarget": "yosoi.surface",
-      "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
-      "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
     },
     {
-      "rustPath": "yosoi::surface::browser",
+      "rustPath": "yosoi::surface::video",
       "kind": "module",
-      "signatureSha256": "855991a0f01a78e70eb78dbea76091c2126fd7b2c2cd73cca4a7b8872785b72a",
+      "signatureSha256": "abfccfd30b14a6f24299dfcf4af6893d190db078dd203b63ef3717f4b8ee1563",
       "pythonTarget": "yosoi.surface",
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",

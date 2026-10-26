@@ -17,8 +17,8 @@ pub struct PixelRect {
 mod enabled {
     use super::PixelRect;
     use crate::surface::{
-        Coordinate, Coverage, Data, Limits, Node, Payload, Reference, Surface, SurfaceError,
-        prepare,
+        Coordinate, Coverage, Data, Limits, Node, Original, Payload, Reference, Surface,
+        SurfaceError, prepare,
     };
     use image::{DynamicImage, ImageFormat, ImageReader};
     use sha2::{Digest, Sha256};
@@ -111,6 +111,10 @@ mod enabled {
             let mut nodes = Vec::new();
             region(rect, None, 0, tile_side, limits, &mut nodes)?;
             let mut data = Data {
+                original: Some(Original::Image {
+                    bytes: bytes.to_vec(),
+                    tile_side,
+                }),
                 identity,
                 source: String::new(),
                 input_bytes: bytes.len(),

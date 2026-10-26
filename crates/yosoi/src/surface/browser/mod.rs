@@ -1,11 +1,11 @@
-//! Document reading and live browser interaction; process details stay local.
+//! Live browser observation and authority; platform process details stay local.
 mod document;
 pub use document::WebSurface;
-#[cfg(feature = "surface-connections")]
-pub mod archive;
-#[cfg(feature = "surface-connections")]
+#[cfg(feature = "browser")]
 mod process;
-#[cfg(feature = "surface-connections")]
+#[cfg(feature = "browser")]
 mod session;
-#[cfg(feature = "surface-connections")]
+#[cfg(feature = "browser")]
 pub use session::BrowserSurface;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+pub mod archive;

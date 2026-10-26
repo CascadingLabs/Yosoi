@@ -8,7 +8,9 @@ order: 0
 
 The current Rust facade exports `yosoi::Archive`, `automation_record` and `view`. Browser records can retain receipts and captured evidence after a Session closes.
 
-Python exposes `Archive`, `AutomationRecord`, and bounded `View` inspection over the same Rust storage and record validation. `await archive.write(value)` and `await archive.read(reference)` support Documents, compiled Plans, and automation records. See [Keeping the evidence](../concepts/keeping-the-evidence.md) for paired runnable examples.
+Python exposes `Archive`, `AutomationRecord`, and bounded `View` inspection over the same Rust storage and record validation. `await archive.write(value)` and `await archive.read(reference)` support Documents, compiled Plans, automation records, and Surface outcomes. See [Keeping the evidence](../concepts/keeping-the-evidence.md) for paired runnable examples.
+
+Surface sessions opt into retention through `surface::SessionPolicy.archive` in Rust and `surface.SessionPolicy(archive="enabled")` in Python. Save the returned outcome through the normal Archive callable. `export_file` and `import_file` move that outcome as one self-contained file, with no original store dependency. Follow [Archiving a surface](../concepts/archiving-a-surface.md) for the complete lifecycle and its limits.
 
 The current backend uses local Unix filesystems with private permissions. Windows is unsupported. Each handle keeps no files open between operations. Cancelling a Python await stops waiting while the Rust filesystem operation settles; a write may already have committed without returning a reference.
 

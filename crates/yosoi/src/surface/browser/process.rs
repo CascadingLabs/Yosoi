@@ -1,4 +1,4 @@
-//! ChromeDriver transport; platform discovery uses the shared Stable admission gate.
+//! Experimental ChromeDriver transport shared by the surface CLI and article example.
 use crate::internal::browser::session::browser_distribution::supported_chrome_executable;
 use crate::surface::connection::{Result, Trace};
 use crate::{

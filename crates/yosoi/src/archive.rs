@@ -5,6 +5,8 @@
 //! payload length and integrity; saved evidence never restores live authority.
 
 use crate::documents::Document;
+mod portable;
+mod surface;
 pub use crate::internal::archive::{
     Archive, ArchiveError, ArchiveRefError, DocumentArchiveRef, PlanArchiveRef,
 };

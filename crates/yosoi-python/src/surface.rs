@@ -6,8 +6,16 @@ use pyo3::{create_exception, prelude::*};
 use serde::{Serialize, de::DeserializeOwned};
 use yosoi::surface::{self, model::SurfaceRead};
 
-use crate::{documents::NativeDocument, errors};
+use crate::{
+    documents::{DocumentSource, NativeDocument},
+    errors,
+};
+use std::sync::Arc;
 
+#[cfg(feature = "browser")]
+mod browser;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+mod connection;
 mod session;
 #[cfg(feature = "surface-video")]
 mod video;
@@ -256,12 +264,112 @@ impl NativeWebSurface {
 }
 
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(surface_source_new, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_source_capture, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_source_restore, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_source_restore_surface, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_outcome_new, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_outcome_with_source, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_outcome_validate, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_outcome_restore, module)?)?;
     module.add("SurfaceError", module.py().get_type::<SurfaceError>())?;
     module.add_class::<NativeSurface>()?;
     module.add_class::<NativeWebSurface>()?;
     module.add("surface_video_enabled", cfg!(feature = "surface-video"))?;
+    module.add("surface_browser_enabled", cfg!(feature = "browser"))?;
+    module.add(
+        "surface_archive_enabled",
+        cfg!(any(feature = "browser", feature = "surface-video")),
+    )?;
+    #[cfg(feature = "browser")]
+    browser::register(module)?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    connection::register(module)?;
     session::register(module)?;
     #[cfg(feature = "surface-video")]
     video::register(module)?;
     Ok(())
+}
+
+#[pyfunction]
+fn surface_outcome_validate(py: Python<'_>, value: &str) -> PyResult<()> {
+    py.detach(|| {
+        decode::<surface::Outcome>(value)?
+            .validate()
+            .map_err(failure)
+    })
+}
+
+#[pyfunction]
+fn surface_outcome_restore(
+    py: Python<'_>,
+    value: &str,
+    key: &str,
+    limits: &str,
+) -> PyResult<NativeSurface> {
+    py.detach(|| {
+        let outcome: surface::Outcome = decode(value)?;
+        outcome.validate().map_err(failure)?;
+        outcome
+            .surface(key, decode(limits)?)
+            .map(|inner| NativeSurface { inner })
+            .map_err(failure)
+    })
+}
+
+#[pyfunction]
+#[pyo3(signature=(key, document, index=None))]
+fn surface_source_new(
+    py: Python<'_>,
+    key: &str,
+    document: &NativeDocument,
+    index: Option<&NativeSurface>,
+) -> PyResult<String> {
+    let document = document.borrowed()?.to_owned();
+    py.detach(|| {
+        encode(&surface::ArchivedSource::new(
+            key,
+            &document,
+            index.map(|value| &value.inner),
+        ))
+    })
+}
+#[pyfunction]
+fn surface_source_capture(py: Python<'_>, key: &str, index: &NativeSurface) -> PyResult<String> {
+    py.detach(|| encode(&surface::ArchivedSource::capture(key, &index.inner).map_err(failure)?))
+}
+#[pyfunction]
+fn surface_source_restore(py: Python<'_>, value: &str, maximum: u64) -> PyResult<NativeDocument> {
+    py.detach(|| {
+        let source: surface::ArchivedSource = decode(value)?;
+        let document = source.restore(maximum).map_err(failure)?;
+        Ok(NativeDocument {
+            source: DocumentSource::Owned(Arc::new(document)),
+        })
+    })
+}
+#[pyfunction]
+fn surface_source_restore_surface(
+    py: Python<'_>,
+    value: &str,
+    limits: &str,
+) -> PyResult<NativeSurface> {
+    py.detach(|| {
+        let source: surface::ArchivedSource = decode(value)?;
+        source
+            .restore_surface(decode(limits)?)
+            .map(|inner| NativeSurface { inner })
+            .map_err(failure)
+    })
+}
+#[pyfunction]
+fn surface_outcome_new(py: Python<'_>, id: &str, limits: &str) -> PyResult<String> {
+    py.detach(|| encode(&surface::Outcome::new(id, decode(limits)?).map_err(failure)?))
+}
+#[pyfunction]
+fn surface_outcome_with_source(py: Python<'_>, value: &str, source: &str) -> PyResult<String> {
+    py.detach(|| {
+        let outcome: surface::Outcome = decode(value)?;
+        encode(&outcome.with_source(decode(source)?).map_err(failure)?)
+    })
 }

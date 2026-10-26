@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import subprocess
 import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import parity
 
@@ -71,8 +73,38 @@ def main() -> None:
             name, 7, content
         ),
     }
+
+    async def archive_case(case, document, index):
+        source = ys.surface.ArchivedSource.capture("source", index)
+        direct = ys.surface.ArchivedSource.from_document("source", document, index)
+        if source != direct or source.restore() != document:
+            raise RuntimeError("retained source differs from original document")
+        retained = source.restore_surface()
+        outcome = ys.surface.Outcome.new(case["name"]).with_source(source)
+        outcome.validate_outcome()
+        with TemporaryDirectory(prefix="yosoi-conformance-") as directory:
+            archive = await ys.Archive.open(Path(directory) / "original")
+            reference = await archive.write(outcome)
+            file = Path(directory) / "case.yosoi"
+            await archive.export_file(reference, file)
+            fresh = await ys.Archive.open(Path(directory) / "fresh")
+            imported = await fresh.import_file(file)
+            loaded = await fresh.read(imported)
+            return {
+                "source": source.model_dump(mode="json"),
+                "record_id": loaded.record.id,
+                "version": loaded.version,
+                "sealed": loaded.sealed,
+                "complete": loaded.complete,
+                "limits": loaded.limits.model_dump(mode="json"),
+                "retained_capture": retained.identity,
+                "file_capture": loaded.surface("source").identity,
+                "policy": ys.surface.SessionPolicy().model_dump(mode="json"),
+            }
+
     for case in vectors:
-        index = ys.Surface(constructors[case["format"]](case["name"], case["content"]))
+        document = constructors[case["format"]](case["name"], case["content"])
+        index = ys.Surface(document)
         found = index.find(case["query"])
         python.append(
             {
@@ -84,6 +116,7 @@ def main() -> None:
                     index.inspect(entry.reference).model_dump(mode="json")
                     for entry in found.entries
                 ],
+                "archive": asyncio.run(archive_case(case, document, index)),
             }
         )
     if python != rust:
@@ -144,11 +177,30 @@ def write_evidence(
         "inspect",
     }
     cases = []
+    archive_methods = {
+        "yosoi::surface::ArchivedSource::new",
+        "yosoi::surface::ArchivedSource::capture",
+        "yosoi::surface::ArchivedSource::restore",
+        "yosoi::surface::ArchivedSource::restore_surface",
+        "yosoi::surface::Outcome::new",
+        "yosoi::surface::Outcome::with_source",
+        "yosoi::surface::Outcome::validate",
+        "yosoi::surface::Outcome::surface",
+        "yosoi::Archive::write",
+        "yosoi::Archive::read",
+        "yosoi::Archive::export_file",
+        "yosoi::Archive::import_file",
+    }
     for entry in ledger["entries"]:
         path = entry["rustPath"]
         if (
-            not path.startswith("yosoi::Surface::")
-            or path.rsplit("::", 1)[-1] not in methods
+            not (
+                path in archive_methods
+                or (
+                    path.startswith("yosoi::Surface::")
+                    and path.rsplit("::", 1)[-1] in methods
+                )
+            )
             or entry.get("trait") is not None
             or entry.get("decision") != "mapped"
         ):

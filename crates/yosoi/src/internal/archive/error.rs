@@ -16,6 +16,9 @@ use crate::internal::archive::{
 /// Typed failures from the local Archive boundary.
 #[derive(Debug, Error)]
 pub enum ArchiveError {
+    /// A portable Surface outcome failed its schema, integrity or resource checks.
+    #[error("invalid Surface outcome: {0}")]
+    InvalidSurfaceOutcome(String),
     #[error("local Archive format 1 is not certified on platform {platform}")]
     /// Local Archive format 1 is not certified on platform `platform`.
     UnsupportedPlatform {
@@ -328,11 +331,7 @@ pub enum ArchiveError {
 }
 
 impl ArchiveError {
-    pub(in crate::internal::archive) fn io(
-        operation: &'static str,
-        path: impl Into<PathBuf>,
-        source: io::Error,
-    ) -> Self {
+    pub(crate) fn io(operation: &'static str, path: impl Into<PathBuf>, source: io::Error) -> Self {
         Self::Io {
             operation,
             path: path.into(),

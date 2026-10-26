@@ -50,6 +50,12 @@ impl NativeSession {
     fn publish(&self, index: &NativeSurface) -> PyResult<()> {
         self.inner.publish(index.inner.clone()).map_err(failure)
     }
+    fn outcome(&self) -> PyResult<String> {
+        encode(&self.inner.outcome().map_err(failure)?)
+    }
+    fn close(&self) -> PyResult<String> {
+        encode(&self.inner.close().map_err(failure)?)
+    }
 }
 
 #[pyclass(frozen, module = "yosoi._native", name = "SurfaceCursor")]

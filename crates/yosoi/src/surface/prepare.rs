@@ -153,6 +153,10 @@ pub(super) fn document(document: &Document, limits: Limits) -> Result<Surface, S
     }
     .to_string();
     let mut data = Data {
+        original: Some(super::Original::Document {
+            id: document.id().clone(),
+            profile: document.profile(),
+        }),
         identity,
         source,
         input_bytes: document.bytes().len(),

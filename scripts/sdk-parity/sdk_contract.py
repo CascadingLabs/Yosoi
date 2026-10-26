@@ -33,7 +33,7 @@ DEFERRED_BETA_ROOTS = {
         "issue": "CAS-566",
         "rationale": (
             "The full generic Rust Archive surface exceeds Python's supported "
-            "Document, Plan and AutomationRecord operations. These supported "
+            "Document, Plan, AutomationRecord and Surface outcome operations. These supported "
             "journeys have Archive tests; additional Rust value kinds and stronger "
             "guarantees remain deferred."
         ),
@@ -73,6 +73,8 @@ def _browser_namespace_mechanic(item: dict[str, Any]) -> bool:
 
 def _deferred_beta_surface(item: dict[str, Any]) -> dict[str, str] | None:
     path = item.get("rustPath") or ""
+    if path in {"yosoi::Archive::export_file", "yosoi::Archive::import_file"}:
+        return None
     for root, boundary in DEFERRED_BETA_ROOTS.items():
         if path == root or path.startswith(root + "::"):
             return {"root": root, **boundary}
@@ -808,6 +810,11 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
 
 
 SURFACE_ROOT_EXPORTS = (
+    "SurfacePolicy",
+    "ExecutionError",
+    "SurfaceConnection",
+    "BrowserSurface",
+    "VideoSession",
     "Surface",
     "SurfaceBudget",
     "SurfaceLimits",

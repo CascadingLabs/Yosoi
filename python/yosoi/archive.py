@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from os import PathLike, fspath
 from pathlib import Path
-from typing import Any, Literal, Self, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, overload
 
 from pydantic import Field, StrictStr, field_validator, model_validator
 
@@ -14,6 +15,9 @@ from ._models import ImmutableModel
 from .browser import FlowOutcome, Observation, OperationReceipt, SessionPolicy
 from .documents import Document
 from .locators import Plan
+
+if TYPE_CHECKING:
+    from .surface import Outcome, OutcomeRef
 
 __all__ = [
     "Archive",
@@ -29,7 +33,7 @@ def _rust_json(value: ImmutableModel) -> str:
     def wire(item: Any) -> Any:
         if isinstance(item, bytes):
             return list(item)
-        if isinstance(item, dict):
+        if isinstance(item, Mapping):
             return {key: wire(child) for key, child in item.items()}
         if isinstance(item, (list, tuple)):
             return [wire(child) for child in item]
@@ -183,16 +187,25 @@ class Archive:
     @overload
     async def write(self, value: AutomationRecord) -> AutomationRecordRef: ...
 
+    @overload
+    async def write(self, value: Outcome) -> OutcomeRef: ...
+
     async def write(
         self,
-        value: Document | Plan | AutomationRecord,
-    ) -> DocumentArchiveRef | PlanArchiveRef | AutomationRecordRef:
+        value: Document | Plan | AutomationRecord | Outcome,
+    ) -> DocumentArchiveRef | PlanArchiveRef | AutomationRecordRef | OutcomeRef:
         """Save a supported value and return a distinct immutable reference.
 
         Exact bytes, profiles, coordinates and result certainty are retained.
         Unsupported application objects raise TypeError. Invalid evidence,
         excessive payloads and storage failures raise ArchiveError.
         """
+        from .surface import Outcome, OutcomeRef
+
+        if isinstance(value, Outcome):
+            return OutcomeRef.model_validate_json(
+                await self._handle.write_surface(_rust_json(value))
+            )
         if isinstance(value, Document):
             return DocumentArchiveRef(
                 value=await self._handle.write_document(value._handle)
@@ -203,7 +216,9 @@ class Archive:
             return AutomationRecordRef.model_validate_json(
                 await self._handle.write_record(_rust_json(value))
             )
-        raise TypeError("Archive.write supports Document, Plan and AutomationRecord")
+        raise TypeError(
+            "Archive.write supports Document, Plan, AutomationRecord and Outcome"
+        )
 
     @overload
     async def read(self, reference: DocumentArchiveRef) -> Document: ...
@@ -214,16 +229,28 @@ class Archive:
     @overload
     async def read(self, reference: AutomationRecordRef) -> AutomationRecord: ...
 
+    @overload
+    async def read(self, reference: OutcomeRef) -> Outcome: ...
+
     async def read(
         self,
-        reference: DocumentArchiveRef | PlanArchiveRef | AutomationRecordRef,
-    ) -> Document | Plan | AutomationRecord:
+        reference: DocumentArchiveRef
+        | PlanArchiveRef
+        | AutomationRecordRef
+        | OutcomeRef,
+    ) -> Document | Plan | AutomationRecord | Outcome:
         """Read exact saved evidence without launching a browser or fetching URLs.
 
         References can be serialized with model_dump_json and reconstructed with
         their class's model_validate_json. Missing or corrupt data and unsupported
         versions raise ArchiveError. An unsupported reference type raises TypeError.
         """
+        from .surface import Outcome, OutcomeRef
+
+        if isinstance(reference, OutcomeRef):
+            return Outcome.model_validate_json(
+                await self._handle.read_surface(reference.model_dump_json())
+            )
         if isinstance(reference, DocumentArchiveRef):
             return Document._from_native(
                 await self._handle.read_document(reference.value)
@@ -237,3 +264,30 @@ class Archive:
                 await self._handle.read_record(reference.model_dump_json())
             )
         raise TypeError("Archive.read requires a typed Archive reference")
+
+    async def export_file(
+        self, reference: OutcomeRef, path: str | PathLike[str]
+    ) -> None:
+        """Export a Surface outcome as one immutable, self-contained file.
+
+        The destination must not exist. Atomic publication requires hard links.
+        A sync error can leave a complete destination; cancellation stops waiting,
+        while native publication can finish. No unrelated Archive values are copied.
+        """
+        from .surface import OutcomeRef
+
+        if not isinstance(reference, OutcomeRef):
+            raise TypeError("export_file requires a Surface OutcomeRef")
+        await self._handle.export_file(reference.model_dump_json(), fspath(path))
+
+    async def import_file(self, path: str | PathLike[str]) -> OutcomeRef:
+        """Validate and import one portable outcome without its original store.
+
+        Version, size, digest and outcome checks precede persistence. Corruption
+        raises ArchiveError. Import restores evidence and never action authority.
+        """
+        from .surface import OutcomeRef
+
+        return OutcomeRef.model_validate_json(
+            await self._handle.import_file(fspath(path))
+        )

@@ -6,21 +6,17 @@
 //! session coordinates readers, scoped watches, and one hot owner.
 //! External adapters still own capture, final live eligibility, and effects.
 
-#[cfg(feature = "surface-connections")]
+#[cfg(any(feature = "browser", feature = "surface-video"))]
 pub mod archive;
-#[cfg(feature = "surface-connections")]
+#[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
 mod images;
 pub mod model;
-#[cfg(feature = "surface-connections")]
+mod outcome;
 mod policy;
 mod prepare;
-#[cfg(feature = "surface-connections")]
-pub use archive::ArchiveReceipt;
-#[cfg(feature = "surface-connections")]
+#[cfg(any(feature = "browser", feature = "surface-video"))]
 pub use connection::SurfaceConnection;
-#[cfg(feature = "surface-connections")]
-pub use policy::{ArchivePolicy, ExecutionError, SurfacePolicy};
 pub mod browser;
 mod session;
 #[cfg(feature = "surface-video")]
@@ -29,9 +25,11 @@ pub mod video;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use images::ImageCrop;
 pub use images::PixelRect;
+pub use outcome::{ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
+pub use policy::{ArchiveLimits, ArchivePolicy, ExecutionError, SurfacePolicy};
 pub use session::*;
 
-use crate::documents::Document;
+use crate::documents::{Document, DocumentId, DocumentProfile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -270,6 +268,7 @@ struct Node {
 
 #[derive(Debug)]
 struct Data {
+    original: Option<Original>,
     identity: String,
     source: String,
     input_bytes: usize,
@@ -282,6 +281,16 @@ struct Data {
     views: Vec<(String, Surface)>,
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     image: Option<Arc<images::ImageData>>,
+}
+
+#[derive(Debug)]
+enum Original {
+    Document {
+        id: DocumentId,
+        profile: DocumentProfile,
+    },
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    Image { bytes: Vec<u8>, tile_side: u32 },
 }
 
 /// Reusable immutable index, safe to share between concurrent Rust readers.
@@ -402,6 +411,7 @@ impl Surface {
         let identity = format!("observation-v2:{:x}", Sha256::digest(encoded(&manifest)?));
         let complete = views.iter().all(|(_, index)| index.coverage().complete);
         let mut data = Data {
+            original: None,
             identity,
             source: String::new(),
             input_bytes,

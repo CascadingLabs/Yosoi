@@ -40,6 +40,17 @@ pub use contract_run::{
     ArchivedFieldIssue, ArchivedFieldIssueKind, ArchivedValidatedContractRecord,
     ArchivedValidationCode, ArchivedValidationFailure, ContractRunRecord, ContractRunRecordError,
 };
+// The development harness exposes this parent module publicly. Keep the seal
+// crate-private there while allowing the SDK facade to implement extensions.
+#[allow(
+    clippy::redundant_pub_crate,
+    reason = "The same source is shared with the public development harness; exposing this seal would open Archive dispatch."
+)]
+#[allow(
+    unused_imports,
+    reason = "Only the SDK facade consumes this crate-private seal; the engine-only development harness intentionally has no Surface facade."
+)]
+pub(crate) use dispatch::sealed;
 #[doc(hidden)]
 pub use dispatch::{ArchiveReference, ArchiveValue};
 pub use document::MAX_ARCHIVED_DOCUMENT_BYTES;

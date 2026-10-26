@@ -17,6 +17,8 @@ The Rust `surface::browser` and `surface::video` modules own their source behavi
 | WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent   |
 | VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop    |
 
+`BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
+
 `Surface::from_image` in Rust and `Surface.from_image` in Python prepare PNG/JPEG pixels as a region tree. They do not perform OCR or apply EXIF rotation. `combine` joins named independently captured views without claiming an atomic observation. Keep each constituent reference when projecting between views.
 
 Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable document reads need neither browser nor decoder.
@@ -45,6 +47,8 @@ Copy continuations into the same operation with the same reference and query. In
 ## Coordinate a cursor
 
 Session is a coordinator for an external capture/control adapter. It does not open a browser, start an observer, or dispatch a click. The [Surface CLI](../cli/surface.md) supplies a live browser adapter; immutable WebSurface and VideoSurface readers remain non-controllable.
+
+Enable `archive` in the session policy to retain sources and receipts separately from live history. `outcome()` snapshots retained evidence; `close()` revokes logical authority and returns its final outcome. Pass that value to the existing Archive write callable, then export it as a portable file. Policy is off by default. [Archiving a surface](../concepts/archiving-a-surface.md) explains save, reload, incomplete outcomes and fresh execution.
 
 | State       | Meaning                                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |

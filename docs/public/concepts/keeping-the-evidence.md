@@ -6,6 +6,8 @@ order: 16
 
 # Keeping the evidence
 
+For a policy-retained Surface session that can travel in one file, follow [Archiving a surface](archiving-a-surface.md). It uses the same Archive callable described here.
+
 The browser has closed, but we still need to explain what it observed. Archive keeps the lamp's input, receipts, and captured evidence under immutable references. We can read them later without sending another request.
 
 We'll save a small Document first, then preserve the two-step lamp Flow from earlier lessons. These examples use the local Archive backend, which currently supports Unix filesystems. Windows callers receive an explicit unsupported-platform error.
