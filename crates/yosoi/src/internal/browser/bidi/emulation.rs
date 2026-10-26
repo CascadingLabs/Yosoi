@@ -8,6 +8,26 @@ use super::session::{Page, SessionError};
 use crate::internal::browser::{RenderingPreferences, Viewport};
 use crate::internal::types::{ColorScheme, ReducedMotion};
 
+#[derive(Default)]
+pub(super) struct ViewportState {
+    pub viewport: Option<Viewport>,
+    // None means the native default. A viewport without a UA leaves this sticky.
+    pub user_agent: Option<String>,
+}
+
+struct UserAgentMutation<'a> {
+    page: &'a Page,
+    armed: bool,
+}
+
+impl Drop for UserAgentMutation<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            self.page.session.connection.fence();
+        }
+    }
+}
+
 impl Page {
     pub async fn set_rendering_preferences(
         &self,
@@ -57,10 +77,41 @@ impl Page {
     ) -> Result<(), SessionError> {
         validate_viewport(&viewport)?;
         let mut current = self.viewport.lock().await;
+        let mut mutation = UserAgentMutation {
+            page: self,
+            armed: false,
+        };
+        if let Some(agent) = viewport.user_agent.as_deref() {
+            // Two commands form one logical change. Never expose a partially
+            // applied identity after cancellation or a failed viewport change.
+            self.apply_user_agent(Some(agent), token, deadline).await?;
+            mutation.armed = true;
+        }
         self.apply_viewport(Some(&viewport), token, deadline)
             .await?;
-        *current = Some(viewport);
+        if let Some(agent) = viewport.user_agent.as_ref() {
+            current.user_agent = Some(agent.clone());
+        }
+        current.viewport = Some(viewport);
+        mutation.armed = false;
+        drop(mutation);
         drop(current);
+        Ok(())
+    }
+
+    pub(super) async fn apply_user_agent(
+        &self,
+        user_agent: Option<&str>,
+        token: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<(), SessionError> {
+        self.command(
+            "emulation.setUserAgentOverride",
+            json!({"contexts":[self.context],"userAgent":user_agent}),
+            token,
+            deadline,
+        )
+        .await?;
         Ok(())
     }
 
@@ -123,10 +174,20 @@ impl Page {
 pub(super) fn validate_viewport(viewport: &Viewport) -> Result<(), SessionError> {
     // BiDi viewport size/DPR does not imply CDP mobile or touch emulation.
     // Reject composite requests before applying any part of the override.
-    if viewport.mobile || viewport.has_touch || viewport.user_agent.is_some() {
+    if viewport.mobile || viewport.has_touch {
         return Err(SessionError::Unsupported(
             "BiDi mobile/touch/device identity",
         ));
+    }
+    if viewport
+        .user_agent
+        .as_ref()
+        .is_some_and(|agent| agent.is_empty() || agent.chars().any(char::is_control))
+    {
+        return Err(SessionError::InvalidArgument {
+            operation: "set_viewport",
+            reason: "user agent must be nonempty and contain no control characters",
+        });
     }
     if viewport.width == 0
         || viewport.height == 0

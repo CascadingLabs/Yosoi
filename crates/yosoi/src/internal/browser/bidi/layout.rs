@@ -156,9 +156,14 @@ impl Page {
             page: self,
             scope: before.clone(),
             realm: realm.clone(),
-            viewport: &current,
+            viewport: &current.viewport,
+            user_agent: current.user_agent.as_deref(),
             scroll: (number(&window, "x")?, number(&window, "y")?),
             restore_viewport: options.viewport.is_some(),
+            restore_user_agent: options
+                .viewport
+                .as_ref()
+                .is_some_and(|viewport| viewport.user_agent.is_some()),
             armed: false,
         };
         let result = self
@@ -180,6 +185,9 @@ impl Page {
         deadline: Instant,
     ) -> Result<VisualSnapshot, SessionError> {
         if let Some(viewport) = options.viewport.as_ref() {
+            if let Some(agent) = viewport.user_agent.as_deref() {
+                self.apply_user_agent(Some(agent), token, deadline).await?;
+            }
             restore.armed = true;
             self.apply_viewport(Some(viewport), token, deadline).await?;
         }
@@ -283,8 +291,10 @@ struct RestoreVisual<'a> {
     scope: DocumentScope,
     realm: String,
     viewport: &'a Option<Viewport>,
+    user_agent: Option<&'a str>,
     scroll: (f64, f64),
     restore_viewport: bool,
+    restore_user_agent: bool,
     armed: bool,
 }
 
@@ -313,6 +323,11 @@ impl RestoreVisual<'_> {
         if self.restore_viewport {
             self.page
                 .apply_viewport(self.viewport.as_ref(), &token, deadline)
+                .await?;
+        }
+        if self.restore_user_agent {
+            self.page
+                .apply_user_agent(self.user_agent, &token, deadline)
                 .await?;
         }
         let (x, y) = self.scroll;

@@ -148,7 +148,29 @@ impl Drop for Fixture {
 
 async fn serve(mut stream: TcpStream, hold: Arc<Gate>) {
     let mut request = [0_u8; 4_096];
-    let Ok(read) = stream.read(&mut request).await else {
+    let Ok(Some(read)) = timeout(FIXTURE_DEADLINE, async {
+        let mut read = 0_usize;
+        loop {
+            let tail = request.get_mut(read..)?;
+            if tail.is_empty() {
+                return None;
+            }
+            let count = stream.read(tail).await.ok()?;
+            if count == 0 {
+                return None;
+            }
+            read = read.checked_add(count)?;
+            if request
+                .get(..read)?
+                .windows(4)
+                .any(|part| part == b"\r\n\r\n")
+            {
+                return Some(read);
+            }
+        }
+    })
+    .await
+    else {
         return;
     };
     let request_text = String::from_utf8_lossy(request.get(..read).unwrap_or_default());
@@ -165,22 +187,35 @@ async fn serve(mut stream: TcpStream, hold: Arc<Gate>) {
         hold.wait_until_open().await;
     }
 
-    let body = match path {
-        "/same-document" => {
-            "<!doctype html><main>before</main><script>history.pushState({}, '', '#first');history.pushState({}, '', '#second')</script>"
+    let body = if path == "/user-agent" {
+        request_text
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("user-agent")
+                    .then_some(value.trim())
+            })
+            .unwrap_or_default()
+    } else {
+        match path {
+            "/same-document" => {
+                "<!doctype html><main>before</main><script>history.pushState({}, '', '#first');history.pushState({}, '', '#second')</script>"
+            }
+            "/frame-parent" => {
+                "<!doctype html><main>top-frame</main><iframe src='/frame-child'></iframe>"
+            }
+            "/frame-child" => {
+                "<!doctype html><main>child-frame</main><script>history.pushState({}, '', '#child')</script>"
+            }
+            "/progress-burst" => {
+                "<!doctype html><main>burst</main><script>for(let index=0;index<64;index+=1){history.pushState({index}, '', '#'+index)}</script>"
+            }
+            "/dcl-hold" => {
+                "<!doctype html><main>dcl-ready</main><img src='/hold-resource' alt='held'>"
+            }
+            "/hold" => "<!doctype html><main>released</main>",
+            _ => "<!doctype html><main>normal</main>",
         }
-        "/frame-parent" => {
-            "<!doctype html><main>top-frame</main><iframe src='/frame-child'></iframe>"
-        }
-        "/frame-child" => {
-            "<!doctype html><main>child-frame</main><script>history.pushState({}, '', '#child')</script>"
-        }
-        "/progress-burst" => {
-            "<!doctype html><main>burst</main><script>for(let index=0;index<64;index+=1){history.pushState({index}, '', '#'+index)}</script>"
-        }
-        "/dcl-hold" => "<!doctype html><main>dcl-ready</main><img src='/hold-resource' alt='held'>",
-        "/hold" => "<!doctype html><main>released</main>",
-        _ => "<!doctype html><main>normal</main>",
     };
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{body}",

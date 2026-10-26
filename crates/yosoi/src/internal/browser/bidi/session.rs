@@ -485,7 +485,7 @@ pub struct Page {
     pub frame_id: u64,
     pub document: Arc<Mutex<(Option<String>, u64)>>,
     // Serializes viewport changes with temporary capture overrides.
-    pub(super) viewport: Arc<Mutex<Option<super::super::Viewport>>>,
+    pub(super) viewport: Arc<Mutex<super::emulation::ViewportState>>,
     pub(in crate::internal::browser) navigation_state:
         Arc<super::super::active_navigation::NavigationState>,
     pub(in crate::internal::browser) active_watch: Arc<Mutex<Option<Weak<super::watch::Inner>>>>,

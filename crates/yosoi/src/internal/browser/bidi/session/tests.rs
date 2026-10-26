@@ -116,14 +116,16 @@ async fn native(engine: BrowserEngine) -> Result<(), Box<dyn std_error::Error + 
         page.navigate(&format!("{origin}/"), "complete", &cancellation, deadline).await?;
         let environment = page.evaluate("({width:innerWidth,height:innerHeight,locale:new Intl.DateTimeFormat().resolvedOptions().locale,timezone:new Intl.DateTimeFormat().resolvedOptions().timeZone})", &cancellation, deadline).await?.0;
         assert_eq!(environment, json!({"width":960,"height":640,"locale":"fr-FR","timezone":"Asia/Tokyo"}));
-        if engine == BrowserEngine::Firefox {
+        {
             use crate::internal::browser::RenderingPreferences;
             use crate::internal::types::{ColorScheme, ReducedMotion};
             let media = "({dark:matchMedia('(prefers-color-scheme: dark)').matches,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})";
             let before = page.evaluate(media, &cancellation, deadline).await?.0;
-            // Stock Firefox 158 does not implement this standard command yet.
+            // The qualified Firefox and Moli releases do not implement this command.
             assert!(matches!(page.set_rendering_preferences(RenderingPreferences::new(Some(ColorScheme::Dark), Some(ReducedMotion::Reduce)), &cancellation, deadline).await, Err(SessionError::Unsupported("emulation.setMediaFeaturesOverride"))));
             assert_eq!(page.evaluate(media, &cancellation, deadline).await?.0, before);
+        }
+        if engine == BrowserEngine::Firefox {
             let layout = page.layout_snapshot(&cancellation, deadline).await?;
             assert_eq!(layout.layout_viewport.client_width, 960);
             assert_eq!(layout.layout_viewport.client_height, 640);

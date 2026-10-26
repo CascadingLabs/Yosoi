@@ -15,8 +15,7 @@ use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
-const STATE: &str =
-    "({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,x:scrollX,y:scrollY})";
+const STATE: &str = "({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,x:scrollX,y:scrollY,ua:navigator.userAgent})";
 const FIXTURE: &str = "(()=>{const node=document.createElement('div');node.style.cssText='position:absolute;left:0;top:0;width:1800px;height:3000px;z-index:99999';node.innerHTML='<div style=\"position:absolute;top:0;width:1800px;height:300px;background:rgb(255,0,0)\"></div><div style=\"position:absolute;top:300px;width:1800px;height:2700px;background:rgb(0,255,0)\"></div><div id=\"visual-a\" class=\"visual-choice\" style=\"position:absolute;left:20px;top:650px;width:50px;height:40px;background:rgb(0,0,255)\"></div><div id=\"visual-b\" class=\"visual-choice\" style=\"position:absolute;left:100px;top:650px;width:30px;height:20px;background:rgb(255,255,0)\"></div><div id=\"visual-hidden\" class=\"visual-choice\" style=\"display:none;width:50px;height:40px\"></div>';document.body.append(node);return true})()";
 
 async fn state(
@@ -60,6 +59,7 @@ async fn exercise(engine: BrowserEngine) -> TestResult {
         let initial = state(&page, &token, deadline).await?;
         let mut temporary = Viewport::custom(640, 480);
         temporary.device_scale_factor = 2.0;
+        temporary.user_agent = Some("Yosoi-BiDi-Temporary".to_owned());
         let capture = page.visual_snapshot(ScreenshotOptions::default()
             .with_viewport(temporary.clone())
             .with_scroll(ScrollTarget::Pixels(400))
@@ -75,10 +75,24 @@ async fn exercise(engine: BrowserEngine) -> TestResult {
 
         let mut persistent = Viewport::custom(800,600);
         persistent.device_scale_factor = 1.5;
-        page.set_viewport(persistent, &token, deadline).await?;
+        persistent.user_agent = Some("Yosoi-BiDi-Persistent".to_owned());
+        page.set_viewport(persistent.clone(), &token, deadline).await?;
+        let observed_agent = page.evaluate("fetch('/user-agent').then(r=>r.text())", &token, deadline).await?.0;
+        assert_eq!(observed_agent,json!("Yosoi-BiDi-Persistent"), "wire and navigator UA must match");
+        let peer=session.new_page(&user,&token,deadline).await?;
+        assert_eq!(peer.evaluate("navigator.userAgent",&token,deadline).await?.0, initial.get("ua").ok_or("initial UA")?.clone(), "context-scoped override must not reach a sibling page");
+        peer.close(&token,deadline).await?;
+        drop(peer);
+        persistent.user_agent=None;
+        page.set_viewport(persistent,&token,deadline).await?;
         page.evaluate("window.scrollTo({left:50,top:200,behavior:'instant'});true", &token, deadline).await?;
         let before = state(&page, &token, deadline).await?;
         assert_eq!(before.get("y"),Some(&json!(200)));
+        assert_eq!(before.get("ua"),Some(&json!("Yosoi-BiDi-Persistent")), "None must preserve the earlier UA override");
+        let mut invalid=Viewport::custom(800,600);
+        invalid.user_agent=Some("invalid\r\nagent".to_owned());
+        assert!(matches!(page.set_viewport(invalid,&token,deadline).await,Err(SessionError::InvalidArgument{..})));
+        assert_eq!(state(&page,&token,deadline).await?,before,"invalid UA must reject before any mutation");
         let capture = page.visual_snapshot(ScreenshotOptions::default().viewport_only()
             .with_viewport(temporary.clone()).with_scroll(ScrollTarget::Viewports(1.0)), &token, deadline).await?;
         assert_eq!((capture.image_width_pixels,capture.image_height_pixels),(1280,960));
@@ -103,8 +117,9 @@ async fn exercise(engine: BrowserEngine) -> TestResult {
             page.evaluate("()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))", &token, deadline).await?;
             page.evaluate("addEventListener('resize',()=>{const request=new XMLHttpRequest();request.open('GET','/hold',false);request.send()},{once:true});true", &token, deadline).await?;
             let captured_page=page.clone();let captured_token=token.clone();
+            let mut cancelled=Viewport::custom(320,240);cancelled.user_agent=Some("Yosoi-BiDi-Cancelled".to_owned());
             let capture=tokio::spawn(async move {
-                captured_page.visual_snapshot(ScreenshotOptions::default().with_viewport(Viewport::custom(320,240)), &captured_token, deadline).await
+                captured_page.visual_snapshot(ScreenshotOptions::default().with_viewport(cancelled), &captured_token, deadline).await
             });
             fixture.wait_until_held().await;
             assert!(!capture.is_finished());

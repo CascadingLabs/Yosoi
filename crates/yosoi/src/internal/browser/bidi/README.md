@@ -16,7 +16,7 @@ or installed browser binaries. Chrome/CDP stays behind its existing adapter.
   and Screenshot permission; standard element-origin rejection is a negative test.
 - No JavaScript activation, silent CDP fallback or replay of uncertain mutations.
   Script capability never grants arbitrary-script permission.
-- DOM-only Moli rejects input/PNG. Desktop viewport/DPR, locale and timezone
+- DOM-only Moli rejects input/PNG. Desktop viewport/DPR, explicit user-agent, locale and timezone
   overrides use native scoped commands; mobile/touch device identities reject
   before mutation. Both layout engines have native viewport/full-page/cropped
   PNG metadata bound to the same document epoch, including DPR and scrollbars.
@@ -85,9 +85,9 @@ command offered by CDP. Shared types do not establish equivalent engine support.
 | Temporary viewport/DPR and scroll capture options | Native, with acknowledged restoration | Native layout, with acknowledged restoration |
 | CSS/XPath/attribute/ID-prefix/coordinate crops | Native | Native layout |
 | AX-exposed role crops | Unsupported | Unsupported |
-| Desktop viewport/DPR, locale, timezone | Native commands | Native commands |
+| Desktop viewport/DPR, explicit user agent, locale, timezone | Native commands | Native commands |
 | Mobile/touch/device identity | Unsupported | Unsupported |
-| Rendering preferences | Command wired; qualified release rejects it | Command wired; not qualified |
+| Rendering preferences | Command wired; qualified release rejects it | Command wired; qualified release rejects it |
 | Full AX tree and AX-change watches | No native tree export | No native tree export |
 
 `visual_snapshot` returns bytes on both providers; filesystem paths are not part
@@ -103,3 +103,5 @@ DOM target crops share the CDP visibility and nth-disambiguation rules. They rej
 Owned Firefox and Moli route each created user context through the existing policy-owned SOCKS relay. The relay retains address-family/source binding, upstream proxy authentication and destination TLS behavior. Routed temporary Firefox profiles explicitly make localhost honor the proxy; Moli routes localhost through its context proxy too. Remote endpoints reject this client-local route. Moli has no service-worker runtime; its route qualification covers implemented fetch, frame, worker and WebSocket consumers. This is a TCP web route, not a UDP proxy or a process-wide network firewall.
 
 Pinned Moli has a native AX implementation behind its CDP Accessibility domain, but its BiDi command dispatcher does not expose that tree. This is a transport boundary, not proof that the engine lacks an internal accessibility tree. The BiDi adapter does not silently open a second CDP connection or label DOM-derived data as native AX.
+
+Desktop user-agent overrides use emulation.setUserAgentOverride on the owned browsing context. They do not change the recorded engine/protocol identity, platform/client-hint identity, or mobile/touch support. A viewport with no user agent preserves the active override. Temporary captures restore the earlier explicit override or native default, including when a later viewport without a user agent left an earlier override active. A partially applied persistent change or cancelled/uncertain temporary change fences reuse. Native tests check the actual HTTP header, sibling-page isolation, default/sticky restoration, invalid-input preflight and cancellation. These are private controller capabilities; no new public SDK setting is introduced.
