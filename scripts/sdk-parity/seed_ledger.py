@@ -1779,6 +1779,7 @@ def main(argv: list[str] | None = None) -> int:
 
     rust = parity.load_rust_inventory(args.reference)
     python = parity.introspect_python_package(args.package, args.python_root)
+    stored = parity.read_json(args.ledger)
     existing = parity.load_ledger(args.ledger)
     ledger, report = seed_entries(rust, python, existing)
     counts = report["coverage"]["counts"]
@@ -1788,6 +1789,15 @@ def main(argv: list[str] | None = None) -> int:
         f"{counts['missing']} missing, {counts['stale']} stale"
     )
     if args.write:
+        if stored.get("surfaceContract") is not None:
+            from sdk_contract import _surface_path
+
+            ledger["entries"] = [
+                entry
+                for entry in ledger["entries"]
+                if not _surface_path(entry["rustPath"])
+            ]
+            ledger["surfaceContract"] = stored["surfaceContract"]
         args.ledger.write_text(
             json.dumps(ledger, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )

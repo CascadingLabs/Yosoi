@@ -22,6 +22,7 @@ NAMESPACES = (
     "policy",
     "request",
     "search",
+    "surface",
 )
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -33,14 +34,16 @@ DEFERRED_BETA_ROOTS = {
         "rationale": (
             "The full generic Rust Archive surface exceeds Python's supported "
             "Document, Plan and AutomationRecord operations. These supported "
-            "journeys have Archive tests; additional Rust value kinds and stronger guarantees remain deferred."
+            "journeys have Archive tests; additional Rust value kinds and stronger "
+            "guarantees remain deferred."
         ),
     },
     "yosoi::view": {
         "issue": "CAS-567",
         "rationale": (
             "Python exposes bounded offline DOM View pages and capture-bound "
-            "continuation cursors. The full Rust View API, including direct condition verification, belongs to "
+            "continuation cursors. The full Rust View API, including direct condition "
+            "verification, belongs to "
             "later release work."
         ),
     },
@@ -257,6 +260,7 @@ REQUIRED_SUITES = (
     "run_serde_conformance.py",
     "run_document_errors_conformance.py",
     "run_webtarget_conformance.py",
+    "run_surface_conformance.py",
 )
 
 
@@ -323,7 +327,7 @@ def _identified_items(items: list[dict[str, Any]]) -> list[tuple[str, dict[str, 
 
 
 def _is_in_scope(item: dict[str, Any], root_names: set[str] | None = None) -> bool:
-    """Select root API items/members and the seven public namespaces."""
+    """Select root API items/members and the reviewed public namespaces."""
     path = item.get("rustPath")
     if not isinstance(path, str):
         return False
@@ -352,7 +356,7 @@ def _mechanic(item: dict[str, Any]) -> dict[str, str] | None:
             ),
             "equivalentCapability": (
                 "Supported browser operations are checked separately by "
-                "installed-wheel browser behavior evidence; the seven existing Python "
+                "installed-wheel browser behavior evidence; the existing Python "
                 "SDK namespaces retain their semantic comparison suites."
             ),
         }
@@ -510,7 +514,7 @@ def _ledger_trait(entry: dict[str, Any]) -> str | None:
 def build_contract(inventory_report: dict[str, Any]) -> dict[str, Any]:
     """Create an initial auditable snapshot from a current full parity report.
 
-    Scope selection is explicit: Rust root items/members and the seven named
+    Scope selection is explicit: Rust root items/members and the named
     public namespaces, with only the `prelude` module added as an import-mechanic
     record. It does not infer SDK scope from visibility or Python package names.
     """
@@ -631,7 +635,7 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
         raise ValueError("SDK contract scope must include the yosoi crate root")
     if scope.get("namespaces") != list(NAMESPACES):
         raise ValueError(
-            "SDK contract namespaces do not match the seven reviewed namespaces"
+            "SDK contract namespaces do not match the reviewed SDK namespaces"
         )
     source_snapshot = contract.get("sourceSnapshot")
     if not isinstance(source_snapshot, dict):
@@ -803,12 +807,235 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
     return contract
 
 
+SURFACE_ROOT_EXPORTS = (
+    "Surface",
+    "SurfaceBudget",
+    "SurfaceLimits",
+    "SurfaceSession",
+    "SurfaceSessionPolicy",
+    "SurfaceError",
+    "WebSurface",
+    "PixelRect",
+    "VideoSurface",
+    "VideoPolicy",
+    "VideoError",
+    "DecodedFrame",
+)
+
+
+def _surface_path(path: str) -> bool:
+    roots = ("yosoi::surface", *(f"yosoi::{name}" for name in SURFACE_ROOT_EXPORTS))
+    return any(path == root or path.startswith(root + "::") for root in roots)
+
+
+def build_surface_contract(
+    contract: dict[str, Any], ledger: dict[str, Any]
+) -> dict[str, Any]:
+    """Produce the single reviewed Surface input from a full inventory report.
+
+    Uses explicit ledger mappings, never guesses names or accepts new exceptions.
+    Runtime reports and compiler source identities remain generated artifacts.
+    """
+    rows = []
+    for declaration in contract["declarations"]:
+        path = declaration["rustPath"]
+        if not _surface_path(path):
+            continue
+        row = {
+            name: declaration[name] for name in ("rustPath", "kind", "signatureSha256")
+        }
+        if declaration.get("trait") is not None:
+            row["trait"] = declaration["trait"]
+        occurrence = int(declaration["id"].rsplit(":", 1)[1])
+        if occurrence != 1:
+            row["occurrence"] = occurrence
+        if declaration["classification"] == "trait-mechanic":
+            row["mechanic"] = True
+        elif declaration["classification"] == "sdk":
+            matches = [
+                entry
+                for entry in ledger["entries"]
+                if entry["rustPath"] == path
+                and _ledger_trait(entry) == declaration.get("trait")
+                and (
+                    entry.get("symbolKey") == declaration.get("symbolKey")
+                    or _ledger_signature_digest(entry) == declaration["signatureSha256"]
+                )
+            ]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"Surface declaration needs one reviewed mapping: {path}"
+                )
+            mapping = _mapping_projection(matches[0]) or {}
+            row.update(
+                {
+                    key: value
+                    for key, value in mapping.items()
+                    if value is not None and value != []
+                }
+            )
+            if row.get("decision") == "mapped":
+                del row["decision"]
+            row["pythonTargetSha256"] = declaration["mapping"]["pythonTargetSha256"]
+        else:
+            raise ValueError(f"unsupported Surface classification: {path}")
+        rows.append(row)
+    return {
+        "schemaVersion": 1,
+        "kind": "yosoi-surface-sdk-contract",
+        "declarations": rows,
+    }
+
+
+def load_surface_contract(
+    path: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Expand the reviewed Surface contract into both parity gate inputs.
+
+    Only stable API identities, signatures, Python shapes and mapping semantics
+    are stored. Compiler/source keys and duplicate report metadata are derived;
+    the normal contract and ledger validators still validate the expanded data.
+    """
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(value, dict)
+        or value.get("schemaVersion") != 1
+        or value.get("kind") != "yosoi-surface-sdk-contract"
+    ):
+        raise ValueError("unsupported Surface SDK contract")
+    rows = value.get("declarations")
+    if not isinstance(rows, list):
+        raise ValueError("Surface contract declarations must be an array")
+    declarations, entries = [], []
+    for raw in rows:
+        if not isinstance(raw, dict):
+            raise ValueError("Surface contract declarations must be objects")
+        row = copy.deepcopy(raw)
+        rust_path = row.pop("rustPath", None)
+        kind = row.pop("kind", None)
+        signature = row.pop("signatureSha256", None)
+        if not isinstance(rust_path, str) or not _surface_path(rust_path):
+            raise ValueError("Surface contract contains a non-Surface declaration")
+        if kind not in {
+            "struct",
+            "enum",
+            "trait",
+            "module",
+            "function",
+            "struct_field",
+            "variant",
+            "assoc_type",
+        }:
+            raise ValueError("unsupported Surface declaration kind")
+        if not isinstance(signature, str) or not SHA256_RE.fullmatch(signature):
+            raise ValueError("Surface contract requires a Rust signature pin")
+        trait = row.pop("trait", None)
+        occurrence = row.pop("occurrence", 1)
+        if type(occurrence) is not int or occurrence < 1:
+            raise ValueError("invalid Surface declaration occurrence")
+        surface = "item" if kind in {"struct", "enum", "trait", "module"} else "member"
+        prefix = "page" if surface == "item" else "member"
+        symbol = f"{prefix}:{kind}:{rust_path}@signature:{signature}"
+        if trait is not None:
+            if not isinstance(trait, str) or not trait or "@" in trait:
+                raise ValueError("invalid Surface trait")
+            symbol += f"@trait:{trait}"
+        declaration = {
+            "rustPath": rust_path,
+            "kind": kind,
+            "trait": trait,
+            "surface": surface,
+            "parentRustPath": rust_path.rsplit("::", 1)[0]
+            if surface == "member"
+            else None,
+            "signatureSha256": signature,
+            "symbolKey": symbol,
+        }
+        declaration["id"] = _identity_id(declaration, occurrence)
+        mechanic = row.pop("mechanic", False)
+        if type(mechanic) is not bool:
+            raise ValueError("invalid Surface mechanic marker")
+        if mechanic:
+            if row or _mechanic(declaration) is None:
+                raise ValueError(
+                    "Surface mechanic differs from the reviewed trait policy"
+                )
+            declaration.update(
+                classification="trait-mechanic",
+                baselineStatus="missing",
+                mechanic=_mechanic(declaration),
+                mapping={
+                    "decision": "missing",
+                    "pythonTarget": None,
+                    "pythonTargetSha256": None,
+                    "ledgerMappingSha256": None,
+                    "semanticEquivalent": None,
+                    "rationale": None,
+                    "review": None,
+                },
+            )
+        else:
+            for field in ("pythonTarget", "rationale"):
+                if not isinstance(row.get(field), str) or not row[field].strip():
+                    raise ValueError(f"Surface contract requires {field}")
+            target_digest = row.pop("pythonTargetSha256", None)
+            if not isinstance(target_digest, str) or not SHA256_RE.fullmatch(
+                target_digest
+            ):
+                raise ValueError("Surface contract requires a Python shape pin")
+            mapping = {
+                "decision": "mapped",
+                "argumentMappings": [],
+                "defaults": [],
+                "units": [],
+                "cardinality": [],
+                **row,
+            }
+            entry = {"rustPath": rust_path, "symbolKey": symbol, **mapping}
+            if trait is not None:
+                entry["trait"] = trait
+            entries.append(entry)
+            declaration.update(
+                classification="sdk",
+                baselineStatus=mapping["decision"],
+                mapping={
+                    "decision": mapping["decision"],
+                    "pythonTarget": mapping.get("pythonTarget"),
+                    "pythonTargetSha256": target_digest,
+                    "semanticEquivalent": mapping.get("semanticEquivalent"),
+                    "rationale": mapping.get("rationale"),
+                    "review": mapping.get("review"),
+                    "ledgerMappingSha256": _digest_json(_mapping_projection(mapping)),
+                },
+            )
+        declarations.append(declaration)
+    return declarations, entries
+
+
+def surface_contract_path(document: dict[str, Any], parent: Path) -> Path | None:
+    """Resolve the sole supported adjacent contract, without arbitrary includes."""
+    name = document.get("surfaceContract")
+    if name is None:
+        return None
+    if name != "surface-contract.json":
+        raise ValueError("unsupported Surface contract filename")
+    return parent / name
+
+
 def load_contract(path: Path | str) -> dict[str, Any]:
     """Load a contract and reject unsupported, malformed, or out-of-scope data."""
     try:
         contract = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"cannot read SDK contract {path}: {error}") from error
+    if not isinstance(contract, dict) or not isinstance(
+        contract.get("declarations"), list
+    ):
+        return _validate_contract(contract)
+    source = surface_contract_path(contract, Path(path).parent)
+    if source is not None:
+        declarations, _ = load_surface_contract(source)
+        contract["declarations"].extend(declarations)
     return _validate_contract(contract)
 
 

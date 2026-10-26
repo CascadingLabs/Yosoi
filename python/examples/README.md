@@ -1,5 +1,8 @@
 # Runnable SDK review examples
 
+Surface examples are paired Rust/Python programs in the public
+[Surfaces guide](../../docs/public/concepts/surfaces.md).
+
 The earlier compatibility report exercised the seven commands that existed in
 that SDK snapshot on normal 3.12, 3.13, 3.14, and exact 3.14.3t. It predates
 the Contract example and does not verify the current Contract wheel. See

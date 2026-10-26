@@ -38,7 +38,7 @@ const SESSION_CLOSE_TIMEOUT: Duration = Duration::from_secs(10);
 const ATTACHED_TARGET_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 const AUTO_DEBUG_PORT_ATTEMPTS: u8 = 3;
 
-mod browser_distribution;
+pub mod browser_distribution;
 mod browser_mode;
 mod security;
 use browser_distribution::supported_chrome_executable;

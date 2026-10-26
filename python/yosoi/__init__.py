@@ -14,6 +14,7 @@ from . import map as map
 from . import policy as policy
 from . import request as request
 from . import search as search
+from . import surface as surface
 from . import view as view
 from .archive import Archive as Archive
 from .archive import AutomationRecord as AutomationRecord
@@ -169,11 +170,59 @@ from .policy import FlowPolicy as FlowPolicy
 from .policy import Policy as Policy
 from .policy import Stop as Stop
 from .policy import StopScope as StopScope
+from .surface import (
+    Budget as SurfaceBudget,
+)
+from .surface import (
+    DecodedFrame as DecodedFrame,
+)
+from .surface import (
+    Limits as SurfaceLimits,
+)
+from .surface import (
+    PixelRect as PixelRect,
+)
+from .surface import (
+    Session as SurfaceSession,
+)
+from .surface import (
+    SessionPolicy as SurfaceSessionPolicy,
+)
+from .surface import (
+    Surface as Surface,
+)
+from .surface import (
+    SurfaceError as SurfaceError,
+)
+from .surface import (
+    VideoError as VideoError,
+)
+from .surface import (
+    VideoPolicy as VideoPolicy,
+)
+from .surface import (
+    VideoSurface as VideoSurface,
+)
+from .surface import (
+    WebSurface as WebSurface,
+)
 from .view import View as View
 
 __version__ = _distribution_version("yosoi")
 
 __all__ = [
+    "Surface",
+    "SurfaceError",
+    "SurfaceBudget",
+    "SurfaceLimits",
+    "SurfaceSession",
+    "SurfaceSessionPolicy",
+    "WebSurface",
+    "VideoSurface",
+    "VideoPolicy",
+    "VideoError",
+    "DecodedFrame",
+    "PixelRect",
     "archive",
     "view",
     "Archive",
@@ -228,6 +277,7 @@ __all__ = [
     "policy",
     "request",
     "search",
+    "surface",
     "Document",
     "Plan",
     "Policy",

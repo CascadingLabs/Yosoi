@@ -288,7 +288,7 @@ class SdkParityRunnerTests(unittest.TestCase):
         )
         self.assertIn("CascadingLabs/Yosoi", call)
         self.assertIn("--features", call)
-        self.assertIn("browser", call)
+        self.assertIn("browser,surface-video", call)
         self.assertIn("--preview", call)
         self.assertIn("--offline", call)
         self.assertTrue(output.is_relative_to(self.output / "references"))

@@ -13,6 +13,9 @@
     "declarations"
   ],
   "properties": {
+    "surfaceContract": {
+      "const": "surface-contract.json"
+    },
     "schemaVersion": {
       "const": 1
     },
@@ -63,7 +66,8 @@
             "map",
             "policy",
             "request",
-            "search"
+            "search",
+            "surface"
           ]
         }
       },

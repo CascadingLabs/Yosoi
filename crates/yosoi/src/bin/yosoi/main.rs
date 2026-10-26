@@ -12,6 +12,7 @@ mod search_command;
 mod self_command;
 mod stats;
 mod stream_output;
+mod surface_command;
 mod syntax;
 
 use std::process::ExitCode;

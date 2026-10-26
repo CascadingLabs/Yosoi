@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
@@ -155,7 +157,10 @@ class SdkContractTests(unittest.TestCase):
         self,
     ) -> None:
         report, _, _, _ = make_inputs()
-        for path, kind in (("yosoi::Archive", "struct"), ("yosoi::view", "module")):
+        for path, kind in (
+            ("yosoi::Archive", "struct"),
+            ("yosoi::view", "module"),
+        ):
             report["coverage"]["items"].append(
                 {**rust_item(path, kind, path), "status": "missing"}
             )
@@ -175,6 +180,22 @@ class SdkContractTests(unittest.TestCase):
         deferred[0]["deferredSurface"]["issue"] = "made-up-exemption"
         with self.assertRaisesRegex(ValueError, "beta boundary"):
             sdk_contract._validate_contract(contract)
+
+    def test_surface_and_provider_children_require_real_sdk_mappings(self) -> None:
+        report, _, _, _ = make_inputs()
+        paths = {
+            "yosoi::surface": "module",
+            "yosoi::surface::Surface": "struct",
+            "yosoi::surface::video::VideoSurface": "struct",
+        }
+        for path, kind in paths.items():
+            report["coverage"]["items"].append(
+                {**rust_item(path, kind, path), "status": "missing"}
+            )
+        contract = sdk_contract.build_contract(report)
+        declarations = {item["rustPath"]: item for item in contract["declarations"]}
+        for path in paths:
+            self.assertEqual(declarations[path]["classification"], "sdk")
 
     def test_implemented_request_api_cannot_be_relabelled_as_deferred(self) -> None:
         contract = copy.deepcopy(self.contract)
@@ -458,6 +479,114 @@ class SdkContractTests(unittest.TestCase):
             "structuralDrift": [],
         }
         self.assertTrue(sdk_contract.sdk_failures(report))
+
+
+class CompactSurfaceContractTests(unittest.TestCase):
+    def setUp(self) -> None:
+        # Reuse the gate's independent miniature SDK, in the Surface namespace.
+        text = (
+            json.dumps(make_inputs())
+            .replace("yosoi::map::MapRequest", "yosoi::surface::Surface")
+            .replace("yosoi.map.MapRequest", "yosoi.surface.Surface")
+        )
+        self.report, self.rust, self.python, self.ledger = json.loads(text)
+        self.contract = sdk_contract.build_contract(self.report)
+        self.compact = sdk_contract.build_surface_contract(self.contract, self.ledger)
+
+    def expand(self, value=None):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "surface-contract.json"
+            path.write_text(json.dumps(self.compact if value is None else value))
+            declarations, entries = sdk_contract.load_surface_contract(path)
+        contract = copy.deepcopy(self.contract)
+        contract["declarations"] = declarations
+        ledger = copy.deepcopy(self.ledger)
+        ledger["entries"] = entries
+        return contract, ledger
+
+    def test_expanded_contract_preserves_pins_and_rebases_only_source_keys(self):
+        contract, ledger = self.expand()
+        sdk_contract._validate_contract(contract)
+        for before, after in zip(
+            self.contract["declarations"], contract["declarations"], strict=True
+        ):
+            self.assertEqual(before["id"], after["id"])
+            self.assertEqual(before["signatureSha256"], after["signatureSha256"])
+            self.assertEqual(before["mapping"], after["mapping"])
+        _, drift = sdk_contract.prepare_ledger(contract, self.rust, self.python, ledger)
+        self.assertEqual(drift, [])
+
+    def test_changed_rust_python_or_mapping_still_fails(self):
+        contract, ledger = self.expand()
+        rust = copy.deepcopy(self.rust)
+        rust["items"][-1]["signature"] += " changed"
+        _, drift = sdk_contract.prepare_ledger(contract, rust, self.python, ledger)
+        self.assertIn("rust-signature-changed", {row["kind"] for row in drift})
+        python = copy.deepcopy(self.python)
+        python["targets"]["yosoi.surface.Surface"]["alias"] = "different"
+        _, drift = sdk_contract.prepare_ledger(contract, self.rust, python, ledger)
+        self.assertIn("python-target-changed", {row["kind"] for row in drift})
+        ledger["entries"][0]["rationale"] = "changed after review"
+        _, drift = sdk_contract.prepare_ledger(contract, self.rust, self.python, ledger)
+        self.assertIn("ledger-mapping-changed", {row["kind"] for row in drift})
+
+    def test_removed_and_added_api_still_fail(self):
+        contract, ledger = self.expand()
+        for change, expected in (
+            (lambda rows: rows.pop(), "rust-declaration-removed"),
+            (
+                lambda rows: rows.append(
+                    rust_item(
+                        "yosoi::surface::Surface::new_api",
+                        "function",
+                        "pub fn new_api()",
+                    )
+                ),
+                "rust-declaration-added",
+            ),
+        ):
+            rust = copy.deepcopy(self.rust)
+            change(rust["items"])
+            _, drift = sdk_contract.prepare_ledger(contract, rust, self.python, ledger)
+            self.assertIn(expected, {row["kind"] for row in drift})
+
+    def test_missing_pins_wrong_scope_and_fake_mechanics_are_rejected(self):
+        for field, value in (
+            ("signatureSha256", ""),
+            ("pythonTargetSha256", None),
+            ("rustPath", "yosoi::request::PageRequest"),
+            ("mechanic", True),
+        ):
+            malformed = copy.deepcopy(self.compact)
+            malformed["declarations"][0][field] = value
+            with self.assertRaises(ValueError):
+                self.expand(malformed)
+        with self.assertRaises(ValueError):
+            sdk_contract.surface_contract_path(
+                {"surfaceContract": "../outside.json"}, Path(".")
+            )
+
+    def test_malformed_outer_contract_raises_a_validation_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sdk-contract.json"
+            for value in (
+                [],
+                {"declarations": {}, "surfaceContract": "surface-contract.json"},
+            ):
+                path.write_text(json.dumps(value))
+                with self.assertRaises(ValueError):
+                    sdk_contract.load_contract(path)
+
+    def test_runtime_ledger_is_self_contained(self):
+        import parity
+
+        root = Path(__file__).resolve().parents[2]
+        ledger = parity.load_ledger(root / "python/parity/ledger.json")
+        self.assertNotIn("surfaceContract", ledger)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "runtime-ledger.json"
+            path.write_text(json.dumps(ledger))
+            self.assertEqual(parity.load_ledger(path), ledger)
 
 
 if __name__ == "__main__":

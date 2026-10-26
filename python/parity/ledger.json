@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "f91cb21933132222a80eb3c677ca2369c14b878f",
-    "inventorySignature": "0dbd86d0adef002340660504272cd68ea62eda7c04df5f1f10ff490ce1afe687",
-    "featureProfileDigest": "8dcabb1246538fafe5b1146b04572729cd0377ced9e71277d7a1621cdb129524"
+    "sourceRevision": "a408de85a8d2f22fef001f3a11d454bdc8fcbf2a",
+    "inventorySignature": "6e4e7a7a3a6f42bb0dad5a0d0ebc26a3dba96486e5720fecf3d24f3d835e99fa",
+    "featureProfileDigest": "dd606b421310c411411880703eaf78a68536b25ba84ceff7f685207eed12cb69"
   },
   "pythonPin": {
-    "surfaceDigest": "ade165961c0c5ecb7147f4c229205da43f3e298ef45a18e9e7b02677f83fd873",
-    "implementationDigest": "1ebd5ea963a2fff9143b81b99117610481f39b7a2552955fc2608daa51dd19d3"
+    "surfaceDigest": "def50fe51f6495814ee7dd47362438cdc09a13ffda3172d721e115b49bc828e2",
+    "implementationDigest": "8d0b6280b31cc0a17c1213cae810e84faaf184c4b5b4066ddbe72f36e4a5d28c"
   },
   "entries": [
     {
@@ -30638,5 +30638,6 @@
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.View.total_rows."
     }
-  ]
+  ],
+  "surfaceContract": "surface-contract.json"
 }

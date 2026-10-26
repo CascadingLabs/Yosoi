@@ -1,6 +1,7 @@
 //! Rust-owned constructors and validation for public SDK scalar values.
 
 use crate::errors::{self, ContractError, DocumentError, LocatorError, PolicyError, RequestError};
+use crate::surface::validate_identity;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use yosoi::{
     contracts::{ContractId, FieldId},
@@ -16,6 +17,7 @@ use yosoi::{
         StepLimit,
     },
     request::WebTarget,
+    surface::model::{AddressToken, ContinuationToken, ObservationId, SourceId, SurfaceId},
 };
 
 mod input;
@@ -29,6 +31,11 @@ use input::{
 #[pyfunction]
 pub fn validate_domain_model(kind: &str, value_json: &str) -> PyResult<String> {
     match kind {
+        "surface_source_id" => validate_identity::<SourceId>(value_json),
+        "surface_id" => validate_identity::<SurfaceId>(value_json),
+        "surface_observation_id" => validate_identity::<ObservationId>(value_json),
+        "surface_address" => validate_identity::<AddressToken>(value_json),
+        "surface_continuation" => validate_identity::<ContinuationToken>(value_json),
         "event_limit_default" => converted_json(&EventLimit::default(), PolicyError::new_err),
         "maximum_elapsed_default" => {
             converted_json(&MaximumElapsed::default(), PolicyError::new_err)

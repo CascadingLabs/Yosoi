@@ -22,6 +22,7 @@ pub mod prelude;
 pub mod request;
 pub mod search;
 pub mod session;
+pub mod surface;
 pub mod timing;
 pub mod view;
 pub use crate::internal::engine::Archive;
@@ -34,6 +35,12 @@ pub use policy::{
     StopScope,
 };
 pub use request::{CancellationToken, ResponseTermination};
+#[cfg(feature = "surface-video")]
+pub use surface::video::{DecodedFrame, VideoError, VideoPolicy, VideoSurface};
+pub use surface::{
+    Budget as SurfaceBudget, Limits as SurfaceLimits, PixelRect, Session as SurfaceSession,
+    SessionPolicy as SurfaceSessionPolicy, Surface, SurfaceError, browser::WebSurface,
+};
 
 extern crate self as yosoi;
 

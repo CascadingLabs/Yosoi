@@ -364,7 +364,7 @@ fn observation_view(
 )]
 #[derive(Clone, Debug)]
 pub struct NativeArchive {
-    inner: Archive,
+    pub(crate) inner: Archive,
 }
 
 #[pymethods]

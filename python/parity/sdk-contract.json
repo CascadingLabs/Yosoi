@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "e5e9552e94ca5a4784c0f42be015c20901b3eb03",
-    "inventorySignature": "264c0243c7eacc8419ecb1bb292eb412228a4dffd89b9c725ede69ed8752a540"
+    "revision": "a408de85a8d2f22fef001f3a11d454bdc8fcbf2a",
+    "inventorySignature": "6e4e7a7a3a6f42bb0dad5a0d0ebc26a3dba96486e5720fecf3d24f3d835e99fa"
   },
   "scope": {
     "crate": "yosoi",
@@ -15,7 +15,8 @@
       "map",
       "policy",
       "request",
-      "search"
+      "search",
+      "surface"
     ]
   },
   "wireEvidence": {
@@ -4917,7 +4918,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -4942,7 +4943,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -4967,7 +4968,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -4992,7 +4993,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -14695,7 +14696,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -14720,7 +14721,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -57425,7 +57426,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -57450,7 +57451,7 @@
       },
       "mechanic": {
         "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
-        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the existing Python SDK namespaces retain their semantic comparison suites."
       }
     },
     {
@@ -57479,5 +57480,6 @@
         "rationale": "Python exposes bounded offline DOM View pages and capture-bound continuation cursors. The full Rust View API, including direct condition verification, belongs to later release work."
       }
     }
-  ]
+  ],
+  "surfaceContract": "surface-contract.json"
 }

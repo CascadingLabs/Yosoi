@@ -27,6 +27,7 @@
         "concepts/sharing-browser-capacity.md",
         "concepts/yielding-while-waiting.md",
         "concepts/keeping-the-evidence.md",
+        "concepts/surfaces.md",
       ],
     },
     {
@@ -39,6 +40,7 @@
         "cli/policy.md",
         "cli/map.md",
         "cli/search.md",
+        "cli/surface.md",
       ],
     },
 

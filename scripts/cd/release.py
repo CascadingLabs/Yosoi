@@ -127,12 +127,13 @@ def python_abis(requirement: str) -> list[dict]:
 
 def wheel_builds(abis: list[dict]) -> list[dict]:
     """Build stable ABIs once, retaining version-specific pre-3.15 threading."""
+    native_features = "browser,surface-video"
     minimum = next(row for row in abis if not row["abi"].endswith("t"))
     result = [
         minimum
         | {
             "abi": "abi3",
-            "features": f"browser,pyo3/abi3-py{minimum['python_tag'][2:]}",
+            "features": f"{native_features},pyo3/abi3-py{minimum['python_tag'][2:]}",
         }
     ]
     for row in abis:
@@ -141,9 +142,9 @@ def wheel_builds(abis: list[dict]) -> list[dict]:
                 row
                 | {
                     "abi": row["wheel_abi"],
-                    "features": "browser,pyo3/abi3t-py315"
+                    "features": f"{native_features},pyo3/abi3t-py315"
                     if row["wheel_abi"] == "abi3.abi3t"
-                    else "browser",
+                    else native_features,
                 }
             )
     return result
