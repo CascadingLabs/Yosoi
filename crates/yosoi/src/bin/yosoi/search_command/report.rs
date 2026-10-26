@@ -75,6 +75,13 @@ pub(super) fn render_human(
             }
         }
         for attempt in &provider.attempts {
+            if let Some(diagnostic) = attempt.parser_diagnostic {
+                writeln!(
+                    writer,
+                    "  {label}Parser stage:{label:#} {diagnostic:?}; Request: {}; Capture: {}",
+                    attempt.request_id, attempt.capture_id
+                )?;
+            }
             if let Some(diagnostic) = attempt.diagnostic {
                 writeln!(
                     writer,
@@ -280,6 +287,13 @@ pub(super) fn render_stats(
         hits = hits.saturating_add(provider.hits.len());
         attempts = attempts.saturating_add(provider.attempts.len());
         for attempt in &provider.attempts {
+            if let Some(diagnostic) = attempt.parser_diagnostic {
+                writeln!(
+                    writer,
+                    "  {label}Parser stage:{label:#} {diagnostic:?}; Request: {}; Capture: {}",
+                    attempt.request_id, attempt.capture_id
+                )?;
+            }
             if let Some(bytes) = attempt.source_bytes {
                 retained_source_bytes = retained_source_bytes.saturating_add(bytes);
             }

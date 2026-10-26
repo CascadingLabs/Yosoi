@@ -16,7 +16,7 @@ use yosoi::{
     CountLimit, DocumentId, Policy, StepLimit,
     browser::{BrowserConfig, BrowserEngine, MoliProfile},
     contracts::{RuntimeFieldValue, RuntimeValue},
-    documents::DocumentEpoch,
+    documents::{DocumentClass, DocumentEpoch},
     locators::{
         AccessibilityCoordinate, ByteRange, DecodedTextCoordinate, DomCoordinate, DomNodeId,
         ExpandedNamePathSegment, JsonCoordinate, NamespaceBinding, NativeCoordinate, NodeReference,
@@ -26,7 +26,13 @@ use yosoi::{
     policy::{
         AddressableByteLimit, BrowserLimits, DirectHttpRedirects, Documents, EventLimit, Filters,
         IpFamily, Limits, Locators, Map, MaximumElapsed, Network, Page, RedirectHopLimit, Request,
-        Scope, SourceLimits, Tuning, search::Search,
+        Scope, SourceLimits, Tuning,
+        search::{Provider, Search},
+    },
+    search::{
+        ProviderOutcome, SearchCaptureRetention, SearchFailure, SearchParserDecision,
+        SearchParserDiagnostic, SearchParserStatus, SearchReplay, SearchReplayPolicy,
+        SearchReplayResult,
     },
 };
 
@@ -262,6 +268,106 @@ where
 
 fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
     let mut output = Vec::new();
+
+    for (name, value) in [
+        (
+            "search-capture-byte-limit",
+            SearchCaptureRetention::ByteLimit,
+        ),
+        (
+            "search-capture-missing-document",
+            SearchCaptureRetention::MissingDocument,
+        ),
+    ] {
+        output.push(constructed_case(
+            name,
+            "yosoi::search::SearchCaptureRetention",
+            "Rust explicit retention fact",
+            value,
+            json!({}),
+        )?);
+    }
+    output.push(constructed_case(
+        "search-parser-query-mismatch",
+        "yosoi::search::SearchParserDiagnostic",
+        "Rust explicit parser fact",
+        SearchParserDiagnostic::QueryMismatch,
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "search-parser-failed",
+        "yosoi::search::SearchParserStatus",
+        "Rust explicit parser category",
+        SearchParserStatus::Failed,
+        json!({}),
+    )?);
+    let decision = SearchParserDecision {
+        status: SearchParserStatus::Failed,
+        failure: Some(SearchFailure::QueryMismatch),
+        parser_diagnostic: Some(SearchParserDiagnostic::QueryMismatch),
+        hit_count: 0,
+        partial: false,
+    };
+    output.push(constructed_case(
+        "search-parser-decision",
+        "yosoi::search::SearchParserDecision",
+        "Rust constructed content-free decision",
+        decision.clone(),
+        json!({}),
+    )?);
+    output.push(serialize_only_case(
+        "search-replay-result",
+        "yosoi::search::SearchReplayResult",
+        "Rust constructed parser result",
+        SearchReplayResult {
+            outcome: ProviderOutcome::Failed(SearchFailure::QueryMismatch),
+            parser_diagnostic: Some(SearchParserDiagnostic::QueryMismatch),
+        },
+        json!({}),
+    )?);
+    let replay_policy = SearchReplayPolicy {
+        documents: Documents::default(),
+        locators: Locators::default(),
+        tuning: Tuning::default(),
+        result_limit: 5,
+        output_limit: 67_108_865,
+    };
+    output.push(constructed_case(
+        "search-replay-large-policy",
+        "yosoi::search::SearchReplayPolicy",
+        "Rust constructed valid policy above 64 MiB",
+        replay_policy,
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "search-replay-record",
+        "yosoi::search::SearchReplay",
+        "Rust-authored synthetic replay record, not an observed capture",
+        SearchReplay {
+            schema_version: 1,
+            sdk_version: "synthetic-control".to_owned(),
+            source_revision: None,
+            provider: Provider::Bing,
+            adapter_version: None,
+            parser_version: "synthetic-control".to_owned(),
+            profile: json!({}),
+            request_id: "synthetic-request".to_owned(),
+            capture_id: "synthetic-capture".to_owned(),
+            original_provider_page_url: "https://www.bing.com/search?q=synthetic".to_owned(),
+            provider_page_url: "https://www.bing.com/search?q=synthetic".to_owned(),
+            final_url: None,
+            http_status: Some(200),
+            capture_complete: true,
+            environment: json!({"kind":"synthetic"}),
+            replay_policy,
+            selected_for_parsing: true,
+            document_class: DocumentClass::SourceHtml,
+            document_bytes: 17,
+            document: "document:v1:123e4567-e89b-42d3-a456-426614174000".parse()?,
+            observed: decision,
+        },
+        json!({"nullPaths":["source_revision", "adapter_version", "final_url"]}),
+    )?);
 
     // Public policy defaults. The nested cases each exercise the
     // direct Rust type and its own Python model, in addition to Policy itself.

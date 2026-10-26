@@ -4,11 +4,14 @@ use crate::internal::policy::policy::{ProfileSelectionKind, search::Provider};
 use tokio_util::sync::CancellationToken;
 
 use super::prepare::ProviderJob;
-use super::response::{provider_result_from_response, request_error_result};
+use super::response::{
+    ProviderResponseLimits, provider_result_from_response, request_error_result,
+};
 
 pub(super) async fn execute_provider(
     job: ProviderJob,
     cancellation: &CancellationToken,
+    diagnostic_capture: bool,
 ) -> ProviderResult {
     let ProviderJob {
         route,
@@ -30,8 +33,11 @@ pub(super) async fn execute_provider(
         provider,
         &policy,
         &provider_target,
-        result_limit,
-        output_limit,
+        ProviderResponseLimits {
+            results: result_limit,
+            output_bytes: output_limit,
+            capture_bytes: diagnostic_capture.then_some(output_limit),
+        },
         profile,
         &response,
     );
@@ -53,6 +59,7 @@ pub(super) async fn execute_provider(
         return result;
     };
     let recovery_request = new_request(recovery_target.as_str());
+    result.recovery_query = Some(shorter_query.clone());
     let Ok(recovery_response) = recovery_request
         .bind(&policy)
         .send_cancellable(cancellation)
@@ -60,15 +67,34 @@ pub(super) async fn execute_provider(
     else {
         return result;
     };
-    let recovered = provider_result_from_response(
+    let retained_bytes = result
+        .captures
+        .iter()
+        .try_fold(0_usize, |total, capture| {
+            usize::try_from(capture.document.byte_len())
+                .ok()
+                .and_then(|bytes| total.checked_add(bytes))
+        })
+        .unwrap_or(output_limit);
+    let mut recovered = provider_result_from_response(
         provider,
         &policy,
         &recovery_target,
-        result_limit,
-        output_limit,
+        ProviderResponseLimits {
+            results: result_limit,
+            output_bytes: output_limit,
+            capture_bytes: diagnostic_capture
+                .then_some(output_limit.saturating_sub(retained_bytes)),
+        },
         profile,
         &recovery_response,
     );
+    for capture in &mut recovered.captures {
+        provider_target
+            .as_str()
+            .clone_into(&mut capture.original_provider_page_url);
+    }
+    result.captures.extend(recovered.captures);
     result.attempts.extend(recovered.attempts);
     result.recovery_query = Some(shorter_query);
     match recovered.outcome {

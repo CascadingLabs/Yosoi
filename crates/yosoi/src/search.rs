@@ -1,5 +1,8 @@
 //! Find candidate URLs and inspect each provider's bounded, typed outcome.
 
+mod diagnostics;
+pub use diagnostics::{SearchReplay, SearchReplayError, replay_document};
+
 use crate::internal::engine::search as implementation;
 use crate::policy::Policy;
 use crate::request::CancellationToken;
@@ -7,10 +10,11 @@ use crate::request::CancellationToken;
 pub use implementation::{
     FeatureCoverage, ImageResult, LocalPlace, ProviderCharge, ProviderIdentity, ProviderOutcome,
     ProviderResult, RequestAttemptSummary, RequestAttemptTerminal, SearchAttemptDiagnostic,
-    SearchCoverage, SearchFailure, SearchFeature, SearchHit, SearchHitMetadata, SearchIssue,
-    SearchIssueKind, SearchPage, SearchProfileFacts, SearchQueryError, SearchRequestId,
-    SearchResponse, SearchResultUrl, SearchSendError, SearchTermination, SearchUnavailableReason,
-    WebCoverage,
+    SearchCapture, SearchCaptureRetention, SearchCoverage, SearchFailure, SearchFeature, SearchHit,
+    SearchHitMetadata, SearchIssue, SearchIssueKind, SearchPage, SearchParserDecision,
+    SearchParserDiagnostic, SearchParserStatus, SearchProfileFacts, SearchQueryError,
+    SearchReplayPolicy, SearchReplayResult, SearchRequestId, SearchResponse, SearchResultUrl,
+    SearchSendError, SearchTermination, SearchUnavailableReason, WebCoverage,
 };
 
 /// Creates query intent without selecting a provider or performing I/O.
@@ -73,6 +77,17 @@ impl BoundSearchRequest<'_> {
     /// Resolves the policy without contacting a provider.
     pub fn validate(&self) -> Result<(), SearchSendError> {
         self.inner.prepare().map(|_| ())
+    }
+
+    /// Explicitly retains bounded original and recovery documents for offline replay.
+    ///
+    /// Captures can contain query/page content. Their total bytes are limited by the
+    /// Search retained-content quota, separately from normalized output. Inspect
+    /// attempt retention states for omitted or unavailable evidence.
+    pub fn with_diagnostic_capture(self) -> Self {
+        Self {
+            inner: self.inner.with_diagnostic_capture(),
+        }
     }
 
     /// Executes through the package's standard provider adapters.

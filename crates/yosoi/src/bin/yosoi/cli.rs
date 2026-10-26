@@ -50,6 +50,8 @@ enum Commands {
     Map(map_command::MapArgs),
     /// Search selected providers for a query.
     Search(search_command::SearchArgs),
+    /// Replay saved Search parser decisions offline from an Archive manifest.
+    SearchReplay(search_command::evidence::ReplayArgs),
     /// Locate values in a file or one typed Yosoi Document on stdin.
     Locate(locate_command::LocateArgs),
     /// Inspect web/video evidence and drive controllable surfaces through bounded JSON.
@@ -106,6 +108,10 @@ pub async fn run() -> ExitCode {
                     Err(error) => report_app_error(&error),
                 }
             }
+            Some(Commands::SearchReplay(args)) => match search_command::evidence::run(args).await {
+                Ok(code) => code,
+                Err(error) => report_app_error(&error),
+            },
             Some(Commands::Search(args)) => {
                 match search_command::run(args, cli.profile.as_deref()).await {
                     Ok(code) => code,

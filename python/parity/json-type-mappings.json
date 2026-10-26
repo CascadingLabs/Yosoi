@@ -622,6 +622,10 @@
       "pythonTarget": "yosoi.search.SearchAttemptDiagnostic"
     },
     {
+      "rustPath": "yosoi::search::SearchCaptureRetention",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention"
+    },
+    {
       "rustPath": "yosoi::search::SearchCoverage",
       "pythonTarget": "yosoi.search.SearchCoverage"
     },
@@ -652,6 +656,30 @@
     {
       "rustPath": "yosoi::search::SearchPage",
       "pythonTarget": "yosoi.search.SearchPage"
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision",
+      "pythonTarget": "yosoi.search.SearchParserDecision"
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic"
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus",
+      "pythonTarget": "yosoi.search.SearchParserStatus"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay",
+      "pythonTarget": "yosoi.search.SearchReplay"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult",
+      "pythonTarget": "yosoi.search.SearchReplayResult"
     },
     {
       "rustPath": "yosoi::search::SearchResultUrl",

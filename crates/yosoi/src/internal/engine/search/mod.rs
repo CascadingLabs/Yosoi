@@ -3,6 +3,7 @@
 //! Search execution composes the existing Requests lifecycle. Provider
 //! selection and acquisition limits belong to the complete Policy value.
 
+mod diagnostics;
 mod execution;
 mod outcome;
 mod preparation;
@@ -11,6 +12,10 @@ mod query;
 mod result;
 mod target;
 
+pub use diagnostics::{
+    SearchCapture, SearchCaptureRetention, SearchParserDecision, SearchParserDiagnostic,
+    SearchParserStatus, SearchReplayPolicy, SearchReplayResult, parse_document, status_failure,
+};
 pub use execution::SearchExecutionSetupError;
 pub use outcome::{
     ProviderCharge, ProviderIdentity, ProviderOutcome, ProviderResult, RequestAttemptSummary,

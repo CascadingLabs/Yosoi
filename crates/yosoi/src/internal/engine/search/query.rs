@@ -88,6 +88,7 @@ impl SearchRequest {
         BoundSearchRequest {
             request: self,
             policy,
+            diagnostic_capture: false,
         }
     }
 }
@@ -96,6 +97,7 @@ impl SearchRequest {
 pub struct BoundSearchRequest<'policy> {
     request: SearchRequest,
     policy: &'policy Policy,
+    diagnostic_capture: bool,
 }
 
 impl fmt::Debug for BoundSearchRequest<'_> {
@@ -109,6 +111,16 @@ impl fmt::Debug for BoundSearchRequest<'_> {
 }
 
 impl<'policy> BoundSearchRequest<'policy> {
+    /// Opts into bounded query/page-content retention for parser diagnostics.
+    pub const fn with_diagnostic_capture(mut self) -> Self {
+        self.diagnostic_capture = true;
+        self
+    }
+
+    pub(crate) const fn diagnostic_capture(&self) -> bool {
+        self.diagnostic_capture
+    }
+
     pub const fn request(&self) -> &SearchRequest {
         &self.request
     }

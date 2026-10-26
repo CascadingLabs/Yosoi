@@ -1,5 +1,6 @@
 //! Provider-backed Search command execution and output.
 
+pub mod evidence;
 mod report;
 #[cfg(test)]
 #[expect(
@@ -9,7 +10,10 @@ mod report;
 mod tests;
 mod view;
 
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::{
+    num::{NonZeroU16, NonZeroUsize},
+    path::PathBuf,
+};
 
 use clap::{ArgAction, Args, ValueEnum};
 use yosoi::policy::search::Provider;
@@ -62,6 +66,9 @@ pub enum OutputFormat {
 pub struct SearchArgs {
     /// Text to search for.
     pub query: String,
+    /// Explicitly retain bounded query/page evidence in this Archive for offline replay.
+    #[arg(long)]
+    pub diagnostic_archive: Option<PathBuf>,
     /// Ordered providers, as a comma-separated enum list.
     #[arg(short = 'p', long = "providers", value_enum, value_delimiter = ',', action = ArgAction::Append)]
     pub providers: Vec<ProviderChoice>,
@@ -95,6 +102,11 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
         .map_err(SearchCommandError::Setup)?
         .bind(&policy);
 
+    let request = if args.diagnostic_archive.is_some() {
+        request.with_diagnostic_capture()
+    } else {
+        request
+    };
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);
     tokio::pin!(send);
@@ -139,6 +151,20 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
         report::report_stats(&envelope, &timer)
             .context("could not write Search stats")
             .map_err(SearchCommandError::Output)?;
+    }
+
+    if let Some(root) = &args.diagnostic_archive {
+        let manifest = evidence::save(root, &response, &envelope)
+            .await
+            .context("Search results were written, but diagnostic capture failed")
+            .map_err(SearchCommandError::Output)?;
+        writeln!(
+            io::stderr().lock(),
+            "Search evidence: {}",
+            manifest.display()
+        )
+        .context("could not report Search evidence path")
+        .map_err(SearchCommandError::Output)?;
     }
 
     Ok(report::exit_code(

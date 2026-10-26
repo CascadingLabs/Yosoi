@@ -24,7 +24,7 @@ impl<'a> SearchEnvelope<'a> {
         policy_profile: Option<&'a str>,
     ) -> Self {
         Self {
-            schema_version: 2,
+            schema_version: 3,
             cli_version: env!("CARGO_PKG_VERSION"),
             policy_profile,
             policy_identity: response.policy_identity().into(),
@@ -187,6 +187,11 @@ impl<'a> ProviderView<'a> {
                     http_status: attempt.http_status,
                     source_bytes: attempt.source_bytes,
                     diagnostic: attempt.diagnostic.map(attempt_diagnostic_name),
+                    parser_diagnostic: attempt.parser_diagnostic,
+                    document_class: attempt.document_class,
+                    document_bytes: attempt.document_bytes,
+                    capture_complete: attempt.capture_complete,
+                    capture_retention: attempt.capture_retention,
                     terminal: match attempt.terminal {
                         RequestAttemptTerminal::Completed => "completed",
                         RequestAttemptTerminal::Failed => "failed",

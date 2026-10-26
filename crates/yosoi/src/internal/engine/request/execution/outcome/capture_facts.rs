@@ -9,9 +9,9 @@ use std::fmt;
 use crate::internal::direct_http::DirectHttpTransportErrorKind;
 use crate::internal::types::{ByteCount, CaptureId, CaptureReceipt, ReasonCode};
 use crate::internal::web_capture::{
-    ArtifactFamilyResult, CaptureCompleteness, CaptureObservation, CaptureResolution,
-    CaptureTermination, CleanupState, Observation, RedirectHop, ResolvedWebUrl, WebArtifactFamily,
-    WebCapture,
+    ArtifactFamilyResult, CaptureCompleteness, CaptureEnvironment, CaptureObservation,
+    CaptureResolution, CaptureTermination, CleanupState, Observation, RedirectHop, ResolvedWebUrl,
+    WebArtifactFamily, WebCapture,
 };
 
 /// Provider-neutral capture facts retained after document payload projection.
@@ -26,6 +26,7 @@ pub struct AttemptCaptureFacts {
     dispositions: Vec<ArtifactFamilyDisposition>,
     response_status: Option<u16>,
     source_bytes: Option<u64>,
+    environment: Box<CaptureEnvironment>,
 }
 
 impl AttemptCaptureFacts {
@@ -64,6 +65,7 @@ impl AttemptCaptureFacts {
         ];
 
         Self {
+            environment: Box::new(capture.environment().clone()),
             capture_id: capture.id(),
             requested_target: acquisition.request().target().as_str().to_owned(),
             final_target,
@@ -86,6 +88,10 @@ impl AttemptCaptureFacts {
 
     pub const fn capture_id(&self) -> CaptureId {
         self.capture_id
+    }
+    /// Secret-safe producer/browser identity and effective representation settings.
+    pub const fn environment(&self) -> &CaptureEnvironment {
+        &self.environment
     }
     pub fn requested_target(&self) -> &str {
         &self.requested_target
