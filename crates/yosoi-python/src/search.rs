@@ -16,6 +16,22 @@ fn replay_error(error: &search::SearchReplayError) -> PyErr {
     Python::attach(|py| errors::search_replay_error(py, error))
 }
 
+fn attempt_summary_json(attempt: &search::RequestAttemptSummary) -> serde_json::Value {
+    let mut value = json!({
+        "request_id": attempt.request_id.to_string(), "capture_id": attempt.capture_id.to_string(),
+        "acquisition": attempt.acquisition, "http_status": attempt.http_status,
+        "source_bytes": attempt.source_bytes, "diagnostic": attempt.diagnostic,
+        "terminal": attempt.terminal, "parser_diagnostic": attempt.parser_diagnostic,
+        "document_class": attempt.document_class, "document_bytes": attempt.document_bytes,
+        "capture_complete": attempt.capture_complete, "capture_retention": attempt.capture_retention,
+    });
+    if let Some(placement) = attempt.resolution_placement
+        && let Some(fields) = value.as_object_mut()
+    {
+        fields.insert("resolution_placement".to_owned(), json!(placement.get()));
+    }
+    value
+}
 async fn response_json(
     response: &search::SearchResponse,
     diagnostic_archive: Option<String>,
@@ -46,14 +62,7 @@ async fn response_json(
     let providers: Vec<_> = response.providers().iter().zip(saved).map(|(provider, captures)| {
         let identity = provider.identity();
         let profile = provider.profile();
-        let attempts: Vec<_> = provider.attempts().iter().map(|attempt| json!({
-            "request_id": attempt.request_id.to_string(), "capture_id": attempt.capture_id.to_string(),
-            "acquisition": attempt.acquisition, "http_status": attempt.http_status,
-            "source_bytes": attempt.source_bytes, "diagnostic": attempt.diagnostic,
-            "terminal": attempt.terminal, "parser_diagnostic": attempt.parser_diagnostic,
-            "document_class": attempt.document_class, "document_bytes": attempt.document_bytes,
-            "capture_complete": attempt.capture_complete, "capture_retention": attempt.capture_retention,
-        })).collect();
+        let attempts: Vec<_> = provider.attempts().iter().map(attempt_summary_json).collect();
         json!({
             "provider": provider.provider(),
             "identity": { "provider": identity.provider, "endpoint": identity.endpoint,

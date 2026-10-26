@@ -1,0 +1,1026 @@
+{
+  "schema": "yosoi.rendered-dom.v1",
+  "document_epoch": 1,
+  "tree_model": "document_light_dom",
+  "root": 1,
+  "nodes": [
+    {
+      "kind": "document",
+      "id": 1,
+      "parent": null,
+      "children": [
+        2
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 2,
+      "parent": 1,
+      "children": [
+        3,
+        5
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "wHYlTd Ww4FFb tF2Cxc asEBEc vt6azd"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 3,
+      "parent": 2,
+      "children": [
+        4
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "h2",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "bNg8Rb"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 4,
+      "parent": 3,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 5,
+      "parent": 2,
+      "children": [
+        6,
+        53,
+        60
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "N54PNb BToiNc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 6,
+      "parent": 5,
+      "children": [
+        7
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "kb0PBd A9Y9g"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 7,
+      "parent": 6,
+      "children": [
+        8
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "yuRUbf"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 8,
+      "parent": 7,
+      "children": [
+        9,
+        29
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "b8lM7"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 9,
+      "parent": 8,
+      "children": [
+        10
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "V9tjod"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 10,
+      "parent": 9,
+      "children": [
+        11,
+        13,
+        14
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "a",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "zReHs"
+        },
+        {
+          "namespace_uri": "",
+          "name": "href",
+          "value": "https://example.com/rust"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 11,
+      "parent": 10,
+      "children": [
+        12
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "h3",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "LC20lb MBeuO DKV0Md"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 12,
+      "parent": 11,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 13,
+      "parent": 10,
+      "children": [],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "br",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 14,
+      "parent": 10,
+      "children": [
+        15
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "notranslate ESMNde HGLrXd ojE3Fb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 15,
+      "parent": 14,
+      "children": [
+        16,
+        20
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "q0vns"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 16,
+      "parent": 15,
+      "children": [
+        17
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 17,
+      "parent": 16,
+      "children": [
+        18
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "lCoAlb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 18,
+      "parent": 17,
+      "children": [
+        19
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "DdlAYc Vwoesf"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 19,
+      "parent": 18,
+      "children": [],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "img",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "XNo5Ab"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 20,
+      "parent": 15,
+      "children": [
+        21,
+        24
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "CA5RN"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 21,
+      "parent": 20,
+      "children": [
+        22
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 22,
+      "parent": 21,
+      "children": [
+        23
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "VuuXrf"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 23,
+      "parent": 22,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 24,
+      "parent": 20,
+      "children": [
+        25
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "byrV5b"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 25,
+      "parent": 24,
+      "children": [
+        26,
+        27
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "cite",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "qLRx3b tjvcx GvPZzd cHaqb"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 26,
+      "parent": 25,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 27,
+      "parent": 25,
+      "children": [
+        28
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "ylgVCe ob9lvb"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 28,
+      "parent": 27,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 29,
+      "parent": 8,
+      "children": [
+        30,
+        44
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "B6fmyf byrV5b Mg1HEd"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 30,
+      "parent": 29,
+      "children": [
+        31
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "HGLrXd ojE3Fb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 31,
+      "parent": 30,
+      "children": [
+        32,
+        35
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "q0vns"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 32,
+      "parent": 31,
+      "children": [
+        33
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 33,
+      "parent": 32,
+      "children": [
+        34
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "lCoAlb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 34,
+      "parent": 33,
+      "children": [],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "PpOcSb DdlAYc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 35,
+      "parent": 31,
+      "children": [
+        36,
+        39
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "CA5RN"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 36,
+      "parent": 35,
+      "children": [
+        37
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 37,
+      "parent": 36,
+      "children": [
+        38
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "VuuXrf"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 38,
+      "parent": 37,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 39,
+      "parent": 35,
+      "children": [
+        40
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "byrV5b"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 40,
+      "parent": 39,
+      "children": [
+        41,
+        42
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "cite",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "qLRx3b tjvcx GvPZzd cHaqb"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 41,
+      "parent": 40,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 42,
+      "parent": 40,
+      "children": [
+        43
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "ylgVCe ob9lvb"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 43,
+      "parent": 42,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 44,
+      "parent": 29,
+      "children": [
+        45
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "csDOgf BCF2pd L48a4c"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 45,
+      "parent": 44,
+      "children": [
+        46
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 46,
+      "parent": 45,
+      "children": [
+        47
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "x3SAYd"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 47,
+      "parent": 46,
+      "children": [
+        48
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 48,
+      "parent": 47,
+      "children": [
+        49
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "MJ8UF iTPLzd rNSxBe eY4mx lUn2nc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 49,
+      "parent": 48,
+      "children": [
+        50
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "D6lY4c"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 50,
+      "parent": 49,
+      "children": [
+        51
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "xTFaxe z1asCe"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 51,
+      "parent": 50,
+      "children": [
+        52
+      ],
+      "namespace_uri": "http://www.w3.org/2000/svg",
+      "tag_name": "svg",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 52,
+      "parent": 51,
+      "children": [],
+      "namespace_uri": "http://www.w3.org/2000/svg",
+      "tag_name": "path",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 53,
+      "parent": 5,
+      "children": [
+        54
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "kb0PBd A9Y9g"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 54,
+      "parent": 53,
+      "children": [
+        55
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "VwiC3b yXK7lf p4wth Hdw6tb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 55,
+      "parent": 54,
+      "children": [
+        56,
+        57,
+        59
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "text",
+      "id": 56,
+      "parent": 55,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 57,
+      "parent": 55,
+      "children": [
+        58
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "em",
+      "attributes": []
+    },
+    {
+      "kind": "text",
+      "id": 58,
+      "parent": 57,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "text",
+      "id": 59,
+      "parent": 55,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 60,
+      "parent": 5,
+      "children": [
+        61
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "kb0PBd"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 61,
+      "parent": 60,
+      "children": [
+        62
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "uo4vr"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 62,
+      "parent": 61,
+      "children": [
+        63,
+        73
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "ChPIuf YrbPuc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 63,
+      "parent": 62,
+      "children": [
+        64,
+        72
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 64,
+      "parent": 63,
+      "children": [
+        65,
+        67,
+        70
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "Y0A0hc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 65,
+      "parent": 64,
+      "children": [
+        66
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "yi40Hd YrbPuc"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 66,
+      "parent": 65,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "element",
+      "id": 67,
+      "parent": 64,
+      "children": [
+        68
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "z3HNkc"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 68,
+      "parent": 67,
+      "children": [
+        69
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 69,
+      "parent": 68,
+      "children": [],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "gTPtFb"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 70,
+      "parent": 64,
+      "children": [
+        71
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "class",
+          "value": "RDApEe YrbPuc"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 71,
+      "parent": 70,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "text",
+      "id": 72,
+      "parent": 63,
+      "children": [],
+      "value": "[redacted captured text]"
+    },
+    {
+      "kind": "text",
+      "id": 73,
+      "parent": 62,
+      "children": [],
+      "value": "[redacted captured text]"
+    }
+  ]
+}

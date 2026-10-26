@@ -10,6 +10,7 @@ use yosoi::{
 
 pub(in crate::search_command) const fn provider_name(provider: Provider) -> &'static str {
     match provider {
+        Provider::Google => "google",
         Provider::Brave => "brave",
         Provider::Bing => "bing",
         Provider::DuckDuckGo => "duckduckgo",
@@ -92,6 +93,9 @@ pub(in crate::search_command) const fn issue_name(kind: SearchIssueKind) -> &'st
         SearchIssueKind::UnrecognizedResultRow => "unrecognized_result_row",
         SearchIssueKind::OutputLimit => "output_limit",
         SearchIssueKind::QueryRelevanceUnknown => "query_relevance_unknown",
+        SearchIssueKind::RedirectResolutionFailed => "redirect_resolution_failed",
+        SearchIssueKind::RedirectResolutionLimit => "redirect_resolution_limit",
+        SearchIssueKind::RedirectChallenge => "redirect_challenge",
         SearchIssueKind::QueryRelaxed => "query_relaxed",
     }
 }

@@ -14,7 +14,12 @@ type TestResult = Result<(), Box<dyn Error>>;
 
 #[test]
 fn current_routes_keep_order_and_expose_versioned_preview_profiles() -> TestResult {
-    let search = Search::new([Provider::Brave, Provider::Bing, Provider::DuckDuckGo])?;
+    let search = Search::new([
+        Provider::Brave,
+        Provider::Bing,
+        Provider::DuckDuckGo,
+        Provider::Google,
+    ])?;
     let policy = Policy {
         search,
         ..Policy::default()
@@ -22,19 +27,20 @@ fn current_routes_keep_order_and_expose_versioned_preview_profiles() -> TestResu
     let snapshot = PolicySnapshot::from_policy(&policy)?;
     let routes = snapshot.effective_policy().search.providers();
 
-    assert_eq!(routes.len(), 3);
-    for (route, provider) in
-        routes
-            .iter()
-            .zip([Provider::Brave, Provider::Bing, Provider::DuckDuckGo])
-    {
+    assert_eq!(routes.len(), 4);
+    for (route, provider) in routes.iter().zip([
+        Provider::Brave,
+        Provider::Bing,
+        Provider::DuckDuckGo,
+        Provider::Google,
+    ]) {
         assert_eq!(route.provider(), provider);
         assert_eq!(
             route.profile_selection_kind(),
             ProfileSelectionKind::Current
         );
         let profile = route.profile().ok_or("Current route profile is missing")?;
-        let expected_version = if provider == Provider::DuckDuckGo {
+        let expected_version = if matches!(provider, Provider::DuckDuckGo | Provider::Google) {
             1
         } else {
             2
@@ -53,7 +59,7 @@ fn current_routes_keep_order_and_expose_versioned_preview_profiles() -> TestResu
             Provider::Bing => {
                 assert_eq!(profile.page, Page::default());
             }
-            Provider::Brave | Provider::DuckDuckGo => {
+            Provider::Brave | Provider::DuckDuckGo | Provider::Google => {
                 let acquisition = profile
                     .page
                     .acquisitions
@@ -83,7 +89,12 @@ fn current_routes_keep_order_and_expose_versioned_preview_profiles() -> TestResu
     }
 
     let reversed = Policy {
-        search: Search::new([Provider::DuckDuckGo, Provider::Bing, Provider::Brave])?,
+        search: Search::new([
+            Provider::Google,
+            Provider::DuckDuckGo,
+            Provider::Bing,
+            Provider::Brave,
+        ])?,
         ..Policy::default()
     };
     assert_ne!(policy.effective_identity()?, reversed.effective_identity()?);

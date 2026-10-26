@@ -131,7 +131,8 @@ pub(super) fn prepare_provider_job(
         ));
     }
 
-    if route.provider() == Provider::DuckDuckGo && !is_supported_duckduckgo_acquisition(acquisition)
+    if matches!(route.provider(), Provider::DuckDuckGo | Provider::Google)
+        && !is_supported_duckduckgo_acquisition(acquisition)
     {
         return Ok((
             Some(ProviderResult::not_started(

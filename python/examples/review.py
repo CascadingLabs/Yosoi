@@ -347,7 +347,9 @@ def main() -> int:
     search = commands.add_parser("search")
     search.add_argument("query")
     search.add_argument(
-        "--provider", choices=["brave", "bing", "duck_duck_go"], default="bing"
+        "--provider",
+        choices=["brave", "bing", "duck_duck_go", "google"],
+        default="bing",
     )
     args = parser.parse_args()
     show(

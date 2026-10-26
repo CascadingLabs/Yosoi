@@ -26,8 +26,8 @@ from .policy import (
 )
 from .request import _token
 
-Provider = Literal["brave", "bing", "duck_duck_go"]
-"""Supported provider-neutral search routes: Brave, Bing, and DuckDuckGo. Selection
+Provider = Literal["brave", "bing", "duck_duck_go", "google"]
+"""Supported search routes: Brave, Bing, DuckDuckGo, and Google. Selection
 does not guarantee provider availability or usable results.
 """
 
@@ -348,6 +348,9 @@ SearchIssueKind = Literal[
     "unrecognized_result_row",
     "output_limit",
     "query_relevance_unknown",
+    "redirect_resolution_failed",
+    "redirect_resolution_limit",
+    "redirect_challenge",
     "query_relaxed",
 ]
 """Extraction and query-relevance issues retained alongside provider results.
@@ -367,9 +370,10 @@ class SearchIssue(ImmutableModel):
     Attributes:
         placement_index: One-based affected placement, or None for a response-wide
             issue.
-        kind: Classifies invalid or duplicate destinations, missing fields, unrecognized
-            rows, output limits, uncertain query relevance, or query relaxation. Inspect
-            coverage before claiming completeness.
+        kind: Classifies invalid or duplicate destinations, unresolved or challenged
+            provider redirects, rows skipped by the Google redirect cap, query relevance
+            uncertainty, missing fields, unrecognized rows, output limits, or query
+            relaxation. Inspect coverage before claiming completeness.
     """
 
     placement_index: Rank | None
@@ -727,6 +731,8 @@ class RequestAttemptSummary(ImmutableModel):
         capture_retention: Whether evidence was retained, unavailable, or omitted.
         terminal: Acquisition completed, failed, or never started; completion does not
             establish provider parsing success.
+        resolution_placement: One-based result placement resolved by this request, or
+            None for acquisitions unrelated to provider-owned redirects.
     """
 
     request_id: str
@@ -741,6 +747,10 @@ class RequestAttemptSummary(ImmutableModel):
     capture_complete: bool | None = None
     capture_retention: SearchCaptureRetention = "disabled"
     terminal: Literal["completed", "failed", "not_started"]
+    resolution_placement: Rank | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
 
 
 class ChargeAmount(ImmutableModel):

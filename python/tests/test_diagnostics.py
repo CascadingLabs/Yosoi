@@ -22,7 +22,7 @@ from yosoi.request import PartialReason as PartialReason
 from yosoi.request import ProjectionReason as ProjectionReason
 from yosoi.request import UnavailableReason as UnavailableReason
 from yosoi.request import UnprojectableReason as UnprojectableReason
-from yosoi.search import RequestAttemptSummary
+from yosoi.search import RequestAttemptSummary, SearchIssue
 from yosoi.search import SearchAttemptDiagnostic as SearchAttemptDiagnostic
 
 
@@ -322,6 +322,27 @@ def test_request_and_search_attempt_result_views_decode_native_shapes() -> None:
     assert summary.model_dump(mode="json")["diagnostic"] == {
         "browser_failure": "timeout"
     }
+    assert summary.resolution_placement is None
+    assert "resolution_placement" not in summary.model_dump(mode="json")
+    assert summary.model_dump(mode="json")["acquisition"] == {"kind": "direct_http"}
+
+    resolver_summary = RequestAttemptSummary.model_validate(
+        {
+            "request_id": "00000000-0000-4000-8000-000000000004",
+            "capture_id": "00000000-0000-4000-8000-000000000005",
+            "acquisition": {"kind": "direct_http"},
+            "http_status": 302,
+            "source_bytes": 0,
+            "diagnostic": None,
+            "terminal": "completed",
+            "resolution_placement": 3,
+        }
+    )
+    assert resolver_summary.resolution_placement == 3
+    assert resolver_summary.model_dump(mode="json")["resolution_placement"] == 3
+    assert resolver_summary.model_dump(mode="json")["acquisition"] == {
+        "kind": "direct_http"
+    }
 
 
 def test_closed_diagnostic_models_reject_missing_or_unknown_payloads() -> None:
@@ -337,3 +358,17 @@ def test_closed_diagnostic_models_reject_missing_or_unknown_payloads() -> None:
         TypeAdapter(SearchAttemptDiagnostic).validate_python(
             {"browser_failure": "secret_provider_message"}
         )
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "redirect_challenge",
+        "redirect_resolution_failed",
+        "redirect_resolution_limit",
+    ],
+)
+def test_google_redirect_issues_are_typed(kind: str) -> None:
+    issue = SearchIssue.model_validate({"placement_index": 9, "kind": kind})
+    assert issue.placement_index == 9
+    assert issue.kind == kind

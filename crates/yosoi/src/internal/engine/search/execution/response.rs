@@ -19,8 +19,9 @@ use crate::internal::engine::{
     },
 };
 
-use super::super::diagnostics::status_failure;
-use super::super::diagnostics::{SearchCapture, SearchReplayPolicy, parse_document};
+use super::super::diagnostics::{
+    SearchCapture, SearchReplayPolicy, parse_document, status_failure,
+};
 use crate::internal::web_capture::CaptureCompleteness;
 
 pub(super) fn request_error_result(
@@ -122,6 +123,7 @@ pub(super) fn provider_result_from_response(
                 SearchCaptureRetention::Disabled
             },
             terminal,
+            resolution_placement: None,
         };
         let parsed = match attempt {
             AttemptOutcome::Completed(result) => {
@@ -292,7 +294,7 @@ pub(super) fn provider_result_from_response(
 
 const fn provider_document_request(provider: Provider) -> DocumentRequest {
     match provider {
-        Provider::DuckDuckGo => DocumentRequest::RenderedDom,
+        Provider::DuckDuckGo | Provider::Google => DocumentRequest::RenderedDom,
         Provider::Brave | Provider::Bing => DocumentRequest::ResponseDocument,
     }
 }
@@ -390,7 +392,9 @@ fn missing_document_diagnostic(
     let rendered_dom = document_projection_state(DocumentRequest::RenderedDom, documents);
     match provider {
         Provider::Brave => brave_missing_document_diagnostic(source, rendered_dom),
-        Provider::Bing | Provider::DuckDuckGo => SearchParserDiagnostic::MissingDocument,
+        Provider::Bing | Provider::DuckDuckGo | Provider::Google => {
+            SearchParserDiagnostic::MissingDocument
+        }
     }
 }
 
@@ -468,6 +472,10 @@ const fn provider_adapter_identity(
     acquisition: Option<AcquisitionKind>,
 ) -> (Option<&'static str>, Option<&'static str>) {
     match provider {
+        Provider::Google => (
+            Some("https://www.google.com/search"),
+            Some("google-browser-v1"),
+        ),
         Provider::Brave => (
             Some("https://search.brave.com/search"),
             Some(match acquisition {
@@ -488,6 +496,7 @@ const fn provider_adapter_identity(
 
 const fn provider_parser_version(provider: Provider) -> &'static str {
     match provider {
+        Provider::Google => "google-rendered-dom-v1",
         Provider::Brave => "brave-source-dom-v1",
         Provider::Bing => "bing-html-v2",
         Provider::DuckDuckGo => "duckduckgo-rendered-dom-v1",

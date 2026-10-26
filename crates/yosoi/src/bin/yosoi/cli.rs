@@ -387,8 +387,14 @@ mod tests {
     #[test]
     fn search_provider_list_rejects_values_outside_the_enum() {
         assert!(
-            Cli::try_parse_from(["yosoi", "search", "query", "--providers", "brave,google",])
-                .is_err()
+            Cli::try_parse_from([
+                "yosoi",
+                "search",
+                "query",
+                "--providers",
+                "brave,unsupported-provider",
+            ])
+            .is_err()
         );
     }
 
@@ -410,6 +416,16 @@ mod tests {
             assert!(args.query.reporting.enabled);
             assert!(Cli::try_parse_from(["yosoi", "search", "query", option]).is_err());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn search_provider_list_accepts_google() -> Result<(), Box<dyn Error>> {
+        let cli = Cli::try_parse_from(["yosoi", "search", "query", "--providers", "google"])?;
+        let Some(Commands::Search(args)) = cli.command else {
+            return Err("parsed command was not Search".into());
+        };
+        assert_eq!(args.query.providers, [ProviderChoice::Google]);
         Ok(())
     }
 

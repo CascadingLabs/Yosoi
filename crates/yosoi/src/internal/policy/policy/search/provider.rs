@@ -8,7 +8,7 @@ use crate::internal::policy::{
 };
 
 /// Version of the provider-default registry used by effective Search snapshots.
-pub const PROVIDER_DEFAULTS_REGISTRY_VERSION: u16 = 4;
+pub const PROVIDER_DEFAULTS_REGISTRY_VERSION: u16 = 5;
 
 /// A supported Search provider.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -20,6 +20,8 @@ pub enum Provider {
     Bing,
     /// DuckDuckGo search route; provider selection is not a successful-result claim.
     DuckDuckGo,
+    /// Google web results acquired through a rendered browser document.
+    Google,
 }
 
 impl Provider {
@@ -27,7 +29,7 @@ impl Provider {
     pub fn defaults_status(self) -> ProviderDefaultsStatus {
         let version = match self {
             Self::Brave | Self::Bing => NonZeroU16::new(2).unwrap_or(NonZeroU16::MIN),
-            Self::DuckDuckGo => NonZeroU16::MIN,
+            Self::DuckDuckGo | Self::Google => NonZeroU16::MIN,
         };
         ProviderDefaultsStatus::Preview {
             version: ProviderDefaultsVersion(version),
@@ -38,7 +40,7 @@ impl Provider {
         let mut request = Request::default();
         let page = match self {
             Self::Bing => Page::default(),
-            Self::Brave | Self::DuckDuckGo => {
+            Self::Brave | Self::DuckDuckGo | Self::Google => {
                 request.maximum_elapsed = MaximumElapsed::default_search_browser_request();
                 Page {
                     acquisitions: vec![Acquisition::Browser(BrowserMode::Headless).documents([

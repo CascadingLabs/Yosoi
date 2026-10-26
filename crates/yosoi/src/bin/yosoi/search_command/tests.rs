@@ -18,11 +18,12 @@ use std::{
     process::ExitCode,
 };
 use yosoi::{
+    Policy,
     policy::{
         self, AcquisitionKind,
         search::{Provider, Search},
     },
-    search::{SearchCaptureRetention, SearchFailure, SearchIssueKind},
+    search::{self, SearchCaptureRetention, SearchFailure, SearchIssueKind},
 };
 
 pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
@@ -70,6 +71,7 @@ pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
                     capture_complete: Some(true),
                     capture_retention: SearchCaptureRetention::Disabled,
                     terminal: "completed",
+                    resolution_placement: None,
                 }],
                 hits: vec![HitView {
                     organic_rank: 4,
@@ -168,6 +170,21 @@ fn query_relevance_unknown_issue_has_a_stable_wire_name() {
         issue_name(SearchIssueKind::QueryRelevanceUnknown),
         "query_relevance_unknown"
     );
+}
+
+#[test]
+fn google_cli_selection_uses_the_search_sdk_provider() -> Result<(), Box<dyn Error>> {
+    let base = Search::new([Provider::Bing])?;
+    let args = cli_args(vec![ProviderChoice::Google], None, None);
+    let selected = search_for_cli(&base, &args)?;
+    let provider = selected.providers().first().ok_or("provider missing")?;
+    assert_eq!(provider.provider, Provider::Google);
+    let policy = Policy {
+        search: selected,
+        ..Policy::default()
+    };
+    search::new("rust language")?.bind(&policy).validate()?;
+    Ok(())
 }
 
 #[test]
@@ -477,4 +494,44 @@ fn browser_failure_advice_and_ids_are_human_only() -> Result<(), Box<dyn Error>>
     );
     assert!(!String::from_utf8(machine)?.contains("Chrome/Chromium could not start"));
     Ok(())
+}
+
+#[test]
+fn google_resolution_attempt_json_links_to_its_result_placement() -> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    let attempt = envelope
+        .providers
+        .first_mut()
+        .and_then(|provider| provider.attempts.first_mut())
+        .ok_or("missing request attempt")?;
+    attempt.resolution_placement = Some(2);
+
+    let mut human = Vec::new();
+    render_human(&mut human, &envelope, Theme::plain())?;
+    let human = String::from_utf8(human)?;
+    assert!(human.contains("result placement 2"));
+    assert!(human.contains("Request 123e4567-e89b-42d3-a456-426614174100"));
+
+    let mut machine = Vec::new();
+    render_json(&mut machine, &envelope)?;
+    let value: serde_json::Value = serde_json::from_slice(&machine)?;
+    assert_eq!(
+        value
+            .pointer("/providers/0/attempts/0/resolution_placement")
+            .and_then(serde_json::Value::as_u64),
+        Some(2)
+    );
+    Ok(())
+}
+
+#[test]
+fn google_redirect_issue_names_are_stable_for_cli_json() {
+    assert_eq!(
+        super::view::names::issue_name(SearchIssueKind::RedirectResolutionLimit),
+        "redirect_resolution_limit"
+    );
+    assert_eq!(
+        super::view::names::issue_name(SearchIssueKind::RedirectChallenge),
+        "redirect_challenge"
+    );
 }

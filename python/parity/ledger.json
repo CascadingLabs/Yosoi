@@ -22859,6 +22859,17 @@
       "rationale": "Rust variant DuckDuckGo maps to the corresponding Python tagged value yosoi.policy.Provider.duck_duck_go. The Python discriminator value is 'duck_duck_go'."
     },
     {
+      "rustPath": "yosoi::policy::search::Provider::Google",
+      "symbolKey": "member:variant:yosoi::policy::search::Provider::Google@signature:ce770667e5f9b0d8f55367bb79419689d90c48451bb33f079f3a9a72ae132de8@source:5efa63e965cbc9a510171067572048956a8b9f510d099a8ad13059dbee986af0",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Provider.google",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Google maps to the corresponding Python tagged value yosoi.policy.Provider.google. The Python discriminator value is 'google'."
+    },
+    {
       "rustPath": "yosoi::policy::search::Provider::defaults_status",
       "symbolKey": "member:function:yosoi::policy::search::Provider::defaults_status@signature:f25cf86b6a2f233c2729ad564686035e7007f312b98296c7ff2019f418f2c7fb@source:d2067610f4266d339d7b058d50db404ba095920a175741dd18cd11a39b7a27f8",
       "decision": "mapped",
@@ -27710,6 +27721,23 @@
       "rationale": "Rust field request_id maps to Python field request_id."
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary::resolution_placement",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::resolution_placement@signature:78ee923346309086b943c1471b3bb7b684194855bc8d786be5a4e44eff679d77@source:590dc96aa31ae92315923a272b608b41ec8650cc54c80371e0a5bfcdbac9400a",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.resolution_placement",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:resolution_placement",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field resolution_placement maps to Python field resolution_placement."
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptSummary::source_bytes",
       "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::source_bytes@signature:30fed0ac730b6b249b9d2f1259936dc693d09d8620ea401f59c126c612a81a8e@source:7de31e0c34d3efd7876b6a0a2341a98834a9fd5d29b43685871bb928da470fd4",
       "decision": "mapped",
@@ -29319,6 +29347,39 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust variant QueryRelevanceUnknown maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'query_relevance_unknown'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssueKind::RedirectChallenge",
+      "symbolKey": "member:variant:yosoi::search::SearchIssueKind::RedirectChallenge@signature:6b4516b104d30453526f172952e725ed73baabd7f6e17bf581578b182b6bd726@source:c16285bae1ce3a3bb8b79ca6a656312b4c910fafb8e4a5afaf5153bbad092adc",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchIssueKind",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant RedirectChallenge maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'redirect_challenge'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssueKind::RedirectResolutionFailed",
+      "symbolKey": "member:variant:yosoi::search::SearchIssueKind::RedirectResolutionFailed@signature:bdce7f8832c4a3aebda4b199dd8921615777eb97ff6b4a1ac7e68f81ef46d0ea@source:5e17adf00d222aae115182d60ccab331c3a64282f5a5fba1e2d5660fb8f69deb",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchIssueKind",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant RedirectResolutionFailed maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'redirect_resolution_failed'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssueKind::RedirectResolutionLimit",
+      "symbolKey": "member:variant:yosoi::search::SearchIssueKind::RedirectResolutionLimit@signature:66af9faefe72bbd55bc53687ae49f2fe1d928f454011b35679f723f6b2a209a4@source:a883820aa76bcc06d9ecf5ed1fba56c7377d7572ac2453bee67b069846b42a1c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchIssueKind",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant RedirectResolutionLimit maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'redirect_resolution_limit'."
     },
     {
       "rustPath": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",

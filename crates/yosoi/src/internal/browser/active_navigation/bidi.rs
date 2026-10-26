@@ -236,10 +236,13 @@ impl Page {
             if stop_loading {
                 cleanup_complete = match Instant::now().checked_add(options.cleanup_timeout()) {
                     Some(deadline) => {
-                        page.stop_loading(&CancellationToken::new(), deadline)
-                            .await
-                            .is_ok()
-                            && cleanup_complete
+                        let stopped = page.stop_loading(&CancellationToken::new(), deadline).await;
+                        #[cfg(test)]
+                        eprintln!(
+                            "navigation cleanup stop={stopped:?} lost={} malformed={malformed_reply}",
+                            lost.load(Ordering::Acquire)
+                        );
+                        stopped.is_ok() && cleanup_complete
                     }
                     None => false,
                 };
@@ -249,10 +252,12 @@ impl Page {
                 // stop. A protocol rejection (e.g. NS_BINDING_ABORTED) is a
                 // settled command; a timeout/disconnect is uncertain cleanup.
                 let settled = match Instant::now().checked_add(options.cleanup_timeout()) {
-                    Some(until) => matches!(
-                        timeout_at(until, &mut command).await,
-                        Ok(Ok(_) | Err(BidiError::Protocol { .. }))
-                    ),
+                    Some(until) => {
+                        let reply = timeout_at(until, &mut command).await;
+                        #[cfg(test)]
+                        eprintln!("navigation cleanup original command={reply:?}");
+                        matches!(reply, Ok(Ok(_) | Err(BidiError::Protocol { .. })))
+                    }
                     None => false,
                 };
                 cleanup_complete = cleanup_complete && settled;

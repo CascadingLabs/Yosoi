@@ -1,9 +1,9 @@
-use crate::internal::engine::request::new as new_request;
+use crate::internal::engine::request::{execution::AttemptOutcome, new as new_request};
 use crate::internal::engine::search::{
     ProviderOutcome, ProviderResult, SearchFailure, SearchIssueKind, SearchProfileFacts,
 };
 use crate::internal::policy::Policy;
-use crate::internal::policy::policy::{ProfileSelectionKind, search::Provider};
+use crate::internal::policy::policy::{DocumentRequest, ProfileSelectionKind, search::Provider};
 use crate::internal::web_capture::RequestedWebTarget;
 use tokio_util::sync::CancellationToken;
 
@@ -17,6 +17,9 @@ pub(super) async fn execute_provider(
     cancellation: &CancellationToken,
     diagnostic_capture: bool,
 ) -> ProviderResult {
+    if job.provider == Provider::Google {
+        return execute_google(job, cancellation, diagnostic_capture).await;
+    }
     let ProviderJob {
         route,
         provider,
@@ -181,4 +184,84 @@ pub(super) async fn execute_bing_recovery(
         _ => {}
     }
     result
+}
+
+async fn execute_google(
+    job: ProviderJob,
+    cancellation: &CancellationToken,
+    diagnostic_capture: bool,
+) -> ProviderResult {
+    let ProviderJob {
+        route,
+        request,
+        policy,
+        provider_target,
+        result_limit,
+        output_limit,
+        profile,
+        ..
+    } = job;
+    let response = match request.bind(&policy).send_cancellable(cancellation).await {
+        Ok(response) => response,
+        Err(error) => return request_error_result(&route, profile, &error),
+    };
+    let mut result = provider_result_from_response(
+        Provider::Google,
+        &policy,
+        &provider_target,
+        ProviderResponseLimits {
+            results: result_limit,
+            output_bytes: output_limit,
+            capture_bytes: diagnostic_capture.then_some(output_limit),
+        },
+        profile,
+        &response,
+    );
+    match &result.outcome {
+        ProviderOutcome::Results(_) | ProviderOutcome::Failed(SearchFailure::MalformedResponse) => {
+        }
+        ProviderOutcome::Empty
+        | ProviderOutcome::Failed(_)
+        | ProviderOutcome::Cancelled
+        | ProviderOutcome::NotStarted(_) => return result,
+    }
+
+    let Some(document) = response
+        .attempts()
+        .iter()
+        .find_map(|attempt| match attempt {
+            AttemptOutcome::Completed(result) => result
+                .documents()
+                .iter()
+                .find(|document| document.requested() == DocumentRequest::RenderedDom)
+                .and_then(|document| document.outcome().document()),
+            AttemptOutcome::Failed(_) | AttemptOutcome::NotStarted(_) => None,
+        })
+    else {
+        return result;
+    };
+    let parsed = match super::super::provider::google::parse_rows(
+        document,
+        &policy,
+        provider_target.as_str(),
+        result_limit,
+    ) {
+        Ok(super::super::provider::google::GoogleParsedDocument::Challenge) => {
+            result.outcome = ProviderOutcome::Failed(SearchFailure::Challenge);
+            return result;
+        }
+        Ok(super::super::provider::google::GoogleParsedDocument::Results(page)) => page,
+        Err(error) => {
+            result.outcome = ProviderOutcome::Failed(match error {
+                super::super::provider::google::GoogleParseError::OutputLimit => {
+                    SearchFailure::BudgetExhausted
+                }
+                _ => SearchFailure::MalformedResponse,
+            });
+            return result;
+        }
+    };
+    let resolution =
+        super::google_redirect::resolve(&parsed, &policy, result_limit, cancellation).await;
+    super::google_redirect::apply(result, parsed, resolution, result_limit, output_limit)
 }

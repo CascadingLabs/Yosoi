@@ -13,7 +13,7 @@ pub enum ProviderTargetError {
 }
 
 /// Constructs one provider target without a parallel HTTP path or unescaped
-/// query-string concatenation. Google is deliberately absent from Provider.
+/// query-string concatenation.
 pub fn provider_target(
     provider: Provider,
     query: &str,
@@ -22,6 +22,7 @@ pub fn provider_target(
         Provider::Brave => "https://search.brave.com/search",
         Provider::Bing => "https://www.bing.com/search",
         Provider::DuckDuckGo => "https://duckduckgo.com/",
+        Provider::Google => "https://www.google.com/search",
     };
     let mut url = Url::parse(base).map_err(ProviderTargetError::Endpoint)?;
     url.query_pairs_mut().append_pair("q", query);
@@ -42,7 +43,12 @@ mod tests {
 
     #[test]
     fn provider_targets_escape_query_intent() -> Result<(), Box<dyn Error>> {
-        for provider in [Provider::Brave, Provider::Bing, Provider::DuckDuckGo] {
+        for provider in [
+            Provider::Brave,
+            Provider::Bing,
+            Provider::DuckDuckGo,
+            Provider::Google,
+        ] {
             let target = provider_target(provider, "rust & ownership")?;
             assert!(target.as_str().contains("q=rust+%26+ownership"));
         }

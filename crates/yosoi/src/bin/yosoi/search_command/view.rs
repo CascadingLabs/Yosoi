@@ -157,6 +157,8 @@ pub(super) struct RequestAttemptView {
     pub(super) capture_complete: Option<bool>,
     pub(super) capture_retention: SearchCaptureRetention,
     pub(super) terminal: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) resolution_placement: Option<u16>,
 }
 
 #[derive(Debug, Serialize)]

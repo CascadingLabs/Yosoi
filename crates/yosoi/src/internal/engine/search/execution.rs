@@ -11,6 +11,7 @@ use crate::internal::engine::search::{
     SearchTermination, SearchUnavailableReason,
 };
 
+mod google_redirect;
 mod output;
 mod prepare;
 mod provider;

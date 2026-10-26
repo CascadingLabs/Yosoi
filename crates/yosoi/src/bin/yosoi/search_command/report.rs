@@ -82,6 +82,17 @@ pub(super) fn render_human(
                     attempt.request_id, attempt.capture_id
                 )?;
             }
+            if let Some(placement) = attempt.resolution_placement {
+                writeln!(
+                    writer,
+                    "  {label}Redirect resolution:{label:#} result placement {placement}, HTTP {}, Request {}, Capture {}",
+                    attempt
+                        .http_status
+                        .map_or_else(|| "unknown".to_owned(), |status| status.to_string()),
+                    attempt.request_id,
+                    attempt.capture_id
+                )?;
+            }
             if let Some(diagnostic) = attempt.diagnostic {
                 writeln!(
                     writer,
