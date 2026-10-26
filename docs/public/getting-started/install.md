@@ -10,7 +10,7 @@ order: 1
 
 Rust projects need Rust 1.99 or newer. Python projects need Python 3.12 through 3.15. The Python package includes its native extension and depends on Pydantic.
 
-> Yosoi supports free-threaded builds in python 3.14 and 3.15
+Free-threaded Python 3.14 and 3.15 builds are supported.
 
 Yosoi is published on [crates.io](https://crates.io/crates/yosoi) and [PyPI](https://pypi.org/project/yosoi/). Python wheels vary by operating system, architecture and interpreter ABI.
 
@@ -30,8 +30,10 @@ uv add yosoi
 
 ## Next steps
 
+These commands install the latest final release. To try the 0.4.0 release candidate, use the version-specific commands in the [0.4.0-rc.1 release notes](../releases/0-4-0-rc-1.md). The Surface and optional-browser guides require that candidate or its source checkout; 0.3.0 does not include those APIs.
+
 Read [Concepts](../concepts/index.md), send a [Request](../sdk/requests.md), or produce a typed record with [Contracts](../sdk/contracts.md).
 
-For shell workflows, install the [CLI](../cli/index.md). Browser execution also needs compatible regular Chrome or Chromium; see [Browser](../sdk/browser.md).
+For shell workflows, install the [CLI](../cli/index.md). The default browser engine needs compatible regular Chrome or Chromium; see [Browser](../sdk/browser.md). [Choosing a browser](../concepts/choosing-a-browser.md) covers optional Firefox and Moli support.
 
 For a browser service in a container, see [Docker setup](docker.md).

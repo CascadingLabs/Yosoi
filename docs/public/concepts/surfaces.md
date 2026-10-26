@@ -11,6 +11,8 @@ A document offers structure and text. A video offers a timeline and requested pi
 
 ## Example: inspect the lamp
 
+Use the [0.4.0 candidate](../releases/0-4-0-rc-1.md) or its source checkout. The earlier 0.3.0 packages do not expose these Surface APIs.
+
 Start with a small product document. These programs search for the same lamp and print the evidence behind the returned reference.
 
 ### Rust
@@ -134,6 +136,8 @@ Give your coding agent this task:
 > Report the action receipt and close the browser. Do not check out or pay.
 
 The agent can keep a CLI process alive while choosing its next command:
+
+This live Surface adapter requires ChromeDriver and regular Chrome or Chromium. Install compatible versions and put them on PATH, or select their paths with `CHROMEDRIVER` and `CHROME`. It uses an isolated, sandboxed profile. Firefox and Moli selection in Requests and Sessions does not change this separate Surface transport.
 
 ```sh
 yosoi surface web \

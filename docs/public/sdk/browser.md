@@ -1,6 +1,6 @@
 ---
 title: Browser
-description: Acquire response, rendered-DOM, and accessibility documents with Chrome or Chromium.
+description: Acquire browser documents and understand the default Chrome engine's capture behavior.
 order: 15
 ---
 
@@ -10,11 +10,13 @@ Use browser acquisition when you need evidence from a page after JavaScript runs
 
 ## Enable the feature
 
-Replace the SDK dependency in your application's `Cargo.toml` with:
+Enable browser support on your application's Yosoi dependency:
 
-```toml
-yosoi = { version = "=0.2.1", features = ["browser"] }
+```sh
+cargo add yosoi --features browser
 ```
+
+For the 0.4.0 candidate, use the source dependency in the [release notes](../releases/0-4-0-rc-1.md). The examples here use the default Chrome/CDP engine. [Choosing a browser](../concepts/choosing-a-browser.md) explains Firefox and Moli, their feature flag, and which captures each engine supports.
 
 Install regular Chrome or Chromium Stable. Testing-only browser distributions are outside the project's supported baseline. The browser must be able to run with its sandbox and site/process isolation enabled. Headful mode also needs a working display.
 

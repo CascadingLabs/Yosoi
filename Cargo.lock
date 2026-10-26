@@ -3575,7 +3575,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3612,7 +3612,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "anstream",
  "anyhow",
@@ -3677,7 +3677,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-benchmarks"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3699,7 +3699,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-derive"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3709,14 +3709,14 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-renamed-dependency-fixture"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "yosoi",
 ]
 
 [[package]]
 name = "yosoi-dev-support"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "anstream",
  "anyhow",
@@ -3777,7 +3777,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-document-locator-benchmarks"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "criterion",
  "divan",
@@ -3787,7 +3787,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-python"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "pyo3",
  "pyo3-async-runtimes",

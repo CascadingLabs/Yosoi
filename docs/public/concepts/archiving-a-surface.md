@@ -11,6 +11,8 @@ The local Archive stores immutable values. `export_file` packages one outcome in
 
 ## Example: save a version lookup
 
+Use the [0.4.0 candidate](../releases/0-4-0-rc-1.md) on Unix, where the local Archive backend is supported. Rust examples also need Tokio's `macros` and `rt` features. Start in a fresh directory so the export destination does not already exist.
+
 This fixture searches the text of a version button and inspects its evidence. It does not click a live browser button. The session begins detached and needs no control authority for these reads.
 
 ### Rust

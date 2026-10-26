@@ -1,4 +1,4 @@
-"""Compile native/offline consumers of the extracted Cargo package, without publish."""
+"""Test native/offline consumers of the packaged SDK and derive crate."""
 
 from __future__ import annotations
 
@@ -25,23 +25,41 @@ def main(args):
     version = manifest["package"]["version"]
     if isinstance(version, dict):
         version = workspace["package"]["version"]
-    command = ["cargo", "package", "--locked", "-p", "yosoi", "--no-verify"]
+    # Cargo stages interdependent packages together. Selecting only the SDK
+    # would require its exact derive version to already exist on crates.io.
+    command = [
+        "cargo",
+        "package",
+        "--locked",
+        "-p",
+        "yosoi-contracts-derive",
+        "-p",
+        "yosoi",
+        "--no-verify",
+    ]
     if args.allow_dirty:
         command.append("--allow-dirty")
     run(command, cwd=ROOT)
     target = Path(os.environ.get("CARGO_TARGET_DIR", str(ROOT / "target")))
     package = target / "package" / f"yosoi-{version}.crate"
-    digest = hashlib.file_digest(package.open("rb"), "sha256").hexdigest()
+    derive_package = target / "package" / f"yosoi-contracts-derive-{version}.crate"
+    with package.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    with derive_package.open("rb") as stream:
+        derive_digest = hashlib.file_digest(stream, "sha256").hexdigest()
     results = {
         "package_sha256": digest,
         "package_version": version,
+        "derive_package_sha256": derive_digest,
         "source_revision": os.environ.get("GITHUB_SHA"),
     }
     with tempfile.TemporaryDirectory(prefix="yosoi-packaged-bidi-") as scratch:
         directory = Path(scratch)
-        with tarfile.open(package) as archive:
-            archive.extractall(directory, filter="data")
+        for source in (package, derive_package):
+            with tarfile.open(source) as archive:
+                archive.extractall(directory, filter="data")
         sdk = directory / f"yosoi-{version}"
+        derive = directory / f"yosoi-contracts-derive-{version}"
         consumer = directory / "consumer"
         (consumer / "src").mkdir(parents=True)
         records = directory / "records"
@@ -71,6 +89,8 @@ version={json.dumps(dependency_version("tokio"))}
 features=["macros","rt-multi-thread"]
 [dependencies.serde_json]
 version={json.dumps(dependency_version("serde_json"))}
+[patch.crates-io]
+yosoi-contracts-derive={{path={json.dumps(str(derive), ensure_ascii=False)}}}
 """
             (consumer / "Cargo.toml").write_text(toml)
             (consumer / "src/main.rs").write_text(

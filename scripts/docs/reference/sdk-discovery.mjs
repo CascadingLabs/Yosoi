@@ -16,7 +16,9 @@ export function discoverSdks(metadata, policy = sdkPolicy) {
 		if (!reserved && !policy.legacySdkPackages.includes(pkg.name)) throw new Error(`${pkg.name} declares an SDK but does not match the SDK naming policy`);
 		const library = pkg.targets.find((target) => target.kind.some((kind) => ['lib', 'rlib', 'cdylib'].includes(kind)));
 		if (!library) throw new Error(`${pkg.name} declares an SDK without a public library target`);
-		sdks.push({ name: pkg.name, crate: library.name, version: pkg.version, manifestPath: pkg.manifest_path, target: library });
+		const referenceFeatures = pkg.metadata.yosoi.reference_features ?? [];
+		if (!Array.isArray(referenceFeatures) || referenceFeatures.some((feature) => typeof feature !== 'string' || !Object.hasOwn(pkg.features || {}, feature))) throw new Error(`${pkg.name} declares unknown reference features`);
+		sdks.push({ name: pkg.name, crate: library.name, version: pkg.version, manifestPath: pkg.manifest_path, target: library, referenceFeatures });
 	}
 	if (!sdks.length) throw new Error('No declared SDK crates were found');
 	return sdks.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);

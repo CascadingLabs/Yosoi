@@ -235,7 +235,7 @@ export function generateReference(options) {
 	const sdks = discoverSdks(metadata);
 	const sdk = options.sdk ? sdks.find((item) => item.name === options.sdk) : sdks.length === 1 ? sdks[0] : null;
 	if (!sdk) throw new Error(`Choose a declared SDK with --sdk; found ${sdks.map((item) => item.name).join(', ')}`);
-	const features = options.features ? options.features.split(',').filter(Boolean).sort(compare) : [];
+	const features = [...new Set(options.features === undefined ? sdk.referenceFeatures : options.features.split(',').filter(Boolean))].sort(compare);
 	const target = options.target || toolchain.target;
 	const targetDir = path.join(work, 'target');
 	const jsonDir = options['from-json'] ? path.resolve(options['from-json']) : path.join(targetDir, target, 'doc');
