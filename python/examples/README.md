@@ -61,6 +61,44 @@ Browser-backed routes require a Python extension built with the Rust
 `browser` feature and a compatible regular Chrome or Chromium installation.
 A wheel's native capabilities are fixed when it is built.
 
+## IP family and proxy URLs
+
+[`networking.py`](networking.py) uses the Python `Network` model to bind a route
+to a Request. Run these from a checkout containing the networking policy:
+
+~~~sh
+uv run --no-sync python python/examples/networking.py 'https://api64.ipify.org?format=json' --ip-family ipv4_only
+uv run --no-sync python python/examples/networking.py 'https://api64.ipify.org?format=json' --ip-family ipv6_only
+~~~
+
+Inspect `state`, `http_status`, and the document outcomes. A completed acquisition
+can still contain an unsuccessful HTTP status or unavailable evidence. The
+example exits unsuccessfully when an acquisition fails.
+
+To use a host proxy, set `YOSOI_PROXY_URL` to its full URL and add `--proxy-env`.
+The supported schemes are `http`, `https`, `socks5`, and `socks5h`:
+
+~~~sh
+uv run --no-sync python python/examples/networking.py https://qscrape.dev/eshop/html/product/obj-001/ --ip-family ipv4_only --proxy-env
+~~~
+
+Use `--proxy-env CUSTOM_PROXY_VARIABLE` to select another environment variable.
+Credentials are read from that variable and the example prints only whether a
+proxy is configured. Family selection applies to the proxy connection; the
+upstream proxy owns its destination route.
+
+Add `--source-address` to select an available local IP. Add `--browser` to acquire
+an owned browser Session with the same route and close it after the Request:
+
+~~~sh
+uv run --no-sync python python/examples/networking.py https://qscrape.dev/eshop/html/product/obj-001/ --ip-family ipv4_only --proxy-env --browser
+~~~
+
+Browser mode requires compatible regular Chrome or Chromium. Retained browser
+captures can omit HTTP status; inspect their document outcomes too. Read
+[choosing a network route](../../docs/public/concepts/network-routing.md) for
+complete Python Session programs, Rust equivalents, and routing limits.
+
 The public Rust SDK has review counterparts for the same commands:
 
 ~~~sh

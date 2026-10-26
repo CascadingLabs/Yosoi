@@ -1,3 +1,4 @@
+use super::policy::Network;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,9 @@ impl Policy {
     /// Computes the v6 identity used by archived policies without Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.effective_policy()?.archived_v6_identity()
     }
 
@@ -29,6 +33,9 @@ impl Policy {
     /// default action timeout field.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.effective_policy()?.archived_v5_identity()
     }
 
@@ -38,6 +45,9 @@ impl Policy {
     /// legacy archive schema, before a Search section existed.
     #[doc(hidden)]
     pub fn archived_v2_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
@@ -74,6 +84,9 @@ impl Policy {
     /// The v3 projection included Map but preceded Search.
     #[doc(hidden)]
     pub fn archived_v3_map_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
@@ -109,6 +122,9 @@ impl Policy {
     pub fn archived_v3_map_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
@@ -159,6 +175,9 @@ impl Policy {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EffectivePolicy {
+    /// Routing behavior included in identity when explicitly configured.
+    #[serde(default, skip_serializing_if = "Network::is_default")]
+    pub network: Network,
     /// Ordered acquisitions with exact effective document requests.
     pub page: EffectivePage,
     /// Shared deadline, domain-specific bounds, and Direct HTTP redirects.
@@ -184,6 +203,7 @@ pub struct EffectivePolicy {
 impl EffectivePolicy {
     /// Validates the stored effective behavior and computes its versioned identity.
     pub fn effective_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        self.network.validate()?;
         self.page.validate()?;
         self.request.validate()?;
         validate_default_action_timeout(self.default_action_timeout_ms)?;
@@ -201,6 +221,7 @@ impl EffectivePolicy {
         let json = serde_json::to_string(&EffectivePolicyIdentityEnvelopeRef {
             schema_version: POLICY_SCHEMA_VERSION,
             policy: EffectivePolicyIdentityBodyRef {
+                network: &self.network,
                 page: EffectivePageIdentityRef { acquisitions },
                 request: &self.request,
                 default_action_timeout_ms: self.default_action_timeout_ms,
@@ -219,6 +240,9 @@ impl EffectivePolicy {
     /// Recomputes the v6 identity for snapshots archived before Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.page.validate()?;
         self.request.validate()?;
         validate_default_action_timeout(self.default_action_timeout_ms)?;
@@ -255,6 +279,9 @@ impl EffectivePolicy {
     /// default action timeouts became part of Policy.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.page.validate()?;
         self.request.validate()?;
         validate_default_action_timeout(self.default_action_timeout_ms)?;
@@ -292,6 +319,9 @@ impl EffectivePolicy {
     pub fn archived_v4_search_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if !self.network.is_default() {
+            return Err(PolicyError::ArchivedIdentityMismatch);
+        }
         self.page.validate()?;
         self.request.validate()?;
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
@@ -380,6 +410,8 @@ struct EffectivePolicyIdentityEnvelopeRef<'a> {
 
 #[derive(Serialize)]
 struct EffectivePolicyIdentityBodyRef<'a> {
+    #[serde(skip_serializing_if = "Network::is_default")]
+    network: &'a Network,
     page: EffectivePageIdentityRef<'a>,
     request: &'a Request,
     default_action_timeout_ms: u64,

@@ -93,7 +93,7 @@ pub(super) fn resolve(
             inputs.navigation_context,
         )),
     );
-    let spec = ResolvedBrowserCaptureSpec::new(
+    let mut spec = ResolvedBrowserCaptureSpec::new(
         request_value,
         artifact_requests,
         observation,
@@ -109,6 +109,8 @@ pub(super) fn resolve(
     )
     .map_err(PolicyResolutionError::BrowserSpec)?;
     validate_instrumentation(&spec)?;
+
+    spec.network = policy.network.clone();
 
     let mut limits = vec![
         AppliedPolicyLimit::MaximumElapsed {

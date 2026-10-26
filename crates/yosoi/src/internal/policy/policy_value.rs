@@ -1,3 +1,4 @@
+use super::policy::Network;
 use std::time::{Duration, Instant};
 
 use crate::internal::policy::{
@@ -14,6 +15,8 @@ use crate::internal::policy::{
 /// Validation runs before serialization and identity calculation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Policy {
+    /// Opt-in outbound routing bound to requests and owned browser lifetimes.
+    pub network: Network,
     /// Fallback execution budget for an action without a nearer Flow or action
     /// timeout, measured in milliseconds.
     pub default_action_timeout_ms: u64,
@@ -38,6 +41,7 @@ pub struct Policy {
 impl Default for Policy {
     fn default() -> Self {
         Self {
+            network: Network::default(),
             default_action_timeout_ms: 10_000,
             page: Page::default(),
             request: Request::default(),
@@ -54,6 +58,7 @@ impl Default for Policy {
 impl Policy {
     /// Validates nested page choices and all typed policy bounds.
     pub fn validate(&self) -> Result<(), PolicyError> {
+        self.network.validate()?;
         self.page.validate()?;
         self.request.validate()?;
         if self.default_action_timeout_ms == 0
@@ -76,6 +81,7 @@ impl Policy {
     pub fn effective_policy(&self) -> Result<EffectivePolicy, PolicyError> {
         self.validate()?;
         Ok(EffectivePolicy {
+            network: self.network.clone(),
             page: self.page.effective(),
             request: self.request,
             default_action_timeout_ms: self.default_action_timeout_ms,
@@ -104,7 +110,8 @@ impl Policy {
     ) -> Result<(), PolicyError> {
         self.validate()?;
         effective.search.validate()?;
-        if effective.request != self.request
+        if effective.network != self.network
+            || effective.request != self.request
             || effective.default_action_timeout_ms != self.default_action_timeout_ms
             || effective.documents != self.documents
             || effective.locators != self.locators

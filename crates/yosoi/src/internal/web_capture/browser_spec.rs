@@ -1,5 +1,6 @@
 //! Validated, provider-neutral input for one browser document-navigation attempt.
 #![allow(clippy::missing_const_for_fn)]
+use crate::internal::policy::policy::Network;
 use crate::internal::web_capture as yosoi_web_capture;
 
 mod schemas;
@@ -80,6 +81,7 @@ impl BrowserEvidenceAdmissionPolicy {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResolvedBrowserCaptureSpec {
+    pub(crate) network: Network,
     request: WebCaptureRequest,
     navigation: DocumentNavigationAcquisition,
     artifacts: WebArtifactRequestSet,
@@ -241,6 +243,7 @@ impl ResolvedBrowserCaptureSpec {
             return Err(BrowserCaptureSpecError::IdenticalSourceSchemas);
         }
         Ok(Self {
+            network: Network::default(),
             request,
             navigation,
             artifacts,

@@ -36,7 +36,6 @@ browser = [
     "dep:notify",
     "dep:pin-project-lite",
     "dep:reqwest",
-    "dep:rustls",
     "dep:schemars",
     "dep:tempfile",
     "dep:tracing",
@@ -69,6 +68,8 @@ futures = { workspace = true, optional = true }
 futures-timer = { workspace = true, optional = true }
 futures-util = { workspace = true }
 globset = { workspace = true, optional = true }
+httparse = { workspace = true }
+percent-encoding = { workspace = true }
 html5ever = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png"], optional = true }
 infer = { workspace = true, optional = true }
@@ -83,7 +84,9 @@ regex = { workspace = true }
 reqwest = { workspace = true, features = ["json", "rustls-no-provider"], optional = true }
 roxmltree = { workspace = true, features = ["positions"] }
 rustix = { workspace = true }
-rustls = { workspace = true, features = ["ring", "std", "tls12"], optional = true }
+rustls = { workspace = true, features = ["ring", "std", "tls12"] }
+tokio-rustls = { workspace = true }
+rustls-platform-verifier = { workspace = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
@@ -93,7 +96,7 @@ tempfile = { workspace = true, optional = true }
 thiserror = { workspace = true }
 tree-sitter = "=0.26.12"
 tree-sitter-javascript = "=0.25.0"
-tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
+tokio = { workspace = true, features = ["fs", "io-util", "net", "macros", "rt", "rt-multi-thread", "sync", "time"] }
 tokio-util = { workspace = true, features = ["rt"] }
 toml = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

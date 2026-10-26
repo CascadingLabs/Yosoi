@@ -53,6 +53,7 @@ The typed Request and Locators models express the same limits. `check` validates
 
 | Field       | Controls                                                           |
 | ----------- | ------------------------------------------------------------------ |
+| `network`   | Opt-in IP family, local source IP, and proxy URL                   |
 | `page`      | Ordered acquisition choices and requested documents                |
 | `request`   | Attempt deadline, source and browser limits, Direct HTTP redirects |
 | `documents` | Parser input bytes, nodes, and depth                               |
@@ -61,7 +62,7 @@ The typed Request and Locators models express the same limits. `check` validates
 | `map`       | Discovery scope, robots rules, filters, retention, and budgets     |
 | `search`    | Search provider choices, profiles and limits                       |
 
-See [Limits](limits.md) for defaults and units, and [Map](map.md) for discovery settings.
+See [Networking](../concepts/network-routing.md) for request and Session routing, [Limits](limits.md) for defaults and units, and [Map](map.md) for discovery settings.
 
 ## Select acquisitions
 

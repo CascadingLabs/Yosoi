@@ -438,6 +438,10 @@
       "pythonTarget": "yosoi.policy.HostScope"
     },
     {
+      "rustPath": "yosoi::policy::IpFamily",
+      "pythonTarget": "yosoi.policy.IpFamily"
+    },
+    {
       "rustPath": "yosoi::policy::Limits",
       "pythonTarget": "yosoi.policy.MapLimits"
     },
@@ -452,6 +456,10 @@
     {
       "rustPath": "yosoi::policy::MaximumElapsed",
       "pythonTarget": "yosoi.scalars.MaximumElapsed"
+    },
+    {
+      "rustPath": "yosoi::policy::Network",
+      "pythonTarget": "yosoi.policy.Network"
     },
     {
       "rustPath": "yosoi::policy::Page",

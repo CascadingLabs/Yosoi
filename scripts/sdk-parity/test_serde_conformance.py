@@ -227,6 +227,51 @@ class SerdeConformanceTests(unittest.TestCase):
             struct_field_evidence_cases(ledger, comparisons, inventory), []
         )
 
+    def test_omitted_default_uses_independent_rust_and_python_typed_values(self):
+        ledger, comparisons, inventory = mapped_field_fixture(
+            rust_output={}, python_present=False, python_value=None
+        )
+        ledger["entries"][1]["defaults"] = [{"id": "field-default"}]
+        comparisons[0].update(
+            construction="Rust Default::default",
+            pythonInputSource="python_public_default_constructor",
+            equal=True,
+            rustFieldObservations={"value": None},
+        )
+        cases = struct_field_evidence_cases(ledger, comparisons, inventory)
+        self.assertEqual(cases[0]["outcome"], "passed")
+        self.assertEqual(
+            cases[0]["comparisons"][0]["rustObservationSource"], "typed_field"
+        )
+        self.assertFalse(cases[0]["comparisons"][0]["rustPresent"])
+
+        # Matching sparse JSON cannot conceal a different live Python default.
+        comparisons[0]["pythonFieldObservations"]["value"][
+            "pythonAttributeValue"
+        ] = "different"
+        cases = struct_field_evidence_cases(ledger, comparisons, inventory)
+        self.assertEqual(cases[0]["outcome"], "failed")
+
+    def test_omitted_default_is_not_inferred_without_typed_rust_observation(self):
+        ledger, comparisons, inventory = mapped_field_fixture(
+            rust_output={}, python_present=False, python_value=None
+        )
+        ledger["entries"][1]["defaults"] = [{"id": "field-default"}]
+        comparisons[0].update(
+            construction="Rust Default::default",
+            pythonInputSource="python_public_default_constructor",
+            equal=True,
+        )
+        self.assertEqual(
+            struct_field_evidence_cases(ledger, comparisons, inventory), []
+        )
+
+        comparisons[0]["rustFieldObservations"] = {"value": None}
+        comparisons[0]["pythonInputSource"] = "rust_wire_input"
+        self.assertEqual(
+            struct_field_evidence_cases(ledger, comparisons, inventory), []
+        )
+
     def test_live_field_observation_keeps_null_and_alias_projection(self):
         class AliasModel(BaseModel):
             value: str | None = Field(alias="wire_value")

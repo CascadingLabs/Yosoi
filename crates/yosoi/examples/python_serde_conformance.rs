@@ -24,8 +24,8 @@ use yosoi::{
     map::{LimitReached, MapTermination},
     policy::{
         AddressableByteLimit, BrowserLimits, DirectHttpRedirects, Documents, EventLimit, Filters,
-        Limits, Locators, Map, MaximumElapsed, Page, RedirectHopLimit, Request, Scope,
-        SourceLimits, Tuning, search::Search,
+        IpFamily, Limits, Locators, Map, MaximumElapsed, Network, Page, RedirectHopLimit, Request,
+        Scope, SourceLimits, Tuning, search::Search,
     },
 };
 
@@ -262,9 +262,74 @@ where
 fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
     let mut output = Vec::new();
 
-    // Seventeen public policy defaults. The nested cases each exercise the
+    // Public policy defaults. The nested cases each exercise the
     // direct Rust type and its own Python model, in addition to Policy itself.
     default_case::<Policy>(&mut output, "default-policy", "yosoi::Policy")?;
+    let network = Network::default();
+    // Read the actual typed defaults before moving the value into its JSON
+    // codec. Missing wire keys alone cannot prove the fields contain None.
+    let fields = json!({
+        "source_address": network.source_address,
+        "proxy": &network.proxy,
+    });
+    let mut network_default = constructed_case(
+        "default-network",
+        "yosoi::policy::Network",
+        "Rust Default::default",
+        network,
+        json!({"absentPaths": ["source_address", "proxy"]}),
+    )?;
+    network_default
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Network default fixture must be an object"))?
+        .insert("field_observations".to_owned(), fields);
+    output.push(network_default);
+    for (name, family) in [
+        ("system", IpFamily::SystemDefault),
+        ("ipv4", IpFamily::Ipv4Only),
+        ("ipv6", IpFamily::Ipv6Only),
+    ] {
+        output.push(constructed_case(
+            &format!("network-family-{name}"),
+            "yosoi::policy::IpFamily",
+            "Rust family selection",
+            family,
+            json!({}),
+        )?);
+    }
+    let network = Network {
+        ip_family: IpFamily::Ipv6Only,
+        source_address: Some("::1".parse()?),
+        proxy: Some("socks5h://user:fixture@[::1]:1080".to_owned()),
+    };
+    output.push(constructed_case(
+        "network-ipv6-source-proxy",
+        "yosoi::policy::Network",
+        "Rust network authoring",
+        network.clone(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "policy-ipv6-source-proxy",
+        "yosoi::Policy",
+        "Rust policy snapshot input",
+        Policy {
+            network,
+            ..Policy::default()
+        },
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "network-mapped-source",
+        "yosoi::policy::Network",
+        "Rust canonical IP address",
+        Network {
+            source_address: Some("::ffff:127.0.0.1".parse()?),
+            ..Network::default()
+        },
+        json!({"absentPaths":["proxy"]}),
+    )?);
+
     default_case::<Page>(&mut output, "default-policy-page", "yosoi::policy::Page")?;
     default_case::<Request>(
         &mut output,

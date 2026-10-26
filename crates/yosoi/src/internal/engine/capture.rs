@@ -354,7 +354,7 @@ async fn execute_browser(
     let _cancel_acquisition = acquiring.clone().drop_guard();
     let acquired = tokio_time::timeout(
         maximum,
-        internal_engine_session::BrowserSession::acquire(mode, 1, false, &acquiring),
+        internal_engine_session::BrowserSession::acquire(mode, 1, false, &spec.network, &acquiring),
     )
     .await
     .map_err(|_| PolicyCaptureError::Execution {

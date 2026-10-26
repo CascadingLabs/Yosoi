@@ -29,6 +29,14 @@ impl BrowserExecutionManager {
         } else {
             builder.headless()
         };
+        if let Some(proxy) = self.inner.config.proxy {
+            builder = builder
+                .proxy(format!("socks5://{proxy}"))
+                .arg("--proxy-bypass-list=<-loopback>")
+                .arg("--disable-quic")
+                .arg("--dns-prefetch-disable")
+                .arg("--force-webrtc-ip-handling-policy=disable_non_proxied_udp");
+        }
         if let Some(profile) = managed_profile_launch {
             builder = builder.user_data_dir(profile.user_data_dir);
         }

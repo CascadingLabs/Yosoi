@@ -102,6 +102,9 @@ fn interrupted(
     initiator: InterruptionInitiator,
     reason: &'static str,
 ) -> DirectHttpFailure {
+    if let Some(relay) = &spec.relay {
+        relay.close();
+    }
     let termination_failure = match ReasonCode::new(reason) {
         Ok(reason) => {
             let evidence = InterruptionEvidence::new(initiator, reason);
@@ -130,6 +133,9 @@ pub(super) fn deadline(
     error: DirectHttpTransportError,
 ) -> DirectHttpFailure {
     let deadline = CaptureOffset::from_microseconds(spec.maximum_elapsed().as_microseconds());
+    if let Some(relay) = &spec.relay {
+        relay.close();
+    }
     let termination_failure = if lifecycle.termination().is_some() {
         None
     } else {

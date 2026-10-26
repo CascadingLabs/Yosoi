@@ -2956,7 +2956,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "1fc5deb9120a635469fdffd8386d8d0da807eef786b81eeb2eac53f2e9e966af",
+        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
         "semanticEquivalent": "Rust Default value and Python authoring default value.",
         "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
         "review": null,
@@ -3069,7 +3069,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "1fc5deb9120a635469fdffd8386d8d0da807eef786b81eeb2eac53f2e9e966af",
+        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -3119,7 +3119,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "1fc5deb9120a635469fdffd8386d8d0da807eef786b81eeb2eac53f2e9e966af",
+        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -4272,7 +4272,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "1fc5deb9120a635469fdffd8386d8d0da807eef786b81eeb2eac53f2e9e966af",
+        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
         "semanticEquivalent": null,
         "rationale": "Python Policy fields obtain defaults from the native Rust SDK and validate through Rust.",
         "review": null,
@@ -38463,7 +38463,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.effective_policy",
-        "pythonTargetSha256": "2aaf2474f0347e12fca7cc72d993360a590c92bffb9c8efe794c404c1fff7e2e",
+        "pythonTargetSha256": "bf3c5723c41f7224f2fdaf27eed97779ec8ad37a97498c24645fe61bb7167eff",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.effective_policy.",
         "review": null,
@@ -38484,7 +38484,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "c9b19b7dd963444223d117ecf14fa42a9e6f93ca3d6a1f44b93db8a9d4c6a72e",
+        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -38513,7 +38513,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "c9b19b7dd963444223d117ecf14fa42a9e6f93ca3d6a1f44b93db8a9d4c6a72e",
+        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -38586,7 +38586,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.policy",
-        "pythonTargetSha256": "c381ba58adc57cd4a742c644b1e946504cdec4b68bc4c611700de498f789c350",
+        "pythonTargetSha256": "d16844a2afe71e23e28c541297feadd3d02d21ae3c5f87aed7160e71a23703f9",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.policy.",
         "review": null,
@@ -38607,7 +38607,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "c9b19b7dd963444223d117ecf14fa42a9e6f93ca3d6a1f44b93db8a9d4c6a72e",
+        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.PolicySnapshot.",
         "review": null,
@@ -57520,6 +57520,549 @@
         "root": "yosoi::view",
         "issue": "CAS-567",
         "rationale": "Python exposes bounded offline DOM View pages and capture-bound continuation cursors. The full Rust View API, including direct condition verification, belongs to later release work."
+      }
+    },
+    {
+      "id": "yosoi::Policy::network|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::Policy::network",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::Policy",
+      "signatureSha256": "58913fc0f7f3f83d38c7e0d4605c808da30f30aa8622895dea4f5ccd16cbab80",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::Policy::network@signature:58913fc0f7f3f83d38c7e0d4605c808da30f30aa8622895dea4f5ccd16cbab80@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Policy.network",
+        "pythonTargetSha256": "b7bfd147ed64ecfdfa7ef5294444ce706b4ec2c78f37f40af4648b741e029492",
+        "semanticEquivalent": null,
+        "rationale": "Rust field network maps to Python field network.",
+        "review": null,
+        "ledgerMappingSha256": "faa8cd39fa9d42c043ca79eb74dc6d7ad1fc612c2605a682e27e618008085b2d"
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::InvalidProxyUrl|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::PolicyError::InvalidProxyUrl",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "a6f33a9aa961ff2ff32fb97623cb909ada13f0ec4f4367a59fa66b241d54ab44",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::PolicyError::InvalidProxyUrl@signature:a6f33a9aa961ff2ff32fb97623cb909ada13f0ec4f4367a59fa66b241d54ab44@source:d62ffcee255c42886ba41d5bc966abe65c9c59e25f92b5d5232aa5237b860ecc",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.errors.PolicyError",
+        "pythonTargetSha256": "a9343fc471ef7b24e9e20ec6c11bc964a5209df59c7b8f87e1808fcac3837235",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant InvalidProxyUrl maps to the corresponding Python tagged value yosoi.errors.PolicyError.",
+        "review": null,
+        "ledgerMappingSha256": "8348f2f81c2369beee496d9da50f9d143cfd9057cca945bf861eff8759a261fe"
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::NetworkSourceFamilyMismatch|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::PolicyError::NetworkSourceFamilyMismatch",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "79fc156f49332f2cad055e366ccdcfa47375296488e8929e0e6e83a2ede43a85",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::PolicyError::NetworkSourceFamilyMismatch@signature:79fc156f49332f2cad055e366ccdcfa47375296488e8929e0e6e83a2ede43a85@source:13517b16101ec1d2f50308995ad45689e57c5d545f5c3c02a203abfbebe8d971",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.errors.PolicyError",
+        "pythonTargetSha256": "a9343fc471ef7b24e9e20ec6c11bc964a5209df59c7b8f87e1808fcac3837235",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant NetworkSourceFamilyMismatch maps to the corresponding Python tagged value yosoi.errors.PolicyError.",
+        "review": null,
+        "ledgerMappingSha256": "7be7ebb08b5a6d7ff5e54ad8625c36516ab4d5e6acdc90b1a0ca5cd85a02e07c"
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::Ipv4Only|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::Ipv4Only",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "ef8f163260859428bf9a8796278f004f80bf501b1cee4f0c7a399620c0939a53",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv4Only@signature:ef8f163260859428bf9a8796278f004f80bf501b1cee4f0c7a399620c0939a53@source:11faef2b7d6d38f961622d43b0216adc07fc988b3fb4323cb8f592bb6c713f21",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.IpFamily",
+        "pythonTargetSha256": "29f7ab34d24f2ce977f1d040e1531401c29d65dba70d54b2787adb02654c94dc",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant Ipv4Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv4_only'.",
+        "review": null,
+        "ledgerMappingSha256": "8a21609b6d1d8d5c724d4b326b759accf8036b246decf0808386d5624b9aeba4"
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::Ipv6Only|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::Ipv6Only",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "c489da845271aeda21911a228da8e79da12d6fd94127b6eae892546807d370b5",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv6Only@signature:c489da845271aeda21911a228da8e79da12d6fd94127b6eae892546807d370b5@source:0c46c44e6d64acb6d465f204bbd35305918d5d8f365ea3b16b375cf4fe5e2e46",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.IpFamily",
+        "pythonTargetSha256": "29f7ab34d24f2ce977f1d040e1531401c29d65dba70d54b2787adb02654c94dc",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant Ipv6Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv6_only'.",
+        "review": null,
+        "ledgerMappingSha256": "f0dfc45a5c940b7a486f19e01a81a8ea3ed5cf924474351a5b92b6ff7c512c68"
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::SystemDefault|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::SystemDefault",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "c80a3a626033bd80a9264ebefb875e4f5b97101fc2d620e1d022306471b20677",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::SystemDefault@signature:c80a3a626033bd80a9264ebefb875e4f5b97101fc2d620e1d022306471b20677@source:993222d31b5e55d299b6a6a3271827b2b8bd9d16eb2b590b57a737f2eb0478f7",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.IpFamily",
+        "pythonTargetSha256": "29f7ab34d24f2ce977f1d040e1531401c29d65dba70d54b2787adb02654c94dc",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant SystemDefault maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'system_default'.",
+        "review": null,
+        "ledgerMappingSha256": "0f7848ec8617cbebd1554f105cf7739838404ed1fba1263a658602e542da42f6"
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "a2f043e3b4d827eccc134d25cf25e0876f2bc8f355db711673ee5fdae86094bf",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::clone@signature:a2f043e3b4d827eccc134d25cf25e0876f2bc8f355db711673ee5fdae86094bf@trait:Clone@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::default|function|trait:Default|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::default",
+      "kind": "function",
+      "trait": "Default",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "1f6c2c98e91e0fe8a17bcc162d6f516970e9cfcfbfe75676483d3f1e8bf508c0",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::default@signature:1f6c2c98e91e0fe8a17bcc162d6f516970e9cfcfbfe75676483d3f1e8bf508c0@trait:Default@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Default constructs the documented default value.",
+        "equivalentCapability": "Python constructors and explicit default factories provide the documented default value."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "737da9712ee4a2582c5574ae8698522ecc0eec940526457dca85204d955ab34e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::eq@signature:737da9712ee4a2582c5574ae8698522ecc0eec940526457dca85204d955ab34e@trait:PartialEq@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::IpFamily",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::IpFamily::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:c522054d3c63b6f4968e0c234f373c2a9726adefe146b7827dfdcb362305ded6",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::policy::IpFamily|enum|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::IpFamily",
+      "kind": "enum",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "8aac6bb85d15a5d12aa2c81d1923d7cb6f0b72034a7f5de1c75fbb7260335121",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:enum:yosoi::policy::IpFamily",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.IpFamily",
+        "pythonTargetSha256": "29f7ab34d24f2ce977f1d040e1531401c29d65dba70d54b2787adb02654c94dc",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.IpFamily.",
+        "review": null,
+        "ledgerMappingSha256": "ff5e97e9e89aa7cdd9e349bc29d5cee239b024f32a0127c8e1896023748a6898"
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::policy::Network::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "9e131f5dade461d34e125714bf242f14b07f6fed7cba57f15b0fb70fe6ea5f9d",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::Network::clone@signature:9e131f5dade461d34e125714bf242f14b07f6fed7cba57f15b0fb70fe6ea5f9d@trait:Clone@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Network.clone",
+        "pythonTargetSha256": "02fba3e2673fd025146fa8e775d13482911dc93c5f3f2730d1c715c8d27587bd",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::default|function|trait:Default|occurrence:1",
+      "rustPath": "yosoi::policy::Network::default",
+      "kind": "function",
+      "trait": "Default",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "73b2816f6ebb82a0729572dd4ad719bd5a932b71c20951f78f88b656c52ecaef",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::Network::default@signature:73b2816f6ebb82a0729572dd4ad719bd5a932b71c20951f78f88b656c52ecaef@trait:Default@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.policy.Network",
+        "pythonTargetSha256": "1ad94fd5803b0d7d19f42084198db7a2b2701b62b51d9fe4ebaea9c84e84acc2",
+        "semanticEquivalent": null,
+        "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
+        "review": {
+          "status": "reviewed",
+          "rationale": "Rust and Python defaults are system_default with no source or upstream proxy; the Rust-authored default-network wire case compares every field.",
+          "pythonEquivalent": "Construct the Python model with its declared Pydantic defaults."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Default constructs the documented default value.",
+        "equivalentCapability": "Python constructors and explicit default factories provide the documented default value."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::policy::Network::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::Network::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::policy::Network::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "945cd3ea427c0991ad15a03f9b785ef45feda84debb42d5357fa72c96246dfb7",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::Network::eq@signature:945cd3ea427c0991ad15a03f9b785ef45feda84debb42d5357fa72c96246dfb7@trait:PartialEq@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.policy.Network",
+        "pythonTargetSha256": "1ad94fd5803b0d7d19f42084198db7a2b2701b62b51d9fe4ebaea9c84e84acc2",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "reviewed",
+          "rationale": "Both Network values compare the three authored fields; source snapshots preserve route values across later mutations.",
+          "pythonEquivalent": "Python value equality on Network fields."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::policy::Network::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "516d23faec68d547b6717cba8a51f8cc72b4ffb5e6be7abd9b21178f16539420",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::Network::fmt@signature:516d23faec68d547b6717cba8a51f8cc72b4ffb5e6be7abd9b21178f16539420@trait:Debug@source:203fef8de854d0ad08decfc55407dc9982973a6abfb21df990cc1ccb9ed27416",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.policy.Network",
+        "pythonTargetSha256": "1ad94fd5803b0d7d19f42084198db7a2b2701b62b51d9fe4ebaea9c84e84acc2",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "reviewed",
+          "rationale": "Both diagnostic representations suppress proxy credentials; Rust/Python redaction tests verify secret absence without requiring identical formatting.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::ip_family|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::Network::ip_family",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "0b290bda4e29f3f44206090caeb9d1b5ae0ce038be36c31daa23551135eb33d8",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::ip_family@signature:0b290bda4e29f3f44206090caeb9d1b5ae0ce038be36c31daa23551135eb33d8@source:d2217982df5d62b043914f30e1920ebc258f6a7d719843d0b9878f9a96306cbb",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Network.ip_family",
+        "pythonTargetSha256": "20299792dfd5490da7e70b42ffe2d4d295633756a8aa0553d22064177bafd7e2",
+        "semanticEquivalent": null,
+        "rationale": "Rust field ip_family maps to Python field ip_family.",
+        "review": null,
+        "ledgerMappingSha256": "1ddb4608d27a090d05d078e39d8d866575e1817af9157159ff49d2aad41cd522"
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::proxy|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::Network::proxy",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "f889b0c3639fdc36240725c344139d8a49b52dfc76d995f452fa992bfc5edefc",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::proxy@signature:f889b0c3639fdc36240725c344139d8a49b52dfc76d995f452fa992bfc5edefc@source:876027d9b6c7f5ef56006543fafa9dd721c7446c1b9f49d28cedcc6407a3f004",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Network.proxy",
+        "pythonTargetSha256": "3f4fd1b98626dc17a9c5c9766ed353c826c983b72633b9e499373aeaf1f40d44",
+        "semanticEquivalent": null,
+        "rationale": "Rust field proxy maps to Python field proxy.",
+        "review": null,
+        "ledgerMappingSha256": "dfa41e41406045a62aba524f77a028e658cead9b3b8a6bd7afa7088999dec907"
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::policy::Network::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::policy::Network::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::policy::Network::source_address|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::Network::source_address",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::Network",
+      "signatureSha256": "4939396952b2b443d241144ab31f73eb2a6915a27bf90cd0fbfda601e58d93d8",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::source_address@signature:4939396952b2b443d241144ab31f73eb2a6915a27bf90cd0fbfda601e58d93d8@source:becf6d3711cc9b70b56cbadae887c1eeda10307592b954db9d9d88ece90faf03",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Network.source_address",
+        "pythonTargetSha256": "ffbadebe743d7ea7f725e9c407fdcd6cb794606f0b5755990cb6bdaba487a2b6",
+        "semanticEquivalent": null,
+        "rationale": "Rust field source_address maps to Python field source_address.",
+        "review": null,
+        "ledgerMappingSha256": "5a0c719f5950a0d2145abf353013d9f0c1bf8e032eaf09ce24a3f2d4b49bef11"
+      }
+    },
+    {
+      "id": "yosoi::policy::Network|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::Network",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "05d6417ab1b886a6182f0c56ee969817653e46749eb740ede409295e692657c0",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::policy::Network",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Network",
+        "pythonTargetSha256": "1ad94fd5803b0d7d19f42084198db7a2b2701b62b51d9fe4ebaea9c84e84acc2",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Network.",
+        "review": null,
+        "ledgerMappingSha256": "0358dd19841277105e988f56452b0013172df41f80b9c24212b25ec2d38703bb"
       }
     }
   ],

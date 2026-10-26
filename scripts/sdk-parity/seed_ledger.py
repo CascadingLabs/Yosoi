@@ -498,6 +498,7 @@ ENUM_VALUE_FIELDS = {
     "yosoi::map::PendingReason": "yosoi.map.FrontierEntry.reason",
     "yosoi::map::RelationshipKind": "yosoi.map.Relationship.kind",
     "yosoi::map::SupportDocumentKind": "yosoi.map.SupportDocument.kind",
+    "yosoi::policy::IpFamily": "yosoi.policy.Network.ip_family",
     "yosoi::policy::BrowserMode": "yosoi.policy.Acquisition.mode",
     "yosoi::policy::AcquisitionKind": "yosoi.policy.Acquisition.kind",
     "yosoi::policy::DirectHttpRedirectTargets": "yosoi.policy.Redirects.targets",

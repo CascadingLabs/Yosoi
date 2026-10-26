@@ -1,5 +1,9 @@
 //! Explicit, validated runtime input for one Direct HTTP capture attempt.
 
+use crate::internal::network::Relay;
+use crate::internal::policy::policy::Network;
+use std::sync::Arc;
+
 use crate::internal::direct_http as yosoi_web_capture_direct_http;
 
 use std::collections::BTreeSet;
@@ -179,6 +183,8 @@ impl DirectHttpOutputSchemas {
 /// Complete validated runtime input for one Direct HTTP capture occurrence.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResolvedDirectHttpCaptureSpec {
+    pub(crate) network: Network,
+    pub(crate) relay: Option<Arc<Relay>>,
     request: WebCaptureRequest,
     direct_strategy: DirectHttpAcquisition,
     artifacts: WebArtifactRequestSet,
@@ -263,6 +269,8 @@ impl ResolvedDirectHttpCaptureSpec {
         validate_output_schemas(artifacts, retention, &output_schemas)?;
 
         Ok(Self {
+            network: Network::default(),
+            relay: None,
             direct_strategy: direct_strategy.clone(),
             request,
             artifacts,
