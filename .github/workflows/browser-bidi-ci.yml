@@ -43,7 +43,9 @@ jobs:
           echo "YOSOI_MOLI_EXECUTABLE=$GITHUB_WORKSPACE/.local/ci-engines/moli/moli" >> "$GITHUB_ENV"
           echo "YOSOI_FIREFOX_EXECUTABLE=$GITHUB_WORKSPACE/.local/ci-engines/firefox/firefox" >> "$GITHUB_ENV"
       - name: Native Rust core and adversarial transport
-        run: cargo test --locked -p yosoi --lib --features browser-bidi bidi -- --include-ignored --test-threads=1
+        run: |
+          cargo test --locked -p yosoi --lib --features browser-bidi bidi -- --include-ignored --test-threads=1
+          cargo test --locked -p yosoi --features browser-bidi --test network_policy bidi_firefox_network -- --include-ignored --test-threads=1
       - name: Build and install the Python wheel
         run: |
           uv sync --locked --no-install-project

@@ -3,6 +3,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
+    net::SocketAddr,
     sync::{Arc, Weak},
     time::Duration,
 };
@@ -92,6 +93,7 @@ pub struct Session {
     pub identity: SessionIdentity,
     pub config: BrowserConfig,
     pub headful: bool,
+    proxy: Option<SocketAddr>,
     process: Mutex<Option<OwnedProcess>>,
     state: Mutex<State>,
     stop: CancellationToken,
@@ -111,6 +113,7 @@ impl Session {
     pub async fn launch(
         config: BrowserConfig,
         headful: bool,
+        proxy: Option<SocketAddr>,
         cancellation: &CancellationToken,
         deadline: Instant,
     ) -> Result<Arc<Self>, SessionError> {
@@ -120,9 +123,21 @@ impl Session {
         if config.engine == BrowserEngine::Chrome {
             return Err(SessionError::Identity);
         }
+        if let Some(proxy) = proxy
+            && (config.engine != BrowserEngine::Firefox
+                || config.endpoint.is_some()
+                || !proxy.ip().is_loopback())
+        {
+            return Err(SessionError::Unsupported(
+                "native route requires an owned Firefox process and loopback SOCKS relay",
+            ));
+        }
         let mut process = match &config.endpoint {
             Some(_) => None,
-            None => Some(OwnedProcess::launch(&config, headful, cancellation, deadline).await?),
+            None => Some(
+                OwnedProcess::launch(&config, headful, proxy.is_some(), cancellation, deadline)
+                    .await?,
+            ),
         };
         let endpoint = config
             .endpoint
@@ -213,6 +228,7 @@ impl Session {
             },
             config,
             headful,
+            proxy,
             connection,
             process: Mutex::new(process),
             state: Mutex::new(State::default()),
@@ -358,7 +374,7 @@ impl Session {
             .connection
             .command(
                 "browser.createUserContext",
-                json!({}),
+                self.proxy.map_or_else(|| json!({}), |proxy| json!({"proxy":{"proxyType":"manual","socksProxy":proxy.to_string(),"socksVersion":5}})),
                 cancellation,
                 deadline,
             )

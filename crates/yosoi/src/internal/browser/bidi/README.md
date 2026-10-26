@@ -69,7 +69,8 @@ command offered by CDP. Shared types do not establish equivalent engine support.
 | Controller operations | Firefox 158.0.1 | Moli 1.1.19 |
 | --- | --- | --- |
 | Launch/close, isolated contexts, additional pages | Native | Native |
-| Managed profile, custom proxy routing | Unsupported | Unsupported |
+| Managed profile | Unsupported | Unsupported |
+| Custom TCP routing | Owned Firefox, scoped SOCKS relay | Unsupported |
 | Navigate, DOM-ready navigation, document scope/URL | Native | Native |
 | Active-navigation progress/cancellation | Native | Rejected: unreliable navigation IDs |
 | Stop loading | Native utility | Acknowledged document only; uncommitted navigation rejected |
@@ -98,3 +99,5 @@ egress are operator-owned facts, not inferred from a Chrome-like user agent.
 Temporary visual capture serializes viewport changes on the owned page. It restores the prior explicit override, or resets an absent override, and restores the prior scroll position after success or returned error. Crop offsets include the actual post-scroll position. A cancelled mutated capture or uncertain restoration fences the connection rather than exposing a modified page for reuse. Native qualification checks pixels, default/explicit state, error restoration and cancellation; the Firefox case also runs headful under an explicit Xvfb/X11 fixture. Headful viewport sizing requires a window system that can honor the requested resize; the fixture does not inherit a desktop Wayland backend.
 
 DOM target crops share the CDP visibility and nth-disambiguation rules. They reject hidden/missing and ambiguous targets with the common typed outcomes, include current document scroll in native clipping, and reject more than 4096 candidates before extracting or returning their rectangles. Native accessibility locators do not establish the non-ignored AX membership required by role crops, so those remain explicitly unsupported.
+
+Owned Firefox routes each created user context through the existing policy-owned SOCKS relay. The relay retains address-family/source binding, upstream proxy authentication and destination TLS behavior. Routed temporary Firefox profiles explicitly make localhost honor the proxy; remote endpoints reject this client-local route. This is a TCP web route, not a UDP proxy or a process-wide network firewall.

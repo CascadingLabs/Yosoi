@@ -114,7 +114,7 @@ Arbitrary scripts still require the owning Session's JavaScript permission. Engi
 
 ## Choose a Moli profile
 
-Custom `Policy.network` routing is currently supported by Chrome sessions. Firefox and Moli reject a nondefault route before launching; they do not silently use a direct connection. Direct HTTP Requests continue to use the selected network policy.
+Custom `Policy.network` routing uses Yosoi's owned TCP relay for Chrome and owned Firefox sessions. Firefox applies the local SOCKS route separately to each created user context. Moli and remote Firefox endpoints reject a nondefault route before launching or connecting. Direct HTTP Requests continue to use the selected network policy.
 
 Moli 1.1.19 is headless-only. Its DOM profile supports reading and scripts without claiming accurate visual geometry. Choose layout deliberately for pointer input or PNG capture.
 

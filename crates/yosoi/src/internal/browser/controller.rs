@@ -3,7 +3,7 @@
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
 use std::sync::atomic;
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 use tokio::runtime::Handle as RuntimeHandle;
 use tokio::time::{Instant, timeout_at};
 #[cfg(feature = "browser-bidi")]
@@ -28,7 +28,7 @@ pub struct BrowserSessionBuilder {
     browser: BrowserConfig,
     headful: bool,
     managed_profile: bool,
-    proxy_configured: bool,
+    proxy: Option<SocketAddr>,
 }
 
 impl BrowserSessionBuilder {
@@ -56,9 +56,9 @@ impl BrowserSessionBuilder {
         self
     }
 
-    pub fn proxy(mut self, url: impl Into<String>) -> Self {
-        self.proxy_configured = true;
-        self.chrome = self.chrome.proxy(url);
+    pub fn proxy(mut self, address: SocketAddr) -> Self {
+        self.proxy = Some(address);
+        self.chrome = self.chrome.proxy(format!("socks5://{address}"));
         self
     }
 
@@ -89,14 +89,17 @@ impl BrowserSessionBuilder {
         if self.managed_profile {
             return Err(unsupported("optional-engine managed profiles"));
         }
-        if self.proxy_configured {
-            return Err(unsupported("optional-engine network routing"));
+        if self.proxy.is_some() && !self.browser.supports_owned_network_route() {
+            return Err(unsupported(
+                "network routing requires Chrome or owned Firefox",
+            ));
         }
         #[cfg(feature = "browser-bidi")]
         {
             let session = super::bidi::session::Session::launch(
                 self.browser,
                 self.headful,
+                self.proxy,
                 &CancellationToken::new(),
                 operation_deadline()?,
             )
@@ -116,7 +119,7 @@ impl BrowserSession {
             browser: BrowserConfig::default(),
             headful: false,
             managed_profile: false,
-            proxy_configured: false,
+            proxy: None,
         }
     }
 

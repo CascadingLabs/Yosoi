@@ -106,6 +106,7 @@ async fn native_network(engine: BrowserEngine) -> Result<(), Box<dyn Error + Sen
             ..BrowserConfig::default()
         },
         false,
+        None,
         &token,
         deadline,
     )

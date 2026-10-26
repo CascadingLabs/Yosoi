@@ -99,6 +99,7 @@ async fn native(engine: BrowserEngine) -> Result<(), Box<dyn std_error::Error + 
             ..BrowserConfig::default()
         },
         false,
+        None,
         &cancellation,
         deadline,
     )

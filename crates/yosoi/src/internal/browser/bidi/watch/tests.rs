@@ -71,6 +71,7 @@ async fn native_watch(engine: BrowserEngine) -> StdResult<(), Box<dyn Error + Se
             ..BrowserConfig::default()
         },
         false,
+        None,
         &token,
         deadline,
     )

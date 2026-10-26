@@ -32,7 +32,7 @@ impl BrowserExecutionManager {
         };
         if let Some(proxy) = self.inner.config.proxy {
             builder = builder
-                .proxy(format!("socks5://{proxy}"))
+                .proxy(proxy)
                 .arg("--proxy-bypass-list=<-loopback>")
                 .arg("--disable-quic")
                 .arg("--dns-prefetch-disable")

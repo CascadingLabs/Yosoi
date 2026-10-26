@@ -780,11 +780,10 @@ impl SessionBuilder {
                 "browser-bidi feature is disabled",
             ));
         }
-        if self.policy.browser.engine != browser_config::BrowserEngine::Chrome
-            && !self.policy.network.is_default()
+        if !self.policy.browser.supports_owned_network_route() && !self.policy.network.is_default()
         {
             return Err(SessionError::Unsupported(
-                "custom network routing is supported only by Chrome sessions",
+                "network routing requires Chrome or an owned Firefox process",
             ));
         }
         #[cfg(feature = "browser")]

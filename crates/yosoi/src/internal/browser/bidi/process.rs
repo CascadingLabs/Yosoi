@@ -82,6 +82,7 @@ impl OwnedProcess {
     pub async fn launch(
         config: &BrowserConfig,
         headful: bool,
+        routed: bool,
         cancellation: &CancellationToken,
         deadline: Instant,
     ) -> Result<Self, LaunchError> {
@@ -103,6 +104,19 @@ impl OwnedProcess {
             .prefix("yosoi-bidi-")
             .tempdir()
             .map_err(|_| LaunchError::Startup)?;
+        if routed {
+            // Match Chrome's <-loopback> bypass override. This is confined to
+            // the owned, ephemeral profile and strengthens the requested route.
+            if config.engine != BrowserEngine::Firefox {
+                return Err(LaunchError::Startup);
+            }
+            tokio_fs::write(
+                profile.path().join("user.js"),
+                b"user_pref(\"network.proxy.allow_hijacking_localhost\", true);\n",
+            )
+            .await
+            .map_err(|_| LaunchError::Startup)?;
+        }
         let mut command = Command::new(&identity.executable);
         command
             .kill_on_drop(true)
@@ -182,6 +196,12 @@ impl OwnedProcess {
                 }
             }
             BrowserEngine::Chrome => return Err(LaunchError::Startup),
+        }
+        if cancellation.is_cancelled() {
+            return Err(LaunchError::Cancelled);
+        }
+        if Instant::now() >= deadline {
+            return Err(LaunchError::Deadline);
         }
         let child = command.spawn().map_err(|_| LaunchError::Startup)?;
         #[cfg(unix)]
@@ -717,7 +737,8 @@ mod tests {
         let deadline = Instant::now()
             .checked_add(Duration::from_secs(30))
             .ok_or(LaunchError::Deadline)?;
-        let mut process = OwnedProcess::launch(&config, false, &cancellation, deadline).await?;
+        let mut process =
+            OwnedProcess::launch(&config, false, false, &cancellation, deadline).await?;
         let connection = BidiConnection::connect(
             &process.endpoint,
             TransportLimits::default(),

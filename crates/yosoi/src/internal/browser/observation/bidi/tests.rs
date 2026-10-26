@@ -43,6 +43,7 @@ async fn native_runtime(engine: BrowserEngine) -> StdResult<(), Box<dyn Error + 
             ..BrowserConfig::default()
         },
         false,
+        None,
         &token,
         deadline,
     )

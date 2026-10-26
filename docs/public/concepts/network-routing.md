@@ -195,6 +195,6 @@ The context closes both browser ownership and the local tunnel. Changing the ori
 
 ## Coverage and limits
 
-Routing applies to HTTP, HTTPS, WebSockets, redirects, browser subresources, and worker web requests that use Chrome's proxy stack. Explicit routing disables Chrome's implicit localhost bypass, QUIC, and non-proxied WebRTC UDP. It preserves sandboxing and site isolation. There is no direct fallback route.
+Chrome and owned Firefox sessions send their TCP web requests through the same local relay. This includes HTTP, HTTPS, WebSockets, redirects, subresources, frames, and worker web requests. Firefox attaches the SOCKS route to each created user context and makes localhost honor it. Chrome disables its implicit localhost bypass, QUIC, and non-proxied WebRTC UDP. Both preserve sandboxing and site isolation, with no direct fallback for the selected TCP route. Moli and remote Firefox endpoints reject custom routing before browser admission.
 
 The local helper is an in-process TCP tunnel with at most 64 active connections and a 30-second handshake bound. Request deadlines, Session startup cancellation, and owner cleanup still apply. It does not intercept destination TLS, provide a UDP proxy, replace an operating-system firewall, or guarantee that every browser subsystem and DNS packet uses the selected route. Stronger process-wide network isolation requires an external operating-system boundary.

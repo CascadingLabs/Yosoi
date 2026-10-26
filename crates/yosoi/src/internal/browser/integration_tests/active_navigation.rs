@@ -280,6 +280,7 @@ async fn bidi_firefox_navigation_preserves_lifecycle_loss_and_cancellation() {
             ..BrowserConfig::default()
         },
         false,
+        None,
         &token,
         deadline,
     )

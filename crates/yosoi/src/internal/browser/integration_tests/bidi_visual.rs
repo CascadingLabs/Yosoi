@@ -47,6 +47,7 @@ async fn exercise(engine: BrowserEngine) -> TestResult {
             ..BrowserConfig::default()
         },
         headful,
+        None,
         &token,
         deadline,
     )
