@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FailureCapturePolicy",
+  "publicPath": "yosoi::flow::FailureCapturePolicy",
+  "kind": "enum",
+  "title": "yosoi::flow::FailureCapturePolicy",
+  "signature": "pub enum FailureCapturePolicy",
+  "docs": "Whether the flow captures one screenshot after a failed or unknown step.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 899,
+    "lineEnd": 905,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L899-L905"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FailureCapturePolicy"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FailureCapturePolicy::Disabled",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::Disabled",
+      "title": "yosoi::flow::FailureCapturePolicy::Disabled",
+      "kind": "variant",
+      "signature": "Disabled",
+      "docs": "Do not capture additional evidence after termination.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 902,
+        "lineEnd": 902,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L902-L902"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FailureCapturePolicy::Screenshot",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::Screenshot",
+      "title": "yosoi::flow::FailureCapturePolicy::Screenshot",
+      "kind": "variant",
+      "signature": "Screenshot",
+      "docs": "Capture one screenshot using the same active Work lease.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 904,
+        "lineEnd": 904,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L904-L904"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::clone",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::clone",
+      "title": "yosoi::flow::FailureCapturePolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FailureCapturePolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::default",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::default",
+      "title": "yosoi::flow::FailureCapturePolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::flow::FailureCapturePolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::deserialize",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::deserialize",
+      "title": "yosoi::flow::FailureCapturePolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::eq",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::eq",
+      "title": "yosoi::flow::FailureCapturePolicy::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FailureCapturePolicy) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::fmt",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::fmt",
+      "title": "yosoi::flow::FailureCapturePolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FailureCapturePolicy::serialize",
+      "publicPath": "yosoi::flow::FailureCapturePolicy::serialize",
+      "title": "yosoi::flow::FailureCapturePolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 897,
+        "lineEnd": 897,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L897-L897"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f7a51432f4525168dd9ae71446dfe4617055bdc56ed760de0bc3ce0d39bfcee5",
+  "slug": "yosoi/flow/enum/failurecapturepolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f7a51432f4525168dd9ae71446dfe4617055bdc56ed760de0bc3ce0d39bfcee5"
+}

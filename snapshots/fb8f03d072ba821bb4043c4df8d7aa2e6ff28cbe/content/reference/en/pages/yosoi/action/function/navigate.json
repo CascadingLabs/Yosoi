@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::navigate",
+  "publicPath": "yosoi::action::navigate",
+  "kind": "function",
+  "title": "yosoi::action::navigate",
+  "signature": "pub fn navigate(url: impl Into<String>) -> yosoi::flow::Step",
+  "docs": "Creates a navigation step.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 38,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/action.rs#L38-L40"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::navigate"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "418ec7e9d04c9afd6dec621a098d3176ff4aaf2a46524072e4680caac0dd31f7",
+  "slug": "yosoi/action/function/navigate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "418ec7e9d04c9afd6dec621a098d3176ff4aaf2a46524072e4680caac0dd31f7"
+}

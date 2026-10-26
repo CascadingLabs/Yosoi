@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Coordinate",
+  "publicPath": "yosoi::surface::Coordinate",
+  "kind": "struct",
+  "title": "yosoi::surface::Coordinate",
+  "signature": "pub struct Coordinate",
+  "docs": "Representation-native evidence address, not an executable browser selector.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 140,
+    "lineEnd": 145,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L140-L145"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Coordinate::clone",
+      "publicPath": "yosoi::surface::Coordinate::clone",
+      "title": "yosoi::surface::Coordinate::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Coordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Coordinate::deserialize",
+      "publicPath": "yosoi::surface::Coordinate::deserialize",
+      "title": "yosoi::surface::Coordinate::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Coordinate::eq",
+      "publicPath": "yosoi::surface::Coordinate::eq",
+      "title": "yosoi::surface::Coordinate::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::Coordinate) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::Coordinate::fmt",
+      "publicPath": "yosoi::surface::Coordinate::fmt",
+      "title": "yosoi::surface::Coordinate::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Coordinate::kind",
+      "publicPath": "yosoi::surface::Coordinate::kind",
+      "title": "yosoi::surface::Coordinate::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: String",
+      "docs": "Address grammar, such as `html_element`, `json_pointer`, or `image_rect`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L142-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Coordinate::serialize",
+      "publicPath": "yosoi::surface::Coordinate::serialize",
+      "title": "yosoi::surface::Coordinate::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L139-L139"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Coordinate::value",
+      "publicPath": "yosoi::surface::Coordinate::value",
+      "title": "yosoi::surface::Coordinate::value",
+      "kind": "struct_field",
+      "signature": "pub value: String",
+      "docs": "Grammar-specific value; scoped to the reference's capture.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 144,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L144-L144"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0d6f4e4fc54ecdf23899ed45297871d3cf668e9434af10a6500e018f5bdb066c",
+  "slug": "yosoi/surface/struct/coordinate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0d6f4e4fc54ecdf23899ed45297871d3cf668e9434af10a6500e018f5bdb066c"
+}

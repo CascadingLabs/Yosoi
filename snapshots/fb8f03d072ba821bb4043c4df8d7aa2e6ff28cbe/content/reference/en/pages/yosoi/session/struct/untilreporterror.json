@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::UntilReportError",
+  "publicPath": "yosoi::session::UntilReportError",
+  "kind": "struct",
+  "title": "yosoi::session::UntilReportError",
+  "signature": "pub struct UntilReportError",
+  "docs": "Invalid or inconsistent saved confirmation evidence.",
+  "source": {
+    "file": "crates/yosoi/src/session/until.rs",
+    "lineStart": 111,
+    "lineEnd": 111,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L111-L111"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L28-L28"
+  },
+  "aliases": [
+    "yosoi::prelude::session::UntilReportError"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::session::UntilReportError::0",
+      "publicPath": "yosoi::session::UntilReportError::0",
+      "title": "yosoi::session::UntilReportError::0",
+      "kind": "struct_field",
+      "signature": "pub 0: &'static str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 111,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L111-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::UntilReportError::clone",
+      "publicPath": "yosoi::session::UntilReportError::clone",
+      "title": "yosoi::session::UntilReportError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::UntilReportError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::UntilReportError::eq",
+      "publicPath": "yosoi::session::UntilReportError::eq",
+      "title": "yosoi::session::UntilReportError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::UntilReportError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::UntilReportError::fmt",
+      "publicPath": "yosoi::session::UntilReportError::fmt",
+      "title": "yosoi::session::UntilReportError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::UntilReportError::fmt",
+      "publicPath": "yosoi::session::UntilReportError::fmt",
+      "title": "yosoi::session::UntilReportError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session/until.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session/until.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "948f1297fd3918376b2ffb5df341baf4eaf6ee44c067530341135fbc0f22c1ff",
+  "slug": "yosoi/session/struct/untilreporterror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "948f1297fd3918376b2ffb5df341baf4eaf6ee44c067530341135fbc0f22c1ff"
+}

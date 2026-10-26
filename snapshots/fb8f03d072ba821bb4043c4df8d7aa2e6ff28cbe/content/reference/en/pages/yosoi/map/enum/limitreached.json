@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::LimitReached",
+  "publicPath": "yosoi::map::LimitReached",
+  "kind": "enum",
+  "title": "yosoi::map::LimitReached",
+  "signature": "pub enum LimitReached",
+  "docs": "Resource boundary that stopped Map discovery or retention.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 272,
+    "lineEnd": 297,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L272-L297"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::LimitReached"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::LimitReached::Hosts",
+      "publicPath": "yosoi::map::LimitReached::Hosts",
+      "title": "yosoi::map::LimitReached::Hosts",
+      "kind": "variant",
+      "signature": "Hosts",
+      "docs": "Maximum retained hostname count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 274,
+        "lineEnd": 274,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L274-L274"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::InventoryBytes",
+      "publicPath": "yosoi::map::LimitReached::InventoryBytes",
+      "title": "yosoi::map::LimitReached::InventoryBytes",
+      "kind": "variant",
+      "signature": "InventoryBytes",
+      "docs": "Retained inventory evidence exhausted its byte budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 294,
+        "lineEnd": 294,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L294-L294"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Observations",
+      "publicPath": "yosoi::map::LimitReached::Observations",
+      "title": "yosoi::map::LimitReached::Observations",
+      "kind": "variant",
+      "signature": "Observations",
+      "docs": "Maximum retained provenance observation count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 280,
+        "lineEnd": 280,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L280-L280"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::ParserEntries",
+      "publicPath": "yosoi::map::LimitReached::ParserEntries",
+      "title": "yosoi::map::LimitReached::ParserEntries",
+      "kind": "variant",
+      "signature": "ParserEntries",
+      "docs": "A source parser exhausted its configured entry budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 296,
+        "lineEnd": 296,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L296-L296"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Pending",
+      "publicPath": "yosoi::map::LimitReached::Pending",
+      "title": "yosoi::map::LimitReached::Pending",
+      "kind": "variant",
+      "signature": "Pending",
+      "docs": "Maximum pending frontier capacity was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 282,
+        "lineEnd": 282,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L282-L282"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Relationships",
+      "publicPath": "yosoi::map::LimitReached::Relationships",
+      "title": "yosoi::map::LimitReached::Relationships",
+      "kind": "variant",
+      "signature": "Relationships",
+      "docs": "Maximum retained directed relationship count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 278,
+        "lineEnd": 278,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L278-L278"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Requests",
+      "publicPath": "yosoi::map::LimitReached::Requests",
+      "title": "yosoi::map::LimitReached::Requests",
+      "kind": "variant",
+      "signature": "Requests",
+      "docs": "Maximum acquisition request count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 284,
+        "lineEnd": 284,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L284-L284"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::ResponseBytes",
+      "publicPath": "yosoi::map::LimitReached::ResponseBytes",
+      "title": "yosoi::map::LimitReached::ResponseBytes",
+      "kind": "variant",
+      "signature": "ResponseBytes",
+      "docs": "A single response exceeded the configured byte budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 290,
+        "lineEnd": 290,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L290-L290"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::SitemapDepth",
+      "publicPath": "yosoi::map::LimitReached::SitemapDepth",
+      "title": "yosoi::map::LimitReached::SitemapDepth",
+      "kind": "variant",
+      "signature": "SitemapDepth",
+      "docs": "Maximum nested sitemap traversal depth was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 288,
+        "lineEnd": 288,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L288-L288"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Sitemaps",
+      "publicPath": "yosoi::map::LimitReached::Sitemaps",
+      "title": "yosoi::map::LimitReached::Sitemaps",
+      "kind": "variant",
+      "signature": "Sitemaps",
+      "docs": "Maximum processed sitemap count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 286,
+        "lineEnd": 286,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L286-L286"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::TotalResponseBytes",
+      "publicPath": "yosoi::map::LimitReached::TotalResponseBytes",
+      "title": "yosoi::map::LimitReached::TotalResponseBytes",
+      "kind": "variant",
+      "signature": "TotalResponseBytes",
+      "docs": "Aggregate acquired response bytes exhausted the operation budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L292-L292"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::LimitReached::Urls",
+      "publicPath": "yosoi::map::LimitReached::Urls",
+      "title": "yosoi::map::LimitReached::Urls",
+      "kind": "variant",
+      "signature": "Urls",
+      "docs": "Maximum retained page URL count was reached.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 276,
+        "lineEnd": 276,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L276-L276"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::clone",
+      "publicPath": "yosoi::map::LimitReached::clone",
+      "title": "yosoi::map::LimitReached::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::LimitReached",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 270,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L270-L270"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::eq",
+      "publicPath": "yosoi::map::LimitReached::eq",
+      "title": "yosoi::map::LimitReached::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::LimitReached) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 270,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L270-L270"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::fmt",
+      "publicPath": "yosoi::map::LimitReached::fmt",
+      "title": "yosoi::map::LimitReached::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 270,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L270-L270"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::LimitReached::serialize",
+      "publicPath": "yosoi::map::LimitReached::serialize",
+      "title": "yosoi::map::LimitReached::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 270,
+        "lineEnd": 270,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/map/mod.rs#L270-L270"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bfd70ad9cb7bf23edb5b60c1955fda1247a618182ffe3a6a1c5dce9ee695c6d3",
+  "slug": "yosoi/map/enum/limitreached",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bfd70ad9cb7bf23edb5b60c1955fda1247a618182ffe3a6a1c5dce9ee695c6d3"
+}

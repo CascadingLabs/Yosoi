@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::Observation",
+  "publicPath": "yosoi::surface::model::Observation",
+  "kind": "struct",
+  "title": "yosoi::surface::model::Observation",
+  "signature": "pub struct Observation",
+  "docs": "Immutable evidence metadata; media position is not a wall-clock capture time.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 111,
+    "lineEnd": 118,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L111-L118"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::model::Observation::clone",
+      "publicPath": "yosoi::surface::model::Observation::clone",
+      "title": "yosoi::surface::model::Observation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Observation::coverage",
+      "publicPath": "yosoi::surface::model::Observation::coverage",
+      "title": "yosoi::surface::model::Observation::coverage",
+      "kind": "struct_field",
+      "signature": "pub coverage: yosoi::surface::Coverage",
+      "docs": "What this representation covers, including omissions or sparse sampling.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 117,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L117-L117"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Observation::deserialize",
+      "publicPath": "yosoi::surface::model::Observation::deserialize",
+      "title": "yosoi::surface::model::Observation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::Observation::fmt",
+      "publicPath": "yosoi::surface::model::Observation::fmt",
+      "title": "yosoi::surface::model::Observation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Observation::id",
+      "publicPath": "yosoi::surface::model::Observation::id",
+      "title": "yosoi::surface::model::Observation::id",
+      "kind": "struct_field",
+      "signature": "pub id: yosoi::surface::model::ObservationId",
+      "docs": "Exact interpretation identity used in references.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 113,
+        "lineEnd": 113,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L113-L113"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Observation::serialize",
+      "publicPath": "yosoi::surface::model::Observation::serialize",
+      "title": "yosoi::surface::model::Observation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L109-L109"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Observation::surface",
+      "publicPath": "yosoi::surface::model::Observation::surface",
+      "title": "yosoi::surface::model::Observation::surface",
+      "kind": "struct_field",
+      "signature": "pub surface: yosoi::surface::model::SurfaceId",
+      "docs": "Continuing surface that produced this observation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 115,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L115-L115"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4f467f8275eb2b2785b5baca2ad6b778c19dd1d3d1eb3b333568e3c29b6d4797",
+  "slug": "yosoi/surface/model/struct/observation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4f467f8275eb2b2785b5baca2ad6b778c19dd1d3d1eb3b333568e3c29b6d4797"
+}

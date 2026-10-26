@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ExtractionDiagnostic",
+  "publicPath": "yosoi::contracts::ExtractionDiagnostic",
+  "kind": "enum",
+  "title": "yosoi::contracts::ExtractionDiagnostic",
+  "signature": "pub enum ExtractionDiagnostic",
+  "docs": "Nonfatal structural issue while mapping located findings into Contract candidate groups.",
+  "source": {
+    "file": "crates/yosoi/src/internal/extractor/mod.rs",
+    "lineStart": 136,
+    "lineEnd": 142,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L136-L142"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/contracts.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ExtractionDiagnostic"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "title": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "kind": "variant",
+      "signature": "IncompatibleLineage { output: yosoi::locators::OutputId }",
+      "docs": "Finding lineage is incompatible with the Contract's page or repeated-region grouping.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 138,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L138-L141"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage::output",
+          "publicPath": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage::output",
+          "title": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage::output",
+          "kind": "struct_field",
+          "signature": "output: yosoi::locators::OutputId",
+          "docs": "Authored locator output whose evidence could not enter a compatible group.",
+          "source": {
+            "file": "crates/yosoi/src/internal/extractor/mod.rs",
+            "lineStart": 140,
+            "lineEnd": 140,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L140-L140"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::clone",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::clone",
+      "title": "yosoi::contracts::ExtractionDiagnostic::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ExtractionDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::eq",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::eq",
+      "title": "yosoi::contracts::ExtractionDiagnostic::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ExtractionDiagnostic) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::fmt",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::fmt",
+      "title": "yosoi::contracts::ExtractionDiagnostic::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::serialize",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::serialize",
+      "title": "yosoi::contracts::ExtractionDiagnostic::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/extractor/mod.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "151e01f7475726ddc8dc5eb868192a6b2c62473d99a17da640a1d3bd539a9d3f",
+  "slug": "yosoi/contracts/enum/extractiondiagnostic",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "151e01f7475726ddc8dc5eb868192a6b2c62473d99a17da640a1d3bd539a9d3f"
+}

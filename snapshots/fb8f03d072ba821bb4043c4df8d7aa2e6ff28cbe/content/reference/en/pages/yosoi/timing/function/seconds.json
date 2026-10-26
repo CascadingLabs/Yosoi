@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::timing::seconds",
+  "publicPath": "yosoi::timing::seconds",
+  "kind": "function",
+  "title": "yosoi::timing::seconds",
+  "signature": "pub fn seconds(value: u32) -> u64",
+  "docs": "Converts seconds to milliseconds. The `u32` input always fits in `u64`.",
+  "source": {
+    "file": "crates/yosoi/src/timing.rs",
+    "lineStart": 11,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/timing.rs#L11-L13"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "bdf53cfe7a39fbdf2c65f0004700089ff3ffbcef3331c6347f4656439a4d9e30",
+  "slug": "yosoi/timing/function/seconds",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bdf53cfe7a39fbdf2c65f0004700089ff3ffbcef3331c6347f4656439a4d9e30"
+}

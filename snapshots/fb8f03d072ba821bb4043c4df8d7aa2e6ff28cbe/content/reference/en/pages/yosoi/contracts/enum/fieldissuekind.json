@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::FieldIssueKind",
+  "publicPath": "yosoi::contracts::FieldIssueKind",
+  "kind": "enum",
+  "title": "yosoi::contracts::FieldIssueKind",
+  "signature": "pub enum FieldIssueKind",
+  "docs": "Field rejection category, separate from operation-level validation-budget failures.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+    "lineStart": 41,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L41-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/contracts.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::FieldIssueKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::ConversionFailed",
+      "publicPath": "yosoi::contracts::FieldIssueKind::ConversionFailed",
+      "title": "yosoi::contracts::FieldIssueKind::ConversionFailed",
+      "kind": "variant",
+      "signature": "ConversionFailed",
+      "docs": "A supported projection could not be parsed into the requested field type.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L54-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::ExcessCandidates",
+      "publicPath": "yosoi::contracts::FieldIssueKind::ExcessCandidates",
+      "title": "yosoi::contracts::FieldIssueKind::ExcessCandidates",
+      "kind": "variant",
+      "signature": "ExcessCandidates { observed: u64 }",
+      "docs": "An exactly-one or zero-or-one field has more values than its cardinality permits.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 45,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L45-L48"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::FieldIssueKind::ExcessCandidates::observed",
+          "publicPath": "yosoi::contracts::FieldIssueKind::ExcessCandidates::observed",
+          "title": "yosoi::contracts::FieldIssueKind::ExcessCandidates::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Number of candidate findings for the field.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 47,
+            "lineEnd": 47,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L47-L47"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::IncompleteEvidence",
+      "publicPath": "yosoi::contracts::FieldIssueKind::IncompleteEvidence",
+      "title": "yosoi::contracts::FieldIssueKind::IncompleteEvidence",
+      "kind": "variant",
+      "signature": "IncompleteEvidence",
+      "docs": "Candidate findings contain partial or unknown evidence that cannot satisfy validation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L50-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::MissingRequired",
+      "publicPath": "yosoi::contracts::FieldIssueKind::MissingRequired",
+      "title": "yosoi::contracts::FieldIssueKind::MissingRequired",
+      "kind": "variant",
+      "signature": "MissingRequired",
+      "docs": "An exactly-one field has no candidate value in the available evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::SemanticValidationFailed",
+      "publicPath": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed",
+      "title": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed",
+      "kind": "variant",
+      "signature": "SemanticValidationFailed { code: yosoi::contracts::ValidationCode }",
+      "docs": "A converted field value violates supported semantic constraints.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 56,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L56-L59"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::FieldIssueKind::SemanticValidationFailed::code",
+          "publicPath": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed::code",
+          "title": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed::code",
+          "kind": "struct_field",
+          "signature": "code: yosoi::contracts::ValidationCode",
+          "docs": "Specific semantic rule rejecting the converted value.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 58,
+            "lineEnd": 58,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L58-L58"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::FieldIssueKind::UnsupportedProjectedValue",
+      "publicPath": "yosoi::contracts::FieldIssueKind::UnsupportedProjectedValue",
+      "title": "yosoi::contracts::FieldIssueKind::UnsupportedProjectedValue",
+      "kind": "variant",
+      "signature": "UnsupportedProjectedValue",
+      "docs": "A finding's projection variant cannot be converted to the requested field type.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 52,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L52-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::FieldIssueKind::clone",
+      "publicPath": "yosoi::contracts::FieldIssueKind::clone",
+      "title": "yosoi::contracts::FieldIssueKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::FieldIssueKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldIssueKind::deserialize",
+      "publicPath": "yosoi::contracts::FieldIssueKind::deserialize",
+      "title": "yosoi::contracts::FieldIssueKind::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldIssueKind::eq",
+      "publicPath": "yosoi::contracts::FieldIssueKind::eq",
+      "title": "yosoi::contracts::FieldIssueKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::FieldIssueKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldIssueKind::fmt",
+      "publicPath": "yosoi::contracts::FieldIssueKind::fmt",
+      "title": "yosoi::contracts::FieldIssueKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::FieldIssueKind::serialize",
+      "publicPath": "yosoi::contracts::FieldIssueKind::serialize",
+      "title": "yosoi::contracts::FieldIssueKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/contract_validation/issue.rs#L39-L39"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7c52fdab9cba3e07582cc7f0ab6cffb12b9bdcf54b92150c2f60c612d7a0b755",
+  "slug": "yosoi/contracts/enum/fieldissuekind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7c52fdab9cba3e07582cc7f0ab6cffb12b9bdcf54b92150c2f60c612d7a0b755"
+}

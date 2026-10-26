@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::run_module_with_export",
+  "publicPath": "yosoi::action::run_module_with_export",
+  "kind": "function",
+  "title": "yosoi::action::run_module_with_export",
+  "signature": "pub fn run_module_with_export(path: impl AsRef<std::path::Path>, export_name: impl Into<String>) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptModuleError>",
+  "docs": "Snapshots an entry module and its local relative import graph with an\noptional selected export returned as JSON after module evaluation.\nThe selected export is read, never invoked.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 120,
+    "lineEnd": 130,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/action.rs#L120-L130"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::run_module_with_export"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "172a13e1317fde64a099462b503a4900e11c3d3e59ab54cce4f57fa057397f14",
+  "slug": "yosoi/action/function/run-module-with-export",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "172a13e1317fde64a099462b503a4900e11c3d3e59ab54cce4f57fa057397f14"
+}

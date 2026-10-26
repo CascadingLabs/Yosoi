@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::model::Access",
+  "publicPath": "yosoi::surface::model::Access",
+  "kind": "enum",
+  "title": "yosoi::surface::model::Access",
+  "signature": "pub enum Access",
+  "docs": "Which operations a capability may perform on the source.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 73,
+    "lineEnd": 78,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L73-L78"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::model::Access::Control",
+      "publicPath": "yosoi::surface::model::Access::Control",
+      "title": "yosoi::surface::model::Access::Control",
+      "kind": "variant",
+      "signature": "Control",
+      "docs": "May change an external source and therefore needs separate live authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 77,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L77-L77"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::model::Access::Read",
+      "publicPath": "yosoi::surface::model::Access::Read",
+      "title": "yosoi::surface::model::Access::Read",
+      "kind": "variant",
+      "signature": "Read",
+      "docs": "Retrieves or derives evidence without changing the observed source.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 75,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L75-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Access::clone",
+      "publicPath": "yosoi::surface::model::Access::clone",
+      "title": "yosoi::surface::model::Access::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::Access",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::model::Access::deserialize",
+      "publicPath": "yosoi::surface::model::Access::deserialize",
+      "title": "yosoi::surface::model::Access::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::Access::eq",
+      "publicPath": "yosoi::surface::model::Access::eq",
+      "title": "yosoi::surface::model::Access::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::model::Access) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::model::Access::fmt",
+      "publicPath": "yosoi::surface::model::Access::fmt",
+      "title": "yosoi::surface::model::Access::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::model::Access::serialize",
+      "publicPath": "yosoi::surface::model::Access::serialize",
+      "title": "yosoi::surface::model::Access::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L71-L71"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "de9bf401257feb94d69e188a7d8c20254a8dda4b867845c9c24ad6f11f3753f5",
+  "slug": "yosoi/surface/model/enum/access",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "de9bf401257feb94d69e188a7d8c20254a8dda4b867845c9c24ad6f11f3753f5"
+}

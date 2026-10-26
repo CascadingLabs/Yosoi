@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::run_module_with_limits",
+  "publicPath": "yosoi::action::run_module_with_limits",
+  "kind": "function",
+  "title": "yosoi::action::run_module_with_limits",
+  "signature": "pub fn run_module_with_limits(path: impl AsRef<std::path::Path>, limits: yosoi::action::JavaScriptModuleLimits) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptModuleError>",
+  "docs": "Snapshots an entry module and its local relative import graph under the\nsupplied bundle bounds.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 169,
+    "lineEnd": 175,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/action.rs#L169-L175"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::run_module_with_limits"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "5f50fd393ecd923d1715a0288f61e4b37ebe20a03794faef68e74cd4a35d46bf",
+  "slug": "yosoi/action/function/run-module-with-limits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5f50fd393ecd923d1715a0288f61e4b37ebe20a03794faef68e74cd4a35d46bf"
+}

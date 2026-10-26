@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::ArchivePolicy",
+  "publicPath": "yosoi::surface::ArchivePolicy",
+  "kind": "enum",
+  "title": "yosoi::surface::ArchivePolicy",
+  "signature": "pub enum ArchivePolicy",
+  "docs": "Whether a Surface retains the evidence required to become an Archive value.",
+  "source": {
+    "file": "crates/yosoi/src/surface/policy.rs",
+    "lineStart": 8,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L8-L14"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 29,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L29-L29"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::ArchivePolicy::Enabled",
+      "publicPath": "yosoi::surface::ArchivePolicy::Enabled",
+      "title": "yosoi::surface::ArchivePolicy::Enabled",
+      "kind": "variant",
+      "signature": "Enabled",
+      "docs": "Retain bounded operation inputs, observations and receipts for explicit saving.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::ArchivePolicy::Off",
+      "publicPath": "yosoi::surface::ArchivePolicy::Off",
+      "title": "yosoi::surface::ArchivePolicy::Off",
+      "kind": "variant",
+      "signature": "Off",
+      "docs": "Retain no portable outcome; ordinary immutable reads remain available.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L11-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::clone",
+      "publicPath": "yosoi::surface::ArchivePolicy::clone",
+      "title": "yosoi::surface::ArchivePolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::ArchivePolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::default",
+      "publicPath": "yosoi::surface::ArchivePolicy::default",
+      "title": "yosoi::surface::ArchivePolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::surface::ArchivePolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::deserialize",
+      "publicPath": "yosoi::surface::ArchivePolicy::deserialize",
+      "title": "yosoi::surface::ArchivePolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::eq",
+      "publicPath": "yosoi::surface::ArchivePolicy::eq",
+      "title": "yosoi::surface::ArchivePolicy::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::ArchivePolicy) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::fmt",
+      "publicPath": "yosoi::surface::ArchivePolicy::fmt",
+      "title": "yosoi::surface::ArchivePolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivePolicy::serialize",
+      "publicPath": "yosoi::surface::ArchivePolicy::serialize",
+      "title": "yosoi::surface::ArchivePolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/policy.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "613ac15f5acdb1c7fb9eb3107bc19f85f54bf873bab022b93bcce2adc143e88c",
+  "slug": "yosoi/surface/enum/archivepolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "613ac15f5acdb1c7fb9eb3107bc19f85f54bf873bab022b93bcce2adc143e88c"
+}

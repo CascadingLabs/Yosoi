@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::SessionPolicy",
+  "publicPath": "yosoi::session::SessionPolicy",
+  "kind": "struct",
+  "title": "yosoi::session::SessionPolicy",
+  "signature": "pub struct SessionPolicy",
+  "docs": "Execution bounds, separate from Request's existing acquisition/output policy.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 116,
+    "lineEnd": 148,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L116-L148"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::SessionPolicy",
+    "yosoi::prelude::session::SessionPolicy"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::allow_arbitrary_js",
+      "publicPath": "yosoi::session::SessionPolicy::allow_arbitrary_js",
+      "title": "yosoi::session::SessionPolicy::allow_arbitrary_js",
+      "kind": "struct_field",
+      "signature": "pub allow_arbitrary_js: bool",
+      "docs": "Explicit permission for arbitrary scripts; Evaluate must also be in `allowed_actions`.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L133-L133"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::allowed_actions",
+      "publicPath": "yosoi::session::SessionPolicy::allowed_actions",
+      "title": "yosoi::session::SessionPolicy::allowed_actions",
+      "kind": "struct_field",
+      "signature": "pub allowed_actions: Vec<yosoi::session::ActionKind>",
+      "docs": "Operation categories permitted for this Session.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L135-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::clone",
+      "publicPath": "yosoi::session::SessionPolicy::clone",
+      "title": "yosoi::session::SessionPolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::SessionPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::default",
+      "publicPath": "yosoi::session::SessionPolicy::default",
+      "title": "yosoi::session::SessionPolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 150,
+        "lineEnd": 174,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L150-L174"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::deserialize",
+      "publicPath": "yosoi::session::SessionPolicy::deserialize",
+      "title": "yosoi::session::SessionPolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::dom",
+      "publicPath": "yosoi::session::SessionPolicy::dom",
+      "title": "yosoi::session::SessionPolicy::dom",
+      "kind": "struct_field",
+      "signature": "pub dom: bool",
+      "docs": "Permit DOM observation and retained rendered-DOM request output.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 131,
+        "lineEnd": 131,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L131-L131"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::eq",
+      "publicPath": "yosoi::session::SessionPolicy::eq",
+      "title": "yosoi::session::SessionPolicy::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::SessionPolicy) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::execution_concurrency",
+      "publicPath": "yosoi::session::SessionPolicy::execution_concurrency",
+      "title": "yosoi::session::SessionPolicy::execution_concurrency",
+      "kind": "struct_field",
+      "signature": "pub execution_concurrency: u32",
+      "docs": "Concurrent controller operations, independent of the number of tabs.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L119-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::fmt",
+      "publicPath": "yosoi::session::SessionPolicy::fmt",
+      "title": "yosoi::session::SessionPolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::maximum_input_bytes",
+      "publicPath": "yosoi::session::SessionPolicy::maximum_input_bytes",
+      "title": "yosoi::session::SessionPolicy::maximum_input_bytes",
+      "kind": "struct_field",
+      "signature": "pub maximum_input_bytes: usize",
+      "docs": "Maximum encoded bytes accepted for authored operation input.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L139-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::maximum_observation_bytes",
+      "publicPath": "yosoi::session::SessionPolicy::maximum_observation_bytes",
+      "title": "yosoi::session::SessionPolicy::maximum_observation_bytes",
+      "kind": "struct_field",
+      "signature": "pub maximum_observation_bytes: usize",
+      "docs": "Maximum retained HTML observation bytes for current-tab evidence.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 143,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L143-L143"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::maximum_queued_operations",
+      "publicPath": "yosoi::session::SessionPolicy::maximum_queued_operations",
+      "title": "yosoi::session::SessionPolicy::maximum_queued_operations",
+      "kind": "struct_field",
+      "signature": "pub maximum_queued_operations: u32",
+      "docs": "Maximum controller operations queued for execution capacity, independent of tab count.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 122,
+        "lineEnd": 122,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L122-L122"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::maximum_result_bytes",
+      "publicPath": "yosoi::session::SessionPolicy::maximum_result_bytes",
+      "title": "yosoi::session::SessionPolicy::maximum_result_bytes",
+      "kind": "struct_field",
+      "signature": "pub maximum_result_bytes: usize",
+      "docs": "Maximum encoded JavaScript result bytes retained after dispatch.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L141-L141"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::maximum_tabs",
+      "publicPath": "yosoi::session::SessionPolicy::maximum_tabs",
+      "title": "yosoi::session::SessionPolicy::maximum_tabs",
+      "kind": "struct_field",
+      "signature": "pub maximum_tabs: u32",
+      "docs": "Maximum retained tabs; owning tabs does not grant simultaneous execution capacity.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 129,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L129-L129"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::mode",
+      "publicPath": "yosoi::session::SessionPolicy::mode",
+      "title": "yosoi::session::SessionPolicy::mode",
+      "kind": "struct_field",
+      "signature": "pub mode: yosoi::policy::BrowserMode",
+      "docs": "Browser launch mode, which must agree with any browser acquisition modes in the bound Policy.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L127-L127"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::operation_timeout_ms",
+      "publicPath": "yosoi::session::SessionPolicy::operation_timeout_ms",
+      "title": "yosoi::session::SessionPolicy::operation_timeout_ms",
+      "kind": "struct_field",
+      "signature": "pub operation_timeout_ms: u64",
+      "docs": "Positive per-operation controller and evidence budget in milliseconds, not browser startup time.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L137-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::remote_endpoint",
+      "publicPath": "yosoi::session::SessionPolicy::remote_endpoint",
+      "title": "yosoi::session::SessionPolicy::remote_endpoint",
+      "kind": "struct_field",
+      "signature": "pub remote_endpoint: Option<String>",
+      "docs": "Reserved remote endpoint configuration; non-`None` values are currently unsupported.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 147,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L147-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::serialize",
+      "publicPath": "yosoi::session::SessionPolicy::serialize",
+      "title": "yosoi::session::SessionPolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::session::SessionPolicy::validate",
+      "publicPath": "yosoi::session::SessionPolicy::validate",
+      "title": "yosoi::session::SessionPolicy::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::session::SessionError>",
+      "docs": "Validates bounded local execution settings without launching a browser.\n\nReturns [`SessionError::InvalidPolicy`] for unsupported numeric limits\nand [`SessionError::Unsupported`] for a configured remote endpoint.\nAcquisition additionally checks the complete bound Policy and mode agreement.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 182,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L182-L205"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::watch_capacity",
+      "publicPath": "yosoi::session::SessionPolicy::watch_capacity",
+      "title": "yosoi::session::SessionPolicy::watch_capacity",
+      "kind": "struct_field",
+      "signature": "pub watch_capacity: usize",
+      "docs": "Bounded receipt broadcast capacity; slower watchers receive explicit lag errors.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L145-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::SessionPolicy::yield_on_wait",
+      "publicPath": "yosoi::session::SessionPolicy::yield_on_wait",
+      "title": "yosoi::session::SessionPolicy::yield_on_wait",
+      "kind": "struct_field",
+      "signature": "pub yield_on_wait: bool",
+      "docs": "Keep tab ownership but park event-driven condition waits outside worker capacity.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L125-L125"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "71632b9bb40e9c0739c66a29b0383ea9a62e6706104e2a53351b7c4596453b94",
+  "slug": "yosoi/session/struct/sessionpolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "71632b9bb40e9c0739c66a29b0383ea9a62e6706104e2a53351b7c4596453b94"
+}

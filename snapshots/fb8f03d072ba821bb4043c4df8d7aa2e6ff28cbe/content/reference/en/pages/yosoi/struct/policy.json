@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::Policy",
+  "publicPath": "yosoi::Policy",
+  "kind": "struct",
+  "title": "yosoi::Policy",
+  "signature": "pub struct Policy",
+  "docs": "Complete page, request, document, and locator policy values.\n\nThe fields remain public so applications can author ordinary struct values.\nValidation runs before serialization and identity calculation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+    "lineStart": 18,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L18-L42"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 35,
+    "lineEnd": 35,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/lib.rs#L35-L35"
+  },
+  "aliases": [
+    "yosoi::policy::Policy",
+    "yosoi::prelude::Policy",
+    "yosoi::prelude::policy::Policy"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::Policy::browser",
+      "publicPath": "yosoi::Policy::browser",
+      "title": "yosoi::Policy::browser",
+      "kind": "struct_field",
+      "signature": "pub browser: yosoi::browser::BrowserConfig",
+      "docs": "Browser implementation and launch/profile settings; defaults to Chrome/CDP.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::clone",
+      "publicPath": "yosoi::Policy::clone",
+      "title": "yosoi::Policy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::Policy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::Policy::default",
+      "publicPath": "yosoi::Policy::default",
+      "title": "yosoi::Policy::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 45,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L45-L59"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "struct_field:yosoi::Policy::default_action_timeout_ms",
+      "publicPath": "yosoi::Policy::default_action_timeout_ms",
+      "title": "yosoi::Policy::default_action_timeout_ms",
+      "kind": "struct_field",
+      "signature": "pub default_action_timeout_ms: u64",
+      "docs": "Fallback execution budget for an action without a nearer Flow or action\ntimeout, measured in milliseconds.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::deserialize",
+      "publicPath": "yosoi::Policy::deserialize",
+      "title": "yosoi::Policy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_serde.rs",
+        "lineStart": 36,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_serde.rs#L36-L56"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::Policy::documents",
+      "publicPath": "yosoi::Policy::documents",
+      "title": "yosoi::Policy::documents",
+      "kind": "struct_field",
+      "signature": "pub documents: yosoi::policy::Documents",
+      "docs": "Immutable document parser limits.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::effective_identity",
+      "publicPath": "yosoi::Policy::effective_identity",
+      "title": "yosoi::Policy::effective_identity",
+      "kind": "function",
+      "signature": "pub fn effective_identity(&self) -> Result<yosoi::EffectivePolicyIdentity, yosoi::PolicyError>",
+      "docs": "Computes the versioned identity of the effective behavior.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 110,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L110-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::effective_policy",
+      "publicPath": "yosoi::Policy::effective_policy",
+      "title": "yosoi::Policy::effective_policy",
+      "kind": "function",
+      "signature": "pub fn effective_policy(&self) -> Result<EffectivePolicy, yosoi::PolicyError>",
+      "docs": "Resolves Current document selections into a stable effective snapshot.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 92,
+        "lineEnd": 107,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L92-L107"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::eq",
+      "publicPath": "yosoi::Policy::eq",
+      "title": "yosoi::Policy::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::Policy) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::Policy::flow",
+      "publicPath": "yosoi::Policy::flow",
+      "title": "yosoi::Policy::flow",
+      "kind": "struct_field",
+      "signature": "pub flow: yosoi::FlowPolicy",
+      "docs": "Default continuation behavior for Flow failures and local cancellations.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L41-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::fmt",
+      "publicPath": "yosoi::Policy::fmt",
+      "title": "yosoi::Policy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::Policy::locators",
+      "publicPath": "yosoi::Policy::locators",
+      "title": "yosoi::Policy::locators",
+      "kind": "struct_field",
+      "signature": "pub locators: yosoi::policy::Locators",
+      "docs": "Locator plan and evaluation limits.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::map",
+      "publicPath": "yosoi::Policy::map",
+      "title": "yosoi::Policy::map",
+      "kind": "struct_field",
+      "signature": "pub map: yosoi::policy::Map",
+      "docs": "Map discovery and inventory policy.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L37-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::network",
+      "publicPath": "yosoi::Policy::network",
+      "title": "yosoi::Policy::network",
+      "kind": "struct_field",
+      "signature": "pub network: yosoi::policy::Network",
+      "docs": "Opt-in outbound routing bound to requests and owned browser lifetimes.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::page",
+      "publicPath": "yosoi::Policy::page",
+      "title": "yosoi::Policy::page",
+      "kind": "struct_field",
+      "signature": "pub page: yosoi::policy::Page",
+      "docs": "Ordered acquisition and document-selection choices.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::request",
+      "publicPath": "yosoi::Policy::request",
+      "title": "yosoi::Policy::request",
+      "kind": "struct_field",
+      "signature": "pub request: yosoi::policy::Request",
+      "docs": "Shared deadline, domain-specific bounds, and Direct HTTP redirects.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L29-L29"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::search",
+      "publicPath": "yosoi::Policy::search",
+      "title": "yosoi::Policy::search",
+      "kind": "struct_field",
+      "signature": "pub search: yosoi::policy::search::Search",
+      "docs": "Ordered provider choices and hard Search resource bounds.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L39-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::serialize",
+      "publicPath": "yosoi::Policy::serialize",
+      "title": "yosoi::Policy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_serde.rs",
+        "lineStart": 13,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_serde.rs#L13-L32"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::Policy::to_canonical_json",
+      "publicPath": "yosoi::Policy::to_canonical_json",
+      "title": "yosoi::Policy::to_canonical_json",
+      "kind": "function",
+      "signature": "pub fn to_canonical_json(&self) -> Result<String, yosoi::PolicyError>",
+      "docs": "Encodes the validated policy values as compact JSON.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 87,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L87-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::Policy::tuning",
+      "publicPath": "yosoi::Policy::tuning",
+      "title": "yosoi::Policy::tuning",
+      "kind": "struct_field",
+      "signature": "pub tuning: yosoi::policy::Tuning",
+      "docs": "Requested execution tuning; default retains the package's current choices.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 35,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L35-L35"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Policy::validate",
+      "publicPath": "yosoi::Policy::validate",
+      "title": "yosoi::Policy::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::PolicyError>",
+      "docs": "Validates nested page choices and all typed policy bounds.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy_value.rs",
+        "lineStart": 64,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/policy/policy_value.rs#L64-L84"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "237c80a34452078bb9ddd6346f1ffb1c28c5f07f30d9aa8ef9763a93302b0c6f",
+  "slug": "yosoi/struct/policy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "237c80a34452078bb9ddd6346f1ffb1c28c5f07f30d9aa8ef9763a93302b0c6f"
+}

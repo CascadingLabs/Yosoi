@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Inspection",
+  "publicPath": "yosoi::surface::Inspection",
+  "kind": "struct",
+  "title": "yosoi::surface::Inspection",
+  "signature": "pub struct Inspection",
+  "docs": "Bounded source-backed detail; text chunks need not be valid whole documents.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 225,
+    "lineEnd": 240,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L225-L240"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Inspection::clone",
+      "publicPath": "yosoi::surface::Inspection::clone",
+      "title": "yosoi::surface::Inspection::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Inspection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L224-L224"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::content",
+      "publicPath": "yosoi::surface::Inspection::content",
+      "title": "yosoi::surface::Inspection::content",
+      "kind": "struct_field",
+      "signature": "pub content: String",
+      "docs": "This response's text content.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 235,
+        "lineEnd": 235,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L235-L235"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::coverage",
+      "publicPath": "yosoi::surface::Inspection::coverage",
+      "title": "yosoi::surface::Inspection::coverage",
+      "kind": "struct_field",
+      "signature": "pub coverage: yosoi::surface::Coverage",
+      "docs": "Coverage of the original evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L239-L239"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Inspection::deserialize",
+      "publicPath": "yosoi::surface::Inspection::deserialize",
+      "title": "yosoi::surface::Inspection::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L224-L224"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Inspection::fmt",
+      "publicPath": "yosoi::surface::Inspection::fmt",
+      "title": "yosoi::surface::Inspection::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L224-L224"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::media_type",
+      "publicPath": "yosoi::surface::Inspection::media_type",
+      "title": "yosoi::surface::Inspection::media_type",
+      "kind": "struct_field",
+      "signature": "pub media_type: String",
+      "docs": "Interpretation and normalization of the returned text.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 229,
+        "lineEnd": 229,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L229-L229"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::next",
+      "publicPath": "yosoi::surface::Inspection::next",
+      "title": "yosoi::surface::Inspection::next",
+      "kind": "struct_field",
+      "signature": "pub next: Option<yosoi::surface::Continuation>",
+      "docs": "Continuation to the next UTF-8-aligned content chunk.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 237,
+        "lineEnd": 237,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L237-L237"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::offset",
+      "publicPath": "yosoi::surface::Inspection::offset",
+      "title": "yosoi::surface::Inspection::offset",
+      "kind": "struct_field",
+      "signature": "pub offset: usize",
+      "docs": "UTF-8 byte offset of this chunk.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 233,
+        "lineEnd": 233,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L233-L233"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::reference",
+      "publicPath": "yosoi::surface::Inspection::reference",
+      "title": "yosoi::surface::Inspection::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::Reference",
+      "docs": "Exact selected evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 227,
+        "lineEnd": 227,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L227-L227"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Inspection::serialize",
+      "publicPath": "yosoi::surface::Inspection::serialize",
+      "title": "yosoi::surface::Inspection::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L224-L224"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Inspection::total_bytes",
+      "publicPath": "yosoi::surface::Inspection::total_bytes",
+      "title": "yosoi::surface::Inspection::total_bytes",
+      "kind": "struct_field",
+      "signature": "pub total_bytes: usize",
+      "docs": "Total UTF-8 bytes in the complete selected serialization.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 231,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L231-L231"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f4b102704bbd3f1905a509b99096fc9e730b7461dd860188a6ed6923bd1bccc4",
+  "slug": "yosoi/surface/struct/inspection",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f4b102704bbd3f1905a509b99096fc9e730b7461dd860188a6ed6923bd1bccc4"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::tree_text_contains",
+  "publicPath": "yosoi::locators::tree_text_contains",
+  "kind": "function",
+  "title": "yosoi::locators::tree_text_contains",
+  "signature": "pub fn tree_text_contains(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Declares nonblank literal substring selection over tree descendant text.\n\nReturns [`QueryError`] for blank input. Results are tree nodes, distinct\nfrom accessible-name selection or decoded-text ranges; no document is searched here.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 27,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/documents/query_builders.rs#L27-L33"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::tree_text_contains",
+    "yosoi::prelude::locators::tree_text_contains"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "c8e07628e090b2548d36c7b8d33aa8485a8386e7dfc3b2ae06679344b0ea30ec",
+  "slug": "yosoi/locators/function/tree-text-contains",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c8e07628e090b2548d36c7b8d33aa8485a8386e7dfc3b2ae06679344b0ea30ec"
+}

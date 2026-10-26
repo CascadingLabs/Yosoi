@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::archive",
+  "publicPath": "yosoi::archive",
+  "kind": "module",
+  "title": "yosoi::archive",
+  "signature": "pub mod archive",
+  "docs": "Local immutable evidence storage and typed references.\n\nArchive format 1 is certified on Unix filesystems. Opening a handle owns no\nbrowser or background writer. Reads validate recorded identity, versions,\npayload length and integrity; saved evidence never restores live authority.",
+  "source": {
+    "file": "crates/yosoi/src/archive.rs",
+    "lineStart": 1,
+    "lineEnd": 44,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/archive.rs#L1-L44"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "ddddd8514818aed6ee88e07468c864f78e387f2744de98eedd1953169c521050",
+  "slug": "yosoi/module/archive",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ddddd8514818aed6ee88e07468c864f78e387f2744de98eedd1953169c521050"
+}

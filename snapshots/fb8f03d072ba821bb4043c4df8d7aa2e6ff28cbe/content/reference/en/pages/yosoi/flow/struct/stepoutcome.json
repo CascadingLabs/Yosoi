@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::StepOutcome",
+  "publicPath": "yosoi::flow::StepOutcome",
+  "kind": "struct",
+  "title": "yosoi::flow::StepOutcome",
+  "signature": "pub struct StepOutcome",
+  "docs": "The result record for one ordered flow step.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 684,
+    "lineEnd": 702,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L684-L702"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::StepOutcome"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::cancellation",
+      "publicPath": "yosoi::flow::StepOutcome::cancellation",
+      "title": "yosoi::flow::StepOutcome::cancellation",
+      "kind": "struct_field",
+      "signature": "pub cancellation: Option<yosoi::flow::FlowCancellationCause>",
+      "docs": "Cancellation source, separate from the operation effect receipt.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 698,
+        "lineEnd": 698,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L698-L698"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::cancelled_flow",
+      "publicPath": "yosoi::flow::StepOutcome::cancelled_flow",
+      "title": "yosoi::flow::StepOutcome::cancelled_flow",
+      "kind": "struct_field",
+      "signature": "pub cancelled_flow: Option<Vec<u64>>",
+      "docs": "Nested Flow node whose step-local token cancelled this leaf's subtree.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 701,
+        "lineEnd": 701,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L701-L701"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::StepOutcome::clone",
+      "publicPath": "yosoi::flow::StepOutcome::clone",
+      "title": "yosoi::flow::StepOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::StepOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 682,
+        "lineEnd": 682,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L682-L682"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::StepOutcome::deserialize",
+      "publicPath": "yosoi::flow::StepOutcome::deserialize",
+      "title": "yosoi::flow::StepOutcome::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 682,
+        "lineEnd": 682,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L682-L682"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::failure",
+      "publicPath": "yosoi::flow::StepOutcome::failure",
+      "title": "yosoi::flow::StepOutcome::failure",
+      "kind": "struct_field",
+      "signature": "pub failure: Option<yosoi::flow::FlowFailureCause>",
+      "docs": "Failure classification, separate from the operation effect receipt.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 695,
+        "lineEnd": 695,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L695-L695"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::flow_path",
+      "publicPath": "yosoi::flow::StepOutcome::flow_path",
+      "title": "yosoi::flow::StepOutcome::flow_path",
+      "kind": "struct_field",
+      "signature": "pub flow_path: Vec<u64>",
+      "docs": "Nested Flow step indexes followed by the action's local step index.\nOlder flat outcomes omit this path.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 690,
+        "lineEnd": 690,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L690-L690"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::StepOutcome::fmt",
+      "publicPath": "yosoi::flow::StepOutcome::fmt",
+      "title": "yosoi::flow::StepOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 682,
+        "lineEnd": 682,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L682-L682"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::index",
+      "publicPath": "yosoi::flow::StepOutcome::index",
+      "title": "yosoi::flow::StepOutcome::index",
+      "kind": "struct_field",
+      "signature": "pub index: u64",
+      "docs": "Zero-based position in the flattened execution result.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 686,
+        "lineEnd": 686,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L686-L686"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::StepOutcome::receipt",
+      "publicPath": "yosoi::flow::StepOutcome::receipt",
+      "title": "yosoi::flow::StepOutcome::receipt",
+      "kind": "struct_field",
+      "signature": "pub receipt: yosoi::automation_record::OperationReceipt",
+      "docs": "The observed, rejected, or unknown operation receipt.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 692,
+        "lineEnd": 692,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L692-L692"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::StepOutcome::serialize",
+      "publicPath": "yosoi::flow::StepOutcome::serialize",
+      "title": "yosoi::flow::StepOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 682,
+        "lineEnd": 682,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/flow/model.rs#L682-L682"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b560bcb65212a9dc459afc0a65ca167433f845c3c2e8de977791970743ec2035",
+  "slug": "yosoi/flow/struct/stepoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b560bcb65212a9dc459afc0a65ca167433f845c3c2e8de977791970743ec2035"
+}

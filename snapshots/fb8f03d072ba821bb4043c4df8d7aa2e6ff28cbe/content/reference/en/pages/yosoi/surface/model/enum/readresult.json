@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::model::ReadResult",
+  "publicPath": "yosoi::surface::model::ReadResult",
+  "kind": "enum",
+  "title": "yosoi::surface::model::ReadResult",
+  "signature": "pub enum ReadResult",
+  "docs": "Shared read result; no browser handles, image bytes or runtime permits are serialized here.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 210,
+    "lineEnd": 217,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L210-L217"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::model::ReadResult::Inspection",
+      "publicPath": "yosoi::surface::model::ReadResult::Inspection",
+      "title": "yosoi::surface::model::ReadResult::Inspection",
+      "kind": "variant",
+      "signature": "Inspection(yosoi::surface::model::Inspection)",
+      "docs": "A bounded evidence fragment.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L214-L214"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadResult::Inspection::0",
+          "publicPath": "yosoi::surface::model::ReadResult::Inspection::0",
+          "title": "yosoi::surface::model::ReadResult::Inspection::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::surface::model::Inspection",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 214,
+            "lineEnd": 214,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L214-L214"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadResult::Page",
+      "publicPath": "yosoi::surface::model::ReadResult::Page",
+      "title": "yosoi::surface::model::ReadResult::Page",
+      "kind": "variant",
+      "signature": "Page(yosoi::surface::model::Page)",
+      "docs": "A bounded routing page.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L212-L212"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadResult::Page::0",
+          "publicPath": "yosoi::surface::model::ReadResult::Page::0",
+          "title": "yosoi::surface::model::ReadResult::Page::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::surface::model::Page",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 212,
+            "lineEnd": 212,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L212-L212"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::surface::model::ReadResult::Parent",
+      "publicPath": "yosoi::surface::model::ReadResult::Parent",
+      "title": "yosoi::surface::model::ReadResult::Parent",
+      "kind": "variant",
+      "signature": "Parent(Option<yosoi::surface::model::Reference>)",
+      "docs": "A structural parent, absent at the root.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 216,
+        "lineEnd": 216,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L216-L216"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::model::ReadResult::Parent::0",
+          "publicPath": "yosoi::surface::model::ReadResult::Parent::0",
+          "title": "yosoi::surface::model::ReadResult::Parent::0",
+          "kind": "struct_field",
+          "signature": "0: Option<yosoi::surface::model::Reference>",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/model.rs",
+            "lineStart": 216,
+            "lineEnd": 216,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L216-L216"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadResult::clone",
+      "publicPath": "yosoi::surface::model::ReadResult::clone",
+      "title": "yosoi::surface::model::ReadResult::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::ReadResult",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L208-L208"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadResult::deserialize",
+      "publicPath": "yosoi::surface::model::ReadResult::deserialize",
+      "title": "yosoi::surface::model::ReadResult::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L208-L208"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadResult::fmt",
+      "publicPath": "yosoi::surface::model::ReadResult::fmt",
+      "title": "yosoi::surface::model::ReadResult::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L208-L208"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::model::ReadResult::serialize",
+      "publicPath": "yosoi::surface::model::ReadResult::serialize",
+      "title": "yosoi::surface::model::ReadResult::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L208-L208"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9bafa82afdca1e529c3cd0e286e6ac8504ec2d0bdd8d7996390ce9ec7b54afea",
+  "slug": "yosoi/surface/model/enum/readresult",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9bafa82afdca1e529c3cd0e286e6ac8504ec2d0bdd8d7996390ce9ec7b54afea"
+}

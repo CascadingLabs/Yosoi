@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::browser::MoliProfile",
+  "publicPath": "yosoi::browser::MoliProfile",
+  "kind": "enum",
+  "title": "yosoi::browser::MoliProfile",
+  "signature": "pub enum MoliProfile",
+  "docs": "Moli's rendering capability, independent of headless/headful window mode.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 48,
+    "lineEnd": 54,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L48-L54"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::browser::MoliProfile::Dom",
+      "publicPath": "yosoi::browser::MoliProfile::Dom",
+      "title": "yosoi::browser::MoliProfile::Dom",
+      "kind": "variant",
+      "signature": "Dom",
+      "docs": "DOM/script operations without claiming accurate geometry or rendered pixels.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::MoliProfile::Layout",
+      "publicPath": "yosoi::browser::MoliProfile::Layout",
+      "title": "yosoi::browser::MoliProfile::Layout",
+      "kind": "variant",
+      "signature": "Layout",
+      "docs": "Enable Moli's on-demand layout and visual surfaces.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::clone",
+      "publicPath": "yosoi::browser::MoliProfile::clone",
+      "title": "yosoi::browser::MoliProfile::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::MoliProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::default",
+      "publicPath": "yosoi::browser::MoliProfile::default",
+      "title": "yosoi::browser::MoliProfile::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::browser::MoliProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::deserialize",
+      "publicPath": "yosoi::browser::MoliProfile::deserialize",
+      "title": "yosoi::browser::MoliProfile::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::eq",
+      "publicPath": "yosoi::browser::MoliProfile::eq",
+      "title": "yosoi::browser::MoliProfile::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::MoliProfile) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::fmt",
+      "publicPath": "yosoi::browser::MoliProfile::fmt",
+      "title": "yosoi::browser::MoliProfile::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::hash",
+      "publicPath": "yosoi::browser::MoliProfile::hash",
+      "title": "yosoi::browser::MoliProfile::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::browser::MoliProfile::serialize",
+      "publicPath": "yosoi::browser::MoliProfile::serialize",
+      "title": "yosoi::browser::MoliProfile::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "366c54ea4117b0125280eae25318e68348c78b98ec6786890cbe2aaad736f232",
+  "slug": "yosoi/browser/enum/moliprofile",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "366c54ea4117b0125280eae25318e68348c78b98ec6786890cbe2aaad736f232"
+}

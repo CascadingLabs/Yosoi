@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::browser::BrowserConfig",
+  "publicPath": "yosoi::browser::BrowserConfig",
+  "kind": "struct",
+  "title": "yosoi::browser::BrowserConfig",
+  "signature": "pub struct BrowserConfig",
+  "docs": "Browser acquisition settings shared by Requests and retained Sessions.\n\nChrome/CDP is the default. Firefox and Moli require the `browser-bidi` Cargo\nfeature at execution time and an explicitly installed executable, or an\nexplicitly configured BiDi service. Parsing a declaration does not require\nthat feature, so archived policies can be inspected without launching browsers.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 104,
+    "lineEnd": 125,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L104-L125"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::browser::BrowserConfig::clone",
+      "publicPath": "yosoi::browser::BrowserConfig::clone",
+      "title": "yosoi::browser::BrowserConfig::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::BrowserConfig",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::default",
+      "publicPath": "yosoi::browser::BrowserConfig::default",
+      "title": "yosoi::browser::BrowserConfig::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::browser::BrowserConfig",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::deserialize",
+      "publicPath": "yosoi::browser::BrowserConfig::deserialize",
+      "title": "yosoi::browser::BrowserConfig::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::endpoint",
+      "publicPath": "yosoi::browser::BrowserConfig::endpoint",
+      "title": "yosoi::browser::BrowserConfig::endpoint",
+      "kind": "struct_field",
+      "signature": "pub endpoint: Option<String>",
+      "docs": "An existing BiDi service's WebSocket URL; its process is never owned.\n\nUse `/session` for the native Firefox/Moli servers. User information,\nquery strings and fragments are rejected rather than retained as secrets\nin policy identities. Endpoint selection is not executable attestation.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L114-L114"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::engine",
+      "publicPath": "yosoi::browser::BrowserConfig::engine",
+      "title": "yosoi::browser::BrowserConfig::engine",
+      "kind": "struct_field",
+      "signature": "pub engine: yosoi::browser::BrowserEngine",
+      "docs": "The selected implementation; omitted declarations retain Chrome/CDP.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::eq",
+      "publicPath": "yosoi::browser::BrowserConfig::eq",
+      "title": "yosoi::browser::BrowserConfig::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::BrowserConfig) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::executable",
+      "publicPath": "yosoi::browser::BrowserConfig::executable",
+      "title": "yosoi::browser::BrowserConfig::executable",
+      "kind": "struct_field",
+      "signature": "pub executable: Option<std::path::PathBuf>",
+      "docs": "An absolute executable path, or normal engine discovery when omitted.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 108,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L108-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::fmt",
+      "publicPath": "yosoi::browser::BrowserConfig::fmt",
+      "title": "yosoi::browser::BrowserConfig::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 128,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L128-L141"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::is_default",
+      "publicPath": "yosoi::browser::BrowserConfig::is_default",
+      "title": "yosoi::browser::BrowserConfig::is_default",
+      "kind": "function",
+      "signature": "pub fn is_default(&self) -> bool",
+      "docs": "Tests whether serialization may omit this legacy-compatible default.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 174,
+        "lineEnd": 176,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L174-L176"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::moli_allow_private_networks",
+      "publicPath": "yosoi::browser::BrowserConfig::moli_allow_private_networks",
+      "title": "yosoi::browser::BrowserConfig::moli_allow_private_networks",
+      "kind": "struct_field",
+      "signature": "pub moli_allow_private_networks: bool",
+      "docs": "Deliberately allow private-network requests in an owned Moli process.\n\nThe default owned launch uses Moli's private-network blocking. A shared\nexternal service must declare/enforce its own network profile; a client\nconnection cannot prove its server's operating-system egress policy.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L124-L124"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::moli_profile",
+      "publicPath": "yosoi::browser::BrowserConfig::moli_profile",
+      "title": "yosoi::browser::BrowserConfig::moli_profile",
+      "kind": "struct_field",
+      "signature": "pub moli_profile: yosoi::browser::MoliProfile",
+      "docs": "Whether Moli may construct accurate layout; valid only for Moli.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 116,
+        "lineEnd": 116,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L116-L116"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserConfig::moli_resources",
+      "publicPath": "yosoi::browser::BrowserConfig::moli_resources",
+      "title": "yosoi::browser::BrowserConfig::moli_resources",
+      "kind": "struct_field",
+      "signature": "pub moli_resources: bool",
+      "docs": "Load optional Moli image/font/media resources; valid only for Moli.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 118,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L118-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::serialize",
+      "publicPath": "yosoi::browser::BrowserConfig::serialize",
+      "title": "yosoi::browser::BrowserConfig::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L102-L102"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::validate",
+      "publicPath": "yosoi::browser::BrowserConfig::validate",
+      "title": "yosoi::browser::BrowserConfig::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::browser::BrowserConfigurationError>",
+      "docs": "Validates the declaration without I/O, binary discovery or feature admission.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 179,
+        "lineEnd": 217,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L179-L217"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfig::validate_headful",
+      "publicPath": "yosoi::browser::BrowserConfig::validate_headful",
+      "title": "yosoi::browser::BrowserConfig::validate_headful",
+      "kind": "function",
+      "signature": "pub fn validate_headful(&self, headful: bool) -> Result<(), yosoi::browser::BrowserConfigurationError>",
+      "docs": "Validates the selected window mode before launch or endpoint admission.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 220,
+        "lineEnd": 226,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L220-L226"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a18941ef145b6c14e0214a6028dce1c614a3c1d19aaf1b155fe0eb7359121a06",
+  "slug": "yosoi/browser/struct/browserconfig",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a18941ef145b6c14e0214a6028dce1c614a3c1d19aaf1b155fe0eb7359121a06"
+}

@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::expect::JsonMatch",
+  "publicPath": "yosoi::expect::JsonMatch",
+  "kind": "struct",
+  "title": "yosoi::expect::JsonMatch",
+  "signature": "pub struct JsonMatch",
+  "docs": "A JSON Pointer match against a response body parsed as JSON.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 84,
+    "lineEnd": 89,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L84-L89"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::JsonMatch",
+    "yosoi::prelude::expect::JsonMatch"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::expect::JsonMatch::clone",
+      "publicPath": "yosoi::expect::JsonMatch::clone",
+      "title": "yosoi::expect::JsonMatch::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::expect::JsonMatch",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::expect::JsonMatch::deserialize",
+      "publicPath": "yosoi::expect::JsonMatch::deserialize",
+      "title": "yosoi::expect::JsonMatch::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::expect::JsonMatch::eq",
+      "publicPath": "yosoi::expect::JsonMatch::eq",
+      "title": "yosoi::expect::JsonMatch::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::expect::JsonMatch) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::expect::JsonMatch::fmt",
+      "publicPath": "yosoi::expect::JsonMatch::fmt",
+      "title": "yosoi::expect::JsonMatch::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::expect::JsonMatch::pointer",
+      "publicPath": "yosoi::expect::JsonMatch::pointer",
+      "title": "yosoi::expect::JsonMatch::pointer",
+      "kind": "struct_field",
+      "signature": "pub pointer: String",
+      "docs": "RFC 6901 JSON Pointer, such as `/cart/quantity`.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 86,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L86-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::expect::JsonMatch::serialize",
+      "publicPath": "yosoi::expect::JsonMatch::serialize",
+      "title": "yosoi::expect::JsonMatch::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::expect::JsonMatch::value",
+      "publicPath": "yosoi::expect::JsonMatch::value",
+      "title": "yosoi::expect::JsonMatch::value",
+      "kind": "struct_field",
+      "signature": "pub value: serde_json::Value",
+      "docs": "Expected JSON value at `pointer`.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/expect.rs#L88-L88"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fe1f88827954be264cba03e5cfd116c67585b6434d56d7671c419a35e50a8cfd",
+  "slug": "yosoi/expect/struct/jsonmatch",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fe1f88827954be264cba03e5cfd116c67585b6434d56d7671c419a35e50a8cfd"
+}

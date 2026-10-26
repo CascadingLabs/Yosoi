@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::archive::DocumentArchiveRef",
+  "publicPath": "yosoi::archive::DocumentArchiveRef",
+  "kind": "struct",
+  "title": "yosoi::archive::DocumentArchiveRef",
+  "signature": "pub struct DocumentArchiveRef",
+  "docs": "Reference to one immutable archived validated Document.",
+  "source": {
+    "file": "crates/yosoi/src/internal/archive/refs.rs",
+    "lineStart": 322,
+    "lineEnd": 326,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/archive.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/archive.rs#L11-L11"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::archive::DocumentArchiveRef::Err",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::Err",
+      "title": "yosoi::archive::DocumentArchiveRef::Err",
+      "kind": "assoc_type",
+      "signature": "type Err = yosoi::archive::ArchiveRefError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::clone",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::clone",
+      "title": "yosoi::archive::DocumentArchiveRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::archive::DocumentArchiveRef",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::cmp",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::cmp",
+      "title": "yosoi::archive::DocumentArchiveRef::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::archive::DocumentArchiveRef) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::deserialize",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::deserialize",
+      "title": "yosoi::archive::DocumentArchiveRef::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::eq",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::eq",
+      "title": "yosoi::archive::DocumentArchiveRef::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::archive::DocumentArchiveRef) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::fmt",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::fmt",
+      "title": "yosoi::archive::DocumentArchiveRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::fmt",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::fmt",
+      "title": "yosoi::archive::DocumentArchiveRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::format_version",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::format_version",
+      "title": "yosoi::archive::DocumentArchiveRef::format_version",
+      "kind": "function",
+      "signature": "pub const fn format_version(&self) -> u32",
+      "docs": "Returns the physical Archive format named by this reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::from_str",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::from_str",
+      "title": "yosoi::archive::DocumentArchiveRef::from_str",
+      "kind": "function",
+      "signature": "fn from_str(value: &str) -> Result<Self, <Self as >::Err>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::hash",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::hash",
+      "title": "yosoi::archive::DocumentArchiveRef::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::logical_key",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::logical_key",
+      "title": "yosoi::archive::DocumentArchiveRef::logical_key",
+      "kind": "function",
+      "signature": "pub fn logical_key(&self) -> &str",
+      "docs": "Returns the opaque logical key, never a filesystem path.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::partial_cmp",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::partial_cmp",
+      "title": "yosoi::archive::DocumentArchiveRef::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::archive::DocumentArchiveRef) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::archive::DocumentArchiveRef::serialize",
+      "publicPath": "yosoi::archive::DocumentArchiveRef::serialize",
+      "title": "yosoi::archive::DocumentArchiveRef::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 322,
+        "lineEnd": 326,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/internal/archive/refs.rs#L322-L326"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "182e339fad65a774232b950113bb212bf4aed0994ff6418be23ff11aef0d3a86",
+  "slug": "yosoi/archive/struct/documentarchiveref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "182e339fad65a774232b950113bb212bf4aed0994ff6418be23ff11aef0d3a86"
+}

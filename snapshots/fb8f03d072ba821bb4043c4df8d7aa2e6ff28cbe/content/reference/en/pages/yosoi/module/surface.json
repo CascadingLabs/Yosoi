@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface",
+  "publicPath": "yosoi::surface",
+  "kind": "module",
+  "title": "yosoi::surface",
+  "signature": "pub mod surface",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 1,
+    "lineEnd": 1050,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/session.rs#L1-L1050"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/module/surface",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::session",
+  "publicPath": "yosoi::session",
+  "kind": "module",
+  "title": "yosoi::session",
+  "signature": "pub mod session",
+  "docs": "Explicit browser authority; the managed APIs compose this same substrate.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 1,
+    "lineEnd": 1908,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/session.rs#L1-L1908"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "db32241ecb12e21201e521e5347365f724e67e938c9c018984a460fdf86174cd",
+  "slug": "yosoi/module/session",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "db32241ecb12e21201e521e5347365f724e67e938c9c018984a460fdf86174cd"
+}

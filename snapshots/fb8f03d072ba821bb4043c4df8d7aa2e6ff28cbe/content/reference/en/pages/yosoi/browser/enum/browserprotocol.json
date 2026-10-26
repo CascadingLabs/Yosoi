@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::browser::BrowserProtocol",
+  "publicPath": "yosoi::browser::BrowserProtocol",
+  "kind": "enum",
+  "title": "yosoi::browser::BrowserProtocol",
+  "signature": "pub enum BrowserProtocol",
+  "docs": "The private controller's wire protocol, recorded separately from engine identity.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 38,
+    "lineEnd": 43,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L38-L43"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::browser::BrowserProtocol::Bidi",
+      "publicPath": "yosoi::browser::BrowserProtocol::Bidi",
+      "title": "yosoi::browser::BrowserProtocol::Bidi",
+      "kind": "variant",
+      "signature": "Bidi",
+      "docs": "WebDriver BiDi through the optional shared controller.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserProtocol::Cdp",
+      "publicPath": "yosoi::browser::BrowserProtocol::Cdp",
+      "title": "yosoi::browser::BrowserProtocol::Cdp",
+      "kind": "variant",
+      "signature": "Cdp",
+      "docs": "Chrome DevTools Protocol through the existing Chromiumoxide integration.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L40-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::clone",
+      "publicPath": "yosoi::browser::BrowserProtocol::clone",
+      "title": "yosoi::browser::BrowserProtocol::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::BrowserProtocol",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::deserialize",
+      "publicPath": "yosoi::browser::BrowserProtocol::deserialize",
+      "title": "yosoi::browser::BrowserProtocol::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::eq",
+      "publicPath": "yosoi::browser::BrowserProtocol::eq",
+      "title": "yosoi::browser::BrowserProtocol::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::BrowserProtocol) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::fmt",
+      "publicPath": "yosoi::browser::BrowserProtocol::fmt",
+      "title": "yosoi::browser::BrowserProtocol::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::hash",
+      "publicPath": "yosoi::browser::BrowserProtocol::hash",
+      "title": "yosoi::browser::BrowserProtocol::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserProtocol::serialize",
+      "publicPath": "yosoi::browser::BrowserProtocol::serialize",
+      "title": "yosoi::browser::BrowserProtocol::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7963d12e31876701c22a31fb813a82fb6164ded217cd8ac4997e0bc397ffaa07",
+  "slug": "yosoi/browser/enum/browserprotocol",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7963d12e31876701c22a31fb813a82fb6164ded217cd8ac4997e0bc397ffaa07"
+}

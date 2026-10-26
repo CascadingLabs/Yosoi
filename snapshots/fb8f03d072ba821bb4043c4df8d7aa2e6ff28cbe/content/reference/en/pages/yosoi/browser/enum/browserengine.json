@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::browser::BrowserEngine",
+  "publicPath": "yosoi::browser::BrowserEngine",
+  "kind": "enum",
+  "title": "yosoi::browser::BrowserEngine",
+  "signature": "pub enum BrowserEngine",
+  "docs": "The browser implementation used for a browser acquisition or retained Session.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 15,
+    "lineEnd": 23,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L15-L23"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::browser::BrowserEngine::Chrome",
+      "publicPath": "yosoi::browser::BrowserEngine::Chrome",
+      "title": "yosoi::browser::BrowserEngine::Chrome",
+      "kind": "variant",
+      "signature": "Chrome",
+      "docs": "The existing regular Chrome/Chromium Stable implementation over CDP.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserEngine::Firefox",
+      "publicPath": "yosoi::browser::BrowserEngine::Firefox",
+      "title": "yosoi::browser::BrowserEngine::Firefox",
+      "kind": "variant",
+      "signature": "Firefox",
+      "docs": "A regular Firefox release controlled through native WebDriver BiDi.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserEngine::Moli",
+      "publicPath": "yosoi::browser::BrowserEngine::Moli",
+      "title": "yosoi::browser::BrowserEngine::Moli",
+      "kind": "variant",
+      "signature": "Moli",
+      "docs": "A pinned Moli release controlled through native WebDriver BiDi.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::clone",
+      "publicPath": "yosoi::browser::BrowserEngine::clone",
+      "title": "yosoi::browser::BrowserEngine::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::BrowserEngine",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::default",
+      "publicPath": "yosoi::browser::BrowserEngine::default",
+      "title": "yosoi::browser::BrowserEngine::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::browser::BrowserEngine",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::deserialize",
+      "publicPath": "yosoi::browser::BrowserEngine::deserialize",
+      "title": "yosoi::browser::BrowserEngine::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::eq",
+      "publicPath": "yosoi::browser::BrowserEngine::eq",
+      "title": "yosoi::browser::BrowserEngine::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::BrowserEngine) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::fmt",
+      "publicPath": "yosoi::browser::BrowserEngine::fmt",
+      "title": "yosoi::browser::BrowserEngine::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::hash",
+      "publicPath": "yosoi::browser::BrowserEngine::hash",
+      "title": "yosoi::browser::BrowserEngine::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::protocol",
+      "publicPath": "yosoi::browser::BrowserEngine::protocol",
+      "title": "yosoi::browser::BrowserEngine::protocol",
+      "kind": "function",
+      "signature": "pub const fn protocol(self) -> yosoi::browser::BrowserProtocol",
+      "docs": "Returns the controller supported by this engine selection.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 27,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L27-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserEngine::serialize",
+      "publicPath": "yosoi::browser::BrowserEngine::serialize",
+      "title": "yosoi::browser::BrowserEngine::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/browser.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "dbf85c47bd14930980bbb1070fc1407f40a2fc7d91a4ee7c2f37844b21eedb88",
+  "slug": "yosoi/browser/enum/browserengine",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "dbf85c47bd14930980bbb1070fc1407f40a2fc7d91a4ee7c2f37844b21eedb88"
+}

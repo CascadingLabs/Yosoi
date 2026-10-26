@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::model",
+  "publicPath": "yosoi::surface::model",
+  "kind": "module",
+  "title": "yosoi::surface::model",
+  "signature": "pub mod model",
+  "docs": "Shared evidence protocol for web documents and video timelines.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 1,
+    "lineEnd": 228,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/model.rs#L1-L228"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f8110e65e5ba5cfecbca9bab36f012647287aa9c46e463abf3d18eec24b86e11",
+  "slug": "yosoi/surface/module/model",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f8110e65e5ba5cfecbca9bab36f012647287aa9c46e463abf3d18eec24b86e11"
+}

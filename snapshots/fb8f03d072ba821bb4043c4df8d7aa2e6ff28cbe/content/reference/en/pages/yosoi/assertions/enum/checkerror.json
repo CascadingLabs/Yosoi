@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::assertions::CheckError",
+  "publicPath": "yosoi::assertions::CheckError",
+  "kind": "enum",
+  "title": "yosoi::assertions::CheckError",
+  "signature": "pub enum CheckError",
+  "docs": "Predicate evaluator failed rather than returning an accepted boolean result.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 195,
+    "lineEnd": 203,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L195-L203"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::assertions::CheckError::EvaluationFailed",
+      "publicPath": "yosoi::assertions::CheckError::EvaluationFailed",
+      "title": "yosoi::assertions::CheckError::EvaluationFailed",
+      "kind": "variant",
+      "signature": "EvaluationFailed { message: String }",
+      "docs": "An external predicate evaluator returned a bounded failure message.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 199,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L199-L202"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::assertions::CheckError::EvaluationFailed::message",
+          "publicPath": "yosoi::assertions::CheckError::EvaluationFailed::message",
+          "title": "yosoi::assertions::CheckError::EvaluationFailed::message",
+          "kind": "struct_field",
+          "signature": "message: String",
+          "docs": "Retained evaluator explanation, not a successful predicate result.",
+          "source": {
+            "file": "crates/yosoi/src/assertions.rs",
+            "lineStart": 201,
+            "lineEnd": 201,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L201-L201"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::assertions::CheckError::Panicked",
+      "publicPath": "yosoi::assertions::CheckError::Panicked",
+      "title": "yosoi::assertions::CheckError::Panicked",
+      "kind": "variant",
+      "signature": "Panicked",
+      "docs": "Local predicate code unwound; subsequent ordinary predicates can still be evaluated.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 197,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L197-L197"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::CheckError::clone",
+      "publicPath": "yosoi::assertions::CheckError::clone",
+      "title": "yosoi::assertions::CheckError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::CheckError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L193-L193"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckError::deserialize",
+      "publicPath": "yosoi::assertions::CheckError::deserialize",
+      "title": "yosoi::assertions::CheckError::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L193-L193"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckError::eq",
+      "publicPath": "yosoi::assertions::CheckError::eq",
+      "title": "yosoi::assertions::CheckError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::assertions::CheckError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L193-L193"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckError::fmt",
+      "publicPath": "yosoi::assertions::CheckError::fmt",
+      "title": "yosoi::assertions::CheckError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L193-L193"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::CheckError::serialize",
+      "publicPath": "yosoi::assertions::CheckError::serialize",
+      "title": "yosoi::assertions::CheckError::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/assertions.rs#L193-L193"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e0fa7b3b1c824c568e80b9b78998392a3fa8891160c593813b1e4d9bf78a68a9",
+  "slug": "yosoi/assertions/enum/checkerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e0fa7b3b1c824c568e80b9b78998392a3fa8891160c593813b1e4d9bf78a68a9"
+}

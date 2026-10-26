@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::OutcomeRef",
+  "publicPath": "yosoi::surface::OutcomeRef",
+  "kind": "struct",
+  "title": "yosoi::surface::OutcomeRef",
+  "signature": "pub struct OutcomeRef",
+  "docs": "Typed reference selecting a Surface outcome through the existing Archive API.",
+  "source": {
+    "file": "crates/yosoi/src/surface/outcome.rs",
+    "lineStart": 43,
+    "lineEnd": 48,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L43-L48"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L28-L28"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::OutcomeRef::clone",
+      "publicPath": "yosoi::surface::OutcomeRef::clone",
+      "title": "yosoi::surface::OutcomeRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::OutcomeRef",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::OutcomeRef::deserialize",
+      "publicPath": "yosoi::surface::OutcomeRef::deserialize",
+      "title": "yosoi::surface::OutcomeRef::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::OutcomeRef::document",
+      "publicPath": "yosoi::surface::OutcomeRef::document",
+      "title": "yosoi::surface::OutcomeRef::document",
+      "kind": "struct_field",
+      "signature": "pub document: yosoi::archive::DocumentArchiveRef",
+      "docs": "Exact immutable Document storing this self-contained outcome.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::OutcomeRef::fmt",
+      "publicPath": "yosoi::surface::OutcomeRef::fmt",
+      "title": "yosoi::surface::OutcomeRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::OutcomeRef::serialize",
+      "publicPath": "yosoi::surface::OutcomeRef::serialize",
+      "title": "yosoi::surface::OutcomeRef::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::OutcomeRef::version",
+      "publicPath": "yosoi::surface::OutcomeRef::version",
+      "title": "yosoi::surface::OutcomeRef::version",
+      "kind": "struct_field",
+      "signature": "pub version: u32",
+      "docs": "Logical Surface outcome schema required on read.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L47-L47"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4a7bfb56e7f9e5b9c203dd11108a3a331018cac74dbe190ffc67df45905d4e1d",
+  "slug": "yosoi/surface/struct/outcomeref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4a7bfb56e7f9e5b9c203dd11108a3a331018cac74dbe190ffc67df45905d4e1d"
+}

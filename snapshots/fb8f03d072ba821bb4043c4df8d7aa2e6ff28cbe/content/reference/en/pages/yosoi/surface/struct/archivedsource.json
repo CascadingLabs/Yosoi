@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::ArchivedSource",
+  "publicPath": "yosoi::surface::ArchivedSource",
+  "kind": "struct",
+  "title": "yosoi::surface::ArchivedSource",
+  "signature": "pub struct ArchivedSource",
+  "docs": "Exact retained source bytes and their document interpretation.",
+  "source": {
+    "file": "crates/yosoi/src/surface/outcome.rs",
+    "lineStart": 53,
+    "lineEnd": 69,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L53-L69"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/mod.rs#L28-L28"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::ArchivedSource::capture",
+      "publicPath": "yosoi::surface::ArchivedSource::capture",
+      "title": "yosoi::surface::ArchivedSource::capture",
+      "kind": "function",
+      "signature": "pub fn capture(key: impl Into<String>, surface: &yosoi::Surface) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Retains a prepared document, image or combined observation with its exact identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 86,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L86-L132"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::clone",
+      "publicPath": "yosoi::surface::ArchivedSource::clone",
+      "title": "yosoi::surface::ArchivedSource::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::ArchivedSource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L51-L51"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::content_base64",
+      "publicPath": "yosoi::surface::ArchivedSource::content_base64",
+      "title": "yosoi::surface::ArchivedSource::content_base64",
+      "kind": "struct_field",
+      "signature": "pub content_base64: String",
+      "docs": "Base64 transport of the original bytes, not an address of an external file.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::deserialize",
+      "publicPath": "yosoi::surface::ArchivedSource::deserialize",
+      "title": "yosoi::surface::ArchivedSource::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L51-L51"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::document",
+      "publicPath": "yosoi::surface::ArchivedSource::document",
+      "title": "yosoi::surface::ArchivedSource::document",
+      "kind": "struct_field",
+      "signature": "pub document: yosoi::DocumentId",
+      "docs": "Original SDK document identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::eq",
+      "publicPath": "yosoi::surface::ArchivedSource::eq",
+      "title": "yosoi::surface::ArchivedSource::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::ArchivedSource) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L51-L51"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::fmt",
+      "publicPath": "yosoi::surface::ArchivedSource::fmt",
+      "title": "yosoi::surface::ArchivedSource::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L51-L51"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::interpretation",
+      "publicPath": "yosoi::surface::ArchivedSource::interpretation",
+      "title": "yosoi::surface::ArchivedSource::interpretation",
+      "kind": "struct_field",
+      "signature": "pub interpretation: yosoi::surface::SourceInterpretation",
+      "docs": "Interpreter for these bytes; raw evidence envelopes use `Document`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L56-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::key",
+      "publicPath": "yosoi::surface::ArchivedSource::key",
+      "title": "yosoi::surface::ArchivedSource::key",
+      "kind": "struct_field",
+      "signature": "pub key: String",
+      "docs": "Identifier within this outcome, independent of a local Archive path.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L58-L58"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::new",
+      "publicPath": "yosoi::surface::ArchivedSource::new",
+      "title": "yosoi::surface::ArchivedSource::new",
+      "kind": "function",
+      "signature": "pub fn new(key: impl Into<String>, document: &yosoi::Document, surface: Option<&yosoi::Surface>) -> Self",
+      "docs": "Freezes an SDK document and optionally binds its prepared interpretation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 73,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L73-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::profile",
+      "publicPath": "yosoi::surface::ArchivedSource::profile",
+      "title": "yosoi::surface::ArchivedSource::profile",
+      "kind": "struct_field",
+      "signature": "pub profile: yosoi::DocumentProfile",
+      "docs": "Original representation and schema profile, including snapshot epoch.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L62-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::restore",
+      "publicPath": "yosoi::surface::ArchivedSource::restore",
+      "title": "yosoi::surface::ArchivedSource::restore",
+      "kind": "function",
+      "signature": "pub fn restore(&self, maximum: u64) -> Result<yosoi::Document, yosoi::SurfaceError>",
+      "docs": "Verifies and reconstructs exact bytes without fetching the original source.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 135,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L135-L160"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::restore_surface",
+      "publicPath": "yosoi::surface::ArchivedSource::restore_surface",
+      "title": "yosoi::surface::ArchivedSource::restore_surface",
+      "kind": "function",
+      "signature": "pub fn restore_surface(&self, limits: yosoi::SurfaceLimits) -> Result<yosoi::Surface, yosoi::SurfaceError>",
+      "docs": "Restores the index and rejects an interpretation whose identity changed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 163,
+        "lineEnd": 209,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L163-L209"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchivedSource::serialize",
+      "publicPath": "yosoi::surface::ArchivedSource::serialize",
+      "title": "yosoi::surface::ArchivedSource::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L51-L51"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::sha256",
+      "publicPath": "yosoi::surface::ArchivedSource::sha256",
+      "title": "yosoi::surface::ArchivedSource::sha256",
+      "kind": "struct_field",
+      "signature": "pub sha256: String",
+      "docs": "SHA-256 of the decoded original bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L64-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchivedSource::surface",
+      "publicPath": "yosoi::surface::ArchivedSource::surface",
+      "title": "yosoi::surface::ArchivedSource::surface",
+      "kind": "struct_field",
+      "signature": "pub surface: Option<String>",
+      "docs": "Optional exact index identity when this source was prepared as a Surface.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/crates/yosoi/src/surface/outcome.rs#L68-L68"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a10aaf4588c8fb7b8d41e74176d4a7c1352755acda75d94c344942aa507a4ce5",
+  "slug": "yosoi/surface/struct/archivedsource",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a10aaf4588c8fb7b8d41e74176d4a7c1352755acda75d94c344942aa507a4ce5"
+}
