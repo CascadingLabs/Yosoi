@@ -30,9 +30,9 @@ use yosoi::{
         search::{Provider, Search},
     },
     search::{
-        ProviderOutcome, SearchCaptureRetention, SearchFailure, SearchParserDecision,
-        SearchParserDiagnostic, SearchParserStatus, SearchReplay, SearchReplayPolicy,
-        SearchReplayResult,
+        ProviderOutcome, SearchCaptureRetention, SearchFailure, SearchIssue, SearchIssueKind,
+        SearchParserDecision, SearchParserDiagnostic, SearchParserStatus, SearchReplay,
+        SearchReplayPolicy, SearchReplayResult,
     },
 };
 
@@ -859,6 +859,23 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         MapTermination::Limit(LimitReached::Urls),
         json!({}),
     )?);
+    output.push(serialize_only_case(
+        "search-issue-query-relevance-unknown",
+        "yosoi::search::SearchIssue",
+        "Rust SearchIssue with QueryRelevanceUnknown (Serialize only)",
+        SearchIssue {
+            placement_index: None,
+            kind: SearchIssueKind::QueryRelevanceUnknown,
+        },
+        json!({"nullPaths": ["placement_index"]}),
+    )?);
+    output.push(serialize_only_case(
+        "search-issue-kind-query-relevance-unknown",
+        "yosoi::search::SearchIssueKind",
+        "Rust SearchIssueKind::QueryRelevanceUnknown (Serialize only)",
+        SearchIssueKind::QueryRelevanceUnknown,
+        json!({}),
+    )?);
 
     Ok(output)
 }
@@ -912,5 +929,16 @@ mod tests {
         let exhausted = find("map-termination-exhausted-unit");
         assert_eq!(exhausted["decoder_supported"], false);
         assert!(exhausted["rust_output"].get("value").is_none());
+
+        let issue = find("search-issue-query-relevance-unknown");
+        assert_eq!(
+            issue["rust_output"],
+            serde_json::json!({
+                "placement_index": null,
+                "kind": "query_relevance_unknown"
+            })
+        );
+        let issue_kind = find("search-issue-kind-query-relevance-unknown");
+        assert_eq!(issue_kind["rust_output"], "query_relevance_unknown");
     }
 }

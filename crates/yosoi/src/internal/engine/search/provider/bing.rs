@@ -19,7 +19,7 @@ mod tests;
 
 pub use destination::decode_destination;
 pub use parse::parse;
-pub use recovery::{recovered_page_matches_query, recovery_query};
+pub use recovery::{has_clear_topic_loss, recovered_page_matches_query, recovery_query};
 
 const PAGE_HOST: &str = "www.bing.com";
 const PAGE_PATH: &str = "/search";
@@ -38,8 +38,6 @@ pub enum BingParseError {
     InvalidPlan,
     #[error("provider document has no recognized Bing result rows")]
     UnrecognizedPage,
-    #[error("provider result rows do not match a distinctive requested query term")]
-    QueryMismatch,
     #[error("provider document has no usable Bing organic results")]
     NoUsableHits,
     #[error("provider document is incomplete for result parsing")]

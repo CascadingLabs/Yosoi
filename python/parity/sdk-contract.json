@@ -55729,7 +55729,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.search.SearchIssue",
-        "pythonTargetSha256": "72cd98910bc1c1e2e620a0a2b37b9f86cd1b4d93ee9a3f248fbb7ecc2e46e7ab",
+        "pythonTargetSha256": "3256cf137a8293a9439adf880b2ea57f1ba71ba65ad93ac266495363453dd3c9",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -55758,7 +55758,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.search.SearchIssue",
-        "pythonTargetSha256": "72cd98910bc1c1e2e620a0a2b37b9f86cd1b4d93ee9a3f248fbb7ecc2e46e7ab",
+        "pythonTargetSha256": "3256cf137a8293a9439adf880b2ea57f1ba71ba65ad93ac266495363453dd3c9",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -55789,7 +55789,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust field kind maps to Python field kind.",
         "review": null,
@@ -55856,7 +55856,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant DuplicateDestination maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'duplicate_destination'.",
         "review": null,
@@ -55877,7 +55877,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant InvalidDestination maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'invalid_destination'.",
         "review": null,
@@ -55898,7 +55898,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant MissingRequiredField maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'missing_required_field'.",
         "review": null,
@@ -55919,7 +55919,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant OutputLimit maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'output_limit'.",
         "review": null,
@@ -55940,11 +55940,32 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant QueryRelaxed maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'query_relaxed'.",
         "review": null,
         "ledgerMappingSha256": "157ff3e77d9d369a85872cf3c4b22b15c7bd9e1c9365a1f9e517138ada6e25b7"
+      }
+    },
+    {
+      "id": "yosoi::search::SearchIssueKind::QueryRelevanceUnknown|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::search::SearchIssueKind::QueryRelevanceUnknown",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::search::SearchIssueKind",
+      "signatureSha256": "05a85f25005a90ca810f707b8a809eef743a9e583ced4fa709c198b11274891f",
+      "baselineStatus": "stale",
+      "symbolKey": "member:variant:yosoi::search::SearchIssueKind::QueryRelevanceUnknown@signature:05a85f25005a90ca810f707b8a809eef743a9e583ced4fa709c198b11274891f@source:05ded80845748819842b5274763caf994c958478490069acdb548b9ecc71e65d",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.search.SearchIssueKind",
+        "pythonTargetSha256": "3b4f6f573d1a62eaa67d7a235fc79e95311c09b7a36ba578b4091b10434a93ba",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant QueryRelevanceUnknown maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'query_relevance_unknown'.",
+        "review": null,
+        "ledgerMappingSha256": "5724cddc6fe9d9c873d23cc99331ab98a16ddb3709184885bdfc6e6f35edf5f5"
       }
     },
     {
@@ -55961,7 +55982,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust variant UnrecognizedResultRow maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'unrecognized_result_row'.",
         "review": null,
@@ -56032,7 +56053,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTargetSha256": "cb6ffbb5f0987e23f341413b7d9b450d907b87fc1180166740090ca9506b5806",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -56087,12 +56108,12 @@
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
-        "pythonTarget": "yosoi.search.SearchIssue.kind",
-        "pythonTargetSha256": "05a68ffa59fd1dbe62b7960426487cdcbe705310085700c28d871bfb840561fd",
+        "pythonTarget": "yosoi.search.SearchIssueKind",
+        "pythonTargetSha256": "3b4f6f573d1a62eaa67d7a235fc79e95311c09b7a36ba578b4091b10434a93ba",
         "semanticEquivalent": null,
-        "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchIssue.kind.",
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchIssueKind.",
         "review": null,
-        "ledgerMappingSha256": "1d685a19c8a4793d4d49d1c65f30cb89c06fa1b2b925474d9e00f18bb222d4d6"
+        "ledgerMappingSha256": "691a26684247d23037c393e0440c8d9415ea51b5b52d09677e597034412b9fd6"
       }
     },
     {
@@ -56109,7 +56130,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.search.SearchIssue",
-        "pythonTargetSha256": "72cd98910bc1c1e2e620a0a2b37b9f86cd1b4d93ee9a3f248fbb7ecc2e46e7ab",
+        "pythonTargetSha256": "3256cf137a8293a9439adf880b2ea57f1ba71ba65ad93ac266495363453dd3c9",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchIssue.",
         "review": null,

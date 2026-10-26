@@ -42,7 +42,7 @@ impl SearchPage {
         self.coverage
     }
 
-    /// Borrows nonfatal extraction issues; configured budgets can bound their count.
+    /// Borrows nonfatal extraction and relevance issues; configured budgets can bound their count.
     pub fn issues(&self) -> &[SearchIssue] {
         &self.issues
     }

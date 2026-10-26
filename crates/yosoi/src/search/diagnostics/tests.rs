@@ -3,18 +3,18 @@
     reason = "Assertions report offline Search diagnostic regressions."
 )]
 
-use std::{env, error::Error, path::Path};
+use std::{env, error::Error, io, path::Path};
 
 use crate::{
     Policy,
     internal::{
-        engine::search::{SearchProfileFacts, parse_document},
+        engine::search::{ProviderOutcome, SearchIssueKind, SearchProfileFacts, parse_document},
         policy::policy::ProviderDefaultsStatus,
         types::CaptureId,
         web_capture::CaptureCompleteness,
     },
     policy::AcquisitionKind,
-    search::{SearchFailure, SearchParserDiagnostic, SearchParserStatus},
+    search::{SearchFailure, SearchParserStatus},
 };
 
 use super::*;
@@ -98,8 +98,19 @@ async fn archive_replays_original_and_recovery_decisions_with_exact_profiles()
         "recovery",
     )?;
     assert_eq!(
-        original.observed().parser_diagnostic,
-        Some(SearchParserDiagnostic::QueryMismatch)
+        original.observed().decision().status,
+        SearchParserStatus::Results
+    );
+    assert!(original.observed().decision().partial);
+    assert_eq!(original.observed().decision().hit_count, 3);
+    let ProviderOutcome::Results(original_page) = &original.observed().outcome else {
+        return Err(io::Error::other("synthetic original should retain parsed hits").into());
+    };
+    assert!(
+        original_page
+            .issues()
+            .iter()
+            .any(|issue| issue.kind == SearchIssueKind::QueryRelevanceUnknown)
     );
     assert_eq!(
         recovery.observed().decision().status,

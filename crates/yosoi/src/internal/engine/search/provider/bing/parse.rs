@@ -14,7 +14,7 @@ use super::super::row_contract::validated_rows;
 use super::common::{
     map_row_contract_error, nonempty_text, nonzero_index, parse_page_url, record_issue,
 };
-use super::recovery::hits_match_query;
+use super::recovery::{QueryRelevance, query_relevance};
 use super::{BingParseError, decode_destination};
 
 const URL_OUTPUT: &str = "result_url";
@@ -183,8 +183,18 @@ pub fn parse(
     if hits.is_empty() {
         return Err(BingParseError::NoUsableHits);
     }
-    if !hits_match_query(&hits, &page_url) {
-        return Err(BingParseError::QueryMismatch);
+    match query_relevance(&hits, &page_url) {
+        QueryRelevance::Supported => {}
+        QueryRelevance::Unknown => {
+            partial = true;
+            if issues.len() >= result_limit {
+                issues.truncate(result_limit.saturating_sub(1));
+            }
+            issues.push(SearchIssue {
+                placement_index: None,
+                kind: SearchIssueKind::QueryRelevanceUnknown,
+            });
+        }
     }
     let coverage = SearchCoverage::new(
         if partial {

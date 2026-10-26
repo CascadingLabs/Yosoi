@@ -1,6 +1,12 @@
 # Search provider fixtures and observations
 
-Status: sanitized evidence package, 2026-10-03. Source: the retained CAS-502 spike artifacts named in `observations.json`. This package supports Brave/Bing Direct HTTP parsing and the first DuckDuckGo RenderedDom parser slice. It contains no provider client or live query from this fixture task. Google is out of scope.
+Status: sanitized evidence package, updated 2026-10-26. Sources: the retained CAS-502 spike artifacts and the CAS-628 Bing query-fidelity captures named in `observations.json`. This package supports Brave/Bing Direct HTTP parsing and the first DuckDuckGo RenderedDom parser slice. It contains no provider client. Google is out of scope.
+
+## CAS-628 Bing query-fidelity evidence
+
+Two source-identified Direct HTTP captures now cover the same query from opposite sides. `history of cotton candy` returned general history rows with no visible cotton/candy topic terms. The subject-first query `cotton candy history` returned cotton fiber, textile, and organization rows with no visible candy terms. Both responses were HTTP 200. Their small sanitized fixtures preserve the `li.b_algo` title/snippet row structure, observed subject text, and destination mapping while replacing every Bing `/ck/a` query with `u=REDACTED`.
+
+These snippets support an uncertainty classification, not a claim about the destination page contents. The parser keeps the hits with partial coverage and `query_relevance_unknown` when the visible result metadata cannot support the full topic and intent. The recorded capture hashes, request/capture IDs, query strings, row numbers, and decoded destination URLs are in the `provenance.bing_query_fidelity` section of `observations.json`. No IP addresses or opaque Bing `u` values are retained in the fixtures or provenance.
 
 ## Observed extraction shape
 
@@ -23,11 +29,11 @@ For a later implementation, validate the wrapper host/path and exactly one `u`, 
 
 ## Redaction and provenance
 
-The HTML fragments are small extracts of actual captured DOM nodes. Element names and observed classes remain. Every ordinary title/snippet string is replaced with an explicit redaction placeholder. The Brave title link retains only its observed destination scheme, host, and path; its query and fragment are removed. The Bing wrapper keeps its observed host/path while the entire query is reduced to `u=REDACTED`. The DuckDuckGo challenge fixture keeps only the short provider-owned challenge title marker. Unrelated nodes and attributes, form values, cookies, opaque IDs, scripts, and page content are omitted.
+The HTML fragments are small extracts of captured DOM nodes. Element names and observed classes remain. The CAS-502 selector fixtures replace ordinary title/snippet text with placeholders. The CAS-628 query-fidelity fixtures retain short visible title/snippet excerpts needed to exercise topic evidence. All Bing wrapper queries are reduced to `u=REDACTED`; destination mappings are listed separately in provenance. The Brave title link retains only its observed destination scheme, host, and path. The DuckDuckGo challenge fixture keeps only the short provider-owned challenge title marker. Unrelated nodes and attributes, form values, cookies, opaque provider tokens, scripts, and page content are omitted.
 
 The DuckDuckGo browser artifacts are serialized RenderedDom snapshots rather than HTML. The redacted provider-source fixtures under `crates/yosoi/src/internal/engine/search/provider/` preserve the observed result/ad row distinction, fourth-child snippet with optional fifth section, and current-Stable English mainline empty marker; they substitute destinations and query text and omit unrelated nodes. The empty fixture is grounded in a hash-checked HTTP-200 browser capture. A separate synthetic browser-DOM challenge control uses the provider-owned phrase from the saved HTML 202 challenge; no browser challenge page has been observed. Unknown zero-row pages remain malformed. The early-shell artifact contains zero result-title markers, but its file does not identify the capture checkpoint.
 
-Raw pages remain in their original `/tmp` evidence locations and are not copied here. The provenance table records each filename and SHA-256 so the sanitized observations can be checked against the retained source when it remains available. The spike implementation and notes are referenced by path and the reported CAS-502 base in `observations.json`.
+The CAS-502 raw pages remain in their original `/tmp` locations and are not copied here. The CAS-628 raw pages remain local-only under the ignored `.generated/search-evidence/` directory and are not copied here. Provenance records artifact hashes and row mappings so the checked-in fixtures can be compared with those local captures when available. The spike implementation and notes are referenced by path and the reported CAS-502 base in `observations.json`.
 
 ## Contents
 
@@ -36,6 +42,8 @@ Raw pages remain in their original `/tmp` evidence locations and are not copied 
 - `fixtures/duckduckgo-http-challenge.html`: minimal observed HTTP challenge marker.
 - `fixtures/brave-multirow.html` and `fixtures/bing-multirow.html`: two captured rows each, with source text and tokens redacted.
 - `fixtures/bing-safari26-snippetless-rows.html`: captured rows 2 and 3 without the standard snippet selector match.
+- `fixtures/bing-history-general-off-query.html`: top five general-history rows from the CAS-628 `history of cotton candy` capture.
+- `fixtures/bing-cotton-only-off-query.html`: seven cotton-only rows from the CAS-628 `cotton candy history` capture.
 - `fixtures/*-synthetic-sponsored-control.html` and `fixtures/*-synthetic-missing-href.html`: explicitly synthetic negative controls derived from captured row structures.
 - `crates/yosoi/src/internal/engine/search/provider/duckduckgo-rendered-dom.json`: redacted Browser result/ad row shape with a synthetic extra section based on the retained DOM.
 - `crates/yosoi/src/internal/engine/search/provider/duckduckgo-empty-rendered-dom.json`: redacted structural fixture for the observed HTTP-200 mainline empty marker.

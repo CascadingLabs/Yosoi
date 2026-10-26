@@ -29217,12 +29217,12 @@
       "rustPath": "yosoi::search::SearchIssueKind",
       "symbolKey": "page:enum:yosoi::search::SearchIssueKind",
       "decision": "mapped",
-      "pythonTarget": "yosoi.search.SearchIssue.kind",
+      "pythonTarget": "yosoi.search.SearchIssueKind",
       "argumentMappings": [],
       "defaults": [],
       "units": [],
       "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchIssue.kind."
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchIssueKind."
     },
     {
       "rustPath": "yosoi::search::SearchIssueKind::DuplicateDestination",
@@ -29308,6 +29308,17 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust variant QueryRelaxed maps to the corresponding Python tagged value yosoi.search.SearchIssue.kind. The Python discriminator value is 'query_relaxed'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssueKind::QueryRelevanceUnknown",
+      "symbolKey": "member:variant:yosoi::search::SearchIssueKind::QueryRelevanceUnknown@signature:05a85f25005a90ca810f707b8a809eef743a9e583ced4fa709c198b11274891f@source:05ded80845748819842b5274763caf994c958478490069acdb548b9ecc71e65d",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchIssueKind",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant QueryRelevanceUnknown maps to the corresponding Python tagged value yosoi.search.SearchIssueKind. The Python discriminator value is 'query_relevance_unknown'."
     },
     {
       "rustPath": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",

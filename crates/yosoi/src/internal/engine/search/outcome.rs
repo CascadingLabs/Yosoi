@@ -145,7 +145,7 @@ pub enum SearchFailure {
     ProviderUnavailable,
     /// Acquired content could not be interpreted as a valid provider response.
     MalformedResponse,
-    /// Organic rows did not match a distinctive requested query term.
+    /// Legacy terminal classification for organic rows that failed a query fidelity check.
     QueryMismatch,
     /// Acquisition failed before usable provider content could be parsed.
     TransportFailure,
@@ -205,7 +205,7 @@ pub struct ProviderResult {
     pub(in crate::internal::engine) identity: ProviderIdentity,
     pub(in crate::internal::engine) profile: SearchProfileFacts,
     pub(in crate::internal::engine) request_id: Option<RequestId>,
-    /// Shorter provider query attempted after a detected off-query response.
+    /// Alternative provider query attempted after a classified off-query response.
     pub(in crate::internal::engine) recovery_query: Option<String>,
     pub(in crate::internal::engine) attempts: Vec<RequestAttemptSummary>,
     pub(in crate::internal::engine) captures: Vec<SearchCapture>,
