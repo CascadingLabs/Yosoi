@@ -124,12 +124,10 @@ impl Session {
             return Err(SessionError::Identity);
         }
         if let Some(proxy) = proxy
-            && (config.engine != BrowserEngine::Firefox
-                || config.endpoint.is_some()
-                || !proxy.ip().is_loopback())
+            && (config.endpoint.is_some() || !proxy.ip().is_loopback())
         {
             return Err(SessionError::Unsupported(
-                "native route requires an owned Firefox process and loopback SOCKS relay",
+                "native route requires an owned process and loopback SOCKS relay",
             ));
         }
         let mut process = match &config.endpoint {

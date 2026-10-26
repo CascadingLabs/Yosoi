@@ -783,7 +783,7 @@ impl SessionBuilder {
         if !self.policy.browser.supports_owned_network_route() && !self.policy.network.is_default()
         {
             return Err(SessionError::Unsupported(
-                "network routing requires Chrome or an owned Firefox process",
+                "network routing requires an owned browser process",
             ));
         }
         #[cfg(feature = "browser")]

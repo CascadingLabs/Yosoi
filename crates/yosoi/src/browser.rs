@@ -167,8 +167,7 @@ pub enum BrowserConfigurationError {
 impl BrowserConfig {
     /// Whether the owned TCP relay can be reached and scoped by this provider.
     pub(crate) fn supports_owned_network_route(&self) -> bool {
-        self.engine == BrowserEngine::Chrome
-            || (self.engine == BrowserEngine::Firefox && self.endpoint.is_none())
+        self.engine == BrowserEngine::Chrome || self.endpoint.is_none()
     }
 
     /// Tests whether serialization may omit this legacy-compatible default.

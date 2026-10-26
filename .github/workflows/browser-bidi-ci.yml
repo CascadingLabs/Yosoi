@@ -45,7 +45,7 @@ jobs:
       - name: Native Rust core and adversarial transport
         run: |
           cargo test --locked -p yosoi --lib --features browser-bidi bidi -- --include-ignored --test-threads=1
-          cargo test --locked -p yosoi --features browser-bidi --test network_policy bidi_firefox_network -- --include-ignored --test-threads=1
+          cargo test --locked -p yosoi --features browser-bidi --test network_policy bidi_network_ -- --include-ignored --test-threads=1
       - name: Build and install the Python wheel
         run: |
           uv sync --locked --no-install-project

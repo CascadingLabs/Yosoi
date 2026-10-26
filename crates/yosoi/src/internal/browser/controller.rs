@@ -91,7 +91,7 @@ impl BrowserSessionBuilder {
         }
         if self.proxy.is_some() && !self.browser.supports_owned_network_route() {
             return Err(unsupported(
-                "network routing requires Chrome or owned Firefox",
+                "network routing requires an owned browser process",
             ));
         }
         #[cfg(feature = "browser-bidi")]

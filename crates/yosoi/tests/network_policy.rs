@@ -77,6 +77,7 @@ async fn stacked_optional_engine_rejects_custom_network_before_launch() -> TestR
     for browser in [
         BrowserConfig {
             engine: BrowserEngine::Moli,
+            endpoint: Some("ws://127.0.0.1:9/session".to_owned()),
             ..BrowserConfig::default()
         },
         BrowserConfig {
@@ -97,7 +98,7 @@ async fn stacked_optional_engine_rejects_custom_network_before_launch() -> TestR
         assert!(matches!(
             result,
             Err(session::SessionError::Unsupported(
-                "network routing requires Chrome or an owned Firefox process"
+                "network routing requires an owned browser process"
             ))
         ));
         drop(result);
@@ -480,7 +481,7 @@ async fn session_proxy_route(browser: BrowserConfig) -> TestResult {
     clippy::significant_drop_tightening,
     reason = "Work is consumed by async release; the nursery tracks its Drop fields beyond that move"
 )]
-async fn session_subresource_route(browser: BrowserConfig) -> TestResult {
+async fn session_subresource_route(browser: BrowserConfig, service_workers: bool) -> TestResult {
     use async_tungstenite::{
         WebSocketStream,
         tokio::TokioAdapter,
@@ -574,12 +575,12 @@ async fn session_subresource_route(browser: BrowserConfig) -> TestResult {
         const fetched = fetch('/fetch').then(r=>r.text());
         const worker = new Promise((resolve,reject)=>{const worker=new Worker('/worker.js');worker.onmessage=e=>{resolve(e.data);worker.terminate()};worker.onerror=reject});
         const websocket = new Promise((resolve,reject)=>{const socket=new WebSocket(location.href.replace('http:','ws:')+'ws');socket.onmessage=e=>{resolve(e.data);socket.close()};socket.onerror=reject});
-        const serviceWorker = new Promise(async (resolve,reject)=>{try{navigator.serviceWorker.addEventListener('message',e=>resolve(e.data),{once:true});await navigator.serviceWorker.register('/sw.js');const registration=await navigator.serviceWorker.ready;registration.active.postMessage('fetch')}catch(error){reject(error)}});
+        const serviceWorker = __SERVICE_WORKERS__ ? new Promise(async (resolve,reject)=>{try{navigator.serviceWorker.addEventListener('message',e=>resolve(e.data),{once:true});await navigator.serviceWorker.register('/sw.js');const registration=await navigator.serviceWorker.ready;registration.active.postMessage('fetch')}catch(error){reject(error)}}) : Promise.resolve('unsupported');
         const frame = new Promise(resolve=>{const frame=document.createElement('iframe');frame.onload=()=>resolve('frame');frame.src='/frame';document.body.append(frame)});
         const blocked = fetch('/redirect',{mode:'no-cors'}).then(()=> 'unexpected').catch(()=> 'blocked');
         const completed=(name,promise)=>promise.then(value=>fetch('/completed-'+name).then(()=>value));
         return await Promise.all([completed('fetch',fetched),completed('worker',worker),completed('websocket',websocket),completed('service-worker',serviceWorker),completed('frame',frame),completed('blocked',blocked)]);
-    })()"#).await;
+    })()"#.replace("__SERVICE_WORKERS__", if service_workers { "true" } else { "false" }).as_str()).await;
     work.release().await?;
     session.close().await?;
     drop(session);
@@ -601,7 +602,11 @@ async fn session_subresource_route(browser: BrowserConfig) -> TestResult {
             "fetch",
             "worker",
             "hello",
-            "service-worker",
+            if service_workers {
+                "service-worker"
+            } else {
+                "unsupported"
+            },
             "frame",
             "blocked"
         ])),
@@ -617,12 +622,14 @@ async fn session_subresource_route(browser: BrowserConfig) -> TestResult {
             "/fetch",
             "/worker.js",
             "/worker",
-            "/sw.js",
-            "/service-worker",
             "/ws",
             "/frame",
             "/redirect",
-        ] {
+        ]
+        .into_iter()
+        .chain(service_workers.then_some("/sw.js"))
+        .chain(service_workers.then_some("/service-worker"))
+        {
             assert!(
                 observed.iter().any(|(path, _)| path == required),
                 "missing {required}: {observed:?}"
@@ -647,7 +654,7 @@ async fn network_session_uses_bound_route_and_rejects_rebinding() -> TestResult 
 #[cfg(feature = "browser-bidi")]
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "requires the qualified regular Firefox executable"]
-async fn bidi_firefox_network_bound_route() -> TestResult {
+async fn bidi_network_firefox_bound_route() -> TestResult {
     use yosoi::browser::BrowserEngine;
     session_bound_route(BrowserConfig {
         engine: BrowserEngine::Firefox,
@@ -665,7 +672,7 @@ async fn network_session_reaches_an_unresolvable_origin_only_through_its_proxy()
 #[cfg(feature = "browser-bidi")]
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "requires the qualified regular Firefox executable"]
-async fn bidi_firefox_network_authenticated_proxy() -> TestResult {
+async fn bidi_network_firefox_authenticated_proxy() -> TestResult {
     use yosoi::browser::BrowserEngine;
     session_proxy_route(BrowserConfig {
         engine: BrowserEngine::Firefox,
@@ -677,17 +684,64 @@ async fn bidi_firefox_network_authenticated_proxy() -> TestResult {
 #[cfg(feature = "browser")]
 #[tokio::test(flavor = "current_thread")]
 async fn network_session_routes_frames_workers_websockets_and_service_workers() -> TestResult {
-    session_subresource_route(BrowserConfig::default()).await
+    session_subresource_route(BrowserConfig::default(), true).await
 }
 
 #[cfg(feature = "browser-bidi")]
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "requires the qualified regular Firefox executable"]
-async fn bidi_firefox_network_subresources() -> TestResult {
+async fn bidi_network_firefox_subresources() -> TestResult {
     use yosoi::browser::BrowserEngine;
-    session_subresource_route(BrowserConfig {
-        engine: BrowserEngine::Firefox,
+    session_subresource_route(
+        BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        true,
+    )
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_bound_route() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_bound_route(BrowserConfig {
+        engine: BrowserEngine::Moli,
+        moli_allow_private_networks: true,
         ..BrowserConfig::default()
     })
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_authenticated_proxy() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_proxy_route(BrowserConfig {
+        engine: BrowserEngine::Moli,
+        moli_allow_private_networks: true,
+        ..BrowserConfig::default()
+    })
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_frames_workers_and_websockets() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    // Pinned Moli does not expose a service-worker runtime. Test the network
+    // consumers it actually implements without weakening Chrome/Firefox coverage.
+    session_subresource_route(
+        BrowserConfig {
+            engine: BrowserEngine::Moli,
+            moli_allow_private_networks: true,
+            ..BrowserConfig::default()
+        },
+        false,
+    )
     .await
 }

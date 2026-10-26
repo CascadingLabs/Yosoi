@@ -104,12 +104,9 @@ impl OwnedProcess {
             .prefix("yosoi-bidi-")
             .tempdir()
             .map_err(|_| LaunchError::Startup)?;
-        if routed {
+        if routed && config.engine == BrowserEngine::Firefox {
             // Match Chrome's <-loopback> bypass override. This is confined to
             // the owned, ephemeral profile and strengthens the requested route.
-            if config.engine != BrowserEngine::Firefox {
-                return Err(LaunchError::Startup);
-            }
             tokio_fs::write(
                 profile.path().join("user.js"),
                 b"user_pref(\"network.proxy.allow_hijacking_localhost\", true);\n",

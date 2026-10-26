@@ -70,7 +70,7 @@ command offered by CDP. Shared types do not establish equivalent engine support.
 | --- | --- | --- |
 | Launch/close, isolated contexts, additional pages | Native | Native |
 | Managed profile | Unsupported | Unsupported |
-| Custom TCP routing | Owned Firefox, scoped SOCKS relay | Unsupported |
+| Custom TCP routing | Owned process, scoped SOCKS relay | Owned process, scoped SOCKS relay |
 | Navigate, DOM-ready navigation, document scope/URL | Native | Native |
 | Active-navigation progress/cancellation | Native | Rejected: unreliable navigation IDs |
 | Stop loading | Native utility | Acknowledged document only; uncommitted navigation rejected |
@@ -100,4 +100,6 @@ Temporary visual capture serializes viewport changes on the owned page. It resto
 
 DOM target crops share the CDP visibility and nth-disambiguation rules. They reject hidden/missing and ambiguous targets with the common typed outcomes, include current document scroll in native clipping, and reject more than 4096 candidates before extracting or returning their rectangles. Native accessibility locators do not establish the non-ignored AX membership required by role crops, so those remain explicitly unsupported.
 
-Owned Firefox routes each created user context through the existing policy-owned SOCKS relay. The relay retains address-family/source binding, upstream proxy authentication and destination TLS behavior. Routed temporary Firefox profiles explicitly make localhost honor the proxy; remote endpoints reject this client-local route. This is a TCP web route, not a UDP proxy or a process-wide network firewall.
+Owned Firefox and Moli route each created user context through the existing policy-owned SOCKS relay. The relay retains address-family/source binding, upstream proxy authentication and destination TLS behavior. Routed temporary Firefox profiles explicitly make localhost honor the proxy; Moli routes localhost through its context proxy too. Remote endpoints reject this client-local route. Moli has no service-worker runtime; its route qualification covers implemented fetch, frame, worker and WebSocket consumers. This is a TCP web route, not a UDP proxy or a process-wide network firewall.
+
+Pinned Moli has a native AX implementation behind its CDP Accessibility domain, but its BiDi command dispatcher does not expose that tree. This is a transport boundary, not proof that the engine lacks an internal accessibility tree. The BiDi adapter does not silently open a second CDP connection or label DOM-derived data as native AX.
