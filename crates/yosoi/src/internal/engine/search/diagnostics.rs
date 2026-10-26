@@ -258,6 +258,7 @@ pub fn parse_document(
             }
             brave::BraveParseError::OutputLimit => D::OutputLimit,
             brave::BraveParseError::InvalidPageUrl => D::InvalidPageUrl,
+            brave::BraveParseError::UnsupportedDocumentClass => D::UnsupportedDocumentClass,
             brave::BraveParseError::UnrecognizedPage => D::UnrecognizedPage,
             brave::BraveParseError::NoUsableHits => D::NoUsableHits,
             brave::BraveParseError::IncompleteDocument => D::IncompleteDocument,

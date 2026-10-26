@@ -8,8 +8,10 @@ use crate::internal::policy::{
 use crate::internal::web_capture::RequestedWebTarget;
 
 use crate::internal::engine::{
-    Document, RequestSendError, Response, ResponseTermination,
-    request::execution::{AttemptCaptureFacts, AttemptDiagnostic, AttemptOutcome},
+    Document, DocumentOutcome, RequestSendError, Response, ResponseTermination,
+    request::execution::{
+        AttemptCaptureFacts, AttemptDiagnostic, AttemptDocumentOutcome, AttemptOutcome,
+    },
     search::{
         ProviderCharge, ProviderIdentity, ProviderOutcome, ProviderResult, RequestAttemptSummary,
         RequestAttemptTerminal, SearchAttemptDiagnostic, SearchCaptureRetention, SearchFailure,
@@ -123,10 +125,19 @@ pub(super) fn provider_result_from_response(
         };
         let parsed = match attempt {
             AttemptOutcome::Completed(result) => {
-                let selected = result
-                    .documents()
-                    .iter()
-                    .find(|document| document.requested() == provider_document_request(provider))
+                let selected_request = selected_provider_document_request(
+                    provider,
+                    attempt.acquisition(),
+                    attempt.status(),
+                    result.documents(),
+                );
+                let selected = selected_request
+                    .and_then(|requested| {
+                        result
+                            .documents()
+                            .iter()
+                            .find(|document| document.requested() == requested)
+                    })
                     .and_then(|document| document.outcome().document());
                 summary.document_class = selected.map(Document::class);
                 summary.document_bytes = selected.map(Document::byte_len);
@@ -148,7 +159,10 @@ pub(super) fn provider_result_from_response(
                     }
                     (None, None) => SearchReplayResult {
                         outcome: ProviderOutcome::Failed(SearchFailure::MalformedResponse),
-                        parser_diagnostic: Some(SearchParserDiagnostic::MissingDocument),
+                        parser_diagnostic: Some(missing_document_diagnostic(
+                            provider,
+                            result.documents(),
+                        )),
                     },
                 };
                 summary.parser_diagnostic = parsed.parser_diagnostic;
@@ -170,7 +184,7 @@ pub(super) fn provider_result_from_response(
                             summary.capture_retention = SearchCaptureRetention::Retained;
                         }
                         let selected_for_parsing =
-                            projected.requested() == provider_document_request(provider);
+                            is_selected_for_parsing(projected.requested(), selected_request);
                         let observed =
                             if selected_for_parsing || status_failure(attempt.status()).is_some() {
                                 parsed.clone()
@@ -283,6 +297,120 @@ const fn provider_document_request(provider: Provider) -> DocumentRequest {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DocumentProjectionState {
+    NotRequested,
+    Produced,
+    PartialWithDocument,
+    PartialWithoutDocument,
+    Unavailable,
+    Unprojectable,
+}
+
+fn document_projection_state(
+    requested: DocumentRequest,
+    documents: &[AttemptDocumentOutcome],
+) -> DocumentProjectionState {
+    let Some(projected) = documents
+        .iter()
+        .find(|document| document.requested() == requested)
+    else {
+        return DocumentProjectionState::NotRequested;
+    };
+    match projected.outcome() {
+        DocumentOutcome::Produced { .. } => DocumentProjectionState::Produced,
+        DocumentOutcome::Partial {
+            document: Some(_), ..
+        } => DocumentProjectionState::PartialWithDocument,
+        DocumentOutcome::Partial { document: None, .. } => {
+            DocumentProjectionState::PartialWithoutDocument
+        }
+        DocumentOutcome::Unavailable { .. } => DocumentProjectionState::Unavailable,
+        DocumentOutcome::Unprojectable { .. } => DocumentProjectionState::Unprojectable,
+    }
+}
+
+fn selected_provider_document_request(
+    provider: Provider,
+    acquisition: AcquisitionKind,
+    status: Option<u16>,
+    documents: &[AttemptDocumentOutcome],
+) -> Option<DocumentRequest> {
+    if provider != Provider::Brave {
+        return Some(provider_document_request(provider));
+    }
+    if status_failure(status).is_some() {
+        return None;
+    }
+
+    let source = document_projection_state(DocumentRequest::ResponseDocument, documents);
+    let rendered_dom = document_projection_state(DocumentRequest::RenderedDom, documents);
+    select_brave_document_request(acquisition, status, source, rendered_dom)
+}
+
+fn select_brave_document_request(
+    acquisition: AcquisitionKind,
+    status: Option<u16>,
+    source: DocumentProjectionState,
+    rendered_dom: DocumentProjectionState,
+) -> Option<DocumentRequest> {
+    if status_failure(status).is_some() {
+        return None;
+    }
+    if matches!(
+        source,
+        DocumentProjectionState::Produced | DocumentProjectionState::PartialWithDocument
+    ) {
+        return Some(DocumentRequest::ResponseDocument);
+    }
+
+    let source_unavailable = matches!(
+        source,
+        DocumentProjectionState::Unavailable
+            | DocumentProjectionState::Unprojectable
+            | DocumentProjectionState::PartialWithoutDocument
+    );
+    let browser_acquisition = matches!(acquisition, AcquisitionKind::Browser { .. });
+    let rendered_dom_complete = rendered_dom == DocumentProjectionState::Produced;
+    if source_unavailable && browser_acquisition && rendered_dom_complete {
+        return Some(DocumentRequest::RenderedDom);
+    }
+    None
+}
+
+fn is_selected_for_parsing(requested: DocumentRequest, selected: Option<DocumentRequest>) -> bool {
+    selected == Some(requested)
+}
+
+fn missing_document_diagnostic(
+    provider: Provider,
+    documents: &[AttemptDocumentOutcome],
+) -> SearchParserDiagnostic {
+    let source = document_projection_state(DocumentRequest::ResponseDocument, documents);
+    let rendered_dom = document_projection_state(DocumentRequest::RenderedDom, documents);
+    match provider {
+        Provider::Brave => brave_missing_document_diagnostic(source, rendered_dom),
+        Provider::Bing | Provider::DuckDuckGo => SearchParserDiagnostic::MissingDocument,
+    }
+}
+
+fn brave_missing_document_diagnostic(
+    source: DocumentProjectionState,
+    rendered_dom: DocumentProjectionState,
+) -> SearchParserDiagnostic {
+    if [source, rendered_dom].into_iter().any(|state| {
+        matches!(
+            state,
+            DocumentProjectionState::PartialWithDocument
+                | DocumentProjectionState::PartialWithoutDocument
+        )
+    }) {
+        SearchParserDiagnostic::IncompleteDocument
+    } else {
+        SearchParserDiagnostic::MissingDocument
+    }
+}
+
 pub(super) const fn search_attempt_diagnostic(
     diagnostic: AttemptDiagnostic,
 ) -> SearchAttemptDiagnostic {
@@ -360,7 +488,7 @@ const fn provider_adapter_identity(
 
 const fn provider_parser_version(provider: Provider) -> &'static str {
     match provider {
-        Provider::Brave => "brave-html-v1",
+        Provider::Brave => "brave-source-dom-v1",
         Provider::Bing => "bing-html-v2",
         Provider::DuckDuckGo => "duckduckgo-rendered-dom-v1",
     }
@@ -392,5 +520,155 @@ pub(super) fn failed_provider(
         captures: Vec::new(),
         outcome: ProviderOutcome::Failed(failure),
         charge: ProviderCharge::Unknown,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::internal::policy::policy::BrowserMode;
+
+    use super::{
+        DocumentProjectionState as State, SearchFailure, SearchParserDiagnostic,
+        brave_missing_document_diagnostic, is_selected_for_parsing, select_brave_document_request,
+    };
+    use crate::internal::policy::policy::{AcquisitionKind, DocumentRequest};
+
+    #[test]
+    fn brave_prefers_source_when_both_browser_documents_are_complete() {
+        let selected = select_brave_document_request(
+            AcquisitionKind::Browser {
+                mode: BrowserMode::Headless,
+            },
+            Some(200),
+            State::Produced,
+            State::Produced,
+        );
+
+        assert_eq!(selected, Some(DocumentRequest::ResponseDocument));
+        assert!(is_selected_for_parsing(
+            DocumentRequest::ResponseDocument,
+            selected
+        ));
+        assert!(!is_selected_for_parsing(
+            DocumentRequest::RenderedDom,
+            selected
+        ));
+    }
+
+    #[test]
+    fn brave_uses_produced_rendered_dom_when_browser_source_is_unavailable() {
+        let selected = select_brave_document_request(
+            AcquisitionKind::Browser {
+                mode: BrowserMode::Headless,
+            },
+            Some(200),
+            State::Unavailable,
+            State::Produced,
+        );
+
+        assert_eq!(selected, Some(DocumentRequest::RenderedDom));
+        assert!(!is_selected_for_parsing(
+            DocumentRequest::ResponseDocument,
+            selected
+        ));
+        assert!(is_selected_for_parsing(
+            DocumentRequest::RenderedDom,
+            selected
+        ));
+    }
+
+    #[test]
+    fn brave_uses_produced_rendered_dom_when_browser_source_is_unprojectable() {
+        assert_eq!(
+            select_brave_document_request(
+                AcquisitionKind::Browser {
+                    mode: BrowserMode::Headless,
+                },
+                Some(200),
+                State::Unprojectable,
+                State::Produced,
+            ),
+            Some(DocumentRequest::RenderedDom)
+        );
+    }
+
+    #[test]
+    fn brave_uses_produced_rendered_dom_when_partial_source_has_no_document() {
+        assert_eq!(
+            select_brave_document_request(
+                AcquisitionKind::Browser {
+                    mode: BrowserMode::Headless
+                },
+                Some(200),
+                State::PartialWithoutDocument,
+                State::Produced,
+            ),
+            Some(DocumentRequest::RenderedDom)
+        );
+    }
+
+    #[test]
+    fn brave_does_not_fallback_to_partial_or_unavailable_rendered_dom() {
+        let acquisition = AcquisitionKind::Browser {
+            mode: BrowserMode::Headless,
+        };
+        for rendered_dom in [
+            State::PartialWithDocument,
+            State::PartialWithoutDocument,
+            State::Unavailable,
+            State::Unprojectable,
+            State::NotRequested,
+        ] {
+            assert_eq!(
+                select_brave_document_request(
+                    acquisition,
+                    Some(200),
+                    State::Unavailable,
+                    rendered_dom,
+                ),
+                None,
+                "rendered DOM state {rendered_dom:?} must not be selected as complete"
+            );
+        }
+    }
+
+    #[test]
+    fn brave_does_not_fallback_from_direct_http_or_after_http_429() {
+        assert_eq!(
+            select_brave_document_request(
+                AcquisitionKind::DirectHttp,
+                Some(200),
+                State::Unavailable,
+                State::Produced,
+            ),
+            None
+        );
+        assert_eq!(
+            select_brave_document_request(
+                AcquisitionKind::Browser {
+                    mode: BrowserMode::Headless,
+                },
+                Some(429),
+                State::Unavailable,
+                State::Produced,
+            ),
+            None
+        );
+        assert_eq!(
+            super::status_failure(Some(429)),
+            Some(SearchFailure::RateLimited)
+        );
+    }
+
+    #[test]
+    fn brave_reports_missing_or_incomplete_document_distinctly() {
+        assert_eq!(
+            brave_missing_document_diagnostic(State::Unavailable, State::Unavailable),
+            SearchParserDiagnostic::MissingDocument
+        );
+        assert_eq!(
+            brave_missing_document_diagnostic(State::Unavailable, State::PartialWithoutDocument),
+            SearchParserDiagnostic::IncompleteDocument
+        );
     }
 }

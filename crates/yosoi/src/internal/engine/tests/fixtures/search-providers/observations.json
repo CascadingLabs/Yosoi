@@ -139,6 +139,61 @@
         "acquisition": "Requests Direct HTTP, safari26 named HTTP impersonation profile; later 429 response reported in the CAS-502 notes",
         "retained_source_path": "/tmp/yosoi-search-spike-brave-safari26.html"
       },
+      "brave_browser_positive_response": {
+        "artifact": "attempt-0-ResponseDocument.data",
+        "sha256": "c251b3318241ae22a4eeb6bbf2fd58e294a499960bc184889e82adfc79d667fb",
+        "bytes": 313706,
+        "status": 200,
+        "acquisition": "Yosoi Requests Browser(Headless), Chrome 155 container, ResponseDocument",
+        "request_id": "36edd060-3499-486b-82e9-9112802cc44d",
+        "capture_id": "9eaf4348-59fa-4979-b20f-bfe69103d890",
+        "target": "https://search.brave.com/search?q=rust+programming+language",
+        "retained_source_path": ".generated/search-evidence/brave-1/attempt-0-ResponseDocument.data"
+      },
+      "brave_browser_positive_rendered_dom": {
+        "artifact": "attempt-0-RenderedDom.data",
+        "sha256": "26cb16d1ca087570653f551ebb1db8a8e857169fa7259c27cf7cc593be720220",
+        "bytes": 674704,
+        "status": 200,
+        "acquisition": "Yosoi Requests Browser(Headless), Chrome 155 container, RenderedDom",
+        "request_id": "36edd060-3499-486b-82e9-9112802cc44d",
+        "capture_id": "9eaf4348-59fa-4979-b20f-bfe69103d890",
+        "target": "https://search.brave.com/search?q=rust+programming+language",
+        "retained_source_path": ".generated/search-evidence/brave-1/attempt-0-RenderedDom.data"
+      },
+      "brave_browser_off_query_response": {
+        "artifact": "attempt-0-ResponseDocument.data",
+        "sha256": "e12b923a1234134c6daeaf6864447eb3b00a3ba3756c85f0c658b678d777ad22",
+        "bytes": 209435,
+        "status": 200,
+        "acquisition": "Yosoi Requests Browser(Headless), Chrome 155 container, ResponseDocument",
+        "request_id": "64b9f971-a973-4c6e-b0aa-8ba1b92f91f6",
+        "capture_id": "13251f67-077e-4619-b2c7-b3daf157bd0b",
+        "target": "https://search.brave.com/search?q=%22brave-cas630-no-match-probe-20261026-xqjv%22",
+        "retained_source_path": ".generated/search-evidence/brave-2/attempt-0-ResponseDocument.data"
+      },
+      "brave_browser_off_query_rendered_dom": {
+        "artifact": "attempt-0-RenderedDom.data",
+        "sha256": "97f2fd2e5fac95b90ae3a431aadb74af0f63afc5241adea09d72e44b90cfac53",
+        "bytes": 460067,
+        "status": 200,
+        "acquisition": "Yosoi Requests Browser(Headless), Chrome 155 container, RenderedDom",
+        "request_id": "64b9f971-a973-4c6e-b0aa-8ba1b92f91f6",
+        "capture_id": "13251f67-077e-4619-b2c7-b3daf157bd0b",
+        "target": "https://search.brave.com/search?q=%22brave-cas630-no-match-probe-20261026-xqjv%22",
+        "retained_source_path": ".generated/search-evidence/brave-2/attempt-0-RenderedDom.data"
+      },
+      "brave_direct_http_quoted_comparison": {
+        "artifact": "attempt-0-ResponseDocument.data",
+        "sha256": "f5538fcfeea0dfc47ab881324040e80aae3ba59ba3b721be49664cf355a74822",
+        "bytes": 206185,
+        "status": 200,
+        "acquisition": "Yosoi Requests DirectHttp, ResponseDocument",
+        "request_id": "9a85773f-f374-4be2-ab3c-54476154b3b1",
+        "capture_id": "8b65d2d1-0c97-41a8-a791-23cf2d93c6b4",
+        "target": "https://search.brave.com/search?q=%22brave-cas630-no-match-probe-20261026-xqjv%22",
+        "retained_source_path": ".generated/search-evidence/brave-http-quoted-1/attempt-0-ResponseDocument.data"
+      },
       "duckduckgo_browser_empty_current_stable": {
         "artifact": "ddg-empty-candidate-dom.json",
         "sha256": "0f8051c4fad514aa55841fbd12c7e9a15f71ccb6c0c786e8e999b91c132e8b59",
@@ -156,6 +211,28 @@
           1,
           2
         ]
+      },
+      "brave_browser_positive_pair": {
+        "kind": "paired_browser_capture_sanitized",
+        "source_capture": "brave_browser_positive_response",
+        "rendered_dom_capture": "brave_browser_positive_rendered_dom",
+        "source_rows": [
+          1,
+          2,
+          3
+        ],
+        "transformation": "Kept observed row structure and titles; replaced destinations with example.org, redacted snippets, and omitted unrelated nodes, attributes, scripts, and query values."
+      },
+      "brave_browser_off_query_pair": {
+        "kind": "paired_browser_capture_sanitized",
+        "source_capture": "brave_browser_off_query_response",
+        "rendered_dom_capture": "brave_browser_off_query_rendered_dom",
+        "source_rows": [
+          1,
+          2,
+          3
+        ],
+        "transformation": "Kept observed row structure and titles; replaced destinations with example.org, redacted snippets, and omitted unrelated nodes, attributes, scripts, and query values."
       },
       "bing_multirow": {
         "kind": "captured_structure_sanitized",
@@ -214,6 +291,90 @@
         "response_status": 429,
         "source_capture": "brave_safari26_http",
         "classification": "rate_limited by recorded HTTP status; one profile-specific observation, not a quota or reliability claim"
+      },
+      "browser_capture_environment": {
+        "probe_source_revision": "c81a25d2c2d6",
+        "probe_binary_sha256": "a307e1eab9d35e0ecc50f3a343e81b2f074e843f2b5597d994c0efaf0ee25b21",
+        "probe_example_source_sha256": "539b4d118e2c095327b44f6703a87d2936166613922d6c1940a2da99015ccb99",
+        "container_image": "yosoi-cas574-chrome155:local",
+        "container_image_id": "sha256:a47b9407209e2f644f64bd49bab29cc5a35566c25ab221649d97fb5bb61b99f3",
+        "browser_executable": "/opt/google/chrome/chrome",
+        "seccomp_policy_sha256": "7df54f14f794a8870d8182a3653085ffc716d30a2fec9e722776c3f8c862f063",
+        "mode": "headless",
+        "request_maximum_elapsed_microseconds": 60000000,
+        "documents_requested": [
+          "ResponseDocument",
+          "RenderedDom"
+        ],
+        "final_browser_url_recorded": false
+      },
+      "browser_pairs": {
+        "positive": {
+          "query": "rust programming language",
+          "request_id": "36edd060-3499-486b-82e9-9112802cc44d",
+          "capture_id": "9eaf4348-59fa-4979-b20f-bfe69103d890",
+          "status": 200,
+          "query_echo": "rust programming language",
+          "source_rows": 20,
+          "rendered_dom_rows": 20,
+          "direct_title_links_per_document": 20,
+          "external_http_destinations_per_document": 20,
+          "titles_per_document": 20,
+          "snippet_matches_per_document": 14,
+          "first_three_titles_identical": true,
+          "ordered_destination_sha256_per_document": "d5108eed89e3eb7636a4660f2f9f2b63343e2f5d63aa4ec4f9b8202c3c88f27d",
+          "top_titles": [
+            "Rust Programming Language",
+            "Rust (programming language) - Wikipedia",
+            "r/learnrust on Reddit: Rust - A Living Hell - The Perspective From A Programmer Of 30 Years"
+          ]
+        },
+        "quoted_rare_candidate": {
+          "query": "\"brave-cas630-no-match-probe-20261026-xqjv\"",
+          "request_id": "64b9f971-a973-4c6e-b0aa-8ba1b92f91f6",
+          "capture_id": "13251f67-077e-4619-b2c7-b3daf157bd0b",
+          "status": 200,
+          "query_echo": "\"brave-cas630-no-match-probe-20261026-xqjv\"",
+          "provider_page_state": {
+            "noResults": false,
+            "badResults": "undefined"
+          },
+          "source_rows": 20,
+          "rendered_dom_rows": 20,
+          "direct_title_links_per_document": 20,
+          "external_http_destinations_per_document": 20,
+          "titles_per_document": 20,
+          "snippet_matches_per_document": 20,
+          "first_three_titles_identical": true,
+          "ordered_destination_sha256_per_document": "7e31f1980884c8c68faf65803f3722920c3194f6e759ba29a090ed0afc9df159",
+          "top_titles": [
+            "Brave Help Center",
+            "Recipe broken: com.brave.Browser.nightly [nightly] (vendor probe) — versionPatternNoMatch · Issue #1354 · jizhi0v0/duo-updater",
+            "Brave - Sometimes DNS_PROBE_POSSIBLE - General - CachyOS Forum"
+          ],
+          "interpretation": "Strong off-query candidate for this one exact phrase; not a universal relevance proof or query mismatch rule.",
+          "direct_http_comparison": {
+            "request_id": "9a85773f-f374-4be2-ab3c-54476154b3b1",
+            "capture_id": "8b65d2d1-0c97-41a8-a791-23cf2d93c6b4",
+            "status": 200,
+            "elapsed_seconds": 0.66,
+            "query_echo": "\"brave-cas630-no-match-probe-20261026-xqjv\"",
+            "source_rows": 20,
+            "direct_title_links": 20,
+            "external_http_destinations": 20,
+            "snippet_matches": 20,
+            "provider_page_state": {
+              "noResults": false,
+              "badResults": "undefined"
+            },
+            "visible_challenge_marker": false,
+            "first_three_titles_and_snippets_match_browser": true,
+            "ordered_destination_sha256": "bf5a61c459c75422f9f8c31df12f77d9b4dccfe27acce322e5cfe5d512a6da9a",
+            "ordered_destinations_match_browser": false
+          }
+        },
+        "empty_marker_observed": false,
+        "challenge_marker_observed": false
       }
     },
     "bing": {

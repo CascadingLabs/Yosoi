@@ -19,6 +19,26 @@ These snippets support an uncertainty classification, not a claim about the dest
 
 Brave and Bing response and profile details, source hashes, and exact sanitized counts are in `observations.json`. The `safari26` named profile is HTTP impersonation, not a Safari browser. The original CAS-502 spike notes live in a separate local workspace and are not present in this merge checkout; the observations file records the capture facts used here.
 
+## CAS-630 Brave browser pairs, 2026-10-26
+
+Two serial Yosoi Requests Browser(Headless) captures retained both `ResponseDocument` and `RenderedDom` from the same acquisition. Both documents contained 20 `.result-wrapper` rows, 20 direct `.result-content > a.l1[href]` title links, and the same ordered external destination sequence and title/snippet fields. The positive `rust programming language` pair had 14 matching snippet nodes; the quoted rare-query pair had 20. These observations show that the source document was populated and the rendered DOM did not expose a different row structure for these two queries. The final browser URL was not recorded by the probe helper, so the manifest identifies the requested target only.
+
+The quoted rare-query page echoed the full quoted query in its search input and bootstrap state, yet returned Brave help, browser, and DNS results. The page state reported `noResults:false` and no `badResults` value. A DirectHttp request for the identical quoted query returned the same first three titles and snippets in 0.66 seconds, also with `noResults:false`; its ordered destination hash differs from the browser capture. This is evidence of one off-query candidate across two acquisition routes, not a general relevance rule. Neither route exposed a visible Brave challenge or empty-page marker, so the parser continues to leave unknown zero-row pages malformed. All three HTTP statuses were 200.
+
+The probe binary came from source revision `c81a25d2c2d6` and ran in the regular Chrome 155 container image `yosoi-cas574-chrome155:local` (`sha256:a47b9407209e2f644f64bd49bab29cc5a35566c25ab221649d97fb5bb61b99f3`) with the browser sandbox enabled. The acquisition helper set a 60-second Request bound; this is separate from the 20-second Brave Search profile bound. Exact binary, example, policy, Request, capture, artifact hashes, and query targets are in `observations.json`.
+
+The four `brave-browser-*-response.html` and `brave-browser-*-rendered-dom.json` files are sanitized first-three-row excerpts from those captures. They preserve the observed classes and parent-child structure, retain titles for the query comparison, replace destinations with `example.org`, redact snippets, and omit unrelated nodes and attributes. Full raw captures remain local under `.generated/search-evidence/` and are not committed.
+
+The ignored Brave replay test feeds the retained browser SourceHtml, matching RenderedDom, and DirectHttp SourceHtml through the current provider parser. It performs no network or browser I/O and prints only typed outcome summaries and the first three titles. With the source-matched shared target available, run it serially:
+
+```sh
+YS_BRAVE_CAPTURE_DIR=/home/andrew/Desktop/cl/yosoi-search-brave/.generated/search-evidence \
+  CARGO_BUILD_JOBS=1 RAYON_NUM_THREADS=1 \
+  CARGO_TARGET_DIR=/home/andrew/Desktop/cl/Yosoi/target \
+  cargo test -p yosoi --lib replay_retained_brave_browser_and_http_captures_serially -- \
+  --ignored --nocapture --test-threads=1
+```
+
 ## Bing `/ck/a` destination evidence
 
 Across both captured Bing pages, all 20 result title links had host `www.bing.com`, path `/ck/a`, and one `u` parameter whose value began `a1`. Removing `a1`, decoding the remaining unpadded URL-safe Base64, and parsing the UTF-8 output produced an absolute HTTP(S) target for every observed link. The observed captures verify that one pattern only. They do not establish handling for other Bing wrapper variants, duplicate or missing `u` parameters, locale changes, ads, nested redirects, or redirect responses.
@@ -41,6 +61,8 @@ The CAS-502 raw pages remain in their original `/tmp` locations and are not copi
 - `fixtures/bing-organic-row.html`: observed Bing row structure with a redacted, non-replayable wrapper URL.
 - `fixtures/duckduckgo-http-challenge.html`: minimal observed HTTP challenge marker.
 - `fixtures/brave-multirow.html` and `fixtures/bing-multirow.html`: two captured rows each, with source text and tokens redacted.
+- `fixtures/brave-browser-positive-response.html` and `fixtures/brave-browser-positive-rendered-dom.json`: paired sanitized Brave Chrome 155 results for `rust programming language`.
+- `fixtures/brave-browser-off-query-response.html` and `fixtures/brave-browser-off-query-rendered-dom.json`: paired sanitized Brave Chrome 155 rows from one exact quoted rare-query candidate; these preserve evidence and do not assert a universal relevance failure.
 - `fixtures/bing-safari26-snippetless-rows.html`: captured rows 2 and 3 without the standard snippet selector match.
 - `fixtures/bing-history-general-off-query.html`: top five general-history rows from the CAS-628 `history of cotton candy` capture.
 - `fixtures/bing-cotton-only-off-query.html`: seven cotton-only rows from the CAS-628 `cotton candy history` capture.

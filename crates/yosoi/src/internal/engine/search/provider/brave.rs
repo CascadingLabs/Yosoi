@@ -1,4 +1,4 @@
-//! Brave Direct HTTP result-row parsing from a retained HTML Document.
+//! Brave result-row parsing from retained HTML or rendered-DOM Documents.
 //!
 //! The parser uses one repeated locator region per result card so its URL,
 //! title, and snippet cannot be combined across neighboring cards. A page with
@@ -11,6 +11,8 @@
 use crate::internal::engine as yosoi_engine;
 
 use std::{collections::HashSet, num::NonZeroU16};
+
+use crate::internal::documents::DocumentClass;
 
 use crate::internal::engine::{
     Document, Policy, locator,
@@ -42,6 +44,8 @@ pub enum BraveParseError {
     OutputLimit,
     #[error("provider page URL is invalid or is not the observed Brave search endpoint")]
     InvalidPageUrl,
+    #[error("Brave parsing requires source HTML or a rendered-DOM document")]
+    UnsupportedDocumentClass,
     #[error("provider locator plan is invalid")]
     InvalidPlan,
     #[error("provider document has no recognized Brave result rows")]
@@ -68,7 +72,7 @@ struct BraveRow {
     snippet: Option<String>,
 }
 
-/// Extracts Brave result rows from an already retained Yosoi HTML Document.
+/// Extracts Brave result rows from a retained SourceHtml or RenderedDom Document.
 ///
 /// An unrecognized zero-row page returns `UnrecognizedPage`; it is never
 /// silently converted to `ProviderOutcome::Empty`.
@@ -84,6 +88,12 @@ pub fn parse(
     }
     if max_output_bytes == 0 {
         return Err(BraveParseError::OutputLimit);
+    }
+    if !matches!(
+        document.class(),
+        DocumentClass::SourceHtml | DocumentClass::RenderedDom
+    ) {
+        return Err(BraveParseError::UnsupportedDocumentClass);
     }
     let page_url = parse_page_url(provider_page_url)?;
     let plan = BraveRow::plan().map_err(|_| BraveParseError::InvalidPlan)?;
