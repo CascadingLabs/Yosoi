@@ -4,21 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Formatter};
 use thiserror::Error;
 
-/// Semantic rejection code after a projection has been converted to its field type.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ValidationCode {
-    /// A converted monetary value is negative where the supported money semantics require nonnegative values.
-    NegativeMoney,
-}
-
 /// Field-level rejection with retained locator evidence for caller inspection.
 #[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FieldIssue {
     /// Authored Contract field whose value was rejected.
     pub field: FieldId,
-    /// Whether cardinality, evidence completeness, conversion, or semantics rejected the field.
+    /// Whether cardinality, evidence completeness, or conversion rejected the field.
     pub kind: FieldIssueKind,
     /// Owned findings supporting the issue; these can contain source-derived values.
     pub evidence: Vec<Finding>,
@@ -52,11 +44,6 @@ pub enum FieldIssueKind {
     UnsupportedProjectedValue,
     /// A supported projection could not be parsed into the requested field type.
     ConversionFailed,
-    /// A converted field value violates supported semantic constraints.
-    SemanticValidationFailed {
-        /// Specific semantic rule rejecting the converted value.
-        code: ValidationCode,
-    },
 }
 
 #[doc(hidden)]

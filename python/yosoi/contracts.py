@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import types
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -34,7 +33,7 @@ from pydantic import Field as PydanticField
 from pydantic_core import InitErrorDetails, PydanticCustomError, PydanticUndefined
 
 from . import _native
-from ._models import ImmutableModel, Model, NativeAuthoringModel
+from ._models import ImmutableModel, Model
 from .documents import BoundDocument, Document, ParsedDocument
 from .identities import ContractIdentity
 from .locators import Locator, Plan, Query, output
@@ -67,56 +66,12 @@ class ContractValue(Protocol):
     TYPE_ID: ClassVar[str]
 
 
-class Money(NativeAuthoringModel):
-    """USD monetary scalar represented by integer minor units.
-
-    Attributes:
-        TYPE_ID: Rust scalar identifier money.usd.
-        minor_units: Nonnegative cents within Rust's signed 64-bit representation.
-            Python construction rejects negative values; text conversion can report a
-            semantic negative-money issue before a record is accepted.
-        currency: Discriminator fixed to usd; no exchange-rate conversion occurs.
-    """
-
-    TYPE_ID: ClassVar[str] = _native.contract_value_type_id(True)
-
-    minor_units: Annotated[
-        int, PydanticField(strict=True, ge=0, le=2**63 - 1, repr=False)
-    ]
-    currency: Literal["usd"] = "usd"
-
-    @model_validator(mode="before")
-    @classmethod
-    def _parse_text(cls, value: Any) -> Any:
-        """Accept the Rust Contract USD text spelling during normal Pydantic use."""
-        if not isinstance(value, str):
-            return value
-        match = re.fullmatch(r"\$([0-9]+)\.([0-9]{2})", value)
-        if match is None:
-            raise ValueError("invalid USD amount")
-        minor_units = int(match.group(1)) * 100 + int(match.group(2))
-        if minor_units > 2**63 - 1:
-            raise ValueError("USD amount exceeds the supported range")
-        return {"minor_units": minor_units, "currency": "usd"}
-
-    @model_validator(mode="after")
-    def _rust_validate(self) -> Self:
-        _native.validate_money(self.model_dump_json())
-        return self
-
-    def __str__(self) -> str:
-        """Return the Rust USD amount representation without currency conversion."""
-        return _native.validate_money(self.model_dump_json())
-
-
 def value_type_id(
-    annotation: type[str] | type[Money] | type[ContractValue],
+    annotation: type[str] | type[ContractValue],
 ) -> str:
     """Return the Rust ContractValue identity declared by a scalar type."""
     if annotation is str:
-        return _native.contract_value_type_id(False)
-    if annotation is Money:
-        return Money.TYPE_ID
+        return _native.contract_value_type_id()
     if not isinstance(annotation, type):
         raise TypeError("ContractValue must be a scalar type")
     type_id = getattr(annotation, "TYPE_ID", None)
@@ -164,7 +119,7 @@ class FieldSchema(ImmutableModel):
         id: Authored identifier matching locator output evidence.
         description: Nonblank business meaning; it does not discover a locator.
         cardinality: exactly_one, zero_or_one, or many describes candidate field shape.
-        value_type: Native transport type, string or money.usd. Python Contracts map
+        value_type: Native transport type, string. Python Contracts map
             other annotations to string and validate raw findings in Pydantic.
     """
 
@@ -403,15 +358,12 @@ class Candidate(ImmutableModel):
 
 
 class FieldIssueKind(ImmutableModel):
-    """Cardinality, completeness, conversion, or semantic field rejection.
+    """Cardinality, completeness, or projection conversion rejection.
 
     Attributes:
         kind: Selects missing_required, excess_candidates, incomplete_evidence,
-            unsupported_projected_value, conversion_failed, or
-            semantic_validation_failed.
+            unsupported_projected_value, or conversion_failed.
         observed: Finding count for excess_candidates, when applicable.
-        code: negative_money when converted money violates supported nonnegative
-            semantics.
     """
 
     kind: Literal[
@@ -420,10 +372,8 @@ class FieldIssueKind(ImmutableModel):
         "incomplete_evidence",
         "unsupported_projected_value",
         "conversion_failed",
-        "semantic_validation_failed",
     ]
     observed: int | None = None
-    code: Literal["negative_money"] | None = None
 
 
 class FieldIssue(ImmutableModel):
@@ -724,7 +674,7 @@ class _Definition:
         )
 
 
-def _field_type(annotation: Any) -> tuple[Literal["string", "money.usd"], Cardinality]:
+def _field_type(annotation: Any) -> tuple[Literal["string"], Cardinality]:
     """Return only the coarse native transport type and extraction cardinality."""
     while get_origin(annotation) is Annotated:
         annotation = get_args(annotation)[0]
@@ -742,17 +692,7 @@ def _field_type(annotation: Any) -> tuple[Literal["string", "money.usd"], Cardin
             cardinality = "zero_or_one"
     if annotation is list or origin is list:
         cardinality = "many"
-        arguments = get_args(annotation)
-        if arguments:
-            annotation = arguments[0]
-        else:
-            annotation = Any
-        while get_origin(annotation) is Annotated:
-            annotation = get_args(annotation)[0]
-    value_type: Literal["string", "money.usd"] = (
-        "money.usd" if annotation is Money else "string"
-    )
-    return value_type, cardinality
+    return "string", cardinality
 
 
 class _ReadOnlyView:
@@ -1622,7 +1562,6 @@ ContractSchemaFailure = _runtime_contracts.ContractSchemaFailure
 RuntimeCandidate = _runtime_contracts.RuntimeCandidate
 ArchivedContractCandidateField = _runtime_contracts.ArchivedContractCandidateField
 ArchivedContractField = _runtime_contracts.ArchivedContractField
-ArchivedContractMoneyUsd = _runtime_contracts.ArchivedContractMoneyUsd
 ArchivedContractOutcome = _runtime_contracts.ArchivedContractOutcome
 ArchivedContractRecordIssue = _runtime_contracts.ArchivedContractRecordIssue
 ArchivedContractString = _runtime_contracts.ArchivedContractString
@@ -1635,7 +1574,6 @@ RuntimeExtracted = _runtime_contracts.RuntimeExtracted
 RuntimeExtractionFailure = _runtime_contracts.RuntimeExtractionFailure
 RuntimeFieldValue = _runtime_contracts.RuntimeFieldValue
 RuntimeMany = _runtime_contracts.RuntimeMany
-RuntimeMoneyUsd = _runtime_contracts.RuntimeMoneyUsd
 RuntimeRecordIssue = _runtime_contracts.RuntimeRecordIssue
 RuntimeString = _runtime_contracts.RuntimeString
 RuntimeValidationFailure = _runtime_contracts.RuntimeValidationFailure

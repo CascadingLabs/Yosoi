@@ -28,7 +28,7 @@ impl RuntimeContractOutcome {
             .identity()
             .map_err(|_| RuntimeContractArchiveError::InvalidSchema)?;
         for field in schema.fields() {
-            if !matches!(field.value_type(), "string" | "money.usd") {
+            if !matches!(field.value_type(), "string") {
                 return Err(RuntimeContractArchiveError::UnsupportedValueType {
                     field: field.id().clone(),
                     value_type: field.value_type().to_owned(),
@@ -180,9 +180,6 @@ fn runtime_archived_value(
     match (field.value_type(), value) {
         ("string", RuntimeValue::String(value)) => Ok(PortableContractValue::String {
             value: value.clone(),
-        }),
-        ("money.usd", RuntimeValue::MoneyUsd(value)) => Ok(PortableContractValue::MoneyUsd {
-            minor_units: value.minor_units(),
         }),
         _ => Err(RuntimeContractArchiveError::FieldValueMismatch {
             field: field.id().clone(),

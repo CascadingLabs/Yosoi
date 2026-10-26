@@ -18,7 +18,7 @@ struct Product {
     name: String,
 
     #[ys(description = "The currently advertised purchase price")]
-    price: ys::Money,
+    price: String,
 
     #[ys(description = "Optional supporting copy shown with the product")]
     subtitle: Option<String>,
@@ -39,7 +39,7 @@ struct ProductWithDifferentDescriptions {
     name: String,
 
     #[ys(description = "Different price guidance")]
-    price: ys::Money,
+    price: String,
 
     #[ys(description = "Different subtitle guidance")]
     subtitle: Option<String>,
@@ -88,7 +88,7 @@ fn derive_generates_pydantic_shaped_schema_and_candidate() -> Result<(), Box<dyn
     );
     assert_eq!(
         schema.fields().get(1).map(ys::FieldSchema::value_type),
-        Some("money.usd")
+        Some("string")
     );
 
     let input = internal_engine::CandidateInput::new(
@@ -99,7 +99,7 @@ fn derive_generates_pydantic_shaped_schema_and_candidate() -> Result<(), Box<dyn
     assert!(!format!("{input:?}").contains("sentinel-document-secret"));
     let candidate = <Product as ys::Contract>::candidate_from(&input);
     let _: &ys::CandidateField<String> = &candidate.name;
-    let _: &ys::CandidateField<ys::Money> = &candidate.price;
+    let _: &ys::CandidateField<String> = &candidate.price;
     let _: &ys::CandidateField<String> = &candidate.subtitle;
     let _: &ys::CandidateField<String> = &candidate.categories;
     let debug = format!("{candidate:?}");
@@ -113,7 +113,7 @@ fn derive_generates_pydantic_shaped_schema_and_candidate() -> Result<(), Box<dyn
 fn descriptions_do_not_change_semantic_identity() -> Result<(), ys::ContractSchemaError> {
     assert_eq!(
         Product::schema()?.identity()?.to_string(),
-        "5b3428f164bcfd354cf28805dc715a8cdd0307ef621f381c06e96d545a72304f"
+        "de173a627ce83cae75789ac517f0a5475d1c342a60296da61607103d88ba473a"
     );
     assert_eq!(
         Product::schema()?.identity()?,

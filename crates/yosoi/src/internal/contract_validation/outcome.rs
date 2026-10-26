@@ -6,7 +6,7 @@ use std::fmt::{self, Formatter};
 
 /// Accepted typed record retaining its original extraction evidence.
 pub struct ValidatedRecord<T: Contract> {
-    /// Converted value that passed field cardinality, completeness, and semantic checks.
+    /// Converted value that passed field cardinality, completeness, and projection checks.
     pub value: T,
     /// Original candidate findings and grouping provenance.
     pub candidate: T::Candidate,

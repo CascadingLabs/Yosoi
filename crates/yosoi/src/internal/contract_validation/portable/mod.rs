@@ -20,7 +20,6 @@ pub use evidence::PortableCandidateField;
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum PortableContractValue {
     String { value: String },
-    MoneyUsd { minor_units: i64 },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -99,12 +98,6 @@ impl PortableValidatedContractRecord {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PortableValidationCode {
-    NegativeMoney,
-}
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum PortableFieldIssueKind {
@@ -113,7 +106,6 @@ pub enum PortableFieldIssueKind {
     IncompleteEvidence,
     UnsupportedProjectedValue,
     ConversionFailed,
-    SemanticValidationFailed { code: PortableValidationCode },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

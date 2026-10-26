@@ -137,7 +137,7 @@ def contracts_example() -> None:
 
         root = ys.css("article")
         author: str = ys.Field("Author", id="byline", locator=ys.css(".author"))
-        price: ys.Money = ys.Field("Price", locator=ys.css(".price"))
+        price: str = ys.Field("Price", locator=ys.css(".price"))
         tags: list[str] = ys.Field("Tags", locator=ys.css(".tag"))
 
     document = ys.Document.html(
@@ -157,7 +157,6 @@ def contracts_example() -> None:
         "Rust Contract value IDs",
         {
             "str": ys.contracts.value_type_id(str),
-            "Money": ys.Money.TYPE_ID,
         },
     )
 
@@ -165,7 +164,7 @@ def contracts_example() -> None:
         TYPE_ID: ClassVar[str] = "review.scalar"
 
     show(
-        "Custom native schema identity (portable runtime supports str and Money)",
+        "Custom native schema identity (portable runtime supports strings)",
         ys.contracts.FieldSchema(
             id="review",
             description="A custom schema value identity",

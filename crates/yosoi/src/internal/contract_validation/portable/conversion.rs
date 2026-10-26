@@ -6,12 +6,12 @@ use diagnostics::{
     portable_validation_failure,
 };
 
+use crate::internal::contract_validation::ContractOutcome;
 use crate::internal::contract_validation::archived::{
     CandidateField as ArchivedCandidateField, ContractDecodeError,
     ContractOutcome as ArchivedContractOutcome,
     ValidatedContractRecord as ArchivedValidatedContractRecord,
 };
-use crate::internal::contract_validation::{ContractOutcome, Money};
 
 use super::PortableContractDecodeError;
 use super::{
@@ -72,45 +72,11 @@ impl PortableContractScalar for String {
     }
 
     fn from_portable_scalar(
-        field: &FieldId,
+        _field: &FieldId,
         value: &PortableContractValue,
     ) -> Result<Self, PortableContractDecodeError> {
-        match value {
-            PortableContractValue::String { value } => Ok(value.clone()),
-            PortableContractValue::MoneyUsd { .. } => {
-                Err(PortableContractDecodeError::ValueTypeMismatch {
-                    field: field.clone(),
-                })
-            }
-        }
-    }
-}
-
-impl PortableContractScalar for Money {
-    fn to_portable_scalar(&self) -> PortableContractValue {
-        PortableContractValue::MoneyUsd {
-            minor_units: self.minor_units(),
-        }
-    }
-
-    fn from_portable_scalar(
-        field: &FieldId,
-        value: &PortableContractValue,
-    ) -> Result<Self, PortableContractDecodeError> {
-        match value {
-            PortableContractValue::MoneyUsd { minor_units } => {
-                Self::from_archived_usd_minor_units(*minor_units).ok_or_else(|| {
-                    PortableContractDecodeError::InvalidValue {
-                        field: field.clone(),
-                    }
-                })
-            }
-            PortableContractValue::String { .. } => {
-                Err(PortableContractDecodeError::ValueTypeMismatch {
-                    field: field.clone(),
-                })
-            }
-        }
+        let PortableContractValue::String { value } = value;
+        Ok(value.clone())
     }
 }
 

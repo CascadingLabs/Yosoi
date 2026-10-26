@@ -114,42 +114,6 @@ fn projected_value_and_cardinality_edge_matrix_is_explicit() -> Result<(), Box<d
             ys::ProjectedValue::Json(serde_json::json!("invalid")),
             region(3)?,
         )?,
-        finding(
-            &document,
-            "name",
-            12,
-            "/4/name",
-            "Whitespace money",
-            ys::Completeness::Complete,
-            region(4)?,
-        )?,
-        finding(
-            &document,
-            "price",
-            13,
-            "/4/price",
-            " $5.00",
-            ys::Completeness::Complete,
-            region(4)?,
-        )?,
-        finding(
-            &document,
-            "name",
-            14,
-            "/5/name",
-            "Overflow money",
-            ys::Completeness::Complete,
-            region(5)?,
-        )?,
-        finding(
-            &document,
-            "price",
-            15,
-            "/5/price",
-            "$92233720368547758.08",
-            ys::Completeness::Complete,
-            region(5)?,
-        )?,
     ];
     let outcome = Product::extract(&ys::LocateOutcome::Matched {
         result: ys::LocateResult::try_new(document, findings)?,
@@ -166,7 +130,7 @@ fn projected_value_and_cardinality_edge_matrix_is_explicit() -> Result<(), Box<d
         records.first().map(|record| record.value.name.as_str()),
         Some("Captured")
     );
-    assert_eq!(issues.len(), 5);
+    assert_eq!(issues.len(), 3);
     assert!(matches!(
         issues
             .first()
@@ -188,10 +152,6 @@ fn projected_value_and_cardinality_edge_matrix_is_explicit() -> Result<(), Box<d
             .map(|field| &field.kind),
         Some(ys::FieldIssueKind::UnsupportedProjectedValue)
     ));
-    assert!(issues.iter().skip(3).all(|issue| matches!(
-        issue.fields.first().map(|field| &field.kind),
-        Some(ys::FieldIssueKind::ConversionFailed)
-    )));
     assert_eq!(
         issues
             .get(2)

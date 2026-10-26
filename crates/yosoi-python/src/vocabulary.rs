@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use pyo3::prelude::*;
 use serde_json::Value;
 use yosoi::{
-    contracts::{ContractValue, Money},
+    contracts::ContractValue,
     map::{
         DiscoverySource, Observation, OmissionReason, PublicProvider, Rejection, Relationship,
         RelationshipKind,
@@ -16,12 +16,8 @@ use yosoi::{
 use crate::errors::{MapError, SearchError};
 
 #[pyfunction]
-pub const fn contract_value_type_id(money: bool) -> &'static str {
-    if money {
-        <Money as ContractValue>::TYPE_ID
-    } else {
-        <String as ContractValue>::TYPE_ID
-    }
+pub const fn contract_value_type_id() -> &'static str {
+    <String as ContractValue>::TYPE_ID
 }
 
 fn provider(value: &str) -> PyResult<PublicProvider> {

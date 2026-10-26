@@ -6,7 +6,7 @@ order: 13
 
 # Validation
 
-Validation turns candidate evidence into typed records. It checks cardinality, completeness, conversion, and the value type's semantic rules.
+Validation checks candidate cardinality, completeness, and supported projections. Rust Contracts retain string values. Python Contracts also apply the field types and validators declared on the Pydantic model; applications own domain parsing and semantic rules.
 
 Rust uses `.validate().require_all()?` when any rejected record should fail the operation. Python validates models automatically in `Product.extract(document)`. Use `Product.extract_report(document)` to inspect accepted records and rejected candidates without accepting the whole result.
 
@@ -24,8 +24,8 @@ use ys::contracts::ContractOutcome;
 struct Product {
     #[ys(description = "Name", locator = ys::locator::css("h2").text())]
     name: String,
-    #[ys(description = "USD price", locator = ys::locator::css(".price").text())]
-    price: ys::Money,
+    #[ys(description = "Price text", locator = ys::locator::css(".price").text())]
+    price: String,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -67,7 +67,7 @@ class Product(ys.Contract):
 
     root = ys.css("article")
     name: str = ys.Field("Name", locator=ys.css("h2"))
-    price: ys.Money = ys.Field("USD price", locator=ys.css(".price"))
+    price: str = ys.Field("Price text", locator=ys.css(".price"))
 
 document = ys.Document.html(
     "catalog.html",
@@ -112,22 +112,8 @@ The Tea record validates. The Coffee record has a missing required price. Its ca
 
 If you need detailed rejection reasons, inspect the outcome before consuming it with `require_all()`. The convenience error summarizes rejection rather than retaining every field issue.
 
-## Built-in Money
-
-Rust's `Money` represents nonnegative USD amounts. Its text parser accepts `$`, whole ASCII digits, a decimal point, and exactly two fractional digits, such as `$4.50`.
-
-| Input                                                  | Result                                |
-| ------------------------------------------------------ | ------------------------------------- |
-| `$4.50`                                                | 450 minor units, `Currency::Usd`      |
-| `$0.00`                                                | Valid zero amount                     |
-| `$-1.00`                                               | Semantic validation failure           |
-| `4.50`, `$4.5`, `$1,000.00`, or surrounding whitespace | Conversion failure                    |
-| An attribute or JSON projection                        | Unsupported projected value for Money |
-
-Rust uses `minor_units()` for the exact integer amount, `currency()` for the currency, and `Display` for the formatted value. Python exposes `minor_units` and `currency` and uses `str(money)` for display. Its Pydantic integration accepts extracted attribute or JSON string values as well as text, and can validate a mapping containing minor units and currency. Its Pydantic type also accepts the same price text during normal model construction. Use a custom Pydantic type for another currency or application-specific parsing.
-
 ## Keep enough evidence
 
-Field issues distinguish missing or excessive values, incomplete evidence, unsupported projections, conversion failures, and semantic failures. Their evidence points back to the source findings. Candidate fields expose that same provenance for valid records.
+Field issues distinguish missing or excessive values, incomplete evidence, unsupported projections, and application validation failures. Their evidence points back to the source findings. Candidate fields expose that same provenance for valid records.
 
 This evidence can contain source content. Choose what to retain and display in your application; a debug representation is not a substitute for inspecting the typed outcome.

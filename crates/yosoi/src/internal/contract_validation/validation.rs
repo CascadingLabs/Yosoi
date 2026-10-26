@@ -263,9 +263,6 @@ fn convert<'a, T: RuntimeContractValue>(
                 FieldIssueKind::UnsupportedProjectedValue
             }
             RuntimeValueIssue::ConversionFailed => FieldIssueKind::ConversionFailed,
-            RuntimeValueIssue::SemanticValidationFailed { code } => {
-                FieldIssueKind::SemanticValidationFailed { code }
-            }
         };
         FieldIssueDraft::one(id.clone(), kind, finding)
     })

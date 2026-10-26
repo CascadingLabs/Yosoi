@@ -23,7 +23,7 @@ class Product(ys.Contract):
 
     root = ys.css("article.product")
     name: str = ys.Field("Product name", locator=ys.css("h2"))
-    price: ys.Money = ys.Field("USD price", locator=ys.css(".price"))
+    price: str = ys.Field("Price text", locator=ys.css(".price"))
 
 document = ys.Document.html(
     "catalog",
@@ -32,7 +32,7 @@ document = ys.Document.html(
 products = ys.extract(document, Product)
 assert len(products) == 1
 assert products[0].name == "Tea"
-assert products[0].price.minor_units == 450
+assert products[0].price == "$4.50"
 ```
 
 Ordinary extraction returns `list[Product]`. Pydantic applies the model's field
@@ -45,7 +45,7 @@ validation errors, or the source evidence retained beside each record.
 >
 > A Python Contract's identity covers its native transport schema, not its
 > Pydantic types or validators. Use `RuntimeContract` when the Rust-owned
-> string and Money conversion rules and portable Rust archive format are needed.
+> string conversion rules and portable Rust archive format are needed.
 
 ## Pages
 

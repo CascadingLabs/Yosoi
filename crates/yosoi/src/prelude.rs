@@ -4,7 +4,7 @@
 //! or Contract. There are no separate namespace-specific SDK preludes.
 
 pub use crate::action::AssertionBuilder;
-pub use crate::contracts::{Contract, ContractLocatorError, Currency, Extracted, Money};
+pub use crate::contracts::{Contract, ContractLocatorError, Extracted};
 pub use crate::documents::{
     Document, DocumentEpoch, DocumentError, DocumentId, DocumentProfile, ParseError, ParsedDocument,
 };

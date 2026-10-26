@@ -75,7 +75,7 @@ JSON Pointer selects a known path. `/data/0/price` identifies the first product'
 
 A CSS query selects tree elements. A JSON Pointer selects a value at a JSON path. They share the Plan vocabulary, but a Plan's queries and projections must be compatible with its Document.
 
-Reading a numeric price does not perform currency conversion. Our earlier Rust Money Contract parsed the supported USD text form. An application consuming this JSON should use the declared units when constructing its own price values.
+Reading a numeric price does not perform currency conversion. Our earlier Contract retained the HTML price text. An application consuming this JSON should use the declared units when constructing its own price values.
 
 ## XML has names and namespaces
 

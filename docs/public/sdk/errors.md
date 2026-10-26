@@ -41,8 +41,7 @@ Check namespace URIs and bind prefixes on each query. XML names are case sensiti
 ## A Contract rejects good-looking data
 
 Inspect the raw candidate values and field issues. A Rust scalar accepts
-exactly one value; an optional scalar accepts at most one. Rust Money requires
-an exact supported string format. A JSON string is still a JSON projection
+exactly one value; an optional scalar accepts at most one. A JSON string is still a JSON projection
 and is not automatically converted to a `RuntimeContract` String. Python
 Contracts can validate compatible JSON projections through Pydantic.
 

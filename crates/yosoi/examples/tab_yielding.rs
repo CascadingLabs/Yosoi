@@ -31,7 +31,7 @@ struct ShippingQuote {
     #[ys(description="Quote status", locator=ys::locator::css(".status").text())]
     status: String,
     #[ys(description="Quoted price", locator=ys::locator::css(".price").text())]
-    price: ys::Money,
+    price: String,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -248,7 +248,8 @@ async fn sample_memory(pool: ExecutionPool, mut stop: oneshot::Receiver<()>) -> 
 
 fn shipping_quote(url: String, id: u32, wait_ms: u64) -> Result<ys::Flow, DemoError> {
     let expected_id = id.to_string();
-    let expected_price = 1_000_i64.saturating_add(i64::from(id));
+    let cents = 1_000_u64.saturating_add(u64::from(id));
+    let expected_price = format!("${}.{:02}", cents.div_euclid(100), cents.rem_euclid(100));
     Ok(flow::new([
         action::navigate(url),
         action::wait_until(
@@ -270,7 +271,7 @@ fn shipping_quote(url: String, id: u32, wait_ms: u64) -> Result<ys::Flow, DemoEr
                 check(move |quote: &ShippingQuote| quote.job_id == expected_id)
                     .named("request identity"),
                 check(|quote: &ShippingQuote| quote.status == "ready").named("service confirmed"),
-                check(move |quote: &ShippingQuote| quote.price.minor_units() == expected_price)
+                check(move |quote: &ShippingQuote| quote.price == expected_price)
                     .named("quoted amount"),
             ],
         )

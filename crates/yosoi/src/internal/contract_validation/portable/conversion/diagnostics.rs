@@ -1,10 +1,8 @@
 use super::super::{
     PortableExtractionDiagnostic, PortableExtractionFailure, PortableExtractionLimit,
-    PortableFieldIssue, PortableFieldIssueKind, PortableValidationCode, PortableValidationFailure,
+    PortableFieldIssue, PortableFieldIssueKind, PortableValidationFailure,
 };
-use crate::internal::contract_validation::{
-    FieldIssue, FieldIssueKind, ValidationCode, ValidationFailure,
-};
+use crate::internal::contract_validation::{FieldIssue, FieldIssueKind, ValidationFailure};
 use crate::internal::extractor::{ExtractionDiagnostic, ExtractionFailure, ExtractionLimit};
 pub(super) fn portable_field_issue(issue: &FieldIssue) -> PortableFieldIssue {
     PortableFieldIssue::new(
@@ -19,13 +17,6 @@ pub(super) fn portable_field_issue(issue: &FieldIssue) -> PortableFieldIssue {
                 PortableFieldIssueKind::UnsupportedProjectedValue
             }
             FieldIssueKind::ConversionFailed => PortableFieldIssueKind::ConversionFailed,
-            FieldIssueKind::SemanticValidationFailed { code } => {
-                PortableFieldIssueKind::SemanticValidationFailed {
-                    code: match code {
-                        ValidationCode::NegativeMoney => PortableValidationCode::NegativeMoney,
-                    },
-                }
-            }
         },
         issue.evidence.clone(),
     )

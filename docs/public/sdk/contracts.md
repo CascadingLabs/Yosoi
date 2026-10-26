@@ -25,8 +25,8 @@ use yosoi::prelude as ys;
 struct Product {
     #[ys(description = "Product name", locator = ys::locator::css("h2").text())]
     name: String,
-    #[ys(description = "Price in USD", locator = ys::locator::css(".price").text())]
-    price: ys::Money,
+    #[ys(description = "Price text", locator = ys::locator::css(".price").text())]
+    price: String,
     #[ys(description = "Optional product link", locator = ys::locator::css("a").attribute("href"))]
     href: Option<String>,
 }
@@ -59,7 +59,7 @@ class Product(ys.Contract):
 
     root = ys.css("article")
     name: str = ys.Field("Product name", locator=ys.css("h2"))
-    price: ys.Money = ys.Field("Price in USD", locator=ys.css(".price"))
+    price: str = ys.Field("Price text", locator=ys.css(".price"))
     href: str | None = ys.Field("Optional product link", locator=ys.css("a").attribute("href"), default=None)
 
 document = ys.Document.html(
@@ -70,12 +70,12 @@ document = ys.Document.html(
 products = Product.extract(document)
 for product in products:
     assert product.name == "Tea"
-    assert product.price.minor_units == 450
+    assert product.price == "$4.50"
     assert product.href is None
     print(f"{product.name} costs {product.price}")
 ```
 
-The model defines the same fields and cardinality. Python constructs and validates each Product through Pydantic automatically. The checks show a 450-cent price and an absent optional link.
+The model defines the same fields and cardinality. Python constructs and validates each Product through Pydantic automatically. The checks show the original `$4.50` price text and an absent optional link.
 
 ## Walk through the result
 
@@ -89,15 +89,15 @@ There are no separate `page` or `repeated` attributes. Scope follows from whethe
 
 ## Field cardinality
 
-| Rust field          | Python annotation   | Accepted evidence   |
-| ------------------- | ------------------- | ------------------- |
-| `String` or `Money` | `str` or `ys.Money` | Exactly one value   |
-| `Option<T>`         | `T \| None`         | Zero or one value   |
-| `Vec<T>`            | `list[T]`           | Zero or more values |
+| Rust field  | Python annotation | Accepted evidence   |
+| ----------- | ----------------- | ------------------- |
+| `String`    | `str`             | Exactly one value   |
+| `Option<T>` | `T \| None`       | Zero or one value   |
+| `Vec<T>`    | `list[T]`         | Zero or more values |
 
 Missing required values and multiple values for a scalar are field issues. Rust does not support nested wrappers such as `Option<Vec<String>>`. Python supports Pydantic-compatible field types; a list collects one projected value per finding. A nullable Python scalar still needs an explicit `default=None` when complete absence should be accepted.
 
-Rust runtime conversion currently supports `String` and `Money`. Strings accept text, text-with-captures, and attribute values. Money accepts the strict USD text form described in [Validation](validation.md). Other scalar types and custom runtime converters are outside the Rust Contract slice. Python supports Pydantic-compatible custom field types without extending the Rust converter registry.
+Rust runtime conversion supports `String`, accepting text, text-with-captures, and attribute values. Application code owns domain parsing and validation. Python supports Pydantic-compatible custom field types and validators without extending the Rust converter registry.
 
 ## Rust static locators
 

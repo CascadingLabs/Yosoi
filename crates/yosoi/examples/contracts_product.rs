@@ -22,7 +22,7 @@ struct Product {
         description = "The currently advertised purchase price",
         locator = ys::locator::css(".price").text()
     )]
-    price: ys::Money,
+    price: String,
 
     #[ys(
         description = "Optional supporting copy shown with the product",

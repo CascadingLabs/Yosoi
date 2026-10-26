@@ -66,16 +66,16 @@ struct UntilContract {
 
 #[derive(ys::Contract)]
 #[ys(
-    id = "until-invalid-money",
-    description = "A deliberately invalid money field",
+    id = "until-missing-field",
+    description = "A deliberately missing required field",
     root = ys::locator::css("#contract")
 )]
-struct InvalidMoneyContract {
+struct MissingFieldContract {
     #[ys(
         description = "Price",
-        locator = ys::locator::css("#contract-price").text()
+        locator = ys::locator::css("#missing-required-price").text()
     )]
-    price: ys::Money,
+    price: String,
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -1008,9 +1008,9 @@ async fn contract_no_record_stays_pending_while_invalid_source_and_panics_are_te
         .await?;
     let calls = Arc::new(AtomicUsize::new(0));
     let captured = Arc::clone(&calls);
-    let invalid = action::assert_all::<InvalidMoneyContract>(
-        InvalidMoneyContract::plan()?,
-        [check(move |_contract: &InvalidMoneyContract| {
+    let invalid = action::assert_all::<MissingFieldContract>(
+        MissingFieldContract::plan()?,
+        [check(move |_contract: &MissingFieldContract| {
             captured.fetch_add(1, Ordering::SeqCst);
             true
         })],

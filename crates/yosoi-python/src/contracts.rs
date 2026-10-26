@@ -3,8 +3,8 @@
 use pyo3::prelude::*;
 use serde::Deserialize;
 use yosoi::contracts::{
-    Cardinality, ContractId, ContractSchema, ExtractionLimits, FieldId, FieldSchema, Money,
-    RecordScope, RuntimeContract, RuntimeContractOutcome, RuntimeExtracted, ValidationLimits,
+    Cardinality, ContractId, ContractSchema, ExtractionLimits, FieldId, FieldSchema, RecordScope,
+    RuntimeContract, RuntimeContractOutcome, RuntimeExtracted, ValidationLimits,
 };
 use yosoi::locators::LocateOutcome;
 
@@ -177,13 +177,6 @@ impl NativeContractOutcome {
             Err(error) => encode(&serde_json::json!({"error": error})),
         })
     }
-}
-
-#[pyfunction]
-pub fn validate_money(value: &str) -> PyResult<String> {
-    let money: Money =
-        serde_json::from_str(value).map_err(|error| ContractError::new_err(error.to_string()))?;
-    Ok(money.to_string())
 }
 
 #[derive(serde::Deserialize)]

@@ -22,7 +22,7 @@ Paths below are relative to the repository root. Follow re-exports to their impl
 | JSONPath subset                        | `crates/yosoi/src/internal/documents/json/query.rs`                                                                          |
 | Accessibility matching and states      | `crates/yosoi/src/internal/documents/accessibility/evaluate.rs`, `query.rs`                                                  |
 | Contract derive and static locators    | `crates/yosoi-contracts-derive/src/lib.rs`, `support.rs`, `crates/yosoi/src/internal/documents/locator_declaration.rs`        |
-| Contract outcomes and Money            | `crates/yosoi/src/internal/contract_validation/outcome.rs`, `value.rs`, `validation.rs`                                       |
+| Contract outcomes            | `crates/yosoi/src/internal/contract_validation/outcome.rs`, `value.rs`, `validation.rs`                                       |
 | Extraction limits                      | `crates/yosoi/src/internal/engine/mod.rs`, `crates/yosoi/src/internal/extractor/mod.rs`                                      |
 | Policy fields, defaults, serialization | `crates/yosoi/src/internal/policy/policy/`, `policy_value.rs`, `policy_serde.rs`, `snapshot.rs`                              |
 | Map authoring and outcomes             | `crates/yosoi/src/map.rs`, `crates/yosoi/src/internal/map/mod.rs`                                                            |

@@ -12,7 +12,7 @@ mod value;
 
 #[doc(hidden)]
 pub use issue::FieldIssueDraft;
-pub use issue::{ContractIssues, FieldIssue, FieldIssueKind, ValidationCode, ValidationFailure};
+pub use issue::{ContractIssues, FieldIssue, FieldIssueKind, ValidationFailure};
 pub use outcome::{ContractOutcome, RecordIssue, ValidatedRecord};
 pub use portable::ArchivedContract;
 pub use portable::RuntimeContractArchiveError;
@@ -25,7 +25,7 @@ pub use validation::{MAX_CONTRACT_FIELDS, MAX_VALIDATED_RECORDS};
 pub use validation::{ValidationBudget, ValidationLimits, read_many, read_optional, read_required};
 #[doc(hidden)]
 pub use value::RuntimeContractValue;
-pub use value::{Currency, Money, RuntimeValueIssue};
+pub use value::RuntimeValueIssue;
 
 /// Code-independent values used to inspect or manually implement archived Contracts.
 pub mod archived {
@@ -39,7 +39,7 @@ pub mod archived {
         PortableExtractionFailure as ExtractionFailure, PortableExtractionLimit as ExtractionLimit,
         PortableFieldIssue as FieldIssue, PortableFieldIssueKind as FieldIssueKind,
         PortableValidatedContractRecord as ValidatedContractRecord,
-        PortableValidationCode as ValidationCode, PortableValidationFailure as ValidationFailure,
+        PortableValidationFailure as ValidationFailure,
     };
 }
 

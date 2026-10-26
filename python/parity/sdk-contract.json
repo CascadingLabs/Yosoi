@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "c7300bb405526c93c3fb85a23d24da530d2f659f",
-    "inventorySignature": "69f7bc09bc06937ee7fe3b957f1b85513605c8aa21ac34e7e4d44296de4eafef"
+    "revision": "daab696f3bd3e4a6e461930bb1a93ae664909bf3",
+    "inventorySignature": "1209c20f272b8804208d1c51142f4ddf00d77823540393393b937f0ca6227b8e"
   },
   "scope": {
     "crate": "yosoi",
@@ -7128,7 +7128,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.value_type_id",
-        "pythonTargetSha256": "1cb93d3cdb01bc3c217e0125a558f911aae324530af935eed31e5c3c0f7b179a",
+        "pythonTargetSha256": "992dc7a6e66b2e9b8144d2c9797be0dbaf37ee3d78a004d352242533523cebac",
         "semanticEquivalent": "Associated type identity maps to value_type_id(type).",
         "rationale": "The helper reads the scalar type's ContractValue TYPE_ID; str uses the compiled Rust String identity.",
         "review": null,
@@ -7200,179 +7200,6 @@
         "rationale": "Rust Contract implementors map to Python subclasses of yosoi.Contract with fields declared using yosoi.Field.",
         "review": null,
         "ledgerMappingSha256": "95733c92380dc6550ce4e862cb06125c858210bcaf4babb8c1e051c66b5e41ac"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::Usd|variant|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::Usd",
-      "kind": "variant",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "4b75b43fc85ca16029cc1ccb248c09531de1b3170dad47c2b0254d330383e3d6",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:variant:yosoi::contracts::Currency::Usd@signature:4b75b43fc85ca16029cc1ccb248c09531de1b3170dad47c2b0254d330383e3d6@source:67e845fb11d49781bdbc25d9f4e8480c480cbbaf90db7f30c79529b3f2fd15d8",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.currency",
-        "pythonTargetSha256": "0d76e37be00138328637358d195d9ea5439795387b18a203c16ef000e50a5b88",
-        "semanticEquivalent": null,
-        "rationale": "Rust variant Usd maps to the corresponding Python tagged value yosoi.contracts.Money.currency. The Python discriminator value is 'usd'.",
-        "review": null,
-        "ledgerMappingSha256": "789969113f96738d2b616ac180849651d345298fb959eb3aa1a018cb4f0bb14f"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::clone|function|trait:Clone|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::clone",
-      "kind": "function",
-      "trait": "Clone",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "adaac794dcede343ba60611903c190954603b650aead88e24ec1020b463d523f",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Currency::clone@signature:adaac794dcede343ba60611903c190954603b650aead88e24ec1020b463d523f@trait:Clone@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
-        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::deserialize|function|trait:Deserialize|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::deserialize",
-      "kind": "function",
-      "trait": "Deserialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Currency::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::eq|function|trait:PartialEq|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::eq",
-      "kind": "function",
-      "trait": "PartialEq",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "157ae212a7a374edaccb4415b007e60a0abd4fb4f3645b6929aacd69f39ffa88",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Currency::eq@signature:157ae212a7a374edaccb4415b007e60a0abd4fb4f3645b6929aacd69f39ffa88@trait:PartialEq@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
-        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::fmt|function|trait:Debug|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::fmt",
-      "kind": "function",
-      "trait": "Debug",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
-      "baselineStatus": "language-specific",
-      "symbolKey": "member:function:yosoi::contracts::Currency::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "language-specific",
-        "pythonTarget": "yosoi.contracts.Money.currency",
-        "pythonTargetSha256": "0d76e37be00138328637358d195d9ea5439795387b18a203c16ef000e50a5b88",
-        "semanticEquivalent": null,
-        "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "review": {
-          "status": "reviewed",
-          "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-          "pythonEquivalent": "repr(value); explicit access: public fields/properties, model_dump() for Pydantic models, union tag and payload fields",
-          "reviewer": "Codex owner",
-          "reviewedAt": "2026-10-05T04:14:55.667019+00:00"
-        },
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Debug provides a diagnostic representation.",
-        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency::serialize|function|trait:Serialize|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency::serialize",
-      "kind": "function",
-      "trait": "Serialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Currency",
-      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Currency::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:c79ea07341dc9c5a3b0b44b6bdf2b3e74d8d47edec948e4d31ca482ed0841e3e",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Currency|enum|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::Currency",
-      "kind": "enum",
-      "trait": null,
-      "surface": "item",
-      "parentRustPath": null,
-      "signatureSha256": "03b99154f0494bfa3c083b579dcce15371a5d3d25f48727cc5e10c799202df8d",
-      "baselineStatus": "mapped",
-      "symbolKey": "page:enum:yosoi::contracts::Currency",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.currency",
-        "pythonTargetSha256": "0d76e37be00138328637358d195d9ea5439795387b18a203c16ef000e50a5b88",
-        "semanticEquivalent": null,
-        "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.Money.currency.",
-        "review": null,
-        "ledgerMappingSha256": "2017d595b798197abc85834341228f27afe19c245f70ad3a8203d1a1425e8eb1"
       }
     },
     {
@@ -8486,7 +8313,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.FieldIssue",
-        "pythonTargetSha256": "c9e4e13b613a60ddca2a43e13858f0e5d7b7789cfcd4b2c18d11b754deb72dd5",
+        "pythonTargetSha256": "814a2eec674f523d12053b6a11cfcf518b1d19b4723012e3451355cc4e91ba42",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -8557,7 +8384,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.FieldIssue",
-        "pythonTargetSha256": "c9e4e13b613a60ddca2a43e13858f0e5d7b7789cfcd4b2c18d11b754deb72dd5",
+        "pythonTargetSha256": "814a2eec674f523d12053b6a11cfcf518b1d19b4723012e3451355cc4e91ba42",
         "semanticEquivalent": null,
         "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -8588,7 +8415,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssue.kind",
-        "pythonTargetSha256": "445b1d3d968e7e44f9f02cd72a8bc5df246e62fd8f995332cef58311d1557002",
+        "pythonTargetSha256": "68e5496453b070eff732e747b4f4aa388de6a9be6a5a4a46ecba70237d524da6",
         "semanticEquivalent": null,
         "rationale": "Rust field kind maps to Python field kind.",
         "review": null,
@@ -8634,7 +8461,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust variant ConversionFailed maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=conversion_failed'.",
         "review": null,
@@ -8655,7 +8482,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust variant ExcessCandidates maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=excess_candidates'.",
         "review": null,
@@ -8676,7 +8503,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust variant IncompleteEvidence maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=incomplete_evidence'.",
         "review": null,
@@ -8697,32 +8524,11 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust variant MissingRequired maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=missing_required'.",
         "review": null,
         "ledgerMappingSha256": "b626b109faefc7b6a8bd31d92aa7a30cf2754ac677eb5bd30995b0c0f1010099"
-      }
-    },
-    {
-      "id": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed|variant|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::FieldIssueKind::SemanticValidationFailed",
-      "kind": "variant",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::FieldIssueKind",
-      "signatureSha256": "5c6448f548a490fbffc118aa4a3b7cecf1dbe7b6b602e4db910b18b07b25d157",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:variant:yosoi::contracts::FieldIssueKind::SemanticValidationFailed@signature:5c6448f548a490fbffc118aa4a3b7cecf1dbe7b6b602e4db910b18b07b25d157@source:cc9b703fa51546e442824e5a1f030f8e0002a1df458d2f5105330ee36b243f61",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
-        "semanticEquivalent": null,
-        "rationale": "Rust variant SemanticValidationFailed maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=semantic_validation_failed'.",
-        "review": null,
-        "ledgerMappingSha256": "b0cea3006c906aa68b79f666a686936bd0705b7ca3c82fd309bef85c67da5a93"
       }
     },
     {
@@ -8739,7 +8545,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust variant UnsupportedProjectedValue maps to the corresponding Python tagged value yosoi.contracts.FieldIssueKind. The Python discriminator value is 'kind=unsupported_projected_value'.",
         "review": null,
@@ -8810,7 +8616,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -8839,7 +8645,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -8895,7 +8701,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
+        "pythonTargetSha256": "b855fe154b2a6cfb0d3ac7a8a31ec593296224deb92197f8de049e13830f559f",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.FieldIssueKind.",
         "review": null,
@@ -8916,7 +8722,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.FieldIssue",
-        "pythonTargetSha256": "c9e4e13b613a60ddca2a43e13858f0e5d7b7789cfcd4b2c18d11b754deb72dd5",
+        "pythonTargetSha256": "814a2eec674f523d12053b6a11cfcf518b1d19b4723012e3451355cc4e91ba42",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.FieldIssue.",
         "review": null,
@@ -9182,254 +8988,6 @@
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.FieldSchema.",
         "review": null,
         "ledgerMappingSha256": "e9b8dbf57541546980605d25c8169822c019151a905fa66c112c1e37cd5f48d1"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::TYPE_ID|assoc_const|trait:ContractValue|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::TYPE_ID",
-      "kind": "assoc_const",
-      "trait": "ContractValue",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "05b8a2334379e1ba7cbb070501e4c7b934ad6250a2f8b45ba499799d3750c62b",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:assoc_const:yosoi::contracts::Money::TYPE_ID@signature:05b8a2334379e1ba7cbb070501e4c7b934ad6250a2f8b45ba499799d3750c62b@trait:ContractValue@source:1b37da7a2a624cbacbbb6f14ad10afab6040cba57fdb282c5368a4802006473e",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.TYPE_ID",
-        "pythonTargetSha256": "91a19e8e2d94ec60c90041da58faa2bb8cee0fc3ddce498b68ff4ebde584de64",
-        "semanticEquivalent": null,
-        "rationale": "Rust associated constant maps to the Rust-backed Python class constant.",
-        "review": null,
-        "ledgerMappingSha256": "2d3dd532eb477d99a7016005987cd667d072fd6e21e8853a830e8d41d5431c33"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::clone|function|trait:Clone|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::clone",
-      "kind": "function",
-      "trait": "Clone",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "e907628318498a998bff5140803aba96ef211cf9ce9a891ce4746b8f432d6449",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::contracts::Money::clone@signature:e907628318498a998bff5140803aba96ef211cf9ce9a891ce4746b8f432d6449@trait:Clone@source:d737e649f4d0a3b5278d641e2d325579baf40908a7478e9cca58ae7a764a6241",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.clone",
-        "pythonTargetSha256": "515005ff57613ad3cdd36141c6cf4d3fac05f30e5699dd5ead7e385753881ac5",
-        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
-        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
-        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::currency|function|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::currency",
-      "kind": "function",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "2cf5edf63efab0e3742a185dfc155564ba8bdc4413c3f5ceb9637bfb11770cf9",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::contracts::Money::currency@signature:2cf5edf63efab0e3742a185dfc155564ba8bdc4413c3f5ceb9637bfb11770cf9@source:e382c9827675cac168d8b5b8c14d7c1c3ee32c124b784f6aa10a4a36c922761d",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.currency",
-        "pythonTargetSha256": "0d76e37be00138328637358d195d9ea5439795387b18a203c16ef000e50a5b88",
-        "semanticEquivalent": null,
-        "rationale": "Rust method maps to the matching Python method/property yosoi.contracts.Money.currency.",
-        "review": null,
-        "ledgerMappingSha256": "347cf85fe3b452839398df92bb9f7f78d24f09704ecaac45c89c60634f082c5f"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::deserialize|function|trait:Deserialize|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::deserialize",
-      "kind": "function",
-      "trait": "Deserialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "0529e3aa32132e48dde436502cc2472d731826251154c8300bea98d5ccfcca2c",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Money::deserialize@signature:0529e3aa32132e48dde436502cc2472d731826251154c8300bea98d5ccfcca2c@trait:Deserialize@source:d5f8352ab1fce6a58efd567172b9cf1f5fe34ec63668b583899e51d0f476c074",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::eq|function|trait:PartialEq|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::eq",
-      "kind": "function",
-      "trait": "PartialEq",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "61acd248b2679c5e17000cc7e219e08e2ae90fe38bb7e0922d2800f4a2af9df5",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Money::eq@signature:61acd248b2679c5e17000cc7e219e08e2ae90fe38bb7e0922d2800f4a2af9df5@trait:PartialEq@source:d737e649f4d0a3b5278d641e2d325579baf40908a7478e9cca58ae7a764a6241",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "language-specific",
-        "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
-        "semanticEquivalent": null,
-        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
-        "review": {
-          "status": "proposed",
-          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
-          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
-        },
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
-        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::fmt|function|trait:Debug|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::fmt",
-      "kind": "function",
-      "trait": "Debug",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9",
-      "baselineStatus": "language-specific",
-      "symbolKey": "member:function:yosoi::contracts::Money::fmt@signature:9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9@trait:Debug@source:8857c8e863b953376d95d7e065f80215e7e037a0fcd9912b26f8d08b7b87a9c8",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "language-specific",
-        "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
-        "semanticEquivalent": null,
-        "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "review": {
-          "status": "reviewed",
-          "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-          "pythonEquivalent": "repr(value); explicit access: currency, minor_units, str(value)",
-          "reviewer": "Codex owner",
-          "reviewedAt": "2026-10-05T04:14:55.667625+00:00"
-        },
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Debug provides a diagnostic representation.",
-        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::fmt|function|trait:Display|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::fmt",
-      "kind": "function",
-      "trait": "Display",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Money::fmt@signature:9aba10de4cae8ef93f432dd2173d643278ab158c561df14d0af0dd60f218d1b9@trait:Display@source:ad1769bb110cafd5ef96b2ea632aeeefe096584f3962c7d2e96d8e39a93b5042",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "language-specific",
-        "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
-        "semanticEquivalent": null,
-        "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
-        "review": {
-          "status": "proposed",
-          "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
-          "pythonEquivalent": "Python str(value) for the corresponding public value."
-        },
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Display provides a user-facing textual representation.",
-        "equivalentCapability": "Python str(value) is the corresponding user-facing textual representation where the SDK exposes the value."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::minor_units|function|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::minor_units",
-      "kind": "function",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "675d6a8038a699e888684a3fc5f7ed537c66dd77e7752dfceb93ea84331f2d71",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::contracts::Money::minor_units@signature:675d6a8038a699e888684a3fc5f7ed537c66dd77e7752dfceb93ea84331f2d71@source:45735bf57e371771602789b2fe94f8f2d41bf32d8d7ab783e242a943322c0db4",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money.minor_units",
-        "pythonTargetSha256": "285d206eae2b3aa5c8f6b1cfde7a47fae6933d7793589da12300c455d025b855",
-        "semanticEquivalent": null,
-        "rationale": "Rust method maps to the matching Python method/property yosoi.contracts.Money.minor_units.",
-        "review": null,
-        "ledgerMappingSha256": "a659107d43ffdf10b4a11018faf59f8c2b808d01262ee5ed4e90f9c27a4bee7a"
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money::serialize|function|trait:Serialize|occurrence:1",
-      "rustPath": "yosoi::contracts::Money::serialize",
-      "kind": "function",
-      "trait": "Serialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::Money",
-      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::Money::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:d737e649f4d0a3b5278d641e2d325579baf40908a7478e9cca58ae7a764a6241",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::Money|struct|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::Money",
-      "kind": "struct",
-      "trait": null,
-      "surface": "item",
-      "parentRustPath": null,
-      "signatureSha256": "91da6f3d298f613bb96f011a6094e97f973ed78d79d4806e284eea2ccce9456e",
-      "baselineStatus": "mapped",
-      "symbolKey": "page:struct:yosoi::contracts::Money",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.Money",
-        "pythonTargetSha256": "b030027d48503b3ddaa9c7786f6f45efee21c80dbccc3ad4c01ab74c95bcc63a",
-        "semanticEquivalent": null,
-        "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.Money.",
-        "review": null,
-        "ledgerMappingSha256": "82df32c96a1724c4bd1f72274d6dae81cfe04d31baa426de0de33a88cbe7c43c"
       }
     },
     {
@@ -10626,7 +10184,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.runtime_contracts.RuntimeExactlyOne",
-        "pythonTargetSha256": "d4219a80455faa652f2ad42fa32b33a7f27c40c38ce849e7158c6e03f55c1901",
+        "pythonTargetSha256": "7512e0444cd096ffd5e56205d92b9e52ceff43f15866cd5a3d085a6ddd097fc7",
         "semanticEquivalent": null,
         "rationale": "Rust variant ExactlyOne maps to the corresponding Python tagged value yosoi.runtime_contracts.RuntimeExactlyOne. The Python discriminator value is 'cardinality=exactly_one'.",
         "review": null,
@@ -10668,7 +10226,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.runtime_contracts.RuntimeZeroOrOne",
-        "pythonTargetSha256": "b939675687f986044ed023e1136267ba276918c573e38853bac3f1df4a06fb57",
+        "pythonTargetSha256": "4ff83295e7a1d49f2f317f6d009b1bfdb54f87a8c9e51dc1c120a49ab146e075",
         "semanticEquivalent": null,
         "rationale": "Rust variant ZeroOrOne maps to the corresponding Python tagged value yosoi.runtime_contracts.RuntimeZeroOrOne. The Python discriminator value is 'cardinality=zero_or_one'.",
         "review": null,
@@ -10764,7 +10322,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.RuntimeFieldValue",
-        "pythonTargetSha256": "ef31271cb203507bedd96bbd7a028827b5cc753b69b53e861651652d047d622c",
+        "pythonTargetSha256": "e7d0a4c59eb61f46138c9d34f21cb2de7e0f462ff8a97e1735f6ff1d97ca1c6b",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -10820,7 +10378,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.RuntimeFieldValue",
-        "pythonTargetSha256": "ef31271cb203507bedd96bbd7a028827b5cc753b69b53e861651652d047d622c",
+        "pythonTargetSha256": "e7d0a4c59eb61f46138c9d34f21cb2de7e0f462ff8a97e1735f6ff1d97ca1c6b",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.RuntimeFieldValue.",
         "review": null,
@@ -11224,27 +10782,6 @@
       }
     },
     {
-      "id": "yosoi::contracts::RuntimeValue::MoneyUsd|variant|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::RuntimeValue::MoneyUsd",
-      "kind": "variant",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::RuntimeValue",
-      "signatureSha256": "300b7728a43b1ba7d85d5c1b2d5c0edf7d91fdd0706750036307e0a35728e15f",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:variant:yosoi::contracts::RuntimeValue::MoneyUsd@signature:300b7728a43b1ba7d85d5c1b2d5c0edf7d91fdd0706750036307e0a35728e15f@source:5109443fabb4f545e3d17fcadfb30959c7fae3de6cf8dccd4fcddf5001863e82",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.runtime_contracts.RuntimeMoneyUsd",
-        "pythonTargetSha256": "33c5ffee3e8d387e033175fd54ec589a45f61644b9268dcb2b487a9a3ee435c3",
-        "semanticEquivalent": null,
-        "rationale": "Rust variant MoneyUsd maps to the corresponding Python tagged value yosoi.runtime_contracts.RuntimeMoneyUsd. The Python discriminator value is 'type=money_usd'.",
-        "review": null,
-        "ledgerMappingSha256": "bd36bec7c849a910d1fb6da381200b686bce2992260ab1b75920d2894ed1db60"
-      }
-    },
-    {
       "id": "yosoi::contracts::RuntimeValue::String|variant|trait:|occurrence:1",
       "rustPath": "yosoi::contracts::RuntimeValue::String",
       "kind": "variant",
@@ -11354,7 +10891,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.contracts.RuntimeValue",
-        "pythonTargetSha256": "a53d978c3d47c1a30fcb184b4abdd1d6f530bcd0ae0e243f224496cb0a3d0498",
+        "pythonTargetSha256": "0ba9da06a1318e9c7eaadbbcaa81f7139395cb96b17104f7de290ade2e8ece00",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -11410,7 +10947,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.contracts.RuntimeValue",
-        "pythonTargetSha256": "a53d978c3d47c1a30fcb184b4abdd1d6f530bcd0ae0e243f224496cb0a3d0498",
+        "pythonTargetSha256": "0ba9da06a1318e9c7eaadbbcaa81f7139395cb96b17104f7de290ade2e8ece00",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.RuntimeValue.",
         "review": null,
@@ -11559,179 +11096,6 @@
         "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.ValidatedRecord.",
         "review": null,
         "ledgerMappingSha256": "53a4611d7b117608085bcbde5f0a0133331e09439fb2f5ceb6eba5f62353af77"
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::NegativeMoney|variant|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::NegativeMoney",
-      "kind": "variant",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "fd1f24e5df097957de1ffdd274e74831d444d3ca932c82493efc8121f3395bc2",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:variant:yosoi::contracts::ValidationCode::NegativeMoney@signature:fd1f24e5df097957de1ffdd274e74831d444d3ca932c82493efc8121f3395bc2@source:b2ebec0d12c8677288e9e824a8240608975df035daef56841897c14b60156f23",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.FieldIssueKind",
-        "pythonTargetSha256": "1983007d0a0937734f32e83a37f8abcdb14a85123162b56a4fce36d30acc8c94",
-        "semanticEquivalent": "The Rust ValidationCode scalar is exposed at ContractOutcome.issues[*].fields[*].kind.code.",
-        "rationale": "NegativeMoney is a returned literal code on the existing typed FieldIssueKind view, not a constructor.",
-        "review": null,
-        "ledgerMappingSha256": "4f4165626003c073c7e8d42046380c7e207c6261c46f3ca0d1d054b971215c8d"
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::clone|function|trait:Clone|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::clone",
-      "kind": "function",
-      "trait": "Clone",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "4bd1d66c79b169fe2b0b8cc224c5723e255b05cecc9bb9134cd82111e9b7dd83",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::clone@signature:4bd1d66c79b169fe2b0b8cc224c5723e255b05cecc9bb9134cd82111e9b7dd83@trait:Clone@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
-        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::deserialize|function|trait:Deserialize|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::deserialize",
-      "kind": "function",
-      "trait": "Deserialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::eq|function|trait:PartialEq|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::eq",
-      "kind": "function",
-      "trait": "PartialEq",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "ca8c2e65bc2ed6e5fad538846a267311e593c4b758deebea968ef598edf1d795",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::eq@signature:ca8c2e65bc2ed6e5fad538846a267311e593c4b758deebea968ef598edf1d795@trait:PartialEq@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
-        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::fmt|function|trait:Debug|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::fmt",
-      "kind": "function",
-      "trait": "Debug",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
-      "baselineStatus": "language-specific",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "language-specific",
-        "pythonTarget": "yosoi.contracts.FieldIssueKind.code",
-        "pythonTargetSha256": "6f9396d33eea9d5bb944b2acbc32edd5b544e2f9866dc5ac62f945de86682dde",
-        "semanticEquivalent": null,
-        "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-        "review": {
-          "status": "reviewed",
-          "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
-          "pythonEquivalent": "repr(value); explicit access: public fields/properties, model_dump() for Pydantic models, union tag and payload fields",
-          "reviewer": "Codex owner",
-          "reviewedAt": "2026-10-05T04:14:55.668428+00:00"
-        },
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Debug provides a diagnostic representation.",
-        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode::serialize|function|trait:Serialize|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode::serialize",
-      "kind": "function",
-      "trait": "Serialize",
-      "surface": "member",
-      "parentRustPath": "yosoi::contracts::ValidationCode",
-      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
-      "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::contracts::ValidationCode::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:fd5fc7c7daead1620d40549178fc9ca6b5aa3962a39a9264fde0e374f5ca79e1",
-      "classification": "trait-mechanic",
-      "mapping": {
-        "decision": "missing",
-        "pythonTarget": null,
-        "pythonTargetSha256": null,
-        "semanticEquivalent": null,
-        "rationale": null,
-        "review": null,
-        "ledgerMappingSha256": null
-      },
-      "mechanic": {
-        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
-        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
-      }
-    },
-    {
-      "id": "yosoi::contracts::ValidationCode|enum|trait:|occurrence:1",
-      "rustPath": "yosoi::contracts::ValidationCode",
-      "kind": "enum",
-      "trait": null,
-      "surface": "item",
-      "parentRustPath": null,
-      "signatureSha256": "5a974fecca2fb7e949ec4477ef9850beed8e2f0de6914dab399739db1466ea89",
-      "baselineStatus": "mapped",
-      "symbolKey": "page:enum:yosoi::contracts::ValidationCode",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.contracts.FieldIssueKind.code",
-        "pythonTargetSha256": "6f9396d33eea9d5bb944b2acbc32edd5b544e2f9866dc5ac62f945de86682dde",
-        "semanticEquivalent": null,
-        "rationale": "The live Python surface exposes the corresponding public target yosoi.contracts.FieldIssueKind.code.",
-        "review": null,
-        "ledgerMappingSha256": "daae5809de834ce281b59c632c20f67dba7e00ea985138432056d65ff62d0ed1"
       }
     },
     {

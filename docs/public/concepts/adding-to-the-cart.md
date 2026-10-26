@@ -110,7 +110,7 @@ struct CartLine {
     #[ys(description = "Quantity text", locator = ys::locator::css(".shop-quantity span").text())]
     quantity: String,
     #[ys(description = "Line total", locator = ys::locator::css(".shop-line-total").text())]
-    total: ys::Money,
+    total: String,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .named("lamp"),
                 ys::action::check(|line: &CartLine| line.quantity == "1")
                     .named("one unit"),
-                ys::action::check(|line: &CartLine| line.total.minor_units() == 6800)
+                ys::action::check(|line: &CartLine| line.total == "$68.00")
                     .named("expected total"),
             ],
         )
@@ -176,7 +176,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 The product ID scopes both the click and the cart record to the lamp. `on_failure` stops dependent work when a prerequisite fails. The wait establishes that its cart line exists. The final Contract assertion validates exactly one record and checks the intended name, quantity, and total. We then print values from its retained HTML.
 
-Rust's native Contract fields support String and Money here, so quantity is retained as text. The total becomes Money. Run `cargo run`: the record prints `Arc desk lamp x1: $68.00`.
+Rust's native Contract fields support String here, so quantity is retained as text. The total remains the source text. Run `cargo run`: the record prints `Arc desk lamp x1: $68.00`.
 
 ### Python
 
@@ -191,7 +191,7 @@ class CartLine(ys.Contract):
     root = ys.css('[data-shop-part="cart-line"][data-product-id="obj-001"]')
     name: str = ys.Field("Product name", locator=ys.css(".shop-cart-item-name"))
     quantity: int = ys.Field("Quantity", locator=ys.css(".shop-quantity span"), ge=1)
-    total: ys.Money = ys.Field("Line total", locator=ys.css(".shop-line-total"))
+    total: str = ys.Field("Line total", locator=ys.css(".shop-line-total"))
 
 
 async def main():
@@ -214,7 +214,7 @@ async def main():
                     ys.check("lamp", lambda line: line.name == "Arc desk lamp"),
                     ys.check("one unit", lambda line: line.quantity == 1),
                     ys.check(
-                        "expected total", lambda line: line.total.minor_units == 6800
+                        "expected total", lambda line: line.total == "$68.00"
                     ),
                 ],
             ),
@@ -237,7 +237,7 @@ asyncio.run(main())
 
 The product ID scopes both the click and the cart record to the lamp. `on_failure` stops dependent work when a prerequisite fails. The wait establishes that its cart line exists. The final Contract assertion validates exactly one record and checks the intended name, quantity, and total. We then print values from its retained HTML.
 
-Pydantic constructs quantity as an integer and applies the minimum of one. The total becomes Money. Run `uv run python main.py`: the record prints `Arc desk lamp x1: $68.00`.
+Pydantic constructs quantity as an integer and applies the minimum of one. The total remains the source text. Run `uv run python main.py`: the record prints `Arc desk lamp x1: $68.00`.
 
 ## Keep the effect and its evidence together
 

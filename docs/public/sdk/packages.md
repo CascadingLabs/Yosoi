@@ -32,7 +32,7 @@ declared mapping from snapshot-matched conformance evidence.
 >
 > `ys.Contract` uses Pydantic types, defaults, and validators to build business
 > records from Rust-located evidence. `RuntimeContract` retains Rust's portable
-> String and Money vocabulary and staged validation behavior.
+> String vocabulary and staged validation behavior.
 
 ## Optional capabilities
 

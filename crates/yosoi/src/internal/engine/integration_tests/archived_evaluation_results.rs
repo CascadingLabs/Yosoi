@@ -33,7 +33,7 @@ struct AuthorProfile {
         description = "Author hourly rate",
         locator = locator::text_literal("$12.00").text()
     )]
-    rate: ys::Money,
+    rate: String,
 
     #[ys(
         description = "Optional author role",
@@ -410,7 +410,7 @@ fn assert_typed_author_values(run: &ys::ContractRunRecord) -> TestResult {
         return Ok(());
     };
     if author.author != "John Doe"
-        || author.rate.minor_units() != 1_200
+        || author.rate != "$12.00"
         || author.role.as_deref() != Some("Staff")
         || author.specialties != ["Rust".to_owned(), "Rust".to_owned()]
     {
@@ -485,7 +485,9 @@ async fn assert_portable_author_result(archive: &ys::Archive, reference: &str) -
         .ok_or_else(|| io::Error::other("archived Contract result omitted rate"))?;
     if rate.value()
         != &(ArchivedFieldValue::ExactlyOne {
-            value: ArchivedValue::MoneyUsd { minor_units: 1_200 },
+            value: ArchivedValue::String {
+                value: "$12.00".to_owned(),
+            },
         })
     {
         return Err(io::Error::other("archived rate did not retain $12.00").into());

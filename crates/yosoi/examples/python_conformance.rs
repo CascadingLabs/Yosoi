@@ -7,8 +7,8 @@ use std::{
 };
 use yosoi::{
     contracts::{
-        ContractSchema, ContractValue, Money, RuntimeContract, RuntimeContractOutcome,
-        RuntimeFieldValue, RuntimeValue,
+        ContractSchema, ContractValue, RuntimeContract, RuntimeContractOutcome, RuntimeFieldValue,
+        RuntimeValue,
     },
     documents::{Document, DocumentId, DocumentProfile},
     locators::{Plan, QuerySpec, TreeCoordinate, css, xpath},
@@ -43,7 +43,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 json!({
                     "string": <String as ContractValue>::TYPE_ID,
-                    "money": <Money as ContractValue>::TYPE_ID,
                     "custom": <CustomValue as ContractValue>::TYPE_ID,
                     "empty": <EmptyIdentity as ContractValue>::TYPE_ID,
                 })
@@ -284,6 +283,5 @@ fn default_model(type_name: &str) -> Result<Value, Box<dyn Error>> {
 fn scalar(value: &RuntimeValue) -> Value {
     match value {
         RuntimeValue::String(value) => json!(value),
-        RuntimeValue::MoneyUsd(value) => json!(value),
     }
 }

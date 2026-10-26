@@ -143,7 +143,7 @@ invent that default.
 Python Contract outcomes cannot be converted into the portable Rust archive
 format because Python models can have custom types and validation behavior.
 `ContractOutcome.to_archived()` raises `TypeError`; use `RuntimeContract` when
-the Rust String/Money value format and archive are required.
+the Rust String value format and archive are required.
 
 ## Separate budgets
 
@@ -177,7 +177,7 @@ been collected, so it does not interrupt arbitrary work inside a custom
 validator.
 
 `RuntimeContract` keeps the Rust-owned staged path and accepts the same
-`ExtractionLimits` and `ValidationLimits`. It supports Rust String and Money
+`ExtractionLimits` and `ValidationLimits`. It supports Rust String
 conversions. An exhausted native budget remains a typed terminal report with
 the relevant limit, maximum, and observed count. Inspect its stage before
 adjusting that operation's budget.

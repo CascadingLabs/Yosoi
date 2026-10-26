@@ -38,7 +38,7 @@ pub use contract_run::{
     ArchivedContractOutcome, ArchivedContractRecordIssue, ArchivedContractValue,
     ArchivedExtractionDiagnostic, ArchivedExtractionFailure, ArchivedExtractionLimit,
     ArchivedFieldIssue, ArchivedFieldIssueKind, ArchivedValidatedContractRecord,
-    ArchivedValidationCode, ArchivedValidationFailure, ContractRunRecord, ContractRunRecordError,
+    ArchivedValidationFailure, ContractRunRecord, ContractRunRecordError,
 };
 // The development harness exposes this parent module publicly. Keep the seal
 // crate-private there while allowing the SDK facade to implement extensions.
