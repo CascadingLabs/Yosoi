@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "latest": "fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe",
+  "latest": "dcb6411a41322c555092dda1df9bb0e49059b10d",
   "snapshots": {
     "4c5ad34b247c86577189ec8ff41857945bcf95df": {
       "sourceCommit": "4c5ad34b247c86577189ec8ff41857945bcf95df",
@@ -151,6 +151,16 @@
       "sha256": "e72561874ac297fcf0b6fae06624d0b79a5ba390e8309bf4fc39a3be8c855226",
       "manifestPath": "snapshots/fb8f03d072ba821bb4043c4df8d7aa2e6ff28cbe/content/archive-manifest.json",
       "manifestSha256": "2c5bf8452f6b5188dc7986d472eeee63f4006c91838c6df3343a6d3bde61fcca"
+    },
+    "dcb6411a41322c555092dda1df9bb0e49059b10d": {
+      "sourceCommit": "dcb6411a41322c555092dda1df9bb0e49059b10d",
+      "version": "0.3.0",
+      "repository": "CascadingLabs/Yosoi",
+      "artifactCommit": "c6370980d6e9633b7d5c25f02e209d1aca9b3864",
+      "bundlePath": "snapshots/dcb6411a41322c555092dda1df9bb0e49059b10d/bundle.tar.gz",
+      "sha256": "9a0aa9b376290f89202d7144ba1101f12971cc34e01dda4f6502747efef2c41a",
+      "manifestPath": "snapshots/dcb6411a41322c555092dda1df9bb0e49059b10d/content/archive-manifest.json",
+      "manifestSha256": "0afbe853675cd7e59687a505d4a65c15a3bb7a41644ea459e1e1afe7a360cee7"
     }
   }
 }
