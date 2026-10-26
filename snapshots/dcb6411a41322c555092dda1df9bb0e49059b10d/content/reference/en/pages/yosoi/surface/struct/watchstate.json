@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::WatchState",
+  "publicPath": "yosoi::surface::WatchState",
+  "kind": "struct",
+  "title": "yosoi::surface::WatchState",
+  "signature": "pub struct WatchState",
+  "docs": "Observable state of one logical region subscription.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 90,
+    "lineEnd": 97,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L90-L97"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::WatchState::clone",
+      "publicPath": "yosoi::surface::WatchState::clone",
+      "title": "yosoi::surface::WatchState::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::WatchState",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::WatchState::fmt",
+      "publicPath": "yosoi::surface::WatchState::fmt",
+      "title": "yosoi::surface::WatchState::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::WatchState::id",
+      "publicPath": "yosoi::surface::WatchState::id",
+      "title": "yosoi::surface::WatchState::id",
+      "kind": "struct_field",
+      "signature": "pub id: yosoi::surface::WatchId",
+      "docs": "Subscription identity scoped to this session.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L92-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::WatchState::needs_reconciliation",
+      "publicPath": "yosoi::surface::WatchState::needs_reconciliation",
+      "title": "yosoi::surface::WatchState::needs_reconciliation",
+      "kind": "struct_field",
+      "signature": "pub needs_reconciliation: bool",
+      "docs": "Whether the provider/caller must reconcile the region before claiming it unchanged.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L96-L96"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::WatchState::reference",
+      "publicPath": "yosoi::surface::WatchState::reference",
+      "title": "yosoi::surface::WatchState::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::Reference",
+      "docs": "Last explicitly selected captured region.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 94,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L94-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::WatchState::serialize",
+      "publicPath": "yosoi::surface::WatchState::serialize",
+      "title": "yosoi::surface::WatchState::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L89-L89"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3d287848331783329d66f56e67516cc20ec476166f15b442995be68491e00d5",
+  "slug": "yosoi/surface/struct/watchstate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3d287848331783329d66f56e67516cc20ec476166f15b442995be68491e00d5"
+}

@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Page",
+  "publicPath": "yosoi::surface::Page",
+  "kind": "struct",
+  "title": "yosoi::surface::Page",
+  "signature": "pub struct Page",
+  "docs": "A bounded overview, member page, or literal-search page.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 204,
+    "lineEnd": 221,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L204-L221"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::Page::capture",
+      "publicPath": "yosoi::surface::Page::capture",
+      "title": "yosoi::surface::Page::capture",
+      "kind": "struct_field",
+      "signature": "pub capture: String",
+      "docs": "Exact interpretation being read.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 206,
+        "lineEnd": 206,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L206-L206"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Page::clone",
+      "publicPath": "yosoi::surface::Page::clone",
+      "title": "yosoi::surface::Page::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Page",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::coverage",
+      "publicPath": "yosoi::surface::Page::coverage",
+      "title": "yosoi::surface::Page::coverage",
+      "kind": "struct_field",
+      "signature": "pub coverage: yosoi::surface::Coverage",
+      "docs": "Completeness of the source, independent of paging.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 220,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L220-L220"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Page::deserialize",
+      "publicPath": "yosoi::surface::Page::deserialize",
+      "title": "yosoi::surface::Page::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::entries",
+      "publicPath": "yosoi::surface::Page::entries",
+      "title": "yosoi::surface::Page::entries",
+      "kind": "struct_field",
+      "signature": "pub entries: Vec<yosoi::surface::Entry>",
+      "docs": "Entries included in this response.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L214-L214"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Page::fmt",
+      "publicPath": "yosoi::surface::Page::fmt",
+      "title": "yosoi::surface::Page::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::next",
+      "publicPath": "yosoi::surface::Page::next",
+      "title": "yosoi::surface::Page::next",
+      "kind": "struct_field",
+      "signature": "pub next: Option<yosoi::surface::Continuation>",
+      "docs": "Next window of the same operation, if more remain after this page.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 218,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L218-L218"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::offset",
+      "publicPath": "yosoi::surface::Page::offset",
+      "title": "yosoi::surface::Page::offset",
+      "kind": "struct_field",
+      "signature": "pub offset: usize",
+      "docs": "Starting offset within that population.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L212-L212"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::omitted",
+      "publicPath": "yosoi::surface::Page::omitted",
+      "title": "yosoi::surface::Page::omitted",
+      "kind": "struct_field",
+      "signature": "pub omitted: usize",
+      "docs": "Number of population entries absent from this particular response.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 216,
+        "lineEnd": 216,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L216-L216"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::operation",
+      "publicPath": "yosoi::surface::Page::operation",
+      "title": "yosoi::surface::Page::operation",
+      "kind": "struct_field",
+      "signature": "pub operation: String",
+      "docs": "Operation that produced this page.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 208,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L208-L208"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Page::serialize",
+      "publicPath": "yosoi::surface::Page::serialize",
+      "title": "yosoi::surface::Page::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L203-L203"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Page::total",
+      "publicPath": "yosoi::surface::Page::total",
+      "title": "yosoi::surface::Page::total",
+      "kind": "struct_field",
+      "signature": "pub total: usize",
+      "docs": "Eligible entries in the full addressed population.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 210,
+        "lineEnd": 210,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L210-L210"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5166b90f5822205ff6a92f304843e68a24f8a85996478cf130113285ddc878a1",
+  "slug": "yosoi/surface/struct/page",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5166b90f5822205ff6a92f304843e68a24f8a85996478cf130113285ddc878a1"
+}

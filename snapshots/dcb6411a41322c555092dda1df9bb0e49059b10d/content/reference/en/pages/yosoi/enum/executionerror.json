@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::ExecutionError",
+  "publicPath": "yosoi::ExecutionError",
+  "kind": "enum",
+  "title": "yosoi::ExecutionError",
+  "signature": "pub enum ExecutionError",
+  "docs": "Failure from the shared execution boundary, preserving its diagnostic source.",
+  "source": {
+    "file": "crates/yosoi/src/surface/policy.rs",
+    "lineStart": 83,
+    "lineEnd": 96,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L83-L96"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 60,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/lib.rs#L60-L60"
+  },
+  "aliases": [
+    "yosoi::surface::ExecutionError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::ExecutionError::Execution",
+      "publicPath": "yosoi::ExecutionError::Execution",
+      "title": "yosoi::ExecutionError::Execution",
+      "kind": "variant",
+      "signature": "Execution { outcomes: Vec<yosoi::surface::Outcome>, source: Box<dyn Error + Send + Sync> }",
+      "docs": "Execution failed after producing retained outcomes, including the failed attempt.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 89,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L89-L95"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::ExecutionError::Execution::outcomes",
+          "publicPath": "yosoi::ExecutionError::Execution::outcomes",
+          "title": "yosoi::ExecutionError::Execution::outcomes",
+          "kind": "struct_field",
+          "signature": "outcomes: Vec<yosoi::surface::Outcome>",
+          "docs": "Separate completed or partial executions; each remains archivable.",
+          "source": {
+            "file": "crates/yosoi/src/surface/policy.rs",
+            "lineStart": 91,
+            "lineEnd": 91,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L91-L91"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::ExecutionError::Execution::source",
+          "publicPath": "yosoi::ExecutionError::Execution::source",
+          "title": "yosoi::ExecutionError::Execution::source",
+          "kind": "struct_field",
+          "signature": "source: Box<dyn Error + Send + Sync>",
+          "docs": "Original execution or cleanup failure, without inventing success.",
+          "source": {
+            "file": "crates/yosoi/src/surface/policy.rs",
+            "lineStart": 94,
+            "lineEnd": 94,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L94-L94"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::ExecutionError::Operation",
+      "publicPath": "yosoi::ExecutionError::Operation",
+      "title": "yosoi::ExecutionError::Operation",
+      "kind": "variant",
+      "signature": "Operation(Box<dyn Error + Send + Sync>)",
+      "docs": "Preparation, validation, provider, retention or cleanup failed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 86,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L86-L86"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::ExecutionError::Operation::0",
+          "publicPath": "yosoi::ExecutionError::Operation::0",
+          "title": "yosoi::ExecutionError::Operation::0",
+          "kind": "struct_field",
+          "signature": "0: Box<dyn Error + Send + Sync>",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/policy.rs",
+            "lineStart": 86,
+            "lineEnd": 86,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L86-L86"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::ExecutionError::fmt",
+      "publicPath": "yosoi::ExecutionError::fmt",
+      "title": "yosoi::ExecutionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::ExecutionError::fmt",
+      "publicPath": "yosoi::ExecutionError::fmt",
+      "title": "yosoi::ExecutionError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::ExecutionError::source",
+      "publicPath": "yosoi::ExecutionError::source",
+      "title": "yosoi::ExecutionError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/policy.rs#L82-L82"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "6a2e3eca6c62acec1a80abafdf5ec304183654e140466b91743a76aaf8c5d996",
+  "slug": "yosoi/enum/executionerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "6a2e3eca6c62acec1a80abafdf5ec304183654e140466b91743a76aaf8c5d996"
+}

@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Outcome",
+  "publicPath": "yosoi::surface::Outcome",
+  "kind": "struct",
+  "title": "yosoi::surface::Outcome",
+  "signature": "pub struct Outcome",
+  "docs": "A self-contained Surface execution suitable for normal Archive persistence.\nCaptures and selectors are data; no live session, cursor or action lease is stored.",
+  "source": {
+    "file": "crates/yosoi/src/surface/outcome.rs",
+    "lineStart": 216,
+    "lineEnd": 231,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L216-L231"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L28-L28"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Outcome::clone",
+      "publicPath": "yosoi::surface::Outcome::clone",
+      "title": "yosoi::surface::Outcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Outcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L214-L214"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::complete",
+      "publicPath": "yosoi::surface::Outcome::complete",
+      "title": "yosoi::surface::Outcome::complete",
+      "kind": "struct_field",
+      "signature": "pub complete: bool",
+      "docs": "Whether all evidence required by the selected archive policy was retained.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L228-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::deserialize",
+      "publicPath": "yosoi::surface::Outcome::deserialize",
+      "title": "yosoi::surface::Outcome::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L214-L214"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::fmt",
+      "publicPath": "yosoi::surface::Outcome::fmt",
+      "title": "yosoi::surface::Outcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L214-L214"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::limits",
+      "publicPath": "yosoi::surface::Outcome::limits",
+      "title": "yosoi::surface::Outcome::limits",
+      "kind": "struct_field",
+      "signature": "pub limits: yosoi::surface::ArchiveLimits",
+      "docs": "Limits governing this retained outcome.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 230,
+        "lineEnd": 230,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L230-L230"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::new",
+      "publicPath": "yosoi::surface::Outcome::new",
+      "title": "yosoi::surface::Outcome::new",
+      "kind": "function",
+      "signature": "pub fn new(id: impl Into<String>, limits: yosoi::surface::ArchiveLimits) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Starts an empty portable outcome for an adapter-managed run.\nSession users normally obtain this value through `Session::outcome`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 236,
+        "lineEnd": 248,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L236-L248"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::plans",
+      "publicPath": "yosoi::surface::Outcome::plans",
+      "title": "yosoi::surface::Outcome::plans",
+      "kind": "struct_field",
+      "signature": "pub plans: Vec<yosoi::locators::Plan>",
+      "docs": "Existing compiled locator Plans, retained without a new selector language.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L224-L224"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::record",
+      "publicPath": "yosoi::surface::Outcome::record",
+      "title": "yosoi::surface::Outcome::record",
+      "kind": "struct_field",
+      "signature": "pub record: yosoi::automation_record::AutomationRecord",
+      "docs": "Original ordered observations and operation certainty.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 220,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L220-L220"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::sealed",
+      "publicPath": "yosoi::surface::Outcome::sealed",
+      "title": "yosoi::surface::Outcome::sealed",
+      "kind": "struct_field",
+      "signature": "pub sealed: bool",
+      "docs": "Whether logical finalization was observed; external cleanup has its own receipts.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 226,
+        "lineEnd": 226,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L226-L226"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::serialize",
+      "publicPath": "yosoi::surface::Outcome::serialize",
+      "title": "yosoi::surface::Outcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L214-L214"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::sources",
+      "publicPath": "yosoi::surface::Outcome::sources",
+      "title": "yosoi::surface::Outcome::sources",
+      "kind": "struct_field",
+      "signature": "pub sources: Vec<yosoi::surface::ArchivedSource>",
+      "docs": "Retained original documents and materialized evidence envelopes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 222,
+        "lineEnd": 222,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L222-L222"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::surface",
+      "publicPath": "yosoi::surface::Outcome::surface",
+      "title": "yosoi::surface::Outcome::surface",
+      "kind": "function",
+      "signature": "pub fn surface(&self, key: &str, limits: yosoi::SurfaceLimits) -> Result<yosoi::Surface, yosoi::SurfaceError>",
+      "docs": "Restores one exact retained Surface without granting live authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 394,
+        "lineEnd": 400,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L394-L400"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::validate",
+      "publicPath": "yosoi::surface::Outcome::validate",
+      "title": "yosoi::surface::Outcome::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Validates schema, original record, bounded source bytes and compiled Plans.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 313,
+        "lineEnd": 391,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L313-L391"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Outcome::version",
+      "publicPath": "yosoi::surface::Outcome::version",
+      "title": "yosoi::surface::Outcome::version",
+      "kind": "struct_field",
+      "signature": "pub version: u32",
+      "docs": "Logical portable Surface outcome version.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 218,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L218-L218"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Outcome::with_source",
+      "publicPath": "yosoi::surface::Outcome::with_source",
+      "title": "yosoi::surface::Outcome::with_source",
+      "kind": "function",
+      "signature": "pub fn with_source(self, source: yosoi::surface::ArchivedSource) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Consumes this value and returns it with one exact retained source.\nEqual keys must have equal bytes and interpretation. Invalid, conflicting,\nexcessive or sealed inputs return an error. Clone first to retain the old\nvalue on failure. Live runtime collectors preserve partial outcomes separately.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 254,
+        "lineEnd": 257,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/outcome.rs#L254-L257"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4e1927325a96889d163657763e1319fd4552b6b7ce3a3bab87ffc70acb0a62ff",
+  "slug": "yosoi/surface/struct/outcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4e1927325a96889d163657763e1319fd4552b6b7ce3a3bab87ffc70acb0a62ff"
+}

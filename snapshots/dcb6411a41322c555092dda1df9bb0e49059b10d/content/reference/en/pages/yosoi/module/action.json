@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::action",
+  "publicPath": "yosoi::action",
+  "kind": "module",
+  "title": "yosoi::action",
+  "signature": "pub mod action",
+  "docs": "Constructors for the actions collected in a Flow.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 1,
+    "lineEnd": 175,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/action.rs#L1-L175"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "c8f2856931c49354ffe13e197486b95417f1224624e7d47e598c8c9af1870a2c",
+  "slug": "yosoi/module/action",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c8f2856931c49354ffe13e197486b95417f1224624e7d47e598c8c9af1870a2c"
+}

@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::DiscoverySource",
+  "publicPath": "yosoi::map::DiscoverySource",
+  "kind": "enum",
+  "title": "yosoi::map::DiscoverySource",
+  "signature": "pub enum DiscoverySource",
+  "docs": "Provenance category explaining how a hostname or page entered the inventory.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 16,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L16-L33"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::DiscoverySource"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::DiscoverySource::HtmlLink",
+      "publicPath": "yosoi::map::DiscoverySource::HtmlLink",
+      "title": "yosoi::map::DiscoverySource::HtmlLink",
+      "kind": "variant",
+      "signature": "HtmlLink",
+      "docs": "A link extracted from an acquired HTML page.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::PassiveCertificate",
+      "publicPath": "yosoi::map::DiscoverySource::PassiveCertificate",
+      "title": "yosoi::map::DiscoverySource::PassiveCertificate",
+      "kind": "variant",
+      "signature": "PassiveCertificate",
+      "docs": "A name reported by certificate evidence, without an HTTP reachability claim.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::PassiveProvider",
+      "publicPath": "yosoi::map::DiscoverySource::PassiveProvider",
+      "title": "yosoi::map::DiscoverySource::PassiveProvider",
+      "kind": "variant",
+      "signature": "PassiveProvider(yosoi::map::PublicProvider)",
+      "docs": "A name reported by the specified anonymous historical discovery index.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L24-L24"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::map::DiscoverySource::PassiveProvider::0",
+          "publicPath": "yosoi::map::DiscoverySource::PassiveProvider::0",
+          "title": "yosoi::map::DiscoverySource::PassiveProvider::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::map::PublicProvider",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/map/mod.rs",
+            "lineStart": 24,
+            "lineEnd": 24,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L24-L24"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::Redirect",
+      "publicPath": "yosoi::map::DiscoverySource::Redirect",
+      "title": "yosoi::map::DiscoverySource::Redirect",
+      "kind": "variant",
+      "signature": "Redirect",
+      "docs": "A destination observed while handling an HTTP redirect.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::Robots",
+      "publicPath": "yosoi::map::DiscoverySource::Robots",
+      "title": "yosoi::map::DiscoverySource::Robots",
+      "kind": "variant",
+      "signature": "Robots",
+      "docs": "Discovery through an acquired robots document.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::Seed",
+      "publicPath": "yosoi::map::DiscoverySource::Seed",
+      "title": "yosoi::map::DiscoverySource::Seed",
+      "kind": "variant",
+      "signature": "Seed",
+      "docs": "The caller's authored seed, rather than an inferred discovery.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::Sitemap",
+      "publicPath": "yosoi::map::DiscoverySource::Sitemap",
+      "title": "yosoi::map::DiscoverySource::Sitemap",
+      "kind": "variant",
+      "signature": "Sitemap",
+      "docs": "A page or nested support document named by a sitemap.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::DiscoverySource::XmlLink",
+      "publicPath": "yosoi::map::DiscoverySource::XmlLink",
+      "title": "yosoi::map::DiscoverySource::XmlLink",
+      "kind": "variant",
+      "signature": "XmlLink",
+      "docs": "A link extracted from an acquired XML document.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::clone",
+      "publicPath": "yosoi::map::DiscoverySource::clone",
+      "title": "yosoi::map::DiscoverySource::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::DiscoverySource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::cmp",
+      "publicPath": "yosoi::map::DiscoverySource::cmp",
+      "title": "yosoi::map::DiscoverySource::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::map::DiscoverySource) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::eq",
+      "publicPath": "yosoi::map::DiscoverySource::eq",
+      "title": "yosoi::map::DiscoverySource::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::DiscoverySource) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::fmt",
+      "publicPath": "yosoi::map::DiscoverySource::fmt",
+      "title": "yosoi::map::DiscoverySource::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::is_passive",
+      "publicPath": "yosoi::map::DiscoverySource::is_passive",
+      "title": "yosoi::map::DiscoverySource::is_passive",
+      "kind": "function",
+      "signature": "pub const fn is_passive(self) -> bool",
+      "docs": "Returns whether this category uses passive index evidence rather than page exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 37,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L37-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::partial_cmp",
+      "publicPath": "yosoi::map::DiscoverySource::partial_cmp",
+      "title": "yosoi::map::DiscoverySource::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::map::DiscoverySource) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::DiscoverySource::serialize",
+      "publicPath": "yosoi::map::DiscoverySource::serialize",
+      "title": "yosoi::map::DiscoverySource::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b204faa4a91d76dc6feaee769a4a9eb9fec2c9f1c227b3fb22b4b5e518db24c5",
+  "slug": "yosoi/map/enum/discoverysource",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b204faa4a91d76dc6feaee769a4a9eb9fec2c9f1c227b3fb22b4b5e518db24c5"
+}

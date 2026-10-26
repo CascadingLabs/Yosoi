@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::IncompleteEvidence",
+  "publicPath": "yosoi::locators::IncompleteEvidence",
+  "kind": "enum",
+  "title": "yosoi::locators::IncompleteEvidence",
+  "signature": "pub enum IncompleteEvidence",
+  "docs": "Evidence states which cannot support a complete absence claim.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 70,
+    "lineEnd": 83,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L70-L83"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/locators.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::IncompleteEvidence",
+    "yosoi::prelude::locators::IncompleteEvidence"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::IncompleteEvidence::Partial",
+      "publicPath": "yosoi::locators::IncompleteEvidence::Partial",
+      "title": "yosoi::locators::IncompleteEvidence::Partial",
+      "kind": "variant",
+      "signature": "Partial { reason_code: String, lost_items: Option<u64> }",
+      "docs": "Evidence is known to omit some items and cannot establish complete absence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 72,
+        "lineEnd": 77,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L72-L77"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::IncompleteEvidence::Partial::reason_code",
+          "publicPath": "yosoi::locators::IncompleteEvidence::Partial::reason_code",
+          "title": "yosoi::locators::IncompleteEvidence::Partial::reason_code",
+          "kind": "struct_field",
+          "signature": "reason_code: String",
+          "docs": "Structural explanation of the evidence loss.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 74,
+            "lineEnd": 74,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L74-L74"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::IncompleteEvidence::Partial::lost_items",
+          "publicPath": "yosoi::locators::IncompleteEvidence::Partial::lost_items",
+          "title": "yosoi::locators::IncompleteEvidence::Partial::lost_items",
+          "kind": "struct_field",
+          "signature": "lost_items: Option<u64>",
+          "docs": "Number of omitted items if quantified; `None` does not mean zero loss.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 76,
+            "lineEnd": 76,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L76-L76"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::IncompleteEvidence::Unknown",
+      "publicPath": "yosoi::locators::IncompleteEvidence::Unknown",
+      "title": "yosoi::locators::IncompleteEvidence::Unknown",
+      "kind": "variant",
+      "signature": "Unknown { reason_code: String }",
+      "docs": "Evidence coverage is unknown and cannot establish complete absence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 79,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L79-L82"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::IncompleteEvidence::Unknown::reason_code",
+          "publicPath": "yosoi::locators::IncompleteEvidence::Unknown::reason_code",
+          "title": "yosoi::locators::IncompleteEvidence::Unknown::reason_code",
+          "kind": "struct_field",
+          "signature": "reason_code: String",
+          "docs": "Structural explanation of the unresolved coverage.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 81,
+            "lineEnd": 81,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L81-L81"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::locators::IncompleteEvidence::clone",
+      "publicPath": "yosoi::locators::IncompleteEvidence::clone",
+      "title": "yosoi::locators::IncompleteEvidence::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::IncompleteEvidence",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::IncompleteEvidence::deserialize",
+      "publicPath": "yosoi::locators::IncompleteEvidence::deserialize",
+      "title": "yosoi::locators::IncompleteEvidence::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::IncompleteEvidence::eq",
+      "publicPath": "yosoi::locators::IncompleteEvidence::eq",
+      "title": "yosoi::locators::IncompleteEvidence::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::IncompleteEvidence) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::IncompleteEvidence::fmt",
+      "publicPath": "yosoi::locators::IncompleteEvidence::fmt",
+      "title": "yosoi::locators::IncompleteEvidence::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::IncompleteEvidence::serialize",
+      "publicPath": "yosoi::locators::IncompleteEvidence::serialize",
+      "title": "yosoi::locators::IncompleteEvidence::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/outcome.rs#L68-L68"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4ed1427e5ed08836bf744ae5145c01508ad8900d06e6ac4e524f26c72bdc8c7e",
+  "slug": "yosoi/locators/enum/incompleteevidence",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4ed1427e5ed08836bf744ae5145c01508ad8900d06e6ac4e524f26c72bdc8c7e"
+}

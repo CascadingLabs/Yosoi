@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::IpFamily",
+  "publicPath": "yosoi::policy::IpFamily",
+  "kind": "enum",
+  "title": "yosoi::policy::IpFamily",
+  "signature": "pub enum IpFamily",
+  "docs": "Address family permitted for outbound TCP connections.\n\nWith an external proxy this constrains the proxy connection, not the\nproxy's destination DNS or egress. Strict choices prohibit cross-family fallback.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+    "lineStart": 13,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L13-L21"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/policy.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::IpFamily"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::IpFamily::Ipv4Only",
+      "publicPath": "yosoi::policy::IpFamily::Ipv4Only",
+      "title": "yosoi::policy::IpFamily::Ipv4Only",
+      "kind": "variant",
+      "signature": "Ipv4Only",
+      "docs": "Connect only to IPv4 addresses.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::IpFamily::Ipv6Only",
+      "publicPath": "yosoi::policy::IpFamily::Ipv6Only",
+      "title": "yosoi::policy::IpFamily::Ipv6Only",
+      "kind": "variant",
+      "signature": "Ipv6Only",
+      "docs": "Connect only to IPv6 addresses.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::IpFamily::SystemDefault",
+      "publicPath": "yosoi::policy::IpFamily::SystemDefault",
+      "title": "yosoi::policy::IpFamily::SystemDefault",
+      "kind": "variant",
+      "signature": "SystemDefault",
+      "docs": "Retain the operating system's available address families.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::clone",
+      "publicPath": "yosoi::policy::IpFamily::clone",
+      "title": "yosoi::policy::IpFamily::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::IpFamily",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::default",
+      "publicPath": "yosoi::policy::IpFamily::default",
+      "title": "yosoi::policy::IpFamily::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::policy::IpFamily",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::deserialize",
+      "publicPath": "yosoi::policy::IpFamily::deserialize",
+      "title": "yosoi::policy::IpFamily::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::eq",
+      "publicPath": "yosoi::policy::IpFamily::eq",
+      "title": "yosoi::policy::IpFamily::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::IpFamily) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::fmt",
+      "publicPath": "yosoi::policy::IpFamily::fmt",
+      "title": "yosoi::policy::IpFamily::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::IpFamily::serialize",
+      "publicPath": "yosoi::policy::IpFamily::serialize",
+      "title": "yosoi::policy::IpFamily::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/policy/policy/network.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c06b59c3b61da96899e6845cbbd325c9998dee8a0da051875f4e68ca553973b6",
+  "slug": "yosoi/policy/enum/ipfamily",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c06b59c3b61da96899e6845cbbd325c9998dee8a0da051875f4e68ca553973b6"
+}

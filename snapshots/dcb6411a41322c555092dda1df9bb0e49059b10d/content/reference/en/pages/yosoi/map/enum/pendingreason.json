@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::PendingReason",
+  "publicPath": "yosoi::map::PendingReason",
+  "kind": "enum",
+  "title": "yosoi::map::PendingReason",
+  "signature": "pub enum PendingReason",
+  "docs": "Reason a retained page remains in the returned frontier.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 187,
+    "lineEnd": 196,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L187-L196"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/map.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::map::PendingReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::PendingReason::AwaitingExploration",
+      "publicPath": "yosoi::map::PendingReason::AwaitingExploration",
+      "title": "yosoi::map::PendingReason::AwaitingExploration",
+      "kind": "variant",
+      "signature": "AwaitingExploration",
+      "docs": "The operation exhausted its runnable work while this inventoried page awaited exploration.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 189,
+        "lineEnd": 189,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L189-L189"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::DepthBoundary",
+      "publicPath": "yosoi::map::PendingReason::DepthBoundary",
+      "title": "yosoi::map::PendingReason::DepthBoundary",
+      "kind": "variant",
+      "signature": "DepthBoundary",
+      "docs": "The page lies beyond the configured rooted link-depth boundary.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L191-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::OperationStopped",
+      "publicPath": "yosoi::map::PendingReason::OperationStopped",
+      "title": "yosoi::map::PendingReason::OperationStopped",
+      "kind": "variant",
+      "signature": "OperationStopped",
+      "docs": "The operation stopped before queued exploration could complete.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L193-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::ProbeCandidate",
+      "publicPath": "yosoi::map::PendingReason::ProbeCandidate",
+      "title": "yosoi::map::PendingReason::ProbeCandidate",
+      "kind": "variant",
+      "signature": "ProbeCandidate",
+      "docs": "The page is a probe candidate without ordinary rooted exploration evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L195-L195"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::clone",
+      "publicPath": "yosoi::map::PendingReason::clone",
+      "title": "yosoi::map::PendingReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::PendingReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L185-L185"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::eq",
+      "publicPath": "yosoi::map::PendingReason::eq",
+      "title": "yosoi::map::PendingReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::PendingReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L185-L185"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::fmt",
+      "publicPath": "yosoi::map::PendingReason::fmt",
+      "title": "yosoi::map::PendingReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L185-L185"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::serialize",
+      "publicPath": "yosoi::map::PendingReason::serialize",
+      "title": "yosoi::map::PendingReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L185-L185"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c5c3519cb847d2e19950bf7dc28e393471233fd9a2a98276adf761ccc33ea3d6",
+  "slug": "yosoi/map/enum/pendingreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c5c3519cb847d2e19950bf7dc28e393471233fd9a2a98276adf761ccc33ea3d6"
+}

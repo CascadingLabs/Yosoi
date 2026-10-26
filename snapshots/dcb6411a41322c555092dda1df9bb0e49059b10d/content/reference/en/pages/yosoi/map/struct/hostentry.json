@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::HostEntry",
+  "publicPath": "yosoi::map::HostEntry",
+  "kind": "struct",
+  "title": "yosoi::map::HostEntry",
+  "signature": "pub struct HostEntry",
+  "docs": "An admitted hostname with provenance and an explicit reachability evidence state.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 142,
+    "lineEnd": 149,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L142-L149"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::HostEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::HostEntry::clone",
+      "publicPath": "yosoi::map::HostEntry::clone",
+      "title": "yosoi::map::HostEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::HostEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::HostEntry::fmt",
+      "publicPath": "yosoi::map::HostEntry::fmt",
+      "title": "yosoi::map::HostEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::host",
+      "publicPath": "yosoi::map::HostEntry::host",
+      "title": "yosoi::map::HostEntry::host",
+      "kind": "struct_field",
+      "signature": "pub host: String",
+      "docs": "Canonical admitted hostname, without a scheme or path.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 144,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L144-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::observations",
+      "publicPath": "yosoi::map::HostEntry::observations",
+      "title": "yosoi::map::HostEntry::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: Vec<yosoi::map::Observation>",
+      "docs": "Retained observations explaining why this host entered the inventory.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L146-L146"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::HostEntry::serialize",
+      "publicPath": "yosoi::map::HostEntry::serialize",
+      "title": "yosoi::map::HostEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::HostEntry::verification",
+      "publicPath": "yosoi::map::HostEntry::verification",
+      "title": "yosoi::map::HostEntry::verification",
+      "kind": "struct_field",
+      "signature": "pub verification: yosoi::map::HostVerification",
+      "docs": "Whether HTTP acquisition produced evidence for the host.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 148,
+        "lineEnd": 148,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L148-L148"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bb3cfa63da85d766f8732148ccbd67f5fbccee8565aaaa39ae6053ada87211d3",
+  "slug": "yosoi/map/struct/hostentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bb3cfa63da85d766f8732148ccbd67f5fbccee8565aaaa39ae6053ada87211d3"
+}

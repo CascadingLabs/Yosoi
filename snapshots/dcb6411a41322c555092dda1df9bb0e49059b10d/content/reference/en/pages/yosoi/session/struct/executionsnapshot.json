@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::ExecutionSnapshot",
+  "publicPath": "yosoi::session::ExecutionSnapshot",
+  "kind": "struct",
+  "title": "yosoi::session::ExecutionSnapshot",
+  "signature": "pub struct ExecutionSnapshot",
+  "docs": "Independent execution counters from one shared pool, without an atomic multi-counter guarantee.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 45,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L45-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 33,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/session.rs#L33-L33"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionSnapshot"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::active",
+      "publicPath": "yosoi::session::ExecutionSnapshot::active",
+      "title": "yosoi::session::ExecutionSnapshot::active",
+      "kind": "struct_field",
+      "signature": "pub active: u32",
+      "docs": "Currently held worker permits across every Session sharing the pool.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L49-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::admitted",
+      "publicPath": "yosoi::session::ExecutionSnapshot::admitted",
+      "title": "yosoi::session::ExecutionSnapshot::admitted",
+      "kind": "struct_field",
+      "signature": "pub admitted: u64",
+      "docs": "Successful permit acquisitions, including resumed waits, not completed business operations.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::capacity",
+      "publicPath": "yosoi::session::ExecutionSnapshot::capacity",
+      "title": "yosoi::session::ExecutionSnapshot::capacity",
+      "kind": "struct_field",
+      "signature": "pub capacity: u32",
+      "docs": "Configured simultaneous worker permits, independent of retained tab count.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L47-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::clone",
+      "publicPath": "yosoi::session::ExecutionSnapshot::clone",
+      "title": "yosoi::session::ExecutionSnapshot::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionSnapshot",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::eq",
+      "publicPath": "yosoi::session::ExecutionSnapshot::eq",
+      "title": "yosoi::session::ExecutionSnapshot::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::ExecutionSnapshot) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionSnapshot::fmt",
+      "publicPath": "yosoi::session::ExecutionSnapshot::fmt",
+      "title": "yosoi::session::ExecutionSnapshot::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::parked",
+      "publicPath": "yosoi::session::ExecutionSnapshot::parked",
+      "title": "yosoi::session::ExecutionSnapshot::parked",
+      "kind": "struct_field",
+      "signature": "pub parked: u32",
+      "docs": "Condition waits retaining tab control while yielding worker capacity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::peak_active",
+      "publicPath": "yosoi::session::ExecutionSnapshot::peak_active",
+      "title": "yosoi::session::ExecutionSnapshot::peak_active",
+      "kind": "struct_field",
+      "signature": "pub peak_active: u32",
+      "docs": "Highest recorded simultaneously held worker permits over this pool's lifetime.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::queued",
+      "publicPath": "yosoi::session::ExecutionSnapshot::queued",
+      "title": "yosoi::session::ExecutionSnapshot::queued",
+      "kind": "struct_field",
+      "signature": "pub queued: u32",
+      "docs": "Operations waiting in bounded FIFO admission for a worker permit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::session::ExecutionSnapshot::waiting",
+      "publicPath": "yosoi::session::ExecutionSnapshot::waiting",
+      "title": "yosoi::session::ExecutionSnapshot::waiting",
+      "kind": "struct_field",
+      "signature": "pub waiting: u32",
+      "docs": "All tracked condition waits, including those that keep their worker permit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/execution.rs#L55-L55"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "09805866d53b52fd2c9f4d9904d70fdcd40ee83e8e7b711258dc1ff70981dbbe",
+  "slug": "yosoi/session/struct/executionsnapshot",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "09805866d53b52fd2c9f4d9904d70fdcd40ee83e8e7b711258dc1ff70981dbbe"
+}

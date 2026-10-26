@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::archive::PlanArchiveRef",
+  "publicPath": "yosoi::archive::PlanArchiveRef",
+  "kind": "struct",
+  "title": "yosoi::archive::PlanArchiveRef",
+  "signature": "pub struct PlanArchiveRef",
+  "docs": "Reference to one immutable archived compiled locator Plan snapshot.",
+  "source": {
+    "file": "crates/yosoi/src/internal/archive/refs.rs",
+    "lineStart": 307,
+    "lineEnd": 311,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/archive.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/archive.rs#L11-L11"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::archive::PlanArchiveRef::Err",
+      "publicPath": "yosoi::archive::PlanArchiveRef::Err",
+      "title": "yosoi::archive::PlanArchiveRef::Err",
+      "kind": "assoc_type",
+      "signature": "type Err = yosoi::archive::ArchiveRefError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::clone",
+      "publicPath": "yosoi::archive::PlanArchiveRef::clone",
+      "title": "yosoi::archive::PlanArchiveRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::archive::PlanArchiveRef",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::cmp",
+      "publicPath": "yosoi::archive::PlanArchiveRef::cmp",
+      "title": "yosoi::archive::PlanArchiveRef::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::archive::PlanArchiveRef) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::deserialize",
+      "publicPath": "yosoi::archive::PlanArchiveRef::deserialize",
+      "title": "yosoi::archive::PlanArchiveRef::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::eq",
+      "publicPath": "yosoi::archive::PlanArchiveRef::eq",
+      "title": "yosoi::archive::PlanArchiveRef::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::archive::PlanArchiveRef) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::fmt",
+      "publicPath": "yosoi::archive::PlanArchiveRef::fmt",
+      "title": "yosoi::archive::PlanArchiveRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::fmt",
+      "publicPath": "yosoi::archive::PlanArchiveRef::fmt",
+      "title": "yosoi::archive::PlanArchiveRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::format_version",
+      "publicPath": "yosoi::archive::PlanArchiveRef::format_version",
+      "title": "yosoi::archive::PlanArchiveRef::format_version",
+      "kind": "function",
+      "signature": "pub const fn format_version(&self) -> u32",
+      "docs": "Returns the physical Archive format named by this reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::from_str",
+      "publicPath": "yosoi::archive::PlanArchiveRef::from_str",
+      "title": "yosoi::archive::PlanArchiveRef::from_str",
+      "kind": "function",
+      "signature": "fn from_str(value: &str) -> Result<Self, <Self as >::Err>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::hash",
+      "publicPath": "yosoi::archive::PlanArchiveRef::hash",
+      "title": "yosoi::archive::PlanArchiveRef::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::logical_key",
+      "publicPath": "yosoi::archive::PlanArchiveRef::logical_key",
+      "title": "yosoi::archive::PlanArchiveRef::logical_key",
+      "kind": "function",
+      "signature": "pub fn logical_key(&self) -> &str",
+      "docs": "Returns the opaque logical key, never a filesystem path.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::partial_cmp",
+      "publicPath": "yosoi::archive::PlanArchiveRef::partial_cmp",
+      "title": "yosoi::archive::PlanArchiveRef::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::archive::PlanArchiveRef) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::archive::PlanArchiveRef::serialize",
+      "publicPath": "yosoi::archive::PlanArchiveRef::serialize",
+      "title": "yosoi::archive::PlanArchiveRef::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 307,
+        "lineEnd": 311,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L307-L311"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0f1eedb8778d01342c16e8da4d69a62538d6887949c80ed07bb633334b7dec51",
+  "slug": "yosoi/archive/struct/planarchiveref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0f1eedb8778d01342c16e8da4d69a62538d6887949c80ed07bb633334b7dec51"
+}

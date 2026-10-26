@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::RequestPreparationError",
+  "publicPath": "yosoi::request::RequestPreparationError",
+  "kind": "struct",
+  "title": "yosoi::request::RequestPreparationError",
+  "signature": "pub struct RequestPreparationError",
+  "docs": "A request's target or policy could not be prepared.",
+  "source": {
+    "file": "crates/yosoi/src/request/authoring.rs",
+    "lineStart": 159,
+    "lineEnd": 159,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/request/authoring.rs#L159-L159"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "aliases": [
+    "yosoi::prelude::request::RequestPreparationError"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::RequestPreparationError::fmt",
+      "publicPath": "yosoi::request::RequestPreparationError::fmt",
+      "title": "yosoi::request::RequestPreparationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/request/authoring.rs#L158-L158"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::RequestPreparationError::fmt",
+      "publicPath": "yosoi::request::RequestPreparationError::fmt",
+      "title": "yosoi::request::RequestPreparationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/authoring.rs",
+        "lineStart": 161,
+        "lineEnd": 163,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/request/authoring.rs#L161-L163"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9f011b07f23eeab977b58ee27bddb49fdd3390898db6dc3971fa02cae0f28363",
+  "slug": "yosoi/request/struct/requestpreparationerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9f011b07f23eeab977b58ee27bddb49fdd3390898db6dc3971fa02cae0f28363"
+}

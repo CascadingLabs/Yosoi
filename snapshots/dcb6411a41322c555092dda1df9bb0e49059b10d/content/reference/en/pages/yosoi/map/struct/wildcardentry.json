@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::WildcardEntry",
+  "publicPath": "yosoi::map::WildcardEntry",
+  "kind": "struct",
+  "title": "yosoi::map::WildcardEntry",
+  "signature": "pub struct WildcardEntry",
+  "docs": "A retained wildcard name pattern, not a concrete verified hostname.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 133,
+    "lineEnd": 138,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L133-L138"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/map.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::map::WildcardEntry"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::WildcardEntry::clone",
+      "publicPath": "yosoi::map::WildcardEntry::clone",
+      "title": "yosoi::map::WildcardEntry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::WildcardEntry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L132-L132"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::WildcardEntry::fmt",
+      "publicPath": "yosoi::map::WildcardEntry::fmt",
+      "title": "yosoi::map::WildcardEntry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L132-L132"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::WildcardEntry::observations",
+      "publicPath": "yosoi::map::WildcardEntry::observations",
+      "title": "yosoi::map::WildcardEntry::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: Vec<yosoi::map::Observation>",
+      "docs": "Sources reporting this pattern, subject to the configured evidence budgets.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L137-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::WildcardEntry::pattern",
+      "publicPath": "yosoi::map::WildcardEntry::pattern",
+      "title": "yosoi::map::WildcardEntry::pattern",
+      "kind": "struct_field",
+      "signature": "pub pattern: String",
+      "docs": "Observed wildcard pattern; it is not expanded into guessed hosts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L135-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::WildcardEntry::serialize",
+      "publicPath": "yosoi::map::WildcardEntry::serialize",
+      "title": "yosoi::map::WildcardEntry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/map/mod.rs#L132-L132"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9281ed70d60b430872801c9ee0d3af7f994bf171079c94af64f2e8b02148b836",
+  "slug": "yosoi/map/struct/wildcardentry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9281ed70d60b430872801c9ee0d3af7f994bf171079c94af64f2e8b02148b836"
+}

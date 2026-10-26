@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::Flow",
+  "publicPath": "yosoi::flow::Flow",
+  "kind": "struct",
+  "title": "yosoi::flow::Flow",
+  "signature": "pub struct Flow",
+  "docs": "A sequence of browser operations to run in order.\n\nThe flow is validated before execution. Its public `steps` field keeps the\nwire model straightforward to author and deserialize; callers should use\n[`Flow::validate`] after mutating or deserializing it.",
+  "source": {
+    "file": "crates/yosoi/src/flow.rs",
+    "lineStart": 29,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L29-L40"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Flow",
+    "yosoi::prelude::flow::Flow"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::flow::Flow::bind",
+      "publicPath": "yosoi::flow::Flow::bind",
+      "title": "yosoi::flow::Flow::bind",
+      "kind": "function",
+      "signature": "pub const fn bind<'a>(&'a self, policy: &'a yosoi::Policy) -> yosoi::flow::BoundFlow<'a>",
+      "docs": "Configures an invocation's policy without executing or acquiring resources.\nWithout a supplied lease, invoke acquires and closes its own Session.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 206,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L206-L214"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::flow::Flow::capture_on_failure",
+      "publicPath": "yosoi::flow::Flow::capture_on_failure",
+      "title": "yosoi::flow::Flow::capture_on_failure",
+      "kind": "struct_field",
+      "signature": "pub capture_on_failure: yosoi::flow::FailureCapturePolicy",
+      "docs": "Optional single screenshot capture after a failed or unknown step.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L39-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::clone",
+      "publicPath": "yosoi::flow::Flow::clone",
+      "title": "yosoi::flow::Flow::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::Flow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::Flow::default",
+      "publicPath": "yosoi::flow::Flow::default",
+      "title": "yosoi::flow::Flow::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 43,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L43-L45"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::flow::Flow::deserialize",
+      "publicPath": "yosoi::flow::Flow::deserialize",
+      "title": "yosoi::flow::Flow::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 80,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L80-L149"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::Flow::eq",
+      "publicPath": "yosoi::flow::Flow::eq",
+      "title": "yosoi::flow::Flow::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::Flow) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::Flow::failure_capture_policy",
+      "publicPath": "yosoi::flow::Flow::failure_capture_policy",
+      "title": "yosoi::flow::Flow::failure_capture_policy",
+      "kind": "function",
+      "signature": "pub const fn failure_capture_policy(&self) -> yosoi::flow::FailureCapturePolicy",
+      "docs": "Returns the configured post-failure capture policy.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 248,
+        "lineEnd": 250,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L248-L250"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::fmt",
+      "publicPath": "yosoi::flow::Flow::fmt",
+      "title": "yosoi::flow::Flow::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::Flow::invoke",
+      "publicPath": "yosoi::flow::Flow::invoke",
+      "title": "yosoi::flow::Flow::invoke",
+      "kind": "function",
+      "signature": "pub async fn invoke(&self) -> Result<yosoi::flow::FlowOutcome, yosoi::flow::FlowInvokeError>",
+      "docs": "Acquires a Session and lease, executes this recipe, and closes owned resources.\nInclude a Navigate action when the recipe needs an initial page.\nInspect the returned terminal status and receipts to determine success.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 163,
+        "lineEnd": 172,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L163-L172"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::new",
+      "publicPath": "yosoi::flow::Flow::new",
+      "title": "yosoi::flow::Flow::new",
+      "kind": "function",
+      "signature": "pub fn new(steps: impl IntoIterator<Item = yosoi::flow::Step>) -> Self",
+      "docs": "Creates a flow from ordered steps.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 230,
+        "lineEnd": 238,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L230-L238"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::on_cancellation",
+      "publicPath": "yosoi::flow::Flow::on_cancellation",
+      "title": "yosoi::flow::Flow::on_cancellation",
+      "kind": "function",
+      "signature": "pub const fn on_cancellation(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Sets this Flow's local cancellation behavior; a child or leaf override takes precedence.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 188,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L188-L191"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::on_failure",
+      "publicPath": "yosoi::flow::Flow::on_failure",
+      "title": "yosoi::flow::Flow::on_failure",
+      "kind": "function",
+      "signature": "pub const fn on_failure(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Sets this Flow's failure behavior; a child or leaf override takes precedence.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 182,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L182-L185"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::serialize",
+      "publicPath": "yosoi::flow::Flow::serialize",
+      "title": "yosoi::flow::Flow::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 49,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L49-L76"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::flow::Flow::steps",
+      "publicPath": "yosoi::flow::Flow::steps",
+      "title": "yosoi::flow::Flow::steps",
+      "kind": "struct_field",
+      "signature": "pub steps: Vec<yosoi::flow::Step>",
+      "docs": "Ordered operations in this flow.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::steps",
+      "publicPath": "yosoi::flow::Flow::steps",
+      "title": "yosoi::flow::Flow::steps",
+      "kind": "function",
+      "signature": "pub fn steps(&self) -> &[yosoi::flow::Step]",
+      "docs": "Returns the steps in their authored order.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 253,
+        "lineEnd": 255,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L253-L255"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::timeout",
+      "publicPath": "yosoi::flow::Flow::timeout",
+      "title": "yosoi::flow::Flow::timeout",
+      "kind": "function",
+      "signature": "pub const fn timeout(self, milliseconds: u64) -> Self",
+      "docs": "Sets the inherited action timeout for this Flow, in milliseconds.\nA nearer nested Flow or action timeout overrides it.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 176,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L176-L179"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::validate",
+      "publicPath": "yosoi::flow::Flow::validate",
+      "title": "yosoi::flow::Flow::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::flow::FlowValidationError>",
+      "docs": "Validates the flow using conservative SDK input limits.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 282,
+        "lineEnd": 284,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L282-L284"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::validate_with_limits",
+      "publicPath": "yosoi::flow::Flow::validate_with_limits",
+      "title": "yosoi::flow::Flow::validate_with_limits",
+      "kind": "function",
+      "signature": "pub fn validate_with_limits(&self, limits: yosoi::flow::FlowLimits) -> Result<(), yosoi::flow::FlowValidationError>",
+      "docs": "Validates the flow using the supplied step and input bounds.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 287,
+        "lineEnd": 299,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L287-L299"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::with_cancellation",
+      "publicPath": "yosoi::flow::Flow::with_cancellation",
+      "title": "yosoi::flow::Flow::with_cancellation",
+      "kind": "function",
+      "signature": "pub const fn with_cancellation<'a>(&'a self, token: &'a CancellationToken) -> yosoi::flow::BoundFlow<'a>",
+      "docs": "Optionally supplies an application-owned stop signal; invoke is always cancellable.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 194,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L194-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::with_failure_capture",
+      "publicPath": "yosoi::flow::Flow::with_failure_capture",
+      "title": "yosoi::flow::Flow::with_failure_capture",
+      "kind": "function",
+      "signature": "pub const fn with_failure_capture(self, policy: yosoi::flow::FailureCapturePolicy) -> Self",
+      "docs": "Selects whether one bounded screenshot is captured after a failed or\nunknown step.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 242,
+        "lineEnd": 245,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L242-L245"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Flow::with_lease",
+      "publicPath": "yosoi::flow::Flow::with_lease",
+      "title": "yosoi::flow::Flow::with_lease",
+      "kind": "function",
+      "signature": "pub const fn with_lease<'a>(&'a self, lease: &'a yosoi::session::Work) -> yosoi::flow::BoundFlow<'a>",
+      "docs": "Configures this invocation to borrow the caller's existing tab lease.\nThis does not execute, acquire another lease, or take ownership of cleanup.\nInvoke runs on the lease's current tab; the caller releases it afterward.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 219,
+        "lineEnd": 227,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L219-L227"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c688c6a96166b02a6b80383cb664a91c0cb7c2a95531774348e1185162b154ce",
+  "slug": "yosoi/flow/struct/flow",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c688c6a96166b02a6b80383cb664a91c0cb7c2a95531774348e1185162b154ce"
+}

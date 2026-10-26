@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::css",
+  "publicPath": "yosoi::locators::css",
+  "kind": "function",
+  "title": "yosoi::locators::css",
+  "signature": "pub fn css(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Owns a nonblank CSS expression with tree-node result shape, without locating a document.\n\nReturns [`QueryError`] for blank input; syntax, projection, namespace, and\ndocument-capability checks remain part of supported compilation/execution paths.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 11,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query_builders.rs#L11-L13"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/locators.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::css",
+    "yosoi::prelude::locators::css"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "18b62b46b1184e83e3385e835f91bf8c3911db306dd8ca9e9b216e42b66a30eb",
+  "slug": "yosoi/locators/function/css",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "18b62b46b1184e83e3385e835f91bf8c3911db306dd8ca9e9b216e42b66a30eb"
+}

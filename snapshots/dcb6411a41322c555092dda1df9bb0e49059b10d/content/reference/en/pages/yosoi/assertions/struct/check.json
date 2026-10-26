@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::assertions::Check",
+  "publicPath": "yosoi::assertions::Check",
+  "kind": "struct",
+  "title": "yosoi::assertions::Check",
+  "signature": "pub struct Check<'a, C>",
+  "docs": "A pure comparison. Captures may borrow when evaluated as a local group.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 34,
+    "lineEnd": 37,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/assertions.rs#L34-L37"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::assertions::Check::fmt",
+      "publicPath": "yosoi::assertions::Check::fmt",
+      "title": "yosoi::assertions::Check::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 39,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/assertions.rs#L39-L43"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::Check::named",
+      "publicPath": "yosoi::assertions::Check::named",
+      "title": "yosoi::assertions::Check::named",
+      "kind": "function",
+      "signature": "pub fn named(self, name: impl Into<String>) -> Self",
+      "docs": "Attaches an authored diagnostic name, validated when the group is evaluated.\nThe name must then be nonblank and within [`MAX_CHECK_NAME_BYTES`].",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 56,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/assertions.rs#L56-L59"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2b02e48220a7262e863f08fe6e0825e1b46448e6bcb7f535618d6853a366e38f",
+  "slug": "yosoi/assertions/struct/check",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2b02e48220a7262e863f08fe6e0825e1b46448e6bcb7f535618d6853a366e38f"
+}

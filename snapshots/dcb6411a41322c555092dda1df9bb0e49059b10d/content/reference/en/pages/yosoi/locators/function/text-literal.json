@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::text_literal",
+  "publicPath": "yosoi::locators::text_literal",
+  "kind": "function",
+  "title": "yosoi::locators::text_literal",
+  "signature": "pub fn text_literal(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Owns a nonempty exact literal query yielding decoded-text ranges.\n\nWhitespace is meaningful literal content. Returns [`QueryError`] for empty\ninput without parsing or searching any document.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 111,
+    "lineEnd": 120,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query_builders.rs#L111-L120"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::text_literal",
+    "yosoi::prelude::locators::text_literal"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "abef7b53151cfa2681c0886c9b0f1a16bbad3c46ce183669cccd049db7d6a526",
+  "slug": "yosoi/locators/function/text-literal",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "abef7b53151cfa2681c0886c9b0f1a16bbad3c46ce183669cccd049db7d6a526"
+}

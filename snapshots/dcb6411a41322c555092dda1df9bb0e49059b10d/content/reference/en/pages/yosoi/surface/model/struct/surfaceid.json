@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::SurfaceId",
+  "publicPath": "yosoi::surface::model::SurfaceId",
+  "kind": "struct",
+  "title": "yosoi::surface::model::SurfaceId",
+  "signature": "pub struct SurfaceId",
+  "docs": "Identity of one continuing representation of a source.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 44,
+    "lineEnd": 47,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::surface::model::SurfaceId::Error",
+      "publicPath": "yosoi::surface::model::SurfaceId::Error",
+      "title": "yosoi::surface::model::SurfaceId::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = yosoi::SurfaceError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::as_str",
+      "publicPath": "yosoi::surface::model::SurfaceId::as_str",
+      "title": "yosoi::surface::model::SurfaceId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "Borrows the producer-issued value; callers must not infer address semantics.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::clone",
+      "publicPath": "yosoi::surface::model::SurfaceId::clone",
+      "title": "yosoi::surface::model::SurfaceId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::SurfaceId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::cmp",
+      "publicPath": "yosoi::surface::model::SurfaceId::cmp",
+      "title": "yosoi::surface::model::SurfaceId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::surface::model::SurfaceId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::deserialize",
+      "publicPath": "yosoi::surface::model::SurfaceId::deserialize",
+      "title": "yosoi::surface::model::SurfaceId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::eq",
+      "publicPath": "yosoi::surface::model::SurfaceId::eq",
+      "title": "yosoi::surface::model::SurfaceId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::model::SurfaceId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::fmt",
+      "publicPath": "yosoi::surface::model::SurfaceId::fmt",
+      "title": "yosoi::surface::model::SurfaceId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::hash",
+      "publicPath": "yosoi::surface::model::SurfaceId::hash",
+      "title": "yosoi::surface::model::SurfaceId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::new",
+      "publicPath": "yosoi::surface::model::SurfaceId::new",
+      "title": "yosoi::surface::model::SurfaceId::new",
+      "kind": "function",
+      "signature": "pub fn new(value: impl Into<String>) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Validates a nonempty opaque identifier of at most 1,024 UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::partial_cmp",
+      "publicPath": "yosoi::surface::model::SurfaceId::partial_cmp",
+      "title": "yosoi::surface::model::SurfaceId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::surface::model::SurfaceId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::serialize",
+      "publicPath": "yosoi::surface::model::SurfaceId::serialize",
+      "title": "yosoi::surface::model::SurfaceId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceId::try_from",
+      "publicPath": "yosoi::surface::model::SurfaceId::try_from",
+      "title": "yosoi::surface::model::SurfaceId::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: String) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 44,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L44-L47"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5da7f125ac4b2baf14a5628a2ff5ef37db72faee12adba10f2a0ee48bd68c1fc",
+  "slug": "yosoi/surface/model/struct/surfaceid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5da7f125ac4b2baf14a5628a2ff5ef37db72faee12adba10f2a0ee48bd68c1fc"
+}

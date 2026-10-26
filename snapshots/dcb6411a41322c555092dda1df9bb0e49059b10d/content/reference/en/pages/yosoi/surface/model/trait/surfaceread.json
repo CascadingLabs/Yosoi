@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::surface::model::SurfaceRead",
+  "publicPath": "yosoi::surface::model::SurfaceRead",
+  "kind": "trait",
+  "title": "yosoi::surface::model::SurfaceRead",
+  "signature": "pub trait SurfaceRead",
+  "docs": "Common pure reading boundary. Pixel materialization and live effects remain capabilities.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 219,
+    "lineEnd": 228,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L219-L228"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::model::SurfaceRead::descriptor",
+      "publicPath": "yosoi::surface::model::SurfaceRead::descriptor",
+      "title": "yosoi::surface::model::SurfaceRead::descriptor",
+      "kind": "function",
+      "signature": "fn descriptor(&self) -> &yosoi::surface::model::Descriptor",
+      "docs": "Describes the source, representation, and operations actually supported.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 221,
+        "lineEnd": 221,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L221-L221"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceRead::observation",
+      "publicPath": "yosoi::surface::model::SurfaceRead::observation",
+      "title": "yosoi::surface::model::SurfaceRead::observation",
+      "kind": "function",
+      "signature": "fn observation(&self) -> &yosoi::surface::model::Observation",
+      "docs": "Borrows immutable observation metadata.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 223,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L223-L223"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceRead::read",
+      "publicPath": "yosoi::surface::model::SurfaceRead::read",
+      "title": "yosoi::surface::model::SurfaceRead::read",
+      "kind": "function",
+      "signature": "fn read(&self, request: &yosoi::surface::model::ReadRequest) -> Result<yosoi::surface::model::ReadResult, yosoi::SurfaceError>",
+      "docs": "Reads bounded evidence without granting or restoring action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 227,
+        "lineEnd": 227,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L227-L227"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::SurfaceRead::root_reference",
+      "publicPath": "yosoi::surface::model::SurfaceRead::root_reference",
+      "title": "yosoi::surface::model::SurfaceRead::root_reference",
+      "kind": "function",
+      "signature": "fn root_reference(&self) -> yosoi::surface::model::Reference",
+      "docs": "Returns an address of the representation's full scope.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 225,
+        "lineEnd": 225,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L225-L225"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2cc8c6f763cb4e0811eaf61d5dc9f1842e9cdf9b29a355da461d9117646d7dd6",
+  "slug": "yosoi/surface/model/trait/surfaceread",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2cc8c6f763cb4e0811eaf61d5dc9f1842e9cdf9b29a355da461d9117646d7dd6"
+}

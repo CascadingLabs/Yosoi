@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::WatchId",
+  "publicPath": "yosoi::surface::WatchId",
+  "kind": "struct",
+  "title": "yosoi::surface::WatchId",
+  "signature": "pub struct WatchId",
+  "docs": "Session-local opaque subscription identity.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 54,
+    "lineEnd": 54,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L54-L54"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::WatchId::clone",
+      "publicPath": "yosoi::surface::WatchId::clone",
+      "title": "yosoi::surface::WatchId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::WatchId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::cmp",
+      "publicPath": "yosoi::surface::WatchId::cmp",
+      "title": "yosoi::surface::WatchId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::surface::WatchId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::deserialize",
+      "publicPath": "yosoi::surface::WatchId::deserialize",
+      "title": "yosoi::surface::WatchId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::eq",
+      "publicPath": "yosoi::surface::WatchId::eq",
+      "title": "yosoi::surface::WatchId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::WatchId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::fmt",
+      "publicPath": "yosoi::surface::WatchId::fmt",
+      "title": "yosoi::surface::WatchId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::get",
+      "publicPath": "yosoi::surface::WatchId::get",
+      "title": "yosoi::surface::WatchId::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u64",
+      "docs": "Returns the subscription identity for diagnostics.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 57,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L57-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::partial_cmp",
+      "publicPath": "yosoi::surface::WatchId::partial_cmp",
+      "title": "yosoi::surface::WatchId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::surface::WatchId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::surface::WatchId::serialize",
+      "publicPath": "yosoi::surface::WatchId::serialize",
+      "title": "yosoi::surface::WatchId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4901488705f18c3d03bc13e843397beb2be261caaf2e0e135cf38269248a1c8d",
+  "slug": "yosoi/surface/struct/watchid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4901488705f18c3d03bc13e843397beb2be261caaf2e0e135cf38269248a1c8d"
+}

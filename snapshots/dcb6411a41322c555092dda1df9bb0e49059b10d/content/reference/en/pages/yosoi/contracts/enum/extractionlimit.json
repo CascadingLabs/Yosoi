@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ExtractionLimit",
+  "publicPath": "yosoi::contracts::ExtractionLimit",
+  "kind": "enum",
+  "title": "yosoi::contracts::ExtractionLimit",
+  "signature": "pub enum ExtractionLimit",
+  "docs": "Resource counter charged during candidate assembly, before value validation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/extractor/mod.rs",
+    "lineStart": 173,
+    "lineEnd": 188,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L173-L188"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/contracts.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ExtractionLimit"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::Candidates",
+      "publicPath": "yosoi::contracts::ExtractionLimit::Candidates",
+      "title": "yosoi::contracts::ExtractionLimit::Candidates",
+      "kind": "variant",
+      "signature": "Candidates",
+      "docs": "Distinct candidate records assembled from located evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 181,
+        "lineEnd": 181,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L181-L181"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::Diagnostics",
+      "publicPath": "yosoi::contracts::ExtractionLimit::Diagnostics",
+      "title": "yosoi::contracts::ExtractionLimit::Diagnostics",
+      "kind": "variant",
+      "signature": "Diagnostics",
+      "docs": "Nonfatal grouping diagnostics retained for caller inspection.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L187-L187"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "publicPath": "yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "title": "yosoi::contracts::ExtractionLimit::MatchingFindings",
+      "kind": "variant",
+      "signature": "MatchingFindings",
+      "docs": "Findings matching authored Contract fields and eligible for grouping.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L179-L179"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "publicPath": "yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "title": "yosoi::contracts::ExtractionLimit::RetainedEvidence",
+      "kind": "variant",
+      "signature": "RetainedEvidence",
+      "docs": "Finding evidence references retained across assembled candidates.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 185,
+        "lineEnd": 185,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L185-L185"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "title": "yosoi::contracts::ExtractionLimit::ScannedFindings",
+      "kind": "variant",
+      "signature": "ScannedFindings",
+      "docs": "Locator findings scanned while matching Contract output identifiers.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 177,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L177-L177"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "title": "yosoi::contracts::ExtractionLimit::ScannedRegions",
+      "kind": "variant",
+      "signature": "ScannedRegions",
+      "docs": "Repeated-region lineage entries scanned for candidate grouping.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 175,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L175-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "publicPath": "yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "title": "yosoi::contracts::ExtractionLimit::ValuesPerField",
+      "kind": "variant",
+      "signature": "ValuesPerField",
+      "docs": "Finding values retained for one Contract field within a candidate.",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 183,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L183-L183"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::clone",
+      "publicPath": "yosoi::contracts::ExtractionLimit::clone",
+      "title": "yosoi::contracts::ExtractionLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ExtractionLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::eq",
+      "publicPath": "yosoi::contracts::ExtractionLimit::eq",
+      "title": "yosoi::contracts::ExtractionLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ExtractionLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::fmt",
+      "publicPath": "yosoi::contracts::ExtractionLimit::fmt",
+      "title": "yosoi::contracts::ExtractionLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionLimit::serialize",
+      "publicPath": "yosoi::contracts::ExtractionLimit::serialize",
+      "title": "yosoi::contracts::ExtractionLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/extractor/mod.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/extractor/mod.rs#L171-L171"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "070d4fe3d88acfe697642e898f030fb93144a296adb1b786cd3aaa136cc10c11",
+  "slug": "yosoi/contracts/enum/extractionlimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "070d4fe3d88acfe697642e898f030fb93144a296adb1b786cd3aaa136cc10c11"
+}

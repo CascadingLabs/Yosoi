@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::AutomationContext",
+  "publicPath": "yosoi::automation_record::AutomationContext",
+  "kind": "struct",
+  "title": "yosoi::automation_record::AutomationContext",
+  "signature": "pub struct AutomationContext",
+  "docs": "Run provenance recorded alongside canonical evidence.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 126,
+    "lineEnd": 139,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L126-L139"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::browser_identity",
+      "publicPath": "yosoi::automation_record::AutomationContext::browser_identity",
+      "title": "yosoi::automation_record::AutomationContext::browser_identity",
+      "kind": "struct_field",
+      "signature": "pub browser_identity: Option<String>",
+      "docs": "Browser identity recorded by the caller, absent when unavailable.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L134-L134"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationContext::clone",
+      "publicPath": "yosoi::automation_record::AutomationContext::clone",
+      "title": "yosoi::automation_record::AutomationContext::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::AutomationContext",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationContext::deserialize",
+      "publicPath": "yosoi::automation_record::AutomationContext::deserialize",
+      "title": "yosoi::automation_record::AutomationContext::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::effective_policy_identity",
+      "publicPath": "yosoi::automation_record::AutomationContext::effective_policy_identity",
+      "title": "yosoi::automation_record::AutomationContext::effective_policy_identity",
+      "kind": "struct_field",
+      "signature": "pub effective_policy_identity: String",
+      "docs": "Recorded resolved Policy identity used for the run.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationContext::eq",
+      "publicPath": "yosoi::automation_record::AutomationContext::eq",
+      "title": "yosoi::automation_record::AutomationContext::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::AutomationContext) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationContext::fmt",
+      "publicPath": "yosoi::automation_record::AutomationContext::fmt",
+      "title": "yosoi::automation_record::AutomationContext::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::parent",
+      "publicPath": "yosoi::automation_record::AutomationContext::parent",
+      "title": "yosoi::automation_record::AutomationContext::parent",
+      "kind": "struct_field",
+      "signature": "pub parent: Option<yosoi::automation_record::AutomationRecordRef>",
+      "docs": "Immutable parent record reference for linking separate evidence records.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L138-L138"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::provider",
+      "publicPath": "yosoi::automation_record::AutomationContext::provider",
+      "title": "yosoi::automation_record::AutomationContext::provider",
+      "kind": "struct_field",
+      "signature": "pub provider: String",
+      "docs": "Recorded browser provider label, not a live provider handle.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L132-L132"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationContext::serialize",
+      "publicPath": "yosoi::automation_record::AutomationContext::serialize",
+      "title": "yosoi::automation_record::AutomationContext::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::session_policy",
+      "publicPath": "yosoi::automation_record::AutomationContext::session_policy",
+      "title": "yosoi::automation_record::AutomationContext::session_policy",
+      "kind": "struct_field",
+      "signature": "pub session_policy: yosoi::session::SessionPolicy",
+      "docs": "Execution and evidence settings recorded for the owning Session.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L130-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::AutomationContext::source_revision",
+      "publicPath": "yosoi::automation_record::AutomationContext::source_revision",
+      "title": "yosoi::automation_record::AutomationContext::source_revision",
+      "kind": "struct_field",
+      "signature": "pub source_revision: Option<String>",
+      "docs": "Source revision provenance supplied by the caller, not verified by capture itself.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 136,
+        "lineEnd": 136,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L136-L136"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "219557d84c90a5157a6534141442f18e3d6cdc247105fea179f264e43f515192",
+  "slug": "yosoi/automation-record/struct/automationcontext",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "219557d84c90a5157a6534141442f18e3d6cdc247105fea179f264e43f515192"
+}

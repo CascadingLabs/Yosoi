@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Continuation",
+  "publicPath": "yosoi::surface::Continuation",
+  "kind": "struct",
+  "title": "yosoi::surface::Continuation",
+  "signature": "pub struct Continuation",
+  "docs": "A continuation bound to capture, operation, scope, and search expression.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 188,
+    "lineEnd": 194,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L188-L194"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Continuation::clone",
+      "publicPath": "yosoi::surface::Continuation::clone",
+      "title": "yosoi::surface::Continuation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Continuation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Continuation::deserialize",
+      "publicPath": "yosoi::surface::Continuation::deserialize",
+      "title": "yosoi::surface::Continuation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Continuation::fmt",
+      "publicPath": "yosoi::surface::Continuation::fmt",
+      "title": "yosoi::surface::Continuation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::Continuation::offset",
+      "publicPath": "yosoi::surface::Continuation::offset",
+      "title": "yosoi::surface::Continuation::offset",
+      "kind": "function",
+      "signature": "pub const fn offset(&self) -> usize",
+      "docs": "Returns the next member, entry, or UTF-8 content-byte offset.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 197,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L197-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Continuation::serialize",
+      "publicPath": "yosoi::surface::Continuation::serialize",
+      "title": "yosoi::surface::Continuation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9f8b3688582c0439328837e93dfa2e1d54c7c1c55907f0c7a278d205a99b451d",
+  "slug": "yosoi/surface/struct/continuation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9f8b3688582c0439328837e93dfa2e1d54c7c1c55907f0c7a278d205a99b451d"
+}

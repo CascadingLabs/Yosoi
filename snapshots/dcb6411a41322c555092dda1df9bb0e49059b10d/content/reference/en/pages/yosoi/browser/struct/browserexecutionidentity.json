@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::browser::BrowserExecutionIdentity",
+  "publicPath": "yosoi::browser::BrowserExecutionIdentity",
+  "kind": "struct",
+  "title": "yosoi::browser::BrowserExecutionIdentity",
+  "signature": "pub struct BrowserExecutionIdentity",
+  "docs": "Engine provenance retained independently of page-visible identity strings.\n\nProtocol fields are the server's claims. Executable fields describe only an\nowned local executable admitted by Yosoi. Neither a configured endpoint nor\na page's user agent proves the identity or network policy of a remote server.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 63,
+    "lineEnd": 94,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L63-L94"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::capability_profile",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::capability_profile",
+      "title": "yosoi::browser::BrowserExecutionIdentity::capability_profile",
+      "kind": "struct_field",
+      "signature": "pub capability_profile: Option<String>",
+      "docs": "Selected versioned controller capability contract, not remote attestation.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserExecutionIdentity::clone",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::clone",
+      "title": "yosoi::browser::BrowserExecutionIdentity::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::BrowserExecutionIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::controller_version",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::controller_version",
+      "title": "yosoi::browser::BrowserExecutionIdentity::controller_version",
+      "kind": "struct_field",
+      "signature": "pub controller_version: Option<String>",
+      "docs": "Linked native controller version, absent in older evidence.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserExecutionIdentity::deserialize",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::deserialize",
+      "title": "yosoi::browser::BrowserExecutionIdentity::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::engine",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::engine",
+      "title": "yosoi::browser::BrowserExecutionIdentity::engine",
+      "kind": "struct_field",
+      "signature": "pub engine: yosoi::browser::BrowserEngine",
+      "docs": "Engine selected by the caller.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 74,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L74-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserExecutionIdentity::eq",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::eq",
+      "title": "yosoi::browser::BrowserExecutionIdentity::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::BrowserExecutionIdentity) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::executable_sha256",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::executable_sha256",
+      "title": "yosoi::browser::BrowserExecutionIdentity::executable_sha256",
+      "kind": "struct_field",
+      "signature": "pub executable_sha256: Option<String>",
+      "docs": "SHA-256 of the admitted owned executable; absent for external services.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L84-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::executable_version",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::executable_version",
+      "title": "yosoi::browser::BrowserExecutionIdentity::executable_version",
+      "kind": "struct_field",
+      "signature": "pub executable_version: Option<String>",
+      "docs": "Admitted owned executable's release version; absent for external services.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L82-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserExecutionIdentity::fmt",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::fmt",
+      "title": "yosoi::browser::BrowserExecutionIdentity::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::moli_profile",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::moli_profile",
+      "title": "yosoi::browser::BrowserExecutionIdentity::moli_profile",
+      "kind": "struct_field",
+      "signature": "pub moli_profile: Option<yosoi::browser::MoliProfile>",
+      "docs": "Declared Moli rendering profile; absent for other engines.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L88-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::moli_resources",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::moli_resources",
+      "title": "yosoi::browser::BrowserExecutionIdentity::moli_resources",
+      "kind": "struct_field",
+      "signature": "pub moli_resources: Option<bool>",
+      "docs": "Declared Moli resource loading profile; absent for other engines.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L90-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::owned_moli_private_network_blocking",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::owned_moli_private_network_blocking",
+      "title": "yosoi::browser::BrowserExecutionIdentity::owned_moli_private_network_blocking",
+      "kind": "struct_field",
+      "signature": "pub owned_moli_private_network_blocking: Option<bool>",
+      "docs": "Native private-network blocking flag of an owned Moli launch.\nExternal services have no client-observed enforcement claim here.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L93-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::process_owned",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::process_owned",
+      "title": "yosoi::browser::BrowserExecutionIdentity::process_owned",
+      "kind": "struct_field",
+      "signature": "pub process_owned: bool",
+      "docs": "Whether this execution owned the process, rather than just logical contexts.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 86,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L86-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::protocol",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::protocol",
+      "title": "yosoi::browser::BrowserExecutionIdentity::protocol",
+      "kind": "struct_field",
+      "signature": "pub protocol: yosoi::browser::BrowserProtocol",
+      "docs": "Actual controller transport used for this execution.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 76,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L76-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::reported_headless",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::reported_headless",
+      "title": "yosoi::browser::BrowserExecutionIdentity::reported_headless",
+      "kind": "struct_field",
+      "signature": "pub reported_headless: Option<bool>",
+      "docs": "Native server's reported headless flag, when supplied.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::reported_name",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::reported_name",
+      "title": "yosoi::browser::BrowserExecutionIdentity::reported_name",
+      "kind": "struct_field",
+      "signature": "pub reported_name: Option<String>",
+      "docs": "Browser name reported by native session negotiation, when provided.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L78-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::browser::BrowserExecutionIdentity::reported_version",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::reported_version",
+      "title": "yosoi::browser::BrowserExecutionIdentity::reported_version",
+      "kind": "struct_field",
+      "signature": "pub reported_version: Option<String>",
+      "docs": "Browser version reported by native session negotiation, when provided.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L80-L80"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserExecutionIdentity::serialize",
+      "publicPath": "yosoi::browser::BrowserExecutionIdentity::serialize",
+      "title": "yosoi::browser::BrowserExecutionIdentity::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a5d8b4e1b2533d2c7afc0c9185b9c0f65e68b6839543a20991eacd69672aa86d",
+  "slug": "yosoi/browser/struct/browserexecutionidentity",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a5d8b4e1b2533d2c7afc0c9185b9c0f65e68b6839543a20991eacd69672aa86d"
+}

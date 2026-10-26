@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::Descriptor",
+  "publicPath": "yosoi::surface::model::Descriptor",
+  "kind": "struct",
+  "title": "yosoi::surface::model::Descriptor",
+  "signature": "pub struct Descriptor",
+  "docs": "Discovery metadata, not a list of every domain Yosoi might eventually support.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 95,
+    "lineEnd": 107,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L95-L107"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::model::Descriptor::capabilities",
+      "publicPath": "yosoi::surface::model::Descriptor::capabilities",
+      "title": "yosoi::surface::model::Descriptor::capabilities",
+      "kind": "struct_field",
+      "signature": "pub capabilities: Vec<yosoi::surface::model::Capability>",
+      "docs": "Read and control operations actually available on this surface.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Descriptor::clone",
+      "publicPath": "yosoi::surface::model::Descriptor::clone",
+      "title": "yosoi::surface::model::Descriptor::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::Descriptor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L93-L93"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Descriptor::controllable",
+      "publicPath": "yosoi::surface::model::Descriptor::controllable",
+      "title": "yosoi::surface::model::Descriptor::controllable",
+      "kind": "struct_field",
+      "signature": "pub controllable: bool",
+      "docs": "Whether the currently bound provider offers any source-changing operations.\nThis flag is descriptive and never grants action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 104,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L104-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Descriptor::deserialize",
+      "publicPath": "yosoi::surface::model::Descriptor::deserialize",
+      "title": "yosoi::surface::model::Descriptor::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L93-L93"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::Descriptor::fmt",
+      "publicPath": "yosoi::surface::model::Descriptor::fmt",
+      "title": "yosoi::surface::model::Descriptor::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L93-L93"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Descriptor::id",
+      "publicPath": "yosoi::surface::model::Descriptor::id",
+      "title": "yosoi::surface::model::Descriptor::id",
+      "kind": "struct_field",
+      "signature": "pub id: yosoi::surface::model::SurfaceId",
+      "docs": "Continuing representation identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Descriptor::representation",
+      "publicPath": "yosoi::surface::model::Descriptor::representation",
+      "title": "yosoi::surface::model::Descriptor::representation",
+      "kind": "struct_field",
+      "signature": "pub representation: String",
+      "docs": "Namespaced interpretation format and version.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 101,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L101-L101"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Descriptor::serialize",
+      "publicPath": "yosoi::surface::model::Descriptor::serialize",
+      "title": "yosoi::surface::model::Descriptor::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 93,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L93-L93"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Descriptor::source",
+      "publicPath": "yosoi::surface::model::Descriptor::source",
+      "title": "yosoi::surface::model::Descriptor::source",
+      "kind": "struct_field",
+      "signature": "pub source: yosoi::surface::model::SourceId",
+      "docs": "Source represented by this surface.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 99,
+        "lineEnd": 99,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L99-L99"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "46e525e8be64b5333e350995b23937cfdbaff75ad7ef70c922a91e19796f5f41",
+  "slug": "yosoi/surface/model/struct/descriptor",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "46e525e8be64b5333e350995b23937cfdbaff75ad7ef70c922a91e19796f5f41"
+}

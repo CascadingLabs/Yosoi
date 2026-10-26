@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::evaluate_file_with_limit",
+  "publicPath": "yosoi::action::evaluate_file_with_limit",
+  "kind": "function",
+  "title": "yosoi::action::evaluate_file_with_limit",
+  "signature": "pub fn evaluate_file_with_limit(path: impl AsRef<std::path::Path>, maximum_bytes: usize) -> Result<yosoi::flow::Step, yosoi::action::JavaScriptSourceError>",
+  "docs": "Snapshots a UTF-8 JavaScript file now with an explicit byte limit.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 98,
+    "lineEnd": 104,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/action.rs#L98-L104"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::evaluate_file_with_limit"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3a8e31ca85fbec87f7fd6e704fee1855c16c1b9101c0fe2c314fb8af83ea135",
+  "slug": "yosoi/action/function/evaluate-file-with-limit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3a8e31ca85fbec87f7fd6e704fee1855c16c1b9101c0fe2c314fb8af83ea135"
+}

@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Cursor",
+  "publicPath": "yosoi::surface::Cursor",
+  "kind": "struct",
+  "title": "yosoi::surface::Cursor",
+  "signature": "pub struct Cursor",
+  "docs": "Logical exploration cursor; cloning refers to the same position and reader identity.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 545,
+    "lineEnd": 548,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L545-L548"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Cursor::begin_action",
+      "publicPath": "yosoi::surface::Cursor::begin_action",
+      "title": "yosoi::surface::Cursor::begin_action",
+      "kind": "function",
+      "signature": "pub fn begin_action(&self) -> Result<yosoi::surface::ActionLease, yosoi::SurfaceError>",
+      "docs": "Opens an exclusive effect lease after current-capture and coverage checks.\nCall `revalidate` immediately before the external effect; this SDK does not click.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 846,
+        "lineEnd": 886,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L846-L886"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::clone",
+      "publicPath": "yosoi::surface::Cursor::clone",
+      "title": "yosoi::surface::Cursor::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Cursor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 544,
+        "lineEnd": 544,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L544-L544"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::close",
+      "publicPath": "yosoi::surface::Cursor::close",
+      "title": "yosoi::surface::Cursor::close",
+      "kind": "function",
+      "signature": "pub fn close(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Closes this logical cursor and its watches; clones then return `Unknown`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 888,
+        "lineEnd": 903,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L888-L903"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::cool",
+      "publicPath": "yosoi::surface::Cursor::cool",
+      "title": "yosoi::surface::Cursor::cool",
+      "kind": "function",
+      "signature": "pub fn cool(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Releases hot ownership, retaining subscriptions and reading position.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 832,
+        "lineEnd": 843,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L832-L843"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::events",
+      "publicPath": "yosoi::surface::Cursor::events",
+      "title": "yosoi::surface::Cursor::events",
+      "kind": "function",
+      "signature": "pub fn events(&self) -> Result<yosoi::surface::EventBatch, yosoi::SurfaceError>",
+      "docs": "Reads this cursor's event window without consuming another reader's events.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 784,
+        "lineEnd": 811,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L784-L811"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::expand",
+      "publicPath": "yosoi::surface::Cursor::expand",
+      "title": "yosoi::surface::Cursor::expand",
+      "kind": "function",
+      "signature": "pub fn expand(&self, reference: &yosoi::surface::Reference, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Expands a retained region and makes it this cursor's exploration scope.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 641,
+        "lineEnd": 657,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L641-L657"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::find",
+      "publicPath": "yosoi::surface::Cursor::find",
+      "title": "yosoi::surface::Cursor::find",
+      "kind": "function",
+      "signature": "pub fn find(&self, query: &str, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Performs literal search in the current capture without granting action permission.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 624,
+        "lineEnd": 639,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L624-L639"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::fmt",
+      "publicPath": "yosoi::surface::Cursor::fmt",
+      "title": "yosoi::surface::Cursor::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 544,
+        "lineEnd": 544,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L544-L544"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::focus",
+      "publicPath": "yosoi::surface::Cursor::focus",
+      "title": "yosoi::surface::Cursor::focus",
+      "kind": "function",
+      "signature": "pub fn focus(&self, reference: &yosoi::surface::Reference) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Selects validated retained evidence without reading it or acquiring action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 677,
+        "lineEnd": 680,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L677-L680"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::id",
+      "publicPath": "yosoi::surface::Cursor::id",
+      "title": "yosoi::surface::Cursor::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> yosoi::surface::CursorId",
+      "docs": "Returns the cursor's session-local identity.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 551,
+        "lineEnd": 553,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L551-L553"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::inspect",
+      "publicPath": "yosoi::surface::Cursor::inspect",
+      "title": "yosoi::surface::Cursor::inspect",
+      "kind": "function",
+      "signature": "pub fn inspect(&self, reference: &yosoi::surface::Reference, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Inspection, yosoi::SurfaceError>",
+      "docs": "Inspects retained evidence and focuses it, even when it is historical.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 659,
+        "lineEnd": 675,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L659-L675"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::overview",
+      "publicPath": "yosoi::surface::Cursor::overview",
+      "title": "yosoi::surface::Cursor::overview",
+      "kind": "function",
+      "signature": "pub fn overview(&self, token: Option<&yosoi::surface::Continuation>, budget: yosoi::SurfaceBudget) -> Result<yosoi::surface::Page, yosoi::SurfaceError>",
+      "docs": "Reads a current overview without moving saved scope or focus.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 608,
+        "lineEnd": 622,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L608-L622"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::position",
+      "publicPath": "yosoi::surface::Cursor::position",
+      "title": "yosoi::surface::Cursor::position",
+      "kind": "function",
+      "signature": "pub fn position(&self) -> Result<yosoi::surface::Position, yosoi::SurfaceError>",
+      "docs": "Returns this reader's independent scope, focus, and continuation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 562,
+        "lineEnd": 571,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L562-L571"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::promote",
+      "publicPath": "yosoi::surface::Cursor::promote",
+      "title": "yosoi::surface::Cursor::promote",
+      "kind": "function",
+      "signature": "pub fn promote(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Acquires the single hot capability. Final target validation still belongs to the effect adapter.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 813,
+        "lineEnd": 830,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L813-L830"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::reconcile",
+      "publicPath": "yosoi::surface::Cursor::reconcile",
+      "title": "yosoi::surface::Cursor::reconcile",
+      "kind": "function",
+      "signature": "pub fn reconcile(&self, watch_id: yosoi::surface::WatchId, replacement: &yosoi::surface::Reference) -> Result<yosoi::surface::EventKind, yosoi::SurfaceError>",
+      "docs": "Explicitly compares a caller-selected replacement region with the watched evidence.\nSelection is not proof of entity identity. Missing history or coverage emits `Unknown`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 728,
+        "lineEnd": 768,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L728-L768"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::status",
+      "publicPath": "yosoi::surface::Cursor::status",
+      "title": "yosoi::surface::Cursor::status",
+      "kind": "function",
+      "signature": "pub fn status(&self) -> Result<yosoi::surface::CursorState, yosoi::SurfaceError>",
+      "docs": "Returns observation, authority, positions, and subscriptions without inferring page state.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 573,
+        "lineEnd": 606,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L573-L606"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::subscribe",
+      "publicPath": "yosoi::surface::Cursor::subscribe",
+      "title": "yosoi::surface::Cursor::subscribe",
+      "kind": "function",
+      "signature": "pub fn subscribe(&self, reference: &yosoi::surface::Reference) -> Result<yosoi::surface::WatchId, yosoi::SurfaceError>",
+      "docs": "Subscribes to one captured region, independently of scope and focus.\nThis registers a logical watch; the external adapter owns event collection.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 704,
+        "lineEnd": 725,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L704-L725"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Cursor::unsubscribe",
+      "publicPath": "yosoi::surface::Cursor::unsubscribe",
+      "title": "yosoi::surface::Cursor::unsubscribe",
+      "kind": "function",
+      "signature": "pub fn unsubscribe(&self, watch: yosoi::surface::WatchId) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Removes this cursor's subscription without moving its position.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 770,
+        "lineEnd": 782,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L770-L782"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "953d08e5adbda4e224c8f3f989c55820e45f4738e481da92aa566dcf9dae4965",
+  "slug": "yosoi/surface/struct/cursor",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "953d08e5adbda4e224c8f3f989c55820e45f4738e481da92aa566dcf9dae4965"
+}

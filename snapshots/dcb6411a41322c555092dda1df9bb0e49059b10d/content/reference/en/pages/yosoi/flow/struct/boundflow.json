@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::flow::BoundFlow",
+  "publicPath": "yosoi::flow::BoundFlow",
+  "kind": "struct",
+  "title": "yosoi::flow::BoundFlow",
+  "signature": "pub struct BoundFlow<'a>",
+  "docs": "A configured invocation borrowing its recipe, policy, and optional tab lease.\n\nConfiguration does not acquire resources or run actions. Without a lease,\ninvoke owns acquisition and cleanup; with a lease, cleanup stays with its caller.",
+  "source": {
+    "file": "crates/yosoi/src/flow.rs",
+    "lineStart": 307,
+    "lineEnd": 313,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L307-L313"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::BoundFlow",
+    "yosoi::prelude::flow::BoundFlow"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::flow::BoundFlow::allow_javascript",
+      "publicPath": "yosoi::flow::BoundFlow::allow_javascript",
+      "title": "yosoi::flow::BoundFlow::allow_javascript",
+      "kind": "function",
+      "signature": "pub const fn allow_javascript(self) -> Self",
+      "docs": "Explicitly permits JavaScript when this invocation acquires its own Session.\nA borrowed lease retains its Session's permission; this cannot elevate it.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 318,
+        "lineEnd": 321,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L318-L321"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::BoundFlow::bind",
+      "publicPath": "yosoi::flow::BoundFlow::bind",
+      "title": "yosoi::flow::BoundFlow::bind",
+      "kind": "function",
+      "signature": "pub const fn bind(self, policy: &'a yosoi::Policy) -> Self",
+      "docs": "Applies this policy within the supplied Session's existing permission limits.\nThis configures the invocation without executing it or changing its recipe.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 324,
+        "lineEnd": 327,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L324-L327"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::BoundFlow::fmt",
+      "publicPath": "yosoi::flow::BoundFlow::fmt",
+      "title": "yosoi::flow::BoundFlow::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 306,
+        "lineEnd": 306,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L306-L306"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::BoundFlow::invoke",
+      "publicPath": "yosoi::flow::BoundFlow::invoke",
+      "title": "yosoi::flow::BoundFlow::invoke",
+      "kind": "function",
+      "signature": "pub async fn invoke(&self) -> Result<yosoi::flow::FlowOutcome, yosoi::flow::FlowInvokeError>",
+      "docs": "Executes using the configured lease, or acquires and closes its own Session.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 337,
+        "lineEnd": 347,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L337-L347"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::BoundFlow::with_cancellation",
+      "publicPath": "yosoi::flow::BoundFlow::with_cancellation",
+      "title": "yosoi::flow::BoundFlow::with_cancellation",
+      "kind": "function",
+      "signature": "pub const fn with_cancellation(self, token: &'a CancellationToken) -> Self",
+      "docs": "Supplies an optional external stop signal without selecting a different executor.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 350,
+        "lineEnd": 353,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L350-L353"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::BoundFlow::with_lease",
+      "publicPath": "yosoi::flow::BoundFlow::with_lease",
+      "title": "yosoi::flow::BoundFlow::with_lease",
+      "kind": "function",
+      "signature": "pub const fn with_lease(self, lease: &'a yosoi::session::Work) -> Self",
+      "docs": "Uses the caller's existing lease without acquiring control or owning cleanup.\nThis configures the invocation without executing it or changing its recipe.",
+      "source": {
+        "file": "crates/yosoi/src/flow.rs",
+        "lineStart": 331,
+        "lineEnd": 334,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow.rs#L331-L334"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "cc5dceb1a3538c5fd783808293b7ab559b0a2f2575f2d124bed8b605b8c9f5ac",
+  "slug": "yosoi/flow/struct/boundflow",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "cc5dceb1a3538c5fd783808293b7ab559b0a2f2575f2d124bed8b605b8c9f5ac"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::MAX_AUTOMATION_RECORD_ITEMS",
+  "publicPath": "yosoi::automation_record::MAX_AUTOMATION_RECORD_ITEMS",
+  "kind": "constant",
+  "title": "yosoi::automation_record::MAX_AUTOMATION_RECORD_ITEMS",
+  "signature": "pub const MAX_AUTOMATION_RECORD_ITEMS: usize = 4_096;",
+  "docs": "Maximum number of observations or operation receipts in one record.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 35,
+    "lineEnd": 35,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/automation_record.rs#L35-L35"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e154b98507f03d8450a7df6d729ea73e4835a6a815de9fc02218b4b91be7b36e",
+  "slug": "yosoi/automation-record/constant/max-automation-record-items",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e154b98507f03d8450a7df6d729ea73e4835a6a815de9fc02218b4b91be7b36e"
+}

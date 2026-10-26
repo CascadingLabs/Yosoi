@@ -1,0 +1,495 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::QueryAtom",
+  "publicPath": "yosoi::locators::QueryAtom",
+  "kind": "enum",
+  "title": "yosoi::locators::QueryAtom",
+  "signature": "pub enum QueryAtom",
+  "docs": "One closed, portable locator operation.\n\nText meanings are intentionally separate. Tree descendant text, accessible\nnames, and decoded text ranges must never silently substitute for one\nanother.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query.rs",
+    "lineStart": 55,
+    "lineEnd": 83,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L55-L83"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::QueryAtom"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::QueryAtom::AccessibilityRole",
+      "publicPath": "yosoi::locators::QueryAtom::AccessibilityRole",
+      "title": "yosoi::locators::QueryAtom::AccessibilityRole",
+      "kind": "variant",
+      "signature": "AccessibilityRole(String)",
+      "docs": "Role match against immutable accessibility-node evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L67-L67"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::AccessibilityRole::0",
+          "publicPath": "yosoi::locators::QueryAtom::AccessibilityRole::0",
+          "title": "yosoi::locators::QueryAtom::AccessibilityRole::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 67,
+            "lineEnd": 67,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L67-L67"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::AccessibilityState",
+      "publicPath": "yosoi::locators::QueryAtom::AccessibilityState",
+      "title": "yosoi::locators::QueryAtom::AccessibilityState",
+      "kind": "variant",
+      "signature": "AccessibilityState { name: yosoi::locators::AccessibilityStateName, value: bool }",
+      "docs": "Boolean match against one supported accessibility snapshot state.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 73,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L73-L78"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::AccessibilityState::name",
+          "publicPath": "yosoi::locators::QueryAtom::AccessibilityState::name",
+          "title": "yosoi::locators::QueryAtom::AccessibilityState::name",
+          "kind": "struct_field",
+          "signature": "name: yosoi::locators::AccessibilityStateName",
+          "docs": "Expanded or focused state to inspect.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 75,
+            "lineEnd": 75,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L75-L75"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::AccessibilityState::value",
+          "publicPath": "yosoi::locators::QueryAtom::AccessibilityState::value",
+          "title": "yosoi::locators::QueryAtom::AccessibilityState::value",
+          "kind": "struct_field",
+          "signature": "value: bool",
+          "docs": "Required boolean value, without mutating browser state.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 77,
+            "lineEnd": 77,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L77-L77"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::AccessibilityText",
+      "publicPath": "yosoi::locators::QueryAtom::AccessibilityText",
+      "title": "yosoi::locators::QueryAtom::AccessibilityText",
+      "kind": "variant",
+      "signature": "AccessibilityText(String)",
+      "docs": "Text match against immutable accessibility-node evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L71-L71"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::AccessibilityText::0",
+          "publicPath": "yosoi::locators::QueryAtom::AccessibilityText::0",
+          "title": "yosoi::locators::QueryAtom::AccessibilityText::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 71,
+            "lineEnd": 71,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L71-L71"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::AccessibleName",
+      "publicPath": "yosoi::locators::QueryAtom::AccessibleName",
+      "title": "yosoi::locators::QueryAtom::AccessibleName",
+      "kind": "variant",
+      "signature": "AccessibleName(String)",
+      "docs": "Accessible-name match, not source-tree descendant text.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L69-L69"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::AccessibleName::0",
+          "publicPath": "yosoi::locators::QueryAtom::AccessibleName::0",
+          "title": "yosoi::locators::QueryAtom::AccessibleName::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 69,
+            "lineEnd": 69,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L69-L69"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::Css",
+      "publicPath": "yosoi::locators::QueryAtom::Css",
+      "title": "yosoi::locators::QueryAtom::Css",
+      "kind": "variant",
+      "signature": "Css(String)",
+      "docs": "Authored CSS expression selecting source-tree nodes.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L57-L57"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::Css::0",
+          "publicPath": "yosoi::locators::QueryAtom::Css::0",
+          "title": "yosoi::locators::QueryAtom::Css::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 57,
+            "lineEnd": 57,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L57-L57"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::JsonPath",
+      "publicPath": "yosoi::locators::QueryAtom::JsonPath",
+      "title": "yosoi::locators::QueryAtom::JsonPath",
+      "kind": "variant",
+      "signature": "JsonPath(String)",
+      "docs": "Authored supported JSONPath expression selecting native JSON values.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L65-L65"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::JsonPath::0",
+          "publicPath": "yosoi::locators::QueryAtom::JsonPath::0",
+          "title": "yosoi::locators::QueryAtom::JsonPath::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 65,
+            "lineEnd": 65,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L65-L65"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::JsonPointer",
+      "publicPath": "yosoi::locators::QueryAtom::JsonPointer",
+      "title": "yosoi::locators::QueryAtom::JsonPointer",
+      "kind": "variant",
+      "signature": "JsonPointer(String)",
+      "docs": "JSON Pointer selecting a native JSON value; the empty pointer denotes the root.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L63-L63"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::JsonPointer::0",
+          "publicPath": "yosoi::locators::QueryAtom::JsonPointer::0",
+          "title": "yosoi::locators::QueryAtom::JsonPointer::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 63,
+            "lineEnd": 63,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L63-L63"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::TextLiteral",
+      "publicPath": "yosoi::locators::QueryAtom::TextLiteral",
+      "title": "yosoi::locators::QueryAtom::TextLiteral",
+      "kind": "variant",
+      "signature": "TextLiteral(String)",
+      "docs": "Literal match yielding decoded-text ranges rather than tree nodes.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L80-L80"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::TextLiteral::0",
+          "publicPath": "yosoi::locators::QueryAtom::TextLiteral::0",
+          "title": "yosoi::locators::QueryAtom::TextLiteral::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 80,
+            "lineEnd": 80,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L80-L80"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::TextRegex",
+      "publicPath": "yosoi::locators::QueryAtom::TextRegex",
+      "title": "yosoi::locators::QueryAtom::TextRegex",
+      "kind": "variant",
+      "signature": "TextRegex(String)",
+      "docs": "Supported regular expression yielding decoded-text ranges and capture evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L82-L82"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::TextRegex::0",
+          "publicPath": "yosoi::locators::QueryAtom::TextRegex::0",
+          "title": "yosoi::locators::QueryAtom::TextRegex::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 82,
+            "lineEnd": 82,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L82-L82"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::TreeTextContains",
+      "publicPath": "yosoi::locators::QueryAtom::TreeTextContains",
+      "title": "yosoi::locators::QueryAtom::TreeTextContains",
+      "kind": "variant",
+      "signature": "TreeTextContains(String)",
+      "docs": "Literal substring match against tree descendant text, distinct from decoded-text ranges.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L61-L61"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::TreeTextContains::0",
+          "publicPath": "yosoi::locators::QueryAtom::TreeTextContains::0",
+          "title": "yosoi::locators::QueryAtom::TreeTextContains::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 61,
+            "lineEnd": 61,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L61-L61"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::QueryAtom::XPath",
+      "publicPath": "yosoi::locators::QueryAtom::XPath",
+      "title": "yosoi::locators::QueryAtom::XPath",
+      "kind": "variant",
+      "signature": "XPath(String)",
+      "docs": "Authored supported XPath expression selecting source-tree nodes.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L59-L59"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::QueryAtom::XPath::0",
+          "publicPath": "yosoi::locators::QueryAtom::XPath::0",
+          "title": "yosoi::locators::QueryAtom::XPath::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/query.rs",
+            "lineStart": 59,
+            "lineEnd": 59,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L59-L59"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::clone",
+      "publicPath": "yosoi::locators::QueryAtom::clone",
+      "title": "yosoi::locators::QueryAtom::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::QueryAtom",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::deserialize",
+      "publicPath": "yosoi::locators::QueryAtom::deserialize",
+      "title": "yosoi::locators::QueryAtom::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::eq",
+      "publicPath": "yosoi::locators::QueryAtom::eq",
+      "title": "yosoi::locators::QueryAtom::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::QueryAtom) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::expression",
+      "publicPath": "yosoi::locators::QueryAtom::expression",
+      "title": "yosoi::locators::QueryAtom::expression",
+      "kind": "function",
+      "signature": "pub fn expression(&self) -> &str",
+      "docs": "Borrows authored expression text, or the state name for a boolean state query.\nThe boolean operand remains separate in `AccessibilityState`.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 88,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L88-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::fmt",
+      "publicPath": "yosoi::locators::QueryAtom::fmt",
+      "title": "yosoi::locators::QueryAtom::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::QueryAtom::serialize",
+      "publicPath": "yosoi::locators::QueryAtom::serialize",
+      "title": "yosoi::locators::QueryAtom::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/query.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/documents/query.rs#L53-L53"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "226fb13445a14eef119a4873a855eb55ee4100b0cc9f0315e8c1b58454e0a10c",
+  "slug": "yosoi/locators/enum/queryatom",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "226fb13445a14eef119a4873a855eb55ee4100b0cc9f0315e8c1b58454e0a10c"
+}

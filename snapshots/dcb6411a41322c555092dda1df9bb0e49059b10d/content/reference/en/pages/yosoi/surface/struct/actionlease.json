@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::ActionLease",
+  "publicPath": "yosoi::surface::ActionLease",
+  "kind": "struct",
+  "title": "yosoi::surface::ActionLease",
+  "signature": "pub struct ActionLease",
+  "docs": "Exclusive action lifetime; dropping it preserves uncertainty rather than claiming success.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 908,
+    "lineEnd": 916,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L908-L916"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::ActionLease::drop",
+      "publicPath": "yosoi::surface::ActionLease::drop",
+      "title": "yosoi::surface::ActionLease::drop",
+      "kind": "function",
+      "signature": "fn drop(&mut self)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 1019,
+        "lineEnd": 1049,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L1019-L1049"
+      },
+      "examples": [],
+      "trait": "Drop"
+    },
+    {
+      "id": "function:yosoi::surface::ActionLease::finish",
+      "publicPath": "yosoi::surface::ActionLease::finish",
+      "title": "yosoi::surface::ActionLease::finish",
+      "kind": "function",
+      "signature": "pub fn finish(self, status: yosoi::surface::ActionStatus, note: impl Into<String>) -> Result<yosoi::surface::ActionReceipt, yosoi::SurfaceError>",
+      "docs": "Finishes with an adapter-reported outcome. A dispatched action cannot become `Rejected`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 967,
+        "lineEnd": 1016,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L967-L1016"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ActionLease::fmt",
+      "publicPath": "yosoi::surface::ActionLease::fmt",
+      "title": "yosoi::surface::ActionLease::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 907,
+        "lineEnd": 907,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L907-L907"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::ActionLease::mark_dispatched",
+      "publicPath": "yosoi::surface::ActionLease::mark_dispatched",
+      "title": "yosoi::surface::ActionLease::mark_dispatched",
+      "kind": "function",
+      "signature": "pub fn mark_dispatched(&mut self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Records dispatch before calling the effect adapter, conservatively preserving uncertainty.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 949,
+        "lineEnd": 965,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L949-L965"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ActionLease::revalidate",
+      "publicPath": "yosoi::surface::ActionLease::revalidate",
+      "title": "yosoi::surface::ActionLease::revalidate",
+      "kind": "function",
+      "signature": "pub fn revalidate(&self) -> Result<&yosoi::surface::Reference, yosoi::SurfaceError>",
+      "docs": "Rechecks SDK authority and exact capture freshness before an external effect.\nThe adapter must additionally check its live node, visibility, and eligibility.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 920,
+        "lineEnd": 947,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/session.rs#L920-L947"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "82440e5f5abad2abf6a98c96328b6a563c93582a6ab4650d3cd56457c7eb12ab",
+  "slug": "yosoi/surface/struct/actionlease",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "82440e5f5abad2abf6a98c96328b6a563c93582a6ab4650d3cd56457c7eb12ab"
+}

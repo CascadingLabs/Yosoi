@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowStopCause",
+  "publicPath": "yosoi::flow::FlowStopCause",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowStopCause",
+  "signature": "pub enum FlowStopCause",
+  "docs": "Why execution stopped at an invocation boundary.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 731,
+    "lineEnd": 740,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L731-L740"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowStopCause"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowStopCause::Cancellation",
+      "publicPath": "yosoi::flow::FlowStopCause::Cancellation",
+      "title": "yosoi::flow::FlowStopCause::Cancellation",
+      "kind": "variant",
+      "signature": "Cancellation",
+      "docs": "Observed cancellation activated a scoped or invocation stop policy.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 735,
+        "lineEnd": 735,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L735-L735"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowStopCause::Failure",
+      "publicPath": "yosoi::flow::FlowStopCause::Failure",
+      "title": "yosoi::flow::FlowStopCause::Failure",
+      "kind": "variant",
+      "signature": "Failure",
+      "docs": "A known step failure activated a scoped or invocation stop policy.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 733,
+        "lineEnd": 733,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L733-L733"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowStopCause::UnknownOutcome",
+      "publicPath": "yosoi::flow::FlowStopCause::UnknownOutcome",
+      "title": "yosoi::flow::FlowStopCause::UnknownOutcome",
+      "kind": "variant",
+      "signature": "UnknownOutcome",
+      "docs": "Possible dispatch without a known result prevented safe dependent execution.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 737,
+        "lineEnd": 737,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L737-L737"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowStopCause::UnsafeState",
+      "publicPath": "yosoi::flow::FlowStopCause::UnsafeState",
+      "title": "yosoi::flow::FlowStopCause::UnsafeState",
+      "kind": "variant",
+      "signature": "UnsafeState",
+      "docs": "Browser or evidence safety state prevented continuation regardless of authored policy.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 739,
+        "lineEnd": 739,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L739-L739"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowStopCause::clone",
+      "publicPath": "yosoi::flow::FlowStopCause::clone",
+      "title": "yosoi::flow::FlowStopCause::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowStopCause",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 729,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L729-L729"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowStopCause::deserialize",
+      "publicPath": "yosoi::flow::FlowStopCause::deserialize",
+      "title": "yosoi::flow::FlowStopCause::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 729,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L729-L729"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::FlowStopCause::eq",
+      "publicPath": "yosoi::flow::FlowStopCause::eq",
+      "title": "yosoi::flow::FlowStopCause::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowStopCause) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 729,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L729-L729"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowStopCause::fmt",
+      "publicPath": "yosoi::flow::FlowStopCause::fmt",
+      "title": "yosoi::flow::FlowStopCause::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 729,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L729-L729"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowStopCause::serialize",
+      "publicPath": "yosoi::flow::FlowStopCause::serialize",
+      "title": "yosoi::flow::FlowStopCause::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 729,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/flow/model.rs#L729-L729"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7734d9c81699454a3e6b62846c137cad492c3827607cfa32a6343cd3b7b74119",
+  "slug": "yosoi/flow/enum/flowstopcause",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7734d9c81699454a3e6b62846c137cad492c3827607cfa32a6343cd3b7b74119"
+}

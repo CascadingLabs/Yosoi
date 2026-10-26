@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::archive::ArchiveRefError",
+  "publicPath": "yosoi::archive::ArchiveRefError",
+  "kind": "enum",
+  "title": "yosoi::archive::ArchiveRefError",
+  "signature": "pub enum ArchiveRefError",
+  "docs": "Invalid textual or logical Archive reference.",
+  "source": {
+    "file": "crates/yosoi/src/internal/archive/refs.rs",
+    "lineStart": 15,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L15-L42"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/archive.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/archive.rs#L11-L11"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::InvalidCaptureKey",
+      "publicPath": "yosoi::archive::ArchiveRefError::InvalidCaptureKey",
+      "title": "yosoi::archive::ArchiveRefError::InvalidCaptureKey",
+      "kind": "variant",
+      "signature": "InvalidCaptureKey(crate::internal::types::OccurrenceIdParseError)",
+      "docs": "Capture occurrence parsing rejected the supplied UUID key.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L41-L41"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::archive::ArchiveRefError::InvalidCaptureKey::0",
+          "publicPath": "yosoi::archive::ArchiveRefError::InvalidCaptureKey::0",
+          "title": "yosoi::archive::ArchiveRefError::InvalidCaptureKey::0",
+          "kind": "struct_field",
+          "signature": "0: crate::internal::types::OccurrenceIdParseError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/archive/refs.rs",
+            "lineStart": 41,
+            "lineEnd": 41,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L41-L41"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::InvalidFormat",
+      "publicPath": "yosoi::archive::ArchiveRefError::InvalidFormat",
+      "title": "yosoi::archive::ArchiveRefError::InvalidFormat",
+      "kind": "variant",
+      "signature": "InvalidFormat",
+      "docs": "The physical format version is absent, zero or not an integer.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::InvalidKey",
+      "publicPath": "yosoi::archive::ArchiveRefError::InvalidKey",
+      "title": "yosoi::archive::ArchiveRefError::InvalidKey",
+      "kind": "variant",
+      "signature": "InvalidKey",
+      "docs": "The key contains unsafe path characters, traversal or an invalid length.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::InvalidSyntax",
+      "publicPath": "yosoi::archive::ArchiveRefError::InvalidSyntax",
+      "title": "yosoi::archive::ArchiveRefError::InvalidSyntax",
+      "kind": "variant",
+      "signature": "InvalidSyntax",
+      "docs": "Text does not follow the kind, version and key reference grammar.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::InvalidUuidKey",
+      "publicPath": "yosoi::archive::ArchiveRefError::InvalidUuidKey",
+      "title": "yosoi::archive::ArchiveRefError::InvalidUuidKey",
+      "kind": "variant",
+      "signature": "InvalidUuidKey { kind: &'static str }",
+      "docs": "The category requires a canonical lowercase version-4 UUID key.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 35,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L35-L38"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::archive::ArchiveRefError::InvalidUuidKey::kind",
+          "publicPath": "yosoi::archive::ArchiveRefError::InvalidUuidKey::kind",
+          "title": "yosoi::archive::ArchiveRefError::InvalidUuidKey::kind",
+          "kind": "struct_field",
+          "signature": "kind: &'static str",
+          "docs": "Record category whose key was rejected.",
+          "source": {
+            "file": "crates/yosoi/src/internal/archive/refs.rs",
+            "lineStart": 37,
+            "lineEnd": 37,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L37-L37"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::archive::ArchiveRefError::WrongKind",
+      "publicPath": "yosoi::archive::ArchiveRefError::WrongKind",
+      "title": "yosoi::archive::ArchiveRefError::WrongKind",
+      "kind": "variant",
+      "signature": "WrongKind { expected: &'static str, found: String }",
+      "docs": "The reference names a different category than the requested typed reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 24,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L24-L29"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::archive::ArchiveRefError::WrongKind::expected",
+          "publicPath": "yosoi::archive::ArchiveRefError::WrongKind::expected",
+          "title": "yosoi::archive::ArchiveRefError::WrongKind::expected",
+          "kind": "struct_field",
+          "signature": "expected: &'static str",
+          "docs": "Record category required by the typed reference.",
+          "source": {
+            "file": "crates/yosoi/src/internal/archive/refs.rs",
+            "lineStart": 26,
+            "lineEnd": 26,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L26-L26"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::archive::ArchiveRefError::WrongKind::found",
+          "publicPath": "yosoi::archive::ArchiveRefError::WrongKind::found",
+          "title": "yosoi::archive::ArchiveRefError::WrongKind::found",
+          "kind": "struct_field",
+          "signature": "found: String",
+          "docs": "Category supplied by the rejected text.",
+          "source": {
+            "file": "crates/yosoi/src/internal/archive/refs.rs",
+            "lineStart": 28,
+            "lineEnd": 28,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L28-L28"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::archive::ArchiveRefError::clone",
+      "publicPath": "yosoi::archive::ArchiveRefError::clone",
+      "title": "yosoi::archive::ArchiveRefError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::archive::ArchiveRefError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::archive::ArchiveRefError::eq",
+      "publicPath": "yosoi::archive::ArchiveRefError::eq",
+      "title": "yosoi::archive::ArchiveRefError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::archive::ArchiveRefError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::archive::ArchiveRefError::fmt",
+      "publicPath": "yosoi::archive::ArchiveRefError::fmt",
+      "title": "yosoi::archive::ArchiveRefError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::archive::ArchiveRefError::fmt",
+      "publicPath": "yosoi::archive::ArchiveRefError::fmt",
+      "title": "yosoi::archive::ArchiveRefError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::archive::ArchiveRefError::source",
+      "publicPath": "yosoi::archive::ArchiveRefError::source",
+      "title": "yosoi::archive::ArchiveRefError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/refs.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/archive/refs.rs#L14-L14"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d46befe3142fedbcee9fcee987772eadb82f0a6d9ade189f0eac54d218f04465",
+  "slug": "yosoi/archive/enum/archivereferror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d46befe3142fedbcee9fcee987772eadb82f0a6d9ade189f0eac54d218f04465"
+}

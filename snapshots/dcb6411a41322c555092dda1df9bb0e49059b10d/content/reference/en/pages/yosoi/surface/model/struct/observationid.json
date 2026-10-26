@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::ObservationId",
+  "publicPath": "yosoi::surface::model::ObservationId",
+  "kind": "struct",
+  "title": "yosoi::surface::model::ObservationId",
+  "signature": "pub struct ObservationId",
+  "docs": "Identity of one immutable interpretation, separate from live authority.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 48,
+    "lineEnd": 51,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::surface::model::ObservationId::Error",
+      "publicPath": "yosoi::surface::model::ObservationId::Error",
+      "title": "yosoi::surface::model::ObservationId::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = yosoi::SurfaceError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::as_str",
+      "publicPath": "yosoi::surface::model::ObservationId::as_str",
+      "title": "yosoi::surface::model::ObservationId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "Borrows the producer-issued value; callers must not infer address semantics.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::clone",
+      "publicPath": "yosoi::surface::model::ObservationId::clone",
+      "title": "yosoi::surface::model::ObservationId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::ObservationId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::cmp",
+      "publicPath": "yosoi::surface::model::ObservationId::cmp",
+      "title": "yosoi::surface::model::ObservationId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::surface::model::ObservationId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::deserialize",
+      "publicPath": "yosoi::surface::model::ObservationId::deserialize",
+      "title": "yosoi::surface::model::ObservationId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::eq",
+      "publicPath": "yosoi::surface::model::ObservationId::eq",
+      "title": "yosoi::surface::model::ObservationId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::model::ObservationId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::fmt",
+      "publicPath": "yosoi::surface::model::ObservationId::fmt",
+      "title": "yosoi::surface::model::ObservationId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::hash",
+      "publicPath": "yosoi::surface::model::ObservationId::hash",
+      "title": "yosoi::surface::model::ObservationId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::new",
+      "publicPath": "yosoi::surface::model::ObservationId::new",
+      "title": "yosoi::surface::model::ObservationId::new",
+      "kind": "function",
+      "signature": "pub fn new(value: impl Into<String>) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Validates a nonempty opaque identifier of at most 1,024 UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::partial_cmp",
+      "publicPath": "yosoi::surface::model::ObservationId::partial_cmp",
+      "title": "yosoi::surface::model::ObservationId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::surface::model::ObservationId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::serialize",
+      "publicPath": "yosoi::surface::model::ObservationId::serialize",
+      "title": "yosoi::surface::model::ObservationId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::ObservationId::try_from",
+      "publicPath": "yosoi::surface::model::ObservationId::try_from",
+      "title": "yosoi::surface::model::ObservationId::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: String) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 48,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/model.rs#L48-L51"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fcc19eb626476130e4f18e46669b4c0a984c8584b9e4e29da26e2b70f0f7fe22",
+  "slug": "yosoi/surface/model/struct/observationid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fcc19eb626476130e4f18e46669b4c0a984c8584b9e4e29da26e2b70f0f7fe22"
+}

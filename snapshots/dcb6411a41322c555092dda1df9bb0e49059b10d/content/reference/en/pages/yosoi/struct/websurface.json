@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::WebSurface",
+  "publicPath": "yosoi::WebSurface",
+  "kind": "struct",
+  "title": "yosoi::WebSurface",
+  "signature": "pub struct WebSurface",
+  "docs": "An immutable web view implementing the same reading protocol as a video timeline.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/document.rs",
+    "lineStart": 14,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L14-L19"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 43,
+    "lineEnd": 43,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/lib.rs#L43-L43"
+  },
+  "aliases": [
+    "yosoi::surface::browser::WebSurface"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::WebSurface::clone",
+      "publicPath": "yosoi::WebSurface::clone",
+      "title": "yosoi::WebSurface::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::WebSurface",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::WebSurface::descriptor",
+      "publicPath": "yosoi::WebSurface::descriptor",
+      "title": "yosoi::WebSurface::descriptor",
+      "kind": "function",
+      "signature": "fn descriptor(&self) -> &yosoi::surface::model::Descriptor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 133,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L133-L135"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::WebSurface::fmt",
+      "publicPath": "yosoi::WebSurface::fmt",
+      "title": "yosoi::WebSurface::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L13-L13"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::WebSurface::native_reference",
+      "publicPath": "yosoi::WebSurface::native_reference",
+      "title": "yosoi::WebSurface::native_reference",
+      "kind": "function",
+      "signature": "pub fn native_reference(&self, reference: &yosoi::surface::model::Reference) -> Result<yosoi::surface::Reference, yosoi::SurfaceError>",
+      "docs": "Resolves a producer-issued address; this operation still grants no live browser authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 77,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L77-L101"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::WebSurface::new",
+      "publicPath": "yosoi::WebSurface::new",
+      "title": "yosoi::WebSurface::new",
+      "kind": "function",
+      "signature": "pub fn new(index: yosoi::Surface, source: yosoi::surface::model::SourceId) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Wraps captured HTML or a rendered DOM; source identity belongs to the caller's session.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 22,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L22-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::WebSurface::observation",
+      "publicPath": "yosoi::WebSurface::observation",
+      "title": "yosoi::WebSurface::observation",
+      "kind": "function",
+      "signature": "fn observation(&self) -> &yosoi::surface::model::Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 136,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L136-L138"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::WebSurface::read",
+      "publicPath": "yosoi::WebSurface::read",
+      "title": "yosoi::WebSurface::read",
+      "kind": "function",
+      "signature": "fn read(&self, request: &yosoi::surface::model::ReadRequest) -> Result<yosoi::surface::model::ReadResult, yosoi::SurfaceError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 142,
+        "lineEnd": 243,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L142-L243"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::WebSurface::reference",
+      "publicPath": "yosoi::WebSurface::reference",
+      "title": "yosoi::WebSurface::reference",
+      "kind": "function",
+      "signature": "pub fn reference(&self, reference: &yosoi::surface::Reference) -> Result<yosoi::surface::model::Reference, yosoi::SurfaceError>",
+      "docs": "Converts an index reference into a representation-neutral evidence address.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 69,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L69-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::WebSurface::root_reference",
+      "publicPath": "yosoi::WebSurface::root_reference",
+      "title": "yosoi::WebSurface::root_reference",
+      "kind": "function",
+      "signature": "fn root_reference(&self) -> yosoi::surface::model::Reference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/document.rs",
+        "lineStart": 139,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/surface/browser/document.rs#L139-L141"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b932130bf9c3eae18f80823ee529f01af37752fd02a762bf49f5806e87b713e8",
+  "slug": "yosoi/struct/websurface",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b932130bf9c3eae18f80823ee529f01af37752fd02a762bf49f5806e87b713e8"
+}

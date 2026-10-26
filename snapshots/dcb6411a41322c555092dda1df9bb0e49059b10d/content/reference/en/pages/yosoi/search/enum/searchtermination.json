@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchTermination",
+  "publicPath": "yosoi::search::SearchTermination",
+  "kind": "enum",
+  "title": "yosoi::search::SearchTermination",
+  "signature": "pub enum SearchTermination",
+  "docs": "Scheduler termination for the whole search, independent of provider success.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+    "lineStart": 294,
+    "lineEnd": 302,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L294-L302"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/search.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchTermination"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchTermination::Cancelled",
+      "publicPath": "yosoi::search::SearchTermination::Cancelled",
+      "title": "yosoi::search::SearchTermination::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "Scheduling observed caller cancellation; retained provider outcomes remain available.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 299,
+        "lineEnd": 299,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L299-L299"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchTermination::Completed",
+      "publicPath": "yosoi::search::SearchTermination::Completed",
+      "title": "yosoi::search::SearchTermination::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "Scheduling ended without observing cancellation or exhausting its deadline.\nIndividual providers can still have failures or incomplete results.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 297,
+        "lineEnd": 297,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L297-L297"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchTermination::DeadlineReached",
+      "publicPath": "yosoi::search::SearchTermination::DeadlineReached",
+      "title": "yosoi::search::SearchTermination::DeadlineReached",
+      "kind": "variant",
+      "signature": "DeadlineReached",
+      "docs": "Scheduling stopped at the shared deadline; not all providers necessarily ran.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 301,
+        "lineEnd": 301,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L301-L301"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::clone",
+      "publicPath": "yosoi::search::SearchTermination::clone",
+      "title": "yosoi::search::SearchTermination::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::eq",
+      "publicPath": "yosoi::search::SearchTermination::eq",
+      "title": "yosoi::search::SearchTermination::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchTermination) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::fmt",
+      "publicPath": "yosoi::search::SearchTermination::fmt",
+      "title": "yosoi::search::SearchTermination::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchTermination::serialize",
+      "publicPath": "yosoi::search::SearchTermination::serialize",
+      "title": "yosoi::search::SearchTermination::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/outcome.rs",
+        "lineStart": 292,
+        "lineEnd": 292,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/internal/engine/search/outcome.rs#L292-L292"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e63a31124020da5503770765b4a4ea582d92cea1b807eb13357ded7fe24d2e1a",
+  "slug": "yosoi/search/enum/searchtermination",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e63a31124020da5503770765b4a4ea582d92cea1b807eb13357ded7fe24d2e1a"
+}

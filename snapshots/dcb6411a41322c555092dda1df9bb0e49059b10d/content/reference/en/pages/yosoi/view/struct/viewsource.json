@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::view::ViewSource",
+  "publicPath": "yosoi::view::ViewSource",
+  "kind": "struct",
+  "title": "yosoi::view::ViewSource",
+  "signature": "pub struct ViewSource",
+  "docs": "Exact observation identity and provenance used as the View's source.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 30,
+    "lineEnd": 36,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L30-L36"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::ViewSource"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::view::ViewSource::clone",
+      "publicPath": "yosoi::view::ViewSource::clone",
+      "title": "yosoi::view::ViewSource::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::ViewSource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::deserialize",
+      "publicPath": "yosoi::view::ViewSource::deserialize",
+      "title": "yosoi::view::ViewSource::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::document_epoch",
+      "publicPath": "yosoi::view::ViewSource::document_epoch",
+      "title": "yosoi::view::ViewSource::document_epoch",
+      "kind": "function",
+      "signature": "pub const fn document_epoch(&self) -> u64",
+      "docs": "Returns the captured document generation that scopes the retained DOM evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 55,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L55-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::eq",
+      "publicPath": "yosoi::view::ViewSource::eq",
+      "title": "yosoi::view::ViewSource::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::ViewSource) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::fmt",
+      "publicPath": "yosoi::view::ViewSource::fmt",
+      "title": "yosoi::view::ViewSource::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::observation_id",
+      "publicPath": "yosoi::view::ViewSource::observation_id",
+      "title": "yosoi::view::ViewSource::observation_id",
+      "kind": "function",
+      "signature": "pub fn observation_id(&self) -> &str",
+      "docs": "Borrows the primary captured observation identity, not a live browser handle.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 40,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L40-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::serialize",
+      "publicPath": "yosoi::view::ViewSource::serialize",
+      "title": "yosoi::view::ViewSource::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::session_id",
+      "publicPath": "yosoi::view::ViewSource::session_id",
+      "title": "yosoi::view::ViewSource::session_id",
+      "kind": "function",
+      "signature": "pub fn session_id(&self) -> &str",
+      "docs": "Borrows recorded Session provenance without reopening browser authority.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 45,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L45-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::tab_id",
+      "publicPath": "yosoi::view::ViewSource::tab_id",
+      "title": "yosoi::view::ViewSource::tab_id",
+      "kind": "function",
+      "signature": "pub fn tab_id(&self) -> &str",
+      "docs": "Borrows recorded tab provenance without granting tab control.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 50,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L50-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::view::ViewSource::url",
+      "publicPath": "yosoi::view::ViewSource::url",
+      "title": "yosoi::view::ViewSource::url",
+      "kind": "function",
+      "signature": "pub fn url(&self) -> Option<&str>",
+      "docs": "Borrows the captured source URL, when available; it is not fetched by the View.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 60,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/view.rs#L60-L62"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "077fcf4cc96a834c9f73d6243dd6392fc537137bd990fbc3e89edd957f4d79cd",
+  "slug": "yosoi/view/struct/viewsource",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "077fcf4cc96a834c9f73d6243dd6392fc537137bd990fbc3e89edd957f4d79cd"
+}

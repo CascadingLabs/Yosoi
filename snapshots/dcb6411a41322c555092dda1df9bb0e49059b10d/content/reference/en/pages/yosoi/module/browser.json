@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::browser",
+  "publicPath": "yosoi::browser",
+  "kind": "module",
+  "title": "yosoi::browser",
+  "signature": "pub mod browser",
+  "docs": "Select an optional browser engine and its explicit execution profile.\n\nBrowser capability does not grant permission: the acquisition and retained\nSession policies still bound every operation. Selecting an optional engine\nnever installs a binary or silently falls back to another controller.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 1,
+    "lineEnd": 330,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dcb6411a41322c555092dda1df9bb0e49059b10d/crates/yosoi/src/browser.rs#L1-L330"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "8e6ffdbe6320656d9ffa700eb5442f2af1abc3301f76f8d83f5a6b38c7af4412",
+  "slug": "yosoi/module/browser",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8e6ffdbe6320656d9ffa700eb5442f2af1abc3301f76f8d83f5a6b38c7af4412"
+}
