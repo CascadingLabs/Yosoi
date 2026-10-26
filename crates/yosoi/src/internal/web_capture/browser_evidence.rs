@@ -24,8 +24,10 @@ pub struct BrowserResourceFact {
     pub url: Option<super::ResolvedWebUrl>,
     pub status: Option<u16>,
     pub outcome: BrowserResourceOutcome,
-    pub from_cache: bool,
-    pub from_service_worker: bool,
+    /// Provider cache fact; None means it has not been reported.
+    pub from_cache: Option<bool>,
+    /// Provider service-worker provenance; None is distinct from false.
+    pub from_service_worker: Option<bool>,
     /// Provider-reported transfer metric, never a retained body extent.
     pub encoded_data_length: Option<u64>,
 }
@@ -82,8 +84,10 @@ pub struct BrowserMainDocumentFact {
     pub status: Option<u16>,
     pub headers: Vec<(String, String)>,
     pub mime_type: Option<String>,
-    pub from_cache: bool,
-    pub from_service_worker: bool,
+    /// Provider cache fact; None means it has not been reported.
+    pub from_cache: Option<bool>,
+    /// Provider service-worker provenance; None is distinct from false.
+    pub from_service_worker: Option<bool>,
 }
 
 impl fmt::Debug for BrowserMainDocumentFact {

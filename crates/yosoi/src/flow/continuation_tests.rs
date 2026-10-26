@@ -72,6 +72,7 @@ fn click(label: &str) -> Step {
 
 fn receipt(label: &str, status: OperationStatus) -> OperationReceipt {
     OperationReceipt {
+        browser: None,
         id: format!("mock-{label}"),
         kind: "click".to_owned(),
         status,

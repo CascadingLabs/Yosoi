@@ -47,6 +47,7 @@ impl Recording {
             Some(surface),
         ))?;
         let observation = Observation {
+            browser: None,
             id: format!("{}:capture:{epoch}", self.outcome.record.id()),
             session_id: self.outcome.record.id().into(),
             tab_id: "primary".into(),

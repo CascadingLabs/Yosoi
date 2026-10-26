@@ -104,6 +104,7 @@ impl Recording {
             .checked_add(1)
             .ok_or_else(|| io::Error::other("record sequence exhausted"))?;
         let result = self.outcome.record.push_operation(OperationReceipt {
+            browser: None,
             id: format!("{}:{}", self.outcome.record.id(), self.sequence),
             kind: kind.into(),
             status,

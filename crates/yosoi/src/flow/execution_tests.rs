@@ -76,6 +76,7 @@ async fn native_nested_execution_keeps_child_receipt_path_and_parent_sibling_bud
                 execute_action(timeout, async move {
                     simulated_control_call(operation_duration).await?;
                     Ok(OperationReceipt {
+                        browser: None,
                         id: "mock-operation".to_owned(),
                         kind: "mock".to_owned(),
                         status: OperationStatus::Observed,
@@ -120,6 +121,7 @@ async fn three_depth_native_flow_inherits_and_restores_action_overrides() {
         selected.push(timeout);
         Box::pin(async {
             Ok(OperationReceipt {
+                browser: None,
                 id: "mock-operation".to_owned(),
                 kind: "screenshot".to_owned(),
                 status: OperationStatus::Observed,

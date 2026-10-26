@@ -1,13 +1,15 @@
+use crate::browser as browser_config;
 use crate::internal::types as yosoi_types;
 
 use std::num::NonZeroU64;
 
 use crate::internal::web_capture::{
     ArtifactRequest, BrowserAttemptEnvironment, BrowserBudgetScope, BrowserByteBound,
-    BrowserByteDomain, BrowserInstrumentationMode, BrowserLimitEnforcement, BrowserOutputSchemas,
-    BrowserProviderBounds, DocumentNavigationAcquisition, NavigationCompletionPolicy,
-    ObservationLimits, ObservationPolicy, ResolvedBrowserCaptureSpec, SettlementPolicy,
-    WebAcquisitionStrategy, WebArtifactFamily, WebArtifactRequestSet, byte_domain_for,
+    BrowserByteDomain, BrowserCapabilityStatus, BrowserInstrumentationMode,
+    BrowserLimitEnforcement, BrowserOutputSchemas, BrowserProviderBounds,
+    DocumentNavigationAcquisition, NavigationCompletionPolicy, ObservationLimits,
+    ObservationPolicy, ResolvedBrowserCaptureSpec, SettlementPolicy, WebAcquisitionStrategy,
+    WebArtifactFamily, WebArtifactRequestSet, byte_domain_for,
 };
 
 use crate::internal::engine::{
@@ -28,6 +30,12 @@ pub(super) fn resolve(
     mode: BrowserMode,
     inputs: BrowserResolutionInputs,
 ) -> Result<super::ResolvedPolicyAttempt, PolicyResolutionError> {
+    let instrumentation = inputs.capabilities.instrumentation();
+    if (policy.browser.engine != browser_config::BrowserEngine::Chrome)
+        != (instrumentation == BrowserInstrumentationMode::Bidi)
+    {
+        return Err(PolicyResolutionError::BrowserInstrumentationMismatch { instrumentation });
+    }
     let completion = inputs.navigation_policy.completion();
     if !matches!(
         completion,
@@ -108,7 +116,7 @@ pub(super) fn resolve(
         inputs.admission,
     )
     .map_err(PolicyResolutionError::BrowserSpec)?;
-    validate_instrumentation(&spec)?;
+    validate_instrumentation(&spec, policy.browser.engine)?;
 
     spec.network = policy.network.clone();
 
@@ -139,6 +147,7 @@ pub(super) fn resolve(
     Ok(super::ResolvedPolicyAttempt::new(
         ResolvedPolicySpec::Browser(Box::new(spec)),
         AppliedPolicy::new(identity, decisions, limits),
+        policy.browser.clone(),
     ))
 }
 
@@ -191,6 +200,7 @@ impl Default for PageArtifactRequests {
 /// The document policy has no runtime-diagnostics request, so runtime escalation cannot fit.
 fn validate_instrumentation(
     spec: &ResolvedBrowserCaptureSpec,
+    engine: browser_config::BrowserEngine,
 ) -> Result<(), PolicyResolutionError> {
     let network = spec.artifacts().source() != ArtifactRequest::NotRequested
         || spec.artifacts().network() != ArtifactRequest::NotRequested
@@ -199,8 +209,26 @@ fn validate_instrumentation(
             SettlementPolicy::QuietPeriod(_)
         );
     let instrumentation = spec.capabilities().instrumentation();
+    if engine == browser_config::BrowserEngine::Moli
+        && matches!(
+            spec.observation().settlement(),
+            SettlementPolicy::QuietPeriod(_)
+        )
+    {
+        // Its isolated-context subresource events cannot establish a complete
+        // in-flight count while main-document events are unavailable.
+        return Err(PolicyResolutionError::BrowserInstrumentationMismatch { instrumentation });
+    }
     let supported = match instrumentation {
         BrowserInstrumentationMode::Normal => true,
+        BrowserInstrumentationMode::Bidi => {
+            !network
+                || spec
+                    .capabilities()
+                    .families()
+                    .get(WebArtifactFamily::Network)
+                    .is_some_and(BrowserCapabilityStatus::is_supported)
+        }
         BrowserInstrumentationMode::Minimal => !network,
         BrowserInstrumentationMode::MinimalNetworkEscalated => network,
         BrowserInstrumentationMode::MinimalRuntimeEscalated

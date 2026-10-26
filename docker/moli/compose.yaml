@@ -1,0 +1,22 @@
+services:
+  moli:
+    image: yosoi-moli:1.1.19-local
+    build:
+      context: .
+    init: true
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=128m,uid=10001,gid=10001,mode=0700
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1.0
+    mem_limit: 768m
+    pids_limit: 128
+    stop_grace_period: 10s
+    ports:
+      - "127.0.0.1:${MOLI_HOST_PORT:-9222}:9222"
+    environment:
+      MOLI_PROFILE: "${MOLI_PROFILE:-dom}"
+      MOLI_RESOURCES: "${MOLI_RESOURCES:-0}"
+      MOLI_ALLOW_PRIVATE_NETWORKS: "${MOLI_ALLOW_PRIVATE_NETWORKS:-0}"

@@ -145,9 +145,11 @@ fn admitted_body(
                 Some(provider::SourceBodyUnavailableReason::CaptureEndedBeforeBody) => {
                     yosoi::BrowserResponseSignalUnavailableReason::BodyCaptureEnded
                 }
-                Some(provider::SourceBodyUnavailableReason::CdpBodyUnavailable) | None => {
-                    yosoi::BrowserResponseSignalUnavailableReason::BodyUnavailable
-                }
+                Some(
+                    provider::SourceBodyUnavailableReason::CdpBodyUnavailable
+                    | provider::SourceBodyUnavailableReason::BidiBodyUnavailable,
+                )
+                | None => yosoi::BrowserResponseSignalUnavailableReason::BodyUnavailable,
             })
         }
     }

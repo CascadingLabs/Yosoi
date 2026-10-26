@@ -1,4 +1,5 @@
 use super::accounting_scope::reason;
+use crate::browser as browser_config;
 use crate::internal::browser as provider;
 use crate::internal::types::{Producer, ProducerId, ProducerVersion};
 use crate::internal::web_capture as yosoi;
@@ -7,6 +8,14 @@ use crate::internal::web_capture::VoidCrawlAdapterError;
 fn controller_version(
     value: &provider::ControllerVersion,
 ) -> Result<Producer, VoidCrawlAdapterError> {
+    if value.name == "com.cascadinglabs.yosoi.bidi" && value.version == env!("CARGO_PKG_VERSION") {
+        return Ok(Producer::new(
+            ProducerId::new(value.name.clone())
+                .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+            ProducerVersion::new(value.version.clone())
+                .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+        ));
+    }
     if value.name != provider::VOID_CRAWL_PACKAGE_NAME
         || value.version != provider::VOID_CRAWL_VERSION
     {
@@ -77,9 +86,7 @@ pub(super) const fn capability_class(value: provider::CapabilityState) -> Capabi
         provider::CapabilityState::Disabled {
             reason: provider::CapabilityDisabledReason::MinimalCdpMode,
         } => CapabilityClass::Disabled,
-        provider::CapabilityState::Unsupported {
-            reason: provider::CapabilityUnsupportedReason::NotImplemented,
-        } => CapabilityClass::Unsupported,
+        provider::CapabilityState::Unsupported { .. } => CapabilityClass::Unsupported,
     }
 }
 
@@ -140,11 +147,21 @@ pub fn verify_environment(
     expected: &yosoi::BrowserAttemptEnvironment,
     certified: &yosoi::CertifiedBrowserCapabilities,
 ) -> Result<(), VoidCrawlAdapterError> {
-    let provider::EnvironmentObservation::Known { value: mode } = &value.mode else {
-        return Err(VoidCrawlAdapterError::EnvironmentMismatch { field: "mode" });
-    };
-    if *mode != expected.mode() {
-        return Err(VoidCrawlAdapterError::EnvironmentMismatch { field: "mode" });
+    match &value.mode {
+        provider::EnvironmentObservation::Known { value: mode } if *mode == expected.mode() => {}
+        provider::EnvironmentObservation::Unavailable { .. }
+            if value.backend.as_ref().is_some_and(|backend| {
+                !backend.process_owned
+                    && backend.protocol == browser_config::BrowserProtocol::Bidi
+                    && match backend.engine {
+                        browser_config::BrowserEngine::Firefox => true,
+                        browser_config::BrowserEngine::Moli => {
+                            expected.mode() == yosoi::BrowserMode::Headless
+                        }
+                        browser_config::BrowserEngine::Chrome => false,
+                    }
+            }) => {}
+        _ => return Err(VoidCrawlAdapterError::EnvironmentMismatch { field: "mode" }),
     }
     verify_capabilities(&value.capabilities, certified.families())?;
     let overrides = expected.overrides();
@@ -221,6 +238,7 @@ pub(super) fn instrumentation_agrees(
     expected: yosoi::BrowserInstrumentationMode,
 ) -> bool {
     match expected {
+        yosoi::BrowserInstrumentationMode::Bidi => false,
         yosoi::BrowserInstrumentationMode::Normal => {
             instrumentation.configured_mode == provider::InstrumentationMode::Normal
                 && instrumentation.network_enabled
@@ -258,16 +276,47 @@ pub fn environment(
     value: provider::BrowserEnvironmentSnapshot,
     expected: yosoi::BrowserInstrumentationMode,
 ) -> Result<yosoi::BrowserCaptureEnvironment, VoidCrawlAdapterError> {
-    if !instrumentation_agrees(value.instrumentation, expected) {
+    let native = value
+        .backend
+        .as_ref()
+        .is_some_and(|backend| backend.protocol == browser_config::BrowserProtocol::Bidi);
+    if (native && expected != yosoi::BrowserInstrumentationMode::Bidi)
+        || (!native && !instrumentation_agrees(value.instrumentation, expected))
+    {
         return Err(VoidCrawlAdapterError::CapabilityMismatch);
     }
     let controller = controller_version(&value.controller)?;
-    let renderer = Producer::new(
-        ProducerId::new("org.chromium.browser")
-            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
-        ProducerVersion::new(value.renderer.product)
-            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
-    );
+    let renderer = match (&value.backend, value.renderer) {
+        (None, Some(renderer)) => Some(Producer::new(
+            ProducerId::new("org.chromium.browser")
+                .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+            ProducerVersion::new(renderer.product)
+                .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+        )),
+        (Some(backend), None) if native => {
+            let id = match backend.engine {
+                browser_config::BrowserEngine::Firefox => "org.mozilla.firefox",
+                browser_config::BrowserEngine::Moli => "org.lexmount.moli",
+                browser_config::BrowserEngine::Chrome => {
+                    return Err(VoidCrawlAdapterError::InvalidEnvironment);
+                }
+            };
+            backend
+                .reported_version
+                .as_ref()
+                .or(backend.executable_version.as_ref())
+                .map(|version| {
+                    Ok::<_, VoidCrawlAdapterError>(Producer::new(
+                        ProducerId::new(id)
+                            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+                        ProducerVersion::new(version.clone())
+                            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
+                    ))
+                })
+                .transpose()?
+        }
+        _ => return Err(VoidCrawlAdapterError::InvalidEnvironment),
+    };
     let mode = environment_value(value.mode, Ok)?;
     let rendering = value.rendering;
     let viewport = environment_value(rendering.viewport, Ok)?;
@@ -289,12 +338,19 @@ pub fn environment(
     })?;
     let color = environment_value(rendering.color_scheme, Ok)?;
     let motion = environment_value(rendering.reduced_motion, Ok)?;
-    Ok(yosoi::BrowserCaptureEnvironment::new(
-        controller,
-        renderer,
-        mode,
-        yosoi::BrowserRenderingContext::new(viewport, dpr, ua, locale, timezone, color, motion),
-    ))
+    let rendering =
+        yosoi::BrowserRenderingContext::new(viewport, dpr, ua, locale, timezone, color, motion);
+    match value.backend {
+        Some(backend) => Ok(yosoi::BrowserCaptureEnvironment::with_backend(
+            controller, renderer, backend, mode, rendering,
+        )),
+        None => Ok(yosoi::BrowserCaptureEnvironment::new(
+            controller,
+            renderer.ok_or(VoidCrawlAdapterError::InvalidEnvironment)?,
+            mode,
+            rendering,
+        )),
+    }
 }
 
 #[cfg(test)]

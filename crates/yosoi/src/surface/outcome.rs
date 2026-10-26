@@ -296,6 +296,7 @@ impl Outcome {
             return;
         }
         let receipt = OperationReceipt {
+            browser: None,
             id: format!("{}:{}", self.record.id(), self.record.operations().len()),
             kind: kind.into(),
             status,

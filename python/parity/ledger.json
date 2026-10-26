@@ -30885,6 +30885,65 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust field source_address maps to Python field source_address."
+    },
+    {
+      "rustPath": "yosoi::Policy::browser",
+      "symbolKey": "member:struct_field:yosoi::Policy::browser@signature:09f38b1847c56721845dd3e09177863807019716a863ca15f263797f3060ae58@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.Policy.browser",
+      "rationale": "Rust browser declaration maps to the Python BrowserConfig field; defaults remain Chrome/CDP and nondefault declarations are hashed in identity v8."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::BrowserConfiguration",
+      "symbolKey": "member:variant:yosoi::PolicyError::BrowserConfiguration@signature:78222e79fff4a693343693ef3173cb7523f69476f650bb68b57fa51cd003c053@source:e0a486f6ac4b56912abaf6796d203c2536bcbfb5083c9df829d53354d252999e",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "BrowserConfiguration",
+        "rustType": "yosoi_policy::PolicyError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "details.reason",
+            "conversion": "stable snake_case BrowserConfigurationError variant code"
+          }
+        ]
+      },
+      "semanticEquivalent": "The native PolicyError adapter retains variant='BrowserConfiguration' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser",
+      "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser@signature:6abb879fd6ed63c69bc4e77aa41d6693267ef05390a9bdd2175b61c35e82ae32@source:1020fe2144c62374a5391b53a3f7cd9a2ff23c8614ecb71aa373c74a38b3efda",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "LegacyIdentityCannotIncludeBrowser",
+        "rustType": "yosoi_policy::PolicyError",
+        "pythonFields": []
+      },
+      "semanticEquivalent": "The native PolicyError adapter retains variant='LegacyIdentityCannotIncludeBrowser' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
     }
   ],
   "surfaceContract": "surface-contract.json"

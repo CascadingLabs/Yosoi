@@ -23,6 +23,7 @@ use tokio::{
 };
 #[cfg(feature = "browser")]
 use yosoi::{
+    browser::BrowserConfig,
     flow,
     policy::{Acquisition, BrowserMode},
     session,
@@ -35,6 +36,75 @@ use yosoi::{
 };
 
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
+
+#[test]
+fn stacked_network_and_engine_declarations_keep_distinct_roundtrip_identities() -> TestResult {
+    use yosoi::browser::{BrowserConfig, BrowserEngine};
+    let default = Policy::default();
+    let routed = Policy {
+        network: Network {
+            ip_family: IpFamily::Ipv4Only,
+            ..Network::default()
+        },
+        ..default.clone()
+    };
+    let optional = Policy {
+        browser: BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        ..default.clone()
+    };
+    let combined = Policy {
+        network: routed.network.clone(),
+        ..optional.clone()
+    };
+    let cases = [default, routed, optional, combined];
+    for (index, policy) in cases.iter().enumerate() {
+        let restored: Policy = serde_json::from_str(&serde_json::to_string(policy)?)?;
+        assert_eq!(policy.effective_identity()?, restored.effective_identity()?);
+        for other in cases.iter().skip(index.saturating_add(1)) {
+            assert_ne!(policy.effective_identity()?, other.effective_identity()?);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test]
+async fn stacked_optional_engine_rejects_custom_network_before_launch() -> TestResult {
+    use yosoi::browser::{BrowserConfig, BrowserEngine};
+    for browser in [
+        BrowserConfig {
+            engine: BrowserEngine::Moli,
+            endpoint: Some("ws://127.0.0.1:9/session".to_owned()),
+            ..BrowserConfig::default()
+        },
+        BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            endpoint: Some("ws://127.0.0.1:9/session".to_owned()),
+            ..BrowserConfig::default()
+        },
+    ] {
+        let policy = Policy {
+            browser,
+            network: Network {
+                ip_family: IpFamily::Ipv4Only,
+                ..Network::default()
+            },
+            ..Policy::default()
+        };
+        let result = session::new().bind(&policy).acquire().await;
+        assert!(matches!(
+            result,
+            Err(session::SessionError::Unsupported(
+                "network routing requires an owned browser process"
+            ))
+        ));
+        drop(result);
+    }
+    Ok(())
+}
 
 async fn fixture(
     bind: &str,
@@ -238,14 +308,14 @@ async fn network_cancellation_closes_a_pending_upstream_handshake() -> TestResul
 }
 
 #[cfg(feature = "browser")]
-#[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::significant_drop_tightening,
     reason = "Work is consumed by async release; the nursery tracks its Drop fields beyond that move"
 )]
-async fn network_session_uses_bound_route_and_rejects_rebinding() -> TestResult {
+async fn session_bound_route(browser: BrowserConfig) -> TestResult {
     let (address, server) = fixture("[::1]:0", html()).await?;
     let mut policy = Policy {
+        browser,
         network: Network {
             ip_family: IpFamily::Ipv6Only,
             source_address: Some("::1".parse()?),
@@ -317,8 +387,7 @@ async fn network_session_uses_bound_route_and_rejects_rebinding() -> TestResult 
 }
 
 #[cfg(feature = "browser")]
-#[tokio::test(flavor = "current_thread")]
-async fn network_session_reaches_an_unresolvable_origin_only_through_its_proxy() -> TestResult {
+async fn session_proxy_route(browser: BrowserConfig) -> TestResult {
     use tokio::{sync::mpsc, task::JoinSet};
 
     let listener = TcpListener::bind("[::1]:0").await?;
@@ -358,6 +427,7 @@ async fn network_session_reaches_an_unresolvable_origin_only_through_its_proxy()
         Ok::<_, io::Error>(())
     });
     let mut policy = Policy {
+        browser,
         network: Network {
             ip_family: IpFamily::Ipv6Only,
             source_address: Some("::1".parse()?),
@@ -407,12 +477,17 @@ async fn network_session_reaches_an_unresolvable_origin_only_through_its_proxy()
 }
 
 #[cfg(feature = "browser")]
-#[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::significant_drop_tightening,
     reason = "Work is consumed by async release; the nursery tracks its Drop fields beyond that move"
 )]
-async fn network_session_routes_frames_workers_websockets_and_service_workers() -> TestResult {
+async fn session_subresource_route(browser: BrowserConfig, service_workers: bool) -> TestResult {
+    use async_tungstenite::{
+        WebSocketStream,
+        tokio::TokioAdapter,
+        tungstenite::{Message, protocol::Role},
+    };
+    use futures_util::{SinkExt, StreamExt};
     use std::sync::{Arc, Mutex};
     use tokio::task::JoinSet;
     use tokio_util::sync::CancellationToken;
@@ -447,7 +522,14 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
                             }).ok_or_else(|| io::Error::other("missing WebSocket key"))?;
                             let accept = derive_accept_key(key.as_bytes());
                             stream.write_all(format!("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n").as_bytes()).await?;
-                            stream.write_all(b"\x81\x05hello").await?;
+                            let mut socket=WebSocketStream::from_raw_socket(TokioAdapter::new(stream),Role::Server,None).await;
+                            socket.send(Message::Text("hello".into())).await.map_err(io::Error::other)?;
+                            while let Some(message)=socket.next().await {
+                                if message.map_err(io::Error::other)?.is_close() {
+                                    socket.flush().await.map_err(io::Error::other)?;
+                                    break;
+                                }
+                            }
                             return Ok(());
                         }
                         if path == "/redirect" {
@@ -473,6 +555,7 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
         Ok::<_, io::Error>(())
     });
     let mut policy = Policy {
+        browser,
         network: Network {
             ip_family: IpFamily::Ipv6Only,
             source_address: Some("::1".parse()?),
@@ -492,11 +575,12 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
         const fetched = fetch('/fetch').then(r=>r.text());
         const worker = new Promise((resolve,reject)=>{const worker=new Worker('/worker.js');worker.onmessage=e=>{resolve(e.data);worker.terminate()};worker.onerror=reject});
         const websocket = new Promise((resolve,reject)=>{const socket=new WebSocket(location.href.replace('http:','ws:')+'ws');socket.onmessage=e=>{resolve(e.data);socket.close()};socket.onerror=reject});
-        const serviceWorker = new Promise(async (resolve,reject)=>{try{navigator.serviceWorker.addEventListener('message',e=>resolve(e.data),{once:true});await navigator.serviceWorker.register('/sw.js');const registration=await navigator.serviceWorker.ready;registration.active.postMessage('fetch')}catch(error){reject(error)}});
+        const serviceWorker = __SERVICE_WORKERS__ ? new Promise(async (resolve,reject)=>{try{navigator.serviceWorker.addEventListener('message',e=>resolve(e.data),{once:true});await navigator.serviceWorker.register('/sw.js');const registration=await navigator.serviceWorker.ready;registration.active.postMessage('fetch')}catch(error){reject(error)}}) : Promise.resolve('unsupported');
         const frame = new Promise(resolve=>{const frame=document.createElement('iframe');frame.onload=()=>resolve('frame');frame.src='/frame';document.body.append(frame)});
         const blocked = fetch('/redirect',{mode:'no-cors'}).then(()=> 'unexpected').catch(()=> 'blocked');
-        return await Promise.all([fetched,worker,websocket,serviceWorker,frame,blocked]);
-    })()"#).await;
+        const completed=(name,promise)=>promise.then(value=>fetch('/completed-'+name).then(()=>value));
+        return await Promise.all([completed('fetch',fetched),completed('worker',worker),completed('websocket',websocket),completed('service-worker',serviceWorker),completed('frame',frame),completed('blocked',blocked)]);
+    })()"#.replace("__SERVICE_WORKERS__", if service_workers { "true" } else { "false" }).as_str()).await;
     work.release().await?;
     session.close().await?;
     drop(session);
@@ -507,13 +591,22 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
         .lock()
         .map_err(|_| io::Error::other("fixture lock poisoned"))?
         .clone();
+    assert!(
+        timeout(Duration::from_millis(50), forbidden.accept())
+            .await
+            .is_err()
+    );
     assert_eq!(
         receipt.result,
         Some(serde_json::json!([
             "fetch",
             "worker",
             "hello",
-            "service-worker",
+            if service_workers {
+                "service-worker"
+            } else {
+                "unsupported"
+            },
             "frame",
             "blocked"
         ])),
@@ -529,12 +622,14 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
             "/fetch",
             "/worker.js",
             "/worker",
-            "/sw.js",
-            "/service-worker",
             "/ws",
             "/frame",
             "/redirect",
-        ] {
+        ]
+        .into_iter()
+        .chain(service_workers.then_some("/sw.js"))
+        .chain(service_workers.then_some("/service-worker"))
+        {
             assert!(
                 observed.iter().any(|(path, _)| path == required),
                 "missing {required}: {observed:?}"
@@ -546,10 +641,107 @@ async fn network_session_routes_frames_workers_websockets_and_service_workers() 
                 .all(|(_, peer)| peer.ip() == Ipv6Addr::LOCALHOST)
         );
     }
-    assert!(
-        timeout(Duration::from_millis(50), forbidden.accept())
-            .await
-            .is_err()
-    );
+
     Ok(())
+}
+
+#[cfg(feature = "browser")]
+#[tokio::test(flavor = "current_thread")]
+async fn network_session_uses_bound_route_and_rejects_rebinding() -> TestResult {
+    session_bound_route(BrowserConfig::default()).await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified regular Firefox executable"]
+async fn bidi_network_firefox_bound_route() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_bound_route(BrowserConfig {
+        engine: BrowserEngine::Firefox,
+        ..BrowserConfig::default()
+    })
+    .await
+}
+
+#[cfg(feature = "browser")]
+#[tokio::test(flavor = "current_thread")]
+async fn network_session_reaches_an_unresolvable_origin_only_through_its_proxy() -> TestResult {
+    session_proxy_route(BrowserConfig::default()).await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified regular Firefox executable"]
+async fn bidi_network_firefox_authenticated_proxy() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_proxy_route(BrowserConfig {
+        engine: BrowserEngine::Firefox,
+        ..BrowserConfig::default()
+    })
+    .await
+}
+
+#[cfg(feature = "browser")]
+#[tokio::test(flavor = "current_thread")]
+async fn network_session_routes_frames_workers_websockets_and_service_workers() -> TestResult {
+    session_subresource_route(BrowserConfig::default(), true).await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified regular Firefox executable"]
+async fn bidi_network_firefox_subresources() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_subresource_route(
+        BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        true,
+    )
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_bound_route() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_bound_route(BrowserConfig {
+        engine: BrowserEngine::Moli,
+        moli_allow_private_networks: true,
+        ..BrowserConfig::default()
+    })
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_authenticated_proxy() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    session_proxy_route(BrowserConfig {
+        engine: BrowserEngine::Moli,
+        moli_allow_private_networks: true,
+        ..BrowserConfig::default()
+    })
+    .await
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the qualified Moli executable"]
+async fn bidi_network_moli_frames_workers_and_websockets() -> TestResult {
+    use yosoi::browser::BrowserEngine;
+    // Pinned Moli does not expose a service-worker runtime. Test the network
+    // consumers it actually implements without weakening Chrome/Firefox coverage.
+    session_subresource_route(
+        BrowserConfig {
+            engine: BrowserEngine::Moli,
+            moli_allow_private_networks: true,
+            ..BrowserConfig::default()
+        },
+        false,
+    )
+    .await
 }

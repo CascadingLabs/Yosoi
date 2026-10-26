@@ -214,11 +214,11 @@ pub(super) fn reserve_capacity(
     if let Some(index) = ready_index {
         return reserve_slot(state, limits, creation_id, index, false);
     }
-    if let Some(index) = state
+    let vacant_index = state
         .slots
         .iter()
-        .position(|slot| slot.status == ProcessStatus::Vacant)
-    {
+        .position(|slot| slot.status == ProcessStatus::Vacant);
+    if let Some(index) = vacant_index {
         return reserve_slot(state, limits, creation_id, index, true);
     }
     if let Some(index) = close_index {

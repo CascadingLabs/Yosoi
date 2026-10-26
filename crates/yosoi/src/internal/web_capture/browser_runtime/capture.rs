@@ -1,5 +1,5 @@
 use super::{BrowserExecutionManager, VoidCrawlAdapterError, config, conversions};
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 use std::{
     env,
@@ -178,10 +178,19 @@ fn provider_stop(error: &VoidCrawlAdapterError, navigation: bool) -> yosoi::Brow
 
 /// Runs one cancellation-aware, maximum-elapsed browser attempt. All provider
 /// collectors and owned browser resources are finalized before this returns.
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "The page, context and session owners remain live until their bounded async cleanup."
+)]
 pub async fn capture_attempt(
     spec: &yosoi::ResolvedBrowserCaptureSpec,
     cancellation: &CancellationToken,
 ) -> Result<yosoi::BrowserAdapterResult, VoidCrawlAdapterError> {
+    if spec.capabilities().instrumentation() == yosoi::BrowserInstrumentationMode::Bidi {
+        // Native execution needs the explicit engine declaration and owned
+        // runtime control; this historical unmanaged entry point is Chrome-only.
+        return Err(VoidCrawlAdapterError::InvalidResolvedSpec);
+    }
     config::validate(spec)?;
     if matches!(spec.environment().mode(), yosoi::BrowserMode::Headful)
         && !headful_display_configured(
@@ -213,7 +222,7 @@ pub async fn capture_attempt(
         yosoi::BrowserMode::Headless => builder.headless(),
         yosoi::BrowserMode::Headful => builder.headful(),
     };
-    let session = match bounded(builder.launch(), cancellation, deadline).await {
+    let session = match Box::pin(bounded(builder.launch(), cancellation, deadline)).await {
         Phase::Complete(Ok(value)) => value,
         Phase::Complete(Err(error)) => return Err(conversions::map_provider_error(&error)),
         Phase::Cancelled => return Err(VoidCrawlAdapterError::CancelledBeforeOwnership),
@@ -388,7 +397,7 @@ pub async fn capture_attempt_managed(
 pub async fn capture(
     spec: &yosoi::ResolvedBrowserCaptureSpec,
 ) -> Result<yosoi::BrowserAdapterFacts, VoidCrawlAdapterError> {
-    let result = capture_attempt(spec, &CancellationToken::new()).await?;
+    let result = Box::pin(capture_attempt(spec, &CancellationToken::new())).await?;
     if !result.is_ready() {
         return Err(VoidCrawlAdapterError::AttemptStopped);
     }

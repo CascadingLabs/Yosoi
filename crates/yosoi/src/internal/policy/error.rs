@@ -1,3 +1,4 @@
+use crate::browser as browser_config;
 use crate::internal::policy::policy::{AcquisitionKind, DocumentRequest, Provider};
 use thiserror::Error;
 
@@ -12,6 +13,12 @@ pub enum PolicyError {
         "proxy URL must use http, https, socks5, or socks5h with a host and no path, query, or fragment"
     )]
     InvalidProxyUrl,
+    /// Engine, endpoint, profile or window mode is incompatible before admission.
+    #[error(transparent)]
+    BrowserConfiguration(#[from] browser_config::BrowserConfigurationError),
+    /// Older identity projections cannot describe newly selected browser behavior.
+    #[error("legacy policy identity cannot include non-default browser settings")]
+    LegacyIdentityCannotIncludeBrowser,
     /// A positive document or locator count was given zero.
     #[error("count limit must be greater than zero")]
     ZeroCountLimit,

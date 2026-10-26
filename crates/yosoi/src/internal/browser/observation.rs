@@ -42,8 +42,12 @@ use tokio::{
 use crate::internal::browser::{
     BrowserBudgetScope, BrowserByteAccounting, BrowserByteBudget, BrowserByteDomain,
     BrowserByteMeasurementUnavailableReason, BrowserByteReport, BrowserByteReportError,
-    BrowserByteSpec, BrowserLimitScope, MeasuredBrowserBytes, Result, VoidCrawlError,
+    BrowserByteSpec, BrowserLimitScope, BrowserPayloadUnavailableReason, MeasuredBrowserBytes,
+    Result, VoidCrawlError,
 };
+
+#[cfg(feature = "browser-bidi")]
+mod bidi;
 
 /// Collectors and hard bounds for one observation scope.
 ///
@@ -512,6 +516,18 @@ impl ObservationReport {
             BrowserLimitScope::RetentionAfterProviderMaterialization,
             BrowserBudgetScope::CaptureAggregate,
         );
+        if matches!(
+            self.accounting.runtime_bytes.admitted,
+            MeasuredCount::Unavailable {
+                reason: MeasurementUnavailableReason::NotCollected
+            }
+        ) {
+            return BrowserByteReport::unavailable_with_spec(
+                BrowserByteDomain::RuntimeDiagnosticUtf8,
+                Some(spec),
+                BrowserPayloadUnavailableReason::NotCollected,
+            );
+        }
         let observed = ByteCount::try_from_usize(
             self.diagnostic_bytes_retained
                 .checked_add(self.diagnostic_bytes_dropped)
@@ -524,7 +540,11 @@ impl ObservationReport {
             retained,
             MeasuredBrowserBytes::Known { value: discarded },
         )?;
-        if self.termination == ObservationTermination::Finished {
+        let unknown_bytes = matches!(
+            self.accounting.runtime_bytes.dropped,
+            MeasuredCount::Unavailable { .. }
+        );
+        if self.termination == ObservationTermination::Finished && !unknown_bytes {
             return BrowserByteReport::from_known_extent(
                 BrowserByteDomain::RuntimeDiagnosticUtf8,
                 Some(spec),
@@ -534,7 +554,11 @@ impl ObservationReport {
         }
 
         let unknown_loss = MeasuredBrowserBytes::Unavailable {
-            reason: BrowserByteMeasurementUnavailableReason::CaptureEndedEarly,
+            reason: if unknown_bytes {
+                BrowserByteMeasurementUnavailableReason::ProviderDidNotReport
+            } else {
+                BrowserByteMeasurementUnavailableReason::CaptureEndedEarly
+            },
         };
         BrowserByteReport::truncated(
             BrowserByteDomain::RuntimeDiagnosticUtf8,

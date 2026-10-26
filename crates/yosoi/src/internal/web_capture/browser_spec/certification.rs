@@ -7,6 +7,8 @@ use crate::internal::web_capture::{
 use thiserror::Error;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BrowserInstrumentationMode {
+    /// Native BiDi subscriptions; does not imply any enabled CDP domain.
+    Bidi,
     Normal,
     Minimal,
     MinimalNetworkEscalated,
@@ -137,7 +139,20 @@ impl CertifiedBrowserCapabilities {
                 WebArtifactFamily::RuntimeDiagnostics => Some(instrumentation.runtime_enabled()),
                 _ => None,
             };
-            let valid = if family == WebArtifactFamily::Storage {
+            let valid = if instrumentation == BrowserInstrumentationMode::Bidi {
+                match family {
+                    WebArtifactFamily::RenderedDom => {
+                        matches!(status, Some(BrowserCapabilityStatus::Supported))
+                    }
+                    _ => matches!(
+                        status,
+                        Some(
+                            BrowserCapabilityStatus::Supported
+                                | BrowserCapabilityStatus::Unsupported { .. }
+                        )
+                    ),
+                }
+            } else if family == WebArtifactFamily::Storage {
                 matches!(status, Some(BrowserCapabilityStatus::Unsupported { .. }))
             } else if let Some(enabled) = expected_enabled {
                 enabled == matches!(status, Some(BrowserCapabilityStatus::Supported))
@@ -148,12 +163,16 @@ impl CertifiedBrowserCapabilities {
                 return Err(BrowserCertificationError::FamilyMismatch { family });
             }
         }
-        if families
+        let source = families
             .get(WebArtifactFamily::Source)
-            .map(BrowserCapabilityStatus::is_supported)
-            != families
-                .get(WebArtifactFamily::Network)
-                .map(BrowserCapabilityStatus::is_supported)
+            .map(BrowserCapabilityStatus::is_supported);
+        let network = families
+            .get(WebArtifactFamily::Network)
+            .map(BrowserCapabilityStatus::is_supported);
+        if (instrumentation == BrowserInstrumentationMode::Bidi
+            && source == Some(true)
+            && network != Some(true))
+            || (instrumentation != BrowserInstrumentationMode::Bidi && source != network)
         {
             return Err(BrowserCertificationError::FamilyMismatch {
                 family: WebArtifactFamily::Network,

@@ -1,3 +1,4 @@
+use crate::browser as browser_config;
 use crate::internal::direct_http as internal_direct_http;
 #[cfg(feature = "browser")]
 use crate::internal::engine::session as internal_engine_session;
@@ -279,6 +280,8 @@ impl ResolvedPolicyAttempt {
         self,
         cancellation: &CancellationToken,
     ) -> Result<PolicyCapture, PolicyCaptureError> {
+        #[cfg(feature = "browser")]
+        let browser = self.browser_config().clone();
         let (spec, applied_policy) = self.into_parts();
         match spec {
             ResolvedPolicySpec::DirectHttp {
@@ -296,7 +299,7 @@ impl ResolvedPolicyAttempt {
             ResolvedPolicySpec::Browser(spec) => {
                 #[cfg(feature = "browser")]
                 {
-                    Box::pin(execute_browser(spec, applied_policy, cancellation)).await
+                    Box::pin(execute_browser(spec, applied_policy, browser, cancellation)).await
                 }
                 #[cfg(not(feature = "browser"))]
                 {
@@ -339,6 +342,7 @@ async fn execute_direct_http(
 async fn execute_browser(
     spec: Box<internal_web_capture::ResolvedBrowserCaptureSpec>,
     applied_policy: AppliedPolicy,
+    browser: browser_config::BrowserConfig,
     cancellation: &CancellationToken,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
     let mode = spec.environment().mode();
@@ -354,7 +358,14 @@ async fn execute_browser(
     let _cancel_acquisition = acquiring.clone().drop_guard();
     let acquired = tokio_time::timeout(
         maximum,
-        internal_engine_session::BrowserSession::acquire(mode, 1, false, &spec.network, &acquiring),
+        internal_engine_session::BrowserSession::acquire(
+            browser,
+            mode,
+            1,
+            false,
+            &spec.network,
+            &acquiring,
+        ),
     )
     .await
     .map_err(|_| PolicyCaptureError::Execution {

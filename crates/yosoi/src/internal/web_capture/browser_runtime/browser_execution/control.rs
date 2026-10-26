@@ -1,7 +1,8 @@
 //! Shared all-operation control over the existing per-tab navigation gate.
 
 use super::{BrowserExecutionManagerError, RuntimeBrowserTabLease};
-use crate::internal::browser as provider;
+use crate::browser as browser_config;
+use crate::internal::browser::controller as provider;
 use serde_json::Value;
 use std::fmt;
 use std::str as std_str;
@@ -177,6 +178,11 @@ impl RuntimeBrowserTabLease {
 }
 
 impl RuntimeBrowserControl {
+    /// Immutable admitted/reported provenance remains readable after fencing;
+    /// it grants no live browser authority or claim about current availability.
+    pub fn execution_identity(&self) -> Option<browser_config::BrowserExecutionIdentity> {
+        self.page.execution_identity()
+    }
     /// Checks the watch's original frame and loader-derived epoch against a
     /// fresh browser frame-tree read, including after worker admission.
     pub async fn observation_scope_is_current(

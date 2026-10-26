@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         return Err(io::Error::other("unexpected argument after output directory").into());
     }
     let fixture = LocalFixture::start().await?;
-    let run = run_spike(&fixture.url, &output_dir).await;
+    let run = Box::pin(run_spike(&fixture.url, &output_dir)).await;
     let shutdown = fixture.shutdown().await;
     run?;
     shutdown?;

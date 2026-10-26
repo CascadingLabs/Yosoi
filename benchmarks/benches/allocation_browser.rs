@@ -115,8 +115,8 @@ fn network(resources_and_events: u64) -> Option<BrowserStructuredEvidence> {
             url: None,
             status: Some(200),
             outcome: BrowserResourceOutcome::Complete,
-            from_cache: false,
-            from_service_worker: false,
+            from_cache: Some(false),
+            from_service_worker: Some(false),
             encoded_data_length: Some(0),
         });
         events.push(BrowserObservationFact {

@@ -60,7 +60,7 @@ pub async fn read_policy_record(
                 .validate_effective_snapshot(&record.effective_policy)
                 .map_err(ArchiveError::InvalidPolicy)?;
             let computed = match record.effective_identity.version() {
-                7 => record.effective_policy.effective_identity(),
+                7 | 8 => record.effective_policy.effective_identity(),
                 6 => record.effective_policy.archived_v6_identity(),
                 5 => record.effective_policy.archived_v5_identity(),
                 4 if !map_robots_authored => record

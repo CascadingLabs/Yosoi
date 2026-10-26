@@ -29,6 +29,9 @@ pub type MeasuredBrowserBytes =
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BrowserByteDomain {
+    /// Browser-decoded response bytes, shared by CDP and BiDi collectors.
+    /// The historical name is retained for existing accounting contracts; the
+    /// execution identity records the actual protocol. These are not wire bytes.
     CdpDecodedBody,
     RenderedDomUtf8,
     AccessibilityJsonUtf8,

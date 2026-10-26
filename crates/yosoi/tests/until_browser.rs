@@ -1766,7 +1766,7 @@ async fn queued_deadline_expires_before_trigger_and_leaves_the_tab_reusable()
     clippy::significant_drop_tightening,
     reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
 )]
-async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch()
+async fn navigation_during_input_preparation_is_unknown_before_trigger_dispatch()
 -> Result<(), TestError> {
     if !enabled() {
         return Ok(());
@@ -1774,12 +1774,28 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
 
     let mut fixture = fixture::UntilFixture::start().await?;
     let browser = session::new()
-        .configure(browser_settings(1))
+        .configure(browser_settings(2))
         .acquire()
         .await?;
     let work = browser.work().await?;
     work.navigate(&fixture.url("/until?attempt=target-scope&target-resolution-gate=1"))
         .await?;
+    let foreground_tab = browser.new_tab().await?;
+    let foreground = foreground_tab.work().await?;
+    foreground
+        .navigate(&fixture.url("/until?attempt=scope-foreground"))
+        .await?;
+    timeout(
+        Duration::from_secs(8),
+        fixture.wait_for("/gate/contract?attempt=target-scope&phase=arm-input"),
+    )
+    .await??;
+    fixture.release("contract:target-scope:arm-input")?;
+    timeout(
+        Duration::from_secs(8),
+        fixture.wait_for("/marker?attempt=target-scope&phase=input-armed"),
+    )
+    .await??;
 
     let flow = flow::new([action::click("#trigger").until(expect::visible("#receipt"))]);
     let bound = flow.with_lease(&work);
@@ -1787,15 +1803,14 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
     let target_lookup = request_before_result(
         &mut invocation,
         &mut fixture,
-        "/gate/contract?attempt=target-scope&phase=target-resolution",
+        "/gate/contract?attempt=target-scope&phase=input-preparation",
     )
     .await?;
     assert_eq!(target_lookup.method, "GET");
 
-    // The overridden querySelectorAll length getter is awaiting this response.
-    // Releasing it starts a real navigation while the original lookup context
-    // is still unresolved; the replacement page's marker proves that it loaded.
-    fixture.release("contract:target-scope:target-resolution")?;
+    // Releasing the activation handler navigates after the original element
+    // was resolved. The replacement marker proves that the document changed.
+    fixture.release("contract:target-scope:input-preparation")?;
     let replacement = timeout(
         Duration::from_secs(8),
         fixture.wait_for("/replacement?attempt=target-scope"),
@@ -1810,7 +1825,7 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
     assert_eq!(replacement_loaded.method, "GET");
 
     let outcome = timeout(Duration::from_secs(8), &mut invocation).await??;
-    save_outcome("until-target-resolution-scope-change", &outcome)?;
+    save_outcome("until-input-preparation-scope-change", &outcome)?;
     assert_eq!(outcome.terminal, FlowTermination::Unknown);
     let step = outcome
         .steps
@@ -1820,10 +1835,16 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
     let report = until_report(&outcome)?;
     report.validate()?;
     assert_eq!(report.termination, UntilTermination::Unavailable);
-    assert!(
-        report.trigger.is_none(),
-        "target lookup dispatched the trigger"
-    );
+    // Input preparation is already inside the attempted trigger. Retain its
+    // uncertainty without claiming a successful native pointer dispatch.
+    let trigger = report
+        .trigger
+        .as_ref()
+        .ok_or("lost attempted input receipt")?;
+    assert_eq!(trigger.kind, "click");
+    assert_eq!(trigger.status, OperationStatus::Unknown);
+    assert!(trigger.result.is_none());
+    assert!(trigger.error.is_some());
     assert_eq!(fixture.request_count("/trigger?attempt=target-scope")?, 0);
     assert_eq!(
         fixture.request_count("/replacement?attempt=target-scope")?,
@@ -1836,6 +1857,7 @@ async fn navigation_during_target_resolution_is_unknown_before_trigger_dispatch(
     drop(invocation);
 
     work.release().await?;
+    foreground.release().await?;
     browser.close().await?;
     fixture.shutdown().await?;
     Ok(())

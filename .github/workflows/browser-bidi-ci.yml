@@ -1,0 +1,97 @@
+name: Optional BiDi browsers
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: browser-bidi-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  CARGO_BUILD_JOBS: '1'
+  RAYON_NUM_THREADS: '1'
+  RUST_TEST_THREADS: '1'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
+  CARGO_TARGET_DIR: ${{ github.workspace }}/target
+  YOSOI_BIDI_TESTS: '1'
+  YOSOI_BIDI_CONTAINER_TESTS: '1'
+  YOSOI_EXPECT_INSTALLED: '1'
+  MOLI_HOST_PORT: '0'
+jobs:
+  acceptance:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          cache-key: bidi-native-v1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.15'
+      - name: Install regular Firefox prerequisites and pinned engines
+        run: |
+          sudo apt-get install -y --no-install-recommends libgtk-3-0 libdbus-glib-1-2 libx11-xcb1 libxt6 xvfb xauth patchelf
+          scripts/bidi/install-engines.sh "$GITHUB_WORKSPACE/.local/ci-engines"
+          echo "YOSOI_MOLI_EXECUTABLE=$GITHUB_WORKSPACE/.local/ci-engines/moli/moli" >> "$GITHUB_ENV"
+          echo "YOSOI_FIREFOX_EXECUTABLE=$GITHUB_WORKSPACE/.local/ci-engines/firefox/firefox" >> "$GITHUB_ENV"
+      - name: Native Rust core and adversarial transport
+        run: |
+          cargo test --locked -p yosoi --lib --features browser-bidi bidi -- --include-ignored --test-threads=1
+          cargo test --locked -p yosoi --features browser-bidi --test network_policy bidi_network_ -- --include-ignored --test-threads=1
+      - name: Build and install the Python wheel
+        run: |
+          uv sync --locked --no-install-project
+          uv run --no-sync maturin build --features browser-bidi --jobs "$CARGO_BUILD_JOBS" --out .generated/bidi/wheels
+          uv pip install --no-deps --reinstall .generated/bidi/wheels/*.whl
+          uv run --no-sync pytest -q python/tests/test_browser_beta.py::test_installed_wheel_is_used_when_requested
+      - name: Native Python core, permissions and Archive
+        run: uv run --no-sync pytest -q python/tests/test_optional_browsers.py python/tests/test_bidi_captures.py
+      - name: Regular headful Firefox
+        env:
+          YOSOI_BIDI_MODE: headful
+          GDK_BACKEND: x11
+          MOZ_ENABLE_WAYLAND: '0'
+        run: |
+          xvfb-run -a -s '-screen 0 1280x1024x24' uv run --no-sync pytest -q 'python/tests/test_optional_browsers.py::test_native_python_session_and_requests[firefox]' 'python/tests/test_bidi_captures.py::test_native_until_body_and_protocol_scope_survive_archive[firefox]'
+          xvfb-run -a -s '-screen 0 1280x1024x24' cargo test --locked -p yosoi --lib --features browser-bidi bidi_firefox_visual_transactions_restore_and_fence -- --ignored --test-threads=1
+      - name: Build portable headless image
+        run: docker compose -f docker/moli/compose.yaml build
+      - name: Start container test environment
+        run: |
+          docker compose -f python/tests/bidi/compose.yaml up -d --no-build --wait --wait-timeout 30
+          uv run --no-sync python python/tests/bidi/containers.py >> "$GITHUB_ENV"
+      - name: Container native core, client isolation and bounded stress
+        env:
+          YOSOI_BIDI_SOURCE_REVISION: ${{ github.sha }}
+        run: |
+          uv run --no-sync pytest -q python/tests/test_optional_browsers.py -k container_clients
+          YOSOI_BIDI_STRESS_ITERATIONS=100 YOSOI_BIDI_EVIDENCE_PATH="$GITHUB_WORKSPACE/.generated/bidi/sdk-stress.json" uv run --no-sync pytest -q -s 'python/tests/test_optional_browsers.py::test_native_python_session_and_requests[moli]'
+      - name: Container policy, cancellation and socket-loss contracts
+        run: uv run --no-sync pytest -q python/tests/bidi/test_container.py --basetemp .generated/bidi/container-tests
+      - name: Packaged Rust consumer and offline reader
+        run: uv run --no-sync python scripts/bidi/packaged_rust.py --output .generated/bidi/installed-rust.json
+      - name: Retain image and resource identity
+        if: always()
+        run: |
+          mkdir -p .generated/bidi
+          docker image inspect yosoi-moli:1.1.19-local > .generated/bidi/image.json || true
+          docker inspect yosoi-bidi-tests-moli-1 > .generated/bidi/container.json || true
+          docker exec yosoi-bidi-tests-moli-1 sh -c 'cat /sys/fs/cgroup/memory.current /sys/fs/cgroup/memory.peak /sys/fs/cgroup/pids.current /sys/fs/cgroup/cpu.stat' > .generated/bidi/resources.txt || true
+      - name: Close container test environment
+        if: always()
+        run: docker compose -f python/tests/bidi/compose.yaml down
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: bidi-native-evidence
+          path: .generated/bidi/
+          if-no-files-found: error
+          retention-days: 7

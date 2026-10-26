@@ -10,6 +10,10 @@ use tokio::sync as tokio_sync;
     clippy::too_many_arguments,
     reason = "the worker keeps provider ownership, rollback, and handoff order explicit"
 )]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "The Result and page owners are consumed by tab registration or async cleanup."
+)]
 pub(in super::super) async fn create_additional_tab(
     resource: Arc<LeaseResource>,
     manager: Arc<ManagerInner>,

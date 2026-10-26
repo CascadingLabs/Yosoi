@@ -1,5 +1,5 @@
 use super::{VoidCrawlAdapterError, conversions};
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 
 pub async fn apply(

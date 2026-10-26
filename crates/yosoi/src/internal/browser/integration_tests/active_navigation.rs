@@ -81,7 +81,7 @@ impl Gate {
     }
 }
 
-struct Fixture {
+pub(super) struct Fixture {
     base_url: String,
     hold: Arc<Gate>,
     shutdown: Option<oneshot::Sender<()>>,
@@ -89,7 +89,7 @@ struct Fixture {
 }
 
 impl Fixture {
-    async fn start() -> Self {
+    pub(super) async fn start() -> Self {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("bind loopback fixture");
@@ -119,17 +119,17 @@ impl Fixture {
         }
     }
 
-    fn url(&self, path: &str) -> String {
+    pub(super) fn url(&self, path: &str) -> String {
         format!("{}{path}", self.base_url)
     }
 
-    async fn wait_until_held(&self) {
+    pub(super) async fn wait_until_held(&self) {
         timeout(FIXTURE_DEADLINE, self.hold.wait_for_arrival())
             .await
             .expect("held request never reached fixture");
     }
 
-    fn release_held_navigation(&self) {
+    pub(super) fn release_held_navigation(&self) {
         self.hold.open();
     }
 }
@@ -148,7 +148,29 @@ impl Drop for Fixture {
 
 async fn serve(mut stream: TcpStream, hold: Arc<Gate>) {
     let mut request = [0_u8; 4_096];
-    let Ok(read) = stream.read(&mut request).await else {
+    let Ok(Some(read)) = timeout(FIXTURE_DEADLINE, async {
+        let mut read = 0_usize;
+        loop {
+            let tail = request.get_mut(read..)?;
+            if tail.is_empty() {
+                return None;
+            }
+            let count = stream.read(tail).await.ok()?;
+            if count == 0 {
+                return None;
+            }
+            read = read.checked_add(count)?;
+            if request
+                .get(..read)?
+                .windows(4)
+                .any(|part| part == b"\r\n\r\n")
+            {
+                return Some(read);
+            }
+        }
+    })
+    .await
+    else {
         return;
     };
     let request_text = String::from_utf8_lossy(request.get(..read).unwrap_or_default());
@@ -165,22 +187,35 @@ async fn serve(mut stream: TcpStream, hold: Arc<Gate>) {
         hold.wait_until_open().await;
     }
 
-    let body = match path {
-        "/same-document" => {
-            "<!doctype html><main>before</main><script>history.pushState({}, '', '#first');history.pushState({}, '', '#second')</script>"
+    let body = if path == "/user-agent" {
+        request_text
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("user-agent")
+                    .then_some(value.trim())
+            })
+            .unwrap_or_default()
+    } else {
+        match path {
+            "/same-document" => {
+                "<!doctype html><main>before</main><script>history.pushState({}, '', '#first');history.pushState({}, '', '#second')</script>"
+            }
+            "/frame-parent" => {
+                "<!doctype html><main>top-frame</main><iframe src='/frame-child'></iframe>"
+            }
+            "/frame-child" => {
+                "<!doctype html><main>child-frame</main><script>history.pushState({}, '', '#child')</script>"
+            }
+            "/progress-burst" => {
+                "<!doctype html><main>burst</main><script>for(let index=0;index<64;index+=1){history.pushState({index}, '', '#'+index)}</script>"
+            }
+            "/dcl-hold" => {
+                "<!doctype html><main>dcl-ready</main><img src='/hold-resource' alt='held'>"
+            }
+            "/hold" => "<!doctype html><main>released</main>",
+            _ => "<!doctype html><main>normal</main>",
         }
-        "/frame-parent" => {
-            "<!doctype html><main>top-frame</main><iframe src='/frame-child'></iframe>"
-        }
-        "/frame-child" => {
-            "<!doctype html><main>child-frame</main><script>history.pushState({}, '', '#child')</script>"
-        }
-        "/progress-burst" => {
-            "<!doctype html><main>burst</main><script>for(let index=0;index<64;index+=1){history.pushState({index}, '', '#'+index)}</script>"
-        }
-        "/dcl-hold" => "<!doctype html><main>dcl-ready</main><img src='/hold-resource' alt='held'>",
-        "/hold" => "<!doctype html><main>released</main>",
-        _ => "<!doctype html><main>normal</main>",
     };
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{body}",
@@ -258,6 +293,121 @@ async fn finish(page: &Page, url: &str) -> (Vec<NavigationProgress>, NavigationR
         .await
         .expect("receive terminal navigation report");
     (progress, report)
+}
+
+#[cfg(feature = "browser-bidi")]
+#[tokio::test]
+#[ignore = "requires the qualified regular Firefox executable"]
+async fn bidi_firefox_navigation_preserves_lifecycle_loss_and_cancellation() {
+    use crate::browser::{BrowserConfig, BrowserEngine};
+    use crate::internal::browser::bidi::session::Session;
+    use tokio::time::Instant;
+    use tokio_util::sync::CancellationToken;
+
+    let fixture = Fixture::start().await;
+    let token = CancellationToken::new();
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(30))
+        .expect("bounded deadline");
+    let session = Session::launch(
+        BrowserConfig {
+            engine: BrowserEngine::Firefox,
+            ..BrowserConfig::default()
+        },
+        false,
+        None,
+        &token,
+        deadline,
+    )
+    .await
+    .expect("launch stock Firefox");
+    let user = session
+        .new_user_context(&token, deadline)
+        .await
+        .expect("isolated context");
+    let page = session
+        .new_page(&user, &token, deadline)
+        .await
+        .expect("owned page");
+    let mut navigation = page
+        .start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("native navigation");
+    let progress = collect_progress(&mut navigation).await;
+    assert_strictly_ordered(&progress);
+    assert!(
+        progress
+            .iter()
+            .any(|event| event.kind == NavigationProgressKind::DomContentLoaded)
+    );
+    let report = navigation.wait().await.expect("native report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(report.cleanup_complete);
+    assert_loss_accounting_is_honest(&report);
+
+    let report = page
+        .start_navigation(
+            &fixture.url("/normal#fragment"),
+            options(128, NAVIGATION_DEADLINE),
+        )
+        .await
+        .expect("fragment navigation")
+        .wait()
+        .await
+        .expect("fragment report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(report.same_document && report.cleanup_complete);
+
+    // A caller that never drains progress must not stall or lose the loss fact.
+    let report = page
+        .start_navigation(
+            &fixture.url("/next"),
+            options(1, NAVIGATION_DEADLINE)
+                .with_provider_event_capacity(NonZeroUsize::new(128).expect("provider capacity")),
+        )
+        .await
+        .expect("bounded progress")
+        .wait()
+        .await
+        .expect("loss report");
+    assert_eq!(report.termination, NavigationTermination::Completed);
+    assert!(matches!(report.progress.dropped, MeasuredCount::Known { value } if value > 0));
+    assert!(report.cleanup_complete);
+    assert_loss_accounting_is_honest(&report);
+
+    let navigation = page
+        .start_navigation(&fixture.url("/hold"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("pending navigation");
+    fixture.wait_until_held().await;
+    let report = navigation.cancel().await.expect("cancel report");
+    assert_eq!(report.termination, NavigationTermination::Cancelled);
+    assert!(
+        report.cleanup_complete,
+        "acknowledged native stop must settle cleanup"
+    );
+    fixture.release_held_navigation();
+    assert_eq!(
+        page.evaluate("document.readyState", &token, deadline)
+            .await
+            .expect("document remains usable after native stop")
+            .0,
+        serde_json::json!("complete")
+    );
+    let navigation = page
+        .start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+        .await
+        .expect("reuse after acknowledged cancellation");
+    drop(navigation);
+    assert!(
+        page.start_navigation(&fixture.url("/normal"), options(128, NAVIGATION_DEADLINE))
+            .await
+            .is_err(),
+        "dropping a dispatched owner must fence reuse"
+    );
+    drop(page);
+    let _ = session.close().await;
+    drop(session);
 }
 
 #[tokio::test]

@@ -14,6 +14,9 @@ use super::staging::{
     BrowserStagingParts, BrowserStagingSlot, LossExtent, StagingState,
 };
 
+#[cfg(test)]
+mod bidi_tests;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CleanupState {
     Complete,
@@ -730,8 +733,12 @@ impl BrowserAdapterFacts {
         if environment.controller() != capabilities.profile().producer() {
             return Err(BrowserAdapterOutputError::EnvironmentMismatch);
         }
-        if !matches!(environment.mode(),yosoi_web_capture::EnvironmentValue::Known { value: mode } if matches!(capabilities.profile().acquisition(),yosoi_web_capture::AcquisitionCapabilityProfile::DocumentNavigation(p) if p.mode()==*mode))
-        {
+        let yosoi_web_capture::AcquisitionCapabilityProfile::DocumentNavigation(profile) =
+            capabilities.profile().acquisition()
+        else {
+            return Err(BrowserAdapterOutputError::EnvironmentMismatch);
+        };
+        if !environment_mode_agrees(&environment, profile.mode(), capabilities.instrumentation()) {
             return Err(BrowserAdapterOutputError::EnvironmentMismatch);
         }
         Ok(Self {
@@ -870,6 +877,34 @@ impl BrowserAdapterFacts {
             .staging
             .decoded_source()
             .is_some_and(|decoded| decoded.outcome().state() == representation_state)
+    }
+}
+
+/// A remote native service can omit window-mode attestation. Preserve that
+/// absence; it is neither a verified requested mode nor a Chrome exception.
+fn environment_mode_agrees(
+    environment: &BrowserCaptureEnvironment,
+    expected: yosoi_web_capture::BrowserMode,
+    instrumentation: yosoi_web_capture::BrowserInstrumentationMode,
+) -> bool {
+    use crate::browser::{BrowserEngine, BrowserProtocol};
+    match environment.mode() {
+        yosoi_web_capture::EnvironmentValue::Known { value } => *value == expected,
+        yosoi_web_capture::EnvironmentValue::Unavailable { reason }
+            if instrumentation == yosoi_web_capture::BrowserInstrumentationMode::Bidi
+                && reason.as_str() == "voidcrawl.environment.attached-browser-not-controlled" =>
+        {
+            environment.backend().is_some_and(|backend| {
+                !backend.process_owned
+                    && backend.protocol == BrowserProtocol::Bidi
+                    && match backend.engine {
+                        BrowserEngine::Firefox => true,
+                        BrowserEngine::Moli => expected == yosoi_web_capture::BrowserMode::Headless,
+                        BrowserEngine::Chrome => false,
+                    }
+            })
+        }
+        _ => false,
     }
 }
 fn byte_accounting_matches_bound(

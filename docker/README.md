@@ -1,5 +1,9 @@
 # Local Docker profiles
 
+The optional [headless Moli service](moli/README.md) has its own pinned binary,
+BiDi endpoint and resource/network profile. It is independent of the historical
+Chrome templates below.
+
 Both builders pin the official Rust 1.99.0 Linux/amd64 image by digest, matching
 the repository's development toolchain. Updated container builds and browser
 certification remain pending; recorded results retain their original toolchain

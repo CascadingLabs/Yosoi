@@ -13,7 +13,7 @@ use std::{
 };
 
 use tokio::{
-    sync::{mpsc, oneshot},
+    sync::{Semaphore, mpsc, oneshot},
     task::JoinHandle,
 };
 
@@ -21,6 +21,8 @@ use crate::internal::browser::{MeasuredCount, Result, VoidCrawlError};
 
 const DEFAULT_CLEANUP_TIMEOUT: Duration = Duration::from_secs(2);
 
+#[cfg(feature = "browser-bidi")]
+mod bidi;
 mod progress;
 mod start;
 mod worker;
@@ -77,6 +79,14 @@ impl ActiveNavigationOptions {
     }
 
     const fn validate(self) -> Result<Self> {
+        if self.progress_capacity.get() > Semaphore::MAX_PERMITS
+            || self.provider_event_capacity.get() > Semaphore::MAX_PERMITS
+        {
+            return Err(VoidCrawlError::InvalidInput {
+                operation: "start_navigation",
+                reason: "navigation channel capacity exceeds the runtime bound",
+            });
+        }
         if self.max_duration.is_zero() {
             return Err(VoidCrawlError::InvalidInput {
                 operation: "start_navigation",
@@ -215,6 +225,34 @@ pub struct ActiveNavigation {
 }
 
 impl ActiveNavigation {
+    pub(in crate::internal::browser) async fn until_dom_content_loaded(mut self) -> Result<()> {
+        while let Some(progress) = self.next_progress().await? {
+            if matches!(
+                progress.kind,
+                NavigationProgressKind::DomContentLoaded
+                    | NavigationProgressKind::SameDocumentNavigation
+            ) {
+                let report = self.complete_at_readiness().await?;
+                return if report.termination == NavigationTermination::Completed
+                    && report.cleanup_complete
+                {
+                    Ok(())
+                } else {
+                    Err(VoidCrawlError::NavigationFailed(
+                        "navigation readiness cleanup failed".to_owned(),
+                    ))
+                };
+            }
+        }
+        let report = self.wait().await?;
+        if report.termination == NavigationTermination::Completed && report.cleanup_complete {
+            Ok(())
+        } else {
+            Err(VoidCrawlError::NavigationFailed(
+                "navigation ended before DOMContentLoaded".to_owned(),
+            ))
+        }
+    }
     pub async fn next_progress(&mut self) -> Result<Option<NavigationProgress>> {
         Ok(self.progress.recv().await)
     }

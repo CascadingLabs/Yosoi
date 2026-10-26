@@ -6,6 +6,7 @@ use yosoi::view::{View, ViewError};
 
 fn observation() -> Observation {
     Observation {
+        browser: None,
         id: "capture-1".to_owned(),
         session_id: "session-1".to_owned(),
         tab_id: "tab-1".to_owned(),

@@ -2,7 +2,7 @@ use super::super::super::{VoidCrawlAdapterError, config, conversions, overrides}
 use super::super::managed::terminal_reason_for_error;
 use super::super::termination::{caller_cancelled, candidate};
 use super::super::{Phase, bounded, provider_stop};
-use crate::internal::browser as provider;
+use crate::internal::browser::controller as provider;
 use crate::internal::web_capture as yosoi;
 use std::future::Future;
 use tokio::time::Instant as TokioInstant;

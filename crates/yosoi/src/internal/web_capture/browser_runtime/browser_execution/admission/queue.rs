@@ -58,7 +58,8 @@ impl BrowserExecutionManager {
                         }
                         ReserveDecision::MaintenanceFailed(error)
                     } else {
-                        match reserve_capacity(&mut state, self.inner.limits, ticket)? {
+                        let decision = reserve_capacity(&mut state, self.inner.limits, ticket)?;
+                        match decision {
                             ReserveDecision::Reserved(reservation) => {
                                 if queued {
                                     let _ = state.queue.pop_front();

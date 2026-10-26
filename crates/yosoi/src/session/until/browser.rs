@@ -88,11 +88,12 @@ impl Work {
             version: 1,
             termination: UntilTermination::Unavailable,
             scope: UntilScope {
+                protocol: self.browser_identity().map(|identity| identity.protocol),
                 session_id: self.session.inner.backend.id(),
                 tab_id: self.tab_id.clone(),
                 document_epoch: epoch,
                 frame_id: Some(watch.frame_id().to_owned()),
-                loader_id: Some(watch.loader_id().to_owned()),
+                loader_id: watch.loader_id().map(str::to_owned),
             },
             trigger: None,
             evaluations: 0,
@@ -218,6 +219,7 @@ impl Work {
             }
         }
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: "until".into(),
             status,
@@ -350,6 +352,7 @@ impl Work {
             ),
         };
         let receipt = OperationReceipt {
+            browser: self.browser_identity(),
             id: new_operation_id(),
             kind: kind.into(),
             status,
@@ -485,6 +488,7 @@ impl Work {
             self.observe_inner().await?
         } else {
             Observation {
+                browser: self.browser_identity(),
                 id: new_operation_id(),
                 session_id: self.session.inner.backend.id(),
                 tab_id: self.tab_id.clone(),

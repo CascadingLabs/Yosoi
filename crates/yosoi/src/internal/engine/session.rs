@@ -1,4 +1,5 @@
 //! Browser scopes shared by retained Sessions and ephemeral Requests.
+use crate::browser as browser_config;
 use crate::internal::network::Relay;
 use crate::internal::policy::policy::Network;
 use crate::internal::web_capture as capture;
@@ -78,6 +79,7 @@ fn quarantine(permit: tokio_sync::OwnedSemaphorePermit) {
 
 impl BrowserSession {
     pub async fn acquire(
+        browser: browser_config::BrowserConfig,
         mode: capture::BrowserMode,
         tabs: u32,
         minimal_cdp: bool,
@@ -129,6 +131,7 @@ impl BrowserSession {
         let manager = capture::BrowserExecutionManager::new(
             limits,
             capture::BrowserExecutionManagerConfig {
+                browser,
                 headful: matches!(mode, capture::BrowserMode::Headful),
                 minimal_cdp,
                 proxy: relay.as_ref().map(|relay| relay.address()),

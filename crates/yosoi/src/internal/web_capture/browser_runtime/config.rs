@@ -57,7 +57,7 @@ const fn validate_instrumentation(
     needs: InstrumentationNeeds,
 ) -> Result<(), VoidCrawlAdapterError> {
     let exact = match instrumentation {
-        yosoi::BrowserInstrumentationMode::Normal => true,
+        yosoi::BrowserInstrumentationMode::Normal | yosoi::BrowserInstrumentationMode::Bidi => true,
         yosoi::BrowserInstrumentationMode::Minimal => !needs.network && !needs.runtime,
         yosoi::BrowserInstrumentationMode::MinimalNetworkEscalated => {
             needs.network && !needs.runtime
@@ -81,6 +81,23 @@ pub fn validate(spec: &yosoi::ResolvedBrowserCaptureSpec) -> Result<(), VoidCraw
     validate_completion(spec.navigation_policy().completion())?;
     let artifacts = spec.artifacts();
     validate_artifacts(&artifacts)?;
+    if spec.capabilities().instrumentation() == yosoi::BrowserInstrumentationMode::Bidi {
+        let needs = instrumentation_needs(spec);
+        for (needed, family) in [
+            (needs.network, yosoi::WebArtifactFamily::Network),
+            (needs.runtime, yosoi::WebArtifactFamily::RuntimeDiagnostics),
+        ] {
+            if needed
+                && !spec
+                    .capabilities()
+                    .families()
+                    .get(family)
+                    .is_some_and(yosoi::BrowserCapabilityStatus::is_supported)
+            {
+                return Err(VoidCrawlAdapterError::UnsupportedFamily { family });
+            }
+        }
+    }
     validate_instrumentation(
         spec.capabilities().instrumentation(),
         instrumentation_needs(spec),
@@ -89,7 +106,9 @@ pub fn validate(spec: &yosoi::ResolvedBrowserCaptureSpec) -> Result<(), VoidCraw
 
 pub const fn cdp_mode(spec: &yosoi::ResolvedBrowserCaptureSpec) -> provider::CdpMode {
     match spec.capabilities().instrumentation() {
-        yosoi::BrowserInstrumentationMode::Normal => provider::CdpMode::Normal,
+        yosoi::BrowserInstrumentationMode::Bidi | yosoi::BrowserInstrumentationMode::Normal => {
+            provider::CdpMode::Normal
+        }
         yosoi::BrowserInstrumentationMode::Minimal
         | yosoi::BrowserInstrumentationMode::MinimalNetworkEscalated
         | yosoi::BrowserInstrumentationMode::MinimalRuntimeEscalated

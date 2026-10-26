@@ -456,6 +456,7 @@ fn flow_capture_policy_and_legacy_flow_outcomes_round_trip() {
 
 fn receipt(id: &str, status: OperationStatus, error: Option<&str>) -> OperationReceipt {
     OperationReceipt {
+        browser: None,
         id: id.to_owned(),
         kind: "test".to_owned(),
         status,

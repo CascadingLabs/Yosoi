@@ -179,12 +179,22 @@ class SelfMaintenanceTests(unittest.TestCase):
                 # Keep the parent slave descriptor open until output is drained.
                 # Closing every slave on macOS can discard buffered final output.
                 data = b""
-                deadline = time.monotonic() + 15
+                # Ownership is verified twice over the complete native binary
+                # before prompting. Unoptimized Intel macOS builds can spend
+                # more than 15 seconds hashing it; use run_cli's same bounded
+                # 30-second command budget, retaining every prompt/file check.
+                deadline = time.monotonic() + 30
                 while expected_prompt not in data:
                     remaining = deadline - time.monotonic()
-                    self.assertGreater(remaining, 0, data)
+                    context = {
+                        "args": args,
+                        "binary_bytes": executable.stat().st_size,
+                        "process_status": process.poll(),
+                        "output": data,
+                    }
+                    self.assertGreater(remaining, 0, context)
                     readable, _, _ = select.select([master], [], [], remaining)
-                    self.assertTrue(readable, data)
+                    self.assertTrue(readable, context)
                     data += os.read(master, 65536)
                 if changed_receipt:
                     receipt_path = executable.parent / ".yosoi-install.json"

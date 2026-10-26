@@ -85,6 +85,9 @@ pub enum VoidCrawlError {
     #[error("target kind does not support visual geometry")]
     UnsupportedVisualTarget,
 
+    #[error("selected browser does not support the requested capability")]
+    UnsupportedCapability { operation: &'static str },
+
     #[error("target selector was ambiguous")]
     AmbiguousSelector(String),
 
@@ -248,6 +251,7 @@ impl VoidCrawlError {
             Self::AmbiguousFrame(_) => "voidcrawl.target.frame_ambiguous",
             Self::ElementNotVisible(_) => "voidcrawl.target.element_not_visible",
             Self::UnsupportedVisualTarget => "voidcrawl.target.visual_geometry_unsupported",
+            Self::UnsupportedCapability { .. } => "yosoi.browser.capability_unsupported",
             Self::AmbiguousSelector(_) => "voidcrawl.target.selector_ambiguous",
             Self::Timeout(_) => "voidcrawl.operation.timeout",
             Self::ResponseTimeout { .. } => "voidcrawl.network.response_timeout",
@@ -283,9 +287,9 @@ impl VoidCrawlError {
             | Self::InterruptPageNotOwned
             | Self::InterruptNotFound { .. }
             | Self::InterruptTerminal { .. } => VoidCrawlErrorCategory::InvalidInput,
-            Self::RecordingEncodeError(_) | Self::UnsupportedVisualTarget => {
-                VoidCrawlErrorCategory::Unsupported
-            }
+            Self::RecordingEncodeError(_)
+            | Self::UnsupportedVisualTarget
+            | Self::UnsupportedCapability { .. } => VoidCrawlErrorCategory::Unsupported,
             Self::NavigationSetupDeadline
             | Self::NavigationTimeout { .. }
             | Self::Timeout(_)
@@ -338,6 +342,9 @@ impl VoidCrawlError {
             Self::AmbiguousFrame(_) => "target frame was ambiguous",
             Self::ElementNotVisible(_) => "target element was not visible",
             Self::UnsupportedVisualTarget => "target kind does not support visual geometry",
+            Self::UnsupportedCapability { .. } => {
+                "selected browser does not support the requested capability"
+            }
             Self::AmbiguousSelector(_) => "target selector was ambiguous",
             Self::Timeout(_) => "operation timed out",
             Self::ResponseTimeout { .. } => "response observation timed out",

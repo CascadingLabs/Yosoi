@@ -2956,7 +2956,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
+        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
         "semanticEquivalent": "Rust Default value and Python authoring default value.",
         "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
         "review": null,
@@ -3069,7 +3069,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
+        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -3119,7 +3119,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
+        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -4272,7 +4272,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "8f2cdfa2d0ead07e0431d5c994983a36ca71a217a184a7094118a05222aedb76",
+        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
         "semanticEquivalent": null,
         "rationale": "Python Policy fields obtain defaults from the native Rust SDK and validate through Rust.",
         "review": null,
@@ -38463,7 +38463,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.effective_policy",
-        "pythonTargetSha256": "bf3c5723c41f7224f2fdaf27eed97779ec8ad37a97498c24645fe61bb7167eff",
+        "pythonTargetSha256": "e02ddd8bc78a28eb102987e37d36b9065d6bff4aa6ccd808a9fd5246d758bedd",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.effective_policy.",
         "review": null,
@@ -38484,7 +38484,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
+        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -38513,7 +38513,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
+        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -38586,7 +38586,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.policy",
-        "pythonTargetSha256": "d16844a2afe71e23e28c541297feadd3d02d21ae3c5f87aed7160e71a23703f9",
+        "pythonTargetSha256": "0c843ea51b0adfa10ea8b9a55b8651a1bcdc07f3e213470aaa0bf79efc5cdc25",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.policy.",
         "review": null,
@@ -38607,7 +38607,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "39126beab73375860964e724195bbd2a8bae71da2293e58581db77eb7af3cf2b",
+        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.PolicySnapshot.",
         "review": null,
@@ -58063,6 +58063,144 @@
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Network.",
         "review": null,
         "ledgerMappingSha256": "0358dd19841277105e988f56452b0013172df41f80b9c24212b25ec2d38703bb"
+      }
+    },
+    {
+      "id": "yosoi::Policy::browser|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::Policy::browser",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::Policy",
+      "signatureSha256": "09f38b1847c56721845dd3e09177863807019716a863ca15f263797f3060ae58",
+      "baselineStatus": "stale",
+      "symbolKey": "member:struct_field:yosoi::Policy::browser@signature:09f38b1847c56721845dd3e09177863807019716a863ca15f263797f3060ae58@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.Policy.browser",
+        "pythonTargetSha256": "f791ff87a0e44f73010577bdd8a4ddee06b3d2519fa0266887d32e70ea51e2dc",
+        "semanticEquivalent": null,
+        "rationale": "Rust browser declaration maps to the Python BrowserConfig field; defaults remain Chrome/CDP and nondefault declarations are hashed in identity v8.",
+        "review": null,
+        "ledgerMappingSha256": "dcf4d30caa11e3ef4f5c5dc99f3e67cc6d81d8ccc2f9b9f99f3c26d098a62369"
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::BrowserConfiguration|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::PolicyError::BrowserConfiguration",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "78222e79fff4a693343693ef3173cb7523f69476f650bb68b57fa51cd003c053",
+      "baselineStatus": "stale",
+      "symbolKey": "member:variant:yosoi::PolicyError::BrowserConfiguration@signature:78222e79fff4a693343693ef3173cb7523f69476f650bb68b57fa51cd003c053@source:e0a486f6ac4b56912abaf6796d203c2536bcbfb5083c9df829d53354d252999e",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.errors.PolicyError",
+        "pythonTargetSha256": "a9343fc471ef7b24e9e20ec6c11bc964a5209df59c7b8f87e1808fcac3837235",
+        "semanticEquivalent": "The native PolicyError adapter retains variant='BrowserConfiguration' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+        "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser.",
+        "review": null,
+        "ledgerMappingSha256": "e3dea92457261ecc28210f0798b61e66e7886c22fc873dea3081b69609d0a7bf"
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "6abb879fd6ed63c69bc4e77aa41d6693267ef05390a9bdd2175b61c35e82ae32",
+      "baselineStatus": "stale",
+      "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser@signature:6abb879fd6ed63c69bc4e77aa41d6693267ef05390a9bdd2175b61c35e82ae32@source:1020fe2144c62374a5391b53a3f7cd9a2ff23c8614ecb71aa373c74a38b3efda",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.errors.PolicyError",
+        "pythonTargetSha256": "a9343fc471ef7b24e9e20ec6c11bc964a5209df59c7b8f87e1808fcac3837235",
+        "semanticEquivalent": "The native PolicyError adapter retains variant='LegacyIdentityCannotIncludeBrowser' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+        "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser.",
+        "review": null,
+        "ledgerMappingSha256": "d1368f5c656bc3311e2d0d89a35a39728dc144de43db595e3b6186fafc3f17ac"
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::from|function|trait:From|occurrence:1",
+      "rustPath": "yosoi::PolicyError::from",
+      "kind": "function",
+      "trait": "From",
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "59d9d1dd2793315e37c162248e3d3bcad9ad1a3422de39ddb967c87765321dc8",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::PolicyError::from@signature:59d9d1dd2793315e37c162248e3d3bcad9ad1a3422de39ddb967c87765321dc8@trait:From@source:ae2d23d5bdefc8fa156309a0a5b97ae8de159d45753a220140669f8a037d0b49",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust From supplies an infallible conversion into a target type.",
+        "equivalentCapability": "The corresponding Python constructor or explicit conversion helper provides the supported conversion."
+      }
+    },
+    {
+      "id": "yosoi::PolicyError::source|function|trait:Error|occurrence:1",
+      "rustPath": "yosoi::PolicyError::source",
+      "kind": "function",
+      "trait": "Error",
+      "surface": "member",
+      "parentRustPath": "yosoi::PolicyError",
+      "signatureSha256": "1dcf3d70095830d97ebde0706192b3b1175999b3a6b327bb148a6cfabee9e761",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::PolicyError::source@signature:1dcf3d70095830d97ebde0706192b3b1175999b3a6b327bb148a6cfabee9e761@trait:Error@source:ae2d23d5bdefc8fa156309a0a5b97ae8de159d45753a220140669f8a037d0b49",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Error integrates an error type with Rust's error-reporting protocol.",
+        "equivalentCapability": "The Python exception hierarchy and structured error attributes expose the corresponding failure."
+      }
+    },
+    {
+      "id": "yosoi::browser|module|trait:|occurrence:1",
+      "rustPath": "yosoi::browser",
+      "kind": "module",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "855991a0f01a78e70eb78dbea76091c2126fd7b2c2cd73cca4a7b8872785b72a",
+      "baselineStatus": "missing",
+      "symbolKey": "page:module:yosoi::browser",
+      "classification": "namespace-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "A Rust root module organizes names; Python exposes the supported operations through its root helpers and named modules. Module organization itself adds no runtime capability.",
+        "equivalentCapability": "Supported browser operations are checked separately by installed-wheel browser behavior evidence; the seven existing Python SDK namespaces retain their semantic comparison suites."
       }
     }
   ],

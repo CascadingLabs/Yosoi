@@ -3,6 +3,8 @@ mod oopif_fixture;
 
 mod active_navigation;
 mod ax_tree;
+#[cfg(feature = "browser-bidi")]
+mod bidi_visual;
 mod browser_acquisition_conformance;
 mod byte_control;
 mod captcha_capture;

@@ -81,6 +81,7 @@ fn source_failure_and_unavailability_remain_distinct() {
     }
     for reason in [
         provider::SourceBodyUnavailableReason::CdpBodyUnavailable,
+        provider::SourceBodyUnavailableReason::BidiBodyUnavailable,
         provider::SourceBodyUnavailableReason::CaptureEndedBeforeBody,
     ] {
         assert!(matches!(
@@ -476,6 +477,39 @@ fn early_observation_termination_leaves_runtime_byte_loss_unknown() {
         assert_eq!(accounting.lost, yosoi::LossExtent::Unknown);
         assert!(!accounting.complete);
     }
+}
+
+#[test]
+fn unavailable_native_log_text_keeps_unknown_loss_after_a_finished_scope() {
+    let mut report = runtime_report(provider::ObservationTermination::Finished);
+    report.accounting.runtime_bytes.dropped = provider::MeasuredCount::Unavailable {
+        reason: provider::MeasurementUnavailableReason::ProviderDidNotReport,
+    };
+    let accounting = browser_native::runtime_byte_accounting(&report).unwrap();
+    assert_eq!(accounting.observed, 0);
+    assert_eq!(accounting.retained, 0);
+    assert_eq!(accounting.lost, yosoi::LossExtent::Unknown);
+    assert!(!accounting.complete);
+    let bytes = report.byte_report().unwrap();
+    assert!(matches!(
+        bytes.extent(),
+        provider::BrowserPayloadExtent::Truncated { .. }
+    ));
+}
+
+#[test]
+fn legacy_cache_booleans_remain_booleans_and_native_unknowns_remain_null() {
+    let value = serde_json::json!({"id":1,"redirect_from":null,"scope":null,"url":null,"status":200,"outcome":"Complete","from_cache":false,"from_service_worker":false,"encoded_data_length":0});
+    let mut fact: yosoi::BrowserResourceFact = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(fact.from_cache, Some(false));
+    assert_eq!(serde_json::to_value(&fact).unwrap(), value);
+    fact.from_service_worker = None;
+    assert_eq!(
+        serde_json::to_value(&fact)
+            .unwrap()
+            .get("from_service_worker"),
+        Some(&serde_json::Value::Null)
+    );
 }
 
 #[test]

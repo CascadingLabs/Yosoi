@@ -25,6 +25,7 @@
 //! `docs/chromium-cdp-baseline.md` for the monthly policy and current inventory.
 
 #[cfg(feature = "browser")]
+use crate::browser as browser_config;
 use crate::internal::browser as void_crawl_core;
 
 use crate::internal::browser::vendor::chromiumoxide::{
@@ -241,6 +242,14 @@ pub enum CapabilityDisabledReason {
 #[serde(rename_all = "snake_case")]
 pub enum CapabilityUnsupportedReason {
     NotImplemented,
+    /// The selected protocol has no native export for this representation.
+    ProtocolNotExposed,
+    /// The qualified engine omits the required facts in isolated contexts.
+    EngineDoesNotReport,
+    /// The selected Moli profile does not construct layout or paint output.
+    RequiresLayoutProfile,
+    /// Fresh geometry needs an additional raster observation and its permission.
+    RequiresRasterRefresh,
 }
 
 /// Exhaustive capabilities of the current VoidCrawl browser primitive set.
@@ -326,7 +335,8 @@ impl BrowserCaptureCapabilities {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct BrowserEnvironmentSnapshot {
     pub controller: ControllerVersion,
-    pub renderer: RendererVersion,
+    pub renderer: Option<RendererVersion>,
+    pub backend: Option<browser_config::BrowserExecutionIdentity>,
     pub mode: EnvironmentObservation<BrowserMode>,
     pub rendering: BrowserRenderingEnvironment,
     pub instrumentation: InstrumentationSnapshot,

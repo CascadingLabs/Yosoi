@@ -159,8 +159,10 @@ pub struct ResourceRecord {
     pub status: Option<u16>,
     pub mime_type: Option<String>,
     pub headers: ProtectedHeaders,
-    pub from_cache: bool,
-    pub from_service_worker: bool,
+    /// Provider cache fact; None means it has not been reported.
+    pub from_cache: Option<bool>,
+    /// Provider service-worker provenance; None is distinct from false.
+    pub from_service_worker: Option<bool>,
     pub encoded_data_length: Option<u64>,
     pub outcome: BrowserResourceOutcome,
 }
@@ -173,10 +175,10 @@ pub struct RedirectHop {
     pub status: Option<u16>,
 }
 
-/// The semantic byte layer returned by Chromium's `Network.getResponseBody`.
+/// The semantic byte layer returned by a browser's native body collector.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BrowserBodyLayer {
-    /// Content codings have already been removed by Chromium. These are not
+    /// Content codings have already been removed by the browser. These are not
     /// transport-framed or content-coded wire bytes.
     DecodedRepresentation,
 }
@@ -186,6 +188,8 @@ pub enum BrowserBodyLayer {
 pub enum SourceBodyUnavailableReason {
     RequestFailed,
     CdpBodyUnavailable,
+    /// The BiDi remote end did not retain or could not supply response bytes.
+    BidiBodyUnavailable,
     InvalidBase64,
     CaptureEndedBeforeBody,
 }
@@ -198,8 +202,10 @@ pub struct MainDocumentSource {
     pub status: Option<u16>,
     pub headers: ProtectedHeaders,
     pub mime_type: Option<String>,
-    pub from_cache: bool,
-    pub from_service_worker: bool,
+    /// Provider cache fact; None means it has not been reported.
+    pub from_cache: Option<bool>,
+    /// Provider service-worker provenance; None is distinct from false.
+    pub from_service_worker: Option<bool>,
     pub body_layer: Option<BrowserBodyLayer>,
     pub body_state: ResponseBodyState,
     pub body_unavailable: Option<SourceBodyUnavailableReason>,
@@ -236,6 +242,7 @@ impl MainDocumentSource {
                 ),
                 Some(
                     SourceBodyUnavailableReason::CdpBodyUnavailable
+                    | SourceBodyUnavailableReason::BidiBodyUnavailable
                     | SourceBodyUnavailableReason::CaptureEndedBeforeBody,
                 )
                 | None => BrowserByteReport::unavailable_with_spec(
@@ -669,8 +676,8 @@ impl CaptureState {
             status: None,
             mime_type: None,
             headers: ProtectedHeaders(Vec::new()),
-            from_cache: false,
-            from_service_worker: false,
+            from_cache: None,
+            from_service_worker: None,
             encoded_data_length: None,
             outcome: BrowserResourceOutcome::Pending,
         });
@@ -754,9 +761,11 @@ impl CaptureState {
         resource.status = http_status(response.status);
         resource.mime_type = nonempty(response.mime_type.clone());
         resource.headers = ProtectedHeaders(flatten_headers(response.headers.inner()));
-        resource.from_cache = response.from_disk_cache.unwrap_or(false)
-            || response.from_prefetch_cache.unwrap_or(false);
-        resource.from_service_worker = response.from_service_worker.unwrap_or(false);
+        resource.from_cache = Some(
+            response.from_disk_cache.unwrap_or(false)
+                || response.from_prefetch_cache.unwrap_or(false),
+        );
+        resource.from_service_worker = Some(response.from_service_worker.unwrap_or(false));
     }
 
     fn frame_id(&mut self, raw: &str) -> ResourceFrameId {
@@ -1086,6 +1095,9 @@ fn nonempty(value: String) -> Option<String> {
 
 mod timing;
 use timing::{duration_micros, unix_millis};
+
+#[cfg(feature = "browser-bidi")]
+mod bidi;
 
 #[cfg(test)]
 #[path = "navigation_capture_options_tests.rs"]

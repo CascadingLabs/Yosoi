@@ -156,6 +156,7 @@ fn unknown_step(index: u64, flow_path: Vec<u64>, kind: &str) -> StepOutcome {
         index,
         flow_path,
         receipt: OperationReceipt {
+            browser: None,
             id: format!("javascript-operation-{index}"),
             kind: kind.to_owned(),
             status: OperationStatus::Unknown,

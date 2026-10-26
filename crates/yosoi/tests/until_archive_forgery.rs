@@ -23,6 +23,7 @@ fn authored_until_rejects_an_observed_click_receipt_carrying_a_report() -> Resul
     let report = network_report("click-kind");
     let flow = network_step("click-kind");
     let receipt = OperationReceipt {
+        browser: None,
         id: "until-outer-click-kind".to_owned(),
         kind: "click".to_owned(),
         status: OperationStatus::Observed,
@@ -176,6 +177,7 @@ fn network_report(attempt: &str) -> UntilReport {
         version: 1,
         termination: UntilTermination::Satisfied,
         scope: UntilScope {
+            protocol: None,
             session_id: "session-archive".to_owned(),
             tab_id: "tab-archive".to_owned(),
             document_epoch: 7,
@@ -183,6 +185,7 @@ fn network_report(attempt: &str) -> UntilReport {
             loader_id: Some("loader-archive".to_owned()),
         },
         trigger: Some(OperationReceipt {
+            browser: None,
             id: format!("trigger-{attempt}"),
             kind: "click".to_owned(),
             status: OperationStatus::Observed,
@@ -261,6 +264,7 @@ fn set_network_timestamp(
 
 fn until_receipt(id: &str, report: &UntilReport) -> Result<OperationReceipt, TestError> {
     Ok(OperationReceipt {
+        browser: None,
         id: id.to_owned(),
         kind: "until".to_owned(),
         status: OperationStatus::Observed,
@@ -272,6 +276,7 @@ fn until_receipt(id: &str, report: &UntilReport) -> Result<OperationReceipt, Tes
 
 fn observation() -> Observation {
     Observation {
+        browser: None,
         id: "observation-archive".to_owned(),
         session_id: "session-archive".to_owned(),
         tab_id: "tab-archive".to_owned(),

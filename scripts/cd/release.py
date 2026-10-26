@@ -127,7 +127,7 @@ def python_abis(requirement: str) -> list[dict]:
 
 def wheel_builds(abis: list[dict]) -> list[dict]:
     """Build stable ABIs once, retaining version-specific pre-3.15 threading."""
-    native_features = "browser,surface-video"
+    native_features = "browser-bidi,surface-video"
     minimum = next(row for row in abis if not row["abi"].endswith("t"))
     result = [
         minimum

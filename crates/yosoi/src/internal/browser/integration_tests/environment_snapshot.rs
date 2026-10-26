@@ -52,11 +52,14 @@ async fn normal_headless_snapshot_contains_effective_environment() {
 
     assert_eq!(snapshot.controller.name, "yosoi-browser-core");
     assert_ne!(snapshot.controller.version.as_str(), "");
+    let renderer = snapshot
+        .renderer
+        .as_ref()
+        .expect("Chrome reports its renderer");
     assert!(
-        snapshot.renderer.product.contains("Chrome")
-            || snapshot.renderer.product.contains("Chromium"),
+        renderer.product.contains("Chrome") || renderer.product.contains("Chromium"),
         "unexpected renderer product: {:?}",
-        snapshot.renderer.product
+        renderer.product
     );
     assert_eq!(
         snapshot.mode,

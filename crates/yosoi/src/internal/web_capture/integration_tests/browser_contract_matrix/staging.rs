@@ -67,7 +67,9 @@ fn instrumentation_domain_matrix() {
                 let expected = match mode {
                     BrowserInstrumentationMode::Normal
                     | BrowserInstrumentationMode::MinimalBothEscalated => network && runtime,
-                    BrowserInstrumentationMode::Minimal => !network && !runtime,
+                    BrowserInstrumentationMode::Bidi | BrowserInstrumentationMode::Minimal => {
+                        !network && !runtime
+                    }
                     BrowserInstrumentationMode::MinimalNetworkEscalated => network && !runtime,
                     BrowserInstrumentationMode::MinimalRuntimeEscalated => !network && runtime,
                 };

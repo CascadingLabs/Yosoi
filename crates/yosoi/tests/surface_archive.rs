@@ -310,6 +310,7 @@ async fn normal_write_rehomes_dependency_references_and_keeps_compiled_plans() -
         "closure",
         Vec::new(),
         vec![OperationReceipt {
+            browser: None,
             id: "capture-1".into(),
             kind: "surface.capture".into(),
             status: OperationStatus::Observed,

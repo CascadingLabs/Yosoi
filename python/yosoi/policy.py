@@ -5,12 +5,14 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from enum import StrEnum
+from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     AfterValidator,
     ConfigDict,
     Field,
+    StrictBool,
     model_serializer,
     model_validator,
 )
@@ -63,6 +65,10 @@ BrowserMode = Literal["headless", "headful"]
 """Headless or headful acquisition mode. Session settings and bound browser
 acquisitions must agree before startup.
 """
+BrowserEngine = Literal["chrome", "firefox", "moli"]
+"""Browser implementation. Optional engines use native BiDi; Chrome retains CDP."""
+MoliProfile = Literal["dom", "layout"]
+"""Moli DOM-only or on-demand layout profile, independent of window mode."""
 DirectHttpRedirectTargets = Literal["allow_http_and_https", "same_origin"]
 """Redirect admission allows supported HTTP(S) destinations or restricts transitions
 to the seed origin. Hop and request budgets apply separately.
@@ -1129,11 +1135,64 @@ def _network_is_default(value: Network | _SnapshotNetwork) -> bool:
     )
 
 
+class BrowserConfig(Model):
+    """Select a browser implementation without installing or launching it.
+
+    Rust validates the complete declaration. Capability never grants arbitrary
+    JavaScript permission, and an optional engine never silently falls back.
+
+    Attributes:
+        engine: Chrome/CDP by default, or optional Firefox/Moli native BiDi.
+        executable: Absolute installed binary path; omitted paths use engine discovery.
+        endpoint: Existing BiDi WebSocket service, mutually exclusive with executable.
+            User information, queries and fragments are rejected. Debug repr omits it.
+        moli_profile: DOM-only or on-demand layout. Layout is not native headful mode.
+        moli_resources: Load optional Moli image/font/media resources deliberately.
+        moli_allow_private_networks: Explicit exception to owned Moli's native private
+            network blocking. A client cannot attest a shared service's egress policy.
+    """
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+    engine: BrowserEngine = "chrome"
+    executable: Path | None = None
+    endpoint: str | None = Field(default=None, repr=False, max_length=4096)
+    moli_profile: MoliProfile = "dom"
+    moli_resources: StrictBool = False
+    moli_allow_private_networks: StrictBool = False
+
+    def is_default(self) -> bool:
+        """Return whether canonical policy serialization may omit this declaration."""
+        return (
+            self.engine == "chrome"
+            and self.executable is None
+            and self.endpoint is None
+            and self.moli_profile == "dom"
+            and not self.moli_resources
+            and not self.moli_allow_private_networks
+        )
+
+    @model_validator(mode="after")
+    def _validate_in_rust(self) -> Self:
+        declaration = json.loads(_native.default_policy())
+        declaration["browser"] = self.model_dump(mode="json", exclude_none=True)
+        try:
+            _native.validate_policy(json.dumps(declaration))
+        except _native.PolicyError as error:
+            raise ValueError(str(error)) from error
+        return self
+
+
+class _SnapshotBrowserConfig(BrowserConfig):
+    model_config = ConfigDict(frozen=True)
+
+
 class EffectivePolicy(ImmutableModel):
     """Rust-resolved behavior view, separate from caller authoring intent.
 
     Attributes:
         network: Opt-in IP family, local source binding, and upstream proxy.
+        browser: Resolved browser engine/profile declaration, without a live handle.
         default_action_timeout_ms: Positive fallback action duration in milliseconds,
             distinct from request startup budgets.
         flow: Resolved independent failure/cancellation fallback policies.
@@ -1149,6 +1208,7 @@ class EffectivePolicy(ImmutableModel):
     network: Network = Field(
         default_factory=lambda: Network(), exclude_if=_network_is_default
     )
+    browser: _SnapshotBrowserConfig = Field(default_factory=_SnapshotBrowserConfig)
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: EffectivePage
@@ -1158,6 +1218,13 @@ class EffectivePolicy(ImmutableModel):
     tuning: Tuning
     map: Map
     search: EffectiveSearch
+
+    @model_serializer(mode="wrap")
+    def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.browser.is_default():
+            data.pop("browser", None)
+        return data
 
 
 IpFamily = Literal["system_default", "ipv4_only", "ipv6_only"]
@@ -1200,6 +1267,7 @@ class Policy(Model):
 
     Attributes:
         network: Opt-in IP family, local source binding, and upstream proxy.
+        browser: Browser engine and optional launch/profile configuration.
         default_action_timeout_ms: Positive fallback action duration in milliseconds;
             explicit action/Flow budgets can override it.
         flow: Independent failure/cancellation continuation defaults.
@@ -1216,6 +1284,7 @@ class Policy(Model):
     model_config = ConfigDict(hide_input_in_errors=True)
 
     network: Network = Field(default_factory=Network, exclude_if=_network_is_default)
+    browser: BrowserConfig = Field(default_factory=BrowserConfig)
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: FlowPolicy = Field(default_factory=FlowPolicy)
     page: Page = _field("page")
@@ -1225,6 +1294,13 @@ class Policy(Model):
     tuning: Tuning = Field(default_factory=Tuning)
     map: Map = _field("map")
     search: Search = _field("search")
+
+    @model_serializer(mode="wrap")
+    def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.browser.is_default():
+            data.pop("browser", None)
+        return data
 
     @model_validator(mode="after")
     def _validate_in_rust(self) -> Self:
@@ -1425,6 +1501,7 @@ class _SnapshotPolicy(ImmutableModel):
     network: _SnapshotNetwork = Field(
         default_factory=_SnapshotNetwork, exclude_if=_network_is_default
     )
+    browser: _SnapshotBrowserConfig = Field(default_factory=_SnapshotBrowserConfig)
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotPage
@@ -1438,6 +1515,8 @@ class _SnapshotPolicy(ImmutableModel):
     @model_serializer(mode="wrap")
     def _omit_default_tuning(self, handler: Any) -> dict[str, Any]:
         data = handler(self)
+        if self.browser.is_default():
+            data.pop("browser", None)
         if self.tuning.mode == "default":
             data.pop("tuning", None)
         return data
@@ -1479,6 +1558,7 @@ class _SnapshotEffectivePolicy(ImmutableModel):
     network: _SnapshotNetwork = Field(
         default_factory=_SnapshotNetwork, exclude_if=_network_is_default
     )
+    browser: _SnapshotBrowserConfig = Field(default_factory=_SnapshotBrowserConfig)
     default_action_timeout_ms: PositiveU64 = 10_000
     flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotEffectivePage
@@ -1488,6 +1568,13 @@ class _SnapshotEffectivePolicy(ImmutableModel):
     tuning: _SnapshotTuning
     map: _SnapshotMap
     search: _SnapshotEffectiveSearch
+
+    @model_serializer(mode="wrap")
+    def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.browser.is_default():
+            data.pop("browser", None)
+        return data
 
 
 class PolicySnapshot(ImmutableModel):

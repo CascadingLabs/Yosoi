@@ -11,6 +11,7 @@ pub mod action;
 pub mod archive;
 pub mod assertions;
 pub mod automation_record;
+pub mod browser;
 pub mod contracts;
 pub mod documents;
 pub mod expect;

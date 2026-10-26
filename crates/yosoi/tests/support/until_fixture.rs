@@ -447,21 +447,18 @@ fn page() -> String {
     let clicks = 0;
     const fetchNoStore = (url, headers = {}) => fetch(url, { cache: 'no-store', headers });
     if (targetResolutionGate) {
-      const originalQuerySelectorAll = document.querySelectorAll.bind(document);
-      document.querySelectorAll = (selector) => {
-        if (selector === '#trigger') {
-          return Object.defineProperty({}, 'length', {
-            get() {
-              return fetchNoStore(`/gate/contract?attempt=${attempt}&phase=target-resolution`)
-                .then(() => {
-                  location.assign(`/replacement?attempt=${attempt}`);
-                  return new Promise(() => {});
-                });
-            },
-          });
-        }
-        return originalQuerySelectorAll(selector);
-      };
+      fetchNoStore(`/gate/contract?attempt=${attempt}&phase=arm-input`)
+        .then(() => {
+          window.addEventListener('focus', () => {
+            // A synchronous fixture request holds the renderer at native
+            // activation, after DOM target resolution but before pointer input.
+            const gate = new XMLHttpRequest();
+            gate.open('GET', `/gate/contract?attempt=${attempt}&phase=input-preparation`, false);
+            gate.send();
+            location.assign(`/replacement?attempt=${attempt}`);
+          }, { once: true });
+          return fetchNoStore(`/marker?attempt=${attempt}&phase=input-armed`);
+        });
     }
     if (noRecord) document.querySelector('#contract').remove();
 

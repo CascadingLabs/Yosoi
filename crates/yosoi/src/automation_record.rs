@@ -6,6 +6,7 @@
 //! remain the provenance carried by the record itself.
 
 use crate::assertions;
+use crate::browser as browser_config;
 use crate::flow;
 use crate::internal::engine as internal_engine;
 use crate::locators;
@@ -46,6 +47,10 @@ pub const MAX_AUTOMATION_RECORD_EVIDENCE_BYTES: usize = 8 * 1024 * 1024;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Observation {
+    /// Optional native-engine provenance; absent in legacy Chrome records.
+    /// This records identity and declarations, not live browser authority.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser: Option<browser_config::BrowserExecutionIdentity>,
     /// Unique identity of this retained observation within the record.
     pub id: String,
     /// Browser Session provenance; it does not reopen or grant authority to that Session.
@@ -78,6 +83,9 @@ pub enum OperationStatus {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OperationReceipt {
+    /// Admitted/reported native-engine identity, retained even without after-state.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub browser: Option<browser_config::BrowserExecutionIdentity>,
     /// Unique identity correlating this operation with recorded Flow evidence.
     pub id: String,
     /// Operation category label, such as navigate, click, or until.
@@ -315,6 +323,7 @@ impl AutomationRecord {
         }
         validate_identity("operation receipt id", &operation.id)?;
         validate_identity("operation kind", &operation.kind)?;
+        validate_browser_provenance(&operation)?;
         if let Some(observation) = &operation.observation {
             validate_observation(observation)?;
         }
@@ -426,6 +435,7 @@ impl AutomationRecord {
         for operation in &self.operations {
             validate_identity("operation receipt id", &operation.id)?;
             validate_identity("operation kind", &operation.kind)?;
+            validate_browser_provenance(operation)?;
             validate_until_receipt(operation)?;
             if operation.kind == "until"
                 && let Some(trigger) = until_report(operation)?.trigger
@@ -1131,6 +1141,7 @@ fn validate_receipt<'a>(
 ) -> Result<(), AutomationRecordError> {
     validate_identity(id_field, &receipt.id)?;
     validate_identity(kind_field, &receipt.kind)?;
+    validate_browser_provenance(receipt)?;
     if receipt_ids
         .iter()
         .any(|id| id.as_str() == receipt.id.as_str())
@@ -1143,6 +1154,20 @@ fn validate_receipt<'a>(
     validate_until_receipt(receipt)?;
     if let Some(observation) = &receipt.observation {
         validate_observation(observation)?;
+    }
+    Ok(())
+}
+
+fn validate_browser_provenance(receipt: &OperationReceipt) -> Result<(), AutomationRecordError> {
+    if let (Some(browser), Some(observed)) = (
+        &receipt.browser,
+        receipt
+            .observation
+            .as_ref()
+            .and_then(|observation| observation.browser.as_ref()),
+    ) && browser != observed
+    {
+        return Err(AutomationRecordError::BrowserProvenanceMismatch);
     }
     Ok(())
 }
@@ -1165,6 +1190,30 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
         .validate()
         .map_err(|error| AutomationRecordError::InvalidUntilReport(error.to_string()))?;
     let satisfied = report.termination == session::UntilTermination::Satisfied;
+    let protocol = report
+        .scope
+        .protocol
+        .unwrap_or(browser_config::BrowserProtocol::Cdp);
+    if protocol
+        != receipt
+            .browser
+            .as_ref()
+            .map_or(browser_config::BrowserProtocol::Cdp, |identity| {
+                identity.protocol
+            })
+        || (satisfied
+            && protocol == browser_config::BrowserProtocol::Bidi
+            && receipt
+                .observation
+                .as_ref()
+                .and_then(|observation| observation.browser.as_ref())
+                .map(|identity| identity.protocol)
+                != Some(protocol))
+    {
+        return Err(AutomationRecordError::InvalidUntilReport(
+            "scope protocol differs from browser provenance".into(),
+        ));
+    }
     if satisfied != (receipt.status == OperationStatus::Observed)
         || (satisfied && receipt.error.is_some())
     {
@@ -1173,6 +1222,14 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
         ));
     }
     if let Some(trigger) = &report.trigger {
+        if protocol == browser_config::BrowserProtocol::Bidi
+            && trigger.status == OperationStatus::Observed
+            && trigger.browser.as_ref().map(|identity| identity.protocol) != Some(protocol)
+        {
+            return Err(AutomationRecordError::InvalidUntilReport(
+                "trigger protocol differs from confirmation scope".into(),
+            ));
+        }
         validate_identity("until trigger id", &trigger.id)?;
         if trigger.id == receipt.id {
             return Err(AutomationRecordError::DuplicateIdentity {
@@ -1246,12 +1303,18 @@ fn validate_until_receipt(receipt: &OperationReceipt) -> Result<(), AutomationRe
                     evidence.get("frame_id").and_then(serde_json::Value::as_str)
                         != Some(frame.as_str())
                 })
-                || report.scope.loader_id.as_ref().is_none_or(|loader| {
+                || if protocol == browser_config::BrowserProtocol::Bidi {
                     evidence
                         .get("loader_id")
-                        .and_then(serde_json::Value::as_str)
-                        != Some(loader.as_str())
-                })
+                        .is_some_and(|value| !value.is_null())
+                } else {
+                    report.scope.loader_id.as_ref().is_none_or(|loader| {
+                        evidence
+                            .get("loader_id")
+                            .and_then(serde_json::Value::as_str)
+                            != Some(loader.as_str())
+                    })
+                }
             {
                 return Err(AutomationRecordError::InvalidUntilReport(
                     "response scope differs from original frame or loader".into(),
@@ -1529,6 +1592,8 @@ fn validate_identity(field: &'static str, value: &str) -> Result<(), AutomationR
 #[derive(Clone, Debug, Eq, PartialEq)]
 /// Bounded record shape, provenance, encoding, or Archive persistence rejected the evidence.
 pub enum AutomationRecordError {
+    /// An operation and its attached observation claim different browser provenance.
+    BrowserProvenanceMismatch,
     /// A required record, observation, or operation identity is blank.
     EmptyIdentity {
         /// Identity role whose value was rejected.
@@ -1611,6 +1676,9 @@ pub enum AutomationRecordError {
 impl fmt::Display for AutomationRecordError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::BrowserProvenanceMismatch => {
+                formatter.write_str("operation and observation browser provenance differ")
+            }
             Self::EmptyIdentity { field } => write!(formatter, "{field} cannot be empty"),
             Self::IdentityTooLong { field } => write!(formatter, "{field} exceeds 1024 bytes"),
             Self::DuplicateIdentity { field } => write!(formatter, "duplicate {field} identity"),
