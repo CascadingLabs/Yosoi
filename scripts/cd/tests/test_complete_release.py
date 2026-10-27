@@ -13,9 +13,32 @@ import release  # noqa: E402
 
 
 class CompletionTests(unittest.TestCase):
+    def test_recovery_and_standalone_docs_are_opt_in(self):
+        workflows = Path(__file__).resolve().parents[3] / ".github/workflows"
+        ordinary = (workflows / "release-cd.yml").read_text()
+        recovery = (workflows / "release-recovery.yml").read_text()
+        docs = (workflows / "docs-publish.yml").read_text()
+        for workflow in (recovery, docs):
+            triggers = workflow.split("\njobs:\n", 1)[0]
+            self.assertIn("\n  workflow_dispatch:", triggers)
+            self.assertNotIn("\n  push:", triggers)
+            self.assertNotIn("\n  pull_request:", triggers)
+        self.assertNotIn("complete_verified_run", ordinary)
+        self.assertNotIn("\n  complete-verified:", ordinary)
+        self.assertNotIn("\n  complete-docs:", ordinary)
+        self.assertIn("needs: [identity, github]", ordinary)
+        self.assertIn("uses: ./.github/workflows/docs-publish.yml", ordinary)
+        self.assertIn("\n  workflow_call:", docs)
+        self.assertIn('run: test "$GITHUB_REF" = refs/heads/main', recovery)
+        self.assertRegex(
+            recovery,
+            r"complete_verified_run:\n.*\n        type: string\n        required: true",
+        )
+
     def test_readonly_completion_cannot_publish(self):
         workflow = (
-            Path(__file__).resolve().parents[3] / ".github/workflows/release-cd.yml"
+            Path(__file__).resolve().parents[3]
+            / ".github/workflows/release-recovery.yml"
         ).read_text()
         publish_steps = workflow.split(
             "      - name: Publish verified Rust packages", 1
