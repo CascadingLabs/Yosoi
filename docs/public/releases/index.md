@@ -24,6 +24,7 @@ A suffix such as `-rc.1` means **release candidate**: a version being evaluated 
 
 ## Releases
 
+- [0.4.0](0-4-0.md) · 2026-10-26: Bounded Surfaces, portable automation evidence, optional browser engines, and explicit network routing.
 - [0.3.0](0-3-0.md) · 2026-10-24: Validated Python Contracts, durable browser evidence, binary response bodies, and a worked Concepts series.
 - [0.2.1](0-2-1.md) · 2026-10-11: Prebuilt CLI installation through PyPI and native scripts, with clearer Rust and Python documentation.
 - [0.2.0](0-2-0.md) · 2026-10-11: Rust and Python browser workflows with reusable Flows, typed assertions, and explicit ownership.
@@ -31,6 +32,6 @@ A suffix such as `-rc.1` means **release candidate**: a version being evaluated 
 - [0.1.1](0-1-1.md) · 2026-10-11: One modular runtime crate, an optional CLI, and unchanged Rust and Python SDK calls.
 - [0.1.0](0-1-0.md) · 2026-10-10: The first public Rust and Python SDK beta, with versioned docs and Chromium runtime images.
 
-<!-- release-history:generated-end sha256=f4b9cda054c881c5b1b15f5077cfd7484d64c4cdcd7d3e6ec454001e158eec84 -->
+<!-- release-history:generated-end sha256=23fe788a50c8ef47acc0b8232b4383ebe8d4d280786dd655d6f6aac16adf7819 -->
 
 <!-- prettier-ignore-end -->

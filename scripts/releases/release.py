@@ -16,6 +16,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateError
 
@@ -736,10 +737,31 @@ def check_release(args: argparse.Namespace) -> None:
         print(f"Release notes valid: {result['file']} ({result['version']}, {result['date']})")
 
 
+def github_body(body: str) -> str:
+    """Resolve documentation links for GitHub without rewriting code examples."""
+    masked = _mask_markdown_code(body)
+    links = re.finditer(
+        r"\]\(\s*(?P<link>(?:\.\.?/|/yosoi/)[^\s)]+)", masked
+    )
+    for match in reversed(list(links)):
+        target = urlsplit(urljoin("https://cascadinglabs.com/yosoi/releases/", match["link"]))
+        if not target.path.startswith("/yosoi/"):
+            raise ReleaseError("Release documentation links must stay within /yosoi/")
+        path = target.path
+        if path.endswith("/index.md"):
+            path = path.removesuffix("index.md")
+        elif path.endswith(".md"):
+            path = path.removesuffix(".md") + "/"
+        resolved = urlunsplit(target._replace(path=path))
+        start, end = match.span("link")
+        body = body[:start] + resolved + body[end:]
+    return body
+
+
 def emit_body(args: argparse.Namespace) -> None:
     root = _resolve_root(args.root)
     document, _, _, _ = validate_release(root, args.version)
-    sys.stdout.write(document.body)
+    sys.stdout.write(github_body(document.body))
 
 
 def _markdown_inline(text: str) -> str:

@@ -30,6 +30,23 @@ GITHUB_NOTES = (
 
 
 class ReleaseToolTests(unittest.TestCase):
+    def test_github_body_uses_live_docs_routes_and_preserves_code(self) -> None:
+        body = (
+            "[Surface](../concepts/surfaces.md#read)\n"
+            "[CLI](../cli/index.md)\n"
+            "[PR](https://github.com/Owner/Repo/pull/1)\n"
+            "`[literal](../example.md)`\n"
+            "```markdown\n[literal](../example.md)\n```\n"
+        )
+        rendered = release.github_body(body)
+        self.assertIn("https://cascadinglabs.com/yosoi/concepts/surfaces/#read", rendered)
+        self.assertIn("https://cascadinglabs.com/yosoi/cli/", rendered)
+        self.assertIn("[PR](https://github.com/Owner/Repo/pull/1)", rendered)
+        self.assertIn("`[literal](../example.md)`", rendered)
+        self.assertIn("```markdown\n[literal](../example.md)\n```", rendered)
+        with self.assertRaises(release.ReleaseError):
+            release.github_body("[escape](../../outside.md)")
+
     def test_candidates_require_preview_during_prepare_and_check(self) -> None:
         before = self.snapshot()
         status, _, error = self.invoke(
