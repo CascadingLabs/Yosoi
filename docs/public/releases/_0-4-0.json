@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* feat(surface): expose Rust/Python SDKs and archived agent CLI by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/164\n* feat(surface): archive policy outcomes and portable reload by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/167\n* feat: add opt-in IPv4/IPv6 and proxy networking policy by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/165\n* feat(browser): add native BiDi captures and workflows for Firefox and Moli by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/166\n* refactor(contracts): remove built-in domain types and their docs by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/169\n* release: prepare 0.4.0-rc.1 and review candidate docs by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/171\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.3.0...v0.4.0\n",
+  "generated_source_sha256": "71b08e0f510e4542bc1def9b2e805cee36dd2ba70945b607be7bde0e5465d0d3",
+  "github_notes_file": "yosoi-040-final-github-notes.md",
+  "previous": "0.3.0",
+  "schema": 1,
+  "version": "0.4.0"
+}

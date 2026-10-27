@@ -11,7 +11,7 @@ A document offers structure and text. A video offers a timeline and requested pi
 
 ## Example: inspect the lamp
 
-Use the [0.4.0 candidate](../releases/0-4-0-rc-1.md) or its source checkout. The earlier 0.3.0 packages do not expose these Surface APIs.
+Use the [0.4.0 release](../releases/0-4-0.md) or its source checkout. The earlier 0.3.0 packages do not expose these Surface APIs.
 
 Start with a small product document. These programs search for the same lamp and print the evidence behind the returned reference.
 

@@ -18,7 +18,7 @@ sh install-yosoi.sh
 To install a specific version, pass `--version` to the downloaded script:
 
 ```sh
-sh install-yosoi.sh --version 0.3.0
+sh install-yosoi.sh --version 0.4.0
 ```
 
 Supports x86-64 and ARM64 with glibc 2.39 or newer, such as Ubuntu 24.04.
@@ -35,7 +35,7 @@ Installs a prebuilt executable. Rust and Cargo are not required.
 To install a specific version:
 
 ```sh
-uv tool install yosoi-cli==0.3.0
+uv tool install yosoi-cli==0.4.0
 ```
 
 To run a command without installing the tool permanently:
@@ -54,7 +54,7 @@ sh install-yosoi.sh
 To install a specific version, pass `--version` to the downloaded script:
 
 ```sh
-sh install-yosoi.sh --version 0.3.0
+sh install-yosoi.sh --version 0.4.0
 ```
 
 Supports Apple Silicon and Intel Macs on macOS 11.0 or newer.
@@ -70,7 +70,7 @@ Invoke-WebRequest https://github.com/CascadingLabs/Yosoi/releases/latest/downloa
 To install a specific version, pass `-Version` to the downloaded script:
 
 ```powershell
-& ./install-yosoi.ps1 -Version 0.3.0
+& ./install-yosoi.ps1 -Version 0.4.0
 ```
 
 Supports Windows x86-64. Installs in `$env:LOCALAPPDATA\Yosoi\bin` and adds it to your PATH.
@@ -87,12 +87,8 @@ Builds from source. Requires Rust 1.99 or newer and native build dependencies fo
 To install a specific version:
 
 ```sh
-cargo install yosoi --features cli --locked --version '=0.3.0'
+cargo install yosoi --features cli --locked --version '=0.4.0'
 ```
-
-## Release candidate
-
-The commands above select a final release. For the 0.4.0 candidate, follow the [version-specific installation instructions](../releases/0-4-0-rc-1.md). The `latest` download URL does not select prereleases.
 
 ## Verification
 

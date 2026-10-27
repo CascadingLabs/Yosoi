@@ -30,7 +30,7 @@ uv add yosoi
 
 ## Next steps
 
-These commands install the latest final release. To try the 0.4.0 release candidate, use the version-specific commands in the [0.4.0-rc.1 release notes](../releases/0-4-0-rc-1.md). The Surface and optional-browser guides require that candidate or its source checkout; 0.3.0 does not include those APIs.
+The Surface and optional-browser guides require Yosoi 0.4.0 or newer. See the [0.4.0 release notes](../releases/0-4-0.md) for version-specific commands and breaking changes when upgrading from 0.3.0.
 
 Read [Concepts](../concepts/index.md), send a [Request](../sdk/requests.md), or produce a typed record with [Contracts](../sdk/contracts.md).
 
