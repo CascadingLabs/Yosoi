@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ContractLocatorError",
+  "publicPath": "yosoi::contracts::ContractLocatorError",
+  "kind": "enum",
+  "title": "yosoi::contracts::ContractLocatorError",
+  "signature": "pub enum ContractLocatorError",
+  "docs": "Pinned Contract locator declarations failed query construction or portable plan compilation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+    "lineStart": 8,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L8-L15"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::ContractLocatorError",
+    "yosoi::prelude::contracts::ContractLocatorError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ContractLocatorError::Plan",
+      "publicPath": "yosoi::contracts::ContractLocatorError::Plan",
+      "title": "yosoi::contracts::ContractLocatorError::Plan",
+      "kind": "variant",
+      "signature": "Plan(yosoi::locators::PlanError)",
+      "docs": "Named pinned outputs and region declarations cannot form a supported plan.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L14-L14"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractLocatorError::Plan::0",
+          "publicPath": "yosoi::contracts::ContractLocatorError::Plan::0",
+          "title": "yosoi::contracts::ContractLocatorError::Plan::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::PlanError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+            "lineStart": 14,
+            "lineEnd": 14,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L14-L14"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ContractLocatorError::Query",
+      "publicPath": "yosoi::contracts::ContractLocatorError::Query",
+      "title": "yosoi::contracts::ContractLocatorError::Query",
+      "kind": "variant",
+      "signature": "Query(yosoi::locators::QueryError)",
+      "docs": "A pinned root or field query/projection has invalid supported semantics.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L11-L11"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ContractLocatorError::Query::0",
+          "publicPath": "yosoi::contracts::ContractLocatorError::Query::0",
+          "title": "yosoi::contracts::ContractLocatorError::Query::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::QueryError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+            "lineStart": 11,
+            "lineEnd": 11,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L11-L11"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::clone",
+      "publicPath": "yosoi::contracts::ContractLocatorError::clone",
+      "title": "yosoi::contracts::ContractLocatorError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ContractLocatorError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::eq",
+      "publicPath": "yosoi::contracts::ContractLocatorError::eq",
+      "title": "yosoi::contracts::ContractLocatorError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ContractLocatorError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::fmt",
+      "publicPath": "yosoi::contracts::ContractLocatorError::fmt",
+      "title": "yosoi::contracts::ContractLocatorError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::fmt",
+      "publicPath": "yosoi::contracts::ContractLocatorError::fmt",
+      "title": "yosoi::contracts::ContractLocatorError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::from",
+      "publicPath": "yosoi::contracts::ContractLocatorError::from",
+      "title": "yosoi::contracts::ContractLocatorError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::locators::QueryError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::from",
+      "publicPath": "yosoi::contracts::ContractLocatorError::from",
+      "title": "yosoi::contracts::ContractLocatorError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::locators::PlanError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractLocatorError::source",
+      "publicPath": "yosoi::contracts::ContractLocatorError::source",
+      "title": "yosoi::contracts::ContractLocatorError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/contract_locator.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/contract_locator.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "29a3d9c12742fdf179faeaa9f5b4c39c93fe900988b4503f09d63af8286f396b",
+  "slug": "yosoi/contracts/enum/contractlocatorerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "29a3d9c12742fdf179faeaa9f5b4c39c93fe900988b4503f09d63af8286f396b"
+}

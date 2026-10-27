@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::expect::AccessibilityExpectation",
+  "publicPath": "yosoi::expect::AccessibilityExpectation",
+  "kind": "struct",
+  "title": "yosoi::expect::AccessibilityExpectation",
+  "signature": "pub struct AccessibilityExpectation",
+  "docs": "Builder for an exact accessible-name expectation.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 143,
+    "lineEnd": 146,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L143-L146"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::AccessibilityExpectation",
+    "yosoi::prelude::expect::AccessibilityExpectation"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::expect::AccessibilityExpectation::clone",
+      "publicPath": "yosoi::expect::AccessibilityExpectation::clone",
+      "title": "yosoi::expect::AccessibilityExpectation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::expect::AccessibilityExpectation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::expect::AccessibilityExpectation::eq",
+      "publicPath": "yosoi::expect::AccessibilityExpectation::eq",
+      "title": "yosoi::expect::AccessibilityExpectation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::expect::AccessibilityExpectation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::expect::AccessibilityExpectation::fmt",
+      "publicPath": "yosoi::expect::AccessibilityExpectation::fmt",
+      "title": "yosoi::expect::AccessibilityExpectation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::expect::AccessibilityExpectation::role",
+      "publicPath": "yosoi::expect::AccessibilityExpectation::role",
+      "title": "yosoi::expect::AccessibilityExpectation::role",
+      "kind": "function",
+      "signature": "pub fn role(self, role: impl Into<String>) -> Self",
+      "docs": "Also requires the accessible node to have this role.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 150,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L150-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::expect::AccessibilityExpectation::until",
+      "publicPath": "yosoi::expect::AccessibilityExpectation::until",
+      "title": "yosoi::expect::AccessibilityExpectation::until",
+      "kind": "function",
+      "signature": "pub fn until(self) -> yosoi::flow::Step",
+      "docs": "Waits for this accessibility expectation without a trigger action.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 156,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L156-L158"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1761e8ee4c07330bb0abae2690b093e96c3773e54708376bbe73bf303a12dff8",
+  "slug": "yosoi/expect/struct/accessibilityexpectation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1761e8ee4c07330bb0abae2690b093e96c3773e54708376bbe73bf303a12dff8"
+}

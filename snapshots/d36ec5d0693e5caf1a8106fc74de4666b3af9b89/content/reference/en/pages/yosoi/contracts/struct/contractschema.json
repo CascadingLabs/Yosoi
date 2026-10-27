@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::ContractSchema",
+  "publicPath": "yosoi::contracts::ContractSchema",
+  "kind": "struct",
+  "title": "yosoi::contracts::ContractSchema",
+  "signature": "pub struct ContractSchema",
+  "docs": "Validated portable record schema; it defines meaning without locating or validating evidence.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/schema.rs",
+    "lineStart": 140,
+    "lineEnd": 148,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L140-L148"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractSchema"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::ContractSchema::clone",
+      "publicPath": "yosoi::contracts::ContractSchema::clone",
+      "title": "yosoi::contracts::ContractSchema::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ContractSchema",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L138-L138"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::description",
+      "publicPath": "yosoi::contracts::ContractSchema::description",
+      "title": "yosoi::contracts::ContractSchema::description",
+      "kind": "function",
+      "signature": "pub fn description(&self) -> &str",
+      "docs": "Borrows the record's business meaning; descriptive prose is excluded from identity hashing.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 226,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L226-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::deserialize",
+      "publicPath": "yosoi::contracts::ContractSchema::deserialize",
+      "title": "yosoi::contracts::ContractSchema::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 273,
+        "lineEnd": 295,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L273-L295"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::eq",
+      "publicPath": "yosoi::contracts::ContractSchema::eq",
+      "title": "yosoi::contracts::ContractSchema::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ContractSchema) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L138-L138"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::fields",
+      "publicPath": "yosoi::contracts::ContractSchema::fields",
+      "title": "yosoi::contracts::ContractSchema::fields",
+      "kind": "function",
+      "signature": "pub fn fields(&self) -> &[yosoi::contracts::FieldSchema]",
+      "docs": "Borrows fields in authored order; changing this order changes semantic identity.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 234,
+        "lineEnd": 236,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L234-L236"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::fmt",
+      "publicPath": "yosoi::contracts::ContractSchema::fmt",
+      "title": "yosoi::contracts::ContractSchema::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L138-L138"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::id",
+      "publicPath": "yosoi::contracts::ContractSchema::id",
+      "title": "yosoi::contracts::ContractSchema::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &yosoi::contracts::ContractId",
+      "docs": "Borrows the authored record identity included in semantic schema hashing.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 222,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L222-L224"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::identity",
+      "publicPath": "yosoi::contracts::ContractSchema::identity",
+      "title": "yosoi::contracts::ContractSchema::identity",
+      "kind": "function",
+      "signature": "pub fn identity(&self) -> Result<yosoi::contracts::ContractIdentity, yosoi::contracts::ContractSchemaError>",
+      "docs": "Hashes semantic metadata into a stable 32-byte Contract identity.\n\nIncludes format version, Contract ID, scope, ordered field IDs,\ncardinalities, and scalar type IDs. Contract and field descriptions are\nexcluded, so prose changes alone do not change identity. Returns\n[`ContractSchemaError`] if a length cannot fit portable hash accounting.\nThis identifies schema semantics, not a document or execution occurrence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 250,
+        "lineEnd": 269,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L250-L269"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::scope",
+      "publicPath": "yosoi::contracts::ContractSchema::scope",
+      "title": "yosoi::contracts::ContractSchema::scope",
+      "kind": "function",
+      "signature": "pub const fn scope(&self) -> yosoi::contracts::RecordScope",
+      "docs": "Returns whether candidate grouping is page-scoped or repeated-region-scoped.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 230,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L230-L232"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::serialize",
+      "publicPath": "yosoi::contracts::ContractSchema::serialize",
+      "title": "yosoi::contracts::ContractSchema::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L138-L138"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::try_new",
+      "publicPath": "yosoi::contracts::ContractSchema::try_new",
+      "title": "yosoi::contracts::ContractSchema::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(version: u32, id: yosoi::contracts::ContractId, description: impl Into<String>, scope: yosoi::contracts::RecordScope, fields: Vec<yosoi::contracts::FieldSchema>) -> Result<Self, yosoi::contracts::ContractSchemaError>",
+      "docs": "Owns a supported schema version, record meaning, scope, and ordered fields.\n\nReturns [`ContractSchemaError`] for an unsupported or zero version, blank\nContract identity or description, an empty field collection, or duplicate\nfield identities. Field order is retained and contributes to semantic\nidentity. This does not acquire documents, choose locators, or check that\nevery declared scalar type has a runtime conversion implementation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 158,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L158-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractSchema::version",
+      "publicPath": "yosoi::contracts::ContractSchema::version",
+      "title": "yosoi::contracts::ContractSchema::version",
+      "kind": "function",
+      "signature": "pub const fn version(&self) -> u32",
+      "docs": "Returns the portable schema format version accepted during construction.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 218,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/schema.rs#L218-L220"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5085787d2396810a242eb46f28e93e9108f90034c27d0cd0a196140be5af7f19",
+  "slug": "yosoi/contracts/struct/contractschema",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5085787d2396810a242eb46f28e93e9108f90034c27d0cd0a196140be5af7f19"
+}

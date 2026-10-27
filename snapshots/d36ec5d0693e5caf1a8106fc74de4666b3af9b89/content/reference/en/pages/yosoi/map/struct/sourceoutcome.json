@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::SourceOutcome",
+  "publicPath": "yosoi::map::SourceOutcome",
+  "kind": "struct",
+  "title": "yosoi::map::SourceOutcome",
+  "signature": "pub struct SourceOutcome",
+  "docs": "Retained execution facts for one selected discovery source.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 249,
+    "lineEnd": 256,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L249-L256"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/map.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SourceOutcome"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::SourceOutcome::clone",
+      "publicPath": "yosoi::map::SourceOutcome::clone",
+      "title": "yosoi::map::SourceOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::SourceOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 248,
+        "lineEnd": 248,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L248-L248"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SourceOutcome::fmt",
+      "publicPath": "yosoi::map::SourceOutcome::fmt",
+      "title": "yosoi::map::SourceOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 248,
+        "lineEnd": 248,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L248-L248"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::SourceOutcome::serialize",
+      "publicPath": "yosoi::map::SourceOutcome::serialize",
+      "title": "yosoi::map::SourceOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 248,
+        "lineEnd": 248,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L248-L248"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::map::SourceOutcome::source",
+      "publicPath": "yosoi::map::SourceOutcome::source",
+      "title": "yosoi::map::SourceOutcome::source",
+      "kind": "struct_field",
+      "signature": "pub source: yosoi::map::DiscoverySource",
+      "docs": "Discovery mechanism occupying this source slot.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 251,
+        "lineEnd": 251,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L251-L251"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::SourceOutcome::source_url",
+      "publicPath": "yosoi::map::SourceOutcome::source_url",
+      "title": "yosoi::map::SourceOutcome::source_url",
+      "kind": "struct_field",
+      "signature": "pub source_url: Option<url::Url>",
+      "docs": "Source endpoint or page, absent when no URL applies.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 253,
+        "lineEnd": 253,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L253-L253"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::map::SourceOutcome::status",
+      "publicPath": "yosoi::map::SourceOutcome::status",
+      "title": "yosoi::map::SourceOutcome::status",
+      "kind": "struct_field",
+      "signature": "pub status: yosoi::map::SourceStatus",
+      "docs": "Terminal source processing state, independent of overall operation exhaustion.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 255,
+        "lineEnd": 255,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/map/mod.rs#L255-L255"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "25a349df74e7c32f6b17604e6925d7a618d80240166873131a334be5215f5317",
+  "slug": "yosoi/map/struct/sourceoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "25a349df74e7c32f6b17604e6925d7a618d80240166873131a334be5215f5317"
+}

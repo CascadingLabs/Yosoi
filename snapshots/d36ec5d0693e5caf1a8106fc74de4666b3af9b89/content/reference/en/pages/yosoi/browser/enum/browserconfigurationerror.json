@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::browser::BrowserConfigurationError",
+  "publicPath": "yosoi::browser::BrowserConfigurationError",
+  "kind": "enum",
+  "title": "yosoi::browser::BrowserConfigurationError",
+  "signature": "pub enum BrowserConfigurationError",
+  "docs": "A structurally invalid browser declaration, before any process or action starts.",
+  "source": {
+    "file": "crates/yosoi/src/browser.rs",
+    "lineStart": 146,
+    "lineEnd": 165,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L146-L165"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::ConflictingLaunchSources",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::ConflictingLaunchSources",
+      "title": "yosoi::browser::BrowserConfigurationError::ConflictingLaunchSources",
+      "kind": "variant",
+      "signature": "ConflictingLaunchSources",
+      "docs": "Owned executable launch and connection to an existing service conflict.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L149-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::EndpointRequiresBidi",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::EndpointRequiresBidi",
+      "title": "yosoi::browser::BrowserConfigurationError::EndpointRequiresBidi",
+      "kind": "variant",
+      "signature": "EndpointRequiresBidi",
+      "docs": "The current Chrome provider is not an externally attached BiDi provider.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L158-L158"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::InvalidEndpoint",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::InvalidEndpoint",
+      "title": "yosoi::browser::BrowserConfigurationError::InvalidEndpoint",
+      "kind": "variant",
+      "signature": "InvalidEndpoint",
+      "docs": "The endpoint is not an unambiguous, secret-free WebSocket service URL.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L155-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::MoliHeadfulUnsupported",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::MoliHeadfulUnsupported",
+      "title": "yosoi::browser::BrowserConfigurationError::MoliHeadfulUnsupported",
+      "kind": "variant",
+      "signature": "MoliHeadfulUnsupported",
+      "docs": "Moli has no native desktop browser window.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 164,
+        "lineEnd": 164,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L164-L164"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::MoliOptionsRequireMoli",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::MoliOptionsRequireMoli",
+      "title": "yosoi::browser::BrowserConfigurationError::MoliOptionsRequireMoli",
+      "kind": "variant",
+      "signature": "MoliOptionsRequireMoli",
+      "docs": "Rendering/resource/network options must not be silently ignored.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 161,
+        "lineEnd": 161,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L161-L161"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::browser::BrowserConfigurationError::RelativeExecutable",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::RelativeExecutable",
+      "title": "yosoi::browser::BrowserConfigurationError::RelativeExecutable",
+      "kind": "variant",
+      "signature": "RelativeExecutable",
+      "docs": "Explicit executable paths must identify a concrete local file.",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 152,
+        "lineEnd": 152,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L152-L152"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfigurationError::clone",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::clone",
+      "title": "yosoi::browser::BrowserConfigurationError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::browser::BrowserConfigurationError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfigurationError::eq",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::eq",
+      "title": "yosoi::browser::BrowserConfigurationError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::browser::BrowserConfigurationError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfigurationError::fmt",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::fmt",
+      "title": "yosoi::browser::BrowserConfigurationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::browser::BrowserConfigurationError::fmt",
+      "publicPath": "yosoi::browser::BrowserConfigurationError::fmt",
+      "title": "yosoi::browser::BrowserConfigurationError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/browser.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/browser.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fb465d5ce27311572c90e2e946ace70822b79ae3254402eab9fcfa22bc858b76",
+  "slug": "yosoi/browser/enum/browserconfigurationerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fb465d5ce27311572c90e2e946ace70822b79ae3254402eab9fcfa22bc858b76"
+}

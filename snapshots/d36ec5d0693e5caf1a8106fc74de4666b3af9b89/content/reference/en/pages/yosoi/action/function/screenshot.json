@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::screenshot",
+  "publicPath": "yosoi::action::screenshot",
+  "kind": "function",
+  "title": "yosoi::action::screenshot",
+  "signature": "pub const fn screenshot() -> yosoi::flow::Step",
+  "docs": "Creates a screenshot step.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 63,
+    "lineEnd": 65,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/action.rs#L63-L65"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::screenshot"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f4d65e8bdfe2753d846e74e04f4435a0fd125c082372080c9d1e5cea743a7240",
+  "slug": "yosoi/action/function/screenshot",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f4d65e8bdfe2753d846e74e04f4435a0fd125c082372080c9d1e5cea743a7240"
+}

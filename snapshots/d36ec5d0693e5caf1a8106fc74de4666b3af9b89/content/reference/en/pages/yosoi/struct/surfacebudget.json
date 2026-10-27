@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::SurfaceBudget",
+  "publicPath": "yosoi::SurfaceBudget",
+  "kind": "struct",
+  "title": "yosoi::SurfaceBudget",
+  "signature": "pub struct SurfaceBudget",
+  "docs": "A per-response bound on serialized JSON bytes and returned entries.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 114,
+    "lineEnd": 119,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L114-L119"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 42,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/lib.rs#L42-L42"
+  },
+  "aliases": [
+    "yosoi::surface::Budget"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::SurfaceBudget::bytes",
+      "publicPath": "yosoi::SurfaceBudget::bytes",
+      "title": "yosoi::SurfaceBudget::bytes",
+      "kind": "struct_field",
+      "signature": "pub bytes: usize",
+      "docs": "Whole serialized response limit, including references and continuation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 116,
+        "lineEnd": 116,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L116-L116"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceBudget::clone",
+      "publicPath": "yosoi::SurfaceBudget::clone",
+      "title": "yosoi::SurfaceBudget::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::SurfaceBudget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::SurfaceBudget::default",
+      "publicPath": "yosoi::SurfaceBudget::default",
+      "title": "yosoi::SurfaceBudget::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 121,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L121-L126"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::SurfaceBudget::deserialize",
+      "publicPath": "yosoi::SurfaceBudget::deserialize",
+      "title": "yosoi::SurfaceBudget::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::SurfaceBudget::fmt",
+      "publicPath": "yosoi::SurfaceBudget::fmt",
+      "title": "yosoi::SurfaceBudget::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::SurfaceBudget::items",
+      "publicPath": "yosoi::SurfaceBudget::items",
+      "title": "yosoi::SurfaceBudget::items",
+      "kind": "struct_field",
+      "signature": "pub items: usize",
+      "docs": "Maximum entries in one response; clamped to 100.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 118,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L118-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceBudget::serialize",
+      "publicPath": "yosoi::SurfaceBudget::serialize",
+      "title": "yosoi::SurfaceBudget::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0afd8e7f1cb17a1b51f7f84e540c30b75df9596fc8738af83e216f5b8a062025",
+  "slug": "yosoi/struct/surfacebudget",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0afd8e7f1cb17a1b51f7f84e540c30b75df9596fc8738af83e216f5b8a062025"
+}

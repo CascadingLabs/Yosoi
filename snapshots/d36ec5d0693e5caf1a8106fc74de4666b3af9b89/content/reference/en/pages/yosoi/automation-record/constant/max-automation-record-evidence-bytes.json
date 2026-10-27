@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::automation_record::MAX_AUTOMATION_RECORD_EVIDENCE_BYTES",
+  "publicPath": "yosoi::automation_record::MAX_AUTOMATION_RECORD_EVIDENCE_BYTES",
+  "kind": "constant",
+  "title": "yosoi::automation_record::MAX_AUTOMATION_RECORD_EVIDENCE_BYTES",
+  "signature": "pub const MAX_AUTOMATION_RECORD_EVIDENCE_BYTES: usize = _;",
+  "docs": "Maximum combined raw HTML and screenshot bytes in one record.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 44,
+    "lineEnd": 44,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L44-L44"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "7ace09f7a75a4f5aed6f28d63bc0653b4c7e59e0239b27df196cb50b9b5af70b",
+  "slug": "yosoi/automation-record/constant/max-automation-record-evidence-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7ace09f7a75a4f5aed6f28d63bc0653b4c7e59e0239b27df196cb50b9b5af70b"
+}

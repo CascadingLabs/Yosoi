@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Coverage",
+  "publicPath": "yosoi::surface::Coverage",
+  "kind": "struct",
+  "title": "yosoi::surface::Coverage",
+  "signature": "pub struct Coverage",
+  "docs": "Source coverage, kept separate from omission due to response budgets.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 158,
+    "lineEnd": 163,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L158-L163"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Coverage::clone",
+      "publicPath": "yosoi::surface::Coverage::clone",
+      "title": "yosoi::surface::Coverage::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Coverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L157-L157"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Coverage::complete",
+      "publicPath": "yosoi::surface::Coverage::complete",
+      "title": "yosoi::surface::Coverage::complete",
+      "kind": "struct_field",
+      "signature": "pub complete: bool",
+      "docs": "Whether the supplied evidence declares complete coverage of its scope.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L160-L160"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Coverage::deserialize",
+      "publicPath": "yosoi::surface::Coverage::deserialize",
+      "title": "yosoi::surface::Coverage::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L157-L157"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Coverage::eq",
+      "publicPath": "yosoi::surface::Coverage::eq",
+      "title": "yosoi::surface::Coverage::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::Coverage) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L157-L157"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::Coverage::fmt",
+      "publicPath": "yosoi::surface::Coverage::fmt",
+      "title": "yosoi::surface::Coverage::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L157-L157"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Coverage::reason",
+      "publicPath": "yosoi::surface::Coverage::reason",
+      "title": "yosoi::surface::Coverage::reason",
+      "kind": "struct_field",
+      "signature": "pub reason: Option<String>",
+      "docs": "Structural reason for partial/unknown coverage, if any.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L162-L162"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Coverage::serialize",
+      "publicPath": "yosoi::surface::Coverage::serialize",
+      "title": "yosoi::surface::Coverage::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L157-L157"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2f7201ee815c2ddaa69d8f6d0cc0205340415d8a78b0eb534ed76bbf8fad6194",
+  "slug": "yosoi/surface/struct/coverage",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2f7201ee815c2ddaa69d8f6d0cc0205340415d8a78b0eb534ed76bbf8fad6194"
+}

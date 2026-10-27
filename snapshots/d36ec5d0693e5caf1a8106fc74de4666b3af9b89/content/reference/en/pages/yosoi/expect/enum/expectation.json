@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::expect::Expectation",
+  "publicPath": "yosoi::expect::Expectation",
+  "kind": "enum",
+  "title": "yosoi::expect::Expectation",
+  "signature": "pub enum Expectation",
+  "docs": "One serializable condition that an eventual assertion can observe.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 20,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L20-L60"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Expectation",
+    "yosoi::prelude::expect::Expectation"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::expect::Expectation::Accessibility",
+      "publicPath": "yosoi::expect::Expectation::Accessibility",
+      "title": "yosoi::expect::Expectation::Accessibility",
+      "kind": "variant",
+      "signature": "Accessibility { name: String, role: Option<String> }",
+      "docs": "An exact accessible name, optionally constrained to a role.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 32,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L32-L38"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Accessibility::name",
+          "publicPath": "yosoi::expect::Expectation::Accessibility::name",
+          "title": "yosoi::expect::Expectation::Accessibility::name",
+          "kind": "struct_field",
+          "signature": "name: String",
+          "docs": "Exact accessible name expected in the supported current accessibility snapshot.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 34,
+            "lineEnd": 34,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L34-L34"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Accessibility::role",
+          "publicPath": "yosoi::expect::Expectation::Accessibility::role",
+          "title": "yosoi::expect::Expectation::Accessibility::role",
+          "kind": "struct_field",
+          "signature": "role: Option<String>",
+          "docs": "Optional accessibility role constraint, absent when any supported role is acceptable.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 37,
+            "lineEnd": 37,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L37-L37"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::expect::Expectation::All",
+      "publicPath": "yosoi::expect::Expectation::All",
+      "title": "yosoi::expect::Expectation::All",
+      "kind": "variant",
+      "signature": "All { expectations: Vec<Self> }",
+      "docs": "Every clause must be confirmed in the same result cycle. Each source\nkeeps its own evidence and timestamp; a response may be retained from\nearlier in the wait while DOM and accessibility evidence is fresh.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 56,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L56-L59"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::expect::Expectation::All::expectations",
+          "publicPath": "yosoi::expect::Expectation::All::expectations",
+          "title": "yosoi::expect::Expectation::All::expectations",
+          "kind": "struct_field",
+          "signature": "expectations: Vec<Self>",
+          "docs": "Authored conjunction leaves, validated against the maximum expectation count.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 58,
+            "lineEnd": 58,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L58-L58"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::expect::Expectation::Condition",
+      "publicPath": "yosoi::expect::Expectation::Condition",
+      "title": "yosoi::expect::Expectation::Condition",
+      "kind": "variant",
+      "signature": "Condition { condition: yosoi::flow::Condition }",
+      "docs": "A typed DOM condition, checked against the current document.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 22,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L22-L25"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Condition::condition",
+          "publicPath": "yosoi::expect::Expectation::Condition::condition",
+          "title": "yosoi::expect::Expectation::Condition::condition",
+          "kind": "struct_field",
+          "signature": "condition: yosoi::flow::Condition",
+          "docs": "One current-document DOM condition to confirm within the retained scope.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 24,
+            "lineEnd": 24,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L24-L24"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::expect::Expectation::Contract",
+      "publicPath": "yosoi::expect::Expectation::Contract",
+      "title": "yosoi::expect::Expectation::Contract",
+      "kind": "variant",
+      "signature": "Contract { assertion: yosoi::assertions::LocalAssertion }",
+      "docs": "A local Rust Contract assertion; executable code is bound in memory only.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 27,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L27-L30"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Contract::assertion",
+          "publicPath": "yosoi::expect::Expectation::Contract::assertion",
+          "title": "yosoi::expect::Expectation::Contract::assertion",
+          "kind": "struct_field",
+          "signature": "assertion: yosoi::assertions::LocalAssertion",
+          "docs": "Bounded saved descriptor whose executable evaluator must be bound explicitly.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 29,
+            "lineEnd": 29,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L29-L29"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::expect::Expectation::Response",
+      "publicPath": "yosoi::expect::Expectation::Response",
+      "title": "yosoi::expect::Expectation::Response",
+      "kind": "variant",
+      "signature": "Response { url: String, method: Option<String>, status: Option<u16>, json: Vec<yosoi::expect::JsonMatch> }",
+      "docs": "A response matching the full URL and any supplied response fields.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 40,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L40-L52"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Response::url",
+          "publicPath": "yosoi::expect::Expectation::Response::url",
+          "title": "yosoi::expect::Expectation::Response::url",
+          "kind": "struct_field",
+          "signature": "url: String",
+          "docs": "Full response URL to match, not an implicit prefix or substring selector.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 42,
+            "lineEnd": 42,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L42-L42"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Response::method",
+          "publicPath": "yosoi::expect::Expectation::Response::method",
+          "title": "yosoi::expect::Expectation::Response::method",
+          "kind": "struct_field",
+          "signature": "method: Option<String>",
+          "docs": "Exact HTTP method constraint when supplied.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 45,
+            "lineEnd": 45,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L45-L45"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Response::status",
+          "publicPath": "yosoi::expect::Expectation::Response::status",
+          "title": "yosoi::expect::Expectation::Response::status",
+          "kind": "struct_field",
+          "signature": "status: Option<u16>",
+          "docs": "Exact HTTP response status constraint when supplied.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 48,
+            "lineEnd": 48,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L48-L48"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::expect::Expectation::Response::json",
+          "publicPath": "yosoi::expect::Expectation::Response::json",
+          "title": "yosoi::expect::Expectation::Response::json",
+          "kind": "struct_field",
+          "signature": "json: Vec<yosoi::expect::JsonMatch>",
+          "docs": "Bounded JSON Pointer/value equality checks against the retained response body.",
+          "source": {
+            "file": "crates/yosoi/src/expect.rs",
+            "lineStart": 51,
+            "lineEnd": 51,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L51-L51"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::clone",
+      "publicPath": "yosoi::expect::Expectation::clone",
+      "title": "yosoi::expect::Expectation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::expect::Expectation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::deserialize",
+      "publicPath": "yosoi::expect::Expectation::deserialize",
+      "title": "yosoi::expect::Expectation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::eq",
+      "publicPath": "yosoi::expect::Expectation::eq",
+      "title": "yosoi::expect::Expectation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::expect::Expectation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::fmt",
+      "publicPath": "yosoi::expect::Expectation::fmt",
+      "title": "yosoi::expect::Expectation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::from",
+      "publicPath": "yosoi::expect::Expectation::from",
+      "title": "yosoi::expect::Expectation::from",
+      "kind": "function",
+      "signature": "fn from(condition: yosoi::flow::Condition) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 70,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L70-L72"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::from",
+      "publicPath": "yosoi::expect::Expectation::from",
+      "title": "yosoi::expect::Expectation::from",
+      "kind": "function",
+      "signature": "fn from(assertion: yosoi::assertions::LocalAssertion) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 76,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L76-L78"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::from",
+      "publicPath": "yosoi::expect::Expectation::from",
+      "title": "yosoi::expect::Expectation::from",
+      "kind": "function",
+      "signature": "fn from(response: yosoi::expect::ResponseExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 131,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L131-L138"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::from",
+      "publicPath": "yosoi::expect::Expectation::from",
+      "title": "yosoi::expect::Expectation::from",
+      "kind": "function",
+      "signature": "fn from(accessibility: yosoi::expect::AccessibilityExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 162,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L162-L167"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::from",
+      "publicPath": "yosoi::expect::Expectation::from",
+      "title": "yosoi::expect::Expectation::from",
+      "kind": "function",
+      "signature": "fn from(all: yosoi::expect::AllExpectation) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 184,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L184-L188"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::serialize",
+      "publicPath": "yosoi::expect::Expectation::serialize",
+      "title": "yosoi::expect::Expectation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::expect::Expectation::until",
+      "publicPath": "yosoi::expect::Expectation::until",
+      "title": "yosoi::expect::Expectation::until",
+      "kind": "function",
+      "signature": "pub fn until(self) -> yosoi::flow::Step",
+      "docs": "Waits for this expectation without a separate trigger action.",
+      "source": {
+        "file": "crates/yosoi/src/expect.rs",
+        "lineStart": 64,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L64-L66"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "524155fb913ca5afcc2670f060cf4a3f30d98ca027969331da4663c6ec1fec00",
+  "slug": "yosoi/expect/enum/expectation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "524155fb913ca5afcc2670f060cf4a3f30d98ca027969331da4663c6ec1fec00"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::accessibility_state",
+  "publicPath": "yosoi::locators::accessibility_state",
+  "kind": "function",
+  "title": "yosoi::locators::accessibility_state",
+  "signature": "pub const fn accessibility_state(name: yosoi::locators::AccessibilityStateName, value: bool) -> yosoi::locators::QuerySpec",
+  "docs": "Declares a supported expanded/focused boolean state query without mutating a browser.\n\nMatching requires immutable accessibility evidence; result shape is accessibility nodes.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 100,
+    "lineEnd": 105,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/query_builders.rs#L100-L105"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/locators.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::accessibility_state",
+    "yosoi::prelude::locators::accessibility_state"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "8c96ab942d22b7e14120dbf236ba2dbb1d5a4b20eb4b3ef260af6573421ce7a6",
+  "slug": "yosoi/locators/function/accessibility-state",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8c96ab942d22b7e14120dbf236ba2dbb1d5a4b20eb4b3ef260af6573421ce7a6"
+}

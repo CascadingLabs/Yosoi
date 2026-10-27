@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::assertions::SourceError",
+  "publicPath": "yosoi::assertions::SourceError",
+  "kind": "enum",
+  "title": "yosoi::assertions::SourceError",
+  "signature": "pub enum SourceError",
+  "docs": "Source evidence cannot provide the one accepted record needed for local predicates.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 207,
+    "lineEnd": 223,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L207-L223"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::assertions::SourceError::ExtractionRejected",
+      "publicPath": "yosoi::assertions::SourceError::ExtractionRejected",
+      "title": "yosoi::assertions::SourceError::ExtractionRejected",
+      "kind": "variant",
+      "signature": "ExtractionRejected",
+      "docs": "Schema or resource checks rejected candidate assembly.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 220,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L220-L220"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::SourceError::IncompleteEvidence",
+      "publicPath": "yosoi::assertions::SourceError::IncompleteEvidence",
+      "title": "yosoi::assertions::SourceError::IncompleteEvidence",
+      "kind": "variant",
+      "signature": "IncompleteEvidence",
+      "docs": "Partial or unknown evidence prevents complete Contract evaluation.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 216,
+        "lineEnd": 216,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L216-L216"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::SourceError::InvalidContract",
+      "publicPath": "yosoi::assertions::SourceError::InvalidContract",
+      "title": "yosoi::assertions::SourceError::InvalidContract",
+      "kind": "variant",
+      "signature": "InvalidContract",
+      "docs": "Field issues or extraction diagnostics prevented an all-accepted record claim.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 214,
+        "lineEnd": 214,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L214-L214"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::SourceError::LocateFailed",
+      "publicPath": "yosoi::assertions::SourceError::LocateFailed",
+      "title": "yosoi::assertions::SourceError::LocateFailed",
+      "kind": "variant",
+      "signature": "LocateFailed",
+      "docs": "Locator execution failed before Contract evaluation.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 218,
+        "lineEnd": 218,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L218-L218"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::assertions::SourceError::RecordCount",
+      "publicPath": "yosoi::assertions::SourceError::RecordCount",
+      "title": "yosoi::assertions::SourceError::RecordCount",
+      "kind": "variant",
+      "signature": "RecordCount { actual: usize }",
+      "docs": "The accepted record count is not exactly one.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 209,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L209-L212"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::assertions::SourceError::RecordCount::actual",
+          "publicPath": "yosoi::assertions::SourceError::RecordCount::actual",
+          "title": "yosoi::assertions::SourceError::RecordCount::actual",
+          "kind": "struct_field",
+          "signature": "actual: usize",
+          "docs": "Number of accepted Contract records, including zero for complete no-match.",
+          "source": {
+            "file": "crates/yosoi/src/assertions.rs",
+            "lineStart": 211,
+            "lineEnd": 211,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L211-L211"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::assertions::SourceError::ValidationRejected",
+      "publicPath": "yosoi::assertions::SourceError::ValidationRejected",
+      "title": "yosoi::assertions::SourceError::ValidationRejected",
+      "kind": "variant",
+      "signature": "ValidationRejected",
+      "docs": "Schema or accounting budgets rejected record validation.",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 222,
+        "lineEnd": 222,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L222-L222"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::assertions::SourceError::clone",
+      "publicPath": "yosoi::assertions::SourceError::clone",
+      "title": "yosoi::assertions::SourceError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::assertions::SourceError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::assertions::SourceError::deserialize",
+      "publicPath": "yosoi::assertions::SourceError::deserialize",
+      "title": "yosoi::assertions::SourceError::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::assertions::SourceError::eq",
+      "publicPath": "yosoi::assertions::SourceError::eq",
+      "title": "yosoi::assertions::SourceError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::assertions::SourceError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::assertions::SourceError::fmt",
+      "publicPath": "yosoi::assertions::SourceError::fmt",
+      "title": "yosoi::assertions::SourceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::assertions::SourceError::serialize",
+      "publicPath": "yosoi::assertions::SourceError::serialize",
+      "title": "yosoi::assertions::SourceError::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/assertions.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/assertions.rs#L205-L205"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e0ccd7f9bcfc68da2434dbc8d55f8f8545f8625382c07f64ba956c9a3447981e",
+  "slug": "yosoi/assertions/enum/sourceerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e0ccd7f9bcfc68da2434dbc8d55f8f8545f8625382c07f64ba956c9a3447981e"
+}

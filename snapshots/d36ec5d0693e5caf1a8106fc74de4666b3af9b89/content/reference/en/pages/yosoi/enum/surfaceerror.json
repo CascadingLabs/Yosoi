@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::SurfaceError",
+  "publicPath": "yosoi::SurfaceError",
+  "kind": "enum",
+  "title": "yosoi::SurfaceError",
+  "signature": "pub enum SurfaceError",
+  "docs": "Checked failures from surface preparation, reading or session control.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 45,
+    "lineEnd": 85,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L45-L85"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 43,
+    "lineEnd": 43,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/lib.rs#L43-L43"
+  },
+  "aliases": [
+    "yosoi::surface::SurfaceError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::SurfaceError::ActionInFlight",
+      "publicPath": "yosoi::SurfaceError::ActionInFlight",
+      "title": "yosoi::SurfaceError::ActionInFlight",
+      "kind": "variant",
+      "signature": "ActionInFlight",
+      "docs": "A current action prevents handoff or another action.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 75,
+        "lineEnd": 75,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L75-L75"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::BudgetTooSmall",
+      "publicPath": "yosoi::SurfaceError::BudgetTooSmall",
+      "title": "yosoi::SurfaceError::BudgetTooSmall",
+      "kind": "variant",
+      "signature": "BudgetTooSmall",
+      "docs": "The response cannot fit one useful item and its metadata.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Detached",
+      "publicPath": "yosoi::SurfaceError::Detached",
+      "title": "yosoi::SurfaceError::Detached",
+      "kind": "variant",
+      "signature": "Detached",
+      "docs": "An action requires an attached live session.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::HotOwned",
+      "publicPath": "yosoi::SurfaceError::HotOwned",
+      "title": "yosoi::SurfaceError::HotOwned",
+      "kind": "variant",
+      "signature": "HotOwned",
+      "docs": "Another cursor owns the single hot capability.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Invalid",
+      "publicPath": "yosoi::SurfaceError::Invalid",
+      "title": "yosoi::SurfaceError::Invalid",
+      "kind": "variant",
+      "signature": "Invalid(String)",
+      "docs": "The input or requested operation is invalid.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 48,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L48-L48"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::SurfaceError::Invalid::0",
+          "publicPath": "yosoi::SurfaceError::Invalid::0",
+          "title": "yosoi::SurfaceError::Invalid::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/mod.rs",
+            "lineStart": 48,
+            "lineEnd": 48,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L48-L48"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Limit",
+      "publicPath": "yosoi::SurfaceError::Limit",
+      "title": "yosoi::SurfaceError::Limit",
+      "kind": "variant",
+      "signature": "Limit(&'static str)",
+      "docs": "A declared resource bound was exceeded.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L54-L54"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::SurfaceError::Limit::0",
+          "publicPath": "yosoi::SurfaceError::Limit::0",
+          "title": "yosoi::SurfaceError::Limit::0",
+          "kind": "struct_field",
+          "signature": "0: &'static str",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/mod.rs",
+            "lineStart": 54,
+            "lineEnd": 54,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L54-L54"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Parse",
+      "publicPath": "yosoi::SurfaceError::Parse",
+      "title": "yosoi::SurfaceError::Parse",
+      "kind": "variant",
+      "signature": "Parse(String)",
+      "docs": "Parsing or encoding failed without a usable result.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L51-L51"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::SurfaceError::Parse::0",
+          "publicPath": "yosoi::SurfaceError::Parse::0",
+          "title": "yosoi::SurfaceError::Parse::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/mod.rs",
+            "lineStart": 51,
+            "lineEnd": 51,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L51-L51"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Poisoned",
+      "publicPath": "yosoi::SurfaceError::Poisoned",
+      "title": "yosoi::SurfaceError::Poisoned",
+      "kind": "variant",
+      "signature": "Poisoned",
+      "docs": "A shared session lock was poisoned; authority is not assumed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L84-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::ReaderOnly",
+      "publicPath": "yosoi::SurfaceError::ReaderOnly",
+      "title": "yosoi::SurfaceError::ReaderOnly",
+      "kind": "variant",
+      "signature": "ReaderOnly",
+      "docs": "This cursor does not own hot action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Stale",
+      "publicPath": "yosoi::SurfaceError::Stale",
+      "title": "yosoi::SurfaceError::Stale",
+      "kind": "variant",
+      "signature": "Stale",
+      "docs": "The selected evidence or issued permit is stale.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L78-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Uncertain",
+      "publicPath": "yosoi::SurfaceError::Uncertain",
+      "title": "yosoi::SurfaceError::Uncertain",
+      "kind": "variant",
+      "signature": "Uncertain",
+      "docs": "Observation coverage cannot support the requested claim.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 81,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L81-L81"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::Unknown",
+      "publicPath": "yosoi::SurfaceError::Unknown",
+      "title": "yosoi::SurfaceError::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "The requested node, cursor, watch, or retained capture is unavailable.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::SurfaceError::WrongCapture",
+      "publicPath": "yosoi::SurfaceError::WrongCapture",
+      "title": "yosoi::SurfaceError::WrongCapture",
+      "kind": "variant",
+      "signature": "WrongCapture",
+      "docs": "The reference addresses another immutable capture.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceError::fmt",
+      "publicPath": "yosoi::SurfaceError::fmt",
+      "title": "yosoi::SurfaceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::SurfaceError::fmt",
+      "publicPath": "yosoi::SurfaceError::fmt",
+      "title": "yosoi::SurfaceError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "46af52716de536c93557b4697a4aeeb38f2b429d33e4d311d69a236977815da0",
+  "slug": "yosoi/enum/surfaceerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "46af52716de536c93557b4697a4aeeb38f2b429d33e4d311d69a236977815da0"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::expect::MAX_EXPECTATIONS",
+  "publicPath": "yosoi::expect::MAX_EXPECTATIONS",
+  "kind": "constant",
+  "title": "yosoi::expect::MAX_EXPECTATIONS",
+  "signature": "pub const MAX_EXPECTATIONS: usize = 128;",
+  "docs": "Maximum number of clauses in an [`Expectation::All`] group.",
+  "source": {
+    "file": "crates/yosoi/src/expect.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/expect.rs#L13-L13"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::expect::MAX_EXPECTATIONS"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "19839d449441e1031713f025677c47b233915282df9907652d34a9f631b598c6",
+  "slug": "yosoi/expect/constant/max-expectations",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "19839d449441e1031713f025677c47b233915282df9907652d34a9f631b598c6"
+}

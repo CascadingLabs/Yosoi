@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::flow::new",
+  "publicPath": "yosoi::flow::new",
+  "kind": "function",
+  "title": "yosoi::flow::new",
+  "signature": "pub fn new(steps: impl IntoIterator<Item = yosoi::flow::Step>) -> yosoi::flow::Flow",
+  "docs": "Creates a flow from ordered steps.",
+  "source": {
+    "file": "crates/yosoi/src/flow.rs",
+    "lineStart": 19,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow.rs#L19-L21"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::new"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "2d561231180aaf458f5a8a629cbc4879f7bf08c120f7681d64480d87eeb9e7a5",
+  "slug": "yosoi/flow/function/new",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2d561231180aaf458f5a8a629cbc4879f7bf08c120f7681d64480d87eeb9e7a5"
+}

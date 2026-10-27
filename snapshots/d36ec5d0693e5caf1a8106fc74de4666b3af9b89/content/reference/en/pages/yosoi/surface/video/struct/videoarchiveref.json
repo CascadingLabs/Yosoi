@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::video::VideoArchiveRef",
+  "publicPath": "yosoi::surface::video::VideoArchiveRef",
+  "kind": "struct",
+  "title": "yosoi::surface::video::VideoArchiveRef",
+  "signature": "pub struct VideoArchiveRef",
+  "docs": "Normal Archive document reference retaining the complete video snapshot and its profile.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/archive.rs",
+    "lineStart": 19,
+    "lineEnd": 24,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L19-L24"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::surface::video::archive::VideoArchiveRef"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::surface::video::VideoArchiveRef::clone",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::clone",
+      "title": "yosoi::surface::video::VideoArchiveRef::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::video::VideoArchiveRef",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::video::VideoArchiveRef::deserialize",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::deserialize",
+      "title": "yosoi::surface::video::VideoArchiveRef::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::VideoArchiveRef::document",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::document",
+      "title": "yosoi::surface::video::VideoArchiveRef::document",
+      "kind": "struct_field",
+      "signature": "pub document: yosoi::archive::DocumentArchiveRef",
+      "docs": "Existing immutable Archive Document reference, not a custom storage backend.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::video::VideoArchiveRef::fmt",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::fmt",
+      "title": "yosoi::surface::video::VideoArchiveRef::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::VideoArchiveRef::observation",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::observation",
+      "title": "yosoi::surface::video::VideoArchiveRef::observation",
+      "kind": "struct_field",
+      "signature": "pub observation: yosoi::surface::model::ObservationId",
+      "docs": "Interpretation identity required when reconstructing this timeline.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::video::VideoArchiveRef::serialize",
+      "publicPath": "yosoi::surface::video::VideoArchiveRef::serialize",
+      "title": "yosoi::surface::video::VideoArchiveRef::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "35e85c7e333f80ef942d80bd36676b4fa266637c08d651a7170c26e0cbb44167",
+  "slug": "yosoi/surface/video/struct/videoarchiveref",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "35e85c7e333f80ef942d80bd36676b4fa266637c08d651a7170c26e0cbb44167"
+}

@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Event",
+  "publicPath": "yosoi::surface::Event",
+  "kind": "struct",
+  "title": "yosoi::surface::Event",
+  "signature": "pub struct Event",
+  "docs": "Bounded session event, optionally addressed to a reader and region watch.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 143,
+    "lineEnd": 158,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L143-L158"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::Event::after",
+      "publicPath": "yosoi::surface::Event::after",
+      "title": "yosoi::surface::Event::after",
+      "kind": "struct_field",
+      "signature": "pub after: Option<yosoi::surface::Reference>",
+      "docs": "Newly selected evidence, if known.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L155-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::before",
+      "publicPath": "yosoi::surface::Event::before",
+      "title": "yosoi::surface::Event::before",
+      "kind": "struct_field",
+      "signature": "pub before: Option<yosoi::surface::Reference>",
+      "docs": "Previously addressed evidence, if retained.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L153-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Event::clone",
+      "publicPath": "yosoi::surface::Event::clone",
+      "title": "yosoi::surface::Event::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Event",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::cursor",
+      "publicPath": "yosoi::surface::Event::cursor",
+      "title": "yosoi::surface::Event::cursor",
+      "kind": "struct_field",
+      "signature": "pub cursor: Option<yosoi::surface::CursorId>",
+      "docs": "Recipient, or `None` for a session-wide observation event.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L149-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Event::fmt",
+      "publicPath": "yosoi::surface::Event::fmt",
+      "title": "yosoi::surface::Event::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::kind",
+      "publicPath": "yosoi::surface::Event::kind",
+      "title": "yosoi::surface::Event::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: yosoi::surface::EventKind",
+      "docs": "Event's evidence or lifecycle meaning.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 147,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L147-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::note",
+      "publicPath": "yosoi::surface::Event::note",
+      "title": "yosoi::surface::Event::note",
+      "kind": "struct_field",
+      "signature": "pub note: String",
+      "docs": "Structural explanation, not inferred application causality.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L157-L157"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::sequence",
+      "publicPath": "yosoi::surface::Event::sequence",
+      "title": "yosoi::surface::Event::sequence",
+      "kind": "struct_field",
+      "signature": "pub sequence: u64",
+      "docs": "Monotonic session-local sequence number.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L145-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Event::serialize",
+      "publicPath": "yosoi::surface::Event::serialize",
+      "title": "yosoi::surface::Event::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 142,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L142-L142"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Event::watch",
+      "publicPath": "yosoi::surface::Event::watch",
+      "title": "yosoi::surface::Event::watch",
+      "kind": "struct_field",
+      "signature": "pub watch: Option<yosoi::surface::WatchId>",
+      "docs": "Affected subscription, if any.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L151-L151"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "272f8e386e2bbd949ab7b6cac67e58582173e0b72311a0642958421256c8de77",
+  "slug": "yosoi/surface/struct/event",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "272f8e386e2bbd949ab7b6cac67e58582173e0b72311a0642958421256c8de77"
+}

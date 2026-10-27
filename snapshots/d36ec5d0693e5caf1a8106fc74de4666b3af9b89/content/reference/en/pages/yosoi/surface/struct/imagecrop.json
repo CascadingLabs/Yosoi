@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::ImageCrop",
+  "publicPath": "yosoi::surface::ImageCrop",
+  "kind": "struct",
+  "title": "yosoi::surface::ImageCrop",
+  "signature": "pub struct ImageCrop",
+  "docs": "Actual PNG pixel evidence for an indexed image region; not OCR or a semantic prediction.",
+  "source": {
+    "file": "crates/yosoi/src/surface/images.rs",
+    "lineStart": 57,
+    "lineEnd": 64,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L57-L64"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 26,
+    "lineEnd": 26,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L26-L26"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::ImageCrop::clone",
+      "publicPath": "yosoi::surface::ImageCrop::clone",
+      "title": "yosoi::surface::ImageCrop::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::ImageCrop",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L56-L56"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::ImageCrop::fmt",
+      "publicPath": "yosoi::surface::ImageCrop::fmt",
+      "title": "yosoi::surface::ImageCrop::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L56-L56"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ImageCrop::png",
+      "publicPath": "yosoi::surface::ImageCrop::png",
+      "title": "yosoi::surface::ImageCrop::png",
+      "kind": "struct_field",
+      "signature": "pub png: Vec<u8>",
+      "docs": "Encoded PNG bytes; the crop's byte limit applies to these bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ImageCrop::rect",
+      "publicPath": "yosoi::surface::ImageCrop::rect",
+      "title": "yosoi::surface::ImageCrop::rect",
+      "kind": "struct_field",
+      "signature": "pub rect: yosoi::PixelRect",
+      "docs": "Crop bounds in the original image coordinate system.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L61-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ImageCrop::reference",
+      "publicPath": "yosoi::surface::ImageCrop::reference",
+      "title": "yosoi::surface::ImageCrop::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::Reference",
+      "docs": "Exact captured region from which these pixels were cropped.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/images.rs#L59-L59"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "89f345b8c549b3812711ccc3738fbc3e249dee099b99f4d59fefebb7c66da396",
+  "slug": "yosoi/surface/struct/imagecrop",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "89f345b8c549b3812711ccc3738fbc3e249dee099b99f4d59fefebb7c66da396"
+}

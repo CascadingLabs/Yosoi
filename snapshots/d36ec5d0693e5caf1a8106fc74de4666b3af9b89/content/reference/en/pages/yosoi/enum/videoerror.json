@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::VideoError",
+  "publicPath": "yosoi::VideoError",
+  "kind": "enum",
+  "title": "yosoi::VideoError",
+  "signature": "pub enum VideoError",
+  "docs": "Checked media preparation, scope, resource and decoder failures.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 35,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L35-L60"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 40,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/lib.rs#L40-L40"
+  },
+  "aliases": [
+    "yosoi::surface::video::VideoError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::VideoError::Invalid",
+      "publicPath": "yosoi::VideoError::Invalid",
+      "title": "yosoi::VideoError::Invalid",
+      "kind": "variant",
+      "signature": "Invalid(String)",
+      "docs": "Evidence addressing or media metadata was invalid.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L41-L41"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::Invalid::0",
+          "publicPath": "yosoi::VideoError::Invalid::0",
+          "title": "yosoi::VideoError::Invalid::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 41,
+            "lineEnd": 41,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L41-L41"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::VideoError::Io",
+      "publicPath": "yosoi::VideoError::Io",
+      "title": "yosoi::VideoError::Io",
+      "kind": "variant",
+      "signature": "Io(io::Error)",
+      "docs": "Local snapshot or decoder I/O failed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L38-L38"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::Io::0",
+          "publicPath": "yosoi::VideoError::Io::0",
+          "title": "yosoi::VideoError::Io::0",
+          "kind": "struct_field",
+          "signature": "0: io::Error",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 38,
+            "lineEnd": 38,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L38-L38"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::VideoError::Limit",
+      "publicPath": "yosoi::VideoError::Limit",
+      "title": "yosoi::VideoError::Limit",
+      "kind": "variant",
+      "signature": "Limit(&'static str)",
+      "docs": "A declared resource limit was exceeded.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L44-L44"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::Limit::0",
+          "publicPath": "yosoi::VideoError::Limit::0",
+          "title": "yosoi::VideoError::Limit::0",
+          "kind": "struct_field",
+          "signature": "0: &'static str",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L44-L44"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::VideoError::NoFrameAtOrAfter",
+      "publicPath": "yosoi::VideoError::NoFrameAtOrAfter",
+      "title": "yosoi::VideoError::NoFrameAtOrAfter",
+      "kind": "variant",
+      "signature": "NoFrameAtOrAfter { requested_us: u64 }",
+      "docs": "No frame starts at or after a requested position, including the final frame tail.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 53,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L53-L56"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::NoFrameAtOrAfter::requested_us",
+          "publicPath": "yosoi::VideoError::NoFrameAtOrAfter::requested_us",
+          "title": "yosoi::VideoError::NoFrameAtOrAfter::requested_us",
+          "kind": "struct_field",
+          "signature": "requested_us: u64",
+          "docs": "Requested position relative to the primary stream start.",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 55,
+            "lineEnd": 55,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L55-L55"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::VideoError::Surface",
+      "publicPath": "yosoi::VideoError::Surface",
+      "title": "yosoi::VideoError::Surface",
+      "kind": "variant",
+      "signature": "Surface(yosoi::SurfaceError)",
+      "docs": "A common evidence operation failed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L59-L59"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::Surface::0",
+          "publicPath": "yosoi::VideoError::Surface::0",
+          "title": "yosoi::VideoError::Surface::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::SurfaceError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 59,
+            "lineEnd": 59,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L59-L59"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::VideoError::Timeout",
+      "publicPath": "yosoi::VideoError::Timeout",
+      "title": "yosoi::VideoError::Timeout",
+      "kind": "variant",
+      "signature": "Timeout",
+      "docs": "A bounded probe/decode wait elapsed and its child was terminated.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L50-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::VideoError::Tool",
+      "publicPath": "yosoi::VideoError::Tool",
+      "title": "yosoi::VideoError::Tool",
+      "kind": "variant",
+      "signature": "Tool(String)",
+      "docs": "The native decoder rejected the input or frame request.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L47-L47"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::VideoError::Tool::0",
+          "publicPath": "yosoi::VideoError::Tool::0",
+          "title": "yosoi::VideoError::Tool::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/surface/video/mod.rs",
+            "lineStart": 47,
+            "lineEnd": 47,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L47-L47"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::VideoError::fmt",
+      "publicPath": "yosoi::VideoError::fmt",
+      "title": "yosoi::VideoError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::VideoError::fmt",
+      "publicPath": "yosoi::VideoError::fmt",
+      "title": "yosoi::VideoError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::VideoError::from",
+      "publicPath": "yosoi::VideoError::from",
+      "title": "yosoi::VideoError::from",
+      "kind": "function",
+      "signature": "fn from(source: io::Error) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::VideoError::from",
+      "publicPath": "yosoi::VideoError::from",
+      "title": "yosoi::VideoError::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::SurfaceError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::VideoError::source",
+      "publicPath": "yosoi::VideoError::source",
+      "title": "yosoi::VideoError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2cef0986d12ee0efb6fe0c0839e5539c7abdfd0ded7b04809b7d400d17e47654",
+  "slug": "yosoi/enum/videoerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2cef0986d12ee0efb6fe0c0839e5539c7abdfd0ded7b04809b7d400d17e47654"
+}

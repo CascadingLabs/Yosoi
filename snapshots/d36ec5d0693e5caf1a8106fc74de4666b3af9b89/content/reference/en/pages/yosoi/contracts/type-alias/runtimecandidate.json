@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "type_alias:yosoi::contracts::RuntimeCandidate",
+  "publicPath": "yosoi::contracts::RuntimeCandidate",
+  "kind": "type_alias",
+  "title": "yosoi::contracts::RuntimeCandidate",
+  "signature": "pub type RuntimeCandidate = CandidateInput",
+  "docs": "Owned field evidence for one runtime-described Contract candidate.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+    "lineStart": 54,
+    "lineEnd": 54,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/candidate.rs#L54-L54"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 21,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/contracts.rs#L21-L21"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeCandidate"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f7b0137cb5feac4120349f5da46350697457a94ec44035773afac7f8648a91cf",
+  "slug": "yosoi/contracts/type-alias/runtimecandidate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f7b0137cb5feac4120349f5da46350697457a94ec44035773afac7f8648a91cf"
+}

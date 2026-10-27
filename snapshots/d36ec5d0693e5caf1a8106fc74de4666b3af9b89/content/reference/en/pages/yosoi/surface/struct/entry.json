@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Entry",
+  "publicPath": "yosoi::surface::Entry",
+  "kind": "struct",
+  "title": "yosoi::surface::Entry",
+  "signature": "pub struct Entry",
+  "docs": "A compact routing entry whose original evidence remains inspectable.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 167,
+    "lineEnd": 184,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L167-L184"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Entry::clone",
+      "publicPath": "yosoi::surface::Entry::clone",
+      "title": "yosoi::surface::Entry::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Entry",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 166,
+        "lineEnd": 166,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L166-L166"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Entry::deserialize",
+      "publicPath": "yosoi::surface::Entry::deserialize",
+      "title": "yosoi::surface::Entry::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 166,
+        "lineEnd": 166,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L166-L166"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::exemplar",
+      "publicPath": "yosoi::surface::Entry::exemplar",
+      "title": "yosoi::surface::Entry::exemplar",
+      "kind": "struct_field",
+      "signature": "pub exemplar: Option<yosoi::surface::Reference>",
+      "docs": "Exact first member of a collapsed region, for one-hop exemplar inspection.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 179,
+        "lineEnd": 179,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L179-L179"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Entry::fmt",
+      "publicPath": "yosoi::surface::Entry::fmt",
+      "title": "yosoi::surface::Entry::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 166,
+        "lineEnd": 166,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L166-L166"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::kind",
+      "publicPath": "yosoi::surface::Entry::kind",
+      "title": "yosoi::surface::Entry::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: String",
+      "docs": "Representation-neutral node kind.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 171,
+        "lineEnd": 171,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L171-L171"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::label",
+      "publicPath": "yosoi::surface::Entry::label",
+      "title": "yosoi::surface::Entry::label",
+      "kind": "struct_field",
+      "signature": "pub label: String",
+      "docs": "Structural name, role, or field name, clipped to 96 characters for routing.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 173,
+        "lineEnd": 173,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L173-L173"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::members",
+      "publicPath": "yosoi::surface::Entry::members",
+      "title": "yosoi::surface::Entry::members",
+      "kind": "struct_field",
+      "signature": "pub members: Option<usize>",
+      "docs": "Number of addressable direct members when this is a repeat region.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 177,
+        "lineEnd": 177,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L177-L177"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::preview",
+      "publicPath": "yosoi::surface::Entry::preview",
+      "title": "yosoi::surface::Entry::preview",
+      "kind": "struct_field",
+      "signature": "pub preview: String",
+      "docs": "Bounded routing preview, not a model-generated summary.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 175,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L175-L175"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::reference",
+      "publicPath": "yosoi::surface::Entry::reference",
+      "title": "yosoi::surface::Entry::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::Reference",
+      "docs": "Exact recoverable evidence reference.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 169,
+        "lineEnd": 169,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L169-L169"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Entry::serialize",
+      "publicPath": "yosoi::surface::Entry::serialize",
+      "title": "yosoi::surface::Entry::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 166,
+        "lineEnd": 166,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L166-L166"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::shape",
+      "publicPath": "yosoi::surface::Entry::shape",
+      "title": "yosoi::surface::Entry::shape",
+      "kind": "struct_field",
+      "signature": "pub shape: Option<String>",
+      "docs": "Bounded exemplar structure, not a complete inferred schema.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 181,
+        "lineEnd": 181,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L181-L181"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Entry::view",
+      "publicPath": "yosoi::surface::Entry::view",
+      "title": "yosoi::surface::Entry::view",
+      "kind": "struct_field",
+      "signature": "pub view: Option<String>",
+      "docs": "Constituent view name when this entry belongs to a combined observation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 183,
+        "lineEnd": 183,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L183-L183"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d1c6560e1a5ede5fcd30d5d3f3cc2bc1ea05e89ea487b5a86dd089ba64cbb5ee",
+  "slug": "yosoi/surface/struct/entry",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d1c6560e1a5ede5fcd30d5d3f3cc2bc1ea05e89ea487b5a86dd089ba64cbb5ee"
+}

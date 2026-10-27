@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::video::FrameInfo",
+  "publicPath": "yosoi::surface::video::FrameInfo",
+  "kind": "struct",
+  "title": "yosoi::surface::video::FrameInfo",
+  "signature": "pub struct FrameInfo",
+  "docs": "PNG evidence metadata; binary bytes are returned separately from this DTO.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 142,
+    "lineEnd": 165,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L142-L165"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::canvas_height",
+      "publicPath": "yosoi::surface::video::FrameInfo::canvas_height",
+      "title": "yosoi::surface::video::FrameInfo::canvas_height",
+      "kind": "struct_field",
+      "signature": "pub canvas_height: u32",
+      "docs": "Height of the full decoded frame's pixel coordinate space.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L154-L154"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::canvas_width",
+      "publicPath": "yosoi::surface::video::FrameInfo::canvas_width",
+      "title": "yosoi::surface::video::FrameInfo::canvas_width",
+      "kind": "struct_field",
+      "signature": "pub canvas_width: u32",
+      "docs": "Width of the full decoded frame's pixel coordinate space.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 152,
+        "lineEnd": 152,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L152-L152"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::video::FrameInfo::clone",
+      "publicPath": "yosoi::surface::video::FrameInfo::clone",
+      "title": "yosoi::surface::video::FrameInfo::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::video::FrameInfo",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 140,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L140-L140"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::video::FrameInfo::deserialize",
+      "publicPath": "yosoi::surface::video::FrameInfo::deserialize",
+      "title": "yosoi::surface::video::FrameInfo::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 140,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L140-L140"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::video::FrameInfo::fmt",
+      "publicPath": "yosoi::surface::video::FrameInfo::fmt",
+      "title": "yosoi::surface::video::FrameInfo::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 140,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L140-L140"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::height",
+      "publicPath": "yosoi::surface::video::FrameInfo::height",
+      "title": "yosoi::surface::video::FrameInfo::height",
+      "kind": "struct_field",
+      "signature": "pub height: u32",
+      "docs": "Height of returned PNG pixels.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L158-L158"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::png_bytes",
+      "publicPath": "yosoi::surface::video::FrameInfo::png_bytes",
+      "title": "yosoi::surface::video::FrameInfo::png_bytes",
+      "kind": "struct_field",
+      "signature": "pub png_bytes: usize",
+      "docs": "Encoded PNG length, independent of text response budgets.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 164,
+        "lineEnd": 164,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L164-L164"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::png_sha256",
+      "publicPath": "yosoi::surface::video::FrameInfo::png_sha256",
+      "title": "yosoi::surface::video::FrameInfo::png_sha256",
+      "kind": "struct_field",
+      "signature": "pub png_sha256: String",
+      "docs": "SHA-256 of the returned PNG bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L162-L162"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::position_us",
+      "publicPath": "yosoi::surface::video::FrameInfo::position_us",
+      "title": "yosoi::surface::video::FrameInfo::position_us",
+      "kind": "struct_field",
+      "signature": "pub position_us: Option<u64>",
+      "docs": "Actual stream-relative position, absent for pre-roll before stream start.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L150-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::reference",
+      "publicPath": "yosoi::surface::video::FrameInfo::reference",
+      "title": "yosoi::surface::video::FrameInfo::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::model::Reference",
+      "docs": "Exact immutable video address that produced the frame or crop.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 144,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L144-L144"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::region",
+      "publicPath": "yosoi::surface::video::FrameInfo::region",
+      "title": "yosoi::surface::video::FrameInfo::region",
+      "kind": "struct_field",
+      "signature": "pub region: Option<yosoi::PixelRect>",
+      "docs": "Optional crop in full decoded-frame pixels, never original-source pixels implicitly.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 160,
+        "lineEnd": 160,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L160-L160"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::requested_us",
+      "publicPath": "yosoi::surface::video::FrameInfo::requested_us",
+      "title": "yosoi::surface::video::FrameInfo::requested_us",
+      "kind": "struct_field",
+      "signature": "pub requested_us: u64",
+      "docs": "Requested position relative to primary stream start.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 146,
+        "lineEnd": 146,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L146-L146"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::video::FrameInfo::serialize",
+      "publicPath": "yosoi::surface::video::FrameInfo::serialize",
+      "title": "yosoi::surface::video::FrameInfo::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 140,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L140-L140"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::source_pts_us",
+      "publicPath": "yosoi::surface::video::FrameInfo::source_pts_us",
+      "title": "yosoi::surface::video::FrameInfo::source_pts_us",
+      "kind": "struct_field",
+      "signature": "pub source_pts_us: i64",
+      "docs": "Actual source PTS measured by the decoder, not copied from the requested time.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 148,
+        "lineEnd": 148,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L148-L148"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::video::FrameInfo::width",
+      "publicPath": "yosoi::surface::video::FrameInfo::width",
+      "title": "yosoi::surface::video::FrameInfo::width",
+      "kind": "struct_field",
+      "signature": "pub width: u32",
+      "docs": "Width of returned PNG pixels.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 156,
+        "lineEnd": 156,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L156-L156"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "902ad5579c16a86f1fa760210460548cfc45024a2d2e648af8c48cfe0496ce54",
+  "slug": "yosoi/surface/video/struct/frameinfo",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "902ad5579c16a86f1fa760210460548cfc45024a2d2e648af8c48cfe0496ce54"
+}

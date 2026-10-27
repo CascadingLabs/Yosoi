@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchIssueKind",
+  "publicPath": "yosoi::search::SearchIssueKind",
+  "kind": "enum",
+  "title": "yosoi::search::SearchIssueKind",
+  "signature": "pub enum SearchIssueKind",
+  "docs": "Nonfatal extraction issue explaining rejected evidence or reduced coverage.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+    "lineStart": 334,
+    "lineEnd": 348,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L334-L348"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/search.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchIssueKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::DuplicateDestination",
+      "publicPath": "yosoi::search::SearchIssueKind::DuplicateDestination",
+      "title": "yosoi::search::SearchIssueKind::DuplicateDestination",
+      "kind": "variant",
+      "signature": "DuplicateDestination",
+      "docs": "A destination already present in the extracted results was omitted.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L338-L338"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::InvalidDestination",
+      "publicPath": "yosoi::search::SearchIssueKind::InvalidDestination",
+      "title": "yosoi::search::SearchIssueKind::InvalidDestination",
+      "kind": "variant",
+      "signature": "InvalidDestination",
+      "docs": "A row's destination failed absolute HTTP(S) URL validation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 336,
+        "lineEnd": 336,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L336-L336"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::MissingRequiredField",
+      "publicPath": "yosoi::search::SearchIssueKind::MissingRequiredField",
+      "title": "yosoi::search::SearchIssueKind::MissingRequiredField",
+      "kind": "variant",
+      "signature": "MissingRequiredField",
+      "docs": "A recognized result row lacked data required to construct a result.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 340,
+        "lineEnd": 340,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L340-L340"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::OutputLimit",
+      "publicPath": "yosoi::search::SearchIssueKind::OutputLimit",
+      "title": "yosoi::search::SearchIssueKind::OutputLimit",
+      "kind": "variant",
+      "signature": "OutputLimit",
+      "docs": "A configured output budget limited retained results or features.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 344,
+        "lineEnd": 344,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L344-L344"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::QueryRelaxed",
+      "publicPath": "yosoi::search::SearchIssueKind::QueryRelaxed",
+      "title": "yosoi::search::SearchIssueKind::QueryRelaxed",
+      "kind": "variant",
+      "signature": "QueryRelaxed",
+      "docs": "Bing supplied off-query rows for the original query; these hits came\nfrom one shorter, disclosed content-term query.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 347,
+        "lineEnd": 347,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L347-L347"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "publicPath": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "title": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "kind": "variant",
+      "signature": "UnrecognizedResultRow",
+      "docs": "A candidate row did not match a supported provider result layout.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 342,
+        "lineEnd": 342,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L342-L342"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::clone",
+      "publicPath": "yosoi::search::SearchIssueKind::clone",
+      "title": "yosoi::search::SearchIssueKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchIssueKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 332,
+        "lineEnd": 332,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L332-L332"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::eq",
+      "publicPath": "yosoi::search::SearchIssueKind::eq",
+      "title": "yosoi::search::SearchIssueKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchIssueKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 332,
+        "lineEnd": 332,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L332-L332"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::fmt",
+      "publicPath": "yosoi::search::SearchIssueKind::fmt",
+      "title": "yosoi::search::SearchIssueKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 332,
+        "lineEnd": 332,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L332-L332"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::serialize",
+      "publicPath": "yosoi::search::SearchIssueKind::serialize",
+      "title": "yosoi::search::SearchIssueKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 332,
+        "lineEnd": 332,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/search/result/types.rs#L332-L332"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ef53e047099a0d0bd103206d3e0c608bcefc221f75f3f9fb6c4f9bc0b855f17b",
+  "slug": "yosoi/search/enum/searchissuekind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ef53e047099a0d0bd103206d3e0c608bcefc221f75f3f9fb6c4f9bc0b855f17b"
+}

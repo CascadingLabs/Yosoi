@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowFailureCause",
+  "publicPath": "yosoi::flow::FlowFailureCause",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowFailureCause",
+  "signature": "pub enum FlowFailureCause",
+  "docs": "Why an attempted Flow step failed.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 707,
+    "lineEnd": 714,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L707-L714"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowFailureCause"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowFailureCause::Execution",
+      "publicPath": "yosoi::flow::FlowFailureCause::Execution",
+      "title": "yosoi::flow::FlowFailureCause::Execution",
+      "kind": "variant",
+      "signature": "Execution",
+      "docs": "The action failed before an operation receipt was returned.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 711,
+        "lineEnd": 711,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L711-L711"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowFailureCause::Rejected",
+      "publicPath": "yosoi::flow::FlowFailureCause::Rejected",
+      "title": "yosoi::flow::FlowFailureCause::Rejected",
+      "kind": "variant",
+      "signature": "Rejected",
+      "docs": "The action returned a known rejection.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 709,
+        "lineEnd": 709,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L709-L709"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowFailureCause::UnknownOutcome",
+      "publicPath": "yosoi::flow::FlowFailureCause::UnknownOutcome",
+      "title": "yosoi::flow::FlowFailureCause::UnknownOutcome",
+      "kind": "variant",
+      "signature": "UnknownOutcome",
+      "docs": "A dispatched operation may have changed the browser without an observed result.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 713,
+        "lineEnd": 713,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L713-L713"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowFailureCause::clone",
+      "publicPath": "yosoi::flow::FlowFailureCause::clone",
+      "title": "yosoi::flow::FlowFailureCause::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowFailureCause",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowFailureCause::deserialize",
+      "publicPath": "yosoi::flow::FlowFailureCause::deserialize",
+      "title": "yosoi::flow::FlowFailureCause::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::FlowFailureCause::eq",
+      "publicPath": "yosoi::flow::FlowFailureCause::eq",
+      "title": "yosoi::flow::FlowFailureCause::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowFailureCause) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowFailureCause::fmt",
+      "publicPath": "yosoi::flow::FlowFailureCause::fmt",
+      "title": "yosoi::flow::FlowFailureCause::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowFailureCause::serialize",
+      "publicPath": "yosoi::flow::FlowFailureCause::serialize",
+      "title": "yosoi::flow::FlowFailureCause::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 705,
+        "lineEnd": 705,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L705-L705"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "dc9721e45164913a44d9d7c120ecf21b7c77a5299b922b1df3567e59c24dda0b",
+  "slug": "yosoi/flow/enum/flowfailurecause",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "dc9721e45164913a44d9d7c120ecf21b7c77a5299b922b1df3567e59c24dda0b"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::regex",
+  "publicPath": "yosoi::locators::regex",
+  "kind": "function",
+  "title": "yosoi::locators::regex",
+  "signature": "pub fn regex(value: impl Into<String>) -> Result<yosoi::locators::QuerySpec, yosoi::locators::QueryError>",
+  "docs": "Checks supported regex syntax and declares decoded-text range selection.\n\nReturns [`QueryError::InvalidRegexSyntax`] for rejected patterns; later\nprojection and execution budgets still apply. This does not search a payload.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/query_builders.rs",
+    "lineStart": 126,
+    "lineEnd": 133,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/query_builders.rs#L126-L133"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::regex",
+    "yosoi::prelude::locators::regex"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "2fe39e48f3f5ff48b070eb8047b6e7325c796bc834e56da3889eb8d51e3cf03e",
+  "slug": "yosoi/locators/function/regex",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2fe39e48f3f5ff48b070eb8047b6e7325c796bc834e56da3889eb8d51e3cf03e"
+}

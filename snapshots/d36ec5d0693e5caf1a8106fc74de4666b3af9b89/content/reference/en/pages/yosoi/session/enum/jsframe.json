@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::JsFrame",
+  "publicPath": "yosoi::session::JsFrame",
+  "kind": "enum",
+  "title": "yosoi::session::JsFrame",
+  "signature": "pub enum JsFrame",
+  "docs": "Frame selection is resolved uniquely immediately before script dispatch.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 86,
+    "lineEnd": 92,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L86-L92"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::JsFrame"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::JsFrame::Main",
+      "publicPath": "yosoi::session::JsFrame::Main",
+      "title": "yosoi::session::JsFrame::Main",
+      "kind": "variant",
+      "signature": "Main",
+      "docs": "Resolve the current main frame immediately before dispatch.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 89,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L89-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::JsFrame::UrlContains",
+      "publicPath": "yosoi::session::JsFrame::UrlContains",
+      "title": "yosoi::session::JsFrame::UrlContains",
+      "kind": "variant",
+      "signature": "UrlContains(String)",
+      "docs": "Require one matching frame URL; ambiguous matches are rejected before dispatch.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L91-L91"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::session::JsFrame::UrlContains::0",
+          "publicPath": "yosoi::session::JsFrame::UrlContains::0",
+          "title": "yosoi::session::JsFrame::UrlContains::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/session.rs",
+            "lineStart": 91,
+            "lineEnd": 91,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L91-L91"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::clone",
+      "publicPath": "yosoi::session::JsFrame::clone",
+      "title": "yosoi::session::JsFrame::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::JsFrame",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::default",
+      "publicPath": "yosoi::session::JsFrame::default",
+      "title": "yosoi::session::JsFrame::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::session::JsFrame",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::deserialize",
+      "publicPath": "yosoi::session::JsFrame::deserialize",
+      "title": "yosoi::session::JsFrame::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::eq",
+      "publicPath": "yosoi::session::JsFrame::eq",
+      "title": "yosoi::session::JsFrame::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::JsFrame) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::fmt",
+      "publicPath": "yosoi::session::JsFrame::fmt",
+      "title": "yosoi::session::JsFrame::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::JsFrame::serialize",
+      "publicPath": "yosoi::session::JsFrame::serialize",
+      "title": "yosoi::session::JsFrame::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L85-L85"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "71201b0c42b9b5977f65e230cfae08f9f7fcbb1a43b16a8ec07b72fcc1fe7f96",
+  "slug": "yosoi/session/enum/jsframe",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "71201b0c42b9b5977f65e230cfae08f9f7fcbb1a43b16a8ec07b72fcc1fe7f96"
+}

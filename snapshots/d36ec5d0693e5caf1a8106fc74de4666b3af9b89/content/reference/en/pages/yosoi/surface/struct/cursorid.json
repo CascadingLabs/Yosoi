@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::CursorId",
+  "publicPath": "yosoi::surface::CursorId",
+  "kind": "struct",
+  "title": "yosoi::surface::CursorId",
+  "signature": "pub struct CursorId",
+  "docs": "Session-local opaque cursor identity.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 45,
+    "lineEnd": 45,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L45-L45"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::CursorId::clone",
+      "publicPath": "yosoi::surface::CursorId::clone",
+      "title": "yosoi::surface::CursorId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::CursorId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::cmp",
+      "publicPath": "yosoi::surface::CursorId::cmp",
+      "title": "yosoi::surface::CursorId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::surface::CursorId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::deserialize",
+      "publicPath": "yosoi::surface::CursorId::deserialize",
+      "title": "yosoi::surface::CursorId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::eq",
+      "publicPath": "yosoi::surface::CursorId::eq",
+      "title": "yosoi::surface::CursorId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::CursorId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::fmt",
+      "publicPath": "yosoi::surface::CursorId::fmt",
+      "title": "yosoi::surface::CursorId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::get",
+      "publicPath": "yosoi::surface::CursorId::get",
+      "title": "yosoi::surface::CursorId::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u64",
+      "docs": "Returns the identity for diagnostics; not a portable capability.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 48,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L48-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::partial_cmp",
+      "publicPath": "yosoi::surface::CursorId::partial_cmp",
+      "title": "yosoi::surface::CursorId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::surface::CursorId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::surface::CursorId::serialize",
+      "publicPath": "yosoi::surface::CursorId::serialize",
+      "title": "yosoi::surface::CursorId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/session.rs#L44-L44"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "da4f349d9b8466bcfc2d50327cfe5c44e639fb18cbf59d5f8f51f2cb2acad77c",
+  "slug": "yosoi/surface/struct/cursorid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "da4f349d9b8466bcfc2d50327cfe5c44e639fb18cbf59d5f8f51f2cb2acad77c"
+}

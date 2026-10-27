@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::OperationReceipt",
+  "publicPath": "yosoi::automation_record::OperationReceipt",
+  "kind": "struct",
+  "title": "yosoi::automation_record::OperationReceipt",
+  "signature": "pub struct OperationReceipt",
+  "docs": "One operation result and the evidence observed alongside it.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 85,
+    "lineEnd": 101,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L85-L101"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::browser",
+      "publicPath": "yosoi::automation_record::OperationReceipt::browser",
+      "title": "yosoi::automation_record::OperationReceipt::browser",
+      "kind": "struct_field",
+      "signature": "pub browser: Option<yosoi::browser::BrowserExecutionIdentity>",
+      "docs": "Admitted/reported native-engine identity, retained even without after-state.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L88-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationReceipt::clone",
+      "publicPath": "yosoi::automation_record::OperationReceipt::clone",
+      "title": "yosoi::automation_record::OperationReceipt::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::OperationReceipt",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L83-L83"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationReceipt::deserialize",
+      "publicPath": "yosoi::automation_record::OperationReceipt::deserialize",
+      "title": "yosoi::automation_record::OperationReceipt::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L83-L83"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationReceipt::eq",
+      "publicPath": "yosoi::automation_record::OperationReceipt::eq",
+      "title": "yosoi::automation_record::OperationReceipt::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::OperationReceipt) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L83-L83"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::error",
+      "publicPath": "yosoi::automation_record::OperationReceipt::error",
+      "title": "yosoi::automation_record::OperationReceipt::error",
+      "kind": "struct_field",
+      "signature": "pub error: Option<String>",
+      "docs": "Retained failure or uncertainty explanation; it does not undo external effects.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L100-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationReceipt::fmt",
+      "publicPath": "yosoi::automation_record::OperationReceipt::fmt",
+      "title": "yosoi::automation_record::OperationReceipt::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L83-L83"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::id",
+      "publicPath": "yosoi::automation_record::OperationReceipt::id",
+      "title": "yosoi::automation_record::OperationReceipt::id",
+      "kind": "struct_field",
+      "signature": "pub id: String",
+      "docs": "Unique identity correlating this operation with recorded Flow evidence.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L90-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::kind",
+      "publicPath": "yosoi::automation_record::OperationReceipt::kind",
+      "title": "yosoi::automation_record::OperationReceipt::kind",
+      "kind": "struct_field",
+      "signature": "pub kind: String",
+      "docs": "Operation category label, such as navigate, click, or until.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 92,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L92-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::observation",
+      "publicPath": "yosoi::automation_record::OperationReceipt::observation",
+      "title": "yosoi::automation_record::OperationReceipt::observation",
+      "kind": "struct_field",
+      "signature": "pub observation: Option<yosoi::automation_record::Observation>",
+      "docs": "Current-tab evidence captured alongside the operation, if available.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L98-L98"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::result",
+      "publicPath": "yosoi::automation_record::OperationReceipt::result",
+      "title": "yosoi::automation_record::OperationReceipt::result",
+      "kind": "struct_field",
+      "signature": "pub result: Option<serde_json::Value>",
+      "docs": "Bounded operation-specific result payload, absent when none was established.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 96,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L96-L96"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::OperationReceipt::serialize",
+      "publicPath": "yosoi::automation_record::OperationReceipt::serialize",
+      "title": "yosoi::automation_record::OperationReceipt::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L83-L83"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::OperationReceipt::status",
+      "publicPath": "yosoi::automation_record::OperationReceipt::status",
+      "title": "yosoi::automation_record::OperationReceipt::status",
+      "kind": "struct_field",
+      "signature": "pub status: yosoi::automation_record::OperationStatus",
+      "docs": "Effect certainty, separate from authored continuation or business completion.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 94,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/automation_record.rs#L94-L94"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bb26cfe8089668e5d85fbdc91fcf55e1820cf1896fca6d6be38c17fda407173c",
+  "slug": "yosoi/automation-record/struct/operationreceipt",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bb26cfe8089668e5d85fbdc91fcf55e1820cf1896fca6d6be38c17fda407173c"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::video::archive",
+  "publicPath": "yosoi::surface::video::archive",
+  "kind": "module",
+  "title": "yosoi::surface::video::archive",
+  "signature": "pub mod archive",
+  "docs": "Frozen video sources, verified PNG evidence and decoder-free archive replay.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/archive.rs",
+    "lineStart": 1,
+    "lineEnd": 384,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/archive.rs#L1-L384"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "5fdc70e50b19aa713ddd09b5192f28c8dc887b1730ea7c07b365252705772907",
+  "slug": "yosoi/surface/video/module/archive",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5fdc70e50b19aa713ddd09b5192f28c8dc887b1730ea7c07b365252705772907"
+}

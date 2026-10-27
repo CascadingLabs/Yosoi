@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::contracts::Contract",
+  "publicPath": "yosoi::contracts::Contract",
+  "kind": "trait",
+  "title": "yosoi::contracts::Contract",
+  "signature": "pub trait Contract",
+  "docs": "Typed record schema linking authored meaning to generated candidate evidence.\n\nImplemented by the public Contract derive. Schema declaration does not\nlocate evidence or validate values; extraction and validation are explicit phases.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+    "lineStart": 138,
+    "lineEnd": 147,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/candidate.rs#L138-L147"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::Contract",
+    "yosoi::prelude::contracts::Contract"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::contracts::Contract::Candidate",
+      "publicPath": "yosoi::contracts::Contract::Candidate",
+      "title": "yosoi::contracts::Contract::Candidate",
+      "kind": "assoc_type",
+      "signature": "type Candidate",
+      "docs": "Owned generated candidate shape holding field findings and grouping provenance.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 140,
+        "lineEnd": 140,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/candidate.rs#L140-L140"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::Contract::schema",
+      "publicPath": "yosoi::contracts::Contract::schema",
+      "title": "yosoi::contracts::Contract::schema",
+      "kind": "function",
+      "signature": "fn schema() -> Result<&'static yosoi::contracts::ContractSchema, yosoi::contracts::ContractSchemaError>",
+      "docs": "Borrows stable portable metadata, returning a schema error for invalid declarations.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/candidate.rs",
+        "lineStart": 144,
+        "lineEnd": 144,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/contracts/candidate.rs#L144-L144"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e386fbb59b89d9d4551fa3aece02350dc1c4d169e0e7f3605ba850c54b9e0cd8",
+  "slug": "yosoi/contracts/trait/contract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e386fbb59b89d9d4551fa3aece02350dc1c4d169e0e7f3605ba850c54b9e0cd8"
+}

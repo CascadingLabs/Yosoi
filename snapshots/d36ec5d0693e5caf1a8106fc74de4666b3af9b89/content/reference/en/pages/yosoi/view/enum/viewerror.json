@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::view::ViewError",
+  "publicPath": "yosoi::view::ViewError",
+  "kind": "enum",
+  "title": "yosoi::view::ViewError",
+  "signature": "pub enum ViewError",
+  "docs": "Typed failure while constructing or paging an offline View.",
+  "source": {
+    "file": "crates/yosoi/src/view.rs",
+    "lineStart": 509,
+    "lineEnd": 590,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L509-L590"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::view::ViewError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::view::ViewError::CursorOutOfRange",
+      "publicPath": "yosoi::view::ViewError::CursorOutOfRange",
+      "title": "yosoi::view::ViewError::CursorOutOfRange",
+      "kind": "variant",
+      "signature": "CursorOutOfRange { offset: u64, total_rows: u64 }",
+      "docs": "A continuation position is outside the remaining captured element rows.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 564,
+        "lineEnd": 569,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L564-L569"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::CursorOutOfRange::offset",
+          "publicPath": "yosoi::view::ViewError::CursorOutOfRange::offset",
+          "title": "yosoi::view::ViewError::CursorOutOfRange::offset",
+          "kind": "struct_field",
+          "signature": "offset: u64",
+          "docs": "Zero-based row position supplied by the cursor.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 566,
+            "lineEnd": 566,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L566-L566"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::view::ViewError::CursorOutOfRange::total_rows",
+          "publicPath": "yosoi::view::ViewError::CursorOutOfRange::total_rows",
+          "title": "yosoi::view::ViewError::CursorOutOfRange::total_rows",
+          "kind": "struct_field",
+          "signature": "total_rows: u64",
+          "docs": "Total captured-document rows established by locator extraction.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 568,
+            "lineEnd": 568,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L568-L568"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::Document",
+      "publicPath": "yosoi::view::ViewError::Document",
+      "title": "yosoi::view::ViewError::Document",
+      "kind": "variant",
+      "signature": "Document(String)",
+      "docs": "Retained observation HTML could not form the required source Document.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 587,
+        "lineEnd": 587,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L587-L587"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::Document::0",
+          "publicPath": "yosoi::view::ViewError::Document::0",
+          "title": "yosoi::view::ViewError::Document::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 587,
+            "lineEnd": 587,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L587-L587"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::EmptyIdentity",
+      "publicPath": "yosoi::view::ViewError::EmptyIdentity",
+      "title": "yosoi::view::ViewError::EmptyIdentity",
+      "kind": "variant",
+      "signature": "EmptyIdentity { field: &'static str }",
+      "docs": "A required observation, Session, or tab identity is blank.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 511,
+        "lineEnd": 514,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L511-L514"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::EmptyIdentity::field",
+          "publicPath": "yosoi::view::ViewError::EmptyIdentity::field",
+          "title": "yosoi::view::ViewError::EmptyIdentity::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Provenance identity role whose text was rejected.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 513,
+            "lineEnd": 513,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L513-L513"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::ForeignCursor",
+      "publicPath": "yosoi::view::ViewError::ForeignCursor",
+      "title": "yosoi::view::ViewError::ForeignCursor",
+      "kind": "variant",
+      "signature": "ForeignCursor",
+      "docs": "Cursor provenance belongs to another observation, Session, or tab.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 551,
+        "lineEnd": 551,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L551-L551"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::ForeignObservation",
+      "publicPath": "yosoi::view::ViewError::ForeignObservation",
+      "title": "yosoi::view::ViewError::ForeignObservation",
+      "kind": "variant",
+      "signature": "ForeignObservation",
+      "docs": "Assertion evidence belongs to another observation, Session, or tab than this View.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 555,
+        "lineEnd": 555,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L555-L555"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::HtmlTooLarge",
+      "publicPath": "yosoi::view::ViewError::HtmlTooLarge",
+      "title": "yosoi::view::ViewError::HtmlTooLarge",
+      "kind": "variant",
+      "signature": "HtmlTooLarge { maximum: usize, observed: usize }",
+      "docs": "Captured HTML exceeds the supported offline byte limit.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 525,
+        "lineEnd": 530,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L525-L530"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::HtmlTooLarge::maximum",
+          "publicPath": "yosoi::view::ViewError::HtmlTooLarge::maximum",
+          "title": "yosoi::view::ViewError::HtmlTooLarge::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted captured HTML bytes.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 527,
+            "lineEnd": 527,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L527-L527"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::view::ViewError::HtmlTooLarge::observed",
+          "publicPath": "yosoi::view::ViewError::HtmlTooLarge::observed",
+          "title": "yosoi::view::ViewError::HtmlTooLarge::observed",
+          "kind": "struct_field",
+          "signature": "observed: usize",
+          "docs": "Actual captured HTML byte length.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 529,
+            "lineEnd": 529,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L529-L529"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::HtmlUnavailable",
+      "publicPath": "yosoi::view::ViewError::HtmlUnavailable",
+      "title": "yosoi::view::ViewError::HtmlUnavailable",
+      "kind": "variant",
+      "signature": "HtmlUnavailable",
+      "docs": "No captured HTML is available for offline element reconstruction.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 523,
+        "lineEnd": 523,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L523-L523"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::IdentityTooLong",
+      "publicPath": "yosoi::view::ViewError::IdentityTooLong",
+      "title": "yosoi::view::ViewError::IdentityTooLong",
+      "kind": "variant",
+      "signature": "IdentityTooLong { field: &'static str }",
+      "docs": "A provenance identity exceeds its UTF-8 byte bound.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 516,
+        "lineEnd": 519,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L516-L519"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::IdentityTooLong::field",
+          "publicPath": "yosoi::view::ViewError::IdentityTooLong::field",
+          "title": "yosoi::view::ViewError::IdentityTooLong::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Identity role whose text is oversized.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 518,
+            "lineEnd": 518,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L518-L518"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::IncompleteEvidence",
+      "publicPath": "yosoi::view::ViewError::IncompleteEvidence",
+      "title": "yosoi::view::ViewError::IncompleteEvidence",
+      "kind": "variant",
+      "signature": "IncompleteEvidence { reason_code: String }",
+      "docs": "Partial or unknown locator evidence prevents an unqualified offline result.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 577,
+        "lineEnd": 580,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L577-L580"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::IncompleteEvidence::reason_code",
+          "publicPath": "yosoi::view::ViewError::IncompleteEvidence::reason_code",
+          "title": "yosoi::view::ViewError::IncompleteEvidence::reason_code",
+          "kind": "struct_field",
+          "signature": "reason_code: String",
+          "docs": "Structural reason that evidence completeness could not be established.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 579,
+            "lineEnd": 579,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L579-L579"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidCursor",
+      "publicPath": "yosoi::view::ViewError::InvalidCursor",
+      "title": "yosoi::view::ViewError::InvalidCursor",
+      "kind": "variant",
+      "signature": "InvalidCursor",
+      "docs": "A continuation cursor has invalid structure, page bounds, or platform representation.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 549,
+        "lineEnd": 549,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L549-L549"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidDocumentEpoch",
+      "publicPath": "yosoi::view::ViewError::InvalidDocumentEpoch",
+      "title": "yosoi::view::ViewError::InvalidDocumentEpoch",
+      "kind": "variant",
+      "signature": "InvalidDocumentEpoch",
+      "docs": "The source epoch is zero and cannot scope immutable browser evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 521,
+        "lineEnd": 521,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L521-L521"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::InvalidPageSize",
+      "publicPath": "yosoi::view::ViewError::InvalidPageSize",
+      "title": "yosoi::view::ViewError::InvalidPageSize",
+      "kind": "variant",
+      "signature": "InvalidPageSize { maximum: usize }",
+      "docs": "Requested rows per page are zero or exceed the supported maximum.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 544,
+        "lineEnd": 547,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L544-L547"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::InvalidPageSize::maximum",
+          "publicPath": "yosoi::view::ViewError::InvalidPageSize::maximum",
+          "title": "yosoi::view::ViewError::InvalidPageSize::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum supported rows per page.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 546,
+            "lineEnd": 546,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L546-L546"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::LocateFailed",
+      "publicPath": "yosoi::view::ViewError::LocateFailed",
+      "title": "yosoi::view::ViewError::LocateFailed",
+      "kind": "variant",
+      "signature": "LocateFailed { detail: String }",
+      "docs": "Locator execution failed instead of yielding complete captured evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 582,
+        "lineEnd": 585,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L582-L585"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::LocateFailed::detail",
+          "publicPath": "yosoi::view::ViewError::LocateFailed::detail",
+          "title": "yosoi::view::ViewError::LocateFailed::detail",
+          "kind": "struct_field",
+          "signature": "detail: String",
+          "docs": "Retained typed-failure explanation for caller inspection.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 584,
+            "lineEnd": 584,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L584-L584"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::MismatchedLocatorProjection",
+      "publicPath": "yosoi::view::ViewError::MismatchedLocatorProjection",
+      "title": "yosoi::view::ViewError::MismatchedLocatorProjection",
+      "kind": "variant",
+      "signature": "MismatchedLocatorProjection",
+      "docs": "Node and text projections do not form matching ordered element evidence.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 575,
+        "lineEnd": 575,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L575-L575"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::Plan",
+      "publicPath": "yosoi::view::ViewError::Plan",
+      "title": "yosoi::view::ViewError::Plan",
+      "kind": "variant",
+      "signature": "Plan(String)",
+      "docs": "The internal supported offline locator plan could not be constructed.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 589,
+        "lineEnd": 589,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L589-L589"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::Plan::0",
+          "publicPath": "yosoi::view::ViewError::Plan::0",
+          "title": "yosoi::view::ViewError::Plan::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 589,
+            "lineEnd": 589,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L589-L589"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::RowCountOverflow",
+      "publicPath": "yosoi::view::ViewError::RowCountOverflow",
+      "title": "yosoi::view::ViewError::RowCountOverflow",
+      "kind": "variant",
+      "signature": "RowCountOverflow",
+      "docs": "Captured element count cannot fit portable row accounting.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 571,
+        "lineEnd": 571,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L571-L571"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::SelectorTooLong",
+      "publicPath": "yosoi::view::ViewError::SelectorTooLong",
+      "title": "yosoi::view::ViewError::SelectorTooLong",
+      "kind": "variant",
+      "signature": "SelectorTooLong { maximum: usize, observed: usize }",
+      "docs": "An offline assertion selector exceeds its UTF-8 byte limit.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 537,
+        "lineEnd": 542,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L537-L542"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::SelectorTooLong::maximum",
+          "publicPath": "yosoi::view::ViewError::SelectorTooLong::maximum",
+          "title": "yosoi::view::ViewError::SelectorTooLong::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum accepted selector bytes.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 539,
+            "lineEnd": 539,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L539-L539"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::view::ViewError::SelectorTooLong::observed",
+          "publicPath": "yosoi::view::ViewError::SelectorTooLong::observed",
+          "title": "yosoi::view::ViewError::SelectorTooLong::observed",
+          "kind": "struct_field",
+          "signature": "observed: usize",
+          "docs": "Actual authored selector byte length.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 541,
+            "lineEnd": 541,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L541-L541"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::StaleCursor",
+      "publicPath": "yosoi::view::ViewError::StaleCursor",
+      "title": "yosoi::view::ViewError::StaleCursor",
+      "kind": "variant",
+      "signature": "StaleCursor",
+      "docs": "Cursor provenance names the same observation but changed epoch, URL, or HTML fingerprint.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 553,
+        "lineEnd": 553,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L553-L553"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::StaleObservation",
+      "publicPath": "yosoi::view::ViewError::StaleObservation",
+      "title": "yosoi::view::ViewError::StaleObservation",
+      "kind": "variant",
+      "signature": "StaleObservation",
+      "docs": "Assertion evidence disagrees on epoch, URL, or the advisory captured-HTML fingerprint.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 557,
+        "lineEnd": 557,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L557-L557"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UnexpectedProjection",
+      "publicPath": "yosoi::view::ViewError::UnexpectedProjection",
+      "title": "yosoi::view::ViewError::UnexpectedProjection",
+      "kind": "variant",
+      "signature": "UnexpectedProjection",
+      "docs": "Locator output is not the node projection required for exact element rows.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 573,
+        "lineEnd": 573,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L573-L573"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UnsupportedCondition",
+      "publicPath": "yosoi::view::ViewError::UnsupportedCondition",
+      "title": "yosoi::view::ViewError::UnsupportedCondition",
+      "kind": "variant",
+      "signature": "UnsupportedCondition { kind: &'static str }",
+      "docs": "The condition needs live browser state unavailable in an offline View.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 559,
+        "lineEnd": 562,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L559-L562"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::UnsupportedCondition::kind",
+          "publicPath": "yosoi::view::ViewError::UnsupportedCondition::kind",
+          "title": "yosoi::view::ViewError::UnsupportedCondition::kind",
+          "kind": "struct_field",
+          "signature": "kind: &'static str",
+          "docs": "Unsupported condition label, currently visible.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 561,
+            "lineEnd": 561,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L561-L561"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::view::ViewError::UrlTooLong",
+      "publicPath": "yosoi::view::ViewError::UrlTooLong",
+      "title": "yosoi::view::ViewError::UrlTooLong",
+      "kind": "variant",
+      "signature": "UrlTooLong { maximum: usize }",
+      "docs": "Captured source URL text exceeds its retained byte bound.",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 532,
+        "lineEnd": 535,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L532-L535"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::view::ViewError::UrlTooLong::maximum",
+          "publicPath": "yosoi::view::ViewError::UrlTooLong::maximum",
+          "title": "yosoi::view::ViewError::UrlTooLong::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum retained UTF-8 URL bytes.",
+          "source": {
+            "file": "crates/yosoi/src/view.rs",
+            "lineStart": 534,
+            "lineEnd": 534,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L534-L534"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::view::ViewError::clone",
+      "publicPath": "yosoi::view::ViewError::clone",
+      "title": "yosoi::view::ViewError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::view::ViewError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 508,
+        "lineEnd": 508,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L508-L508"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::eq",
+      "publicPath": "yosoi::view::ViewError::eq",
+      "title": "yosoi::view::ViewError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::view::ViewError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 508,
+        "lineEnd": 508,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L508-L508"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::fmt",
+      "publicPath": "yosoi::view::ViewError::fmt",
+      "title": "yosoi::view::ViewError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 508,
+        "lineEnd": 508,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L508-L508"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::view::ViewError::fmt",
+      "publicPath": "yosoi::view::ViewError::fmt",
+      "title": "yosoi::view::ViewError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/view.rs",
+        "lineStart": 593,
+        "lineEnd": 655,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/view.rs#L593-L655"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "85e1e3c35c21abb0449e1d3c3792984cab711f5cc285b1f7e6d60f3201905653",
+  "slug": "yosoi/view/enum/viewerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "85e1e3c35c21abb0449e1d3c3792984cab711f5cc285b1f7e6d60f3201905653"
+}

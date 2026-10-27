@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::ProjectedValue",
+  "publicPath": "yosoi::locators::ProjectedValue",
+  "kind": "enum",
+  "title": "yosoi::locators::ProjectedValue",
+  "signature": "pub enum ProjectedValue",
+  "docs": "Owned value emitted by one projection.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 24,
+    "lineEnd": 45,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L24-L45"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::ProjectedValue"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::ProjectedValue::Attribute",
+      "publicPath": "yosoi::locators::ProjectedValue::Attribute",
+      "title": "yosoi::locators::ProjectedValue::Attribute",
+      "kind": "variant",
+      "signature": "Attribute { name: String, value: String }",
+      "docs": "One projected attribute name and its decoded value.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 35,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L35-L40"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::Attribute::name",
+          "publicPath": "yosoi::locators::ProjectedValue::Attribute::name",
+          "title": "yosoi::locators::ProjectedValue::Attribute::name",
+          "kind": "struct_field",
+          "signature": "name: String",
+          "docs": "Name of the attribute selected by the projection.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 37,
+            "lineEnd": 37,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L37-L37"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::Attribute::value",
+          "publicPath": "yosoi::locators::ProjectedValue::Attribute::value",
+          "title": "yosoi::locators::ProjectedValue::Attribute::value",
+          "kind": "struct_field",
+          "signature": "value: String",
+          "docs": "Owned decoded attribute value.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 39,
+            "lineEnd": 39,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L39-L39"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::ProjectedValue::Json",
+      "publicPath": "yosoi::locators::ProjectedValue::Json",
+      "title": "yosoi::locators::ProjectedValue::Json",
+      "kind": "variant",
+      "signature": "Json(serde_json::Value)",
+      "docs": "An owned JSON value, preserving its native JSON shape.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L42-L42"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::Json::0",
+          "publicPath": "yosoi::locators::ProjectedValue::Json::0",
+          "title": "yosoi::locators::ProjectedValue::Json::0",
+          "kind": "struct_field",
+          "signature": "0: serde_json::Value",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 42,
+            "lineEnd": 42,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L42-L42"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::ProjectedValue::Node",
+      "publicPath": "yosoi::locators::ProjectedValue::Node",
+      "title": "yosoi::locators::ProjectedValue::Node",
+      "kind": "variant",
+      "signature": "Node(yosoi::locators::NodeReference)",
+      "docs": "A document-bound native node reference rather than a copy of its contents.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L44-L44"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::Node::0",
+          "publicPath": "yosoi::locators::ProjectedValue::Node::0",
+          "title": "yosoi::locators::ProjectedValue::Node::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::locators::NodeReference",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 44,
+            "lineEnd": 44,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L44-L44"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::ProjectedValue::Text",
+      "publicPath": "yosoi::locators::ProjectedValue::Text",
+      "title": "yosoi::locators::ProjectedValue::Text",
+      "kind": "variant",
+      "signature": "Text(String)",
+      "docs": "Owned decoded text emitted by a text projection.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L26-L26"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::Text::0",
+          "publicPath": "yosoi::locators::ProjectedValue::Text::0",
+          "title": "yosoi::locators::ProjectedValue::Text::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 26,
+            "lineEnd": 26,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L26-L26"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::locators::ProjectedValue::TextWithCaptures",
+      "publicPath": "yosoi::locators::ProjectedValue::TextWithCaptures",
+      "title": "yosoi::locators::ProjectedValue::TextWithCaptures",
+      "kind": "variant",
+      "signature": "TextWithCaptures { text: String, captures: std::collections::BTreeMap<String, String> }",
+      "docs": "Text accompanied by named regular-expression capture values.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 28,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L28-L33"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::TextWithCaptures::text",
+          "publicPath": "yosoi::locators::ProjectedValue::TextWithCaptures::text",
+          "title": "yosoi::locators::ProjectedValue::TextWithCaptures::text",
+          "kind": "struct_field",
+          "signature": "text: String",
+          "docs": "Full projected text, independent of the captured subexpressions.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 30,
+            "lineEnd": 30,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L30-L30"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::locators::ProjectedValue::TextWithCaptures::captures",
+          "publicPath": "yosoi::locators::ProjectedValue::TextWithCaptures::captures",
+          "title": "yosoi::locators::ProjectedValue::TextWithCaptures::captures",
+          "kind": "struct_field",
+          "signature": "captures: std::collections::BTreeMap<String, String>",
+          "docs": "Capture names mapped to their owned matched text.",
+          "source": {
+            "file": "crates/yosoi/src/internal/documents/outcome.rs",
+            "lineStart": 32,
+            "lineEnd": 32,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L32-L32"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::locators::ProjectedValue::clone",
+      "publicPath": "yosoi::locators::ProjectedValue::clone",
+      "title": "yosoi::locators::ProjectedValue::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::ProjectedValue",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::ProjectedValue::deserialize",
+      "publicPath": "yosoi::locators::ProjectedValue::deserialize",
+      "title": "yosoi::locators::ProjectedValue::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::ProjectedValue::eq",
+      "publicPath": "yosoi::locators::ProjectedValue::eq",
+      "title": "yosoi::locators::ProjectedValue::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::ProjectedValue) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::ProjectedValue::fmt",
+      "publicPath": "yosoi::locators::ProjectedValue::fmt",
+      "title": "yosoi::locators::ProjectedValue::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::ProjectedValue::serialize",
+      "publicPath": "yosoi::locators::ProjectedValue::serialize",
+      "title": "yosoi::locators::ProjectedValue::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/documents/outcome.rs#L22-L22"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "2065eac93e174774f327512321bbd1f7064be6ab8c278800aadb3c7b8e0e8d67",
+  "slug": "yosoi/locators/enum/projectedvalue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "2065eac93e174774f327512321bbd1f7064be6ab8c278800aadb3c7b8e0e8d67"
+}

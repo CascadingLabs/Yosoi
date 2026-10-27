@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::Inspection",
+  "publicPath": "yosoi::surface::model::Inspection",
+  "kind": "struct",
+  "title": "yosoi::surface::model::Inspection",
+  "signature": "pub struct Inspection",
+  "docs": "Exact or explicitly normalized evidence chunks.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 191,
+    "lineEnd": 206,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L191-L206"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::model::Inspection::clone",
+      "publicPath": "yosoi::surface::model::Inspection::clone",
+      "title": "yosoi::surface::model::Inspection::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::Inspection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 190,
+        "lineEnd": 190,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L190-L190"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::content",
+      "publicPath": "yosoi::surface::model::Inspection::content",
+      "title": "yosoi::surface::model::Inspection::content",
+      "kind": "struct_field",
+      "signature": "pub content: String",
+      "docs": "Source-backed content; follow continuations before parsing a complete JSON record.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 201,
+        "lineEnd": 201,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L201-L201"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::coverage",
+      "publicPath": "yosoi::surface::model::Inspection::coverage",
+      "title": "yosoi::surface::model::Inspection::coverage",
+      "kind": "struct_field",
+      "signature": "pub coverage: yosoi::surface::Coverage",
+      "docs": "Observation coverage.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 205,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L205-L205"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Inspection::deserialize",
+      "publicPath": "yosoi::surface::model::Inspection::deserialize",
+      "title": "yosoi::surface::model::Inspection::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 190,
+        "lineEnd": 190,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L190-L190"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::Inspection::fmt",
+      "publicPath": "yosoi::surface::model::Inspection::fmt",
+      "title": "yosoi::surface::model::Inspection::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 190,
+        "lineEnd": 190,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L190-L190"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::media_type",
+      "publicPath": "yosoi::surface::model::Inspection::media_type",
+      "title": "yosoi::surface::model::Inspection::media_type",
+      "kind": "struct_field",
+      "signature": "pub media_type: String",
+      "docs": "Format of the content field.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 195,
+        "lineEnd": 195,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L195-L195"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::next",
+      "publicPath": "yosoi::surface::model::Inspection::next",
+      "title": "yosoi::surface::model::Inspection::next",
+      "kind": "struct_field",
+      "signature": "pub next: Option<yosoi::surface::model::ContinuationToken>",
+      "docs": "Next chunk of the same inspection.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 203,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L203-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::offset",
+      "publicPath": "yosoi::surface::model::Inspection::offset",
+      "title": "yosoi::surface::model::Inspection::offset",
+      "kind": "struct_field",
+      "signature": "pub offset: usize",
+      "docs": "Starting UTF-8 byte offset.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::reference",
+      "publicPath": "yosoi::surface::model::Inspection::reference",
+      "title": "yosoi::surface::model::Inspection::reference",
+      "kind": "struct_field",
+      "signature": "pub reference: yosoi::surface::model::Reference",
+      "docs": "Exact selected evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 193,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L193-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Inspection::serialize",
+      "publicPath": "yosoi::surface::model::Inspection::serialize",
+      "title": "yosoi::surface::model::Inspection::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 190,
+        "lineEnd": 190,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L190-L190"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Inspection::total_bytes",
+      "publicPath": "yosoi::surface::model::Inspection::total_bytes",
+      "title": "yosoi::surface::model::Inspection::total_bytes",
+      "kind": "struct_field",
+      "signature": "pub total_bytes: usize",
+      "docs": "Complete detail length in UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 197,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/model.rs#L197-L197"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c80d5786982bad48d1ef71ea2a2b6fc40cecf2919fb09db0a55ae7729b19911b",
+  "slug": "yosoi/surface/model/struct/inspection",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c80d5786982bad48d1ef71ea2a2b6fc40cecf2919fb09db0a55ae7729b19911b"
+}

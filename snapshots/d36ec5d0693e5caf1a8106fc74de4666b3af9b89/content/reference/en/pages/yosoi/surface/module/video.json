@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::video",
+  "publicPath": "yosoi::surface::video",
+  "kind": "module",
+  "title": "yosoi::surface::video",
+  "signature": "pub mod video",
+  "docs": "Immutable local-video observations, lazy frame reads, and time-addressed references.\n\nFFprobe reads metadata; FFmpeg materializes individual frames with one worker.\nTimeline navigation never grants browser/device control and does not imply OCR,\ntranscription, audio inspection, or that unsampled frames have been observed.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 1,
+    "lineEnd": 578,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/video/mod.rs#L1-L578"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "afde52110ecdff955cf26ecd984a7301a30b46badee3e72cf9cc9ac77a4003eb",
+  "slug": "yosoi/surface/module/video",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "afde52110ecdff955cf26ecd984a7301a30b46badee3e72cf9cc9ac77a4003eb"
+}

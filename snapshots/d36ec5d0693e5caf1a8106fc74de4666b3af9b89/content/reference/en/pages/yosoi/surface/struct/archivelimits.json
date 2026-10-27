@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::ArchiveLimits",
+  "publicPath": "yosoi::surface::ArchiveLimits",
+  "kind": "struct",
+  "title": "yosoi::surface::ArchiveLimits",
+  "signature": "pub struct ArchiveLimits",
+  "docs": "Resource limits for a self-contained Surface outcome before encoding.",
+  "source": {
+    "file": "crates/yosoi/src/surface/policy.rs",
+    "lineStart": 19,
+    "lineEnd": 26,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L19-L26"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 29,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/mod.rs#L29-L29"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::ArchiveLimits::bytes",
+      "publicPath": "yosoi::surface::ArchiveLimits::bytes",
+      "title": "yosoi::surface::ArchiveLimits::bytes",
+      "kind": "struct_field",
+      "signature": "pub bytes: u64",
+      "docs": "Maximum retained original source and derived payload bytes combined.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::clone",
+      "publicPath": "yosoi::surface::ArchiveLimits::clone",
+      "title": "yosoi::surface::ArchiveLimits::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::ArchiveLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::default",
+      "publicPath": "yosoi::surface::ArchiveLimits::default",
+      "title": "yosoi::surface::ArchiveLimits::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 29,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L29-L35"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::deserialize",
+      "publicPath": "yosoi::surface::ArchiveLimits::deserialize",
+      "title": "yosoi::surface::ArchiveLimits::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::eq",
+      "publicPath": "yosoi::surface::ArchiveLimits::eq",
+      "title": "yosoi::surface::ArchiveLimits::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::ArchiveLimits) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::fmt",
+      "publicPath": "yosoi::surface::ArchiveLimits::fmt",
+      "title": "yosoi::surface::ArchiveLimits::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchiveLimits::observations",
+      "publicPath": "yosoi::surface::ArchiveLimits::observations",
+      "title": "yosoi::surface::ArchiveLimits::observations",
+      "kind": "struct_field",
+      "signature": "pub observations: usize",
+      "docs": "Maximum source captures and materialized artifacts.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::ArchiveLimits::operations",
+      "publicPath": "yosoi::surface::ArchiveLimits::operations",
+      "title": "yosoi::surface::ArchiveLimits::operations",
+      "kind": "struct_field",
+      "signature": "pub operations: usize",
+      "docs": "Maximum retained operation receipts, including rejected operations.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::ArchiveLimits::serialize",
+      "publicPath": "yosoi::surface::ArchiveLimits::serialize",
+      "title": "yosoi::surface::ArchiveLimits::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/surface/policy.rs#L17-L17"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "df81903aa37ee13b68b8d4ec7d3c706955d21243ef9caa507666e23cad1c5cb7",
+  "slug": "yosoi/surface/struct/archivelimits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "df81903aa37ee13b68b8d4ec7d3c706955d21243ef9caa507666e23cad1c5cb7"
+}

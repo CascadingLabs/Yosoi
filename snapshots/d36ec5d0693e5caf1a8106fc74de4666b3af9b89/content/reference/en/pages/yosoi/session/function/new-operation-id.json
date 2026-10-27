@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::session::new_operation_id",
+  "publicPath": "yosoi::session::new_operation_id",
+  "kind": "function",
+  "title": "yosoi::session::new_operation_id",
+  "signature": "pub fn new_operation_id() -> String",
+  "docs": "Generates a fresh activity UUID for operation correlation without dispatching anything.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 321,
+    "lineEnd": 323,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L321-L323"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::new_operation_id"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "34122c564baac8af130fa29a8bc8d4a1adf51eb8a1a8794d7b473dda8e8a60f5",
+  "slug": "yosoi/session/function/new-operation-id",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "34122c564baac8af130fa29a8bc8d4a1adf51eb8a1a8794d7b473dda8e8a60f5"
+}

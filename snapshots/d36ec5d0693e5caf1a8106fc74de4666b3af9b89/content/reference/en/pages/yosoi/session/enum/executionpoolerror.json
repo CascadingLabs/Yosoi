@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::session::ExecutionPoolError",
+  "publicPath": "yosoi::session::ExecutionPoolError",
+  "kind": "enum",
+  "title": "yosoi::session::ExecutionPoolError",
+  "signature": "pub enum ExecutionPoolError",
+  "docs": "Execution admission failed without transferring any browser or tab ownership.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/execution.rs",
+    "lineStart": 12,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L12-L22"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 33,
+    "lineEnd": 33,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/session.rs#L33-L33"
+  },
+  "aliases": [
+    "yosoi::prelude::session::ExecutionPoolError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::Closed",
+      "publicPath": "yosoi::session::ExecutionPoolError::Closed",
+      "title": "yosoi::session::ExecutionPoolError::Closed",
+      "kind": "variant",
+      "signature": "Closed",
+      "docs": "The execution semaphore closed before a worker permit could be acquired.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::InvalidLimits",
+      "publicPath": "yosoi::session::ExecutionPoolError::InvalidLimits",
+      "title": "yosoi::session::ExecutionPoolError::InvalidLimits",
+      "kind": "variant",
+      "signature": "InvalidLimits",
+      "docs": "Worker concurrency or queue capacity falls outside the supported bounded ranges.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::session::ExecutionPoolError::QueueFull",
+      "publicPath": "yosoi::session::ExecutionPoolError::QueueFull",
+      "title": "yosoi::session::ExecutionPoolError::QueueFull",
+      "kind": "variant",
+      "signature": "QueueFull",
+      "docs": "No bounded queue slot is available for another waiting operation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::clone",
+      "publicPath": "yosoi::session::ExecutionPoolError::clone",
+      "title": "yosoi::session::ExecutionPoolError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::ExecutionPoolError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::eq",
+      "publicPath": "yosoi::session::ExecutionPoolError::eq",
+      "title": "yosoi::session::ExecutionPoolError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::session::ExecutionPoolError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::fmt",
+      "publicPath": "yosoi::session::ExecutionPoolError::fmt",
+      "title": "yosoi::session::ExecutionPoolError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::ExecutionPoolError::fmt",
+      "publicPath": "yosoi::session::ExecutionPoolError::fmt",
+      "title": "yosoi::session::ExecutionPoolError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/execution.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/internal/engine/execution.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "628e2791d493be60555a0ed2e6fcf1be087958dafd3707a782b59656285cb880",
+  "slug": "yosoi/session/enum/executionpoolerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "628e2791d493be60555a0ed2e6fcf1be087958dafd3707a782b59656285cb880"
+}

@@ -1,0 +1,814 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::Step",
+  "publicPath": "yosoi::flow::Step",
+  "kind": "enum",
+  "title": "yosoi::flow::Step",
+  "signature": "pub enum Step",
+  "docs": "One typed action or assertion in a flow.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 47,
+    "lineEnd": 143,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L47-L143"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::Step",
+    "yosoi::prelude::flow::Step"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::Step::Assert",
+      "publicPath": "yosoi::flow::Step::Assert",
+      "title": "yosoi::flow::Step::Assert",
+      "kind": "variant",
+      "signature": "Assert { condition: yosoi::flow::Condition }",
+      "docs": "Check a condition once and stop if it is rejected.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 117,
+        "lineEnd": 120,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L117-L120"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Assert::condition",
+          "publicPath": "yosoi::flow::Step::Assert::condition",
+          "title": "yosoi::flow::Step::Assert::condition",
+          "kind": "struct_field",
+          "signature": "condition: yosoi::flow::Condition",
+          "docs": "DOM condition checked once without a retry loop.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 119,
+            "lineEnd": 119,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L119-L119"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::AssertAll",
+      "publicPath": "yosoi::flow::Step::AssertAll",
+      "title": "yosoi::flow::Step::AssertAll",
+      "kind": "variant",
+      "signature": "AssertAll { assertion: yosoi::assertions::LocalAssertion }",
+      "docs": "Local Rust checks over one current Contract observation.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 49,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L49-L52"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::AssertAll::assertion",
+          "publicPath": "yosoi::flow::Step::AssertAll::assertion",
+          "title": "yosoi::flow::Step::AssertAll::assertion",
+          "kind": "struct_field",
+          "signature": "assertion: yosoi::assertions::LocalAssertion",
+          "docs": "Saved bounded assertion descriptor with an explicitly bound evaluator.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 51,
+            "lineEnd": 51,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L51-L51"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Click",
+      "publicPath": "yosoi::flow::Step::Click",
+      "title": "yosoi::flow::Step::Click",
+      "kind": "variant",
+      "signature": "Click { selector: String }",
+      "docs": "Click one selector-resolved target.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 98,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L98-L101"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Click::selector",
+          "publicPath": "yosoi::flow::Step::Click::selector",
+          "title": "yosoi::flow::Step::Click::selector",
+          "kind": "struct_field",
+          "signature": "selector: String",
+          "docs": "CSS selector that must resolve to one supported click target.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 100,
+            "lineEnd": 100,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L100-L100"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Configured",
+      "publicPath": "yosoi::flow::Step::Configured",
+      "title": "yosoi::flow::Step::Configured",
+      "kind": "variant",
+      "signature": "Configured { action: Box<Self>, on_failure: Option<yosoi::Continuation>, on_cancellation: Option<yosoi::Continuation>, cancellation_binding_required: bool, cancellation: StepCancellationBinding }",
+      "docs": "Local continuation overrides and optional runtime cancellation binding.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 71,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L71-L86"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Configured::action",
+          "publicPath": "yosoi::flow::Step::Configured::action",
+          "title": "yosoi::flow::Step::Configured::action",
+          "kind": "struct_field",
+          "signature": "action: Box<Self>",
+          "docs": "Wrapped action retaining its local continuation and cancellation settings.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 73,
+            "lineEnd": 73,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L73-L73"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Configured::on_failure",
+          "publicPath": "yosoi::flow::Step::Configured::on_failure",
+          "title": "yosoi::flow::Step::Configured::on_failure",
+          "kind": "struct_field",
+          "signature": "on_failure: Option<yosoi::Continuation>",
+          "docs": "Override for known failures, absent to inherit the selected scope's fallback.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 76,
+            "lineEnd": 76,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L76-L76"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Configured::on_cancellation",
+          "publicPath": "yosoi::flow::Step::Configured::on_cancellation",
+          "title": "yosoi::flow::Step::Configured::on_cancellation",
+          "kind": "struct_field",
+          "signature": "on_cancellation: Option<yosoi::Continuation>",
+          "docs": "Override for observed cancellation, absent to inherit the selected scope's fallback.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 79,
+            "lineEnd": 79,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L79-L79"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Configured::cancellation_binding_required",
+          "publicPath": "yosoi::flow::Step::Configured::cancellation_binding_required",
+          "title": "yosoi::flow::Step::Configured::cancellation_binding_required",
+          "kind": "struct_field",
+          "signature": "cancellation_binding_required: bool",
+          "docs": "Whether a saved runtime cancellation token must be rebound before invocation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 82,
+            "lineEnd": 82,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L82-L82"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Configured::cancellation",
+          "publicPath": "yosoi::flow::Step::Configured::cancellation",
+          "title": "yosoi::flow::Step::Configured::cancellation",
+          "kind": "struct_field",
+          "signature": "cancellation: StepCancellationBinding",
+          "docs": "Runtime-only token binding, deliberately omitted from serialized recipes.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 85,
+            "lineEnd": 85,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L85-L85"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::EnterText",
+      "publicPath": "yosoi::flow::Step::EnterText",
+      "title": "yosoi::flow::Step::EnterText",
+      "kind": "variant",
+      "signature": "EnterText { selector: String, text: String }",
+      "docs": "Enter text into one selector-resolved target.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 103,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L103-L108"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::EnterText::selector",
+          "publicPath": "yosoi::flow::Step::EnterText::selector",
+          "title": "yosoi::flow::Step::EnterText::selector",
+          "kind": "struct_field",
+          "signature": "selector: String",
+          "docs": "CSS selector for the editable target, checked again before keyboard dispatch.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 105,
+            "lineEnd": 105,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L105-L105"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::EnterText::text",
+          "publicPath": "yosoi::flow::Step::EnterText::text",
+          "title": "yosoi::flow::Step::EnterText::text",
+          "kind": "struct_field",
+          "signature": "text: String",
+          "docs": "Authored text to enter; it can contain user-sensitive values.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 107,
+            "lineEnd": 107,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L107-L107"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Evaluate",
+      "publicPath": "yosoi::flow::Step::Evaluate",
+      "title": "yosoi::flow::Step::Evaluate",
+      "kind": "variant",
+      "signature": "Evaluate { source: String }",
+      "docs": "Evaluate a policy-approved script on the current tab.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 129,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L129-L132"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Evaluate::source",
+          "publicPath": "yosoi::flow::Step::Evaluate::source",
+          "title": "yosoi::flow::Step::Evaluate::source",
+          "kind": "struct_field",
+          "signature": "source: String",
+          "docs": "Authored JavaScript source; dispatch requires explicit Session permission.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 131,
+            "lineEnd": 131,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L131-L131"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::EvaluateFile",
+      "publicPath": "yosoi::flow::Step::EvaluateFile",
+      "title": "yosoi::flow::Step::EvaluateFile",
+      "kind": "variant",
+      "signature": "EvaluateFile { snapshot: yosoi::action::JavaScriptSourceSnapshot }",
+      "docs": "Evaluates an exact construction-time file snapshot as a script.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 134,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L134-L137"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::EvaluateFile::snapshot",
+          "publicPath": "yosoi::flow::Step::EvaluateFile::snapshot",
+          "title": "yosoi::flow::Step::EvaluateFile::snapshot",
+          "kind": "struct_field",
+          "signature": "snapshot: yosoi::action::JavaScriptSourceSnapshot",
+          "docs": "Exact retained file bytes captured before execution, rather than a live path read.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 136,
+            "lineEnd": 136,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L136-L136"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::EvaluateModule",
+      "publicPath": "yosoi::flow::Step::EvaluateModule",
+      "title": "yosoi::flow::Step::EvaluateModule",
+      "kind": "variant",
+      "signature": "EvaluateModule { bundle: yosoi::action::JavaScriptModuleBundle }",
+      "docs": "Executes a construction-time local ES module graph.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 139,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L139-L142"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::EvaluateModule::bundle",
+          "publicPath": "yosoi::flow::Step::EvaluateModule::bundle",
+          "title": "yosoi::flow::Step::EvaluateModule::bundle",
+          "kind": "struct_field",
+          "signature": "bundle: yosoi::action::JavaScriptModuleBundle",
+          "docs": "Retained local module graph and selected export captured at construction time.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 141,
+            "lineEnd": 141,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L141-L141"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Navigate",
+      "publicPath": "yosoi::flow::Step::Navigate",
+      "title": "yosoi::flow::Step::Navigate",
+      "kind": "variant",
+      "signature": "Navigate { url: String }",
+      "docs": "Navigate the current tab to a URL.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 93,
+        "lineEnd": 96,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L93-L96"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Navigate::url",
+          "publicPath": "yosoi::flow::Step::Navigate::url",
+          "title": "yosoi::flow::Step::Navigate::url",
+          "kind": "struct_field",
+          "signature": "url: String",
+          "docs": "Authored destination text validated before browser dispatch.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 95,
+            "lineEnd": 95,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L95-L95"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::NestedFlow",
+      "publicPath": "yosoi::flow::Step::NestedFlow",
+      "title": "yosoi::flow::Step::NestedFlow",
+      "kind": "variant",
+      "signature": "NestedFlow { flow: Box<yosoi::flow::Flow> }",
+      "docs": "Runs a child Flow as a nested timeout scope.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 88,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L88-L91"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::NestedFlow::flow",
+          "publicPath": "yosoi::flow::Step::NestedFlow::flow",
+          "title": "yosoi::flow::Step::NestedFlow::flow",
+          "kind": "struct_field",
+          "signature": "flow: Box<yosoi::flow::Flow>",
+          "docs": "Owned child recipe, retaining its scoped timeouts and continuation policies.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 90,
+            "lineEnd": 90,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L90-L90"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Screenshot",
+      "publicPath": "yosoi::flow::Step::Screenshot",
+      "title": "yosoi::flow::Step::Screenshot",
+      "kind": "variant",
+      "signature": "Screenshot",
+      "docs": "Capture the current tab's screenshot.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 115,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L115-L115"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Timed",
+      "publicPath": "yosoi::flow::Step::Timed",
+      "title": "yosoi::flow::Step::Timed",
+      "kind": "variant",
+      "signature": "Timed { action: Box<Self>, timeout: std::time::Duration }",
+      "docs": "Applies one execution budget to the complete action.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 64,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L64-L69"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Timed::action",
+          "publicPath": "yosoi::flow::Step::Timed::action",
+          "title": "yosoi::flow::Step::Timed::action",
+          "kind": "struct_field",
+          "signature": "action: Box<Self>",
+          "docs": "Action or nested scope governed by this single execution budget.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 66,
+            "lineEnd": 66,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L66-L66"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Timed::timeout",
+          "publicPath": "yosoi::flow::Step::Timed::timeout",
+          "title": "yosoi::flow::Step::Timed::timeout",
+          "kind": "struct_field",
+          "signature": "timeout: std::time::Duration",
+          "docs": "Positive maximum duration; serialization may use exact microseconds.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 68,
+            "lineEnd": 68,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L68-L68"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Until",
+      "publicPath": "yosoi::flow::Step::Until",
+      "title": "yosoi::flow::Step::Until",
+      "kind": "variant",
+      "signature": "Until { trigger: Option<Box<Self>>, expectation: yosoi::expect::Expectation }",
+      "docs": "Waits for an expectation, optionally after one trigger action.\n\nWith a trigger, observation starts before that action is dispatched and\nthe trigger executes once. One timeout covers both the action and wait.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 57,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L57-L62"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Until::trigger",
+          "publicPath": "yosoi::flow::Step::Until::trigger",
+          "title": "yosoi::flow::Step::Until::trigger",
+          "kind": "struct_field",
+          "signature": "trigger: Option<Box<Self>>",
+          "docs": "One supported action, executed once after observation starts.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 59,
+            "lineEnd": 59,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L59-L59"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::Until::expectation",
+          "publicPath": "yosoi::flow::Step::Until::expectation",
+          "title": "yosoi::flow::Step::Until::expectation",
+          "kind": "struct_field",
+          "signature": "expectation: yosoi::expect::Expectation",
+          "docs": "Serializable, bounded expectation data.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 61,
+            "lineEnd": 61,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L61-L61"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::Wait",
+      "publicPath": "yosoi::flow::Step::Wait",
+      "title": "yosoi::flow::Step::Wait",
+      "kind": "variant",
+      "signature": "Wait { milliseconds: u64 }",
+      "docs": "Wait for an explicit number of milliseconds.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 110,
+        "lineEnd": 113,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L110-L113"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::Wait::milliseconds",
+          "publicPath": "yosoi::flow::Step::Wait::milliseconds",
+          "title": "yosoi::flow::Step::Wait::milliseconds",
+          "kind": "struct_field",
+          "signature": "milliseconds: u64",
+          "docs": "Explicit delay in milliseconds, including zero; this is not readiness confirmation.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 112,
+            "lineEnd": 112,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L112-L112"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::Step::WaitUntil",
+      "publicPath": "yosoi::flow::Step::WaitUntil",
+      "title": "yosoi::flow::Step::WaitUntil",
+      "kind": "variant",
+      "signature": "WaitUntil { condition: yosoi::flow::Condition, timeout_ms: u64 }",
+      "docs": "Check a condition until the supplied positive timeout expires.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 122,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L122-L127"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::Step::WaitUntil::condition",
+          "publicPath": "yosoi::flow::Step::WaitUntil::condition",
+          "title": "yosoi::flow::Step::WaitUntil::condition",
+          "kind": "struct_field",
+          "signature": "condition: yosoi::flow::Condition",
+          "docs": "DOM condition confirmed within the same retained document epoch.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 124,
+            "lineEnd": 124,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L124-L124"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::Step::WaitUntil::timeout_ms",
+          "publicPath": "yosoi::flow::Step::WaitUntil::timeout_ms",
+          "title": "yosoi::flow::Step::WaitUntil::timeout_ms",
+          "kind": "struct_field",
+          "signature": "timeout_ms: u64",
+          "docs": "Positive authored maximum wait in milliseconds, also bounded by the enclosing budget.",
+          "source": {
+            "file": "crates/yosoi/src/flow/model.rs",
+            "lineStart": 126,
+            "lineEnd": 126,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L126-L126"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::flow::Step::clone",
+      "publicPath": "yosoi::flow::Step::clone",
+      "title": "yosoi::flow::Step::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::Step",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::Step::deserialize",
+      "publicPath": "yosoi::flow::Step::deserialize",
+      "title": "yosoi::flow::Step::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 146,
+        "lineEnd": 267,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L146-L267"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::Step::eq",
+      "publicPath": "yosoi::flow::Step::eq",
+      "title": "yosoi::flow::Step::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::Step) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::Step::fmt",
+      "publicPath": "yosoi::flow::Step::fmt",
+      "title": "yosoi::flow::Step::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::Step::from",
+      "publicPath": "yosoi::flow::Step::from",
+      "title": "yosoi::flow::Step::from",
+      "kind": "function",
+      "signature": "fn from(builder: yosoi::action::AssertionBuilder) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 104,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/action/builder.rs#L104-L106"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::flow::Step::from",
+      "publicPath": "yosoi::flow::Step::from",
+      "title": "yosoi::flow::Step::from",
+      "kind": "function",
+      "signature": "fn from(flow: yosoi::flow::Flow) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 346,
+        "lineEnd": 350,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L346-L350"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::flow::Step::on_cancellation",
+      "publicPath": "yosoi::flow::Step::on_cancellation",
+      "title": "yosoi::flow::Step::on_cancellation",
+      "kind": "function",
+      "signature": "pub fn on_cancellation(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Overrides local cancellation handling for this action or nested Flow.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 443,
+        "lineEnd": 445,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L443-L445"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Step::on_failure",
+      "publicPath": "yosoi::flow::Step::on_failure",
+      "title": "yosoi::flow::Step::on_failure",
+      "kind": "function",
+      "signature": "pub fn on_failure(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Overrides failure handling for this action or nested Flow.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 438,
+        "lineEnd": 440,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L438-L440"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Step::rebind_cancellation",
+      "publicPath": "yosoi::flow::Step::rebind_cancellation",
+      "title": "yosoi::flow::Step::rebind_cancellation",
+      "kind": "function",
+      "signature": "pub fn rebind_cancellation(self, token: &CancellationToken) -> Self",
+      "docs": "Restores the runtime authority omitted when a cancellation-bound step was serialized.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 457,
+        "lineEnd": 462,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L457-L462"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Step::serialize",
+      "publicPath": "yosoi::flow::Step::serialize",
+      "title": "yosoi::flow::Step::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L45-L45"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::flow::Step::timeout",
+      "publicPath": "yosoi::flow::Step::timeout",
+      "title": "yosoi::flow::Step::timeout",
+      "kind": "function",
+      "signature": "pub fn timeout(self, milliseconds: u64) -> Self",
+      "docs": "Sets this action's timeout in milliseconds; a second call replaces the first.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 426,
+        "lineEnd": 435,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L426-L435"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Step::until",
+      "publicPath": "yosoi::flow::Step::until",
+      "title": "yosoi::flow::Step::until",
+      "kind": "function",
+      "signature": "pub fn until(self, expectation: impl Into<yosoi::expect::UntilExpectation>) -> Self",
+      "docs": "Executes this action once, then waits until `expectation` is observed.\n\nThe trigger's outer timeout, continuation, and cancellation settings are\nlifted to the complete Until step. Explicit settings carried by a local\nContract assertion take precedence over the trigger settings.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 359,
+        "lineEnd": 366,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L359-L366"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::Step::with_cancellation",
+      "publicPath": "yosoi::flow::Step::with_cancellation",
+      "title": "yosoi::flow::Step::with_cancellation",
+      "kind": "function",
+      "signature": "pub fn with_cancellation(self, token: &CancellationToken) -> Self",
+      "docs": "Binds a step-local cancellation token that may stop this action or child Flow.\nThe runtime token is omitted from serialized recipes; rebind it after loading.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 449,
+        "lineEnd": 454,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/d36ec5d0693e5caf1a8106fc74de4666b3af9b89/crates/yosoi/src/flow/model.rs#L449-L454"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5ea24278b98175e0fbf6228521bc844f42e43ae19e1d9f426205ecde2f9a8369",
+  "slug": "yosoi/flow/enum/step",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5ea24278b98175e0fbf6228521bc844f42e43ae19e1d9f426205ecde2f9a8369"
+}

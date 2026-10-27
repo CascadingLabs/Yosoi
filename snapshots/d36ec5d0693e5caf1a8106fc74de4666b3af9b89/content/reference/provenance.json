@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "type": "rust-reference-build-metadata",
+  "status": "pending-attestation",
+  "sourceCommit": "d36ec5d0693e5caf1a8106fc74de4666b3af9b89",
+  "repository": "CascadingLabs/Yosoi",
+  "contentDigest": "dd15d9c4e67a3d36c77b15a88e9ebc62a8efb699036340646d06bffcea480cda",
+  "generatorDigest": "a1d1e37915a9fe9ddc71d331eeb8f9ec01d0e5680e14ad572e7221dd6dc7c85b",
+  "toolchain": {
+    "rustdocVersion": "rustdoc 1.100.0-nightly (f248f4038 2026-09-05)",
+    "compilerCommit": "f248f4038796913873f11ca65b1b901e311c8dae",
+    "toolchain": "nightly-2026-09-06",
+    "formatVersion": 61,
+    "target": "x86_64-unknown-linux-gnu",
+    "features": [
+      "browser-bidi",
+      "encode-ffmpeg",
+      "encode-gif",
+      "scanner",
+      "surface-connections"
+    ],
+    "generatorDigest": "a1d1e37915a9fe9ddc71d331eeb8f9ec01d0e5680e14ad572e7221dd6dc7c85b"
+  },
+  "translations": {}
+}
