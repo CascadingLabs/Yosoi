@@ -3,6 +3,7 @@ use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 use std::{
     error::Error,
+    fs::File,
     io::{self, BufRead, Read},
     path::PathBuf,
     process::ExitCode,
@@ -44,6 +45,9 @@ enum SurfaceCommand {
         /// Enable archive policy, checkpoint each command, and export output/surface.yosoi on close.
         #[arg(long)]
         archive: Option<PathBuf>,
+        /// JSON DocumentPolicies: per-type capture bytes, depth, nodes and read bytes.
+        #[arg(long)]
+        document_policy: Option<PathBuf>,
     },
     /// Explore an immutable local video through the shared bounded read protocol.
     Video {
@@ -152,7 +156,7 @@ async fn drive(mut surface: impl SurfaceConnection) -> Result<()> {
             if bytes.len() > 65536 { reply(&mut output, Value::Null, Err(io::Error::other("command exceeds 64 KiB; closing input").into()), 4096).await?; break; }
             let raw: Value = match serde_json::from_slice(&bytes) { Ok(value) => value, Err(error) => { reply(&mut output, Value::Null, Err(error.into()),4096).await?; continue; } };
             let id = raw.get("id").filter(|id| serde_json::to_vec(id).is_ok_and(|value|value.len()<=64)).cloned().unwrap_or(Value::Null);
-            let budget = raw.get("budget").and_then(Value::as_u64).and_then(|value| usize::try_from(value).ok()).filter(|value| (1024..=16384).contains(value)).unwrap_or(4096);
+            let budget = raw.get("budget").and_then(Value::as_u64).and_then(|value| usize::try_from(value).ok()).filter(|value| (1024..=65536).contains(value)).unwrap_or(4096);
             let close = raw.get("op").and_then(Value::as_str)==Some("close");
             let result = surface.execute(raw).await.map_err(Into::into);
             let accepted = result.is_ok();
@@ -185,7 +189,14 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             headless,
             output,
             archive,
-        } => drive(BrowserSurface::open(&url, policy(output, archive), headless).await?).await,
+            document_policy,
+        } => {
+            let mut policy = policy(output, archive);
+            if let Some(path) = document_policy {
+                policy.documents = serde_json::from_reader(File::open(path)?)?;
+            }
+            drive(BrowserSurface::open(&url, policy, headless).await?).await
+        }
         SurfaceCommand::Video {
             file,
             output,

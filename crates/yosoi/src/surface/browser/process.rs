@@ -3,7 +3,7 @@ use crate::internal::browser::session::browser_distribution::supported_chrome_ex
 use crate::surface::connection::{Result, Trace};
 use crate::{
     documents::{Document, DocumentEpoch},
-    surface::{Limits, Surface},
+    surface::{DocumentPolicies, Surface},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rustls::crypto::{CryptoProvider, ring};
@@ -24,12 +24,17 @@ pub struct Browser {
     pub capabilities: Value,
     driver: Child,
     profile: tempfile::TempDir,
+    pub(super) documents: DocumentPolicies,
 }
 impl Browser {
     pub fn session_key(&self) -> &str {
         &self.session
     }
-    pub async fn open(headless: bool) -> Result<Self> {
+    pub(super) async fn open_with_policy(
+        headless: bool,
+        documents: DocumentPolicies,
+    ) -> Result<Self> {
+        documents.validate()?;
         if CryptoProvider::get_default().is_none() {
             ring::default_provider()
                 .install_default()
@@ -71,6 +76,7 @@ impl Browser {
             capabilities: Value::Null,
             driver,
             profile,
+            documents,
         };
         let mut flags = vec![
             "--no-first-run".to_owned(),
@@ -82,7 +88,7 @@ impl Browser {
             flags.push("--headless=new".into());
         }
         let created = browser.command(reqwest::Method::POST, "/session", Some(json!({"capabilities":{"alwaysMatch":{
-            "browserName":"chrome","pageLoadStrategy":"eager","goog:chromeOptions":{"binary":browser_bin,"args":flags}}}}))).await?;
+            "browserName":"chrome","pageLoadStrategy":"eager","goog:loggingPrefs":{"performance":"ALL"},"goog:chromeOptions":{"binary":browser_bin,"args":flags,"perfLoggingPrefs":{"enableNetwork":true,"enablePage":false}}}}}))).await?;
         browser.capabilities = created.get("capabilities").cloned().unwrap_or(Value::Null);
         browser.session = created
             .get("sessionId")
@@ -144,7 +150,7 @@ impl Browser {
         epoch: u64,
         trace: &mut Trace,
     ) -> Result<(Surface, Document, Value)> {
-        let captured = self.script("capture", json!({"epoch":epoch})).await?;
+        let captured = self.script("capture", json!({"epoch":epoch,"limits":self.documents.dom,"html_limits":self.documents.html})).await?;
         let wire = captured
             .get("wire")
             .ok_or_else(|| io::Error::other("capture lacks DOM evidence"))?;
@@ -153,13 +159,7 @@ impl Browser {
             DocumentEpoch::try_from(epoch)?,
             serde_json::to_vec(wire)?,
         )?;
-        let index = match Surface::with_limits(
-            &document,
-            Limits {
-                input_bytes: 32 * 1024 * 1024,
-                ..Limits::default()
-            },
-        ) {
+        let index = match Surface::with_limits(&document, self.documents.dom.limits()?) {
             Ok(index) => index,
             Err(error) => {
                 let artifact = trace.output.join(format!("rejected-capture-{epoch}.json"));
@@ -173,6 +173,97 @@ impl Browser {
         };
         trace.event("capture", json!({"url":captured.get("url"),"epoch":epoch,"capture":index.identity(),"nodes":index.node_count(),"source_bytes":index.source_bytes(),"normalized_strings":captured.get("normalized_strings")}));
         Ok((index, document, captured))
+    }
+    pub(super) async fn capture_evidence(
+        &self,
+        epoch: u64,
+        representation: super::BrowserRepresentation,
+    ) -> Result<(Surface, Document, Value)> {
+        use super::BrowserRepresentation;
+        let policy = representation.policy(&self.documents);
+        let location = self.script("location", json!({})).await?;
+        let id = format!("surface-{}-{representation:?}-{epoch}", self.session);
+        let document = match representation {
+            BrowserRepresentation::Dom => {
+                return Err(io::Error::other("DOM capture uses the retained live session").into());
+            }
+            BrowserRepresentation::Ax => {
+                let before = self.cdp("Page.getFrameTree", json!({})).await?;
+                let captured = self
+                    .cdp(
+                        "Accessibility.getFullAXTree",
+                        json!({"depth":policy.max_depth}),
+                    )
+                    .await?;
+                let after = self.cdp("Page.getFrameTree", json!({})).await?;
+                if before.pointer("/frameTree/frame/loaderId")
+                    != after.pointer("/frameTree/frame/loaderId")
+                    || before.pointer("/frameTree/frame/id") != after.pointer("/frameTree/frame/id")
+                {
+                    return Err(io::Error::other(
+                        "document changed during AX capture; observe again",
+                    )
+                    .into());
+                }
+                super::evidence::accessibility_document(
+                    id,
+                    epoch,
+                    captured
+                        .get("nodes")
+                        .ok_or_else(|| io::Error::other("AX tree missing nodes"))?,
+                    policy,
+                )?
+            }
+            BrowserRepresentation::Network => {
+                let logs = self.post("/log", json!({"type":"performance"})).await?;
+                let logs = logs
+                    .as_array()
+                    .ok_or_else(|| io::Error::other("network log is not an array"))?;
+                let mut events = Vec::new();
+                let mut bytes = 0usize;
+                let mut observed = 0usize;
+                for entry in logs {
+                    let raw = entry
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| io::Error::other("network log message missing"))?;
+                    let envelope: Value = serde_json::from_str(raw)?;
+                    let message = envelope
+                        .get("message")
+                        .ok_or_else(|| io::Error::other("network log envelope invalid"))?;
+                    if !message
+                        .get("method")
+                        .and_then(Value::as_str)
+                        .is_some_and(|m| m.starts_with("Network."))
+                    {
+                        continue;
+                    }
+                    observed = observed.saturating_add(1);
+                    let size = serde_json::to_vec(message)?.len().saturating_add(1);
+                    if bytes.saturating_add(size) <= policy.max_bytes.saturating_sub(512)
+                        && events.len() < policy.max_nodes.saturating_sub(16) / 16
+                    {
+                        bytes = bytes.saturating_add(size);
+                        events.push(message.clone());
+                    }
+                }
+                Document::json(
+                    id,
+                    serde_json::to_vec(
+                        &json!({"schema":"yosoi.network.v1","document_epoch":epoch,
+                    "url":location.get("url"),"coverage":{"complete":false,"reason":"browser_network_log_window"},
+                    "events_observed":observed,"events_retained":events.len(),"events_omitted":observed.saturating_sub(events.len()),
+                    "response_bodies":"not_collected","events":events}),
+                    )?,
+                )?
+            }
+        };
+        let index = Surface::with_limits(&document, policy.limits()?)?;
+        Ok((index, document, location))
+    }
+    async fn cdp(&self, command: &str, params: Value) -> Result<Value> {
+        self.post("/goog/cdp/execute", json!({"cmd":command,"params":params}))
+            .await
     }
     pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
         let value = self

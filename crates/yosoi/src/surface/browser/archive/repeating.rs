@@ -22,7 +22,7 @@ pub(in crate::surface::browser) struct RunFailure {
     pub source: Box<dyn Error + Send + Sync>,
 }
 use serde_json::{Value, json};
-use std::{error::Error, fs, io, path::Path};
+use std::{collections::BTreeMap, error::Error, fs, io, path::Path};
 
 pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
     if target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty() {
@@ -261,7 +261,9 @@ pub(super) async fn run(
             .unwrap_or_else(|| output.join("archive"));
         let mut recording = Recording::open(&root, &directory, &url).await?;
         recording.set_limits(policy.archive_limits);
-        let mut browser = match Browser::open(headless).await {
+        policy.documents.validate()?;
+        let mut browser = match Browser::open_with_policy(headless, policy.documents.clone()).await
+        {
             Ok(browser) => browser,
             Err(error) => {
                 recording.fault();
@@ -322,6 +324,7 @@ pub(super) async fn run(
             trace,
             recording_fault: false,
             recording: Some(recording),
+            evidence: BTreeMap::new(),
         };
         let execution = async {
             for click in &clicks {

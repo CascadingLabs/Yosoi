@@ -12,6 +12,7 @@ use crate::surface::{
 };
 use serde_json::{Value, json};
 use std::{
+    collections::BTreeMap,
     error::Error,
     fmt::{self, Debug, Formatter},
     fs, io,
@@ -25,12 +26,14 @@ pub(super) struct Driver {
     pub(super) trace: Trace,
     pub(super) recording_fault: bool,
     pub(super) recording: Option<Recording>,
+    pub(super) evidence: BTreeMap<super::BrowserRepresentation, WebSurface>,
 }
 impl Driver {
     pub(super) fn web_view(&self) -> Result<WebSurface> {
-        Ok(WebSurface::new(
+        Ok(WebSurface::with_policy(
             self.session.current()?,
             model::SourceId::new(format!("browser:{}", self.browser.session_key()))?,
+            self.browser.documents.dom,
         )?)
     }
     pub(super) fn describe(&self) -> Result<Value> {
@@ -46,7 +49,7 @@ impl Driver {
             });
         }
         Ok(
-            json!({"descriptor":descriptor,"observation":view.observation(),"root":view.root_reference()}),
+            json!({"descriptor":descriptor,"observation":view.observation(),"root":view.root_reference(),"representations":["dom","ax","network"],"documents":self.browser.documents}),
         )
     }
     pub(super) fn status(&self) -> Result<Value> {
@@ -95,13 +98,29 @@ impl Driver {
         Ok(coordinate.value.parse()?)
     }
     pub(super) async fn command(&mut self, request: &Request) -> Result<Value> {
-        let budget = Budget {
+        let budget = self.browser.documents.dom.budget(Budget {
             bytes: request.budget.saturating_sub(256),
             items: request.items.min(100),
-        };
+        });
         let token = request.continuation.as_ref();
         match &request.operation {
             Operation::Describe => self.describe(),
+            Operation::Observe { representation } => self.observe(*representation).await,
+            Operation::ReadView {
+                representation,
+                request: read,
+            } => {
+                let view = if *representation == super::BrowserRepresentation::Dom {
+                    self.web_view()?
+                } else {
+                    self.evidence.get(representation).cloned().ok_or_else(|| {
+                        io::Error::other("observe this representation before reading it")
+                    })?
+                };
+                let mut read = read.clone();
+                read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
+                Ok(serde_json::to_value(view.read(&read)?)?)
+            }
             Operation::Read { request: read } => {
                 let mut read = read.clone();
                 read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
@@ -187,6 +206,44 @@ impl Driver {
             Operation::Close => Ok(json!({"closing":true})),
         }
     }
+    async fn observe(&mut self, representation: super::BrowserRepresentation) -> Result<Value> {
+        if representation == super::BrowserRepresentation::Dom {
+            self.refresh().await?;
+            let view = self.web_view()?;
+            return Ok(
+                json!({"descriptor":view.descriptor(),"observation":view.observation(),"root":view.root_reference()}),
+            );
+        }
+        self.epoch = self
+            .epoch
+            .checked_add(1)
+            .ok_or_else(|| io::Error::other("capture epoch exhausted"))?;
+        let (index, document, snapshot) = self
+            .browser
+            .capture_evidence(self.epoch, representation)
+            .await?;
+        let view = WebSurface::with_policy(
+            index.clone(),
+            model::SourceId::new(format!(
+                "browser:{}:{representation:?}",
+                self.browser.session_key()
+            ))?,
+            representation.policy(&self.browser.documents),
+        )?;
+        if let Some(recording) = &mut self.recording
+            && let Err(error) = recording
+                .capture(&document, &index, &snapshot, self.epoch)
+                .await
+        {
+            self.recording_fault = true;
+            recording.fault();
+            self.session.detach()?;
+            return Err(error);
+        }
+        let reply = json!({"descriptor":view.descriptor(),"observation":view.observation(),"root":view.root_reference()});
+        self.evidence.insert(representation, view);
+        Ok(reply)
+    }
     pub(super) fn record_reply(
         &mut self,
         operation: &Operation,
@@ -195,6 +252,7 @@ impl Driver {
         if matches!(
             operation,
             Operation::Read { .. }
+                | Operation::ReadView { .. }
                 | Operation::Overview
                 | Operation::Find { .. }
                 | Operation::Expand { .. }
@@ -578,6 +636,32 @@ pub struct BrowserSurface {
     inner: Connection<Driver>,
 }
 impl BrowserSurface {
+    /// Captures fresh evidence without acquiring live action authority.
+    /// AX is native and depth-limited; network covers a best-effort log window.
+    /// Replacing a view invalidates its previous addresses, while other views
+    /// remain immutable historical observations. DOM capture invalidates live targets.
+    pub async fn observe(
+        &mut self,
+        representation: super::BrowserRepresentation,
+    ) -> StdResult<super::BrowserObservation, ExecutionError> {
+        let value = self
+            .inner
+            .execute(json!({"op":"observe","representation":representation}))
+            .await?;
+        serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
+    }
+    /// Reads a previously observed representation under both caller and SDK policy bounds.
+    /// Network and AX addresses cannot be used as DOM action references. Requests
+    /// larger than the transport ceiling are reduced to 65280 result bytes.
+    pub async fn read(
+        &mut self,
+        representation: super::BrowserRepresentation,
+        mut request: model::ReadRequest,
+    ) -> StdResult<model::ReadResult, ExecutionError> {
+        request.budget.bytes = request.budget.bytes.min(65_280);
+        let value = self.inner.execute(json!({"op":"read_view","representation":representation,"budget":request.budget.bytes.saturating_add(256).max(1024),"request":request})).await?;
+        serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
+    }
     /// Opens a supported regular Chrome/Chromium source under explicit archive policy.
     /// `headless` selects this browser's display mode and is not a generic Surface policy.
     pub async fn open(
@@ -592,6 +676,7 @@ impl BrowserSurface {
     async fn open_inner(url: &str, policy: SurfacePolicy, headless: bool) -> Result<Self> {
         validate_url(url)?;
         policy.archive_limits.validate()?;
+        policy.documents.validate()?;
         let temporary = tempfile::tempdir()?;
         let output = policy
             .output
@@ -610,7 +695,7 @@ impl BrowserSurface {
         } else {
             None
         };
-        let mut browser = match Browser::open(headless).await {
+        let mut browser = match Browser::open_with_policy(headless, policy.documents).await {
             Ok(browser) => browser,
             Err(source) => {
                 if let Some(recording) = &mut recording {
@@ -677,6 +762,7 @@ impl BrowserSurface {
                     trace,
                     recording_fault: false,
                     recording,
+                    evidence: BTreeMap::new(),
                 },
                 output,
                 temporary,
