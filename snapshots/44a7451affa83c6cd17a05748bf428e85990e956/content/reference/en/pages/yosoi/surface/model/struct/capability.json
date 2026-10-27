@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::model::Capability",
+  "publicPath": "yosoi::surface::model::Capability",
+  "kind": "struct",
+  "title": "yosoi::surface::model::Capability",
+  "signature": "pub struct Capability",
+  "docs": "Advertised operation; input semantics belong to its representation.",
+  "source": {
+    "file": "crates/yosoi/src/surface/model.rs",
+    "lineStart": 82,
+    "lineEnd": 91,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L82-L91"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::model::Capability::access",
+      "publicPath": "yosoi::surface::model::Capability::access",
+      "title": "yosoi::surface::model::Capability::access",
+      "kind": "struct_field",
+      "signature": "pub access: yosoi::surface::model::Access",
+      "docs": "Whether invoking it can alter the observed source.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 86,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L86-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Capability::clone",
+      "publicPath": "yosoi::surface::model::Capability::clone",
+      "title": "yosoi::surface::model::Capability::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::model::Capability",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Capability::control_domain",
+      "publicPath": "yosoi::surface::model::Capability::control_domain",
+      "title": "yosoi::surface::model::Capability::control_domain",
+      "kind": "struct_field",
+      "signature": "pub control_domain: Option<String>",
+      "docs": "Shared actuation domain, absent for read-only capabilities.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L88-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Capability::deserialize",
+      "publicPath": "yosoi::surface::model::Capability::deserialize",
+      "title": "yosoi::surface::model::Capability::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::model::Capability::fmt",
+      "publicPath": "yosoi::surface::model::Capability::fmt",
+      "title": "yosoi::surface::model::Capability::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Capability::id",
+      "publicPath": "yosoi::surface::model::Capability::id",
+      "title": "yosoi::surface::model::Capability::id",
+      "kind": "struct_field",
+      "signature": "pub id: String",
+      "docs": "Namespaced, versioned capability name.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L84-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::model::Capability::input_schema",
+      "publicPath": "yosoi::surface::model::Capability::input_schema",
+      "title": "yosoi::surface::model::Capability::input_schema",
+      "kind": "struct_field",
+      "signature": "pub input_schema: String",
+      "docs": "Versioned input contract name; this value does not cause schema fetching.",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L90-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::model::Capability::serialize",
+      "publicPath": "yosoi::surface::model::Capability::serialize",
+      "title": "yosoi::surface::model::Capability::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/model.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/model.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b08ea74ded73aafb011d8fccf84f6c1ff2102334d96a137995e4baa43fa07cf6",
+  "slug": "yosoi/surface/model/struct/capability",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b08ea74ded73aafb011d8fccf84f6c1ff2102334d96a137995e4baa43fa07cf6"
+}

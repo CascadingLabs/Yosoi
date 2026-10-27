@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::JavaScriptModuleSource",
+  "publicPath": "yosoi::action::JavaScriptModuleSource",
+  "kind": "struct",
+  "title": "yosoi::action::JavaScriptModuleSource",
+  "signature": "pub struct JavaScriptModuleSource",
+  "docs": "One source module in a local ESM bundle.",
+  "source": {
+    "file": "crates/yosoi/src/action/module/types.rs",
+    "lineStart": 81,
+    "lineEnd": 84,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L81-L84"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptModuleSource"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::clone",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::clone",
+      "title": "yosoi::action::JavaScriptModuleSource::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::JavaScriptModuleSource",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::deserialize",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::deserialize",
+      "title": "yosoi::action::JavaScriptModuleSource::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::eq",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::eq",
+      "title": "yosoi::action::JavaScriptModuleSource::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::action::JavaScriptModuleSource) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::fmt",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::fmt",
+      "title": "yosoi::action::JavaScriptModuleSource::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::imports",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::imports",
+      "title": "yosoi::action::JavaScriptModuleSource::imports",
+      "kind": "function",
+      "signature": "pub fn imports(&self) -> &[yosoi::action::JavaScriptModuleImport]",
+      "docs": "Returns parsed import, re-export, and literal dynamic-import edges.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 93,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L93-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::serialize",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::serialize",
+      "title": "yosoi::action::JavaScriptModuleSource::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L79-L79"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleSource::snapshot",
+      "publicPath": "yosoi::action::JavaScriptModuleSource::snapshot",
+      "title": "yosoi::action::JavaScriptModuleSource::snapshot",
+      "kind": "function",
+      "signature": "pub const fn snapshot(&self) -> &yosoi::action::JavaScriptSourceSnapshot",
+      "docs": "Returns the exact source snapshot for this module.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 88,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L88-L90"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b31c7820a5edb855da1390ba580873483d3f79d8d7d4796762d49707f2cbffdb",
+  "slug": "yosoi/action/struct/javascriptmodulesource",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b31c7820a5edb855da1390ba580873483d3f79d8d7d4796762d49707f2cbffdb"
+}

@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Reference",
+  "publicPath": "yosoi::surface::Reference",
+  "kind": "struct",
+  "title": "yosoi::surface::Reference",
+  "signature": "pub struct Reference",
+  "docs": "Address of one node within one exact immutable interpretation.",
+  "source": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 131,
+    "lineEnd": 136,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L131-L136"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::surface::Reference::capture",
+      "publicPath": "yosoi::surface::Reference::capture",
+      "title": "yosoi::surface::Reference::capture",
+      "kind": "struct_field",
+      "signature": "pub capture: String",
+      "docs": "Content, document identity, profile, and interpreter-bound capture digest.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L133-L133"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Reference::clone",
+      "publicPath": "yosoi::surface::Reference::clone",
+      "title": "yosoi::surface::Reference::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Reference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::Reference::cmp",
+      "publicPath": "yosoi::surface::Reference::cmp",
+      "title": "yosoi::surface::Reference::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::surface::Reference) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::surface::Reference::deserialize",
+      "publicPath": "yosoi::surface::Reference::deserialize",
+      "title": "yosoi::surface::Reference::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::Reference::eq",
+      "publicPath": "yosoi::surface::Reference::eq",
+      "title": "yosoi::surface::Reference::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::Reference) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::Reference::fmt",
+      "publicPath": "yosoi::surface::Reference::fmt",
+      "title": "yosoi::surface::Reference::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Reference::node",
+      "publicPath": "yosoi::surface::Reference::node",
+      "title": "yosoi::surface::Reference::node",
+      "kind": "struct_field",
+      "signature": "pub node: usize",
+      "docs": "Opaque node ordinal within that capture; never a durable entity ID.",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L135-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Reference::partial_cmp",
+      "publicPath": "yosoi::surface::Reference::partial_cmp",
+      "title": "yosoi::surface::Reference::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::surface::Reference) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::surface::Reference::serialize",
+      "publicPath": "yosoi::surface::Reference::serialize",
+      "title": "yosoi::surface::Reference::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/mod.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L130-L130"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "fd5b89d9a34a6e1a92e5f4c5d3a9aea63e3c84eff997f7627d34a93edac4e301",
+  "slug": "yosoi/surface/struct/reference",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "fd5b89d9a34a6e1a92e5f4c5d3a9aea63e3c84eff997f7627d34a93edac4e301"
+}

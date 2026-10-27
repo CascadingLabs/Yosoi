@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::SurfaceSession",
+  "publicPath": "yosoi::SurfaceSession",
+  "kind": "struct",
+  "title": "yosoi::SurfaceSession",
+  "signature": "pub struct SurfaceSession",
+  "docs": "Thread-safe session coordinating immutable evidence and one hot action owner.\nLive means an external capture adapter is attached, not that this object launches a browser.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 281,
+    "lineEnd": 283,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L281-L283"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 42,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L42-L42"
+  },
+  "aliases": [
+    "yosoi::surface::Session"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::SurfaceSession::attach",
+      "publicPath": "yosoi::SurfaceSession::attach",
+      "title": "yosoi::SurfaceSession::attach",
+      "kind": "function",
+      "signature": "pub fn attach(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Marks the external observation adapter attached; readers gain no action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 437,
+        "lineEnd": 440,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L437-L440"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::clone",
+      "publicPath": "yosoi::SurfaceSession::clone",
+      "title": "yosoi::SurfaceSession::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::SurfaceSession",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 280,
+        "lineEnd": 280,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L280-L280"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::close",
+      "publicPath": "yosoi::SurfaceSession::close",
+      "title": "yosoi::SurfaceSession::close",
+      "kind": "function",
+      "signature": "pub fn close(&self) -> Result<Option<yosoi::surface::Outcome>, yosoi::SurfaceError>",
+      "docs": "Closes logical readers and revokes authority, preserving a final policy outcome.\nThe caller still owns external browser/provider cleanup. Outstanding effects remain unknown.\nRepeated close calls are harmless; closed sessions cannot be attached again.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 354,
+        "lineEnd": 386,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L354-L386"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::current",
+      "publicPath": "yosoi::SurfaceSession::current",
+      "title": "yosoi::SurfaceSession::current",
+      "kind": "function",
+      "signature": "pub fn current(&self) -> Result<yosoi::Surface, yosoi::SurfaceError>",
+      "docs": "Returns the current immutable index for concurrent, lock-free evidence reads.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 478,
+        "lineEnd": 480,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L478-L480"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::cursor",
+      "publicPath": "yosoi::SurfaceSession::cursor",
+      "title": "yosoi::SurfaceSession::cursor",
+      "kind": "function",
+      "signature": "pub fn cursor(&self) -> Result<yosoi::surface::Cursor, yosoi::SurfaceError>",
+      "docs": "Opens another independent reader, subject to the session cursor limit.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 416,
+        "lineEnd": 435,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L416-L435"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::detach",
+      "publicPath": "yosoi::SurfaceSession::detach",
+      "title": "yosoi::SurfaceSession::detach",
+      "kind": "function",
+      "signature": "pub fn detach(&self) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Detaches observation and revokes hot ownership; an already dispatched effect is not undone.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 459,
+        "lineEnd": 476,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L459-L476"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::fmt",
+      "publicPath": "yosoi::SurfaceSession::fmt",
+      "title": "yosoi::SurfaceSession::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 285,
+        "lineEnd": 287,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L285-L287"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::hot_owner",
+      "publicPath": "yosoi::SurfaceSession::hot_owner",
+      "title": "yosoi::SurfaceSession::hot_owner",
+      "kind": "function",
+      "signature": "pub fn hot_owner(&self) -> Result<Option<yosoi::surface::CursorId>, yosoi::SurfaceError>",
+      "docs": "Returns the current hot owner, if any; readers and watches remain independent.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 482,
+        "lineEnd": 484,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L482-L484"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::invalidate",
+      "publicPath": "yosoi::SurfaceSession::invalidate",
+      "title": "yosoi::SurfaceSession::invalidate",
+      "kind": "function",
+      "signature": "pub fn invalidate(&self, reason: &str) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Marks live evidence uncertain as soon as an event or capture failure is known.\nHot ownership remains, but actions are blocked until a successful `publish`.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 443,
+        "lineEnd": 457,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L443-L457"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::new",
+      "publicPath": "yosoi::SurfaceSession::new",
+      "title": "yosoi::SurfaceSession::new",
+      "kind": "function",
+      "signature": "pub fn new(index: yosoi::Surface, policy: yosoi::SurfaceSessionPolicy) -> Result<Self, yosoi::SurfaceError>",
+      "docs": "Creates a detached session with bounded history and no implicit cursors.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 291,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L291-L333"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::outcome",
+      "publicPath": "yosoi::SurfaceSession::outcome",
+      "title": "yosoi::SurfaceSession::outcome",
+      "kind": "function",
+      "signature": "pub fn outcome(&self) -> Result<Option<yosoi::surface::Outcome>, yosoi::SurfaceError>",
+      "docs": "Returns retained evidence without closing this session, or `None` when policy is off.\nAn in-flight action makes the snapshot unsealed; saved data never grants live authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 343,
+        "lineEnd": 350,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L343-L350"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceSession::publish",
+      "publicPath": "yosoi::SurfaceSession::publish",
+      "title": "yosoi::SurfaceSession::publish",
+      "kind": "function",
+      "signature": "pub fn publish(&self, index: yosoi::Surface) -> Result<(), yosoi::SurfaceError>",
+      "docs": "Publishes externally captured evidence, preserving old cursor positions.\nWatches become stale until explicit reconciliation; snapshots are not silently matched.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 487,
+        "lineEnd": 540,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L487-L540"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "cb7688b8275e590b16a3fc51cdf8e52a76180210d030e6d62164838347834f6b",
+  "slug": "yosoi/struct/surfacesession",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "cb7688b8275e590b16a3fc51cdf8e52a76180210d030e6d62164838347834f6b"
+}

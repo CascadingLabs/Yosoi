@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::action::wait_until",
+  "publicPath": "yosoi::action::wait_until",
+  "kind": "function",
+  "title": "yosoi::action::wait_until",
+  "signature": "pub const fn wait_until(condition: yosoi::flow::Condition, timeout_ms: u64) -> yosoi::flow::Step",
+  "docs": "Creates a typed assertion step bounded by a positive timeout in milliseconds.",
+  "source": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 76,
+    "lineEnd": 81,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action.rs#L76-L81"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::action::wait_until"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "b877429e553a011c0970ff26267f1f3a2a8f598b6aae74fd83618e7e76a1be1e",
+  "slug": "yosoi/action/function/wait-until",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b877429e553a011c0970ff26267f1f3a2a8f598b6aae74fd83618e7e76a1be1e"
+}

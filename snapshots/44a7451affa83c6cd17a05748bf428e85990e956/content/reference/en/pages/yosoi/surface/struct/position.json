@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::surface::Position",
+  "publicPath": "yosoi::surface::Position",
+  "kind": "struct",
+  "title": "yosoi::surface::Position",
+  "signature": "pub struct Position",
+  "docs": "Independent exploration position for one logical cursor.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 64,
+    "lineEnd": 71,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L64-L71"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "function:yosoi::surface::Position::clone",
+      "publicPath": "yosoi::surface::Position::clone",
+      "title": "yosoi::surface::Position::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::Position",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L63-L63"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Position::continuation",
+      "publicPath": "yosoi::surface::Position::continuation",
+      "title": "yosoi::surface::Position::continuation",
+      "kind": "struct_field",
+      "signature": "pub continuation: Option<yosoi::surface::Continuation>",
+      "docs": "Continuation of the last bounded read; does not grant action authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Position::default",
+      "publicPath": "yosoi::surface::Position::default",
+      "title": "yosoi::surface::Position::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::surface::Position",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L63-L63"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::surface::Position::fmt",
+      "publicPath": "yosoi::surface::Position::fmt",
+      "title": "yosoi::surface::Position::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L63-L63"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::surface::Position::focus",
+      "publicPath": "yosoi::surface::Position::focus",
+      "title": "yosoi::surface::Position::focus",
+      "kind": "struct_field",
+      "signature": "pub focus: Option<yosoi::surface::Reference>",
+      "docs": "Most recently inspected or explicitly focused evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::surface::Position::scope",
+      "publicPath": "yosoi::surface::Position::scope",
+      "title": "yosoi::surface::Position::scope",
+      "kind": "struct_field",
+      "signature": "pub scope: Option<yosoi::surface::Reference>",
+      "docs": "Most recently expanded region, which may belong to an older capture.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::Position::serialize",
+      "publicPath": "yosoi::surface::Position::serialize",
+      "title": "yosoi::surface::Position::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L63-L63"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "cf829316b19bb0158c2cfd7c2df624d24b469d8448edb4575613bfc488421d46",
+  "slug": "yosoi/surface/struct/position",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "cf829316b19bb0158c2cfd7c2df624d24b469d8448edb4575613bfc488421d46"
+}

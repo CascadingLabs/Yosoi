@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Network",
+  "publicPath": "yosoi::policy::Network",
+  "kind": "struct",
+  "title": "yosoi::policy::Network",
+  "signature": "pub struct Network",
+  "docs": "Opt-in TCP routing shared by Requests and owned browser Sessions.\n\nThe default preserves existing transport behavior. Explicit routing uses an\nowned local SOCKS5 tunnel for web traffic, without decrypting destination TLS.\nThis is not an operating-system firewall or an all-protocol egress guarantee.\nProxy credentials are present in serialized policy and must be treated as\nsecrets; Debug output redacts the entire proxy URL.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+    "lineStart": 42,
+    "lineEnd": 54,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L42-L54"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/policy.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Network"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Network::clone",
+      "publicPath": "yosoi::policy::Network::clone",
+      "title": "yosoi::policy::Network::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::Network",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L40-L40"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Network::default",
+      "publicPath": "yosoi::policy::Network::default",
+      "title": "yosoi::policy::Network::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::policy::Network",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L40-L40"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Network::deserialize",
+      "publicPath": "yosoi::policy::Network::deserialize",
+      "title": "yosoi::policy::Network::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L40-L40"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Network::eq",
+      "publicPath": "yosoi::policy::Network::eq",
+      "title": "yosoi::policy::Network::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::Network) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L40-L40"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Network::fmt",
+      "publicPath": "yosoi::policy::Network::fmt",
+      "title": "yosoi::policy::Network::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 57,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L57-L63"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Network::ip_family",
+      "publicPath": "yosoi::policy::Network::ip_family",
+      "title": "yosoi::policy::Network::ip_family",
+      "kind": "struct_field",
+      "signature": "pub ip_family: yosoi::policy::IpFamily",
+      "docs": "Family for TCP connections to a destination or configured upstream proxy.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Network::proxy",
+      "publicPath": "yosoi::policy::Network::proxy",
+      "title": "yosoi::policy::Network::proxy",
+      "kind": "struct_field",
+      "signature": "pub proxy: Option<String>",
+      "docs": "External HTTP CONNECT or SOCKS5 proxy URL, optionally with user/password.\nSupported schemes are `http`, `https`, `socks5`, and `socks5h`.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Network::serialize",
+      "publicPath": "yosoi::policy::Network::serialize",
+      "title": "yosoi::policy::Network::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L40-L40"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Network::source_address",
+      "publicPath": "yosoi::policy::Network::source_address",
+      "title": "yosoi::policy::Network::source_address",
+      "kind": "struct_field",
+      "signature": "pub source_address: Option<std::net::IpAddr>",
+      "docs": "Optional already-assigned local IP for destination or upstream-proxy sockets.\nThis does not allocate an address or choose the public address after NAT.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/network.rs",
+        "lineStart": 49,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/policy/policy/network.rs#L49-L49"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b4dc7e0bc0da87dad0f677f7134ce3191e1dddb7c7298a4f45fe160cc7baf2b6",
+  "slug": "yosoi/policy/struct/network",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b4dc7e0bc0da87dad0f677f7134ce3191e1dddb7c7298a4f45fe160cc7baf2b6"
+}

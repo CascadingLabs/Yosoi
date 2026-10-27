@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::archive",
+  "publicPath": "yosoi::surface::archive",
+  "kind": "module",
+  "title": "yosoi::surface::archive",
+  "signature": "pub mod archive",
+  "docs": "Surface recording uses existing immutable Documents and AutomationRecords.",
+  "source": {
+    "file": "crates/yosoi/src/surface/archive.rs",
+    "lineStart": 1,
+    "lineEnd": 445,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/archive.rs#L1-L445"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f0983fc352a42084e5d2af7ba74fc9298efc0a70abeceebe9566f2db69e59abc",
+  "slug": "yosoi/surface/module/archive",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f0983fc352a42084e5d2af7ba74fc9298efc0a70abeceebe9566f2db69e59abc"
+}

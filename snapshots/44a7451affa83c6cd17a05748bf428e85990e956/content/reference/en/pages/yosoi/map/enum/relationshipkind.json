@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::RelationshipKind",
+  "publicPath": "yosoi::map::RelationshipKind",
+  "kind": "enum",
+  "title": "yosoi::map::RelationshipKind",
+  "signature": "pub enum RelationshipKind",
+  "docs": "Kind of retained directed relationship between normalized pages.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 164,
+    "lineEnd": 171,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L164-L171"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/map.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::map::RelationshipKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::RelationshipKind::Canonical",
+      "publicPath": "yosoi::map::RelationshipKind::Canonical",
+      "title": "yosoi::map::RelationshipKind::Canonical",
+      "kind": "variant",
+      "signature": "Canonical",
+      "docs": "An extracted canonical hint; it does not create a traversal-tree parent.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 170,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L170-L170"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::RelationshipKind::Link",
+      "publicPath": "yosoi::map::RelationshipKind::Link",
+      "title": "yosoi::map::RelationshipKind::Link",
+      "kind": "variant",
+      "signature": "Link",
+      "docs": "An extracted hyperlink; traversing it increases rooted link depth.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 166,
+        "lineEnd": 166,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L166-L166"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::RelationshipKind::Redirect",
+      "publicPath": "yosoi::map::RelationshipKind::Redirect",
+      "title": "yosoi::map::RelationshipKind::Redirect",
+      "kind": "variant",
+      "signature": "Redirect",
+      "docs": "An observed redirect, which preserves rooted link depth.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 168,
+        "lineEnd": 168,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L168-L168"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::clone",
+      "publicPath": "yosoi::map::RelationshipKind::clone",
+      "title": "yosoi::map::RelationshipKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::RelationshipKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::cmp",
+      "publicPath": "yosoi::map::RelationshipKind::cmp",
+      "title": "yosoi::map::RelationshipKind::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &yosoi::map::RelationshipKind) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::eq",
+      "publicPath": "yosoi::map::RelationshipKind::eq",
+      "title": "yosoi::map::RelationshipKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::RelationshipKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::fmt",
+      "publicPath": "yosoi::map::RelationshipKind::fmt",
+      "title": "yosoi::map::RelationshipKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::partial_cmp",
+      "publicPath": "yosoi::map::RelationshipKind::partial_cmp",
+      "title": "yosoi::map::RelationshipKind::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &yosoi::map::RelationshipKind) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::RelationshipKind::serialize",
+      "publicPath": "yosoi::map::RelationshipKind::serialize",
+      "title": "yosoi::map::RelationshipKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 162,
+        "lineEnd": 162,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L162-L162"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "19067d57d4287797bca07709f1291cbcb2030fae08549c441409637d6f65d7c6",
+  "slug": "yosoi/map/enum/relationshipkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "19067d57d4287797bca07709f1291cbcb2030fae08549c441409637d6f65d7c6"
+}

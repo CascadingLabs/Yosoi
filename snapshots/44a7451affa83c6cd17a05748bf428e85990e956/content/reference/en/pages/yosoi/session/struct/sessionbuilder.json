@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::SessionBuilder",
+  "publicPath": "yosoi::session::SessionBuilder",
+  "kind": "struct",
+  "title": "yosoi::session::SessionBuilder",
+  "signature": "pub struct SessionBuilder",
+  "docs": "Owned policy and execution settings awaiting explicit browser acquisition.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 678,
+    "lineEnd": 683,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L678-L683"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionBuilder"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::SessionBuilder::acquire",
+      "publicPath": "yosoi::session::SessionBuilder::acquire",
+      "title": "yosoi::session::SessionBuilder::acquire",
+      "kind": "function",
+      "signature": "pub async fn acquire(self) -> Result<yosoi::session::Session, yosoi::session::SessionError>",
+      "docs": "Consumes the builder and acquires an owned browser Session with default startup cancellation.\nReturns [`SessionError`] for invalid policies, unavailable browser features,\ncapacity admission, or acquisition-deadline failure. Close the returned\nSession explicitly when its retained browser lifetime should end.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 734,
+        "lineEnd": 736,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L734-L736"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::acquire_cancellable",
+      "publicPath": "yosoi::session::SessionBuilder::acquire_cancellable",
+      "title": "yosoi::session::SessionBuilder::acquire_cancellable",
+      "kind": "function",
+      "signature": "pub async fn acquire_cancellable(self, cancellation: &CancellationToken) -> Result<yosoi::session::Session, yosoi::session::SessionError>",
+      "docs": "Acquires a browser Session while honoring caller cancellation during startup.\n\nStartup uses the bound Request's acquisition budget, separate from\nper-Work operation timeouts. Consumes this builder; dropping the startup\nfuture cancels pending acquisition. Returns [`SessionError`] for validation,\nadmission, cancellation, or startup deadline failures.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 743,
+        "lineEnd": 833,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L743-L833"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::allow_javascript",
+      "publicPath": "yosoi::session::SessionBuilder::allow_javascript",
+      "title": "yosoi::session::SessionBuilder::allow_javascript",
+      "kind": "function",
+      "signature": "pub fn allow_javascript(self) -> Self",
+      "docs": "Explicitly permits arbitrary JavaScript through Work evaluation methods.\nBrowser acquisition mode remains selected by the bound Policy.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 687,
+        "lineEnd": 697,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L687-L697"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::bind",
+      "publicPath": "yosoi::session::SessionBuilder::bind",
+      "title": "yosoi::session::SessionBuilder::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> Self",
+      "docs": "Snapshots complete acquisition policy; unconfigured settings adopt its browser mode.\nExplicitly configured settings retain their mode and are checked for agreement at acquisition.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 706,
+        "lineEnd": 722,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L706-L722"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::clone",
+      "publicPath": "yosoi::session::SessionBuilder::clone",
+      "title": "yosoi::session::SessionBuilder::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::session::SessionBuilder",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 677,
+        "lineEnd": 677,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L677-L677"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::configure",
+      "publicPath": "yosoi::session::SessionBuilder::configure",
+      "title": "yosoi::session::SessionBuilder::configure",
+      "kind": "function",
+      "signature": "pub fn configure(self, settings: yosoi::session::SessionPolicy) -> Self",
+      "docs": "Replaces execution settings without launching or validating a browser.\nThe replacement marks browser mode as explicit for later Policy agreement checks.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 725,
+        "lineEnd": 729,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L725-L729"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::execution_pool",
+      "publicPath": "yosoi::session::SessionBuilder::execution_pool",
+      "title": "yosoi::session::SessionBuilder::execution_pool",
+      "kind": "function",
+      "signature": "pub fn execution_pool(self, pool: &yosoi::session::ExecutionPool) -> Self",
+      "docs": "Shares controller capacity across Sessions/browser processes. Without this,\nthe Session creates its own pool using its execution policy limits.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 700,
+        "lineEnd": 703,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L700-L703"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionBuilder::fmt",
+      "publicPath": "yosoi::session::SessionBuilder::fmt",
+      "title": "yosoi::session::SessionBuilder::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 677,
+        "lineEnd": 677,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L677-L677"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "35affff8e79df97fd3008fa3f0e7770e7da9ff6f7eee644b1529c1a5893c283b",
+  "slug": "yosoi/session/struct/sessionbuilder",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "35affff8e79df97fd3008fa3f0e7770e7da9ff6f7eee644b1529c1a5893c283b"
+}

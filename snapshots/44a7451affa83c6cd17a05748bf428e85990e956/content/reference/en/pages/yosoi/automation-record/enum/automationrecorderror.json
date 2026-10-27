@@ -1,0 +1,718 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::automation_record::AutomationRecordError",
+  "publicPath": "yosoi::automation_record::AutomationRecordError",
+  "kind": "enum",
+  "title": "yosoi::automation_record::AutomationRecordError",
+  "signature": "pub enum AutomationRecordError",
+  "docs": "Failure while authoring or reading the prototype record container.\nBounded record shape, provenance, encoding, or Archive persistence rejected the evidence.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 1594,
+    "lineEnd": 1674,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1594-L1674"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::Archive",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::Archive",
+      "title": "yosoi::automation_record::AutomationRecordError::Archive",
+      "kind": "variant",
+      "signature": "Archive(String)",
+      "docs": "Archive persistence or retrieval failed before a valid record could be returned.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1673,
+        "lineEnd": 1673,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1673-L1673"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::Archive::0",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::Archive::0",
+          "title": "yosoi::automation_record::AutomationRecordError::Archive::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1673,
+            "lineEnd": 1673,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1673-L1673"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::BrowserProvenanceMismatch",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::BrowserProvenanceMismatch",
+      "title": "yosoi::automation_record::AutomationRecordError::BrowserProvenanceMismatch",
+      "kind": "variant",
+      "signature": "BrowserProvenanceMismatch",
+      "docs": "An operation and its attached observation claim different browser provenance.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1596,
+        "lineEnd": 1596,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1596-L1596"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::Document",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::Document",
+      "title": "yosoi::automation_record::AutomationRecordError::Document",
+      "kind": "variant",
+      "signature": "Document(String)",
+      "docs": "Construction or interpretation of the immutable record Document failed.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1671,
+        "lineEnd": 1671,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1671-L1671"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::Document::0",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::Document::0",
+          "title": "yosoi::automation_record::AutomationRecordError::Document::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1671,
+            "lineEnd": 1671,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1671-L1671"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::DocumentIdentityMismatch",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::DocumentIdentityMismatch",
+      "title": "yosoi::automation_record::AutomationRecordError::DocumentIdentityMismatch",
+      "kind": "variant",
+      "signature": "DocumentIdentityMismatch",
+      "docs": "Archived Document identity disagrees with the logical record identity.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1648,
+        "lineEnd": 1648,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1648-L1648"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::DuplicateIdentity",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::DuplicateIdentity",
+      "title": "yosoi::automation_record::AutomationRecordError::DuplicateIdentity",
+      "kind": "variant",
+      "signature": "DuplicateIdentity { field: &'static str }",
+      "docs": "An observation or receipt identity is repeated within its record scope.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1608,
+        "lineEnd": 1611,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1608-L1611"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::DuplicateIdentity::field",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::DuplicateIdentity::field",
+          "title": "yosoi::automation_record::AutomationRecordError::DuplicateIdentity::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Evidence category containing the repeated identity.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1610,
+            "lineEnd": 1610,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1610-L1610"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::EmptyIdentity",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::EmptyIdentity",
+      "title": "yosoi::automation_record::AutomationRecordError::EmptyIdentity",
+      "kind": "variant",
+      "signature": "EmptyIdentity { field: &'static str }",
+      "docs": "A required record, observation, or operation identity is blank.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1598,
+        "lineEnd": 1601,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1598-L1601"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::EmptyIdentity::field",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::EmptyIdentity::field",
+          "title": "yosoi::automation_record::AutomationRecordError::EmptyIdentity::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Identity role whose value was rejected.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1600,
+            "lineEnd": 1600,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1600-L1600"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded",
+      "title": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded",
+      "kind": "variant",
+      "signature": "EncodedSizeExceeded { maximum: u64, observed: u64 }",
+      "docs": "Encoded record or context data exceeds its permitted byte bound.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1632,
+        "lineEnd": 1637,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1632-L1637"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::maximum",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::maximum",
+          "title": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum accepted bytes for the rejected encoding or context field.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1634,
+            "lineEnd": 1634,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1634-L1634"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::observed",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::observed",
+          "title": "yosoi::automation_record::AutomationRecordError::EncodedSizeExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Recorded encoded or attempted field byte count.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1636,
+            "lineEnd": 1636,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1636-L1636"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded",
+      "title": "yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded",
+      "kind": "variant",
+      "signature": "EvidenceSizeExceeded { maximum: usize }",
+      "docs": "Aggregate raw or confirmation evidence exceeds record retention limits.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1627,
+        "lineEnd": 1630,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1627-L1630"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded::maximum",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded::maximum",
+          "title": "yosoi::automation_record::AutomationRecordError::EvidenceSizeExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum combined retained evidence bytes.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1629,
+            "lineEnd": 1629,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1629-L1629"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::FieldSizeExceeded",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded",
+      "title": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded",
+      "kind": "variant",
+      "signature": "FieldSizeExceeded { field: &'static str, maximum: usize }",
+      "docs": "One retained evidence field exceeds its byte bound.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1620,
+        "lineEnd": 1625,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1620-L1625"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::field",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::field",
+          "title": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Oversized field role, such as HTML or screenshot evidence.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1622,
+            "lineEnd": 1622,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1622-L1622"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::maximum",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::maximum",
+          "title": "yosoi::automation_record::AutomationRecordError::FieldSizeExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum permitted bytes for that field.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1624,
+            "lineEnd": 1624,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1624-L1624"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::FlowStepCountMismatch",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::FlowStepCountMismatch",
+      "title": "yosoi::automation_record::AutomationRecordError::FlowStepCountMismatch",
+      "kind": "variant",
+      "signature": "FlowStepCountMismatch",
+      "docs": "Result, skipped-step, or cleanup counts cannot correspond to the authored Flow.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1657,
+        "lineEnd": 1657,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1657-L1657"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::FlowTerminalMismatch",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::FlowTerminalMismatch",
+      "title": "yosoi::automation_record::AutomationRecordError::FlowTerminalMismatch",
+      "kind": "variant",
+      "signature": "FlowTerminalMismatch",
+      "docs": "The terminal completion claim disagrees with retained receipts or stop evidence.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1663,
+        "lineEnd": 1663,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1663-L1663"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::IdentityTooLong",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::IdentityTooLong",
+      "title": "yosoi::automation_record::AutomationRecordError::IdentityTooLong",
+      "kind": "variant",
+      "signature": "IdentityTooLong { field: &'static str }",
+      "docs": "A required identity exceeds its UTF-8 byte bound.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1603,
+        "lineEnd": 1606,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1603-L1606"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::IdentityTooLong::field",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::IdentityTooLong::field",
+          "title": "yosoi::automation_record::AutomationRecordError::IdentityTooLong::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Identity role whose text is oversized.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1605,
+            "lineEnd": 1605,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1605-L1605"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::InvalidFlow",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidFlow",
+      "title": "yosoi::automation_record::AutomationRecordError::InvalidFlow",
+      "kind": "variant",
+      "signature": "InvalidFlow(String)",
+      "docs": "The embedded authored recipe fails current structural validation.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1665,
+        "lineEnd": 1665,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1665-L1665"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::InvalidFlow::0",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidFlow::0",
+          "title": "yosoi::automation_record::AutomationRecordError::InvalidFlow::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1665,
+            "lineEnd": 1665,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1665-L1665"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::InvalidFlowStepOrder",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidFlowStepOrder",
+      "title": "yosoi::automation_record::AutomationRecordError::InvalidFlowStepOrder",
+      "kind": "variant",
+      "signature": "InvalidFlowStepOrder",
+      "docs": "Recorded leaf indexes are not in the required deterministic execution order.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1659,
+        "lineEnd": 1659,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1659-L1659"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::InvalidFlowStepPath",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidFlowStepPath",
+      "title": "yosoi::automation_record::AutomationRecordError::InvalidFlowStepPath",
+      "kind": "variant",
+      "signature": "InvalidFlowStepPath",
+      "docs": "A recorded leaf or stop path does not identify a valid authored action scope.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1661,
+        "lineEnd": 1661,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1661-L1661"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::InvalidUntilReport",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidUntilReport",
+      "title": "yosoi::automation_record::AutomationRecordError::InvalidUntilReport",
+      "kind": "variant",
+      "signature": "InvalidUntilReport(String)",
+      "docs": "Saved Until confirmation shape, source coordinates, or success claims are inconsistent.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1667,
+        "lineEnd": 1667,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1667-L1667"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::InvalidUntilReport::0",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::InvalidUntilReport::0",
+          "title": "yosoi::automation_record::AutomationRecordError::InvalidUntilReport::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1667,
+            "lineEnd": 1667,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1667-L1667"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::ItemLimitExceeded",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded",
+      "title": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded",
+      "kind": "variant",
+      "signature": "ItemLimitExceeded { field: &'static str, maximum: usize }",
+      "docs": "A retained evidence collection exceeds its item-count bound.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1613,
+        "lineEnd": 1618,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1613-L1618"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::field",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::field",
+          "title": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::field",
+          "kind": "struct_field",
+          "signature": "field: &'static str",
+          "docs": "Collection whose items cannot all be retained.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1615,
+            "lineEnd": 1615,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1615-L1615"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::maximum",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::maximum",
+          "title": "yosoi::automation_record::AutomationRecordError::ItemLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: usize",
+          "docs": "Maximum permitted items in that collection.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1617,
+            "lineEnd": 1617,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1617-L1617"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::Serialization",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::Serialization",
+      "title": "yosoi::automation_record::AutomationRecordError::Serialization",
+      "kind": "variant",
+      "signature": "Serialization(String)",
+      "docs": "Bounded record encoding or decoding failed.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1669,
+        "lineEnd": 1669,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1669-L1669"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::Serialization::0",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::Serialization::0",
+          "title": "yosoi::automation_record::AutomationRecordError::Serialization::0",
+          "kind": "struct_field",
+          "signature": "0: String",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1669,
+            "lineEnd": 1669,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1669-L1669"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion",
+      "title": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion",
+      "kind": "variant",
+      "signature": "UnsupportedFlowVersion { observed: u32, supported: u32 }",
+      "docs": "The embedded Flow outcome schema is outside the supported legacy/current range.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1650,
+        "lineEnd": 1655,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1650-L1655"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::observed",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::observed",
+          "title": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::observed",
+          "kind": "struct_field",
+          "signature": "observed: u32",
+          "docs": "Version supplied by the embedded outcome.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1652,
+            "lineEnd": 1652,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1652-L1652"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::supported",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::supported",
+          "title": "yosoi::automation_record::AutomationRecordError::UnsupportedFlowVersion::supported",
+          "kind": "struct_field",
+          "signature": "supported: u32",
+          "docs": "Highest Flow outcome version understood by this build.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1654,
+            "lineEnd": 1654,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1654-L1654"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::UnsupportedVersion",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion",
+      "title": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion",
+      "kind": "variant",
+      "signature": "UnsupportedVersion { observed: u32, supported: u32 }",
+      "docs": "The logical automation record schema version is unsupported by this build.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1639,
+        "lineEnd": 1644,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1639-L1644"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::UnsupportedVersion::observed",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion::observed",
+          "title": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion::observed",
+          "kind": "struct_field",
+          "signature": "observed: u32",
+          "docs": "Version supplied by the record or reference.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1641,
+            "lineEnd": 1641,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1641-L1641"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::automation_record::AutomationRecordError::UnsupportedVersion::supported",
+          "publicPath": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion::supported",
+          "title": "yosoi::automation_record::AutomationRecordError::UnsupportedVersion::supported",
+          "kind": "struct_field",
+          "signature": "supported: u32",
+          "docs": "Record schema version supported by this build.",
+          "source": {
+            "file": "crates/yosoi/src/automation_record.rs",
+            "lineStart": 1643,
+            "lineEnd": 1643,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1643-L1643"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::automation_record::AutomationRecordError::WrongDocumentProfile",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::WrongDocumentProfile",
+      "title": "yosoi::automation_record::AutomationRecordError::WrongDocumentProfile",
+      "kind": "variant",
+      "signature": "WrongDocumentProfile",
+      "docs": "Archived record bytes do not use the required source-text Document profile.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1646,
+        "lineEnd": 1646,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1646-L1646"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordError::clone",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::clone",
+      "title": "yosoi::automation_record::AutomationRecordError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::AutomationRecordError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1592,
+        "lineEnd": 1592,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1592-L1592"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordError::eq",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::eq",
+      "title": "yosoi::automation_record::AutomationRecordError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::AutomationRecordError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1592,
+        "lineEnd": 1592,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1592-L1592"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordError::fmt",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::fmt",
+      "title": "yosoi::automation_record::AutomationRecordError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1592,
+        "lineEnd": 1592,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1592-L1592"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::automation_record::AutomationRecordError::fmt",
+      "publicPath": "yosoi::automation_record::AutomationRecordError::fmt",
+      "title": "yosoi::automation_record::AutomationRecordError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 1677,
+        "lineEnd": 1746,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L1677-L1746"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4b65ac76c0da363874f7e4e73f44ff6c4cdbdb3aca5ea836b047da58b15be1a2",
+  "slug": "yosoi/automation-record/enum/automationrecorderror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4b65ac76c0da363874f7e4e73f44ff6c4cdbdb3aca5ea836b047da58b15be1a2"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::locator::text_literal",
+  "publicPath": "yosoi::locators::locator::text_literal",
+  "kind": "function",
+  "title": "yosoi::locators::locator::text_literal",
+  "signature": "pub const fn text_literal(expression: &'static str) -> yosoi::locators::PinnedLocator",
+  "docs": "Retains static decoded-text literal query data for a Contract declaration. Compilation and evidence matching are separate phases.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+    "lineStart": 89,
+    "lineEnd": 91,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/locator_declaration.rs#L89-L91"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/locators.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::prelude::locator::text_literal",
+    "yosoi::prelude::locators::locator::text_literal"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "b231e979709fbca1ce6d3e6893aae2bf089b4b2742d69bf3237754d3e6c1206f",
+  "slug": "yosoi/locators/locator/function/text-literal",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b231e979709fbca1ce6d3e6893aae2bf089b4b2742d69bf3237754d3e6c1206f"
+}

@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::SourceInterpretation",
+  "publicPath": "yosoi::surface::SourceInterpretation",
+  "kind": "enum",
+  "title": "yosoi::surface::SourceInterpretation",
+  "signature": "pub enum SourceInterpretation",
+  "docs": "Interpreter needed to reconstruct retained evidence, without live authority.",
+  "source": {
+    "file": "crates/yosoi/src/surface/outcome.rs",
+    "lineStart": 20,
+    "lineEnd": 31,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L20-L31"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/surface/mod.rs",
+    "lineStart": 28,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/mod.rs#L28-L28"
+  },
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::SourceInterpretation::Bundle",
+      "publicPath": "yosoi::surface::SourceInterpretation::Bundle",
+      "title": "yosoi::surface::SourceInterpretation::Bundle",
+      "kind": "variant",
+      "signature": "Bundle",
+      "docs": "A bounded manifest of named document/image views; never nested bundles.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::SourceInterpretation::Document",
+      "publicPath": "yosoi::surface::SourceInterpretation::Document",
+      "title": "yosoi::surface::SourceInterpretation::Document",
+      "kind": "variant",
+      "signature": "Document",
+      "docs": "One of the six SDK document representations, preserving its profile.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::SourceInterpretation::Image",
+      "publicPath": "yosoi::surface::SourceInterpretation::Image",
+      "title": "yosoi::surface::SourceInterpretation::Image",
+      "kind": "variant",
+      "signature": "Image { tile_side: u32 }",
+      "docs": "PNG/JPEG pixels with the exact original tiling policy.",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 25,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L25-L28"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::surface::SourceInterpretation::Image::tile_side",
+          "publicPath": "yosoi::surface::SourceInterpretation::Image::tile_side",
+          "title": "yosoi::surface::SourceInterpretation::Image::tile_side",
+          "kind": "struct_field",
+          "signature": "tile_side: u32",
+          "docs": "Smallest automatically indexed region size in pixels.",
+          "source": {
+            "file": "crates/yosoi/src/surface/outcome.rs",
+            "lineStart": 27,
+            "lineEnd": 27,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L27-L27"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::clone",
+      "publicPath": "yosoi::surface::SourceInterpretation::clone",
+      "title": "yosoi::surface::SourceInterpretation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::SourceInterpretation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::default",
+      "publicPath": "yosoi::surface::SourceInterpretation::default",
+      "title": "yosoi::surface::SourceInterpretation::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::surface::SourceInterpretation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::deserialize",
+      "publicPath": "yosoi::surface::SourceInterpretation::deserialize",
+      "title": "yosoi::surface::SourceInterpretation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::eq",
+      "publicPath": "yosoi::surface::SourceInterpretation::eq",
+      "title": "yosoi::surface::SourceInterpretation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::SourceInterpretation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::fmt",
+      "publicPath": "yosoi::surface::SourceInterpretation::fmt",
+      "title": "yosoi::surface::SourceInterpretation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::SourceInterpretation::serialize",
+      "publicPath": "yosoi::surface::SourceInterpretation::serialize",
+      "title": "yosoi::surface::SourceInterpretation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/outcome.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/outcome.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0333ed177e3a1849ed5bf5153c6099e7cd8d0e10c853f38bab109c6fc8b48a8b",
+  "slug": "yosoi/surface/enum/sourceinterpretation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0333ed177e3a1849ed5bf5153c6099e7cd8d0e10c853f38bab109c6fc8b48a8b"
+}

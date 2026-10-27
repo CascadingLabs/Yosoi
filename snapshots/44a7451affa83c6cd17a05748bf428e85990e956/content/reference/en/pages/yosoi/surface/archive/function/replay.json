@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::surface::archive::replay",
+  "publicPath": "yosoi::surface::archive::replay",
+  "kind": "function",
+  "title": "yosoi::surface::archive::replay",
+  "signature": "pub async fn replay(path: impl AsRef<std::path::Path>, repeat: usize, query: Option<&str>, output: Option<&std::path::Path>) -> std::result::Result<serde_json::Value, yosoi::ExecutionError>",
+  "docs": "Verifies and reconstructs saved observations without starting source processes.\nSaved video pixels require neither a browser nor a decoder.",
+  "source": {
+    "file": "crates/yosoi/src/surface/archive.rs",
+    "lineStart": 357,
+    "lineEnd": 366,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/archive.rs#L357-L366"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "9b2b674cc3649fda5efb4dc4fedc2c56e26ffc3d945828eb84f74ba08329bf1e",
+  "slug": "yosoi/surface/archive/function/replay",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9b2b674cc3649fda5efb4dc4fedc2c56e26ffc3d945828eb84f74ba08329bf1e"
+}

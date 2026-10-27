@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::SurfacePolicy",
+  "publicPath": "yosoi::SurfacePolicy",
+  "kind": "struct",
+  "title": "yosoi::SurfacePolicy",
+  "signature": "pub struct SurfacePolicy",
+  "docs": "Execution and retention settings for the Surface connection.",
+  "source": {
+    "file": "crates/yosoi/src/surface/policy.rs",
+    "lineStart": 60,
+    "lineEnd": 69,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L60-L69"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 60,
+    "lineEnd": 60,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L60-L60"
+  },
+  "aliases": [
+    "yosoi::surface::SurfacePolicy"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::SurfacePolicy::archive",
+      "publicPath": "yosoi::SurfacePolicy::archive",
+      "title": "yosoi::SurfacePolicy::archive",
+      "kind": "struct_field",
+      "signature": "pub archive: yosoi::surface::ArchivePolicy",
+      "docs": "Whether execution retains a portable outcome. Defaults to off.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L62-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::SurfacePolicy::archive_limits",
+      "publicPath": "yosoi::SurfacePolicy::archive_limits",
+      "title": "yosoi::SurfacePolicy::archive_limits",
+      "kind": "struct_field",
+      "signature": "pub archive_limits: yosoi::surface::ArchiveLimits",
+      "docs": "Bounded evidence retention, separate from response budgets.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L64-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::SurfacePolicy::archive_root",
+      "publicPath": "yosoi::SurfacePolicy::archive_root",
+      "title": "yosoi::SurfacePolicy::archive_root",
+      "kind": "struct_field",
+      "signature": "pub archive_root: Option<std::path::PathBuf>",
+      "docs": "Optional durable checkpoint directory. Otherwise an owned temporary store is used.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfacePolicy::clone",
+      "publicPath": "yosoi::SurfacePolicy::clone",
+      "title": "yosoi::SurfacePolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::SurfacePolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L58-L58"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::SurfacePolicy::default",
+      "publicPath": "yosoi::SurfacePolicy::default",
+      "title": "yosoi::SurfacePolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 71,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L71-L78"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::SurfacePolicy::deserialize",
+      "publicPath": "yosoi::SurfacePolicy::deserialize",
+      "title": "yosoi::SurfacePolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L58-L58"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::SurfacePolicy::fmt",
+      "publicPath": "yosoi::SurfacePolicy::fmt",
+      "title": "yosoi::SurfacePolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L58-L58"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::SurfacePolicy::output",
+      "publicPath": "yosoi::SurfacePolicy::output",
+      "title": "yosoi::SurfacePolicy::output",
+      "kind": "struct_field",
+      "signature": "pub output: Option<std::path::PathBuf>",
+      "docs": "Optional retained traces and artifacts. Otherwise temporary artifacts live with the runtime.",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfacePolicy::serialize",
+      "publicPath": "yosoi::SurfacePolicy::serialize",
+      "title": "yosoi::SurfacePolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/policy.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/policy.rs#L58-L58"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e7559bad1cd786b45f2afd502065f6066dbf92c638f63865fdad330be82fc23d",
+  "slug": "yosoi/struct/surfacepolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e7559bad1cd786b45f2afd502065f6066dbf92c638f63865fdad330be82fc23d"
+}

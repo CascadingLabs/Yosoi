@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::JavaScriptSourceProvenance",
+  "publicPath": "yosoi::action::JavaScriptSourceProvenance",
+  "kind": "struct",
+  "title": "yosoi::action::JavaScriptSourceProvenance",
+  "signature": "pub struct JavaScriptSourceProvenance",
+  "docs": "Source identity retained with a JavaScript snapshot.",
+  "source": {
+    "file": "crates/yosoi/src/action/source.rs",
+    "lineStart": 127,
+    "lineEnd": 131,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L127-L131"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptSourceProvenance"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::byte_len",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::byte_len",
+      "title": "yosoi::action::JavaScriptSourceProvenance::byte_len",
+      "kind": "function",
+      "signature": "pub const fn byte_len(&self) -> usize",
+      "docs": "Returns the captured source length in UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 140,
+        "lineEnd": 142,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L140-L142"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::clone",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::clone",
+      "title": "yosoi::action::JavaScriptSourceProvenance::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::JavaScriptSourceProvenance",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L125-L125"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::deserialize",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::deserialize",
+      "title": "yosoi::action::JavaScriptSourceProvenance::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L125-L125"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::eq",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::eq",
+      "title": "yosoi::action::JavaScriptSourceProvenance::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::action::JavaScriptSourceProvenance) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L125-L125"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::fmt",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::fmt",
+      "title": "yosoi::action::JavaScriptSourceProvenance::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L125-L125"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::origin",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::origin",
+      "title": "yosoi::action::JavaScriptSourceProvenance::origin",
+      "kind": "function",
+      "signature": "pub const fn origin(&self) -> &yosoi::action::JavaScriptSourceOrigin",
+      "docs": "Returns the authored source location.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 135,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L135-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::serialize",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::serialize",
+      "title": "yosoi::action::JavaScriptSourceProvenance::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 125,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L125-L125"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptSourceProvenance::sha256",
+      "publicPath": "yosoi::action::JavaScriptSourceProvenance::sha256",
+      "title": "yosoi::action::JavaScriptSourceProvenance::sha256",
+      "kind": "function",
+      "signature": "pub fn sha256(&self) -> &str",
+      "docs": "Returns the lowercase SHA-256 digest of the exact captured UTF-8 bytes.",
+      "source": {
+        "file": "crates/yosoi/src/action/source.rs",
+        "lineStart": 145,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/source.rs#L145-L147"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1a93949da40f82c2c8ef34fe7b8a0e9aa03afef40a97e9d41e4289edf12c5166",
+  "slug": "yosoi/action/struct/javascriptsourceprovenance",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1a93949da40f82c2c8ef34fe7b8a0e9aa03afef40a97e9d41e4289edf12c5166"
+}

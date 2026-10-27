@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::BrowserSurface",
+  "publicPath": "yosoi::BrowserSurface",
+  "kind": "struct",
+  "title": "yosoi::BrowserSurface",
+  "signature": "pub struct BrowserSurface",
+  "docs": "An isolated live browser source, initially detached from observation and control.\nCall `close` even after failure; cancellation does not prove an effect was undone.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/session.rs",
+    "lineStart": 577,
+    "lineEnd": 579,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L577-L579"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 57,
+    "lineEnd": 57,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L57-L57"
+  },
+  "aliases": [
+    "yosoi::surface::browser::BrowserSurface"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::BrowserSurface::close",
+      "publicPath": "yosoi::BrowserSurface::close",
+      "title": "yosoi::BrowserSurface::close",
+      "kind": "function",
+      "signature": "async fn close(&mut self) -> StdResult<Option<yosoi::surface::Outcome>, yosoi::ExecutionError>",
+      "docs": "Awaits source cleanup and retains its outcome even when cleanup fails.\nRepeated calls return the saved outcome without reacquiring control.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 687,
+        "lineEnd": 687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L687-L687"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::BrowserSurface::execute",
+      "publicPath": "yosoi::BrowserSurface::execute",
+      "title": "yosoi::BrowserSurface::execute",
+      "kind": "function",
+      "signature": "async fn execute(&mut self, command: Value) -> StdResult<Value, yosoi::ExecutionError>",
+      "docs": "Executes one bounded JSON command against this source.\nErrors after dispatch do not imply that effects were undone; inspect the retained outcome.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 687,
+        "lineEnd": 687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L687-L687"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::BrowserSurface::fmt",
+      "publicPath": "yosoi::BrowserSurface::fmt",
+      "title": "yosoi::BrowserSurface::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 687,
+        "lineEnd": 687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L687-L687"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::BrowserSurface::open",
+      "publicPath": "yosoi::BrowserSurface::open",
+      "title": "yosoi::BrowserSurface::open",
+      "kind": "function",
+      "signature": "pub async fn open(url: &str, policy: yosoi::SurfacePolicy, headless: bool) -> StdResult<Self, yosoi::ExecutionError>",
+      "docs": "Opens a supported regular Chrome/Chromium source under explicit archive policy.\n`headless` selects this browser's display mode and is not a generic Surface policy.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 583,
+        "lineEnd": 591,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L583-L591"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::BrowserSurface::outcome",
+      "publicPath": "yosoi::BrowserSurface::outcome",
+      "title": "yosoi::BrowserSurface::outcome",
+      "kind": "function",
+      "signature": "fn outcome(&self) -> Option<yosoi::surface::Outcome>",
+      "docs": "Returns retained evidence, including partial attempts, when archive policy is enabled.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 687,
+        "lineEnd": 687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L687-L687"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::BrowserSurface::ready",
+      "publicPath": "yosoi::BrowserSurface::ready",
+      "title": "yosoi::BrowserSurface::ready",
+      "kind": "function",
+      "signature": "fn ready(&mut self) -> StdResult<Value, yosoi::ExecutionError>",
+      "docs": "Returns source capabilities and the initial bounded observation.\nA closed connection returns an error instead of reopening its source.",
+      "source": {
+        "file": "crates/yosoi/src/surface/browser/session.rs",
+        "lineStart": 687,
+        "lineEnd": 687,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/session.rs#L687-L687"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "52bfd07fc38a1a57a87f286f67dafd05bb72d881c1992d71df272c4404a01b8f",
+  "slug": "yosoi/struct/browsersurface",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "52bfd07fc38a1a57a87f286f67dafd05bb72d881c1992d71df272c4404a01b8f"
+}

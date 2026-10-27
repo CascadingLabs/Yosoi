@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::assertions::MAX_CHECKS",
+  "publicPath": "yosoi::assertions::MAX_CHECKS",
+  "kind": "constant",
+  "title": "yosoi::assertions::MAX_CHECKS",
+  "signature": "pub const MAX_CHECKS: usize = 128;",
+  "docs": "Maximum predicates retained in one validated local assertion group.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 25,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/assertions.rs#L25-L25"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "a2e09eb22815cbfa1eb1dd10878af5af7dcd8af4f15193369c125d0a0d032988",
+  "slug": "yosoi/assertions/constant/max-checks",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a2e09eb22815cbfa1eb1dd10878af5af7dcd8af4f15193369c125d0a0d032988"
+}

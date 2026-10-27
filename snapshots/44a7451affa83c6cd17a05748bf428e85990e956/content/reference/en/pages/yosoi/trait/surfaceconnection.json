@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::SurfaceConnection",
+  "publicPath": "yosoi::SurfaceConnection",
+  "kind": "trait",
+  "title": "yosoi::SurfaceConnection",
+  "signature": "pub trait SurfaceConnection",
+  "docs": "Common lifecycle for one bound source, without assuming its modality or OS.\nReading does not grant control; each source rejects unsupported capabilities.",
+  "source": {
+    "file": "crates/yosoi/src/surface/connection.rs",
+    "lineStart": 190,
+    "lineEnd": 203,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/connection.rs#L190-L203"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 55,
+    "lineEnd": 55,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L55-L55"
+  },
+  "aliases": [
+    "yosoi::surface::SurfaceConnection"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::SurfaceConnection::close",
+      "publicPath": "yosoi::SurfaceConnection::close",
+      "title": "yosoi::SurfaceConnection::close",
+      "kind": "function",
+      "signature": "fn close(&mut self) -> impl Future<Output = StdResult<Option<yosoi::surface::Outcome>, yosoi::ExecutionError>> + Send",
+      "docs": "Awaits source-specific cleanup and preserves evidence even if cleanup fails.\nRepeated calls return the last retained outcome without reacquiring authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/connection.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/connection.rs#L202-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceConnection::execute",
+      "publicPath": "yosoi::SurfaceConnection::execute",
+      "title": "yosoi::SurfaceConnection::execute",
+      "kind": "function",
+      "signature": "fn execute(&mut self, command: Value) -> impl Future<Output = StdResult<Value, yosoi::ExecutionError>> + Send",
+      "docs": "Executes one bounded command. Dispatched effects are never assumed undone on error.",
+      "source": {
+        "file": "crates/yosoi/src/surface/connection.rs",
+        "lineStart": 194,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/connection.rs#L194-L197"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceConnection::outcome",
+      "publicPath": "yosoi::SurfaceConnection::outcome",
+      "title": "yosoi::SurfaceConnection::outcome",
+      "kind": "function",
+      "signature": "fn outcome(&self) -> Option<yosoi::surface::Outcome>",
+      "docs": "Returns retained evidence, including partial attempts, when archive policy is enabled.",
+      "source": {
+        "file": "crates/yosoi/src/surface/connection.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/connection.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::SurfaceConnection::ready",
+      "publicPath": "yosoi::SurfaceConnection::ready",
+      "title": "yosoi::SurfaceConnection::ready",
+      "kind": "function",
+      "signature": "fn ready(&mut self) -> StdResult<Value, yosoi::ExecutionError>",
+      "docs": "Returns source capabilities and its initial bounded observation.",
+      "source": {
+        "file": "crates/yosoi/src/surface/connection.rs",
+        "lineStart": 192,
+        "lineEnd": 192,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/connection.rs#L192-L192"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f08905578dc2150941e23b22f742370cec289a03f5fc28c01047f4e0f06cb9c8",
+  "slug": "yosoi/trait/surfaceconnection",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f08905578dc2150941e23b22f742370cec289a03f5fc28c01047f4e0f06cb9c8"
+}

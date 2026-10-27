@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::automation_record::Observation",
+  "publicPath": "yosoi::automation_record::Observation",
+  "kind": "struct",
+  "title": "yosoi::automation_record::Observation",
+  "signature": "pub struct Observation",
+  "docs": "A browser observation retained as primary evidence.",
+  "source": {
+    "file": "crates/yosoi/src/automation_record.rs",
+    "lineStart": 49,
+    "lineEnd": 68,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L49-L68"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::browser",
+      "publicPath": "yosoi::automation_record::Observation::browser",
+      "title": "yosoi::automation_record::Observation::browser",
+      "kind": "struct_field",
+      "signature": "pub browser: Option<yosoi::browser::BrowserExecutionIdentity>",
+      "docs": "Optional native-engine provenance; absent in legacy Chrome records.\nThis records identity and declarations, not live browser authority.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::clone",
+      "publicPath": "yosoi::automation_record::Observation::clone",
+      "title": "yosoi::automation_record::Observation::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::automation_record::Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::deserialize",
+      "publicPath": "yosoi::automation_record::Observation::deserialize",
+      "title": "yosoi::automation_record::Observation::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::document_epoch",
+      "publicPath": "yosoi::automation_record::Observation::document_epoch",
+      "title": "yosoi::automation_record::Observation::document_epoch",
+      "kind": "struct_field",
+      "signature": "pub document_epoch: u64",
+      "docs": "Positive source-document generation used to bind DOM evidence.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L61-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::eq",
+      "publicPath": "yosoi::automation_record::Observation::eq",
+      "title": "yosoi::automation_record::Observation::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::automation_record::Observation) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::fmt",
+      "publicPath": "yosoi::automation_record::Observation::fmt",
+      "title": "yosoi::automation_record::Observation::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::html",
+      "publicPath": "yosoi::automation_record::Observation::html",
+      "title": "yosoi::automation_record::Observation::html",
+      "kind": "struct_field",
+      "signature": "pub html: Option<String>",
+      "docs": "Captured HTML bytes represented as text, absent when not retained.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::id",
+      "publicPath": "yosoi::automation_record::Observation::id",
+      "title": "yosoi::automation_record::Observation::id",
+      "kind": "struct_field",
+      "signature": "pub id: String",
+      "docs": "Unique identity of this retained observation within the record.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::screenshot",
+      "publicPath": "yosoi::automation_record::Observation::screenshot",
+      "title": "yosoi::automation_record::Observation::screenshot",
+      "kind": "struct_field",
+      "signature": "pub screenshot: Option<Vec<u8>>",
+      "docs": "Retained screenshot bytes, subject to observation and aggregate record limits.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L67-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::automation_record::Observation::serialize",
+      "publicPath": "yosoi::automation_record::Observation::serialize",
+      "title": "yosoi::automation_record::Observation::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 47,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L47-L47"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::session_id",
+      "publicPath": "yosoi::automation_record::Observation::session_id",
+      "title": "yosoi::automation_record::Observation::session_id",
+      "kind": "struct_field",
+      "signature": "pub session_id: String",
+      "docs": "Browser Session provenance; it does not reopen or grant authority to that Session.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::tab_id",
+      "publicPath": "yosoi::automation_record::Observation::tab_id",
+      "title": "yosoi::automation_record::Observation::tab_id",
+      "kind": "struct_field",
+      "signature": "pub tab_id: String",
+      "docs": "Source tab provenance, distinct from a live tab-control handle.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::automation_record::Observation::url",
+      "publicPath": "yosoi::automation_record::Observation::url",
+      "title": "yosoi::automation_record::Observation::url",
+      "kind": "struct_field",
+      "signature": "pub url: Option<String>",
+      "docs": "Observed source URL, if available; it can contain user-sensitive data.",
+      "source": {
+        "file": "crates/yosoi/src/automation_record.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/automation_record.rs#L65-L65"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "da3766015c7dffe95b7a3da648f53454f44a821cb475ca390e9f7dae0934a63c",
+  "slug": "yosoi/automation-record/struct/observation",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "da3766015c7dffe95b7a3da648f53454f44a821cb475ca390e9f7dae0934a63c"
+}

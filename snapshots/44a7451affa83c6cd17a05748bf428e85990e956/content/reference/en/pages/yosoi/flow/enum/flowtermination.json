@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowTermination",
+  "publicPath": "yosoi::flow::FlowTermination",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowTermination",
+  "signature": "pub enum FlowTermination",
+  "docs": "Why the runner stopped executing the flow.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 668,
+    "lineEnd": 679,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L668-L679"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowTermination"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowTermination::Cancelled",
+      "publicPath": "yosoi::flow::FlowTermination::Cancelled",
+      "title": "yosoi::flow::FlowTermination::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "A local or invocation cancellation stopped the selected scope.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 678,
+        "lineEnd": 678,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L678-L678"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowTermination::Completed",
+      "publicPath": "yosoi::flow::FlowTermination::Completed",
+      "title": "yosoi::flow::FlowTermination::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "Every step returned an observed receipt.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 670,
+        "lineEnd": 670,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L670-L670"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowTermination::CompletedWithIssues",
+      "publicPath": "yosoi::flow::FlowTermination::CompletedWithIssues",
+      "title": "yosoi::flow::FlowTermination::CompletedWithIssues",
+      "kind": "variant",
+      "signature": "CompletedWithIssues",
+      "docs": "Every selected scope finished; retained failures, cancellations, or skips remain.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 672,
+        "lineEnd": 672,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L672-L672"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowTermination::Failed",
+      "publicPath": "yosoi::flow::FlowTermination::Failed",
+      "title": "yosoi::flow::FlowTermination::Failed",
+      "kind": "variant",
+      "signature": "Failed",
+      "docs": "A failure policy stopped the current Flow or invocation.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 674,
+        "lineEnd": 674,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L674-L674"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowTermination::Unknown",
+      "publicPath": "yosoi::flow::FlowTermination::Unknown",
+      "title": "yosoi::flow::FlowTermination::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "A dispatched operation may have completed without a known result.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 676,
+        "lineEnd": 676,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L676-L676"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowTermination::clone",
+      "publicPath": "yosoi::flow::FlowTermination::clone",
+      "title": "yosoi::flow::FlowTermination::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 666,
+        "lineEnd": 666,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L666-L666"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowTermination::deserialize",
+      "publicPath": "yosoi::flow::FlowTermination::deserialize",
+      "title": "yosoi::flow::FlowTermination::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 666,
+        "lineEnd": 666,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L666-L666"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::FlowTermination::eq",
+      "publicPath": "yosoi::flow::FlowTermination::eq",
+      "title": "yosoi::flow::FlowTermination::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowTermination) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 666,
+        "lineEnd": 666,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L666-L666"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowTermination::fmt",
+      "publicPath": "yosoi::flow::FlowTermination::fmt",
+      "title": "yosoi::flow::FlowTermination::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 666,
+        "lineEnd": 666,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L666-L666"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowTermination::serialize",
+      "publicPath": "yosoi::flow::FlowTermination::serialize",
+      "title": "yosoi::flow::FlowTermination::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 666,
+        "lineEnd": 666,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L666-L666"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d3de153606f360e71a19458d8e791a8f147d6a07760a7c5e3dbf47e3e2dfa4dd",
+  "slug": "yosoi/flow/enum/flowtermination",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d3de153606f360e71a19458d8e791a8f147d6a07760a7c5e3dbf47e3e2dfa4dd"
+}

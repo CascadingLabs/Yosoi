@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::PixelRect",
+  "publicPath": "yosoi::PixelRect",
+  "kind": "struct",
+  "title": "yosoi::PixelRect",
+  "signature": "pub struct PixelRect",
+  "docs": "Pixel rectangle in an exact captured raster, with an exclusive right/bottom edge.",
+  "source": {
+    "file": "crates/yosoi/src/surface/images.rs",
+    "lineStart": 5,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L5-L14"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 42,
+    "lineEnd": 42,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L42-L42"
+  },
+  "aliases": [
+    "yosoi::surface::PixelRect"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::PixelRect::clone",
+      "publicPath": "yosoi::PixelRect::clone",
+      "title": "yosoi::PixelRect::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::PixelRect",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::PixelRect::deserialize",
+      "publicPath": "yosoi::PixelRect::deserialize",
+      "title": "yosoi::PixelRect::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::PixelRect::eq",
+      "publicPath": "yosoi::PixelRect::eq",
+      "title": "yosoi::PixelRect::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::PixelRect) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::PixelRect::fmt",
+      "publicPath": "yosoi::PixelRect::fmt",
+      "title": "yosoi::PixelRect::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::PixelRect::height",
+      "publicPath": "yosoi::PixelRect::height",
+      "title": "yosoi::PixelRect::height",
+      "kind": "struct_field",
+      "signature": "pub height: u32",
+      "docs": "Positive region height.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::PixelRect::serialize",
+      "publicPath": "yosoi::PixelRect::serialize",
+      "title": "yosoi::PixelRect::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 4,
+        "lineEnd": 4,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L4-L4"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::PixelRect::width",
+      "publicPath": "yosoi::PixelRect::width",
+      "title": "yosoi::PixelRect::width",
+      "kind": "struct_field",
+      "signature": "pub width: u32",
+      "docs": "Positive region width.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L11-L11"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::PixelRect::x",
+      "publicPath": "yosoi::PixelRect::x",
+      "title": "yosoi::PixelRect::x",
+      "kind": "struct_field",
+      "signature": "pub x: u32",
+      "docs": "Left pixel coordinate.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L7-L7"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::PixelRect::y",
+      "publicPath": "yosoi::PixelRect::y",
+      "title": "yosoi::PixelRect::y",
+      "kind": "struct_field",
+      "signature": "pub y: u32",
+      "docs": "Top pixel coordinate.",
+      "source": {
+        "file": "crates/yosoi/src/surface/images.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/images.rs#L9-L9"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "21445e9c84c7f4030e2d32fd988fe85fff01ae3e687ad86a8fea99a0ace818fe",
+  "slug": "yosoi/struct/pixelrect",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "21445e9c84c7f4030e2d32fd988fe85fff01ae3e687ad86a8fea99a0ace818fe"
+}

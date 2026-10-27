@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::surface::EventKind",
+  "publicPath": "yosoi::surface::EventKind",
+  "kind": "enum",
+  "title": "yosoi::surface::EventKind",
+  "signature": "pub enum EventKind",
+  "docs": "Event classes; none imply that arbitrary application memory was observed.",
+  "source": {
+    "file": "crates/yosoi/src/surface/session.rs",
+    "lineStart": 124,
+    "lineEnd": 139,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L124-L139"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [
+    {
+      "id": "variant:yosoi::surface::EventKind::ActionFinished",
+      "publicPath": "yosoi::surface::EventKind::ActionFinished",
+      "title": "yosoi::surface::EventKind::ActionFinished",
+      "kind": "variant",
+      "signature": "ActionFinished",
+      "docs": "An action lease finished or was dropped with a recorded outcome.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 138,
+        "lineEnd": 138,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L138-L138"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Changed",
+      "publicPath": "yosoi::surface::EventKind::Changed",
+      "title": "yosoi::surface::EventKind::Changed",
+      "kind": "variant",
+      "signature": "Changed",
+      "docs": "Caller-selected replacement evidence differs from prior evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L130-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Detached",
+      "publicPath": "yosoi::surface::EventKind::Detached",
+      "title": "yosoi::surface::EventKind::Detached",
+      "kind": "variant",
+      "signature": "Detached",
+      "docs": "Observation detached and hot authority was revoked.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 136,
+        "lineEnd": 136,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L136-L136"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Published",
+      "publicPath": "yosoi::surface::EventKind::Published",
+      "title": "yosoi::surface::EventKind::Published",
+      "kind": "variant",
+      "signature": "Published",
+      "docs": "New immutable evidence became current.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L126-L126"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Stale",
+      "publicPath": "yosoi::surface::EventKind::Stale",
+      "title": "yosoi::surface::EventKind::Stale",
+      "kind": "variant",
+      "signature": "Stale",
+      "docs": "A region needs explicit reconciliation against current evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Unchanged",
+      "publicPath": "yosoi::surface::EventKind::Unchanged",
+      "title": "yosoi::surface::EventKind::Unchanged",
+      "kind": "variant",
+      "signature": "Unchanged",
+      "docs": "Caller-selected replacement evidence has identical complete serialization.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 132,
+        "lineEnd": 132,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L132-L132"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::surface::EventKind::Unknown",
+      "publicPath": "yosoi::surface::EventKind::Unknown",
+      "title": "yosoi::surface::EventKind::Unknown",
+      "kind": "variant",
+      "signature": "Unknown",
+      "docs": "Evidence, coverage, or retained history cannot support comparison.",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L134-L134"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::surface::EventKind::clone",
+      "publicPath": "yosoi::surface::EventKind::clone",
+      "title": "yosoi::surface::EventKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::surface::EventKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::surface::EventKind::deserialize",
+      "publicPath": "yosoi::surface::EventKind::deserialize",
+      "title": "yosoi::surface::EventKind::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::surface::EventKind::eq",
+      "publicPath": "yosoi::surface::EventKind::eq",
+      "title": "yosoi::surface::EventKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::surface::EventKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::surface::EventKind::fmt",
+      "publicPath": "yosoi::surface::EventKind::fmt",
+      "title": "yosoi::surface::EventKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::surface::EventKind::serialize",
+      "publicPath": "yosoi::surface::EventKind::serialize",
+      "title": "yosoi::surface::EventKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/session.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/session.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "bea2f8e9fd5199ec1db2bb422d6f2e4b3a8911cb50d532012ad5f2d28f9e8b17",
+  "slug": "yosoi/surface/enum/eventkind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "bea2f8e9fd5199ec1db2bb422d6f2e4b3a8911cb50d532012ad5f2d28f9e8b17"
+}

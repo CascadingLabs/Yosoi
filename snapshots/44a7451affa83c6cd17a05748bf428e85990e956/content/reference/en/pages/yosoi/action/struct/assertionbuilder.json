@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::AssertionBuilder",
+  "publicPath": "yosoi::action::AssertionBuilder",
+  "kind": "struct",
+  "title": "yosoi::action::AssertionBuilder",
+  "signature": "pub struct AssertionBuilder",
+  "docs": "A typed assertion that can run once or wait through `until`.",
+  "source": {
+    "file": "crates/yosoi/src/action/builder.rs",
+    "lineStart": 17,
+    "lineEnd": 23,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L17-L23"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 7,
+    "lineEnd": 7,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action.rs#L7-L7"
+  },
+  "aliases": [
+    "yosoi::prelude::AssertionBuilder",
+    "yosoi::prelude::action::AssertionBuilder"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::AssertionBuilder::clone",
+      "publicPath": "yosoi::action::AssertionBuilder::clone",
+      "title": "yosoi::action::AssertionBuilder::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::AssertionBuilder",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L16-L16"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::fmt",
+      "publicPath": "yosoi::action::AssertionBuilder::fmt",
+      "title": "yosoi::action::AssertionBuilder::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L16-L16"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::on_cancellation",
+      "publicPath": "yosoi::action::AssertionBuilder::on_cancellation",
+      "title": "yosoi::action::AssertionBuilder::on_cancellation",
+      "kind": "function",
+      "signature": "pub const fn on_cancellation(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Sets this assertion step's cancellation continuation.",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 59,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L59-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::on_failure",
+      "publicPath": "yosoi::action::AssertionBuilder::on_failure",
+      "title": "yosoi::action::AssertionBuilder::on_failure",
+      "kind": "function",
+      "signature": "pub const fn on_failure(self, continuation: yosoi::Continuation) -> Self",
+      "docs": "Sets this assertion step's failure continuation.",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 53,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L53-L56"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::timeout",
+      "publicPath": "yosoi::action::AssertionBuilder::timeout",
+      "title": "yosoi::action::AssertionBuilder::timeout",
+      "kind": "function",
+      "signature": "pub const fn timeout(self, milliseconds: u64) -> Self",
+      "docs": "Sets the timeout in milliseconds; it applies to the complete assertion step.",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 47,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L47-L50"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::until",
+      "publicPath": "yosoi::action::AssertionBuilder::until",
+      "title": "yosoi::action::AssertionBuilder::until",
+      "kind": "function",
+      "signature": "pub fn until(self) -> yosoi::flow::Step",
+      "docs": "Waits for this assertion without a separate trigger action.",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 71,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L71-L73"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::AssertionBuilder::with_cancellation",
+      "publicPath": "yosoi::action::AssertionBuilder::with_cancellation",
+      "title": "yosoi::action::AssertionBuilder::with_cancellation",
+      "kind": "function",
+      "signature": "pub fn with_cancellation(self, token: &CancellationToken) -> Self",
+      "docs": "Binds a local cancellation token to this assertion step.",
+      "source": {
+        "file": "crates/yosoi/src/action/builder.rs",
+        "lineStart": 65,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/builder.rs#L65-L68"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9358391aa76bd4749ee5361f93e165a6c5b6705d52a48210579f99605cea787e",
+  "slug": "yosoi/action/struct/assertionbuilder",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9358391aa76bd4749ee5361f93e165a6c5b6705d52a48210579f99605cea787e"
+}

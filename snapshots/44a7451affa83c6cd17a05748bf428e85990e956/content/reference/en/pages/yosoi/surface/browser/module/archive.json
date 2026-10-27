@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::browser::archive",
+  "publicPath": "yosoi::surface::browser::archive",
+  "kind": "module",
+  "title": "yosoi::surface::browser::archive",
+  "signature": "pub mod archive",
+  "docs": "Browser capture, replay and fresh-session archive procedures.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/archive.rs",
+    "lineStart": 1,
+    "lineEnd": 236,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/archive.rs#L1-L236"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "1231c8ba330e1243499d97245a6e728acc57a3456327a691223c21ec4ac29b80",
+  "slug": "yosoi/surface/browser/module/archive",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1231c8ba330e1243499d97245a6e728acc57a3456327a691223c21ec4ac29b80"
+}

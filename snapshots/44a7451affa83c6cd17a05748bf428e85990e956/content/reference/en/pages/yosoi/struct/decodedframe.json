@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::DecodedFrame",
+  "publicPath": "yosoi::DecodedFrame",
+  "kind": "struct",
+  "title": "yosoi::DecodedFrame",
+  "signature": "pub struct DecodedFrame",
+  "docs": "Materialized pixel evidence with metadata suitable for bounded agent replies.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 168,
+    "lineEnd": 173,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L168-L173"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 40,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L40-L40"
+  },
+  "aliases": [
+    "yosoi::surface::video::DecodedFrame"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::DecodedFrame::clone",
+      "publicPath": "yosoi::DecodedFrame::clone",
+      "title": "yosoi::DecodedFrame::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::DecodedFrame",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 167,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L167-L167"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::DecodedFrame::fmt",
+      "publicPath": "yosoi::DecodedFrame::fmt",
+      "title": "yosoi::DecodedFrame::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 167,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L167-L167"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::DecodedFrame::info",
+      "publicPath": "yosoi::DecodedFrame::info",
+      "title": "yosoi::DecodedFrame::info",
+      "kind": "struct_field",
+      "signature": "pub info: yosoi::surface::video::FrameInfo",
+      "docs": "Source and time/pixel coordinate provenance.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 170,
+        "lineEnd": 170,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L170-L170"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::DecodedFrame::png",
+      "publicPath": "yosoi::DecodedFrame::png",
+      "title": "yosoi::DecodedFrame::png",
+      "kind": "struct_field",
+      "signature": "pub png: Vec<u8>",
+      "docs": "Actual PNG bytes; these are intentionally not implicitly serialized into replies.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 172,
+        "lineEnd": 172,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L172-L172"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::DecodedFrame::read_from",
+      "publicPath": "yosoi::DecodedFrame::read_from",
+      "title": "yosoi::DecodedFrame::read_from",
+      "kind": "function",
+      "signature": "pub async fn read_from(archive: &yosoi::Archive, reference: &yosoi::surface::video::FrameArchiveRef) -> Result<Self, yosoi::VideoError>",
+      "docs": "Restores and verifies observed pixels without a video decoder or original source file.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 149,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/archive.rs#L149-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::DecodedFrame::write_to",
+      "publicPath": "yosoi::DecodedFrame::write_to",
+      "title": "yosoi::DecodedFrame::write_to",
+      "kind": "function",
+      "signature": "pub async fn write_to(&self, archive: &yosoi::Archive) -> Result<yosoi::surface::video::FrameArchiveRef, yosoi::VideoError>",
+      "docs": "Archives actual PNG pixels and their measured timestamp through a normal JSON Document.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 129,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/archive.rs#L129-L147"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0bc7bc8a93ab2cdf03bad95c2422f6a0aadd4d1f38ad0a7afa9be8e83e715df1",
+  "slug": "yosoi/struct/decodedframe",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0bc7bc8a93ab2cdf03bad95c2422f6a0aadd4d1f38ad0a7afa9be8e83e715df1"
+}

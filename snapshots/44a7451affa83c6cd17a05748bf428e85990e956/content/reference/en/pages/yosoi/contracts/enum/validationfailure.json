@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ValidationFailure",
+  "publicPath": "yosoi::contracts::ValidationFailure",
+  "kind": "enum",
+  "title": "yosoi::contracts::ValidationFailure",
+  "signature": "pub enum ValidationFailure",
+  "docs": "Schema or resource failure rejecting validation as an operation.\n\nThese failures are not ordinary per-record field issues. Callers must not\ntreat a validation-rejected outcome as an accepted partial record collection.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+    "lineStart": 150,
+    "lineEnd": 209,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L150-L209"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/contracts.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ValidationFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "kind": "variant",
+      "signature": "ConversionCountOverflow",
+      "docs": "Required field-conversion count does not fit validation accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 178,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L178-L178"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "kind": "variant",
+      "signature": "ConversionLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "Required field conversions exceed the configured budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 181,
+        "lineEnd": 186,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L181-L186"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::ConversionLimitExceeded::maximum",
+          "publicPath": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded::maximum",
+          "title": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted field conversions.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 183,
+            "lineEnd": 183,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L183-L183"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::ConversionLimitExceeded::observed",
+          "publicPath": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded::observed",
+          "title": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Field conversions charged to the validation budget.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 185,
+            "lineEnd": 185,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L185-L185"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "kind": "variant",
+      "signature": "FieldCountOverflow",
+      "docs": "The Contract field count does not fit the validation accounting representation.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 156,
+        "lineEnd": 156,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L156-L156"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "kind": "variant",
+      "signature": "FieldLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "Contract fields exceed the configured validation field budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 159,
+        "lineEnd": 164,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L159-L164"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::FieldLimitExceeded::maximum",
+          "publicPath": "yosoi::contracts::ValidationFailure::FieldLimitExceeded::maximum",
+          "title": "yosoi::contracts::ValidationFailure::FieldLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted Contract fields.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 161,
+            "lineEnd": 161,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L161-L161"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::FieldLimitExceeded::observed",
+          "publicPath": "yosoi::contracts::ValidationFailure::FieldLimitExceeded::observed",
+          "title": "yosoi::contracts::ValidationFailure::FieldLimitExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Number of Contract fields requiring validation.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 163,
+            "lineEnd": 163,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L163-L163"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "publicPath": "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "title": "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "kind": "variant",
+      "signature": "InvalidContractSchema(yosoi::contracts::ContractSchemaError)",
+      "docs": "Contract schema validation failed before candidate conversion could proceed.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L153-L153"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::InvalidContractSchema::0",
+          "publicPath": "yosoi::contracts::ValidationFailure::InvalidContractSchema::0",
+          "title": "yosoi::contracts::ValidationFailure::InvalidContractSchema::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::contracts::ContractSchemaError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 153,
+            "lineEnd": 153,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L153-L153"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "kind": "variant",
+      "signature": "IssueCountOverflow",
+      "docs": "Generated field-issue count does not fit validation accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 189,
+        "lineEnd": 189,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L189-L189"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "kind": "variant",
+      "signature": "IssueLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "Generated validation issues exceed their retention budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 192,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L192-L197"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::IssueLimitExceeded::maximum",
+          "publicPath": "yosoi::contracts::ValidationFailure::IssueLimitExceeded::maximum",
+          "title": "yosoi::contracts::ValidationFailure::IssueLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted retained field issues.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 194,
+            "lineEnd": 194,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L194-L194"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::IssueLimitExceeded::observed",
+          "publicPath": "yosoi::contracts::ValidationFailure::IssueLimitExceeded::observed",
+          "title": "yosoi::contracts::ValidationFailure::IssueLimitExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Field issues requiring retention.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 196,
+            "lineEnd": 196,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L196-L196"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "kind": "variant",
+      "signature": "ProvenanceCountOverflow",
+      "docs": "Retained finding-provenance count does not fit validation accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 200,
+        "lineEnd": 200,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L200-L200"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "kind": "variant",
+      "signature": "ProvenanceLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "Findings retained for validation provenance exceed their budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 203,
+        "lineEnd": 208,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L203-L208"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::maximum",
+          "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::maximum",
+          "title": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted retained finding evidence references.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 205,
+            "lineEnd": 205,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L205-L205"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::observed",
+          "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::observed",
+          "title": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Finding evidence references requiring retention.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 207,
+            "lineEnd": 207,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L207-L207"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "kind": "variant",
+      "signature": "RecordCountOverflow",
+      "docs": "Candidate record count does not fit validation accounting.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 167,
+        "lineEnd": 167,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L167-L167"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "kind": "variant",
+      "signature": "RecordLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "Candidate records exceed the configured validation record budget.",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 170,
+        "lineEnd": 175,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L170-L175"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::RecordLimitExceeded::maximum",
+          "publicPath": "yosoi::contracts::ValidationFailure::RecordLimitExceeded::maximum",
+          "title": "yosoi::contracts::ValidationFailure::RecordLimitExceeded::maximum",
+          "kind": "struct_field",
+          "signature": "maximum: u64",
+          "docs": "Maximum permitted candidate records.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 172,
+            "lineEnd": 172,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L172-L172"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::contracts::ValidationFailure::RecordLimitExceeded::observed",
+          "publicPath": "yosoi::contracts::ValidationFailure::RecordLimitExceeded::observed",
+          "title": "yosoi::contracts::ValidationFailure::RecordLimitExceeded::observed",
+          "kind": "struct_field",
+          "signature": "observed: u64",
+          "docs": "Candidate records requiring validation.",
+          "source": {
+            "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+            "lineStart": 174,
+            "lineEnd": 174,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L174-L174"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::clone",
+      "publicPath": "yosoi::contracts::ValidationFailure::clone",
+      "title": "yosoi::contracts::ValidationFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ValidationFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::eq",
+      "publicPath": "yosoi::contracts::ValidationFailure::eq",
+      "title": "yosoi::contracts::ValidationFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ValidationFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::fmt",
+      "publicPath": "yosoi::contracts::ValidationFailure::fmt",
+      "title": "yosoi::contracts::ValidationFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::fmt",
+      "publicPath": "yosoi::contracts::ValidationFailure::fmt",
+      "title": "yosoi::contracts::ValidationFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::from",
+      "publicPath": "yosoi::contracts::ValidationFailure::from",
+      "title": "yosoi::contracts::ValidationFailure::from",
+      "kind": "function",
+      "signature": "fn from(source: yosoi::contracts::ContractSchemaError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::serialize",
+      "publicPath": "yosoi::contracts::ValidationFailure::serialize",
+      "title": "yosoi::contracts::ValidationFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 212,
+        "lineEnd": 259,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L212-L259"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::source",
+      "publicPath": "yosoi::contracts::ValidationFailure::source",
+      "title": "yosoi::contracts::ValidationFailure::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/contract_validation/issue.rs#L149-L149"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c788412ee8bfde3de30eecd2d1239f3566040b24b02fee46e3a27af149e9a43e",
+  "slug": "yosoi/contracts/enum/validationfailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c788412ee8bfde3de30eecd2d1239f3566040b24b02fee46e3a27af149e9a43e"
+}

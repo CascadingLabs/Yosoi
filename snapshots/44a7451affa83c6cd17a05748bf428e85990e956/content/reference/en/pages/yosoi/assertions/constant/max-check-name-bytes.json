@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "constant:yosoi::assertions::MAX_CHECK_NAME_BYTES",
+  "publicPath": "yosoi::assertions::MAX_CHECK_NAME_BYTES",
+  "kind": "constant",
+  "title": "yosoi::assertions::MAX_CHECK_NAME_BYTES",
+  "signature": "pub const MAX_CHECK_NAME_BYTES: usize = 256;",
+  "docs": "Maximum UTF-8 bytes in a nonblank authored predicate name.",
+  "source": {
+    "file": "crates/yosoi/src/assertions.rs",
+    "lineStart": 27,
+    "lineEnd": 27,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/assertions.rs#L27-L27"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "795f31b6f7f09b34f517e2c01b4dd8df860ed37e7488987d6be51e4b13e72d87",
+  "slug": "yosoi/assertions/constant/max-check-name-bytes",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "795f31b6f7f09b34f517e2c01b4dd8df860ed37e7488987d6be51e4b13e72d87"
+}

@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::action::JavaScriptModuleLimits",
+  "publicPath": "yosoi::action::JavaScriptModuleLimits",
+  "kind": "struct",
+  "title": "yosoi::action::JavaScriptModuleLimits",
+  "signature": "pub struct JavaScriptModuleLimits",
+  "docs": "Bounds applied while capturing a local JavaScript module graph.",
+  "source": {
+    "file": "crates/yosoi/src/action/module/types.rs",
+    "lineStart": 17,
+    "lineEnd": 21,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L17-L21"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/action.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::action::JavaScriptModuleLimits"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::clone",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::clone",
+      "title": "yosoi::action::JavaScriptModuleLimits::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::action::JavaScriptModuleLimits",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::default",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::default",
+      "title": "yosoi::action::JavaScriptModuleLimits::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 24,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L24-L30"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::deserialize",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::deserialize",
+      "title": "yosoi::action::JavaScriptModuleLimits::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::eq",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::eq",
+      "title": "yosoi::action::JavaScriptModuleLimits::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::action::JavaScriptModuleLimits) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::fmt",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::fmt",
+      "title": "yosoi::action::JavaScriptModuleLimits::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::max_module_source_bytes",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::max_module_source_bytes",
+      "title": "yosoi::action::JavaScriptModuleLimits::max_module_source_bytes",
+      "kind": "function",
+      "signature": "pub const fn max_module_source_bytes(self) -> usize",
+      "docs": "Returns the maximum UTF-8 bytes in one module.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 55,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L55-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::max_modules",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::max_modules",
+      "title": "yosoi::action::JavaScriptModuleLimits::max_modules",
+      "kind": "function",
+      "signature": "pub const fn max_modules(self) -> usize",
+      "docs": "Returns the maximum module count.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 50,
+        "lineEnd": 52,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L50-L52"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::max_total_source_bytes",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::max_total_source_bytes",
+      "title": "yosoi::action::JavaScriptModuleLimits::max_total_source_bytes",
+      "kind": "function",
+      "signature": "pub const fn max_total_source_bytes(self) -> usize",
+      "docs": "Returns the maximum aggregate UTF-8 source bytes in the bundle.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 60,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L60-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::new",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::new",
+      "title": "yosoi::action::JavaScriptModuleLimits::new",
+      "kind": "function",
+      "signature": "pub fn new(max_modules: usize, max_module_source_bytes: usize, max_total_source_bytes: usize) -> Result<Self, yosoi::action::JavaScriptModuleError>",
+      "docs": "Creates tighter module limits. Values above the SDK hard caps are rejected.",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 35,
+        "lineEnd": 47,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L35-L47"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::action::JavaScriptModuleLimits::serialize",
+      "publicPath": "yosoi::action::JavaScriptModuleLimits::serialize",
+      "title": "yosoi::action::JavaScriptModuleLimits::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/action/module/types.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/action/module/types.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5906e1ae3d920a532dae3c95eb4e2347eb98ee7ac5be06a05243bcbaf969dbef",
+  "slug": "yosoi/action/struct/javascriptmodulelimits",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5906e1ae3d920a532dae3c95eb4e2347eb98ee7ac5be06a05243bcbaf969dbef"
+}

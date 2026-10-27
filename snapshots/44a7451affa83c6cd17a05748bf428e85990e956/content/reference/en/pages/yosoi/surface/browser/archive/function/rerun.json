@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::surface::browser::archive::rerun",
+  "publicPath": "yosoi::surface::browser::archive::rerun",
+  "kind": "function",
+  "title": "yosoi::surface::browser::archive::rerun",
+  "signature": "pub async fn rerun(value: &yosoi::surface::Outcome, policy: yosoi::SurfacePolicy, count: usize, headless: bool) -> std::result::Result<Vec<yosoi::surface::Outcome>, yosoi::ExecutionError>",
+  "docs": "Explicitly executes a confirmed web recipe against fresh isolated sessions.\n\nPreflight rejects incomplete/unsealed outcomes and unsupported procedures\nbefore launching a browser. Targets are resolved uniquely from new evidence;\nsaved references never grant authority. Each successful iteration returns\na separate outcome. Failures retain evidence in the selected output directory.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/archive.rs",
+    "lineStart": 198,
+    "lineEnd": 225,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/archive.rs#L198-L225"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "06a7d9ac0c7cb2570888f0cc7f1700f8a5230cf66e9e4d3c566c50ee28071e67",
+  "slug": "yosoi/surface/browser/archive/function/rerun",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "06a7d9ac0c7cb2570888f0cc7f1700f8a5230cf66e9e4d3c566c50ee28071e67"
+}

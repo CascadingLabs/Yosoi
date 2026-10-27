@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::VideoSurface",
+  "publicPath": "yosoi::VideoSurface",
+  "kind": "struct",
+  "title": "yosoi::VideoSurface",
+  "signature": "pub struct VideoSurface",
+  "docs": "A frozen local source with a lazy timeline and read-only frame capabilities.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 188,
+    "lineEnd": 190,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L188-L190"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 40,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L40-L40"
+  },
+  "aliases": [
+    "yosoi::surface::video::VideoSurface"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::VideoSurface::at",
+      "publicPath": "yosoi::VideoSurface::at",
+      "title": "yosoi::VideoSurface::at",
+      "kind": "function",
+      "signature": "pub fn at(&self, position_us: u64) -> Result<yosoi::surface::model::Reference, yosoi::VideoError>",
+      "docs": "Issues a request for the first frame at or after a stream-relative position.\nA position in the final frame tail may have no later frame; materialization then fails explicitly.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 379,
+        "lineEnd": 389,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L379-L389"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::clone",
+      "publicPath": "yosoi::VideoSurface::clone",
+      "title": "yosoi::VideoSurface::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::VideoSurface",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::crop",
+      "publicPath": "yosoi::VideoSurface::crop",
+      "title": "yosoi::VideoSurface::crop",
+      "kind": "function",
+      "signature": "pub async fn crop(&self, reference: &yosoi::surface::model::Reference, rect: yosoi::PixelRect) -> Result<yosoi::DecodedFrame, yosoi::VideoError>",
+      "docs": "Crops full decoded-frame pixels; nested crop coordinates are rejected as ambiguous.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 422,
+        "lineEnd": 441,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L422-L441"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::descriptor",
+      "publicPath": "yosoi::VideoSurface::descriptor",
+      "title": "yosoi::VideoSurface::descriptor",
+      "kind": "function",
+      "signature": "fn descriptor(&self) -> &yosoi::surface::model::Descriptor",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/timeline.rs",
+        "lineStart": 286,
+        "lineEnd": 288,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/timeline.rs#L286-L288"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::fmt",
+      "publicPath": "yosoi::VideoSurface::fmt",
+      "title": "yosoi::VideoSurface::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 187,
+        "lineEnd": 187,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L187-L187"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::frame",
+      "publicPath": "yosoi::VideoSurface::frame",
+      "title": "yosoi::VideoSurface::frame",
+      "kind": "function",
+      "signature": "pub async fn frame(&self, reference: &yosoi::surface::model::Reference) -> Result<yosoi::DecodedFrame, yosoi::VideoError>",
+      "docs": "Materializes one frame or previously addressed crop. At most four full frames are cached.\nThe measured PTS is retained separately from the requested position.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 392,
+        "lineEnd": 420,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L392-L420"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::metadata",
+      "publicPath": "yosoi::VideoSurface::metadata",
+      "title": "yosoi::VideoSurface::metadata",
+      "kind": "function",
+      "signature": "pub fn metadata(&self) -> &yosoi::surface::video::VideoMetadata",
+      "docs": "Borrows demuxer metadata and its clock origin; this is not decoded frame evidence.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 370,
+        "lineEnd": 372,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L370-L372"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::observation",
+      "publicPath": "yosoi::VideoSurface::observation",
+      "title": "yosoi::VideoSurface::observation",
+      "kind": "function",
+      "signature": "fn observation(&self) -> &yosoi::surface::model::Observation",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/timeline.rs",
+        "lineStart": 289,
+        "lineEnd": 291,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/timeline.rs#L289-L291"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::open",
+      "publicPath": "yosoi::VideoSurface::open",
+      "title": "yosoi::VideoSurface::open",
+      "kind": "function",
+      "signature": "pub async fn open(path: impl AsRef<Path>, policy: yosoi::VideoPolicy) -> Result<Self, yosoi::VideoError>",
+      "docs": "Copies and probes one local file under explicit byte, duration and pixel limits.\nNo full-video frame scan occurs. YOSOI_FFMPEG/YOSOI_FFPROBE select local executables.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 194,
+        "lineEnd": 293,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L194-L293"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::policy",
+      "publicPath": "yosoi::VideoSurface::policy",
+      "title": "yosoi::VideoSurface::policy",
+      "kind": "function",
+      "signature": "pub fn policy(&self) -> &yosoi::VideoPolicy",
+      "docs": "Borrows the effective processing limits, without exposing live authority.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 374,
+        "lineEnd": 376,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L374-L376"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::read",
+      "publicPath": "yosoi::VideoSurface::read",
+      "title": "yosoi::VideoSurface::read",
+      "kind": "function",
+      "signature": "fn read(&self, request: &yosoi::surface::model::ReadRequest) -> Result<yosoi::surface::model::ReadResult, yosoi::SurfaceError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/timeline.rs",
+        "lineStart": 295,
+        "lineEnd": 297,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/timeline.rs#L295-L297"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::read_from",
+      "publicPath": "yosoi::VideoSurface::read_from",
+      "title": "yosoi::VideoSurface::read_from",
+      "kind": "function",
+      "signature": "pub async fn read_from(archive: &yosoi::Archive, reference: &yosoi::surface::video::VideoArchiveRef) -> Result<Self, yosoi::VideoError>",
+      "docs": "Restores a timeline without the original file, FFprobe, a browser or network access.\nFrame decoding is a separate capability and still requires a compatible FFmpeg.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 74,
+        "lineEnd": 125,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/archive.rs#L74-L125"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSurface::root_reference",
+      "publicPath": "yosoi::VideoSurface::root_reference",
+      "title": "yosoi::VideoSurface::root_reference",
+      "kind": "function",
+      "signature": "fn root_reference(&self) -> yosoi::surface::model::Reference",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/timeline.rs",
+        "lineStart": 292,
+        "lineEnd": 294,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/timeline.rs#L292-L294"
+      },
+      "examples": [],
+      "trait": "SurfaceRead"
+    },
+    {
+      "id": "function:yosoi::VideoSurface::write_to",
+      "publicPath": "yosoi::VideoSurface::write_to",
+      "title": "yosoi::VideoSurface::write_to",
+      "kind": "function",
+      "signature": "pub async fn write_to(&self, archive: &yosoi::Archive) -> Result<yosoi::surface::video::VideoArchiveRef, yosoi::VideoError>",
+      "docs": "Saves a complete bounded source using an existing JSON Document in the normal Archive.\nBinary bytes are explicitly base64 encoded; no archive format or record schema is changed.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/archive.rs",
+        "lineStart": 50,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/archive.rs#L50-L71"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "8976716f8fe942ebdf369b9b3c1c2ab9c550a6b944ed05b6c53aa2013c2ce70e",
+  "slug": "yosoi/struct/videosurface",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8976716f8fe942ebdf369b9b3c1c2ab9c550a6b944ed05b6c53aa2013c2ce70e"
+}

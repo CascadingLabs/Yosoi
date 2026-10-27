@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::session::SessionRequest",
+  "publicPath": "yosoi::session::SessionRequest",
+  "kind": "struct",
+  "title": "yosoi::session::SessionRequest",
+  "signature": "pub struct SessionRequest<'scope>",
+  "docs": "Page request borrowing an existing Session or exclusive Work authority.\n\nSending retains the caller's browser lifetime. A Session-bound request\nacquires and settles temporary Work; a Work-bound request uses the held tab\ncontrol without releasing the caller's lease.",
+  "source": {
+    "file": "crates/yosoi/src/session.rs",
+    "lineStart": 355,
+    "lineEnd": 359,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L355-L359"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::session::SessionRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::session::SessionRequest::bind",
+      "publicPath": "yosoi::session::SessionRequest::bind",
+      "title": "yosoi::session::SessionRequest::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &yosoi::Policy) -> Self",
+      "docs": "Snapshots a complete request Policy without transferring ownership of the browser owner.\nNetwork choices must match the acquired Session; send rejects a different route.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 384,
+        "lineEnd": 387,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L384-L387"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::fmt",
+      "publicPath": "yosoi::session::SessionRequest::fmt",
+      "title": "yosoi::session::SessionRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut std_fmt::Formatter<'_>) -> std_fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 361,
+        "lineEnd": 365,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L361-L365"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::send",
+      "publicPath": "yosoi::session::SessionRequest::send",
+      "title": "yosoi::session::SessionRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(&self) -> Result<yosoi::request::Response, yosoi::session::SessionRequestError>",
+      "docs": "Executes on borrowed browser authority using any scoped invocation cancellation.\nReturns typed acquisition attempts, including failures; completion alone\ndoes not establish success. Authority/setup failures return [`SessionRequestError`].",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 391,
+        "lineEnd": 396,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L391-L396"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::session::SessionRequest::send_cancellable",
+      "publicPath": "yosoi::session::SessionRequest::send_cancellable",
+      "title": "yosoi::session::SessionRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(&self, cancellation: &CancellationToken) -> Result<yosoi::request::Response, yosoi::session::SessionRequestError>",
+      "docs": "Executes while honoring caller cancellation through acquisition and request settlement.",
+      "source": {
+        "file": "crates/yosoi/src/session.rs",
+        "lineStart": 402,
+        "lineEnd": 432,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/session.rs#L402-L432"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "8903299b735518e7a51416cce880c70f0be9fe78be4cde8ab46e8a7ff819faa9",
+  "slug": "yosoi/session/struct/sessionrequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8903299b735518e7a51416cce880c70f0be9fe78be4cde8ab46e8a7ff819faa9"
+}

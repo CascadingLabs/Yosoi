@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::Archive",
+  "publicPath": "yosoi::Archive",
+  "kind": "struct",
+  "title": "yosoi::Archive",
+  "signature": "pub struct Archive",
+  "docs": "One concrete handle to a local `.yosoi` Archive.\n\nThe handle owns only an absolute root path. It has no background writer and\nholds no files open between operations, so dropping it is sufficient cleanup.",
+  "source": {
+    "file": "crates/yosoi/src/internal/archive/mod.rs",
+    "lineStart": 82,
+    "lineEnd": 84,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L82-L84"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 29,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L29-L29"
+  },
+  "aliases": [
+    "yosoi::archive::Archive"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::Archive::clone",
+      "publicPath": "yosoi::Archive::clone",
+      "title": "yosoi::Archive::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::Archive",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 81,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L81-L81"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::Archive::eq",
+      "publicPath": "yosoi::Archive::eq",
+      "title": "yosoi::Archive::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::Archive) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 81,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L81-L81"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::Archive::export_file",
+      "publicPath": "yosoi::Archive::export_file",
+      "title": "yosoi::Archive::export_file",
+      "kind": "function",
+      "signature": "pub async fn export_file(&self, reference: &yosoi::surface::OutcomeRef, path: impl AsRef<Path>) -> Result<(), yosoi::archive::ArchiveError>",
+      "docs": "Exports one validated Surface outcome as a self-contained portable file.\n\nThe file contains a version marker, SHA-256 and exact JSON payload. It\nincludes retained sources and Plans, never the Archive directory or live\nauthority. The destination must not exist. Publication is atomic through\na same-directory hard link; filesystems without hard links return an error.\nA sync failure after publication reports an error with the file possibly\npresent. Cancellation can leave a complete file, never a partial destination.",
+      "source": {
+        "file": "crates/yosoi/src/archive/portable.rs",
+        "lineStart": 27,
+        "lineEnd": 78,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/archive/portable.rs#L27-L78"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::fmt",
+      "publicPath": "yosoi::Archive::fmt",
+      "title": "yosoi::Archive::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 81,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L81-L81"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::Archive::format_root",
+      "publicPath": "yosoi::Archive::format_root",
+      "title": "yosoi::Archive::format_root",
+      "kind": "function",
+      "signature": "pub fn format_root(&self) -> PathBuf",
+      "docs": "Returns the current physical format root.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 98,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L98-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::import_file",
+      "publicPath": "yosoi::Archive::import_file",
+      "title": "yosoi::Archive::import_file",
+      "kind": "function",
+      "signature": "pub async fn import_file(&self, path: impl AsRef<Path>) -> Result<yosoi::surface::OutcomeRef, yosoi::archive::ArchiveError>",
+      "docs": "Validates a portable file and imports its outcome through normal `write`.\n\nNo original directory, source file, browser, decoder or network is used.\nIntegrity is checked before JSON interpretation, and all outcome limits\nare checked before persistence. SHA-256 detects corruption; it does not\nauthenticate the file's author. Import grants no action permission.",
+      "source": {
+        "file": "crates/yosoi/src/archive/portable.rs",
+        "lineStart": 86,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/archive/portable.rs#L86-L126"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::open",
+      "publicPath": "yosoi::Archive::open",
+      "title": "yosoi::Archive::open",
+      "kind": "function",
+      "signature": "pub async fn open(root: impl AsRef<Path>) -> Result<Self, yosoi::archive::ArchiveError>",
+      "docs": "Opens or creates the current local Archive format beneath `root`.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 88,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L88-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::read",
+      "publicPath": "yosoi::Archive::read",
+      "title": "yosoi::Archive::read",
+      "kind": "function",
+      "signature": "pub async fn read<R>(&self, reference: &R) -> Result<<R as >::Value, yosoi::archive::ArchiveError> where R: ArchiveReference",
+      "docs": "Reads the exact value selected by one typed Archive reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 113,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L113-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::read_document",
+      "publicPath": "yosoi::Archive::read_document",
+      "title": "yosoi::Archive::read_document",
+      "kind": "function",
+      "signature": "pub async fn read_document(&self, reference: &yosoi::archive::DocumentArchiveRef) -> Result<yosoi::Document, yosoi::archive::ArchiveError>",
+      "docs": "Restores and validates one exact SDK Document without network or browser I/O.\n\nMissing records, unsupported versions and corrupt payloads return typed\nArchive errors. The result owns its bytes independently of this handle.",
+      "source": {
+        "file": "crates/yosoi/src/archive.rs",
+        "lineStart": 32,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/archive.rs#L32-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::root",
+      "publicPath": "yosoi::Archive::root",
+      "title": "yosoi::Archive::root",
+      "kind": "function",
+      "signature": "pub fn root(&self) -> &Path",
+      "docs": "Returns the caller-selected root as an absolute path.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 93,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L93-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::write",
+      "publicPath": "yosoi::Archive::write",
+      "title": "yosoi::Archive::write",
+      "kind": "function",
+      "signature": "pub async fn write<V>(&self, value: &V) -> Result<<V as >::Reference, yosoi::archive::ArchiveError> where V: ArchiveValue",
+      "docs": "Writes one supported value and returns its exact typed reference.",
+      "source": {
+        "file": "crates/yosoi/src/internal/archive/mod.rs",
+        "lineStart": 105,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/archive/mod.rs#L105-L110"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::Archive::write_document",
+      "publicPath": "yosoi::Archive::write_document",
+      "title": "yosoi::Archive::write_document",
+      "kind": "function",
+      "signature": "pub async fn write_document(&self, document: &yosoi::Document) -> Result<yosoi::archive::DocumentArchiveRef, yosoi::archive::ArchiveError>",
+      "docs": "Saves an SDK Document with its exact identity, profile and bytes.\n\nReturns an immutable reference, or an Archive error for unsupported\nplatforms, unsafe paths, excessive payloads, or failed durable storage.\nCancellation may leave unreferenced staging data; no partial reference is\nreturned. Repeating a write creates a distinct immutable occurrence.",
+      "source": {
+        "file": "crates/yosoi/src/archive.rs",
+        "lineStart": 21,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/archive.rs#L21-L26"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ac9692f16d6ffb696180b65dcdabc32b59201425e1e695b5494924b232cce3c9",
+  "slug": "yosoi/struct/archive",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ac9692f16d6ffb696180b65dcdabc32b59201425e1e695b5494924b232cce3c9"
+}

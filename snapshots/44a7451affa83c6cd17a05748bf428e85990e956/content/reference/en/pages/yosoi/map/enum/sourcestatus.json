@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::SourceStatus",
+  "publicPath": "yosoi::map::SourceStatus",
+  "kind": "enum",
+  "title": "yosoi::map::SourceStatus",
+  "signature": "pub enum SourceStatus",
+  "docs": "Per-source terminal state, distinct from termination of the whole Map operation.",
+  "source": {
+    "file": "crates/yosoi/src/internal/map/mod.rs",
+    "lineStart": 230,
+    "lineEnd": 245,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L230-L245"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/map.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::map::SourceStatus"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::SourceStatus::Completed",
+      "publicPath": "yosoi::map::SourceStatus::Completed",
+      "title": "yosoi::map::SourceStatus::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "Supported source processing finished within local limits; the source may not cover a whole site.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 232,
+        "lineEnd": 232,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L232-L232"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::Disabled",
+      "publicPath": "yosoi::map::SourceStatus::Disabled",
+      "title": "yosoi::map::SourceStatus::Disabled",
+      "kind": "variant",
+      "signature": "Disabled",
+      "docs": "Policy disabled this discovery source.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 238,
+        "lineEnd": 238,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L238-L238"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::Failed",
+      "publicPath": "yosoi::map::SourceStatus::Failed",
+      "title": "yosoi::map::SourceStatus::Failed",
+      "kind": "variant",
+      "signature": "Failed(yosoi::map::SourceFailure)",
+      "docs": "Acquisition or source interpretation ended with the supplied typed failure.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 240,
+        "lineEnd": 240,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L240-L240"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::map::SourceStatus::Failed::0",
+          "publicPath": "yosoi::map::SourceStatus::Failed::0",
+          "title": "yosoi::map::SourceStatus::Failed::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::map::SourceFailure",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/map/mod.rs",
+            "lineStart": 240,
+            "lineEnd": 240,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L240-L240"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::NotStarted",
+      "publicPath": "yosoi::map::SourceStatus::NotStarted",
+      "title": "yosoi::map::SourceStatus::NotStarted",
+      "kind": "variant",
+      "signature": "NotStarted",
+      "docs": "The source was retained in the outcome but no acquisition started for it.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 244,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L244-L244"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::Sampled",
+      "publicPath": "yosoi::map::SourceStatus::Sampled",
+      "title": "yosoi::map::SourceStatus::Sampled",
+      "kind": "variant",
+      "signature": "Sampled",
+      "docs": "The provider response is known or likely to be a sample of its index.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 234,
+        "lineEnd": 234,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L234-L234"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::Skipped",
+      "publicPath": "yosoi::map::SourceStatus::Skipped",
+      "title": "yosoi::map::SourceStatus::Skipped",
+      "kind": "variant",
+      "signature": "Skipped(yosoi::map::SourceSkipReason)",
+      "docs": "Processing was omitted for the supplied source-classification reason.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 236,
+        "lineEnd": 236,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L236-L236"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::map::SourceStatus::Skipped::0",
+          "publicPath": "yosoi::map::SourceStatus::Skipped::0",
+          "title": "yosoi::map::SourceStatus::Skipped::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::map::SourceSkipReason",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/internal/map/mod.rs",
+            "lineStart": 236,
+            "lineEnd": 236,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L236-L236"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::map::SourceStatus::Truncated",
+      "publicPath": "yosoi::map::SourceStatus::Truncated",
+      "title": "yosoi::map::SourceStatus::Truncated",
+      "kind": "variant",
+      "signature": "Truncated",
+      "docs": "A local resource or stopping boundary prevented retaining or parsing all source evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 242,
+        "lineEnd": 242,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L242-L242"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::SourceStatus::clone",
+      "publicPath": "yosoi::map::SourceStatus::clone",
+      "title": "yosoi::map::SourceStatus::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::map::SourceStatus",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L228-L228"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::SourceStatus::eq",
+      "publicPath": "yosoi::map::SourceStatus::eq",
+      "title": "yosoi::map::SourceStatus::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::map::SourceStatus) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L228-L228"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::SourceStatus::fmt",
+      "publicPath": "yosoi::map::SourceStatus::fmt",
+      "title": "yosoi::map::SourceStatus::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L228-L228"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::SourceStatus::serialize",
+      "publicPath": "yosoi::map::SourceStatus::serialize",
+      "title": "yosoi::map::SourceStatus::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/map/mod.rs",
+        "lineStart": 228,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/map/mod.rs#L228-L228"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "deb5b1f348598d752b5eb0c2489f9ca6a366e194040d175c7330e0435313a221",
+  "slug": "yosoi/map/enum/sourcestatus",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "deb5b1f348598d752b5eb0c2489f9ca6a366e194040d175c7330e0435313a221"
+}

@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::VideoSession",
+  "publicPath": "yosoi::VideoSession",
+  "kind": "struct",
+  "title": "yosoi::VideoSession",
+  "signature": "pub struct VideoSession",
+  "docs": "Read-only video connection with its own cursor, bounded processing and archive collection.\nIt never starts a browser or acquires action authority. Await `close` for finalization.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/session.rs",
+    "lineStart": 200,
+    "lineEnd": 202,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L200-L202"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 59,
+    "lineEnd": 59,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L59-L59"
+  },
+  "aliases": [
+    "yosoi::surface::video::VideoSession"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::VideoSession::close",
+      "publicPath": "yosoi::VideoSession::close",
+      "title": "yosoi::VideoSession::close",
+      "kind": "function",
+      "signature": "async fn close(&mut self) -> StdResult<Option<yosoi::surface::Outcome>, yosoi::ExecutionError>",
+      "docs": "Awaits source cleanup and retains its outcome even when cleanup fails.\nRepeated calls return the saved outcome without reacquiring control.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L239-L239"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::VideoSession::execute",
+      "publicPath": "yosoi::VideoSession::execute",
+      "title": "yosoi::VideoSession::execute",
+      "kind": "function",
+      "signature": "async fn execute(&mut self, command: Value) -> StdResult<Value, yosoi::ExecutionError>",
+      "docs": "Executes one bounded JSON command against this source.\nErrors after dispatch do not imply that effects were undone; inspect the retained outcome.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L239-L239"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::VideoSession::fmt",
+      "publicPath": "yosoi::VideoSession::fmt",
+      "title": "yosoi::VideoSession::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L239-L239"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::VideoSession::open",
+      "publicPath": "yosoi::VideoSession::open",
+      "title": "yosoi::VideoSession::open",
+      "kind": "function",
+      "signature": "pub async fn open(path: impl AsRef<Path> + Send + Sync, policy: yosoi::SurfacePolicy, max_side: u32) -> StdResult<Self, yosoi::ExecutionError>",
+      "docs": "Freezes a local source and opens a detached reader. `max_side` bounds decoded pixels.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 205,
+        "lineEnd": 237,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L205-L237"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoSession::outcome",
+      "publicPath": "yosoi::VideoSession::outcome",
+      "title": "yosoi::VideoSession::outcome",
+      "kind": "function",
+      "signature": "fn outcome(&self) -> Option<yosoi::surface::Outcome>",
+      "docs": "Returns retained evidence, including partial attempts, when archive policy is enabled.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L239-L239"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    },
+    {
+      "id": "function:yosoi::VideoSession::ready",
+      "publicPath": "yosoi::VideoSession::ready",
+      "title": "yosoi::VideoSession::ready",
+      "kind": "function",
+      "signature": "fn ready(&mut self) -> StdResult<Value, yosoi::ExecutionError>",
+      "docs": "Returns source capabilities and the initial bounded observation.\nA closed connection returns an error instead of reopening its source.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/session.rs",
+        "lineStart": 239,
+        "lineEnd": 239,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/session.rs#L239-L239"
+      },
+      "examples": [],
+      "trait": "SurfaceConnection"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "0dc616c4efa21a789fb6d46a619eff93813ed131919e3cf06258a24004d98c9d",
+  "slug": "yosoi/struct/videosession",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "0dc616c4efa21a789fb6d46a619eff93813ed131919e3cf06258a24004d98c9d"
+}

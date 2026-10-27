@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::VideoPolicy",
+  "publicPath": "yosoi::VideoPolicy",
+  "kind": "struct",
+  "title": "yosoi::VideoPolicy",
+  "signature": "pub struct VideoPolicy",
+  "docs": "Processing bounds. Frame size and interval granularity affect interpretation identity.",
+  "source": {
+    "file": "crates/yosoi/src/surface/video/mod.rs",
+    "lineStart": 64,
+    "lineEnd": 77,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L64-L77"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 40,
+    "lineEnd": 40,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/lib.rs#L40-L40"
+  },
+  "aliases": [
+    "yosoi::surface::video::VideoPolicy"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::VideoPolicy::clone",
+      "publicPath": "yosoi::VideoPolicy::clone",
+      "title": "yosoi::VideoPolicy::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::VideoPolicy",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::VideoPolicy::default",
+      "publicPath": "yosoi::VideoPolicy::default",
+      "title": "yosoi::VideoPolicy::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 79,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L79-L88"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::VideoPolicy::deserialize",
+      "publicPath": "yosoi::VideoPolicy::deserialize",
+      "title": "yosoi::VideoPolicy::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::VideoPolicy::fmt",
+      "publicPath": "yosoi::VideoPolicy::fmt",
+      "title": "yosoi::VideoPolicy::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::frame_max_side",
+      "publicPath": "yosoi::VideoPolicy::frame_max_side",
+      "title": "yosoi::VideoPolicy::frame_max_side",
+      "kind": "struct_field",
+      "signature": "pub frame_max_side: u32",
+      "docs": "Maximum decoded frame side; the adapter never upscales smaller videos.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::max_duration_us",
+      "publicPath": "yosoi::VideoPolicy::max_duration_us",
+      "title": "yosoi::VideoPolicy::max_duration_us",
+      "kind": "struct_field",
+      "signature": "pub max_duration_us: u64",
+      "docs": "Maximum accepted primary video duration.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 74,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L74-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::max_frame_bytes",
+      "publicPath": "yosoi::VideoPolicy::max_frame_bytes",
+      "title": "yosoi::VideoPolicy::max_frame_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_frame_bytes: usize",
+      "docs": "Maximum encoded PNG bytes per materialized frame or crop.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::max_source_bytes",
+      "publicPath": "yosoi::VideoPolicy::max_source_bytes",
+      "title": "yosoi::VideoPolicy::max_source_bytes",
+      "kind": "struct_field",
+      "signature": "pub max_source_bytes: usize",
+      "docs": "Maximum local source bytes copied into an owned immutable snapshot.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::min_interval_us",
+      "publicPath": "yosoi::VideoPolicy::min_interval_us",
+      "title": "yosoi::VideoPolicy::min_interval_us",
+      "kind": "struct_field",
+      "signature": "pub min_interval_us: u64",
+      "docs": "Smallest temporal interval automatically subdivided by exploration.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L72-L72"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::VideoPolicy::serialize",
+      "publicPath": "yosoi::VideoPolicy::serialize",
+      "title": "yosoi::VideoPolicy::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::VideoPolicy::tool_timeout_ms",
+      "publicPath": "yosoi::VideoPolicy::tool_timeout_ms",
+      "title": "yosoi::VideoPolicy::tool_timeout_ms",
+      "kind": "struct_field",
+      "signature": "pub tool_timeout_ms: u64",
+      "docs": "Timeout for each probe or decode process.",
+      "source": {
+        "file": "crates/yosoi/src/surface/video/mod.rs",
+        "lineStart": 76,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/video/mod.rs#L76-L76"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "996d1db2c7570179e41299c6136d5035aa1a3b4c9c0c5092a47392315867f5f8",
+  "slug": "yosoi/struct/videopolicy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "996d1db2c7570179e41299c6136d5035aa1a3b4c9c0c5092a47392315867f5f8"
+}

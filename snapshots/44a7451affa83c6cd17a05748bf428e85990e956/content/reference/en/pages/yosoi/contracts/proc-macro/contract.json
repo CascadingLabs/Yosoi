@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "proc_macro:yosoi::contracts::Contract",
+  "publicPath": "yosoi::contracts::Contract",
+  "kind": "proc_macro",
+  "title": "yosoi::contracts::Contract",
+  "signature": "#[derive] Contract",
+  "docs": "Defines portable record meaning and explicit extraction/validation helpers for a named struct.\n\nRequires nonblank `#[ys(id = \"...\", description = \"...\")]` record metadata\nand supported named-field declarations with descriptions. An optional root\nlocator selects repeated-region grouping; without a root the schema is page-scoped.\nFields may pin locators, but if one is pinned every field must be pinned.\n\nGenerates schema access, owned candidate evidence, and explicit conversion\nand validation paths. It performs no document acquisition and does not infer\nlocators from natural-language field descriptions. Invalid declarations emit\ncompiler diagnostics rather than a partially usable record implementation.",
+  "source": {
+    "file": "crates/yosoi-contracts-derive/src/lib.rs",
+    "lineStart": 27,
+    "lineEnd": 32,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi-contracts-derive/src/lib.rs#L27-L32"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::Contract",
+    "yosoi::prelude::contracts::Contract"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "43ae1238a32668453551094998f4c1fcd61250e11fae51c687d0cf679314edce",
+  "slug": "yosoi/contracts/proc-macro/contract",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "43ae1238a32668453551094998f4c1fcd61250e11fae51c687d0cf679314edce"
+}

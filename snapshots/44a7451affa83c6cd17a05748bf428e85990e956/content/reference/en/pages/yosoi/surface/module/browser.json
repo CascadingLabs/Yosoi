@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::surface::browser",
+  "publicPath": "yosoi::surface::browser",
+  "kind": "module",
+  "title": "yosoi::surface::browser",
+  "signature": "pub mod browser",
+  "docs": "Live browser observation and authority; platform process details stay local.",
+  "source": {
+    "file": "crates/yosoi/src/surface/browser/mod.rs",
+    "lineStart": 1,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/surface/browser/mod.rs#L1-L11"
+  },
+  "reexportSource": null,
+  "aliases": [],
+  "members": [],
+  "examples": [],
+  "docsDigest": "a93e99dd78260feb68019d41006a44b9efbdb3eefb2634a98bd94af06b2fb09a",
+  "slug": "yosoi/surface/module/browser",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a93e99dd78260feb68019d41006a44b9efbdb3eefb2634a98bd94af06b2fb09a"
+}

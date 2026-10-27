@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowInvokeError",
+  "publicPath": "yosoi::flow::FlowInvokeError",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowInvokeError",
+  "signature": "pub enum FlowInvokeError",
+  "docs": "A flow failed validation or could not start/clean up its managed Session.",
+  "source": {
+    "file": "crates/yosoi/src/flow/error.rs",
+    "lineStart": 218,
+    "lineEnd": 235,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L218-L235"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/flow.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::FlowInvokeError",
+    "yosoi::prelude::flow::FlowInvokeError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowInvokeError::InvalidFlow",
+      "publicPath": "yosoi::flow::FlowInvokeError::InvalidFlow",
+      "title": "yosoi::flow::FlowInvokeError::InvalidFlow",
+      "kind": "variant",
+      "signature": "InvalidFlow(yosoi::flow::FlowValidationError)",
+      "docs": "The authored Flow failed validation before Session invocation.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 221,
+        "lineEnd": 221,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L221-L221"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowInvokeError::InvalidFlow::0",
+          "publicPath": "yosoi::flow::FlowInvokeError::InvalidFlow::0",
+          "title": "yosoi::flow::FlowInvokeError::InvalidFlow::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::flow::FlowValidationError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 221,
+            "lineEnd": 221,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L221-L221"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowInvokeError::Policy",
+      "publicPath": "yosoi::flow::FlowInvokeError::Policy",
+      "title": "yosoi::flow::FlowInvokeError::Policy",
+      "kind": "variant",
+      "signature": "Policy(yosoi::PolicyError)",
+      "docs": "The supplied complete policy failed validation before invocation.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 224,
+        "lineEnd": 224,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L224-L224"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowInvokeError::Policy::0",
+          "publicPath": "yosoi::flow::FlowInvokeError::Policy::0",
+          "title": "yosoi::flow::FlowInvokeError::Policy::0",
+          "kind": "struct_field",
+          "signature": "0: yosoi::PolicyError",
+          "docs": "",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 224,
+            "lineEnd": 224,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L224-L224"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "variant:yosoi::flow::FlowInvokeError::Session",
+      "publicPath": "yosoi::flow::FlowInvokeError::Session",
+      "title": "yosoi::flow::FlowInvokeError::Session",
+      "kind": "variant",
+      "signature": "Session { source: yosoi::session::SessionError, outcome: Option<Box<yosoi::flow::FlowOutcome>>, cleanup: Option<yosoi::session::SessionError> }",
+      "docs": "Managed Session setup, invocation, or cleanup failed, possibly after partial execution.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 227,
+        "lineEnd": 234,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L227-L234"
+      },
+      "examples": [],
+      "fields": [
+        {
+          "id": "struct_field:yosoi::flow::FlowInvokeError::Session::source",
+          "publicPath": "yosoi::flow::FlowInvokeError::Session::source",
+          "title": "yosoi::flow::FlowInvokeError::Session::source",
+          "kind": "struct_field",
+          "signature": "source: yosoi::session::SessionError",
+          "docs": "Primary Session failure, retained separately from a cleanup failure.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 229,
+            "lineEnd": 229,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L229-L229"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowInvokeError::Session::outcome",
+          "publicPath": "yosoi::flow::FlowInvokeError::Session::outcome",
+          "title": "yosoi::flow::FlowInvokeError::Session::outcome",
+          "kind": "struct_field",
+          "signature": "outcome: Option<Box<yosoi::flow::FlowOutcome>>",
+          "docs": "Owned partial outcome when execution produced one before the failure.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 231,
+            "lineEnd": 231,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L231-L231"
+          },
+          "examples": []
+        },
+        {
+          "id": "struct_field:yosoi::flow::FlowInvokeError::Session::cleanup",
+          "publicPath": "yosoi::flow::FlowInvokeError::Session::cleanup",
+          "title": "yosoi::flow::FlowInvokeError::Session::cleanup",
+          "kind": "struct_field",
+          "signature": "cleanup: Option<yosoi::session::SessionError>",
+          "docs": "Additional cleanup failure, if present; external effects are not rolled back.",
+          "source": {
+            "file": "crates/yosoi/src/flow/error.rs",
+            "lineStart": 233,
+            "lineEnd": 233,
+            "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L233-L233"
+          },
+          "examples": []
+        }
+      ]
+    },
+    {
+      "id": "function:yosoi::flow::FlowInvokeError::cleanup_error",
+      "publicPath": "yosoi::flow::FlowInvokeError::cleanup_error",
+      "title": "yosoi::flow::FlowInvokeError::cleanup_error",
+      "kind": "function",
+      "signature": "pub const fn cleanup_error(&self) -> Option<&yosoi::session::SessionError>",
+      "docs": "Returns a managed cleanup error without replacing the primary failure.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 239,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L239-L244"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowInvokeError::fmt",
+      "publicPath": "yosoi::flow::FlowInvokeError::fmt",
+      "title": "yosoi::flow::FlowInvokeError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 217,
+        "lineEnd": 217,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L217-L217"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowInvokeError::fmt",
+      "publicPath": "yosoi::flow::FlowInvokeError::fmt",
+      "title": "yosoi::flow::FlowInvokeError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 217,
+        "lineEnd": 217,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L217-L217"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::flow::FlowInvokeError::partial_outcome",
+      "publicPath": "yosoi::flow::FlowInvokeError::partial_outcome",
+      "title": "yosoi::flow::FlowInvokeError::partial_outcome",
+      "kind": "function",
+      "signature": "pub fn partial_outcome(&self) -> Option<&yosoi::flow::FlowOutcome>",
+      "docs": "Returns the partial flow outcome when managed cleanup failed after execution.",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 246,
+        "lineEnd": 251,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L246-L251"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowInvokeError::source",
+      "publicPath": "yosoi::flow::FlowInvokeError::source",
+      "title": "yosoi::flow::FlowInvokeError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/error.rs",
+        "lineStart": 217,
+        "lineEnd": 217,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/error.rs#L217-L217"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4eb73a7d69444b45cf33eb649f3b03eb22b7b0a11321f4ba2c37abc955c1f993",
+  "slug": "yosoi/flow/enum/flowinvokeerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4eb73a7d69444b45cf33eb649f3b03eb22b7b0a11321f4ba2c37abc955c1f993"
+}

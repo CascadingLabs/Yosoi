@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::Finding",
+  "publicPath": "yosoi::locators::Finding",
+  "kind": "struct",
+  "title": "yosoi::locators::Finding",
+  "signature": "pub struct Finding",
+  "docs": "One deterministic, ordered locator finding.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 128,
+    "lineEnd": 136,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L128-L136"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/locators.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::Finding"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::Finding::clone",
+      "publicPath": "yosoi::locators::Finding::clone",
+      "title": "yosoi::locators::Finding::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::Finding",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::completeness",
+      "publicPath": "yosoi::locators::Finding::completeness",
+      "title": "yosoi::locators::Finding::completeness",
+      "kind": "function",
+      "signature": "pub const fn completeness(&self) -> &yosoi::locators::Completeness",
+      "docs": "Borrows the evidence coverage claim; matches can still have partial evidence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 207,
+        "lineEnd": 209,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L207-L209"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::coordinate",
+      "publicPath": "yosoi::locators::Finding::coordinate",
+      "title": "yosoi::locators::Finding::coordinate",
+      "kind": "function",
+      "signature": "pub const fn coordinate(&self) -> &yosoi::locators::NativeCoordinate",
+      "docs": "Borrows the native evidence location, without copying document contents.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 199,
+        "lineEnd": 201,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L199-L201"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::deserialize",
+      "publicPath": "yosoi::locators::Finding::deserialize",
+      "title": "yosoi::locators::Finding::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 217,
+        "lineEnd": 244,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L217-L244"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::document_id",
+      "publicPath": "yosoi::locators::Finding::document_id",
+      "title": "yosoi::locators::Finding::document_id",
+      "kind": "function",
+      "signature": "pub const fn document_id(&self) -> &yosoi::DocumentId",
+      "docs": "Borrows the document identity to which this finding's evidence belongs.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 187,
+        "lineEnd": 189,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L187-L189"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::eq",
+      "publicPath": "yosoi::locators::Finding::eq",
+      "title": "yosoi::locators::Finding::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::Finding) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::fmt",
+      "publicPath": "yosoi::locators::Finding::fmt",
+      "title": "yosoi::locators::Finding::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::order",
+      "publicPath": "yosoi::locators::Finding::order",
+      "title": "yosoi::locators::Finding::order",
+      "kind": "function",
+      "signature": "pub const fn order(&self) -> u64",
+      "docs": "Returns deterministic global finding order; a result requires strictly increasing values.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 195,
+        "lineEnd": 197,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L195-L197"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::output_id",
+      "publicPath": "yosoi::locators::Finding::output_id",
+      "title": "yosoi::locators::Finding::output_id",
+      "kind": "function",
+      "signature": "pub const fn output_id(&self) -> &yosoi::locators::OutputId",
+      "docs": "Borrows the authored output identity that produced this finding.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 191,
+        "lineEnd": 193,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L191-L193"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::parent_region",
+      "publicPath": "yosoi::locators::Finding::parent_region",
+      "title": "yosoi::locators::Finding::parent_region",
+      "kind": "function",
+      "signature": "pub const fn parent_region(&self) -> Option<&yosoi::locators::RegionLineage>",
+      "docs": "Borrows repeated-region lineage, or `None` for a finding without a parent region.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 211,
+        "lineEnd": 213,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L211-L213"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::serialize",
+      "publicPath": "yosoi::locators::Finding::serialize",
+      "title": "yosoi::locators::Finding::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::Finding::try_new",
+      "publicPath": "yosoi::locators::Finding::try_new",
+      "title": "yosoi::locators::Finding::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(document_id: yosoi::DocumentId, output_id: yosoi::locators::OutputId, order: u64, coordinate: yosoi::locators::NativeCoordinate, value: yosoi::locators::ProjectedValue, completeness: yosoi::locators::Completeness, parent_region: Option<yosoi::locators::RegionLineage>) -> Result<Self, FindingError>",
+      "docs": "Creates an owned finding after checking projected node-reference identity.\n\n`document_id`, `output_id`, and `order` label the finding; `coordinate`\nlocates its evidence, and `parent_region` records optional repeated-region\nlineage. `completeness` is the supplied evidence claim, not independently\nverified by this constructor. For node projections, returns\n[`FindingError`] if the projected document or coordinate disagrees.\nOther projected values are accepted without document I/O.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 158,
+        "lineEnd": 184,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L158-L184"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::Finding::value",
+      "publicPath": "yosoi::locators::Finding::value",
+      "title": "yosoi::locators::Finding::value",
+      "kind": "function",
+      "signature": "pub const fn value(&self) -> &yosoi::locators::ProjectedValue",
+      "docs": "Borrows the owned projection value retained by this finding.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 203,
+        "lineEnd": 205,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/internal/documents/outcome.rs#L203-L205"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b275cbd9cb33273331a6bd717e2f079479bdc6cb929667919a9560154cd8bdf7",
+  "slug": "yosoi/locators/struct/finding",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b275cbd9cb33273331a6bd717e2f079479bdc6cb929667919a9560154cd8bdf7"
+}

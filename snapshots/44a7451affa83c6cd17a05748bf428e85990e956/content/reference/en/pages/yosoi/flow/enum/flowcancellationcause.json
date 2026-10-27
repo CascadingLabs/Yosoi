@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::flow::FlowCancellationCause",
+  "publicPath": "yosoi::flow::FlowCancellationCause",
+  "kind": "enum",
+  "title": "yosoi::flow::FlowCancellationCause",
+  "signature": "pub enum FlowCancellationCause",
+  "docs": "Which cancellation authority stopped an attempted Flow step.",
+  "source": {
+    "file": "crates/yosoi/src/flow/model.rs",
+    "lineStart": 719,
+    "lineEnd": 726,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L719-L726"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::flow::FlowCancellationCause"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::flow::FlowCancellationCause::Invocation",
+      "publicPath": "yosoi::flow::FlowCancellationCause::Invocation",
+      "title": "yosoi::flow::FlowCancellationCause::Invocation",
+      "kind": "variant",
+      "signature": "Invocation",
+      "docs": "The invocation cancellation token was cancelled.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 723,
+        "lineEnd": 723,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L723-L723"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowCancellationCause::Session",
+      "publicPath": "yosoi::flow::FlowCancellationCause::Session",
+      "title": "yosoi::flow::FlowCancellationCause::Session",
+      "kind": "variant",
+      "signature": "Session",
+      "docs": "The owning Session or tab authority was revoked.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 725,
+        "lineEnd": 725,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L725-L725"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::flow::FlowCancellationCause::Step",
+      "publicPath": "yosoi::flow::FlowCancellationCause::Step",
+      "title": "yosoi::flow::FlowCancellationCause::Step",
+      "kind": "variant",
+      "signature": "Step",
+      "docs": "The explicitly bound token for this Step or nested Flow was cancelled.",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 721,
+        "lineEnd": 721,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L721-L721"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::flow::FlowCancellationCause::clone",
+      "publicPath": "yosoi::flow::FlowCancellationCause::clone",
+      "title": "yosoi::flow::FlowCancellationCause::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::flow::FlowCancellationCause",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 717,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L717-L717"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCancellationCause::deserialize",
+      "publicPath": "yosoi::flow::FlowCancellationCause::deserialize",
+      "title": "yosoi::flow::FlowCancellationCause::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 717,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L717-L717"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCancellationCause::eq",
+      "publicPath": "yosoi::flow::FlowCancellationCause::eq",
+      "title": "yosoi::flow::FlowCancellationCause::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::flow::FlowCancellationCause) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 717,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L717-L717"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCancellationCause::fmt",
+      "publicPath": "yosoi::flow::FlowCancellationCause::fmt",
+      "title": "yosoi::flow::FlowCancellationCause::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 717,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L717-L717"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::flow::FlowCancellationCause::serialize",
+      "publicPath": "yosoi::flow::FlowCancellationCause::serialize",
+      "title": "yosoi::flow::FlowCancellationCause::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/flow/model.rs",
+        "lineStart": 717,
+        "lineEnd": 717,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/44a7451affa83c6cd17a05748bf428e85990e956/crates/yosoi/src/flow/model.rs#L717-L717"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "08e64799b705864b23a4d6020496a6126dacc9a4c7b08bbc80c07a8132d50750",
+  "slug": "yosoi/flow/enum/flowcancellationcause",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "08e64799b705864b23a4d6020496a6126dacc9a4c7b08bbc80c07a8132d50750"
+}
