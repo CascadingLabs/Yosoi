@@ -79,7 +79,7 @@ fn renamed_css_class_values_do_not_change_structure() -> Result {
         .get("name")
         .ok_or_else(|| super::super::error("no field"))?;
     let before = dom.signature(field, root)?;
-    let mut changed = dom.clone();
+    let mut changed = dom;
     for node in &mut changed.nodes {
         for attr in node
             .attributes
