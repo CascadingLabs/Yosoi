@@ -1,0 +1,731 @@
+{
+  "version": 1,
+  "baseline": "document:v1:318f7725-a392-4172-bca0-49eee0d6f0d4",
+  "scenarios": [
+    {
+      "seeds": [
+        "obj-001",
+        "obj-002"
+      ],
+      "cases": [
+        {
+          "id": "obj-001",
+          "product": {
+            "id": "obj-001",
+            "name": "Arc desk lamp",
+            "price": "$68.00",
+            "color": "Burnt orange",
+            "material": "Powder-coated steel",
+            "stock": "12 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-002",
+          "product": {
+            "id": "obj-002",
+            "name": "Loop ceramic mug",
+            "price": "$24.00",
+            "color": "Chalk",
+            "material": "Glazed stoneware",
+            "stock": "8 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-003",
+          "product": {
+            "id": "obj-003",
+            "name": "Grid notebook",
+            "price": "$18.00",
+            "color": "Moss",
+            "material": "Recycled paper, cloth cover",
+            "stock": "24 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-004",
+          "product": {
+            "id": "obj-004",
+            "name": "Daybreak tote",
+            "price": "$32.00",
+            "color": "Sand",
+            "material": "Heavyweight cotton canvas",
+            "stock": "5 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-005",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "1b73231b4f23f18db99d129fb45add898657eb5b9cac710c02de446f55c6dead",
+          "fingerprint_bytes": 2645,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        },
+        {
+          "id": "obj-006",
+          "product": {
+            "id": "obj-006",
+            "name": "Still glass bottle",
+            "price": "$36.00",
+            "color": "Smoke",
+            "material": "Borosilicate glass, silicone",
+            "stock": "9 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "seeds": [
+        "obj-002",
+        "obj-005"
+      ],
+      "cases": [
+        {
+          "id": "obj-001",
+          "product": {
+            "id": "obj-001",
+            "name": "Arc desk lamp",
+            "price": "$68.00",
+            "color": "Burnt orange",
+            "material": "Powder-coated steel",
+            "stock": "12 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-002",
+          "product": {
+            "id": "obj-002",
+            "name": "Loop ceramic mug",
+            "price": "$24.00",
+            "color": "Chalk",
+            "material": "Glazed stoneware",
+            "stock": "8 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-003",
+          "product": {
+            "id": "obj-003",
+            "name": "Grid notebook",
+            "price": "$18.00",
+            "color": "Moss",
+            "material": "Recycled paper, cloth cover",
+            "stock": "24 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-004",
+          "product": {
+            "id": "obj-004",
+            "name": "Daybreak tote",
+            "price": "$32.00",
+            "color": "Sand",
+            "material": "Heavyweight cotton canvas",
+            "stock": "5 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-005",
+          "product": {
+            "id": "obj-005",
+            "name": "Pebble catchall",
+            "price": "$28.00",
+            "color": "Terracotta",
+            "material": "Unglazed terracotta",
+            "stock": "Currently unavailable."
+          },
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            },
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "1b73231b4f23f18db99d129fb45add898657eb5b9cac710c02de446f55c6dead",
+          "fingerprint_bytes": 2645,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-006",
+          "product": {
+            "id": "obj-006",
+            "name": "Still glass bottle",
+            "price": "$36.00",
+            "color": "Smoke",
+            "material": "Borosilicate glass, silicone",
+            "stock": "9 in stock and ready to find a home."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            },
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "seeds": [
+        "obj-005"
+      ],
+      "cases": [
+        {
+          "id": "obj-001",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        },
+        {
+          "id": "obj-002",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        },
+        {
+          "id": "obj-003",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        },
+        {
+          "id": "obj-004",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        },
+        {
+          "id": "obj-005",
+          "product": {
+            "id": "obj-005",
+            "name": "Pebble catchall",
+            "price": "$28.00",
+            "color": "Terracotta",
+            "material": "Unglazed terracotta",
+            "stock": "Currently unavailable."
+          },
+          "comparisons": [
+            {
+              "similarity": 1.0,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 1.0,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 1.0,
+                "stock": 1.0
+              },
+              "eligible": true
+            }
+          ],
+          "fingerprint_checksum": "1b73231b4f23f18db99d129fb45add898657eb5b9cac710c02de446f55c6dead",
+          "fingerprint_bytes": 2645,
+          "runtime_validated": true,
+          "oracle_passed": true,
+          "error": null
+        },
+        {
+          "id": "obj-006",
+          "product": null,
+          "comparisons": [
+            {
+              "similarity": 0.9423076923076924,
+              "coverage": 1.0,
+              "components": {
+                "color": 1.0,
+                "id": 0.8461538461538461,
+                "material": 1.0,
+                "name": 1.0,
+                "price": 1.0,
+                "root": 0.8461538461538461,
+                "stock": 1.0
+              },
+              "eligible": false
+            }
+          ],
+          "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af",
+          "fingerprint_bytes": 2627,
+          "runtime_validated": false,
+          "oracle_passed": false,
+          "error": "no eligible structural reference; rediscovery required"
+        }
+      ]
+    }
+  ]
+}

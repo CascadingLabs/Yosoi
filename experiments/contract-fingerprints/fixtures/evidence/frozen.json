@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "schema": {
+    "version": 1,
+    "id": "qscrape_product",
+    "description": "One eShop product",
+    "scope": "repeated",
+    "fields": [
+      {
+        "id": "id",
+        "description": "Product identity attached to the selected root",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      },
+      {
+        "id": "name",
+        "description": "Product name",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      },
+      {
+        "id": "price",
+        "description": "Displayed USD purchase price",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      },
+      {
+        "id": "color",
+        "description": "Color identified by its fact label",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      },
+      {
+        "id": "material",
+        "description": "Material identified by its fact label",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      },
+      {
+        "id": "stock",
+        "description": "Stock availability text, including explicit unavailability",
+        "cardinality": "exactly_one",
+        "value_type": "string"
+      }
+    ]
+  },
+  "recipe": {
+    "root": "[data-shop-part='product-detail']",
+    "name": "h1",
+    "price": ".shop-detail-price",
+    "stock": ".shop-availability",
+    "fact_value": ".shop-product-facts > div > .shop-fact-value",
+    "material_label": "Material",
+    "color_label": "Color"
+  },
+  "plan": {
+    "regions": [
+      {
+        "id": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": "[data-shop-part='product-detail']"
+          },
+          "result_shape": "tree_nodes"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "id": "id",
+        "parent_region": null,
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": "[data-shop-part='product-detail']"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "attribute",
+          "value": "data-product-id"
+        }
+      },
+      {
+        "id": "name",
+        "parent_region": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": "h1"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "descendant_text"
+        }
+      },
+      {
+        "id": "price",
+        "parent_region": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": ".shop-detail-price"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "descendant_text"
+        }
+      },
+      {
+        "id": "stock",
+        "parent_region": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": ".shop-availability"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "descendant_text"
+        }
+      },
+      {
+        "id": "material",
+        "parent_region": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": ".shop-product-facts > div > .shop-fact-value"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "descendant_text"
+        }
+      },
+      {
+        "id": "color",
+        "parent_region": "qscrape_product",
+        "query": {
+          "atom": {
+            "kind": "css",
+            "value": ".shop-product-facts > div > .shop-fact-value"
+          },
+          "result_shape": "tree_nodes"
+        },
+        "projection": {
+          "kind": "descendant_text"
+        }
+      }
+    ],
+    "requirement": {
+      "accepted_documents": [
+        "source_html",
+        "source_xml",
+        "rendered_dom"
+      ],
+      "capabilities": [
+        "css",
+        "attribute_projection",
+        "descendant_text_projection"
+      ]
+    }
+  },
+  "plan_checksum": "70885aa5a6e83b1dfee5b6a7edbbfe0e4d7211f8197d2c3f42f0dba1d0bf50f8",
+  "references": [
+    {
+      "source": "document:v1:bd81f1a8-815f-4a03-87fc-4fad4d761d20",
+      "fingerprint": {
+        "profile": "selected-dom-paths-v1-depth3",
+        "schema_checksum": "3110396186a99605a731ba5dfdab65b28079296e3ce0718280debeb1df3d691d",
+        "components": {
+          "color": [
+            "path:span[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]/div[]/span[class]"
+          ],
+          "id": [
+            "path:div[class,data-product-id,data-shop-part]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]/img[alt,height,src,width]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/button[class,type]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/nav[aria-label,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]",
+            "relation:div[class,data-product-id,data-shop-part]"
+          ],
+          "material": [
+            "path:span[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]/div[]/span[class]"
+          ],
+          "name": [
+            "path:h1[id]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]"
+          ],
+          "price": [
+            "path:p[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]"
+          ],
+          "root": [
+            "path:div[class,data-product-id,data-shop-part]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]/img[alt,height,src,width]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/button[class,type]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/nav[aria-label,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]",
+            "relation:div[class,data-product-id,data-shop-part]"
+          ],
+          "stock": [
+            "path:p[class,data-available]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]"
+          ]
+        }
+      },
+      "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af"
+    },
+    {
+      "source": "document:v1:3ec6ae80-08f5-4377-a60d-80d2f96a2ae6",
+      "fingerprint": {
+        "profile": "selected-dom-paths-v1-depth3",
+        "schema_checksum": "3110396186a99605a731ba5dfdab65b28079296e3ce0718280debeb1df3d691d",
+        "components": {
+          "color": [
+            "path:span[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]/div[]/span[class]"
+          ],
+          "id": [
+            "path:div[class,data-product-id,data-shop-part]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]/img[alt,height,src,width]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/button[class,type]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/nav[aria-label,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]",
+            "relation:div[class,data-product-id,data-shop-part]"
+          ],
+          "material": [
+            "path:span[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]/div[]/span[class]"
+          ],
+          "name": [
+            "path:h1[id]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]"
+          ],
+          "price": [
+            "path:p[class]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]"
+          ],
+          "root": [
+            "path:div[class,data-product-id,data-shop-part]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/div[class]/img[alt,height,src,width]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/button[class,type]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/div[class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/h1[id]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/nav[aria-label,class]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]",
+            "path:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class]",
+            "relation:div[class,data-product-id,data-shop-part]"
+          ],
+          "stock": [
+            "path:p[class,data-available]",
+            "relation:div[class,data-product-id,data-shop-part]/section[aria-labelledby,class]/p[class,data-available]"
+          ]
+        }
+      },
+      "fingerprint_checksum": "ea3f0f35c88e561dae9feab5163d6429d2e1d3ec0d92cbac4d4446f67d80d7af"
+    }
+  ]
+}
