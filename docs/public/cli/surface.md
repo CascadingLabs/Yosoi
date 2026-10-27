@@ -40,6 +40,8 @@ An effect without an observed postcondition remains unconfirmed. A successful tr
 
 ## Open a video surface
 
+Install FFmpeg and FFprobe on PATH, or select their executable paths with `YOSOI_FFMPEG` and `YOSOI_FFPROBE`. Archive storage requires Unix.
+
 ```sh
 yosoi surface video --file recording.mp4 --archive ./video-evidence --output ./video-run
 ```
@@ -63,4 +65,4 @@ Incomplete portable outcomes remain inspectable through the SDK, but CLI replay 
 
 Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 16,384 bytes, and reject oversized input lines above 64 KiB.
 
-Use `yosoi surface --help` for command options. Continue with [Exploring a surface](../concepts/surfaces.md) and [Exploring video evidence](../concepts/surfaces.md).
+Use `yosoi surface --help` for command options. Continue with [Surfaces](../concepts/surfaces.md) for document and video walkthroughs, or [Archiving a surface](../concepts/archiving-a-surface.md) for portable outcomes.

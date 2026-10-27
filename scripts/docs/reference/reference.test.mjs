@@ -25,6 +25,12 @@ test('SDK discovery reserves names and excludes development support', () => {
 	const pkg = (name, sdk) => ({ id: name, name, metadata: { yosoi: { sdk } }, version: '0.1.0', manifest_path: '/repo/Cargo.toml', targets: [{ name: name.replaceAll('-', '_'), kind: ['lib'] }] });
 	const metadata = { workspace_members: ['yosoi-dev-support', 'yosoi'], packages: [pkg('yosoi-dev-support', false), pkg('yosoi', true)] };
 	assert.deepEqual(discoverSdks(metadata).map((s) => s.name), ['yosoi']);
+	const documented = structuredClone(metadata);
+	documented.packages[1].features = { browser: [] };
+	documented.packages[1].metadata.yosoi.reference_features = ['browser'];
+	assert.deepEqual(discoverSdks(documented)[0].referenceFeatures, ['browser']);
+	documented.packages[1].metadata.yosoi.reference_features = ['missing'];
+	assert.throws(() => discoverSdks(documented), /unknown reference features/);
 	assert.throws(() => discoverSdks({ ...metadata, packages: [pkg('yosoi', false)] }), /reserved SDK/);
 	assert.throws(() => discoverSdks({ workspace_members: ['yosoi-dev-support'], packages: [pkg('yosoi-dev-support', true)] }), /naming policy/);
 });

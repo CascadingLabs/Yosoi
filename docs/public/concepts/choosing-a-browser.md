@@ -8,7 +8,7 @@ order: 4
 
 Chrome/CDP remains the default browser. Firefox and Moli use the optional native BiDi controller. Selecting an engine does not install it, change a Direct HTTP request, or retry an operation through another browser.
 
-The optional controller is part of the source version targeting 0.4.0. Published 0.3.0 packages do not contain it. The examples below require a source build with `browser-bidi` and an installed regular Firefox release. The qualified release is Firefox 158.0.1. `YOSOI_FIREFOX_EXECUTABLE` can select its absolute executable path.
+The optional controller is included in the 0.4.0 release candidate. Published 0.3.0 packages do not contain it. Follow the [candidate installation instructions](../releases/0-4-0-rc-1.md), or build from a checkout as shown below. Rust needs `browser-bidi`; the candidate Python wheels include it. The examples also need an installed regular Firefox release. The qualified release is Firefox 158.0.1. `YOSOI_FIREFOX_EXECUTABLE` can select its absolute executable path.
 
 ## Install: from a checkout
 

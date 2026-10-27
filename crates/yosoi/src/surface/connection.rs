@@ -297,15 +297,22 @@ impl<D: AgentSurface> Connection<D> {
 macro_rules! connection {
     ($name:ident) => {
         impl SurfaceConnection for $name {
+            /// Returns source capabilities and the initial bounded observation.
+            /// A closed connection returns an error instead of reopening its source.
             fn ready(&mut self) -> StdResult<Value, ExecutionError> {
                 self.inner.ready()
             }
+            /// Executes one bounded JSON command against this source.
+            /// Errors after dispatch do not imply that effects were undone; inspect the retained outcome.
             async fn execute(&mut self, command: Value) -> StdResult<Value, ExecutionError> {
                 self.inner.execute(command).await
             }
+            /// Returns retained evidence, including partial attempts, when archive policy is enabled.
             fn outcome(&self) -> Option<Outcome> {
                 self.inner.outcome()
             }
+            /// Awaits source cleanup and retains its outcome even when cleanup fails.
+            /// Repeated calls return the saved outcome without reacquiring control.
             async fn close(&mut self) -> StdResult<Option<Outcome>, ExecutionError> {
                 self.inner.close().await
             }

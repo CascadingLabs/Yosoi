@@ -61,7 +61,13 @@ node scripts/docs/reference/compiler-fixture.mjs
 ```
 
 Generation extracts a fresh exact Git snapshot, compiles with one Cargo worker,
-and records SDK package version, source SHA, target, features, compiler,
+and uses the SDK's `package.metadata.yosoi.reference_features` unless an explicit
+`--features` selection is supplied. Yosoi declares its supported browser, Surface,
+scanner and encoder features here so publication and local previews include those
+public APIs. This does not change the crate's default runtime features. Each
+declared reference feature must exist in the selected package.
+
+Generation records SDK package version, source SHA, target, features, compiler,
 generator digest and localization provenance. A version directory is immutable:
 choose a new output directory to regenerate. `--offline` is optional for warm
 local caches. `--toolchain nightly` is accepted only when its compiler hash
