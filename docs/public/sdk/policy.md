@@ -143,6 +143,77 @@ Serialize a complete Policy rather than guessing its JSON layout. Deserializatio
 
 Requests and Map return the snapshot they used. Changing your original Policy later does not change that recorded snapshot. The identity describes effective configuration; it does not identify a document or guarantee identical remote content.
 
+## Example: keep a binding stable
+
+Use the same query to compare an existing binding with a policy prepared for
+the next operation. This example validates configuration without contacting a
+provider.
+
+### Rust
+
+```rust
+use std::error::Error;
+use yosoi::{
+    Policy,
+    policy::{
+        PolicySnapshot,
+        search::{Provider, Search},
+    },
+};
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let policy = Policy {
+        search: Search::new([Provider::Bing])?.per_provider_limit(3)?,
+        ..Policy::default()
+    };
+    let restored: Policy = serde_json::from_str(&policy.to_canonical_json()?)?;
+    let snapshot = PolicySnapshot::from_policy(&policy)?;
+    let bound = yosoi::search::new("photosynthesis")?.bind(&policy);
+    bound.validate()?;
+
+    let mut next = policy.clone();
+    next.search = next.search.per_provider_limit(1)?;
+    assert_eq!(policy.effective_identity()?, restored.effective_identity()?);
+    assert_eq!(snapshot.policy().search.max_results_per_provider().get(), 3);
+    assert_eq!(bound.policy().search.max_results_per_provider().get(), 3);
+    assert_eq!(next.search.max_results_per_provider().get(), 1);
+    Ok(())
+}
+```
+
+A Rust binding borrows its Policy. Clone the declaration to prepare different
+values while the original binding remains in use. The separate snapshot owns
+its recorded policy and identity. This program also needs `serde_json = "1"`.
+
+### Python
+
+```python
+import yosoi as ys
+from yosoi.policy import Policy, ProviderSelection, Search
+
+policy = Policy(
+    search=Search(
+        providers=[ProviderSelection(provider="bing")],
+        max_results_per_provider=3,
+        max_total_results=3,
+    )
+)
+restored = Policy.model_validate_json(policy.to_json())
+snapshot = policy.snapshot()
+bound = ys.search.new("photosynthesis").bind(policy)
+bound.check()
+identity = policy.identity()
+
+policy.search.max_results_per_provider = 1
+assert restored.identity() == snapshot.identity == bound.policy.identity() == identity
+assert bound.policy.search.max_results_per_provider == 3
+assert policy.identity() != identity
+```
+
+Python bindings keep a serialized copy of the declaration. Editing the mutable
+authoring model affects future bindings, while this binding and the immutable
+snapshot retain their original configuration.
+
 ## Python Contract acceptance
 
 > [!NOTE]
