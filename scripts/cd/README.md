@@ -9,7 +9,9 @@ it runs formatting, lint, and synthetic artifact tests without compiling Rust.
 ## Release sequence
 
 For an already verified final release blocked only by missing Rust package
-descriptions, manual `complete_verified_run` selects the existing CD run.
+descriptions, run the separate **Release recovery** workflow
+(`release-recovery.yml`) manually on `main`. Its required `complete_verified_run`
+input selects the existing CD run. These jobs do not appear in ordinary Release CD runs.
 This recovery path requires that PyPI publication and all published-install
 checks already succeeded, as in the original 0.1.0 run. A later run stopped by
 metadata preflight before those jobs must use a corrected new release tag.
@@ -33,7 +35,12 @@ Chromium images, and the matching docs bundle. Rust registry uploads run only
 for final beta tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
 registry prerequisites and successful registry uploads remain mandatory for it.
 
-Standalone main/manual docs runs defer RC publication; only Release CD's verified
+Standalone docs publication is opt-in: use **Publish Yosoi docs** → **Run workflow**
+on `main` for docs corrections, or supply `release_tag` to replay an already
+published release. Main pushes do not start a separate publisher. Normal Release CD
+still publishes its verified docs bundle automatically after the GitHub release succeeds.
+
+Standalone manual docs runs defer RC publication; only Release CD's verified
 `release-docs` bundle with explicit source and version can publish candidate docs.
 
 Maturin reduces the Cargo workspace when exporting the Python sdist. Before

@@ -1,7 +1,9 @@
 # Published docs snapshots
 
-`docs-publish.yml` runs for relevant main pushes, manual dispatches, or after a
-successful SDK release. Every snapshot records its full Yosoi source commit and
+`docs-publish.yml` runs only through manual dispatch or a reusable call after a
+successful SDK release. Main pushes do not publish docs automatically. Use
+**Publish Yosoi docs** → **Run workflow** on `main` for standalone docs corrections.
+Every snapshot records its full Yosoi source commit and
 the SDK version it documents. Docs corrections keep the SDK version and acquire
 a new source identity. The version is not used as a mutable directory name.
 
@@ -26,9 +28,8 @@ all subsequent downloads use immutable commit URLs.
 
 Publication checks out the current `main`, appends the snapshot and catalog,
 and pushes forward without force. A concurrent source push rejects publication
-instead of overwriting it; rerun the workflow. Snapshot and catalog paths do not
-trigger docs publication, so publishing artifacts does not recursively build
-another snapshot. Historical artifact commits remain ancestors of `main`, keeping
+instead of overwriting it; rerun the workflow. Publishing artifacts does not start
+another publisher. Historical artifact commits remain ancestors of `main`, keeping
 existing commit-pinned archive URLs valid without a separate artifact branch.
 
 The archive manifest includes version-local navigation and page checksums. Old
