@@ -31,6 +31,7 @@ from pydantic import (
 )
 
 from . import _native
+from . import browser as _browser
 from ._models import ImmutableModel
 from .archive import Archive, AutomationRecord, DocumentArchiveRef, _rust_json
 from .documents import Document, DocumentProfile
@@ -112,6 +113,101 @@ class Limits(ImmutableModel):
     overview_depth: int = Field(
         default=6, strict=True, ge=0, description="Automatic zoom depth."
     )
+
+
+class DocumentPolicy(ImmutableModel):
+    """Independent retained-document, tree and read-response limits.
+
+    Supplied documents exceeding preparation limits are rejected. Native AX
+    captures are depth-limited and report partial coverage. Read limits bound
+    complete serialized results, independently of retained source bytes.
+    """
+
+    max_bytes: int = Field(
+        default=8388608,
+        strict=True,
+        ge=1,
+        le=134217728,
+        description="Maximum retained serialized document bytes.",
+    )
+    max_depth: int = Field(
+        default=96,
+        strict=True,
+        ge=1,
+        le=256,
+        description="Maximum tree depth; root is level zero.",
+    )
+    max_nodes: int = Field(
+        default=100000,
+        strict=True,
+        ge=1,
+        le=200000,
+        description="Maximum indexed nodes, including scalars.",
+    )
+    overview_depth: int = Field(
+        default=6,
+        strict=True,
+        ge=0,
+        le=256,
+        description="Automatic overview depth, capped to max_depth.",
+    )
+    response_bytes: int = Field(
+        default=65536,
+        strict=True,
+        ge=512,
+        le=65536,
+        description="Maximum complete serialized read-result bytes.",
+    )
+
+    def limits(self) -> Limits:
+        """Return preparation bounds with overview depth capped to tree depth."""
+        return Limits(
+            input_bytes=self.max_bytes,
+            nodes=self.max_nodes,
+            depth=self.max_depth,
+            overview_depth=min(self.overview_depth, self.max_depth),
+        )
+
+
+class DocumentPolicies(ImmutableModel):
+    """Separate SDK capture and response limits per evidence representation."""
+
+    dom: DocumentPolicy = Field(
+        default_factory=lambda: DocumentPolicy(max_bytes=33554432, max_nodes=200000),
+        description="Rendered DOM retention, tree and read bounds.",
+    )
+    ax: DocumentPolicy = Field(
+        default_factory=lambda: DocumentPolicy(max_nodes=100000),
+        description="Native accessibility evidence limits; at most 100000 nodes.",
+    )
+    html: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Source HTML preparation limits."
+    )
+    xml: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Source XML preparation limits."
+    )
+    json_document: DocumentPolicy = Field(
+        default_factory=DocumentPolicy,
+        alias="json",
+        description="Ordinary JSON preparation limits; serialized as json.",
+    )
+    text: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Plain text preparation limits."
+    )
+    network: DocumentPolicy = Field(
+        default_factory=DocumentPolicy,
+        description="Network event-document limits, independent of ordinary JSON.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_ax_nodes(self) -> Self:
+        if self.ax.max_nodes > 100000:
+            raise ValueError("AX supports at most 100000 nodes")
+        return self
+
+
+BrowserRepresentation = Literal["dom", "ax", "network"]
+"""Native browser evidence view; AX and network addresses are read-only."""
 
 
 class Coverage(ImmutableModel):
@@ -415,6 +511,13 @@ class Surface:
         )
 
     @classmethod
+    def with_policy(cls, document: Document, policies: DocumentPolicies) -> Self:
+        """Prepare using Rust's policy selection for the declared document type."""
+        return cls._from_native(
+            _native.Surface.with_policy(document._handle, policies.model_dump_json())
+        )
+
+    @classmethod
     def _from_native(cls, handle: _native.Surface) -> Self:
         value = cls.__new__(cls)
         value._handle = handle
@@ -583,16 +686,21 @@ class Surface:
 
 
 class WebSurface:
-    """Shared read protocol over an immutable HTML or rendered-DOM index.
+    """Shared read protocol over immutable HTML, DOM, AX or network evidence.
 
     Args:
         index: Prepared document index; other document classes are rejected.
         source: Nonempty continuing-source identity, without browser authority.
+        policy: Optional independent serialized response limits.
     """
 
-    def __init__(self, index: Surface, source: str) -> None:
+    def __init__(
+        self, index: Surface, source: str, policy: DocumentPolicy | None = None
+    ) -> None:
         """Bind a web observation to its source; no browser is opened."""
-        self._handle = index._handle.web(source)
+        self._handle = index._handle.web(
+            source, (policy or DocumentPolicy()).model_dump_json()
+        )
 
     @property
     def descriptor(self) -> Descriptor:
@@ -1092,6 +1200,11 @@ def _require_browser() -> None:
 class SurfacePolicy(ImmutableModel):
     """Evidence retention and output bounds shared across source connections."""
 
+    documents: DocumentPolicies = Field(
+        default_factory=DocumentPolicies,
+        description="Per-type document bytes, depth, nodes and response bytes.",
+    )
+
     archive: ArchivePolicy = Field(
         default="off", description="Portable outcome retention, disabled by default."
     )
@@ -1112,8 +1225,9 @@ class SurfacePolicy(ImmutableModel):
 class SurfaceConnection:
     """Shared lifecycle for a source-specific browser or video connection.
 
-    Use a source's open factory, then await close or use async with. Cancellation
-    stops waiting; it does not prove that a dispatched effect was undone.
+    Use a source's open or consume factory, then await close or use async with.
+    Cancellation stops waiting; it does not prove that a dispatched effect was
+    undone.
     """
 
     def __init__(self, handle: _native.BrowserSurface | _native.VideoSession) -> None:
@@ -1155,8 +1269,56 @@ class SurfaceConnection:
         return None if value == "null" else Outcome.model_validate_json(value)
 
 
+class BrowserObservation(ImmutableModel):
+    """Exact browser evidence identity, capabilities, coverage and root address."""
+
+    descriptor: Descriptor = Field(description="Read capabilities and representation.")
+    observation: Observation = Field(description="Immutable identity and coverage.")
+    root: Reference = Field(description="Producer-issued root evidence address.")
+
+
 class BrowserSurface(SurfaceConnection):
-    """An isolated live browser with source-specific actions and archive support."""
+    """A live browser surface opened alone or bound to managed browser Work."""
+
+    async def observe(
+        self, representation: BrowserRepresentation
+    ) -> BrowserObservation:
+        """Capture fresh evidence without acquiring live action authority.
+
+        Native Session bindings support depth-limited AX. The isolated provider
+        supports DOM only; unsupported representations raise ExecutionError.
+        Views are captured sequentially. Replacing a view invalidates its previous
+        addresses.
+        """
+        return BrowserObservation.model_validate(
+            await self.execute({"op": "observe", "representation": representation})
+        )
+
+    async def read(
+        self, representation: BrowserRepresentation, request: ReadRequest
+    ) -> ReadResult:
+        """Read observed evidence under both caller and per-type policy bounds.
+
+        Results are capped at 65280 bytes by the connection envelope. AX and
+        network references do not grant live DOM targeting authority.
+        """
+        request = request.model_copy(
+            update={
+                "budget": request.budget.model_copy(
+                    update={"bytes": min(request.budget.bytes, 65280)}
+                )
+            }
+        )
+        return _RESULT.validate_python(
+            await self.execute(
+                {
+                    "op": "read_view",
+                    "representation": representation,
+                    "budget": max(1024, request.budget.bytes + 256),
+                    "request": request.model_dump(mode="json"),
+                }
+            )
+        )
 
     @classmethod
     async def open(
@@ -1169,6 +1331,123 @@ class BrowserSurface(SurfaceConnection):
                 url, (policy or SurfacePolicy()).model_dump_json(), headless
             )
         )
+
+    @classmethod
+    async def consume_session(
+        cls,
+        session: _browser.Session,
+        policy: SurfacePolicy | None = None,
+    ) -> Self:
+        """Bind a Surface connection to a managed Session's initial tab.
+
+        This clones the retained native Session owner under its state guard and
+        acquires the initial tab's Work lease. The returned connection releases
+        that Work lease on close; it does not close the Session or tab. Keep the
+        original Session open while the connection is in use. If Work for the
+        initial tab is already held, acquire the connection from that Work with
+        :meth:`consume_work` instead of requesting a second controller.
+
+        Args:
+            session: Entered managed browser Session whose initial tab is selected.
+            policy: Surface capture and retention policy; browser launch policy is
+                inherited from the existing Session.
+
+        Returns:
+            A Surface connection over the existing tab and Session scheduler.
+
+        Raises:
+            TypeError: `session` is not a Yosoi browser Session.
+            BrowserError: The Session is not entered, closed, or its native state
+                is busy.
+            ExecutionError: Initial-tab Work cannot be acquired, or Surface binding
+                or initial observation fails.
+        """
+        if not isinstance(session, _browser.Session):
+            raise TypeError("session must be a Yosoi browser.Session")
+        if session._handle is None:
+            raise _browser.BrowserError("enter the browser Session before consuming it")
+        _require_browser()
+        handle = await _native.surface_browser_consume_session(
+            session._handle, (policy or SurfacePolicy()).model_dump_json()
+        )
+        return cls(handle)
+
+    @classmethod
+    async def consume_work(
+        cls,
+        work: _browser.Work,
+        policy: SurfacePolicy | None = None,
+    ) -> Self:
+        """Transfer one selected Work lease into a Surface connection.
+
+        The Work wrapper becomes released after the native lease is taken. Closing
+        this connection releases Work but leaves its owning Session and tab open.
+        A failed transfer before the native take leaves Work usable; a failure
+        afterward consumes it because its controller has moved.
+
+        Args:
+            work: Yosoi Work lease for the tab to bind. The lease is consumed on
+                successful native transfer.
+            policy: Surface capture and retention policy; browser policy remains
+                bound to the Work's owning Session.
+
+        Returns:
+            A Surface connection using the transferred exclusive Work lease.
+
+        Raises:
+            TypeError: `work` is not a Yosoi browser Work lease.
+            BrowserError: The Work lease is unavailable or already released.
+            ExecutionError: Surface binding or initial observation fails. Work
+                remains consumed if native transfer already took place.
+        """
+        if not isinstance(work, _browser.Work):
+            raise TypeError("work must be a Yosoi browser.Work")
+        _require_browser()
+        policy_json = (policy or SurfacePolicy()).model_dump_json()
+        async with work._operation_lock:
+            if work._released or work._release_task is not None:
+                raise _browser.BrowserError("browser Work lease has been released")
+            await work._acquire()
+            native_work = work._handle
+            if native_work is None:
+                raise _browser.BrowserError("browser Work lease is unavailable")
+            try:
+                handle = await _native.surface_browser_consume_work(
+                    native_work, policy_json
+                )
+            finally:
+                if native_work.released:
+                    if work._handle is native_work:
+                        work._handle = None
+                    work._released = True
+                    work._release_task = None
+        return cls(handle)
+
+
+async def consume_session(
+    session: _browser.Session,
+    policy: SurfacePolicy | None = None,
+) -> BrowserSurface:
+    """Bind a Surface connection to the initial tab of a managed browser Session.
+
+    This is the module-level spelling of ``BrowserSurface.consume_session``.
+    The Session remains caller-owned and must remain open while the connection
+    is active.
+
+    Args:
+        session: Entered managed browser Session whose initial tab is selected.
+        policy: Surface capture and retention policy; browser policy is inherited.
+
+    Returns:
+        A Surface connection using the existing Session scheduler.
+
+    Raises:
+        TypeError: `session` is not a Yosoi browser Session.
+        BrowserError: The Session is not entered, closed, or its native state is busy.
+        ExecutionError: Initial-tab Work cannot be acquired, or Surface binding
+            or initial observation fails.
+    """
+    return await BrowserSurface.consume_session(session, policy)
 
 
 class VideoSession(SurfaceConnection):

@@ -53,6 +53,7 @@ function article() {
     ready: document.readyState};
 }
 if (operation === 'capture') {
+  const limits = input.limits ?? {max_depth:96,max_nodes:200000,max_bytes:33554432};
   const nodes = new Map(), rows = [], normalized_strings = [], signatures = new WeakMap();
   // The v1 DOM wire disallows control characters that real ad srcdoc payloads
   // contain. Preserve those strings reversibly as JSON-string content and
@@ -65,8 +66,10 @@ if (operation === 'capture') {
       character => '\\u' + character.codePointAt(0).toString(16).padStart(4, '0'));
   }
   let next = 0;
-  function visit(node, parent) {
+  function visit(node, parent, depth = 0) {
     if (![1, 3, 9].includes(node.nodeType)) return null;
+    if (depth > limits.max_depth) throw Error('DOM capture exceeds configured depth');
+    if (rows.length >= limits.max_nodes) throw Error('DOM capture exceeds configured node count');
     const id = ++next, children = [];
     nodes.set(id, node);
     if (node instanceof Element && (['a', 'button', 'input', 'textarea', 'select', 'summary'].includes(node.localName) || node.getAttribute('role') === 'button')) signatures.set(node, signature(node));
@@ -76,26 +79,31 @@ if (operation === 'capture') {
         attributes: [...node.attributes].map(a => ({namespace_uri: a.namespaceURI ?? '', name: a.localName, value: wireString(a.value, id, 'attribute:' + (a.namespaceURI ?? '') + ':' + a.localName)}))
           .sort((a, b) => a.namespace_uri.localeCompare(b.namespace_uri) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))};
     rows.push(item);
-    for (const child of node.childNodes) { const id = visit(child, item.id); if (id !== null) children.push(id); }
+    for (const child of node.childNodes) { const id = visit(child, item.id, depth + 1); if (id !== null) children.push(id); }
     return id;
   }
   const root = visit(document, null);
+  const wire = {schema: 'yosoi.rendered-dom.v1', document_epoch: input.epoch,
+    tree_model: 'document_light_dom', root, nodes: rows};
+  if (new TextEncoder().encode(JSON.stringify(wire)).length > limits.max_bytes) throw Error('DOM capture exceeds configured bytes');
+  const html = document.documentElement.outerHTML;
+  const html_retained = new TextEncoder().encode(html).length <= (input.html_limits?.max_bytes ?? 8388608);
   window.__ysArticle = {nodes, signatures, document, url: location.href, epoch: input.epoch};
-  return {url: location.href, html: document.documentElement.outerHTML, normalized_strings, wire: {schema: 'yosoi.rendered-dom.v1', document_epoch: input.epoch,
-    tree_model: 'document_light_dom', root, nodes: rows}};
+  return {url: location.href, html: html_retained ? html : null, html_omitted: !html_retained, normalized_strings, wire};
 }
 if (operation === 'eligibility') return eligibility(state()?.nodes.get(input.id));
 if (operation === 'element') return state()?.nodes.get(input.id) ?? null;
 if (operation === 'article') return article();
 if (operation === 'binding') return {current: state()?.document === document && state()?.url === location.href, url: location.href};
 if (operation === 'location') return {url: location.href, title: document.title};
-if (operation === 'value') return {matches: input.element.value === input.expected, characters: input.element.value?.length ?? 0};
-if (operation === 'watch') {
-  const done = arguments[arguments.length - 1];
-  let finished = false;
+if (operation === 'value') {
+  const element = input.element ?? state()?.nodes.get(input.id);
+  return {matches: element?.value === input.expected, characters: element?.value?.length ?? 0};
+}
+function condition() {
   const consent = () => [...document.getElementsByTagName('*')].some(node =>
     node.children.length === 0 && visible(node) && /legal terms and privacy/i.test(node.innerText ?? ''));
-  const evaluate = () => {
+
     if (input.kind === 'text') {
       const present = (document.body?.innerText ?? '').includes(input.text);
       return present === input.present ? {state: 'text_matched', present, url: location.href} : null;
@@ -114,7 +122,12 @@ if (operation === 'watch') {
     if (value.url !== input.before_url && destination_matches && value.heading && (value.gate || (value.readable && value.ready === 'complete')))
       return {state: value.gate ? 'subscription_required' : 'readable', destination_matches, ...value};
     return null;
-  };
+}
+if (operation === 'condition') return condition();
+if (operation === 'watch') {
+  const done = arguments[arguments.length - 1];
+  let finished = false;
+  const evaluate = () => condition();
   const finish = value => {
     if (finished) return;
     finished = true; observer.disconnect(); clearTimeout(timer);
