@@ -12,6 +12,7 @@ mod map;
 mod parsed;
 mod policy;
 mod policy_helpers;
+mod registry;
 mod requests;
 mod responses;
 mod scalars;
@@ -26,6 +27,7 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     browser::register(module)?;
     archive::register(module)?;
     surface::register(module)?;
+    module.add_class::<registry::NativeRegistry>()?;
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_function(wrap_pyfunction!(scalars::validate_domain_model, module)?)?;
     module.add("browser_enabled", cfg!(feature = "browser"))?;

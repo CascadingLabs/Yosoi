@@ -26,4 +26,4 @@ pub use crate::request::{PageRequest, RequestSendError, Response, WebTarget};
 pub use crate::search::{SearchQueryError, SearchRequest, SearchResponse, SearchSendError};
 pub use crate::session::{Session, SessionPolicy, Work};
 pub use crate::{action, expect, flow, session, view};
-pub use crate::{contracts, documents, locators, map, policy, request, search};
+pub use crate::{contracts, documents, locators, map, policy, registry, request, search};

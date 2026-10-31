@@ -20,6 +20,7 @@ pub mod locators;
 pub mod map;
 pub mod policy;
 pub mod prelude;
+pub mod registry;
 pub mod request;
 pub mod search;
 pub mod session;
