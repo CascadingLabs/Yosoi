@@ -22,12 +22,12 @@ use yosoi::{
         self, AcquisitionKind,
         search::{Provider, Search},
     },
-    search::SearchFailure,
+    search::{SearchCaptureRetention, SearchFailure},
 };
 
-fn fixture() -> SearchEnvelope<'static> {
+pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
     SearchEnvelope {
-        schema_version: 2,
+        schema_version: 3,
         cli_version: env!("CARGO_PKG_VERSION"),
         policy_profile: Some("daily"),
         policy_identity: PolicyIdentityView {
@@ -64,6 +64,11 @@ fn fixture() -> SearchEnvelope<'static> {
                     http_status: Some(200),
                     source_bytes: Some(302_543),
                     diagnostic: None,
+                    parser_diagnostic: None,
+                    document_class: None,
+                    document_bytes: None,
+                    capture_complete: Some(true),
+                    capture_retention: SearchCaptureRetention::Disabled,
                     terminal: "completed",
                 }],
                 hits: vec![HitView {
@@ -132,7 +137,8 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
-        query: "unused fixture query".to_owned(),
+        query: Some("unused fixture query".to_owned()),
+        diagnostics: None,
         providers,
         reporting: StatsArgs { enabled: false },
         per_provider_limit,
@@ -280,7 +286,7 @@ fn json_formatter_keeps_provider_order_profile_facts_issues_and_unknown_cost()
         value
             .get("schema_version")
             .and_then(serde_json::Value::as_u64),
-        Some(2)
+        Some(3)
     );
     let providers = value
         .get("providers")

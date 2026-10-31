@@ -1,5 +1,10 @@
 use serde::Serialize;
-use yosoi::{EffectivePolicyIdentity, policy::AcquisitionKind};
+use yosoi::{
+    EffectivePolicyIdentity,
+    documents::DocumentClass,
+    policy::AcquisitionKind,
+    search::{SearchCaptureRetention, SearchParserDiagnostic},
+};
 
 mod convert;
 pub(super) mod names;
@@ -146,6 +151,11 @@ pub(super) struct RequestAttemptView {
     pub(super) http_status: Option<u16>,
     pub(super) source_bytes: Option<u64>,
     pub(super) diagnostic: Option<&'static str>,
+    pub(super) parser_diagnostic: Option<SearchParserDiagnostic>,
+    pub(super) document_class: Option<DocumentClass>,
+    pub(super) document_bytes: Option<u64>,
+    pub(super) capture_complete: Option<bool>,
+    pub(super) capture_retention: SearchCaptureRetention,
     pub(super) terminal: &'static str,
 }
 

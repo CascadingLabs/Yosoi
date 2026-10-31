@@ -81,6 +81,10 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<map::NativeMapRequest>()?;
     module.add_class::<map::NativeMapOutcome>()?;
     module.add_class::<search::NativeSearch>()?;
+    module.add_class::<search::NativeSearchResponse>()?;
+    module.add_class::<search::NativeSearchCapture>()?;
+    module.add_function(wrap_pyfunction!(search::search_replay, module)?)?;
+    module.add_function(wrap_pyfunction!(search::search_replay_document, module)?)?;
     module.add_class::<responses::NativeResponse>()?;
     module.add_class::<async_runtime::NativeCancellation>()?;
     module.add_function(wrap_pyfunction!(async_runtime::wait_for_idle, module)?)?;

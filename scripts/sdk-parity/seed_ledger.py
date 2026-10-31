@@ -136,6 +136,7 @@ ERROR_TARGETS = {
     "RuntimeContractArchiveError": "yosoi.errors.ContractError",
     "SearchError": "yosoi.errors.SearchError",
     "SearchQueryError": "yosoi.errors.SearchError",
+    "SearchReplayError": "yosoi.errors.SearchError",
     "SearchSendError": "yosoi.errors.SearchError",
     "SearchFailure": "yosoi.search.Failed.value",
     "SearchUnavailableReason": "yosoi.search.NotStarted.value",
@@ -205,6 +206,9 @@ VALUE_TARGETS = {
     "yosoi::request::UnprojectableReason": "yosoi.request.UnprojectableReason",
     "yosoi::search::RequestAttemptTerminal": "yosoi.search.RequestAttemptSummary.terminal",
     "yosoi::search::SearchAttemptDiagnostic": "yosoi.search.SearchAttemptDiagnostic",
+    "yosoi::search::SearchCaptureRetention": "yosoi.search.SearchCaptureRetention",
+    "yosoi::search::SearchParserDiagnostic": "yosoi.search.SearchParserDiagnostic",
+    "yosoi::search::SearchParserStatus": "yosoi.search.SearchParserStatus",
     "yosoi::search::SearchIssueKind": "yosoi.search.SearchIssue.kind",
     "yosoi::documents::AccessibilityCompleteness": "yosoi.outcomes.Completeness",
     "yosoi::documents::DocumentEpoch": "yosoi.scalars.DocumentEpoch",
@@ -305,6 +309,7 @@ ITEM_SEMANTIC_EQUIVALENTS = {
 }
 
 MEMBER_TARGETS = {
+    "yosoi::search::ProviderResult::captures": "yosoi.search.ProviderResult.diagnostic_captures",
     "yosoi::request::DocumentOutcome::document": "yosoi.request.DocumentOutcome.document",
     "yosoi::Document::bytes": "yosoi.documents.Document.data",
     "yosoi::Document::class": "yosoi.documents.Document.document_class",
@@ -1735,6 +1740,61 @@ def seed_entries(
             for candidate in entries_by_identity.values()
         ):
             entries_by_identity[f"legacy:{entry['rustPath']}"] = dict(entry)
+
+    # These are returned native failures, not Python exception constructors.
+    # The adapter preserves the enum tag and its version/source-message payload.
+    replay_payloads = {
+        "UnsupportedVersion": (
+            "details.version",
+            "exact unsupported u16 manifest version",
+        ),
+        "Archive": (
+            "details.source.message",
+            "ArchiveError Display message; arbitrary Rust error reconstruction is not claimed",
+        ),
+        "Metadata": (
+            "details.source.message",
+            "serde_json::Error Display message; arbitrary Rust error reconstruction is not claimed",
+        ),
+        "InvalidBounds": None,
+    }
+    for item in rust["items"]:
+        if (
+            item.get("kind") != "variant"
+            or item.get("parentRustPath") != "yosoi::search::SearchReplayError"
+        ):
+            continue
+        variant = item["rustPath"].rsplit("::", 1)[-1]
+        payload = replay_payloads.get(variant)
+        entries_by_identity[item["symbolKey"]] = {
+            "rustPath": item["rustPath"],
+            "symbolKey": item["symbolKey"],
+            "decision": "mapped",
+            "pythonTarget": "yosoi.errors.SearchError",
+            "argumentMappings": [],
+            "defaults": [],
+            "units": [],
+            "cardinality": [],
+            "mappingDirection": "output",
+            "outputBinding": {
+                "kind": "error-details",
+                "schemaTarget": "yosoi.errors.RustErrorDetails",
+                "discriminator": "variant",
+                "tag": variant,
+                "rustType": "yosoi::search::SearchReplayError",
+                "pythonFields": []
+                if payload is None
+                else [
+                    {
+                        "rustArgument": "0",
+                        "pythonFieldPath": payload[0],
+                        "conversion": payload[1],
+                    }
+                ],
+            },
+            "semanticEquivalent": "Native Search replay raises SearchError; rust_error_details preserves the Rust variant and declared diagnostic payload without constructing a Rust error object in Python.",
+            "rationale": "The native search_replay_error adapter retains version values and nested source Display messages; source chains remain separately available.",
+        }
 
     result = dict(existing)
     result["entries"] = sorted(

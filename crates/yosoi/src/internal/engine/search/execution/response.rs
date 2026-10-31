@@ -1,23 +1,25 @@
 use crate::internal::policy::{
     Policy,
     policy::{
-        Acquisition, DocumentRequest,
+        Acquisition, AcquisitionKind, DocumentRequest,
         search::{EffectiveProviderRoute, Provider},
     },
 };
 use crate::internal::web_capture::RequestedWebTarget;
 
 use crate::internal::engine::{
-    RequestSendError, Response, ResponseTermination,
+    Document, RequestSendError, Response, ResponseTermination,
     request::execution::{AttemptCaptureFacts, AttemptDiagnostic, AttemptOutcome},
     search::{
         ProviderCharge, ProviderIdentity, ProviderOutcome, ProviderResult, RequestAttemptSummary,
-        RequestAttemptTerminal, SearchAttemptDiagnostic, SearchFailure, SearchProfileFacts,
-        SearchUnavailableReason,
+        RequestAttemptTerminal, SearchAttemptDiagnostic, SearchCaptureRetention, SearchFailure,
+        SearchParserDiagnostic, SearchProfileFacts, SearchReplayResult, SearchUnavailableReason,
     },
 };
 
-use super::super::provider::{bing, brave, duckduckgo};
+use super::super::diagnostics::status_failure;
+use super::super::diagnostics::{SearchCapture, SearchReplayPolicy, parse_document};
+use crate::internal::web_capture::CaptureCompleteness;
 
 pub(super) fn request_error_result(
     route: &EffectiveProviderRoute,
@@ -39,23 +41,40 @@ pub(super) fn request_error_result(
             request_id: None,
             recovery_query: None,
             attempts: Vec::new(),
+            captures: Vec::new(),
             outcome: ProviderOutcome::Failed(SearchFailure::MalformedResponse),
             charge: ProviderCharge::Unknown,
         },
     }
 }
 
+#[derive(Clone, Copy)]
+pub(super) struct ProviderResponseLimits {
+    pub(super) results: usize,
+    pub(super) output_bytes: usize,
+    pub(super) capture_bytes: Option<usize>,
+}
+
 pub(super) fn provider_result_from_response(
     provider: Provider,
     policy: &Policy,
     target: &RequestedWebTarget,
-    result_limit: usize,
-    output_limit: usize,
+    limits: ProviderResponseLimits,
     profile: SearchProfileFacts,
     response: &Response,
 ) -> ProviderResult {
+    let ProviderResponseLimits {
+        results: result_limit,
+        output_bytes: output_limit,
+        capture_bytes: capture_limit,
+    } = limits;
     let mut attempts = Vec::with_capacity(response.attempts().len());
+    let mut captures = Vec::new();
+    let mut capture_remaining = capture_limit.unwrap_or(0);
     let mut any_attempt_started = false;
+    let mut parser_ran = false;
+    let mut first_failure = None;
+    let mut selected_outcome = None;
     for attempt in response.attempts() {
         let terminal = match attempt {
             AttemptOutcome::Completed(_) => {
@@ -73,40 +92,166 @@ pub(super) fn provider_result_from_response(
             }
             AttemptOutcome::NotStarted(_) => RequestAttemptTerminal::NotStarted,
         };
-        attempts.push(RequestAttemptSummary {
+        let facts = match attempt {
+            AttemptOutcome::Completed(result) => Some(result.capture_facts()),
+            AttemptOutcome::Failed(failure) => failure.capture_facts(),
+            AttemptOutcome::NotStarted(_) => None,
+        };
+        let mut summary = RequestAttemptSummary {
             request_id: response.request_id(),
             capture_id: attempt.capture_id(),
             acquisition: attempt.acquisition(),
             http_status: attempt.status(),
-            source_bytes: match attempt {
-                AttemptOutcome::Completed(result) => result.capture_facts().source_bytes(),
-                AttemptOutcome::Failed(failure) => failure
-                    .capture_facts()
-                    .and_then(AttemptCaptureFacts::source_bytes),
-                AttemptOutcome::NotStarted(_) => None,
-            },
+            source_bytes: facts.and_then(AttemptCaptureFacts::source_bytes),
             diagnostic: match attempt {
                 AttemptOutcome::Failed(failure) => {
                     Some(search_attempt_diagnostic(failure.diagnostic()))
                 }
                 AttemptOutcome::Completed(_) | AttemptOutcome::NotStarted(_) => None,
             },
+            parser_diagnostic: None,
+            document_class: None,
+            document_bytes: None,
+            capture_complete: facts
+                .map(|facts| facts.completeness() == CaptureCompleteness::Complete),
+            capture_retention: if capture_limit.is_some() {
+                SearchCaptureRetention::MissingDocument
+            } else {
+                SearchCaptureRetention::Disabled
+            },
             terminal,
-        });
+        };
+        let parsed = match attempt {
+            AttemptOutcome::Completed(result) => {
+                let selected = result
+                    .documents()
+                    .iter()
+                    .find(|document| document.requested() == provider_document_request(provider))
+                    .and_then(|document| document.outcome().document());
+                summary.document_class = selected.map(Document::class);
+                summary.document_bytes = selected.map(Document::byte_len);
+                let parsed = match (status_failure(attempt.status()), selected) {
+                    (Some(failure), _) => SearchReplayResult {
+                        outcome: ProviderOutcome::Failed(failure),
+                        parser_diagnostic: None,
+                    },
+                    (None, Some(document)) => {
+                        parser_ran = true;
+                        parse_document(
+                            provider,
+                            document,
+                            policy,
+                            target.as_str(),
+                            result_limit,
+                            output_limit,
+                        )
+                    }
+                    (None, None) => SearchReplayResult {
+                        outcome: ProviderOutcome::Failed(SearchFailure::MalformedResponse),
+                        parser_diagnostic: Some(SearchParserDiagnostic::MissingDocument),
+                    },
+                };
+                summary.parser_diagnostic = parsed.parser_diagnostic;
+                if capture_limit.is_some() {
+                    for projected in result.documents() {
+                        let Some(document) = projected.outcome().document() else {
+                            continue;
+                        };
+                        let Ok(bytes) = usize::try_from(document.byte_len()) else {
+                            summary.capture_retention = SearchCaptureRetention::ByteLimit;
+                            continue;
+                        };
+                        if bytes > capture_remaining {
+                            summary.capture_retention = SearchCaptureRetention::ByteLimit;
+                            continue;
+                        }
+                        capture_remaining = capture_remaining.saturating_sub(bytes);
+                        if summary.capture_retention != SearchCaptureRetention::ByteLimit {
+                            summary.capture_retention = SearchCaptureRetention::Retained;
+                        }
+                        let selected_for_parsing =
+                            projected.requested() == provider_document_request(provider);
+                        let observed =
+                            if selected_for_parsing || status_failure(attempt.status()).is_some() {
+                                parsed.clone()
+                            } else {
+                                parse_document(
+                                    provider,
+                                    document,
+                                    policy,
+                                    target.as_str(),
+                                    result_limit,
+                                    output_limit,
+                                )
+                            };
+                        captures.push(SearchCapture {
+                            document: document.clone(),
+                            provider,
+                            profile,
+                            adapter_version: provider_adapter_identity(
+                                provider,
+                                Some(attempt.acquisition()),
+                            )
+                            .1,
+                            parser_version: provider_parser_version(provider),
+                            request_id: response.request_id().to_string(),
+                            capture_id: attempt.capture_id(),
+                            provider_page_url: target.as_str().to_owned(),
+                            original_provider_page_url: target.as_str().to_owned(),
+                            final_url: result
+                                .capture_facts()
+                                .final_target()
+                                .map(|url| url.as_str().to_owned()),
+                            http_status: attempt.status(),
+                            completeness: result.capture_facts().completeness(),
+                            environment: result.capture_facts().environment().clone(),
+                            replay_policy: SearchReplayPolicy::from_policy(
+                                policy,
+                                result_limit,
+                                output_limit,
+                            ),
+                            selected_for_parsing,
+                            observed,
+                        });
+                    }
+                }
+                parsed.outcome
+            }
+            AttemptOutcome::Failed(failure) => ProviderOutcome::Failed(
+                status_failure(attempt.status())
+                    .unwrap_or_else(|| search_failure_for_attempt(failure.diagnostic())),
+            ),
+            AttemptOutcome::NotStarted(_) => {
+                ProviderOutcome::Failed(SearchFailure::TransportFailure)
+            }
+        };
+        match parsed {
+            outcome @ (ProviderOutcome::Results(_) | ProviderOutcome::Empty) => {
+                if selected_outcome.is_none() {
+                    selected_outcome = Some(outcome);
+                }
+            }
+            ProviderOutcome::Failed(failure) => {
+                first_failure.get_or_insert(failure);
+            }
+            ProviderOutcome::Cancelled => {
+                first_failure.get_or_insert(SearchFailure::TransportFailure);
+            }
+            ProviderOutcome::NotStarted(_) => {
+                first_failure.get_or_insert(SearchFailure::MalformedResponse);
+            }
+        }
+        attempts.push(summary);
     }
-
-    let mut parser_ran = false;
-    let outcome = interpret_response(
-        provider,
-        policy,
-        target,
-        result_limit,
-        output_limit,
-        response,
-        &mut parser_ran,
-    );
+    let outcome = selected_outcome.unwrap_or_else(|| {
+        if response.termination() == ResponseTermination::Cancelled {
+            ProviderOutcome::Cancelled
+        } else {
+            ProviderOutcome::Failed(first_failure.unwrap_or(SearchFailure::MalformedResponse))
+        }
+    });
     let (endpoint, adapter_version) = if any_attempt_started {
-        provider_adapter_identity(provider)
+        provider_adapter_identity(provider, profile.acquisition)
     } else {
         (None, None)
     };
@@ -125,117 +270,16 @@ pub(super) fn provider_result_from_response(
         request_id: Some(response.request_id()),
         recovery_query: None,
         attempts,
+        captures,
         outcome,
         charge: ProviderCharge::Unknown,
     }
-}
-
-fn interpret_response(
-    provider: Provider,
-    policy: &Policy,
-    target: &RequestedWebTarget,
-    result_limit: usize,
-    output_limit: usize,
-    response: &Response,
-    parser_ran: &mut bool,
-) -> ProviderOutcome {
-    let mut first_failure = None;
-    for attempt in response.attempts() {
-        if let Some(failure) = status_failure(attempt.status()) {
-            first_failure.get_or_insert(failure);
-            continue;
-        }
-        match attempt {
-            AttemptOutcome::Completed(result) => {
-                let document = result
-                    .documents()
-                    .iter()
-                    .find(|document| document.requested() == provider_document_request(provider))
-                    .and_then(|document| document.outcome().document());
-                let Some(document) = document else {
-                    first_failure.get_or_insert(SearchFailure::MalformedResponse);
-                    continue;
-                };
-                *parser_ran = true;
-                let parsed = match provider {
-                    Provider::Brave => brave::parse(
-                        document,
-                        policy,
-                        target.as_str(),
-                        result_limit,
-                        output_limit,
-                    )
-                    .map_err(|error| {
-                        search_parse_failure(matches!(error, brave::BraveParseError::OutputLimit))
-                    }),
-                    Provider::Bing => bing::parse(
-                        document,
-                        policy,
-                        target.as_str(),
-                        result_limit,
-                        output_limit,
-                    )
-                    .map_err(|error| match error {
-                        bing::BingParseError::OutputLimit => SearchFailure::BudgetExhausted,
-                        bing::BingParseError::QueryMismatch => SearchFailure::QueryMismatch,
-                        _ => SearchFailure::MalformedResponse,
-                    }),
-                    Provider::DuckDuckGo => duckduckgo::parse(
-                        document,
-                        policy,
-                        target.as_str(),
-                        result_limit,
-                        output_limit,
-                    )
-                    .map_err(|error| {
-                        search_parse_failure(matches!(
-                            error,
-                            duckduckgo::DuckDuckGoParseError::OutputLimit
-                        ))
-                    }),
-                };
-                match parsed {
-                    Ok(outcome @ ProviderOutcome::Results(_)) => return outcome,
-                    Ok(ProviderOutcome::Empty) => return ProviderOutcome::Empty,
-                    Ok(ProviderOutcome::Failed(failure)) | Err(failure) => {
-                        first_failure.get_or_insert(failure);
-                    }
-                    Ok(ProviderOutcome::Cancelled) => {
-                        first_failure.get_or_insert(SearchFailure::TransportFailure);
-                    }
-                    Ok(ProviderOutcome::NotStarted(_)) => {
-                        first_failure.get_or_insert(SearchFailure::MalformedResponse);
-                    }
-                }
-            }
-            AttemptOutcome::Failed(failure) => {
-                first_failure
-                    .get_or_insert_with(|| search_failure_for_attempt(failure.diagnostic()));
-            }
-            AttemptOutcome::NotStarted(_) => {
-                first_failure.get_or_insert(SearchFailure::TransportFailure);
-            }
-        }
-    }
-
-    if response.termination() == ResponseTermination::Cancelled {
-        return ProviderOutcome::Cancelled;
-    }
-    ProviderOutcome::Failed(first_failure.unwrap_or(SearchFailure::MalformedResponse))
 }
 
 const fn provider_document_request(provider: Provider) -> DocumentRequest {
     match provider {
         Provider::DuckDuckGo => DocumentRequest::RenderedDom,
         Provider::Brave | Provider::Bing => DocumentRequest::ResponseDocument,
-    }
-}
-
-pub(super) const fn search_parse_failure(output_limited: bool) -> SearchFailure {
-    if output_limited {
-        SearchFailure::BudgetExhausted
-    } else {
-        SearchFailure::MalformedResponse
     }
 }
 
@@ -291,26 +335,17 @@ pub(super) const fn search_failure_for_attempt(diagnostic: AttemptDiagnostic) ->
     }
 }
 
-fn status_failure(status: Option<u16>) -> Option<SearchFailure> {
-    let status = status?;
-    if status == 429 {
-        Some(SearchFailure::RateLimited)
-    } else if status == 401 || status == 403 {
-        Some(SearchFailure::Challenge)
-    } else if !(200..300).contains(&status) {
-        Some(SearchFailure::ProviderUnavailable)
-    } else {
-        None
-    }
-}
-
 const fn provider_adapter_identity(
     provider: Provider,
+    acquisition: Option<AcquisitionKind>,
 ) -> (Option<&'static str>, Option<&'static str>) {
     match provider {
         Provider::Brave => (
             Some("https://search.brave.com/search"),
-            Some("brave-direct-http-v1"),
+            Some(match acquisition {
+                Some(AcquisitionKind::Browser { .. }) => "brave-browser-v1",
+                _ => "brave-direct-http-v1",
+            }),
         ),
         Provider::Bing => (
             Some("https://www.bing.com/search"),
@@ -354,6 +389,7 @@ pub(super) fn failed_provider(
         request_id: None,
         recovery_query: None,
         attempts: Vec::new(),
+        captures: Vec::new(),
         outcome: ProviderOutcome::Failed(failure),
         charge: ProviderCharge::Unknown,
     }

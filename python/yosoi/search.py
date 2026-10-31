@@ -2,16 +2,28 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Literal
 
-from pydantic import Field, GetCoreSchemaHandler, PrivateAttr
+from pydantic import Field, GetCoreSchemaHandler, JsonValue, PrivateAttr
 from pydantic_core import CoreSchema, core_schema
 
 from . import _native
 from ._models import ImmutableModel, NativeAuthoringModel
+from .archive import Archive
 from .cancellation import CancellationToken
 from .diagnostics import SearchAttemptDiagnostic as SearchAttemptDiagnostic
-from .policy import AcquisitionKind, Policy, PolicyIdentity, ProviderDefaultsStatus
+from .documents import Document, DocumentClass
+from .policy import (
+    AcquisitionKind,
+    AddressableByteLimitValue,
+    Documents,
+    Locators,
+    Policy,
+    PolicyIdentity,
+    ProviderDefaultsStatus,
+    Tuning,
+)
 from .request import _token
 
 Provider = Literal["brave", "bing", "duck_duck_go"]
@@ -461,6 +473,195 @@ observed cancellation, and work that never started.
 """
 
 
+SearchParserDiagnostic = Literal[
+    "missing_document",
+    "unrecognized_page",
+    "incomplete_document",
+    "no_usable_hits",
+    "query_mismatch",
+    "output_limit",
+    "unsupported_document_class",
+    "invalid_page_url",
+    "invalid_configuration",
+    "locate_failed",
+    "invalid_locator_result",
+    "unknown",
+]
+"""Bounded parser reasons, separate from acquisition failure and empty results."""
+
+SearchCaptureRetention = Literal[
+    "disabled", "retained", "byte_limit", "missing_document"
+]
+"""Capture retention state, preserving unavailable and quota-omitted evidence."""
+
+SearchParserStatus = Literal["results", "empty", "failed", "cancelled", "not_started"]
+"""Single-document parser category, independent of HTTP success."""
+
+
+class SearchParserDecision(ImmutableModel):
+    """Content-free decision used to compare original evidence with offline replay.
+
+    Attributes:
+        status: Single-document parser category, separate from HTTP success.
+        failure: Coarse provider failure, absent for usable or empty results.
+        parser_diagnostic: Precise structural failure reason, when available.
+        hit_count: Accepted organic count; zero alone does not establish an empty page.
+        partial: Whether organic extraction coverage was incomplete.
+    """
+
+    status: SearchParserStatus
+    failure: (
+        Literal[
+            "rate_limited",
+            "challenge",
+            "provider_unavailable",
+            "malformed_response",
+            "query_mismatch",
+            "transport_failure",
+            "budget_exhausted",
+        ]
+        | None
+    )
+    parser_diagnostic: SearchParserDiagnostic | None
+    hit_count: int
+    partial: bool
+
+
+class SearchReplayResult(ImmutableModel):
+    """Single-document parser result without network or recovery execution.
+
+    Attributes:
+        outcome: Provider interpretation before cross-request recovery reconciliation.
+        parser_diagnostic: Structural failure reason, when available.
+    """
+
+    outcome: ProviderOutcome
+    parser_diagnostic: SearchParserDiagnostic | None
+
+    def decision(self) -> SearchParserDecision:
+        """Return content-free facts for comparing parser revisions."""
+        page = self.outcome.value if isinstance(self.outcome, Results) else None
+        return SearchParserDecision(
+            status=self.outcome.status,
+            failure=self.outcome.value if isinstance(self.outcome, Failed) else None,
+            parser_diagnostic=self.parser_diagnostic,
+            hit_count=len(page.hits) if page is not None else 0,
+            partial=page.coverage.web == "partial" if page is not None else False,
+        )
+
+
+class SearchReplayPolicy(ImmutableModel):
+    """Exact bounded parsing inputs, without transport configuration or credentials.
+
+    Attributes:
+        documents: Document parser input, node, and depth limits.
+        locators: Locator query, traversal, finding, and output limits.
+        tuning: Parser execution tuning.
+        result_limit: Positive maximum organic results retained by the parser.
+        output_limit: Positive maximum normalized output bytes retained by the parser.
+    """
+
+    documents: Documents = Field(default_factory=Documents)
+    locators: Locators = Field(default_factory=Locators)
+    tuning: Tuning = Field(default_factory=Tuning)
+    result_limit: int = Field(default=5, ge=1, le=65535, strict=True)
+    output_limit: AddressableByteLimitValue = Field(default=1048576)
+
+
+class SearchReplay(ImmutableModel):
+    """Portable reference to an explicitly retained Archive document and replay inputs.
+
+    URLs retain query/page content. Sanitize evidence before committing fixtures.
+
+    Attributes:
+        schema_version: Manifest version, currently one.
+        sdk_version: Capturing SDK version; this alone is not exact-source validation.
+        source_revision: Optional revision assertion embedded at native build time.
+        provider: Provider parser associated with this evidence.
+        adapter_version: Adapter implementation label for the acquisition route.
+        parser_version: Parser implementation label recorded during capture.
+        profile: Secret-safe route/defaults and effective Requests identity facts.
+        request_id: Underlying original or recovery Request identity.
+        capture_id: Capture identity shared by paired projected documents.
+        original_provider_page_url: Original authored provider URL, including query.
+        provider_page_url: URL used for this document's parser decision.
+        final_url: Final observed URL, absent when Requests did not record one.
+        http_status: Observed status; HTTP success does not establish useful results.
+        capture_complete: Whether Requests recorded a complete capture.
+        environment: Secret-safe producer/browser and representation environment facts.
+        replay_policy: Exact bounded parser inputs without transport configuration.
+        selected_for_parsing: Whether live Search selected this representation.
+        document_class: Representation class of the exact archived document.
+        document_bytes: Exact retained normalized document byte count.
+        document: Exact typed Document Archive reference, validated by Rust on replay.
+        observed: Content-free original parser decision for comparison.
+    """
+
+    schema_version: Literal[1]
+    sdk_version: str
+    source_revision: str | None
+    provider: Provider
+    adapter_version: str | None
+    parser_version: str
+    profile: dict[str, JsonValue]
+    request_id: str
+    capture_id: str
+    original_provider_page_url: str = Field(repr=False)
+    provider_page_url: str = Field(repr=False)
+    final_url: str | None = Field(repr=False)
+    http_status: int | None
+    capture_complete: bool
+    environment: dict[str, JsonValue] = Field(repr=False)
+    replay_policy: SearchReplayPolicy
+    selected_for_parsing: bool
+    document_class: DocumentClass
+    document_bytes: int
+    document: str
+    observed: SearchParserDecision
+
+    async def replay(self, archive: Archive) -> SearchReplayResult:
+        """Restore the exact document and replay its parser without a network request.
+
+        Args:
+            archive: Existing Archive containing this record's exact document.
+
+        Returns:
+            Bounded parser result. Compare its decision() with observed.
+
+        Raises:
+            SearchError: Manifest bounds or Archive document integrity checks fail.
+        """
+        value = await _native.search_replay(self.model_dump_json(), str(archive.root))
+        return SearchReplayResult.model_validate_json(value)
+
+
+def replay_document(
+    provider: Provider,
+    document: Document,
+    provider_page_url: str,
+    policy: SearchReplayPolicy,
+) -> SearchReplayResult:
+    """Run the live provider parser on an existing document without acquisition.
+
+    Args:
+        provider: Provider whose single-document parser should run.
+        document: Exact immutable source or rendered representation to interpret.
+        provider_page_url: Provider endpoint and query corresponding to the document.
+        policy: Explicit document/locator and normalized output bounds.
+
+    Returns:
+        Typed parser outcome and structural failure reason, if available.
+
+    Raises:
+        SearchError: Native input encoding or provider selection fails.
+    """
+    return SearchReplayResult.model_validate_json(
+        _native.search_replay_document(
+            provider, document._handle, provider_page_url, policy.model_dump_json()
+        )
+    )
+
+
 class ProviderIdentity(ImmutableModel):
     """Provider and adapter identities recorded when an adapter actually ran.
 
@@ -506,6 +707,11 @@ class RequestAttemptSummary(ImmutableModel):
         http_status: Observed HTTP status, absent when none was recorded.
         source_bytes: Exact retained source-artifact byte count, when recorded.
         diagnostic: Typed bounded failure details, absent when none were recorded.
+        parser_diagnostic: Structural parser reason, independent of acquisition failure.
+        document_class: Representation selected for provider parsing, when available.
+        document_bytes: Byte count of the selected retained document, when available.
+        capture_complete: Whether Requests recorded a complete capture.
+        capture_retention: Whether evidence was retained, unavailable, or omitted.
         terminal: Acquisition completed, failed, or never started; completion does not
             establish provider parsing success.
     """
@@ -516,6 +722,11 @@ class RequestAttemptSummary(ImmutableModel):
     http_status: int | None
     source_bytes: int | None
     diagnostic: SearchAttemptDiagnostic | None
+    parser_diagnostic: SearchParserDiagnostic | None = None
+    document_class: DocumentClass | None = None
+    document_bytes: int | None = None
+    capture_complete: bool | None = None
+    capture_retention: SearchCaptureRetention = "disabled"
     terminal: Literal["completed", "failed", "not_started"]
 
 
@@ -543,6 +754,83 @@ class ProviderCharge(ImmutableModel):
     value: ChargeAmount | None = None
 
 
+class SearchCapture(ImmutableModel):
+    """An owning view of one explicitly retained, bounded native Search document.
+
+    The native owner keeps captured bytes alive after the response is discarded.
+    Document access makes one cached, independent SDK document. Payload bytes are
+    absent from model fields and default JSON; ordinary response JSON also excludes
+    diagnostic_captures. URLs can retain query content after explicit capture opt-in.
+
+    Attributes:
+        provider: Provider parser associated with this original or recovery capture.
+        request_id: Underlying acquisition Request identity.
+        capture_id: Capture identity shared by paired representations.
+        original_provider_page_url: Original authored provider URL, including query.
+        provider_page_url: URL interpreted by this document's parser invocation.
+        final_url: Final observed URL, when Requests recorded it.
+        http_status: Observed status, separate from parser success.
+        capture_complete: Whether Requests recorded every requested artifact complete.
+        environment: Secret-safe producer/browser and representation facts.
+        replay_policy: Exact bounded parser inputs without transport credentials.
+        selected_for_parsing: Whether live Search selected this representation.
+        observed: Original single-document parser result before recovery reconciliation.
+    """
+
+    provider: Provider
+    request_id: str
+    capture_id: str
+    original_provider_page_url: str = Field(repr=False)
+    provider_page_url: str = Field(repr=False)
+    final_url: str | None = Field(repr=False)
+    http_status: int | None
+    capture_complete: bool
+    environment: dict[str, JsonValue] = Field(repr=False)
+    replay_policy: SearchReplayPolicy
+    selected_for_parsing: bool
+    observed: SearchReplayResult = Field(repr=False)
+    _handle: _native.SearchCapture = PrivateAttr()
+    _document: Document | None = PrivateAttr(default=None)
+
+    def model_post_init(self, context: object) -> None:
+        """Require the native retained-capture owner for these observed facts."""
+        if not isinstance(context, _native.SearchCapture):
+            raise ValueError("SearchCapture must come from a native Search response")
+        self._handle = context
+
+    @classmethod
+    def _from_native(cls, handle: _native.SearchCapture) -> SearchCapture:
+        return cls.model_validate_json(handle.metadata(), context=handle)
+
+    @property
+    def document(self) -> Document:
+        """Return one cached owned Document; bytes survive capture/response disposal."""
+        if self._document is None:
+            self._document = Document._from_native(self._handle.document())
+        return self._document
+
+    def replay(self) -> SearchReplayResult:
+        """Repeat this bounded parser invocation without network or browser access."""
+        return SearchReplayResult.model_validate_json(self._handle.replay())
+
+    async def save(self, archive: Archive) -> SearchReplay:
+        """Persist this exact document through the existing Archive integrity checks.
+
+        Cancelling the await does not guarantee rollback; Archive writes still settle.
+
+        Args:
+            archive: Caller-selected supported local Archive for explicit retention.
+
+        Returns:
+            Portable replay record retaining safe capture facts and parser bounds.
+
+        Raises:
+            SearchError: The Archive cannot store the exact retained document.
+        """
+        value = await self._handle.save(str(archive.root))
+        return SearchReplay.model_validate_json(value)
+
+
 class ProviderResult(ImmutableModel):
     """One selected provider slot, retained in authored policy order.
 
@@ -554,6 +842,8 @@ class ProviderResult(ImmutableModel):
         recovery_query: Shorter query used for off-query recovery, when attempted; may
             contain user content.
         attempts: Underlying acquisitions, including any recovery Request attempts.
+        captures: Opt-in Archive records for original and recovery projected documents.
+        diagnostic_captures: Owning in-memory capture views, excluded from JSON.
         outcome: Terminal provider interpretation, independent of acquisition success.
         charge: Reported monetary charge facts; unknown does not mean zero.
     """
@@ -564,6 +854,10 @@ class ProviderResult(ImmutableModel):
     request_id: str | None
     recovery_query: str | None = Field(repr=False)
     attempts: tuple[RequestAttemptSummary, ...] = Field(repr=False)
+    captures: tuple[SearchReplay, ...] = Field(default=(), repr=False)
+    diagnostic_captures: tuple[SearchCapture, ...] = Field(
+        default=(), repr=False, exclude=True
+    )
     outcome: ProviderOutcome
     charge: ProviderCharge
 
@@ -609,6 +903,16 @@ class SearchResponse(ImmutableModel):
     policy_identity: PolicyIdentity
     termination: Literal["completed", "cancelled", "deadline_reached"]
     providers: tuple[ProviderResult, ...] = Field(repr=False)
+
+    @classmethod
+    def _from_native(cls, handle: _native.SearchResponse) -> SearchResponse:
+        value = json.loads(handle.to_json())
+        for index, provider in enumerate(value["providers"]):
+            provider["diagnostic_captures"] = tuple(
+                SearchCapture._from_native(handle.capture(index, capture))
+                for capture in range(handle.capture_count(index))
+            )
+        return cls.model_validate(value)
 
     def __repr__(self) -> str:
         """Return structural diagnostics with retained content redacted."""
@@ -664,11 +968,17 @@ class SearchRequest(NativeAuthoringModel):
         self._handle.validate()
 
     async def send(
-        self, *, cancellation: CancellationToken | None = None
+        self,
+        *,
+        cancellation: CancellationToken | None = None,
+        diagnostic_archive: Archive | None = None,
+        capture: bool = False,
     ) -> SearchResponse:
         """Run selected providers with package defaults and retain every provider slot.
 
         Args:
+            diagnostic_archive: Retain bounded query/page evidence in this Archive.
+            capture: Retain bounded native documents without saving an Archive.
             cancellation: Optional shared cooperative cancellation token. Completed
                 provider outcomes remain available when cancellation is observed.
 
@@ -681,8 +991,14 @@ class SearchRequest(NativeAuthoringModel):
             SearchError: Policy resolution or execution setup fails before a response.
             pydantic.ValidationError: Native response data cannot form a typed result.
         """
-        value = await self._handle.send(cancellation=_token(cancellation))
-        return SearchResponse.model_validate_json(value)
+        value = await self._handle.send(
+            cancellation=_token(cancellation),
+            diagnostic_archive=str(diagnostic_archive.root)
+            if diagnostic_archive is not None
+            else None,
+            capture=capture,
+        )
+        return SearchResponse._from_native(value)
 
 
 class BoundSearchRequest:
@@ -702,6 +1018,7 @@ class BoundSearchRequest:
         """
         self.request = request
         self._policy_json = policy.to_json()
+        self._capture = False
 
     @property
     def id(self) -> str:
@@ -718,6 +1035,18 @@ class BoundSearchRequest:
         """Return a policy copy whose edits do not affect this binding."""
         return Policy.model_validate_json(self._policy_json)
 
+    def with_diagnostic_capture(self) -> BoundSearchRequest:
+        """Return a binding that retains bounded documents for offline diagnostics.
+
+        Capture is explicit query/page-content retention. Original and recovery
+        captures share the existing Search byte quota. Inspect attempt retention
+        states for unavailable documents or whole documents omitted at that quota.
+        The original binding remains unchanged, and no provider request is sent.
+        """
+        bound = BoundSearchRequest(self.request, self.policy)
+        bound._capture = True
+        return bound
+
     def check(self) -> None:
         """Validate against the bound policy snapshot without sending provider requests.
 
@@ -728,11 +1057,17 @@ class BoundSearchRequest:
         self.request._handle.validate(self._policy_json)
 
     async def send(
-        self, *, cancellation: CancellationToken | None = None
+        self,
+        *,
+        cancellation: CancellationToken | None = None,
+        diagnostic_archive: Archive | None = None,
+        capture: bool = False,
     ) -> SearchResponse:
         """Run providers selected by the bound policy snapshot.
 
         Args:
+            diagnostic_archive: Retain bounded query/page evidence in this Archive.
+            capture: Retain bounded native documents without saving an Archive.
             cancellation: Optional cooperative token shared with other operations.
                 Observed cancellation retains completed results and unstarted slots.
 
@@ -744,8 +1079,13 @@ class BoundSearchRequest:
             SearchError: Policy resolution or execution setup fails before a response.
             pydantic.ValidationError: Native response data cannot form a typed result.
         """
-        value = await self.request._handle.send(self._policy_json, _token(cancellation))
-        return SearchResponse.model_validate_json(value)
+        value = await self.request._handle.send(
+            self._policy_json,
+            _token(cancellation),
+            str(diagnostic_archive.root) if diagnostic_archive is not None else None,
+            capture=self._capture or capture,
+        )
+        return SearchResponse._from_native(value)
 
 
 def new(query: str) -> SearchRequest:

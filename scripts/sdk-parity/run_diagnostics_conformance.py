@@ -34,6 +34,8 @@ PYTHON_TYPES = {
 }
 PYTHON_TYPES["DirectHttpTransportErrorKind"] = "yosoi.diagnostics.TransportDiagnostic"
 PYTHON_TYPES["Rejection"] = "yosoi.map.Rejection"
+for name in ("SearchParserDiagnostic", "SearchCaptureRetention", "SearchParserStatus"):
+    PYTHON_TYPES[name] = f"yosoi.search.{name}"
 
 
 def select_comparisons(entry: dict, comparisons: list[dict]) -> list[dict]:

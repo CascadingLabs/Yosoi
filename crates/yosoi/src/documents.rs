@@ -146,6 +146,10 @@ pub struct DocumentRef<'document> {
     inner: &'document internal_engine::Document,
 }
 impl<'document> DocumentRef<'document> {
+    pub(crate) const fn as_internal(self) -> &'document internal_engine::Document {
+        self.inner
+    }
+
     pub(crate) const fn from_internal(inner: &'document internal_engine::Document) -> Self {
         Self { inner }
     }

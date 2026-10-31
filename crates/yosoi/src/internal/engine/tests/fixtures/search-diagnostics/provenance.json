@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "path": "bing-synthetic-original.html",
+      "kind": "synthetic",
+      "provenance": "Authored control, not a live provider observation.",
+      "sha256": "64afddd5c8b66acbce98f26d0427ebf75840ac9e26f5436b56cca0b8b487c730",
+      "bytes": 790,
+      "provider": "bing",
+      "query": "history of photosynthesis",
+      "phase": "original",
+      "expected_parser_diagnostic": "query_mismatch"
+    },
+    {
+      "path": "bing-synthetic-recovery.html",
+      "kind": "synthetic",
+      "provenance": "Authored control, not a live provider observation.",
+      "sha256": "1c37e086c8877d9d54114b740281d9607cd418c1dce00d892b49c265b38126b2",
+      "bytes": 850,
+      "provider": "bing",
+      "query": "photosynthesis",
+      "phase": "recovery",
+      "expected_parser_diagnostic": null
+    },
+    {
+      "path": "unknown-synthetic.html",
+      "kind": "synthetic",
+      "provenance": "Authored control, not a live provider observation.",
+      "sha256": "1fdc5ac228d0bcb79595b28c69d005b9a3b3f0c852cc8171e00c2929129bbaa1",
+      "bytes": 140,
+      "provider": "brave",
+      "query": "photosynthesis",
+      "phase": "original",
+      "expected_parser_diagnostic": "unrecognized_page"
+    }
+  ]
+}

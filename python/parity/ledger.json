@@ -1416,6 +1416,17 @@
       "symbolKey": "page:struct:yosoi::Policy"
     },
     {
+      "rustPath": "yosoi::Policy::browser",
+      "symbolKey": "member:struct_field:yosoi::Policy::browser@signature:09f38b1847c56721845dd3e09177863807019716a863ca15f263797f3060ae58@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.Policy.browser",
+      "rationale": "Rust browser declaration maps to the Python BrowserConfig field; defaults remain Chrome/CDP and nondefault declarations are hashed in identity v8."
+    },
+    {
       "rustPath": "yosoi::Policy::clone",
       "symbolKey": "member:function:yosoi::Policy::clone@signature:e545b9627d9604222d23a45c0b841c6f6115b14dbfc96060ac35796a66bc6c7e@trait:Clone@source:0b2a60129420ab0be8af39c90f4051750a959a1725c952a9ace53884efe0e31f",
       "decision": "mapped",
@@ -1574,6 +1585,17 @@
       "rationale": "Rust field map maps to Python field map."
     },
     {
+      "rustPath": "yosoi::Policy::network",
+      "symbolKey": "member:struct_field:yosoi::Policy::network@signature:58913fc0f7f3f83d38c7e0d4605c808da30f30aa8622895dea4f5ccd16cbab80@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Policy.network",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field network maps to Python field network."
+    },
+    {
       "rustPath": "yosoi::Policy::page",
       "symbolKey": "member:struct_field:yosoi::Policy::page@signature:d0c2e95d033694cd10d5498140aa3d044f0ddbd0c192492b952ad6a4745c3263@source:7cbbd049e606728a47fbd4fa86af3bb22cc9151f5af4ccc08304bfba76962f02",
       "decision": "mapped",
@@ -1682,6 +1704,33 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust variant ArchivedSnapshotMismatch maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::BrowserConfiguration",
+      "symbolKey": "member:variant:yosoi::PolicyError::BrowserConfiguration@signature:78222e79fff4a693343693ef3173cb7523f69476f650bb68b57fa51cd003c053@source:e0a486f6ac4b56912abaf6796d203c2536bcbfb5083c9df829d53354d252999e",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "BrowserConfiguration",
+        "rustType": "yosoi_policy::PolicyError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "details.reason",
+            "conversion": "stable snake_case BrowserConfigurationError variant code"
+          }
+        ]
+      },
+      "semanticEquivalent": "The native PolicyError adapter retains variant='BrowserConfiguration' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
     },
     {
       "rustPath": "yosoi::PolicyError::ByteLimitNotAddressable",
@@ -1837,6 +1886,38 @@
       "rationale": "Rust variant InvalidMapDuration maps to the corresponding Python tagged value yosoi.errors.PolicyError."
     },
     {
+      "rustPath": "yosoi::PolicyError::InvalidProxyUrl",
+      "symbolKey": "member:variant:yosoi::PolicyError::InvalidProxyUrl@signature:a6f33a9aa961ff2ff32fb97623cb909ada13f0ec4f4367a59fa66b241d54ab44@source:d62ffcee255c42886ba41d5bc966abe65c9c59e25f92b5d5232aa5237b860ecc",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidProxyUrl maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser",
+      "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser@signature:6abb879fd6ed63c69bc4e77aa41d6693267ef05390a9bdd2175b61c35e82ae32@source:1020fe2144c62374a5391b53a3f7cd9a2ff23c8614ecb71aa373c74a38b3efda",
+      "decision": "mapped",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "LegacyIdentityCannotIncludeBrowser",
+        "rustType": "yosoi_policy::PolicyError",
+        "pythonFields": []
+      },
+      "semanticEquivalent": "The native PolicyError adapter retains variant='LegacyIdentityCannotIncludeBrowser' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
+      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
+    },
+    {
       "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeMap",
       "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeMap@signature:5ea27b685c2f379f964ab9bded59dd756c1a0ba7df3501861fbd7a6cf8831fd2@source:69c56af29dc926ccef0beca8bd44e2a318059f68d12e4cf62cfd0fafe07dc004",
       "decision": "mapped",
@@ -1879,6 +1960,17 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust variant MapFilterStringTooLong maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::NetworkSourceFamilyMismatch",
+      "symbolKey": "member:variant:yosoi::PolicyError::NetworkSourceFamilyMismatch@signature:79fc156f49332f2cad055e366ccdcfa47375296488e8929e0e6e83a2ede43a85@source:13517b16101ec1d2f50308995ad45689e57c5d545f5c3c02a203abfbebe8d971",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant NetworkSourceFamilyMismatch maps to the corresponding Python tagged value yosoi.errors.PolicyError."
     },
     {
       "rustPath": "yosoi::PolicyError::NonCanonicalDocumentOrder",
@@ -19343,6 +19435,50 @@
       }
     },
     {
+      "rustPath": "yosoi::policy::IpFamily",
+      "symbolKey": "page:enum:yosoi::policy::IpFamily",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.IpFamily."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::Ipv4Only",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv4Only@signature:ef8f163260859428bf9a8796278f004f80bf501b1cee4f0c7a399620c0939a53@source:11faef2b7d6d38f961622d43b0216adc07fc988b3fb4323cb8f592bb6c713f21",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Ipv4Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv4_only'."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::Ipv6Only",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv6Only@signature:c489da845271aeda21911a228da8e79da12d6fd94127b6eae892546807d370b5@source:0c46c44e6d64acb6d465f204bbd35305918d5d8f365ea3b16b375cf4fe5e2e46",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Ipv6Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv6_only'."
+    },
+    {
+      "rustPath": "yosoi::policy::IpFamily::SystemDefault",
+      "symbolKey": "member:variant:yosoi::policy::IpFamily::SystemDefault@signature:c80a3a626033bd80a9264ebefb875e4f5b97101fc2d620e1d022306471b20677@source:993222d31b5e55d299b6a6a3271827b2b8bd9d16eb2b590b57a737f2eb0478f7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.IpFamily",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant SystemDefault maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'system_default'."
+    },
+    {
       "rustPath": "yosoi::policy::Limits",
       "symbolKey": "page:struct:yosoi::policy::Limits",
       "decision": "mapped",
@@ -20078,6 +20214,138 @@
       "rationale": "Rust checked conversion maps to this Rust-backed Python scalar helper.",
       "trait": "TryFrom",
       "semanticEquivalent": "Python helper validates and constructs the same Rust scalar value."
+    },
+    {
+      "rustPath": "yosoi::policy::Network",
+      "symbolKey": "page:struct:yosoi::policy::Network",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Network."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::clone",
+      "symbolKey": "member:function:yosoi::policy::Network::clone@signature:9e131f5dade461d34e125714bf242f14b07f6fed7cba57f15b0fb70fe6ea5f9d@trait:Clone@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::default",
+      "symbolKey": "member:function:yosoi::policy::Network::default@signature:73b2816f6ebb82a0729572dd4ad719bd5a932b71c20951f78f88b656c52ecaef@trait:Default@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "language-specific",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Rust and Python defaults are system_default with no source or upstream proxy; the Rust-authored default-network wire case compares every field.",
+        "pythonEquivalent": "Construct the Python model with its declared Pydantic defaults."
+      },
+      "trait": "Default",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::eq",
+      "symbolKey": "member:function:yosoi::policy::Network::eq@signature:945cd3ea427c0991ad15a03f9b785ef45feda84debb42d5357fa72c96246dfb7@trait:PartialEq@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Both Network values compare the three authored fields; source snapshots preserve route values across later mutations.",
+        "pythonEquivalent": "Python value equality on Network fields."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::fmt",
+      "symbolKey": "member:function:yosoi::policy::Network::fmt@signature:516d23faec68d547b6717cba8a51f8cc72b4ffb5e6be7abd9b21178f16539420@trait:Debug@source:203fef8de854d0ad08decfc55407dc9982973a6abfb21df990cc1ccb9ed27416",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "reviewed",
+        "rationale": "Both diagnostic representations suppress proxy credentials; Rust/Python redaction tests verify secret absence without requiring identical formatting.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.Network"
+    },
+    {
+      "rustPath": "yosoi::policy::Network::ip_family",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::ip_family@signature:0b290bda4e29f3f44206090caeb9d1b5ae0ce038be36c31daa23551135eb33d8@source:d2217982df5d62b043914f30e1920ebc258f6a7d719843d0b9878f9a96306cbb",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.ip_family",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field ip_family maps to Python field ip_family."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::proxy",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::proxy@signature:f889b0c3639fdc36240725c344139d8a49b52dfc76d995f452fa992bfc5edefc@source:876027d9b6c7f5ef56006543fafa9dd721c7446c1b9f49d28cedcc6407a3f004",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.proxy",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:proxy",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field proxy maps to Python field proxy."
+    },
+    {
+      "rustPath": "yosoi::policy::Network::source_address",
+      "symbolKey": "member:struct_field:yosoi::policy::Network::source_address@signature:4939396952b2b443d241144ab31f73eb2a6915a27bf90cd0fbfda601e58d93d8@source:becf6d3711cc9b70b56cbadae887c1eeda10307592b954db9d9d88ece90faf03",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.Network.source_address",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:source_address",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field source_address maps to Python field source_address."
     },
     {
       "rustPath": "yosoi::policy::Page",
@@ -26387,7 +26655,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::fmt",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:49952494467c8faab1281c81fa238cde9463d1d9435b17cc269697e430deaa39",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:75ed9448bfeae0939727c5e577e5e02ceba465fbdf539c0ad6d16c693214e6ee",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.BoundSearchRequest",
@@ -26406,7 +26674,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::id",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::id@signature:b2e88d7eeb6db925ed24176e1cf763dd26c980825a10b36892b23a9f56c7c8e8@source:a5db3734844830d6385717412d348ded2efc7c10374f96d775276b842ed79e8a",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::id@signature:b2e88d7eeb6db925ed24176e1cf763dd26c980825a10b36892b23a9f56c7c8e8@source:0b7001a2f13833a168d038c7e7f88010f83091b46bb7a562bf9f55685290493b",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.id",
       "argumentMappings": [],
@@ -26417,7 +26685,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::policy",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::policy@signature:29009917222b02501f64bf35653c4bd0428a1d560ada4b35367f5eaeb526baeb@source:69b032820a35d451efe8389948415501316f1a5842b90bc4eb88a9ed50de98f2",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::policy@signature:29009917222b02501f64bf35653c4bd0428a1d560ada4b35367f5eaeb526baeb@source:f314fe9caf6de48e683cc1dec20b818bb3737d5e433d039aa6ba285eef77c5a7",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.policy",
       "argumentMappings": [],
@@ -26428,7 +26696,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::query",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::query@signature:06ede4c8bb618c3a29057877c5f62321a5f2085676958c21a35011fca2d753a4@source:b2c8a7dbdd4563ea4357c7c07a9ab106c95c71883fefafcb36629dfe6e181277",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::query@signature:06ede4c8bb618c3a29057877c5f62321a5f2085676958c21a35011fca2d753a4@source:ef758b6b4896bd6741eafeebb8e6f6c04a59785f901f2be1d7ae0da6c6109de3",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.query",
       "argumentMappings": [],
@@ -26439,7 +26707,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::send",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::send@signature:15e897807bab1b404dd9cbc33a355bb68db82802381c7367d670bc9daaf92fe1@source:f97fc0cf3aa7067fead0d4f0bf8e82b65f11c6787d84567b8f98563ffc6b7fcf",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::send@signature:15e897807bab1b404dd9cbc33a355bb68db82802381c7367d670bc9daaf92fe1@source:869714f70fee56c5bf5c6b7e23038ae69bb80b02ec8e8f6f58afccd209775ed2",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.send",
       "argumentMappings": [],
@@ -26450,7 +26718,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::send_cancellable",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::send_cancellable@signature:f2a54d32a88beb3da224bac685036ba40283c5b8b6dc5d81ff0f97f2ac963913@source:8d43dfa1b48dec58e60eac988cba7e33c269d6003e8148bd341837706f6694f6",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::send_cancellable@signature:f2a54d32a88beb3da224bac685036ba40283c5b8b6dc5d81ff0f97f2ac963913@source:ac6dcff5ef8b0ff03cea4e728c5e3f4872d793f6073a266a5d087db2de9425b4",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.send",
       "argumentMappings": [
@@ -26473,7 +26741,7 @@
     },
     {
       "rustPath": "yosoi::search::BoundSearchRequest::validate",
-      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::validate@signature:f2d6e3960ca2f37f36743199b0893cc0346ac7e3a2329f93f3aca89036ea7be1@source:73cba2653e18ba23114aa9488957c49f595eb7c0aa2b44e69dc0e17be02072f7",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::validate@signature:f2d6e3960ca2f37f36743199b0893cc0346ac7e3a2329f93f3aca89036ea7be1@source:4ce8d11cbebdcb665f68f91f529fbbcaad21ffb01e4b64b87a0658a4f8488e9f",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.BoundSearchRequest.check",
       "argumentMappings": [],
@@ -26481,6 +26749,17 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.search.BoundSearchRequest.check."
+    },
+    {
+      "rustPath": "yosoi::search::BoundSearchRequest::with_diagnostic_capture",
+      "symbolKey": "member:function:yosoi::search::BoundSearchRequest::with_diagnostic_capture@signature:6f9e98ebc84658aa6967362bb5d267fbaf7fb7890f2d3427b11984172148741d@source:98c882ad9803692ffab0e27a2ffd8ec4b3769f4811a882e2394ee13adb8677c3",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.BoundSearchRequest.with_diagnostic_capture",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.BoundSearchRequest.with_diagnostic_capture."
     },
     {
       "rustPath": "yosoi::search::FeatureCoverage",
@@ -26760,7 +27039,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderCharge::Known",
-      "symbolKey": "member:variant:yosoi::search::ProviderCharge::Known@signature:479174e364ba25130090f9c301a621d456a8dc5058813cc04b4465315565be3d@source:8a8c0d5b82af107cbbad0ba57ea0050261ff7fba854710998c32edbb8e05b975",
+      "symbolKey": "member:variant:yosoi::search::ProviderCharge::Known@signature:479174e364ba25130090f9c301a621d456a8dc5058813cc04b4465315565be3d@source:fd72939c3de3dce5e4950f057a307fb9f7797f9b6d9204275c520a197bfa7857",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderCharge",
       "argumentMappings": [],
@@ -26791,7 +27070,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderCharge::Unknown",
-      "symbolKey": "member:variant:yosoi::search::ProviderCharge::Unknown@signature:b764cdc0eab7137467211272fa539f1260d1bf2e71bcf6ff3bdc960f5c16aa14@source:5bee68f016b42a38a885c83ca28994343431f69fb4a9e48b4ddc30febbcdeac8",
+      "symbolKey": "member:variant:yosoi::search::ProviderCharge::Unknown@signature:b764cdc0eab7137467211272fa539f1260d1bf2e71bcf6ff3bdc960f5c16aa14@source:dc72b11af7043095880ece408e25d438c1690a09b919663d9a2b7e03ad3622e4",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderCharge",
       "argumentMappings": [],
@@ -26808,7 +27087,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderCharge::clone",
-      "symbolKey": "member:function:yosoi::search::ProviderCharge::clone@signature:59d07adea490b979d83dc97226eb50b745f4a4864cc6e134cde3b5cb7f2350fc@trait:Clone@source:590dc96aa31ae92315923a272b608b41ec8650cc54c80371e0a5bfcdbac9400a",
+      "symbolKey": "member:function:yosoi::search::ProviderCharge::clone@signature:59d07adea490b979d83dc97226eb50b745f4a4864cc6e134cde3b5cb7f2350fc@trait:Clone@source:35ef4cae0583fa51a0ab0742ae68cd0bafdf487501c0b3489beb024a5a502fa8",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderCharge.clone",
       "argumentMappings": [],
@@ -26821,7 +27100,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderCharge::eq",
-      "symbolKey": "member:function:yosoi::search::ProviderCharge::eq@signature:966ddb70035ed065823bf3460362d72f4ae794979184add48906b6dd70c1ef9d@trait:PartialEq@source:590dc96aa31ae92315923a272b608b41ec8650cc54c80371e0a5bfcdbac9400a",
+      "symbolKey": "member:function:yosoi::search::ProviderCharge::eq@signature:966ddb70035ed065823bf3460362d72f4ae794979184add48906b6dd70c1ef9d@trait:PartialEq@source:35ef4cae0583fa51a0ab0742ae68cd0bafdf487501c0b3489beb024a5a502fa8",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -26844,7 +27123,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderCharge::fmt",
-      "symbolKey": "member:function:yosoi::search::ProviderCharge::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:590dc96aa31ae92315923a272b608b41ec8650cc54c80371e0a5bfcdbac9400a",
+      "symbolKey": "member:function:yosoi::search::ProviderCharge::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:35ef4cae0583fa51a0ab0742ae68cd0bafdf487501c0b3489beb024a5a502fa8",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.ProviderCharge",
@@ -26874,7 +27153,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::adapter_version",
-      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::adapter_version@signature:b4ac607575372417ce60ddb4c9a1ecfaf38b690bbd64e6d0041d1b62817a6633@source:2f88a86997c3190e158811554dc74c31f9d102a9726e61699219c27cf43c2de2",
+      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::adapter_version@signature:b4ac607575372417ce60ddb4c9a1ecfaf38b690bbd64e6d0041d1b62817a6633@source:a967af6a6066f64271e283b4ede1715b3cf3e987cbdec5220a237471018bf63c",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderIdentity.adapter_version",
       "argumentMappings": [],
@@ -26885,7 +27164,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::clone",
-      "symbolKey": "member:function:yosoi::search::ProviderIdentity::clone@signature:7a986d52f0395c6eb10f859b1c04ad04bf2db9f94b7d567ba6b8af4ed38a67b8@trait:Clone@source:223beb6f1976e224cc2a8e223e30c043f5b40ab27d3588b5e4d0bbfa04c03108",
+      "symbolKey": "member:function:yosoi::search::ProviderIdentity::clone@signature:7a986d52f0395c6eb10f859b1c04ad04bf2db9f94b7d567ba6b8af4ed38a67b8@trait:Clone@source:6b9d3e6db73e45e7eb9159894e21e3a526b09af330d4204149d04ec3c7a9501d",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderIdentity.clone",
       "argumentMappings": [],
@@ -26898,7 +27177,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::endpoint",
-      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::endpoint@signature:ca5aada472668e34f63d053e2bb2bd762590aa543b636e1bd4809a7300661719@source:6dfd2d96c1633a2367cc3fa8fb163fc9e385f9835c6e13afbf64654ba0130771",
+      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::endpoint@signature:ca5aada472668e34f63d053e2bb2bd762590aa543b636e1bd4809a7300661719@source:e3b310bf89f3d2f37d85a71a8d8e40076c67837a5ee62f5ce1813c2b0420373d",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderIdentity.endpoint",
       "argumentMappings": [],
@@ -26909,7 +27188,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::eq",
-      "symbolKey": "member:function:yosoi::search::ProviderIdentity::eq@signature:e856cf5a48b7dc669c642a628221e655e59a779ab08f55d648cbe11403b019b8@trait:PartialEq@source:223beb6f1976e224cc2a8e223e30c043f5b40ab27d3588b5e4d0bbfa04c03108",
+      "symbolKey": "member:function:yosoi::search::ProviderIdentity::eq@signature:e856cf5a48b7dc669c642a628221e655e59a779ab08f55d648cbe11403b019b8@trait:PartialEq@source:6b9d3e6db73e45e7eb9159894e21e3a526b09af330d4204149d04ec3c7a9501d",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -26932,7 +27211,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::fmt",
-      "symbolKey": "member:function:yosoi::search::ProviderIdentity::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:223beb6f1976e224cc2a8e223e30c043f5b40ab27d3588b5e4d0bbfa04c03108",
+      "symbolKey": "member:function:yosoi::search::ProviderIdentity::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:6b9d3e6db73e45e7eb9159894e21e3a526b09af330d4204149d04ec3c7a9501d",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.ProviderIdentity",
@@ -26951,7 +27230,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::parser_version",
-      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::parser_version@signature:fde90272d6a169ea27d8a7bd375f1fa2e3efdc175ec3011a979a08429c6d8383@source:103a7f0e75275a2f0cb8b06e078c3209be056117661ad315085819e15b162068",
+      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::parser_version@signature:fde90272d6a169ea27d8a7bd375f1fa2e3efdc175ec3011a979a08429c6d8383@source:853eadd82ccc21ddaa67c615654353e9cef1899a9fca33451fd86f00d6d2ba98",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderIdentity.parser_version",
       "argumentMappings": [],
@@ -26962,7 +27241,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderIdentity::provider",
-      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::provider@signature:eb81d82fad34e85f9bdb0924136ed9e5936f117d8b509e7748139d94e5d951c1@source:6b9d3e6db73e45e7eb9159894e21e3a526b09af330d4204149d04ec3c7a9501d",
+      "symbolKey": "member:struct_field:yosoi::search::ProviderIdentity::provider@signature:eb81d82fad34e85f9bdb0924136ed9e5936f117d8b509e7748139d94e5d951c1@source:3e8840602cf678daafee164136af20d8e6002226aefa70a9f87d4cc59a3bafe7",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderIdentity.provider",
       "argumentMappings": [],
@@ -26984,7 +27263,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderOutcome::Cancelled",
-      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:6cb69da45ead63d46fa194a0f9641b1998c1037d41376b65a1f61c903e2fc454",
+      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:4de0b4c4a56e5fe3d7b0de0e82e9207ccff7ada2a5081133beae5eabe6fb8b47",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Cancelled",
       "argumentMappings": [],
@@ -27001,7 +27280,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderOutcome::Empty",
-      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Empty@signature:c6c094bc0054f9cbe34102ff49f86b3928b5ac09f3d2ac87e170d0500675921f@source:885452816798746b6e2ce36053e990cee72e295b5c0ff7512222b859aaea3d11",
+      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Empty@signature:c6c094bc0054f9cbe34102ff49f86b3928b5ac09f3d2ac87e170d0500675921f@source:6e69e2787f69f526b7edd0783fb8e60b0355dbc4d63ef673cbec06bb7c45508e",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Empty",
       "argumentMappings": [],
@@ -27018,7 +27297,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderOutcome::Failed",
-      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Failed@signature:2d8bc3f85ede81ed1efbc449bf61780ab5cca17dabbe5c390889359a8234eb69@source:cb15d76b6c18429b16984abf1f1bbd0ffee464d0a40995375080613642b81bd3",
+      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Failed@signature:2d8bc3f85ede81ed1efbc449bf61780ab5cca17dabbe5c390889359a8234eb69@source:6599910c653a6abdf3ff7803b11950fd0d65925957019050f85591d52cdee82f",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed",
       "argumentMappings": [
@@ -27041,7 +27320,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderOutcome::NotStarted",
-      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::NotStarted@signature:c92d64d1803aab405ec9cac02ec32b876aa5dc725513141f813ff9f4dfcc5015@source:77ce838c833c3d2a6e0db3278a983577db2265b9a9195222409f8055d6d161e0",
+      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::NotStarted@signature:c92d64d1803aab405ec9cac02ec32b876aa5dc725513141f813ff9f4dfcc5015@source:6b241981bbd7d7f338f10095ad4e7f3437a5b3250aef6bba357bac0a4882dbcb",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted",
       "argumentMappings": [
@@ -27064,7 +27343,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderOutcome::Results",
-      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Results@signature:5a78779db3b35bf5397cbb911bd0a72509c15cfac4af3e688a97a17b65226ec5@source:198ac49e381c29e921f14a89d667f4c67630b3cfb33847eac8a6a454700f717f",
+      "symbolKey": "member:variant:yosoi::search::ProviderOutcome::Results@signature:5a78779db3b35bf5397cbb911bd0a72509c15cfac4af3e688a97a17b65226ec5@source:947139b697fe2705a9f36988da290aa74b0645905cc94e6c1b19195124197231",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Results",
       "argumentMappings": [
@@ -27098,7 +27377,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::attempts",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::attempts@signature:d8a51948d57afa243388d57d1842092b56eb385ea33987cf5dfacb192b09f20e@source:a0ab8894ae00fd9224a7465afe5294f1b1557c609503e2b30425df40ab30c3c2",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::attempts@signature:d8a51948d57afa243388d57d1842092b56eb385ea33987cf5dfacb192b09f20e@source:104aaf31ad33cbc72e8599f75bf5fe16d714130d33cae309585d89e468f93077",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.attempts",
       "argumentMappings": [],
@@ -27114,8 +27393,25 @@
       "rationale": "Rust method maps to the matching Python method/property yosoi.search.ProviderResult.attempts."
     },
     {
+      "rustPath": "yosoi::search::ProviderResult::captures",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::captures@signature:cefca27ccb7d082365e171abffdaa07f7230251c916022017f6cc6ad0f94d1d0@source:18ea1e7c0eb5dd48154585d4221c33a872f3d11b094f6f0979c76bce68314c9c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.ProviderResult.diagnostic_captures",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "sequence:captures",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.ProviderResult.diagnostic_captures."
+    },
+    {
       "rustPath": "yosoi::search::ProviderResult::charge",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::charge@signature:37277075e02269120b816418ad25c5ac368760ea50c4dcd46744883988546f1c@source:9ebea8f18f056e89aa5a78e97ece34c5892dadc3df7b00178f330d6474d8d9a3",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::charge@signature:37277075e02269120b816418ad25c5ac368760ea50c4dcd46744883988546f1c@source:9e56f1a7637d8e018ef6324ee9bba7f645e99e69a7ae54bac4b77e5d697ef185",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.charge",
       "argumentMappings": [],
@@ -27126,7 +27422,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::fmt",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:2e42844117cb7939a4fabf6468d7ba8ef51e3e1eb45ffefbfff0b9215d2deccf",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:3e3d15cfa1245bf246e7b1fb6c92305dbe65359e9b5efc77ed2e9fc3937b1de2",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -27149,7 +27445,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::identity",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::identity@signature:5ef82424483f52377e445a29d922449675827d7c248247fe7cc575623e7acca8@source:001b4922cf45e0ffd987152bb4bcd232ab2473da12fc0e2a582e46df8a1bec73",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::identity@signature:5ef82424483f52377e445a29d922449675827d7c248247fe7cc575623e7acca8@source:0c6e47d50d58ecb1fbdfc0f563d899f35d3cf474a3ab3069b6add764bff936ab",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.identity",
       "argumentMappings": [],
@@ -27160,7 +27456,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::outcome",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::outcome@signature:21361a8a200bc317a07d750b337eb71ab7e3dfcdb16c27344adc8694191c291b@source:a41d4f3d2183ae48c428b5c701f8925f95ea7cf72c523a0f7fae64dd2f664213",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::outcome@signature:21361a8a200bc317a07d750b337eb71ab7e3dfcdb16c27344adc8694191c291b@source:62ca6a2c99ba936c503e51df3ad7b2c95ad16561e06b3ba4704088156133c337",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.outcome",
       "argumentMappings": [],
@@ -27171,7 +27467,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::profile",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::profile@signature:e4980217c3905ac9b1f790089b102b022917b06156dabcd7811e4a02a9764c7a@source:1f62e02f7a27e924bcc939884b4856a00babcc90ea7300dc042d5a4274d96511",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::profile@signature:e4980217c3905ac9b1f790089b102b022917b06156dabcd7811e4a02a9764c7a@source:dccd23eadac09ef4a6acf96f9ac9e244563b4ed38a5646abcb0f964c714172f6",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.profile",
       "argumentMappings": [],
@@ -27182,7 +27478,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::provider",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::provider@signature:9ae7eaf07da5465df8f067bbb93e594e8745ce39afcb4013248e79627e0d1e06@source:2f5cc20bc83f897abfba4b82b6d3e40d02720164069ce7903206ff4b42d8c8df",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::provider@signature:9ae7eaf07da5465df8f067bbb93e594e8745ce39afcb4013248e79627e0d1e06@source:0caced5b002aeabd5965ededd9334d168537ddceed46a23948155a5147173c9e",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.provider",
       "argumentMappings": [],
@@ -27193,7 +27489,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::recovery_query",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::recovery_query@signature:fc80da5b214a904e58f8c1e944eafd2d366870bc34013957cb294b221be61ab4@source:d33018b52e6cc05881d861ba2e5662c4b69e1cecdb26df90f80e69b0eb7827e8",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::recovery_query@signature:fc80da5b214a904e58f8c1e944eafd2d366870bc34013957cb294b221be61ab4@source:9ebea8f18f056e89aa5a78e97ece34c5892dadc3df7b00178f330d6474d8d9a3",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.recovery_query",
       "argumentMappings": [],
@@ -27204,7 +27500,7 @@
     },
     {
       "rustPath": "yosoi::search::ProviderResult::request_id",
-      "symbolKey": "member:function:yosoi::search::ProviderResult::request_id@signature:1b1f4db22b65d55292ffb7d8a167e6cc844bc56ebf125dd8e6865be1fabbe3a6@source:0caced5b002aeabd5965ededd9334d168537ddceed46a23948155a5147173c9e",
+      "symbolKey": "member:function:yosoi::search::ProviderResult::request_id@signature:1b1f4db22b65d55292ffb7d8a167e6cc844bc56ebf125dd8e6865be1fabbe3a6@source:d483d150bf1dcdfc58dd7b64809deadb379a8e95106257d7342fb7ec66d133d5",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.ProviderResult.request_id",
       "argumentMappings": [],
@@ -27226,7 +27522,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::acquisition",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::acquisition@signature:8aef8b8e4f0e0529dd85f8e7321b0e95cefe5438d772d733d176204b3ce03c89@source:1009f1f2efc2e223b9d56e49c17fa4e536ca7f8369f3e91a0c9fa485662b6f38",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::acquisition@signature:8aef8b8e4f0e0529dd85f8e7321b0e95cefe5438d772d733d176204b3ce03c89@source:5f79fc03536dc44b535b70739e04ade45ea8378f4e4a542bc43f22e83dacb003",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.acquisition",
       "argumentMappings": [],
@@ -27236,8 +27532,25 @@
       "rationale": "Rust field acquisition maps to Python field acquisition."
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary::capture_complete",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::capture_complete@signature:283e09d561ae73eab7a106555c56340c9e31f4d5ce219f41a51249542339e183@source:d9c138c56d0b9cb624d4801714ba545d56a8d617e24c994701d9695c47ac24c9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.capture_complete",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:capture_complete",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field capture_complete maps to Python field capture_complete."
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptSummary::capture_id",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::capture_id@signature:a0897e0a7ade6c9a071525e9e5841b17d664bbac10b143fbe325776c6a45f06a@source:7f71a78ec13b3419d1ad9262f5d178474b59aba26eabac6799dd3e6ea2e1ea8e",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::capture_id@signature:a0897e0a7ade6c9a071525e9e5841b17d664bbac10b143fbe325776c6a45f06a@source:5d90088bf864da808b60d11d08ccf2a1290d24ee2e45d9141600fd915b83562a",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.capture_id",
       "argumentMappings": [],
@@ -27247,8 +27560,19 @@
       "rationale": "Rust field capture_id maps to Python field capture_id."
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary::capture_retention",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::capture_retention@signature:fa834006bb8d9f48643745494dae0454352df427aa2d709d60aef9529a18923b@source:2387c6c241cd8bf2f7d0782bfcb588660c20b0eb0c4abac1e30f87cd631f83a5",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.capture_retention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field capture_retention maps to Python field capture_retention."
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptSummary::clone",
-      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::clone@signature:3c200af6935632d26c135ea070e0fe1992f86baed9c41a44cc40cea987c9ce6d@trait:Clone@source:d0cd9ad41a0ef6bc85fb658a4b801e56d75e57fd109dea2b8063d6faafbfa243",
+      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::clone@signature:3c200af6935632d26c135ea070e0fe1992f86baed9c41a44cc40cea987c9ce6d@trait:Clone@source:46bd048051006a59900ee8f437ae81061ca7cab5b1bf9ac412e8507145416232",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.clone",
       "argumentMappings": [],
@@ -27261,7 +27585,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::diagnostic",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::diagnostic@signature:5395cca1faace79baba53494c7f1c899b30aad7c2689e95292e7c157817c86a1@source:90f778bd63590a6f192cb544deca86d9b2de6647b46bbd06dcb4c4bae4470611",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::diagnostic@signature:5395cca1faace79baba53494c7f1c899b30aad7c2689e95292e7c157817c86a1@source:c7f234d789613240883c59aa8e71a2cc7337f7e110bb1a6a5ac3bd5889c8631a",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.diagnostic",
       "argumentMappings": [],
@@ -27271,8 +27595,42 @@
       "rationale": "Rust field diagnostic maps to Python field diagnostic."
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary::document_bytes",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::document_bytes@signature:0dfc975ed39cc635cd4ade37f5a78fcc008013d4f7e0996bef3d081a676b2105@source:5f105135185b2b08288b649015b3bbcc94612df45987080894328816070662d9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.document_bytes",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:document_bytes",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field document_bytes maps to Python field document_bytes."
+    },
+    {
+      "rustPath": "yosoi::search::RequestAttemptSummary::document_class",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::document_class@signature:74290101722440eeafaaf20aa8a2f4c8c1bcd15dd148ef82e8136574c9f5a9b2@source:2d3917fc2530bb00fa6937bda45f29f55192261771834e72a55708c87a558a1c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.document_class",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:document_class",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field document_class maps to Python field document_class."
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptSummary::eq",
-      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::eq@signature:c5c34020c902e2f0856a6993fc6d8e1207687b4b7f0f4072efd45758efe643a6@trait:PartialEq@source:d0cd9ad41a0ef6bc85fb658a4b801e56d75e57fd109dea2b8063d6faafbfa243",
+      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::eq@signature:c5c34020c902e2f0856a6993fc6d8e1207687b4b7f0f4072efd45758efe643a6@trait:PartialEq@source:46bd048051006a59900ee8f437ae81061ca7cab5b1bf9ac412e8507145416232",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -27295,7 +27653,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::fmt",
-      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:d0cd9ad41a0ef6bc85fb658a4b801e56d75e57fd109dea2b8063d6faafbfa243",
+      "symbolKey": "member:function:yosoi::search::RequestAttemptSummary::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:46bd048051006a59900ee8f437ae81061ca7cab5b1bf9ac412e8507145416232",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.RequestAttemptSummary",
@@ -27314,7 +27672,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::http_status",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::http_status@signature:cd6f3b47627d4f72eccae2c5c99be1821417c3664624b4d5b1badcac0b8c123b@source:b155592435d44ce232f5f2646bab78fa83cc69ea4223b8446bf40cac204a71f5",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::http_status@signature:cd6f3b47627d4f72eccae2c5c99be1821417c3664624b4d5b1badcac0b8c123b@source:eb5f9f07ceccc29726e5f492fb647b7ddfc4f8d500e39d28c5f34e351fac41f2",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.http_status",
       "argumentMappings": [],
@@ -27324,8 +27682,25 @@
       "rationale": "Rust field http_status maps to Python field http_status."
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary::parser_diagnostic",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::parser_diagnostic@signature:5be9e14f664887da463a16c0d0409d9142c575c1f393bb8cfd4e2d94d3f36a7d@source:847fb53cec3d41727120204874739b1ff06bb542186267b0d9d8211b88220791",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.parser_diagnostic",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:parser_diagnostic",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field parser_diagnostic maps to Python field parser_diagnostic."
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptSummary::request_id",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::request_id@signature:8048eb6c54de5244d89b6c7ae469076283638e868762c2de64f474c231162364@source:46bd048051006a59900ee8f437ae81061ca7cab5b1bf9ac412e8507145416232",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::request_id@signature:8048eb6c54de5244d89b6c7ae469076283638e868762c2de64f474c231162364@source:bb99e9e00bbac13fdf2fdc94aaf676920627e42755b48ff7c4f5ba799b3b945a",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.request_id",
       "argumentMappings": [],
@@ -27336,7 +27711,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::source_bytes",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::source_bytes@signature:30fed0ac730b6b249b9d2f1259936dc693d09d8620ea401f59c126c612a81a8e@source:9f40b6f4ec824b01ae4f9600bff9ad4b3a5ecdfbf9ec62913b4f55ffc9faae5d",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::source_bytes@signature:30fed0ac730b6b249b9d2f1259936dc693d09d8620ea401f59c126c612a81a8e@source:7de31e0c34d3efd7876b6a0a2341a98834a9fd5d29b43685871bb928da470fd4",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.source_bytes",
       "argumentMappings": [],
@@ -27347,7 +27722,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptSummary::terminal",
-      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::terminal@signature:408c8fb18ed5484c5887ca52bbebf950b71f05ded7926745839ba918f9216bca@source:68907ff3c1793ce0700b3dfa905ab6843788ac45dfa563d53cb4b9914c7cf478",
+      "symbolKey": "member:struct_field:yosoi::search::RequestAttemptSummary::terminal@signature:408c8fb18ed5484c5887ca52bbebf950b71f05ded7926745839ba918f9216bca@source:019c63f67739f60d7f4c03a067136723ba9bfe344cdad6829aa01628a9946691",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal",
       "argumentMappings": [],
@@ -27369,7 +27744,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptTerminal::Completed",
-      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::Completed@signature:22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1@source:90b15163c89fe60ede943223d10595abb8fa61d2f081f1b6454f31017067a7a8",
+      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::Completed@signature:22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1@source:5bee68f016b42a38a885c83ca28994343431f69fb4a9e48b4ddc30febbcdeac8",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal",
       "argumentMappings": [],
@@ -27386,7 +27761,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptTerminal::Failed",
-      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::Failed@signature:031a8f0f659df890dfd53c92e45295b0f14c997185bae46e168831e403b273f7@source:eb58822364ab045b1ca5ec358a07dc97194e3735fdf43e302f8641b937ab367f",
+      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::Failed@signature:031a8f0f659df890dfd53c92e45295b0f14c997185bae46e168831e403b273f7@source:b693c56ffcc15d63c945ccc42ac4f68cb66c3abba5da2a75296f4ca3273ab603",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal",
       "argumentMappings": [],
@@ -27403,7 +27778,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptTerminal::NotStarted",
-      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::NotStarted@signature:bd719109bc0281808300315b54fdbdf843b1a0c9b1aeaded5369280fc9801003@source:a7955a06c7cc0a13d014edc6945137a62d18dd307c944fd0a3e229b15468e579",
+      "symbolKey": "member:variant:yosoi::search::RequestAttemptTerminal::NotStarted@signature:bd719109bc0281808300315b54fdbdf843b1a0c9b1aeaded5369280fc9801003@source:66be0d01bee0a005c5cc62da57b5bfa484b5cc6f8fe3d0bcd1a960cbe1691e93",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal",
       "argumentMappings": [],
@@ -27420,7 +27795,7 @@
     },
     {
       "rustPath": "yosoi::search::RequestAttemptTerminal::fmt",
-      "symbolKey": "member:function:yosoi::search::RequestAttemptTerminal::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:c4f5940c3a9b510e852dc7fa362baee465c822238ce8b5982ff7214dd8466a61",
+      "symbolKey": "member:function:yosoi::search::RequestAttemptTerminal::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:590dc96aa31ae92315923a272b608b41ec8650cc54c80371e0a5bfcdbac9400a",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal",
@@ -27450,7 +27825,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelled",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelled@signature:5ceaed720ce609d57c528d091313ae6661d4ec931f1e9a722558035cd9bfd0ca@source:f97dc4dc2a3ada8df34f4506f28eabbbd13b386867bfc6cb80bd3da35134e732",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelled@signature:5ceaed720ce609d57c528d091313ae6661d4ec931f1e9a722558035cd9bfd0ca@source:d0868a6131f49eaa1c958feab4fe28397b0d7d4d9452b78d3addba07e488284d",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27470,7 +27845,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed@signature:b185d54d40b0f55486c76508cf4e2349e37bcf245409890e840167db1b69e64b@source:4295ded23b2211373edcf7c3481250aee9b28546d386a873a49e08c15ca78a4a",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCancelledCleanupFailed@signature:b185d54d40b0f55486c76508cf4e2349e37bcf245409890e840167db1b69e64b@source:bc2623efdac8058757cc6ab414593d2b4005f99c31968d7a6efc236018111483",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27490,7 +27865,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed@signature:07f35e423277c0e24ef7f7aa4b7136605d46dc4213c758590b10d40885c31040@source:11cdb0ee96f14a28590daee52f60a1fda4ef015716e518814c5c372bf2dd6f95",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCaptureFailed@signature:07f35e423277c0e24ef7f7aa4b7136605d46dc4213c758590b10d40885c31040@source:8b646ed65f9db6eaa9e37fdae47ba59649ed228be41384dede1bcc0339244d08",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27510,7 +27885,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed@signature:b92dd7fafe1cbc7668e43211dd0687d671db1d1ea89ee1e17223173501301d0c@source:ae97dbaffa95500dec316d804d3b2f8767aa7eb5f73a106ba5c37ad0bcf468ca",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserCleanupFailed@signature:b92dd7fafe1cbc7668e43211dd0687d671db1d1ea89ee1e17223173501301d0c@source:a3f99d55fc41602bb13bee702e7a91b5d8ec943a777e52aed473a6255cd0ae30",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27530,7 +27905,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFailure@signature:9c02077fdce07539b1ed7d0a2424771df6ea2e3fbb6770c3b4b3930d5d66e6fd@source:92f1a619f9f575a0ab5543935e490b61356e488d21ddb73384f22319e5264862",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFailure@signature:9c02077fdce07539b1ed7d0a2424771df6ea2e3fbb6770c3b4b3930d5d66e6fd@source:e306d004b47da948facba67ac3be264dce75639befd2cf25d7248c4c21efbc26",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27556,7 +27931,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled@signature:7c2565388e326c218d122b477034a9fac4602f2b571f032c77033362e30936e2@source:37f86de185c6fbe02b1f229441c5f0d0831af0d78ffb8e16ea50fc912b707934",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFeatureDisabled@signature:7c2565388e326c218d122b477034a9fac4602f2b571f032c77033362e30936e2@source:9346df8b7511c5f4493ffdb5dc11e78f39a5bef3c40c98575cd19021e0915337",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27576,7 +27951,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed@signature:b850bd4179ff8d27b48f83b92b1b7f2e7b0f211409aeaa8b16b10725fc745b13@source:46aff955cd3684de207d4571ee0ef49dca42df970818b804b23cfc3d4d47d45b",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::BrowserFinalizationFailed@signature:b850bd4179ff8d27b48f83b92b1b7f2e7b0f211409aeaa8b16b10725fc745b13@source:46c00efe31e6a69dc587865f25c70b9fa2c9353c746cfe377d46d3d7bdfb803b",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27596,7 +27971,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed@signature:841c4bf4b6e1697199463e502c5e911a1c6396789fec9c3c93145b6a24c771aa@source:d71f66ba7afce43c824c3fee40bde6e1cd50036c75bec72dad4477b2b409946a",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpBodyFailed@signature:841c4bf4b6e1697199463e502c5e911a1c6396789fec9c3c93145b6a24c771aa@source:71fc37a23f181e9100b79448f4edb8a5ddb5ab304629e56e794c093aa8c304ce",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27616,7 +27991,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed@signature:78e89f42b2a3f7896636753889e0bd79634d2ea3dbca9bd1878b5e24e3bcaf60@source:3b376d7669ee7a57873af283d3a31121e45a4326f3f549c820e96953fc317ac7",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpFinalizationFailed@signature:78e89f42b2a3f7896636753889e0bd79634d2ea3dbca9bd1878b5e24e3bcaf60@source:5b4c2e7bd07e27f8334c556cccc136b4fa568662ca39f330f619fd0c3ca7de56",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27636,7 +28011,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport@signature:dc1afff97de6f480d92632fd50be23317c99f8d7e7cb0afa07cfe275a128f8d0@source:325c844de9523a28b01627b7fe8b123bbfd70d35655e26e94b7bec5471ba598b",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::DirectHttpTransport@signature:dc1afff97de6f480d92632fd50be23317c99f8d7e7cb0afa07cfe275a128f8d0@source:69bcec0856f8cc3a6ee9fd3bd077bbca8a1942d0ab78f034ee2023506eda5195",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27656,7 +28031,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext@signature:4c1dffcda524b0c9d9fac3b023e36b346278839c2f09ed8c76a0c52dc2a73053@source:55497c54a38e311c6974cf754192e250a234f6842444a65f8c62eed9093e12c0",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::MissingExecutionContext@signature:4c1dffcda524b0c9d9fac3b023e36b346278839c2f09ed8c76a0c52dc2a73053@source:2ad59e45fbeb7f7de0ace75bd64ba95beaeb343019a97ac8a8eb71889695c300",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27676,7 +28051,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed@signature:70aedc811a6ffec3843579953a539c3e52c899892c32f9f1e32bd0b9254d77f2@source:d3f4759d1f04f53f93faeb9f86d088236fb2e592cf524d996ec30f913773db95",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::PolicyResolutionFailed@signature:70aedc811a6ffec3843579953a539c3e52c899892c32f9f1e32bd0b9254d77f2@source:228a62d55344297c3bf04501baab0f481271b14f4bb3813b1233c53ab9e9f36b",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27696,7 +28071,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::ProjectionFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::ProjectionFailed@signature:b23b6302e64276f953b035a3b8039cf4d6e2242c8092e82d4266c6ea9fc8d52b@source:733c235ee00ac59028732a090fd7e04334b8dae89b5480a5a80eb601d4c5cd56",
+      "symbolKey": "member:variant:yosoi::search::SearchAttemptDiagnostic::ProjectionFailed@signature:b23b6302e64276f953b035a3b8039cf4d6e2242c8092e82d4266c6ea9fc8d52b@source:92e2387561c3957059da99a1e8583af14cb8c9c5d016072505d44e84ab5d145f",
       "decision": "mapped",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
       "argumentMappings": [],
@@ -27716,7 +28091,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchAttemptDiagnostic::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchAttemptDiagnostic::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:2cc2c9c67a5ee8acf1a126a4a04b2b1847659776af5bfae3462dd8fc4028391f",
+      "symbolKey": "member:function:yosoi::search::SearchAttemptDiagnostic::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:8e46a0c18f80f6f2d416786b3302d76a25aa27d3442a28cef78fea5036ed9242",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.diagnostics.SearchAttemptDiagnostic",
@@ -27732,6 +28107,279 @@
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "pythonEquivalent": "repr(value); explicit access: public fields/properties, model_dump() for Pydantic models, union tag and payload fields"
       }
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture",
+      "symbolKey": "page:struct:yosoi::search::SearchCapture",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchCapture."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::capture_complete",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::capture_complete@signature:33f6c1a6c8e7762eb5725c242e0fdd3945f87689918859d6cbf56ef2bec86dcf@source:647eefac8bafb4f9b985b5973736de87e6ef2ddb1322d22d277b10563e9cc531",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.capture_complete",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.capture_complete."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::capture_id",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::capture_id@signature:217f88bfb750e05d3a6e96152f435dcfe1416285449687eb152beba33fb68eac@source:8141c227536c80164a906b86faf793d1181b64212e59e0c3538c0c8b0980e3fe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.capture_id",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.capture_id."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::clone",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::clone@signature:2b50c3442acab95f512e045106485cf1f5c83a496aa67cb9c51ea6985af2d5c7@trait:Clone@source:504ebe0305d5e79427d4e7a5b2a14b7eac9736dbc38dd138143d23bbbf50bba4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::document",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::document@signature:00d98a6cec4ca1f4ee3a94075cad79a75e2404cbf1bb32aeae898d0160739cd9@source:e7dd50223c470545dc2b6286dad953128e4763da58a1bcca658f9b4a4297f81e",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.document",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.document."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::environment",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::environment@signature:be4f2074b76031f9445ba56e82373293f75eb91a8c8fbdb1877f0f63afd0d70f@source:d3f6b44c65243f24646240057d645feaa7406d0b256fe174f49ef626bcbc91a9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.environment",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.environment."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::final_url",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::final_url@signature:6ec7198c2e4362e0784c22756b628eb6f87c9d565dd4c7810b22a7101c4a8099@source:536c285cf6bf40560fda760a5afcdb4825f63d79bc1137dc96b63318d6089902",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.final_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.final_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:d24da5bc35df4850b0365845d93395cd0a8d663791b51e9ec2c4c8b48e52e792",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "formatter",
+          "pythonArgument": "formatter",
+          "conversion": "Language-specific Debug input formatter needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.search.SearchCapture"
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::http_status",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::http_status@signature:a6f4d53713c2ab08ad04f8cf26f7f857bafdc77bb55fbb8cecdde2bab1d2dae3@source:8baa61c16c31d2b5e345b2e602752fc8ff267c51c58397738988f8676c5411bd",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.http_status",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.http_status."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::observed",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::observed@signature:870fdca66e763e9ea61213b7551b764f55cbd2da290d5906ea22dfd9877942c8@source:eec1ebc63a66ebb35d8686338d7d2b82b5bb8d46ee97f12f6445c40b835a835d",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.observed",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.observed."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::original_provider_page_url",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::original_provider_page_url@signature:0a5e4948e6cec7f09b04209b557022302c2dce66cd300e21900192d1becac068@source:4bff32995d05e1b2b5f6d835d4b4bdff2820d4df5bbdda23fd624f93e42af3f3",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.original_provider_page_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.original_provider_page_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::provider",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::provider@signature:9ae7eaf07da5465df8f067bbb93e594e8745ce39afcb4013248e79627e0d1e06@source:7f764c62d08191eade4dc329646194e802d3558016d31577d06f4db5584f53c7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.provider",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.provider."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::provider_page_url",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::provider_page_url@signature:5197a2e8136d15085c025673476d62a560f8c2e6639f5e54b91a1449b35bce70@source:acad145ec7c136b02bf01274b57190d187ef5a4c264fd96ac9a95ff0fa854a98",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.provider_page_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.provider_page_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::replay",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::replay@signature:1debc8b421064477029078e1448c0b381bd967ec07edc704fa6687f52112676b@source:c40ca13873fdb8079fd2506ba402cdf5c0e7949a15414b955f4c0f38a76a1013",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.replay",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.replay."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::replay_policy",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::replay_policy@signature:745f5daa7e308c39add0b95d40e57e49d7099b8a5506579ee56d8d0c4f35ad50@source:ebc54142efec3c8564f5dd4cef4160f964ca29ac32ed92b5bec169ad4efae494",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.replay_policy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.replay_policy."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::request_id",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::request_id@signature:7ab7a6928fc13f57a9f028c04d23d727774f1d72cc41418fdcf374cb9a11ac8e@source:dfcd16807967434c32b99310a455c010533778622120ef9edd9cfba475ff6725",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.request_id",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.request_id."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::save",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::save@signature:3c697544e18f38e83f152830678994fdd41c1e78125d433cafd143f3c5832425@source:6a94daac0adcec731879b8eee01e7d718d5c96de4171e2d40920b795e5a40824",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.save",
+      "argumentMappings": [
+        {
+          "rustArgument": "archive",
+          "pythonArgument": "archive",
+          "conversion": "Python Archive converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.save."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCapture::selected_for_parsing",
+      "symbolKey": "member:function:yosoi::search::SearchCapture::selected_for_parsing@signature:b9394dae9af3529196db5846de2e324a720d09ffdb20b26bc002db00dab9803f@source:248274d1ce1fd478e4a9c89abf846dab79e0ec2cebb0202d2202dbe33c5449cd",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCapture.selected_for_parsing",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchCapture.selected_for_parsing."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCaptureRetention",
+      "symbolKey": "page:enum:yosoi::search::SearchCaptureRetention",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchCaptureRetention."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCaptureRetention::ByteLimit",
+      "symbolKey": "member:variant:yosoi::search::SearchCaptureRetention::ByteLimit@signature:34c4082906b709d88e92eab6726c630ac423baac2e07f6fb1179f13a194dad7d@source:388776a18fb6c65ace19a154a10599b076835a4b11b3a37ec311a766a16129d4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant ByteLimit maps to the corresponding Python tagged value yosoi.search.SearchCaptureRetention. The Python discriminator value is 'byte_limit'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCaptureRetention::Disabled",
+      "symbolKey": "member:variant:yosoi::search::SearchCaptureRetention::Disabled@signature:75081b593d15cf6e631971bc6768723f593b88b172477e40ae7d363e4829816d@source:cf07b4910bfc6458574458607f861438f429cf93cc1c27b2cb41d30b9c83b4d8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Disabled maps to the corresponding Python tagged value yosoi.search.SearchCaptureRetention. The Python discriminator value is 'disabled'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCaptureRetention::MissingDocument",
+      "symbolKey": "member:variant:yosoi::search::SearchCaptureRetention::MissingDocument@signature:dfc336848feb697447c741b7e3cdd5d915d6207d58370679aa593d28ec3cce77@source:2fe27bc64f66211823430102d656e62e19a2df13c8a3e65cd62120f0299cb3c0",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant MissingDocument maps to the corresponding Python tagged value yosoi.search.SearchCaptureRetention. The Python discriminator value is 'missing_document'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchCaptureRetention::Retained",
+      "symbolKey": "member:variant:yosoi::search::SearchCaptureRetention::Retained@signature:2a64df82cdaad5511bea0259973c8e12cdf3e6a99a62974f7ff46cb948a1f539@source:6575389dff28536320b8f2caba1e005ee38c2e00bae18be91d2e30a3a4c5c7c7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchCaptureRetention",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Retained maps to the corresponding Python tagged value yosoi.search.SearchCaptureRetention. The Python discriminator value is 'retained'."
     },
     {
       "rustPath": "yosoi::search::SearchCoverage",
@@ -27856,7 +28504,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::BudgetExhausted",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::BudgetExhausted@signature:51fd265f6d56bb07cd1628c262a2f5c5caea53394348dcde03a7aff487007fc3@source:d846e6c107c86b20772b0dc1f84cf7e3213dbfa6ef18c609e1c1a4431f026ef2",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::BudgetExhausted@signature:51fd265f6d56bb07cd1628c262a2f5c5caea53394348dcde03a7aff487007fc3@source:74230e3e7a044178d5e39d801e44083ed1d8c5371e14a7c2d07b300482ba0079",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27873,7 +28521,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::Challenge",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::Challenge@signature:27cf1792f7bb4da955117bb4a15cb33f4e4705984cacfac9055a2884b061e4e1@source:47be9a21763aab1bf708d5917a44d50e6e35309c258418bcdf4882343c92fb09",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::Challenge@signature:27cf1792f7bb4da955117bb4a15cb33f4e4705984cacfac9055a2884b061e4e1@source:f83e2f03d669cac161fbc78dff6f36f6841888e133a3f662c532d6c9b521637b",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27890,7 +28538,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::MalformedResponse",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::MalformedResponse@signature:4940a8dbab249fb1d3c348fbe711e226741755359547a190943034f690e75995@source:176b893f46c2ec038ccf783554943ded8ecb2050f15d91c302ebd52e3865095a",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::MalformedResponse@signature:4940a8dbab249fb1d3c348fbe711e226741755359547a190943034f690e75995@source:28204d9c15a36a4231a70929da7512a27efccd70dd4afaf793f16ff51a5c2abf",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27907,7 +28555,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::ProviderUnavailable",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::ProviderUnavailable@signature:c148731dd3d59026179a45e39dacdbbb847de5f23ae4499f9ca29667071cbfce@source:f3f730b58583307fac92bb57a7eb6298a37ebcb6757f5c7509945aadbb0ea86c",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::ProviderUnavailable@signature:c148731dd3d59026179a45e39dacdbbb847de5f23ae4499f9ca29667071cbfce@source:332228e060cc6f9a0c1ec7129cf28c9d4e417cd553f6143e32b2eec5118badac",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27924,7 +28572,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::QueryMismatch",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::QueryMismatch@signature:c1570d56d69448f3941b9fad45268ec6ce51803ca3d834b2bf0d9dd22beb7adb@source:7e4aa7b09c5fdc449089b1e13d8025d2adcc0783cfe59ae1fd2d7c34ddb58169",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::QueryMismatch@signature:c1570d56d69448f3941b9fad45268ec6ce51803ca3d834b2bf0d9dd22beb7adb@source:53278fdc2e7e071aecb552ee4d229adf45affc723a50ad5e1044a3f7fcb179c2",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27941,7 +28589,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::RateLimited",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::RateLimited@signature:33e1cf5dedd25646e3fa279d6c432b2224c5412e828268eb9afea923093d9189@source:faf7785e0159f3006d7992ed0235d554a6e093cf9e5cdfa906f614bd020beff8",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::RateLimited@signature:33e1cf5dedd25646e3fa279d6c432b2224c5412e828268eb9afea923093d9189@source:75bcb3e9c1f6197bd563a3fa3dc2b8c5ed7a0625b6c190eb2e65b3c464e62fa3",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27958,7 +28606,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::TransportFailure",
-      "symbolKey": "member:variant:yosoi::search::SearchFailure::TransportFailure@signature:f84f4fe1fd6eb20278c01d8d8b7455c1c637696bfdfbaf74344cd98f8062fcd2@source:85759d6d86ee2c064528b4cce31e26011ee8f1fe69a4d70a8c7c89438fe97982",
+      "symbolKey": "member:variant:yosoi::search::SearchFailure::TransportFailure@signature:f84f4fe1fd6eb20278c01d8d8b7455c1c637696bfdfbaf74344cd98f8062fcd2@source:d77d91d1e656d503fdc6607af82a11366fad2e01a3a8e33f147b68878e0120ca",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.Failed.value",
       "argumentMappings": [],
@@ -27975,7 +28623,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchFailure::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchFailure::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:5b724d4dddb506a77e169a946ad5ac5c792d44e57fcb7ce1df1a30a7d4eb3e87",
+      "symbolKey": "member:function:yosoi::search::SearchFailure::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:235232b05bcbf82ed16a0d622ef958e0e34318909e3b929efbe25bba68208c95",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.Failed.value",
@@ -28830,6 +29478,340 @@
       "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchPage.issues."
     },
     {
+      "rustPath": "yosoi::search::SearchParserDecision",
+      "symbolKey": "page:struct:yosoi::search::SearchParserDecision",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchParserDecision."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::clone",
+      "symbolKey": "member:function:yosoi::search::SearchParserDecision::clone@signature:001553b0734532ef5d8be95011da3c596bb484f3fcc25e49222cd2a70af8c9ff@trait:Clone@source:f2d09232ce4eb7b87f77568b72829001c06dca74d4a685e0ec77a66fc0a9f6d7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::eq",
+      "symbolKey": "member:function:yosoi::search::SearchParserDecision::eq@signature:33556d8d69c256962fe75bb32e6b0b1c7710c1e117b411025acdf65feb3474ff@trait:PartialEq@source:f2d09232ce4eb7b87f77568b72829001c06dca74d4a685e0ec77a66fc0a9f6d7",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.search.SearchParserDecision"
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::failure",
+      "symbolKey": "member:struct_field:yosoi::search::SearchParserDecision::failure@signature:bcc767d0109b1f3b427981f2af70f69972d8403bd850f199941f7fd824c9d757@source:526e41b6e185682c288b37389c04484c0408bfe26fd6b7ed63d4823393cd6c79",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.failure",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field failure maps to Python field failure."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchParserDecision::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:f2d09232ce4eb7b87f77568b72829001c06dca74d4a685e0ec77a66fc0a9f6d7",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.search.SearchParserDecision"
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::hit_count",
+      "symbolKey": "member:struct_field:yosoi::search::SearchParserDecision::hit_count@signature:294343bb2adcb9dd9ed979e27a6a9ecdc2a8eb9972dcdc7429f75aa0b72aa931@source:51f2b2321e9a57ffadeed89c8fd75811d88dcbca38b73bad65f367cda13223d2",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.hit_count",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field hit_count maps to Python field hit_count."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::parser_diagnostic",
+      "symbolKey": "member:struct_field:yosoi::search::SearchParserDecision::parser_diagnostic@signature:5be9e14f664887da463a16c0d0409d9142c575c1f393bb8cfd4e2d94d3f36a7d@source:be5a8e08e661dc8dc149e9ea908103f2a213af8e73d77733781fc81ed0fbb952",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.parser_diagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field parser_diagnostic maps to Python field parser_diagnostic."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::partial",
+      "symbolKey": "member:struct_field:yosoi::search::SearchParserDecision::partial@signature:a71bd4112b947df7a2143b8210f30e439bc5100226d3e2a61cf38824c4f6305f@source:890c51e0243afde63b03456c70490bd37847a5167028e9463e8a4e1508e0c2fd",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.partial",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field partial maps to Python field partial."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDecision::status",
+      "symbolKey": "member:struct_field:yosoi::search::SearchParserDecision::status@signature:b646f9e4f24ec0cbe13567fe0ba6ae5e2a56a1b3ae9c7cd91a4811448d28af67@source:a346853f81469fb0341f7064890a5a76b6f8dcd6e67d3e995bff2928b4a16d5f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDecision.status",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field status maps to Python field status."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic",
+      "symbolKey": "page:enum:yosoi::search::SearchParserDiagnostic",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchParserDiagnostic."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::IncompleteDocument",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::IncompleteDocument@signature:f5f0975f777bdb4c14417e2c140cd1df2e3d254fb22d7ba06f97f0f445decc69@source:8a44b0f185f02f405c2cfe9ecb36daa34641d5d962cd430be6a71968d28903fe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant IncompleteDocument maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'incomplete_document'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::InvalidConfiguration",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::InvalidConfiguration@signature:709b2e9c6146b6aa96800aed600cdecfd05fe1032bfbc9b48749b85b585b463f@source:aac5c72697c275ec141ba6c43d1903b1a3df9d0c9b0bd8a3bc107763889a7886",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidConfiguration maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'invalid_configuration'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::InvalidLocatorResult",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::InvalidLocatorResult@signature:6b9beebfb8a6bbb6203dd70a2c276adbc6eeaf8b83d6aa426ff92c0a0adda874@source:af9ab1193aebddaec9af5057b1e07a1aa11450517a55b9811603c86fe32d8f2f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidLocatorResult maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'invalid_locator_result'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::InvalidPageUrl",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::InvalidPageUrl@signature:57495d364170eb7521983dc925001958103bcebbd1163a58f856129783f80357@source:b2f5bf29374068f7ac090201e544b06352702f90bdfaff114586fcd6458e6ee1",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidPageUrl maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'invalid_page_url'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::LocateFailed",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::LocateFailed@signature:cdd853940c8863cecfe5f3407a40b319837c7a8c85ffa8273bbf989b2b21a063@source:8ac2876e3439f37e0b62fa842c84d59c0347f49cdee8b29a18827939a26739a6",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant LocateFailed maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'locate_failed'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::MissingDocument",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::MissingDocument@signature:dfc336848feb697447c741b7e3cdd5d915d6207d58370679aa593d28ec3cce77@source:0dacfeeae08b49f51e04ae96e2ac39f67af194e058ea1f85efd446c87890a343",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant MissingDocument maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'missing_document'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::NoUsableHits",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::NoUsableHits@signature:0d566145da7fff8acdbbba8ed1fc38d0b4f36a4ec3955000d621ecd1dd4d253b@source:b891d915ebfb3b002f4a26d4bf5238d90b2ae7850f52a11fde6316791a9155e0",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant NoUsableHits maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'no_usable_hits'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::OutputLimit",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::OutputLimit@signature:295650c601d3c04c01a75c489a1b4bf13a6b8f75c87327ddc3ebb52bf27832d8@source:55f0892ca41c00f3438b10a4ef70b51907334440f61a4bbf2ebc63880031ca07",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant OutputLimit maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'output_limit'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::QueryMismatch",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::QueryMismatch@signature:c1570d56d69448f3941b9fad45268ec6ce51803ca3d834b2bf0d9dd22beb7adb@source:bf6f31ab95ec8b284f7452ff9ceff6ee1f2992f4b1fb2c5ad3b4deb941124402",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant QueryMismatch maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'query_mismatch'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::Unknown",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::Unknown@signature:b764cdc0eab7137467211272fa539f1260d1bf2e71bcf6ff3bdc960f5c16aa14@source:bf149c6a44c73ef5478c23fe9e9f4466c83324effcf0c0ba5cbeebed7f62741f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Unknown maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'unknown'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::UnrecognizedPage",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::UnrecognizedPage@signature:77ef4bbbb9485d224fa2e638c4f4601f72923f955f52f903b9229a5582985ab3@source:40ce6abd3005a137742ff7345e2ee408b54a0f73e1e374915d7eba7c5a786bab",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant UnrecognizedPage maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'unrecognized_page'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserDiagnostic::UnsupportedDocumentClass",
+      "symbolKey": "member:variant:yosoi::search::SearchParserDiagnostic::UnsupportedDocumentClass@signature:34cd0dcb106e35eab71266799751454b0faf3ea009a82548c6829ab861786fe7@source:b51247cc9d26c0ff73c948bc5a326923f99ffb45148ce2f920de3540f7f7d93b",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserDiagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant UnsupportedDocumentClass maps to the corresponding Python tagged value yosoi.search.SearchParserDiagnostic. The Python discriminator value is 'unsupported_document_class'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus",
+      "symbolKey": "page:enum:yosoi::search::SearchParserStatus",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchParserStatus."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus::Cancelled",
+      "symbolKey": "member:variant:yosoi::search::SearchParserStatus::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:3e48fe2bc414b241979c4c877ae466d222fbf5e70e202be1b40b07458e79e416",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Cancelled maps to the corresponding Python tagged value yosoi.search.SearchParserStatus. The Python discriminator value is 'cancelled'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus::Empty",
+      "symbolKey": "member:variant:yosoi::search::SearchParserStatus::Empty@signature:c6c094bc0054f9cbe34102ff49f86b3928b5ac09f3d2ac87e170d0500675921f@source:b4ade532094b52af904ac5aeef2477c4bd0cd4ad0c384516aea97c57f98cc126",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Empty maps to the corresponding Python tagged value yosoi.search.SearchParserStatus. The Python discriminator value is 'empty'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus::Failed",
+      "symbolKey": "member:variant:yosoi::search::SearchParserStatus::Failed@signature:031a8f0f659df890dfd53c92e45295b0f14c997185bae46e168831e403b273f7@source:bf2b996729e19baa7f74545210f194c868ba197e0877f116ee101af6797b3730",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Failed maps to the corresponding Python tagged value yosoi.search.SearchParserStatus. The Python discriminator value is 'failed'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus::NotStarted",
+      "symbolKey": "member:variant:yosoi::search::SearchParserStatus::NotStarted@signature:bd719109bc0281808300315b54fdbdf843b1a0c9b1aeaded5369280fc9801003@source:a4271e8f8d7d20250257799acfa25f61d793e78055ccc2193334bdd3086f03e9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant NotStarted maps to the corresponding Python tagged value yosoi.search.SearchParserStatus. The Python discriminator value is 'not_started'."
+    },
+    {
+      "rustPath": "yosoi::search::SearchParserStatus::Results",
+      "symbolKey": "member:variant:yosoi::search::SearchParserStatus::Results@signature:219c4a6c86a716e99d5dc9611b61e584deb11b57e972d87d4b773387ebc3cadd@source:9146287b9a38fef33ab571dbeaa70f99ded3cf09c7ae11268841e8434290bbde",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchParserStatus",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Results maps to the corresponding Python tagged value yosoi.search.SearchParserStatus. The Python discriminator value is 'results'."
+    },
+    {
       "rustPath": "yosoi::search::SearchProfileFacts",
       "symbolKey": "page:struct:yosoi::search::SearchProfileFacts",
       "decision": "mapped",
@@ -28842,7 +29824,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::acquisition",
-      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::acquisition@signature:0351da5ce1e599aaca00deff042ee0f8c4028c6ea263e5fe1290d57140f2220c@source:4d0de911f4c8bb561595155671cc272308a9eac799a432892da5d38da7de25d9",
+      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::acquisition@signature:0351da5ce1e599aaca00deff042ee0f8c4028c6ea263e5fe1290d57140f2220c@source:0fdf7efa24e6c3ea97d88058eb11a8e663c0356c17eb9af9a2a6d362e57f486a",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchProfileFacts.acquisition",
       "argumentMappings": [],
@@ -28853,7 +29835,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::clone",
-      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::clone@signature:28cd67e360b0ab3c35d0c75bf480242afe5a915cc27adeb503ad764cf0cf4996@trait:Clone@source:87e5c2aa2a4361a56440a5b3a912aaef84959c5037a3883744a5f5919eaea8dd",
+      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::clone@signature:28cd67e360b0ab3c35d0c75bf480242afe5a915cc27adeb503ad764cf0cf4996@trait:Clone@source:4d0de911f4c8bb561595155671cc272308a9eac799a432892da5d38da7de25d9",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchProfileFacts.clone",
       "argumentMappings": [],
@@ -28866,7 +29848,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::defaults_status",
-      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::defaults_status@signature:c0d9f3ea126bc21581139b35c747ad2153732bc5920ee07ec8cf1528958d2aeb@source:e47cc5ecb822dc4c899977468cf19246bbde2e42efc591c16faa30affa0a6e71",
+      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::defaults_status@signature:c0d9f3ea126bc21581139b35c747ad2153732bc5920ee07ec8cf1528958d2aeb@source:08dc8721d023500983c3acd8bcf9c9bc1473fc5c08d39c09664e6376d45c5aa7",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchProfileFacts.defaults_status",
       "argumentMappings": [],
@@ -28877,7 +29859,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::defaults_version",
-      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::defaults_version@signature:d4752966f9e60a6d23afb9fcc966b0228963b87b1e01d836e160e2b7ad92e73f@source:295d8975dcf2c411892d74e89dc3f483c3f28a13fd4f67f5517f08fcb11b4ce4",
+      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::defaults_version@signature:d4752966f9e60a6d23afb9fcc966b0228963b87b1e01d836e160e2b7ad92e73f@source:87c1c2a347b231e2a1482db7e31c5b23d99aab4d700adc188409c3591676f487",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchProfileFacts.defaults_version",
       "argumentMappings": [],
@@ -28888,7 +29870,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::effective_request_policy",
-      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::effective_request_policy@signature:0cdd02f0fdccf76a695d2a5518d072677d9922ebf83f3ddfaa4cdab87ad905c1@source:feb5a4126970b204adab5c444135eebdbfad5d466c7ee8c4d29f5ad994ce4f86",
+      "symbolKey": "member:struct_field:yosoi::search::SearchProfileFacts::effective_request_policy@signature:0cdd02f0fdccf76a695d2a5518d072677d9922ebf83f3ddfaa4cdab87ad905c1@source:5e9d69b9be1523d654be8202fa1db7e66baf8c8158b8216624c848be0f516b7c",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchProfileFacts.effective_request_policy",
       "argumentMappings": [],
@@ -28899,7 +29881,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::eq",
-      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::eq@signature:9023e0dca0b476ee12a92aa6fe002e03d3b731508b4bbfefe77ca13bf072ffc0@trait:PartialEq@source:87e5c2aa2a4361a56440a5b3a912aaef84959c5037a3883744a5f5919eaea8dd",
+      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::eq@signature:9023e0dca0b476ee12a92aa6fe002e03d3b731508b4bbfefe77ca13bf072ffc0@trait:PartialEq@source:4d0de911f4c8bb561595155671cc272308a9eac799a432892da5d38da7de25d9",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -28922,7 +29904,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchProfileFacts::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:87e5c2aa2a4361a56440a5b3a912aaef84959c5037a3883744a5f5919eaea8dd",
+      "symbolKey": "member:function:yosoi::search::SearchProfileFacts::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:4d0de911f4c8bb561595155671cc272308a9eac799a432892da5d38da7de25d9",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.SearchProfileFacts",
@@ -29036,6 +30018,688 @@
       "pythonTarget": "yosoi.errors.SearchError"
     },
     {
+      "rustPath": "yosoi::search::SearchReplay",
+      "symbolKey": "page:struct:yosoi::search::SearchReplay",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchReplay."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::adapter_version",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::adapter_version@signature:fe6a0b6a8ec8f08d10ac9f0a5e50d54d43ff122e1fdc422871c7067388e926e3@source:84ae4451d45e63486780a494697d2a421ec336f34b777efa909254bdc7937f08",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.adapter_version",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field adapter_version maps to Python field adapter_version."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::capture_complete",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::capture_complete@signature:8b15ba8894eca1b98059e84eaa6d9c78a346b68fca2439835629b5ddf9501a83@source:2039bd77410e89200b4f831c74311468d1bcaa25f620857852d12bc08bf8d492",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.capture_complete",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field capture_complete maps to Python field capture_complete."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::capture_id",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::capture_id@signature:6dd13086a5d2581e5f23937817a2627ab08c941186b2818b65a3bb11ad015c82@source:0844d54932d5404e5896d87856858e7259b8073f643adeb4f717a53764d7180a",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.capture_id",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field capture_id maps to Python field capture_id."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::clone",
+      "symbolKey": "member:function:yosoi::search::SearchReplay::clone@signature:c911dedc1073c7d706d8cb88e58b8cbd7a630a81899e5de11e8cdbb8f87f4028@trait:Clone@source:79ac90313357e75c761725bbf0c22ef5e4e1561961ef09d80e0839c8cb01eeed",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::document",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::document@signature:0aacb4648800448287527837b1ff14dd43d774ab59620871def50f4a01fc7fcd@source:d9c7b02915daa67b9bc281ee5dc9a6ebaafb662c415212e6ce9af4ce7f5152a0",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.document",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field document maps to Python field document."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::document_bytes",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::document_bytes@signature:d939a48817cf4e6eb13a8a10a5843e65266937fbb1a24405d5fc59276e369c4b@source:927a362aef849121fdbe4ba477008f1f5ff4d46ece434342ff5204ef82dde99a",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.document_bytes",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field document_bytes maps to Python field document_bytes."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::document_class",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::document_class@signature:d30ebb92723759185922c6001ff5862944d53f6aa6d75d2991c36fef629e847b@source:615ab131350c026c7c280d89ffcca49b96b51ac5d096186daa31701f329cacd4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.document_class",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field document_class maps to Python field document_class."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::environment",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::environment@signature:743f4b21a6ca578221b964d7c3550fb2a55d05ec0ae5a09a42d399d9edbe38f5@source:df5c2f8a21ab707a8cd06d46ec579ccc6bab5a4869b01e45e131a09e0cd9fc44",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.environment",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field environment maps to Python field environment."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::final_url",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::final_url@signature:17b7b54c5a3bd74a814d9bca7b4d298df905ca8754622ce44496a46f9f158131@source:3c2f2f8f023a36ee194d93fe2e32cf5e61ac1164f4fada825a5650a26ac1669f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.final_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field final_url maps to Python field final_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchReplay::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:ca42faa04629f4e815e62afc999156bafcfba0afdc9c5b22dca9d6d3667f65a0",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "formatter",
+          "pythonArgument": "formatter",
+          "conversion": "Language-specific Debug input formatter needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.search.SearchReplay"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::http_status",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::http_status@signature:cd6f3b47627d4f72eccae2c5c99be1821417c3664624b4d5b1badcac0b8c123b@source:a4dec0212677040a568e71ee801918d1861e4de9b3ba3600c725714e22f621b1",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.http_status",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field http_status maps to Python field http_status."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::observed",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::observed@signature:6076fd7f1f11fecd43b215d6fab1216990fae3a1662cf6a3faa86fdcd30fc320@source:c38e8f4f37996f5a8426e1f5bf9eeee0c3e3a6337274b5900e667db6911ad3d3",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.observed",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field observed maps to Python field observed."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::original_provider_page_url",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::original_provider_page_url@signature:60f354ca66fc90fa25b130bcce12a312b3f3b35d22dda2ec7abc25e1021b66f2@source:adfe8b660460d36f39d286cd842cfabec492f3b292e5cf11c9c3e64c013435fc",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.original_provider_page_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field original_provider_page_url maps to Python field original_provider_page_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::parser_version",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::parser_version@signature:3a897ea6e88f79fb89e51077d745a49bdba13221a587493bfec5a92cb7fff06b@source:a0c0f3607e9cac9fde06e8590c60a7afcbdc8621a8f2d014b76720fbd6ef7e09",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.parser_version",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field parser_version maps to Python field parser_version."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::profile",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::profile@signature:ce510355d9cd8158e4b7bc74d2507581ea09021104d2562a51d29abba662b81f@source:658df67572013181269aa73cc14d16ccdb600b29e688393dcef6ca6deeb9541c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.profile",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field profile maps to Python field profile."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::provider",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::provider@signature:eb81d82fad34e85f9bdb0924136ed9e5936f117d8b509e7748139d94e5d951c1@source:24dbbac6aaf308c78643282b3d63f1418da8e4d44a624cf1ebc7e7837b7e0e7c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.provider",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field provider maps to Python field provider."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::provider_page_url",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::provider_page_url@signature:d83396823b68e747c770110578fbcf3a3f64ef22092d921e82987fe585fd2da6@source:dd86a4772e7f11b2e1bbfe094e2dafcdb1f884d1d27525833f89c1c009ce427c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.provider_page_url",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field provider_page_url maps to Python field provider_page_url."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::replay",
+      "symbolKey": "member:function:yosoi::search::SearchReplay::replay@signature:078c184e28cd42e8d745ee6c71f0095fbc8c1c7d2c075a154d13a2cc4b9c3819@source:bcc67b282baefa06823195645dcf025e41546b735fa1c00f321d764a57d45441",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.replay",
+      "argumentMappings": [
+        {
+          "rustArgument": "archive",
+          "pythonArgument": "archive",
+          "conversion": "Python Archive converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchReplay.replay."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::replay_policy",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::replay_policy@signature:270e81b511762903d9a4bb35a090d15247940fa898504cf9973ad1519e8cedd9@source:f3a4c4d6b239132d45ac3893a18a19f09ec022642911a68573af065e6cd9e0b4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.replay_policy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field replay_policy maps to Python field replay_policy."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::request_id",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::request_id@signature:1e49cca2169fe4d90517cca8b5543ffcaf78cc9d9a2f78a1ca774c2cdc22e3c5@source:21c65711f36cc3fe8aaa94f5782b1133397141550f2d705c4d5eda9dd1a897e1",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.request_id",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field request_id maps to Python field request_id."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::schema_version",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::schema_version@signature:c3a3d1c62b4a8b7ed1ef5f94c877049d884ab29955ba250a95a01af22207f635@source:ba67b0ce05ecb3e4569ee92474f182a047168c3fcab5e6fbacf378ecdfa649ef",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.schema_version",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field schema_version maps to Python field schema_version."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::sdk_version",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::sdk_version@signature:40ef4c6ac3dc6dc6905f6ae518fafd94e1a9c6a6fdaf04f0dbb4cfc32da6db88@source:409bf8704dcd99adc270f2bfacf1011b7a758a7364c4bce49ccbde2ad879f2b6",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.sdk_version",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field sdk_version maps to Python field sdk_version."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::selected_for_parsing",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::selected_for_parsing@signature:d08e8f74054a954ce9ca9e3c954b0047142b4d33aeb6ddbeb7bf80daaecd27d3@source:c0c49de3cf36ae403e1fc5382a73ff379992080fcaeefbee3dfb89a09d787fdf",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.selected_for_parsing",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field selected_for_parsing maps to Python field selected_for_parsing."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplay::source_revision",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplay::source_revision@signature:fb02d731d7081928e1d0adaa8b383bbae6ebb1275e6f237eaeae4555e8128cad@source:94dcb27521bc29cadb92e518c2743beb276fc41d8b8e216c0d0f8beced26e4a2",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplay.source_revision",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field source_revision maps to Python field source_revision."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError",
+      "symbolKey": "page:enum:yosoi::search::SearchReplayError",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.SearchError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.errors.SearchError."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::Archive",
+      "symbolKey": "member:variant:yosoi::search::SearchReplayError::Archive@signature:65f522832ebb8406065c9b9e20c14bd7c09e8be6ff7d593bb3771306a752c893@source:ac2cdcc2984b0baa2168bab5c19a55d7e1d30821da760b864138ee32b1db7404",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.SearchError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Archive",
+        "rustType": "yosoi::search::SearchReplayError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "details.source.message",
+            "conversion": "ArchiveError Display message; arbitrary Rust error reconstruction is not claimed"
+          }
+        ]
+      },
+      "semanticEquivalent": "Native Search replay raises SearchError; rust_error_details preserves the Rust variant and declared diagnostic payload without constructing a Rust error object in Python.",
+      "rationale": "The native search_replay_error adapter retains version values and nested source Display messages; source chains remain separately available."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::InvalidBounds",
+      "symbolKey": "member:variant:yosoi::search::SearchReplayError::InvalidBounds@signature:454f1366af6f0848150cebcadd085587a5255f7e89352114bb5224bd325aed83@source:61e579ba3c8785eb028052844a2ffc17f4e50b835773fde6e70f61c3608a1aea",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.SearchError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "InvalidBounds",
+        "rustType": "yosoi::search::SearchReplayError",
+        "pythonFields": []
+      },
+      "semanticEquivalent": "Native Search replay raises SearchError; rust_error_details preserves the Rust variant and declared diagnostic payload without constructing a Rust error object in Python.",
+      "rationale": "The native search_replay_error adapter retains version values and nested source Display messages; source chains remain separately available."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::Metadata",
+      "symbolKey": "member:variant:yosoi::search::SearchReplayError::Metadata@signature:f8e98f962adbad46628cb26596e026b816f21a7cf907766b8559c451b253b8aa@source:0724e597761e6df22d6e6fd27262dccdadc1b9f5557bd3d09dec377af9d24cc4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.SearchError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Metadata",
+        "rustType": "yosoi::search::SearchReplayError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "details.source.message",
+            "conversion": "serde_json::Error Display message; arbitrary Rust error reconstruction is not claimed"
+          }
+        ]
+      },
+      "semanticEquivalent": "Native Search replay raises SearchError; rust_error_details preserves the Rust variant and declared diagnostic payload without constructing a Rust error object in Python.",
+      "rationale": "The native search_replay_error adapter retains version values and nested source Display messages; source chains remain separately available."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::UnsupportedVersion",
+      "symbolKey": "member:variant:yosoi::search::SearchReplayError::UnsupportedVersion@signature:be12733a8e279a0aa6343e69dc823ea4d37c5444271f78f5bafd0f8c7e9a3bde@source:f3325f8e2714a2f7ba13d36a973cefea95511394abbe6e9c955db400d5b94655",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.SearchError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "UnsupportedVersion",
+        "rustType": "yosoi::search::SearchReplayError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "details.version",
+            "conversion": "exact unsupported u16 manifest version"
+          }
+        ]
+      },
+      "semanticEquivalent": "Native Search replay raises SearchError; rust_error_details preserves the Rust variant and declared diagnostic payload without constructing a Rust error object in Python.",
+      "rationale": "The native search_replay_error adapter retains version values and nested source Display messages; source chains remain separately available."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchReplayError::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:c92ade66a06dabfd948db2d362ff968d189a01545d8d31e9c6d8905ab40c831c",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.errors.SearchError"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayError::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchReplayError::fmt@signature:2653e7ab50af9f961a708d2db3b3bd062e8f00d17290d0a8127aa19b81156c7d@trait:Display@source:c92ade66a06dabfd948db2d362ff968d189a01545d8d31e9c6d8905ab40c831c",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "__formatter",
+          "pythonArgument": "__formatter",
+          "conversion": "Language-specific Display input __formatter needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python str(value) for the corresponding public value."
+      },
+      "trait": "Display",
+      "pythonTarget": "yosoi.errors.SearchError"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy",
+      "symbolKey": "page:struct:yosoi::search::SearchReplayPolicy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchReplayPolicy."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::clone",
+      "symbolKey": "member:function:yosoi::search::SearchReplayPolicy::clone@signature:cba70a7275365db303004d6f887283ccff3988dc6afd5a258c8e877294e97a38@trait:Clone@source:383aaa3238d98249d491b1784675a449796720f0cb445f8bd85262a802c7eb46",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::documents",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayPolicy::documents@signature:db766515dd11d65b4803b61c4ff627a704b7a41ee3f7734da31d31e5dd492d94@source:7965d382b55aeaa1b09657eeeb7b708e5f7d90010ce0e598bd43da43ba5c1491",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.documents",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field documents maps to Python field documents."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::eq",
+      "symbolKey": "member:function:yosoi::search::SearchReplayPolicy::eq@signature:9b9fdb3793aa583242287691cef208c35dabf65f1eba1f7e1532ee491c56c5fa@trait:PartialEq@source:383aaa3238d98249d491b1784675a449796720f0cb445f8bd85262a802c7eb46",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchReplayPolicy::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:383aaa3238d98249d491b1784675a449796720f0cb445f8bd85262a802c7eb46",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::locators",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayPolicy::locators@signature:8a1036ed15bc062dc7f7d0cae3189f9c445a6bcdbbc33fa4fcdbb280d2bf3eec@source:4d30be5a82a1efde545f2985692473681e38a6113d586182788afdb42fe9e7e4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.locators",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field locators maps to Python field locators."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::output_limit",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayPolicy::output_limit@signature:d6a0f123e4f275ee6e18e070e7b0c4b871782f1fc73ab7bc7cbc04c86241a8ac@source:7dbd99fb1948543cf743916d41b5bc7fea7bc6eea4e6a17d6a28d56196146b11",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.output_limit",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field output_limit maps to Python field output_limit."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::result_limit",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayPolicy::result_limit@signature:10df0070c1cf798a8131164e3ce303ba4276b60cef4ea604551479cafc7bfd0d@source:33da9248a0efeb5bfcc58e5b509828ae038335e3392dc3a6fff354c3eb70f4e8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.result_limit",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field result_limit maps to Python field result_limit."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayPolicy::tuning",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayPolicy::tuning@signature:43c600129384d5c96efde10e027d20d4ed4358d106592c6f152729a12af90df1@source:65d53d34edbe7514cd3aa3965324bc5f97c86a26319cce0c4a32540491deda74",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayPolicy.tuning",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field tuning maps to Python field tuning."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult",
+      "symbolKey": "page:struct:yosoi::search::SearchReplayResult",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayResult",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.SearchReplayResult."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::clone",
+      "symbolKey": "member:function:yosoi::search::SearchReplayResult::clone@signature:8431c7b0ac5b569052641ce52f6d1826c8a5f271ce7b9d6de27a84dec189d61d@trait:Clone@source:f3fbeaa91033514864f8583bd675f3f5aac081cc135fd3eb47706d40fc98fc3e",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayResult.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::decision",
+      "symbolKey": "member:function:yosoi::search::SearchReplayResult::decision@signature:209b57ceff3dfbd6aad7f5f2f00ad35eaf09dc9550a29ed2a9600cedb2242e22@source:ebef47ec595031a62d30a635534db5570c46bbd2bde6b926c9d0475337d5b68a",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayResult.decision",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.search.SearchReplayResult.decision."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::eq",
+      "symbolKey": "member:function:yosoi::search::SearchReplayResult::eq@signature:cfb495fa600a88675bc9a34ca0bec29b1b06cfad3baea9e0b8247c582e700e64@trait:PartialEq@source:f3fbeaa91033514864f8583bd675f3f5aac081cc135fd3eb47706d40fc98fc3e",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.search.SearchReplayResult"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::fmt",
+      "symbolKey": "member:function:yosoi::search::SearchReplayResult::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:f3fbeaa91033514864f8583bd675f3f5aac081cc135fd3eb47706d40fc98fc3e",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.search.SearchReplayResult"
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::outcome",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayResult::outcome@signature:35d49b99959864d14cac5823c5a8cdcd08e4f61a8250b442aaf145a0fdc08100@source:5f2b8cfd8a117c1e0f45fbf7801a6108b80aa2f7b6af14b59a8676ebf1aa8122",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayResult.outcome",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field outcome maps to Python field outcome."
+    },
+    {
+      "rustPath": "yosoi::search::SearchReplayResult::parser_diagnostic",
+      "symbolKey": "member:struct_field:yosoi::search::SearchReplayResult::parser_diagnostic@signature:5be9e14f664887da463a16c0d0409d9142c575c1f393bb8cfd4e2d94d3f36a7d@source:46f2a233d6ece12c4f657c861b9573a060e2f78eb4ea4ad84bd18b31a29c787c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchReplayResult.parser_diagnostic",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field parser_diagnostic maps to Python field parser_diagnostic."
+    },
+    {
       "rustPath": "yosoi::search::SearchRequest",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest",
@@ -29054,7 +30718,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::bind",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::bind@signature:88efe7b77bf5dadef265fe63eec50c91807cc9669d2be9a70b610e9edee15d2e@source:75da1adb82fbf41643c745b6089f173929405ca38a969f1dd29d6edb1da7bb72",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::bind@signature:88efe7b77bf5dadef265fe63eec50c91807cc9669d2be9a70b610e9edee15d2e@source:780e6383aff9f7009ad4631500ac5be86e9640d0296ec3f149100cd4bc1f74ef",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest.bind",
       "argumentMappings": [
@@ -29071,7 +30735,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::clone",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::clone@signature:35d6d68d62471eabb1fe10ea0bc11cfa20e557829cf8d16105407e5e6926f85e@trait:Clone@source:f353eb8c44ffbb0d9940b0d3934c2d631d970bfcdb4c7f1bcce2a948523eec2f",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::clone@signature:35d6d68d62471eabb1fe10ea0bc11cfa20e557829cf8d16105407e5e6926f85e@trait:Clone@source:7d023d399a3dd3d08aad66987c03a9ac89bba6953a2e9746075364479d15ddfc",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest.clone",
       "argumentMappings": [],
@@ -29084,7 +30748,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::eq",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::eq@signature:c04ae1a8bbf8d7f4f9a104d4db9b6b1733dde6071843bcf989bc412a6f7d2f1b@trait:PartialEq@source:f353eb8c44ffbb0d9940b0d3934c2d631d970bfcdb4c7f1bcce2a948523eec2f",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::eq@signature:c04ae1a8bbf8d7f4f9a104d4db9b6b1733dde6071843bcf989bc412a6f7d2f1b@trait:PartialEq@source:7d023d399a3dd3d08aad66987c03a9ac89bba6953a2e9746075364479d15ddfc",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -29107,7 +30771,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:f353eb8c44ffbb0d9940b0d3934c2d631d970bfcdb4c7f1bcce2a948523eec2f",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:7d023d399a3dd3d08aad66987c03a9ac89bba6953a2e9746075364479d15ddfc",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.SearchRequest",
@@ -29126,7 +30790,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::id",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::id@signature:b2e88d7eeb6db925ed24176e1cf763dd26c980825a10b36892b23a9f56c7c8e8@source:1b118f06d0747dca62d7f9c1f5ea3b2ec63414677b2bae82d8df05166b07936f",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::id@signature:b2e88d7eeb6db925ed24176e1cf763dd26c980825a10b36892b23a9f56c7c8e8@source:a77922a7b4c29ac2630ee7dd48da6c60d16eb13127965521bad6e146fa14dff8",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest.id",
       "argumentMappings": [],
@@ -29137,7 +30801,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::new",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::new@signature:d0c402c9aa3d9bd138294c8920eae0b1360211bd7fea51ce519ffc10f0946359@source:4faf96c79b94bf729ed8be7876c22fc70326915b845c7c061329fcbf96404c0d",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::new@signature:d0c402c9aa3d9bd138294c8920eae0b1360211bd7fea51ce519ffc10f0946359@source:4f2fb73cb80b157f5bd3f788d92f8758018fa8cf1aed69ddb8040c551e30d37f",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest",
       "argumentMappings": [
@@ -29154,7 +30818,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchRequest::query",
-      "symbolKey": "member:function:yosoi::search::SearchRequest::query@signature:06ede4c8bb618c3a29057877c5f62321a5f2085676958c21a35011fca2d753a4@source:7f382d24502edcc47c49dd2d87c33927268132abda24e82503b36382874c09b9",
+      "symbolKey": "member:function:yosoi::search::SearchRequest::query@signature:06ede4c8bb618c3a29057877c5f62321a5f2085676958c21a35011fca2d753a4@source:6afab7574b3aeaeb0e428de03ef35d610d7b94cdb1ef1cc670ccd6551f46c41b",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchRequest.query",
       "argumentMappings": [],
@@ -29223,7 +30887,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchResponse::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchResponse::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:5c7400b61d9561d578127653200024a74fafb0993ea8af1c913552fca3a20c57",
+      "symbolKey": "member:function:yosoi::search::SearchResponse::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:cd2be3aa95599f95a1a8f0cf6603dac279b0741424e3660ff933c5ec6e6722eb",
       "decision": "language-specific",
       "argumentMappings": [
         {
@@ -29246,7 +30910,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchResponse::policy_identity",
-      "symbolKey": "member:function:yosoi::search::SearchResponse::policy_identity@signature:28e495ca65c348da70a14ca0484c0b78bb7e36d351da3ff38d63b1eeaa1c25f8@source:c40f24e7df2f1be2e89823fcef3be594a049d12780ee445d72f1ad141ad6b3ed",
+      "symbolKey": "member:function:yosoi::search::SearchResponse::policy_identity@signature:28e495ca65c348da70a14ca0484c0b78bb7e36d351da3ff38d63b1eeaa1c25f8@source:f316b331c19b64c45b2a41de5461f688bddce4ec6115d38ef7dfb5f7aba99779",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.policy_identity",
       "argumentMappings": [],
@@ -29257,7 +30921,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchResponse::providers",
-      "symbolKey": "member:function:yosoi::search::SearchResponse::providers@signature:976e033eb066ad5bc197bdb72b8bf28e24f9b0dd7749ebdc543871315d6de3e1@source:b6f098fc47d60ee5f5464ecd40a7b0020cb0f34501a020b9d93e5f3a488772c0",
+      "symbolKey": "member:function:yosoi::search::SearchResponse::providers@signature:976e033eb066ad5bc197bdb72b8bf28e24f9b0dd7749ebdc543871315d6de3e1@source:2c1a3a7dce224ad22f2cf3b7476a4e67a52ee60861982b08ccb61947da8269b0",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.providers",
       "argumentMappings": [],
@@ -29274,7 +30938,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchResponse::request_id",
-      "symbolKey": "member:function:yosoi::search::SearchResponse::request_id@signature:bb2e85c1bc140ce685f4dfbe2dd934ef3b222e98cae4a010bfd41960602fb4f0@source:33053a0ae7b82751c37205a49d92c453acb218ecdfd89f54db91fee3d0897a68",
+      "symbolKey": "member:function:yosoi::search::SearchResponse::request_id@signature:bb2e85c1bc140ce685f4dfbe2dd934ef3b222e98cae4a010bfd41960602fb4f0@source:f332aae3e57520ef3ec7c9bfe1532896b0595be89441faf74fc8dad3ddcc97bb",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.request_id",
       "argumentMappings": [],
@@ -29285,7 +30949,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchResponse::termination",
-      "symbolKey": "member:function:yosoi::search::SearchResponse::termination@signature:eb277f66cf042fa72f20198d800859103ec2c104cf013c5df4f4371a6e027847@source:99dd7db10f6e2b272f26b2aa1249e9a2ec0fbac69f8d6caa2d0450c86d688098",
+      "symbolKey": "member:function:yosoi::search::SearchResponse::termination@signature:eb277f66cf042fa72f20198d800859103ec2c104cf013c5df4f4371a6e027847@source:c33f6f7a45c835e1d38801259da6b9626045eceef63cd5229768c4e362e5f7b0",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.termination",
       "argumentMappings": [],
@@ -29544,7 +31208,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchTermination::Cancelled",
-      "symbolKey": "member:variant:yosoi::search::SearchTermination::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:61fc54e0fdd0046c89dd277fff63818ad3b7dc3fb4fdece2ecf3e9ab0cc0cf9e",
+      "symbolKey": "member:variant:yosoi::search::SearchTermination::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:65efcd5dd2076e87267e499266fbc867bc59c2fdb7838071b569fa3e1af5d615",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.termination",
       "argumentMappings": [],
@@ -29561,7 +31225,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchTermination::Completed",
-      "symbolKey": "member:variant:yosoi::search::SearchTermination::Completed@signature:22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1@source:91c7f924e095f0f470d478ff36d6c996112bc0995e7cb0592d74d2df216169b8",
+      "symbolKey": "member:variant:yosoi::search::SearchTermination::Completed@signature:22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1@source:2a873b3d44f356e0562629b8f3b4fccaaf5417678ff6602b4c4e07250b473dac",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.termination",
       "argumentMappings": [],
@@ -29578,7 +31242,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchTermination::DeadlineReached",
-      "symbolKey": "member:variant:yosoi::search::SearchTermination::DeadlineReached@signature:b83144a07a831b6261d81c4653eb0edd7a78f35f1561b547e33e063e60802d9d@source:52924c2672995ebf204f32119b35e63b55c7b5646b68b7d9cf31b199be15980a",
+      "symbolKey": "member:variant:yosoi::search::SearchTermination::DeadlineReached@signature:b83144a07a831b6261d81c4653eb0edd7a78f35f1561b547e33e063e60802d9d@source:1bbab81df3ffb215983d05364e6d7a4dc6e5c76853a319a01d9d667ab51b6a53",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.SearchResponse.termination",
       "argumentMappings": [],
@@ -29595,7 +31259,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchTermination::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchTermination::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:eb4ad616e8695032f8857853dc34130ab9d978716583e6fc6a333307adb8cad1",
+      "symbolKey": "member:function:yosoi::search::SearchTermination::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:1345e9e25dbb2e0453fa7d9d5922f71e6a387d0e31282d433cd657d1672d2ec9",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.SearchResponse.termination",
@@ -29625,7 +31289,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::AdapterUnavailable",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::AdapterUnavailable@signature:9cc0ab9021dedc5a7d2c77a8eea38272fbc8c05e2f967951eb5ca2d4f21ba103@source:ac6725c3ac8769e534cad5dbbbd4e0937513d58697640d63ccb017e861c52435",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::AdapterUnavailable@signature:9cc0ab9021dedc5a7d2c77a8eea38272fbc8c05e2f967951eb5ca2d4f21ba103@source:ffb5dac02679974ba916fd95d0833898e98d7ceaf92931485511941ceb305de4",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29642,7 +31306,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::Cancelled",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:54f34cd30bfffb2fbd7dfd7c30fd0f146d72ac74eb8c3231f62a9a762ab7f795",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::Cancelled@signature:d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc@source:4958ae6664e56edca26e62d9a0a83914e07f39ebeb4cd0d13cf359683efe8a87",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29659,7 +31323,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::DeadlineReached",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::DeadlineReached@signature:b83144a07a831b6261d81c4653eb0edd7a78f35f1561b547e33e063e60802d9d@source:768e23fa9e616fd604e4a815e3ef3a4fed1c6ccbb966cd5b8557f69d66225831",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::DeadlineReached@signature:b83144a07a831b6261d81c4653eb0edd7a78f35f1561b547e33e063e60802d9d@source:39dd8b1b1d303c7ddf4da5fc152149e7c9f930a447c2561ea80c6db6a148dde0",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29676,7 +31340,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::DefaultUncertified",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::DefaultUncertified@signature:000cc6475ce3cf8440ed23afc281f72b0db05270ac43bd57cc57e10e31b779ed@source:fc21c28c2df0b0af9cee637e72dccb03882c23296245b856123fc69424aa5d8e",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::DefaultUncertified@signature:000cc6475ce3cf8440ed23afc281f72b0db05270ac43bd57cc57e10e31b779ed@source:79442d2375837ca98bfad030fa8ae3f61baa985048fda536028faa880217f94e",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29693,7 +31357,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::RequestSetupFailed",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::RequestSetupFailed@signature:45adde9d41f70af6769f3fab4e4363f5e6f1e30e0eb22b86ac19ed6c9f7089c7@source:7a951e72d234aa364b9937e5ffc7777392a15edaae0c217f5863cad20bce2827",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::RequestSetupFailed@signature:45adde9d41f70af6769f3fab4e4363f5e6f1e30e0eb22b86ac19ed6c9f7089c7@source:7cccfc9b4a732a7fb1df3ba9f2d3215632666a9a0019f4b81f60346121294b70",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29710,7 +31374,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::UnsupportedCapability",
-      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::UnsupportedCapability@signature:0cf7c0b8ab1b4c520946afdd13cc1b3ad5567513306073ccf9f602c6f51dbf63@source:0562084b8b0bbd2f56a06de470c865a16e5ccc4859b0cddf77302012dd3dafd3",
+      "symbolKey": "member:variant:yosoi::search::SearchUnavailableReason::UnsupportedCapability@signature:0cf7c0b8ab1b4c520946afdd13cc1b3ad5567513306073ccf9f602c6f51dbf63@source:0c4793e3b7341283747f5b25f2374db3029a073f4ac12926b44bb0d21ab61c3c",
       "decision": "mapped",
       "pythonTarget": "yosoi.search.NotStarted.value",
       "argumentMappings": [],
@@ -29727,7 +31391,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchUnavailableReason::fmt",
-      "symbolKey": "member:function:yosoi::search::SearchUnavailableReason::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:e81776208c85dcd363e861c07dfd261bc8ab1c26e32c73bf2e8aca8bd617e5bd",
+      "symbolKey": "member:function:yosoi::search::SearchUnavailableReason::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:05205bb18dc107257119d984d2fdda1b6a13867ff3181e5e5f6b1dce1c452397",
       "trait": "Debug",
       "decision": "language-specific",
       "pythonTarget": "yosoi.search.NotStarted.value",
@@ -29824,6 +31488,38 @@
       "cardinality": [],
       "rationale": "The Python convenience constructor creates a SearchRequest with the authored query.",
       "symbolKey": "page:function:yosoi::search::new"
+    },
+    {
+      "rustPath": "yosoi::search::replay_document",
+      "symbolKey": "page:function:yosoi::search::replay_document",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.replay_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "provider",
+          "pythonArgument": "provider",
+          "conversion": "Python Provider converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python Document wraps the native document value"
+        },
+        {
+          "rustArgument": "provider_page_url",
+          "pythonArgument": "provider_page_url",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.search.replay_document."
     },
     {
       "rustPath": "yosoi::session::Session",
@@ -30405,274 +32101,6 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.View.total_rows."
-    },
-    {
-      "rustPath": "yosoi::Policy::network",
-      "symbolKey": "member:struct_field:yosoi::Policy::network@signature:58913fc0f7f3f83d38c7e0d4605c808da30f30aa8622895dea4f5ccd16cbab80@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.Policy.network",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust field network maps to Python field network."
-    },
-    {
-      "rustPath": "yosoi::PolicyError::InvalidProxyUrl",
-      "symbolKey": "member:variant:yosoi::PolicyError::InvalidProxyUrl@signature:a6f33a9aa961ff2ff32fb97623cb909ada13f0ec4f4367a59fa66b241d54ab44@source:d62ffcee255c42886ba41d5bc966abe65c9c59e25f92b5d5232aa5237b860ecc",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.errors.PolicyError",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant InvalidProxyUrl maps to the corresponding Python tagged value yosoi.errors.PolicyError."
-    },
-    {
-      "rustPath": "yosoi::PolicyError::NetworkSourceFamilyMismatch",
-      "symbolKey": "member:variant:yosoi::PolicyError::NetworkSourceFamilyMismatch@signature:79fc156f49332f2cad055e366ccdcfa47375296488e8929e0e6e83a2ede43a85@source:13517b16101ec1d2f50308995ad45689e57c5d545f5c3c02a203abfbebe8d971",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.errors.PolicyError",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant NetworkSourceFamilyMismatch maps to the corresponding Python tagged value yosoi.errors.PolicyError."
-    },
-    {
-      "rustPath": "yosoi::policy::IpFamily",
-      "symbolKey": "page:enum:yosoi::policy::IpFamily",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.IpFamily",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.IpFamily."
-    },
-    {
-      "rustPath": "yosoi::policy::IpFamily::Ipv4Only",
-      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv4Only@signature:ef8f163260859428bf9a8796278f004f80bf501b1cee4f0c7a399620c0939a53@source:11faef2b7d6d38f961622d43b0216adc07fc988b3fb4323cb8f592bb6c713f21",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.IpFamily",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant Ipv4Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv4_only'."
-    },
-    {
-      "rustPath": "yosoi::policy::IpFamily::Ipv6Only",
-      "symbolKey": "member:variant:yosoi::policy::IpFamily::Ipv6Only@signature:c489da845271aeda21911a228da8e79da12d6fd94127b6eae892546807d370b5@source:0c46c44e6d64acb6d465f204bbd35305918d5d8f365ea3b16b375cf4fe5e2e46",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.IpFamily",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant Ipv6Only maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'ipv6_only'."
-    },
-    {
-      "rustPath": "yosoi::policy::IpFamily::SystemDefault",
-      "symbolKey": "member:variant:yosoi::policy::IpFamily::SystemDefault@signature:c80a3a626033bd80a9264ebefb875e4f5b97101fc2d620e1d022306471b20677@source:993222d31b5e55d299b6a6a3271827b2b8bd9d16eb2b590b57a737f2eb0478f7",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.IpFamily",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust variant SystemDefault maps to the corresponding Python tagged value yosoi.policy.IpFamily. The Python discriminator value is 'system_default'."
-    },
-    {
-      "rustPath": "yosoi::policy::Network",
-      "symbolKey": "page:struct:yosoi::policy::Network",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.Network",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Network."
-    },
-    {
-      "rustPath": "yosoi::policy::Network::clone",
-      "symbolKey": "member:function:yosoi::policy::Network::clone@signature:9e131f5dade461d34e125714bf242f14b07f6fed7cba57f15b0fb70fe6ea5f9d@trait:Clone@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.Network.clone",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
-      "trait": "Clone",
-      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
-    },
-    {
-      "rustPath": "yosoi::policy::Network::default",
-      "symbolKey": "member:function:yosoi::policy::Network::default@signature:73b2816f6ebb82a0729572dd4ad719bd5a932b71c20951f78f88b656c52ecaef@trait:Default@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
-      "decision": "language-specific",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
-      "review": {
-        "status": "reviewed",
-        "rationale": "Rust and Python defaults are system_default with no source or upstream proxy; the Rust-authored default-network wire case compares every field.",
-        "pythonEquivalent": "Construct the Python model with its declared Pydantic defaults."
-      },
-      "trait": "Default",
-      "pythonTarget": "yosoi.policy.Network"
-    },
-    {
-      "rustPath": "yosoi::policy::Network::eq",
-      "symbolKey": "member:function:yosoi::policy::Network::eq@signature:945cd3ea427c0991ad15a03f9b785ef45feda84debb42d5357fa72c96246dfb7@trait:PartialEq@source:01696c120e6a9dea3cd529b61b0f8bf6e87a87a6fb365090ec16bb52428b5a91",
-      "decision": "language-specific",
-      "argumentMappings": [
-        {
-          "rustArgument": "other",
-          "pythonArgument": "other",
-          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
-        }
-      ],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
-      "review": {
-        "status": "reviewed",
-        "rationale": "Both Network values compare the three authored fields; source snapshots preserve route values across later mutations.",
-        "pythonEquivalent": "Python value equality on Network fields."
-      },
-      "trait": "PartialEq",
-      "pythonTarget": "yosoi.policy.Network"
-    },
-    {
-      "rustPath": "yosoi::policy::Network::fmt",
-      "symbolKey": "member:function:yosoi::policy::Network::fmt@signature:516d23faec68d547b6717cba8a51f8cc72b4ffb5e6be7abd9b21178f16539420@trait:Debug@source:203fef8de854d0ad08decfc55407dc9982973a6abfb21df990cc1ccb9ed27416",
-      "decision": "language-specific",
-      "argumentMappings": [
-        {
-          "rustArgument": "f",
-          "pythonArgument": "f",
-          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
-        }
-      ],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
-      "review": {
-        "status": "reviewed",
-        "rationale": "Both diagnostic representations suppress proxy credentials; Rust/Python redaction tests verify secret absence without requiring identical formatting.",
-        "pythonEquivalent": "Python repr(value) for the corresponding public value."
-      },
-      "trait": "Debug",
-      "pythonTarget": "yosoi.policy.Network"
-    },
-    {
-      "rustPath": "yosoi::policy::Network::ip_family",
-      "symbolKey": "member:struct_field:yosoi::policy::Network::ip_family@signature:0b290bda4e29f3f44206090caeb9d1b5ae0ce038be36c31daa23551135eb33d8@source:d2217982df5d62b043914f30e1920ebc258f6a7d719843d0b9878f9a96306cbb",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.Network.ip_family",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust field ip_family maps to Python field ip_family."
-    },
-    {
-      "rustPath": "yosoi::policy::Network::proxy",
-      "symbolKey": "member:struct_field:yosoi::policy::Network::proxy@signature:f889b0c3639fdc36240725c344139d8a49b52dfc76d995f452fa992bfc5edefc@source:876027d9b6c7f5ef56006543fafa9dd721c7446c1b9f49d28cedcc6407a3f004",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.Network.proxy",
-      "argumentMappings": [],
-      "defaults": [
-        {
-          "id": "optional-default:proxy",
-          "rust": "optional value; no constructor default",
-          "python": "None default"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust field proxy maps to Python field proxy."
-    },
-    {
-      "rustPath": "yosoi::policy::Network::source_address",
-      "symbolKey": "member:struct_field:yosoi::policy::Network::source_address@signature:4939396952b2b443d241144ab31f73eb2a6915a27bf90cd0fbfda601e58d93d8@source:becf6d3711cc9b70b56cbadae887c1eeda10307592b954db9d9d88ece90faf03",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.policy.Network.source_address",
-      "argumentMappings": [],
-      "defaults": [
-        {
-          "id": "optional-default:source_address",
-          "rust": "optional value; no constructor default",
-          "python": "None default"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Rust field source_address maps to Python field source_address."
-    },
-    {
-      "rustPath": "yosoi::Policy::browser",
-      "symbolKey": "member:struct_field:yosoi::Policy::browser@signature:09f38b1847c56721845dd3e09177863807019716a863ca15f263797f3060ae58@source:6f440c827a8e6f62654cd21ff1c7f21873a47f966dab68e8280b757703877f0c",
-      "decision": "mapped",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "pythonTarget": "yosoi.Policy.browser",
-      "rationale": "Rust browser declaration maps to the Python BrowserConfig field; defaults remain Chrome/CDP and nondefault declarations are hashed in identity v8."
-    },
-    {
-      "rustPath": "yosoi::PolicyError::BrowserConfiguration",
-      "symbolKey": "member:variant:yosoi::PolicyError::BrowserConfiguration@signature:78222e79fff4a693343693ef3173cb7523f69476f650bb68b57fa51cd003c053@source:e0a486f6ac4b56912abaf6796d203c2536bcbfb5083c9df829d53354d252999e",
-      "decision": "mapped",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "pythonTarget": "yosoi.errors.PolicyError",
-      "mappingDirection": "output",
-      "outputBinding": {
-        "kind": "error-details",
-        "schemaTarget": "yosoi.errors.RustErrorDetails",
-        "discriminator": "variant",
-        "tag": "BrowserConfiguration",
-        "rustType": "yosoi_policy::PolicyError",
-        "pythonFields": [
-          {
-            "rustArgument": "0",
-            "pythonFieldPath": "details.reason",
-            "conversion": "stable snake_case BrowserConfigurationError variant code"
-          }
-        ]
-      },
-      "semanticEquivalent": "The native PolicyError adapter retains variant='BrowserConfiguration' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
-      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
-    },
-    {
-      "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser",
-      "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeBrowser@signature:6abb879fd6ed63c69bc4e77aa41d6693267ef05390a9bdd2175b61c35e82ae32@source:1020fe2144c62374a5391b53a3f7cd9a2ff23c8614ecb71aa373c74a38b3efda",
-      "decision": "mapped",
-      "argumentMappings": [],
-      "defaults": [],
-      "units": [],
-      "cardinality": [],
-      "pythonTarget": "yosoi.errors.PolicyError",
-      "mappingDirection": "output",
-      "outputBinding": {
-        "kind": "error-details",
-        "schemaTarget": "yosoi.errors.RustErrorDetails",
-        "discriminator": "variant",
-        "tag": "LegacyIdentityCannotIncludeBrowser",
-        "rustType": "yosoi_policy::PolicyError",
-        "pythonFields": []
-      },
-      "semanticEquivalent": "The native PolicyError adapter retains variant='LegacyIdentityCannotIncludeBrowser' and its structured details through rust_error_details; Python declaration validators may reject invalid declarations earlier.",
-      "rationale": "Source-reviewed native adapter in crates/yosoi-python/src/errors/operations.rs preserves this policy error without launching a browser."
     }
   ],
   "surfaceContract": "surface-contract.json"

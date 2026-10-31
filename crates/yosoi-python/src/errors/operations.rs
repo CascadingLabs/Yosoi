@@ -7,10 +7,34 @@ use yosoi::request::{
     RequestPreparationError as SdkRequestPreparationError, RequestSendError as SdkRequestSendError,
 };
 use yosoi::search::{
-    SearchQueryError as SdkSearchQueryError, SearchSendError as SdkSearchSendError,
+    SearchQueryError as SdkSearchQueryError, SearchReplayError as SdkSearchReplayError,
+    SearchSendError as SdkSearchSendError,
 };
 
 use super::{MapError, PolicyError, RequestError, SearchError, source_chain, with_metadata};
+
+pub fn search_replay_error(py: Python<'_>, error: &SdkSearchReplayError) -> PyErr {
+    let (variant, details) = match error {
+        SdkSearchReplayError::UnsupportedVersion(version) => {
+            ("UnsupportedVersion", json!({"version":version}))
+        }
+        SdkSearchReplayError::InvalidBounds => ("InvalidBounds", json!({})),
+        SdkSearchReplayError::Archive(source) => {
+            ("Archive", json!({"source":{"message":source.to_string()}}))
+        }
+        SdkSearchReplayError::Metadata(source) => {
+            ("Metadata", json!({"source":{"message":source.to_string()}}))
+        }
+    };
+    with_metadata(
+        py,
+        SearchError::new_err(error.to_string()),
+        "yosoi::search::SearchReplayError",
+        Some(variant),
+        details,
+        &source_chain(error),
+    )
+}
 
 pub fn policy_error(py: Python<'_>, error: &SdkPolicyError) -> PyErr {
     let (variant, details) = policy_error_details(error);

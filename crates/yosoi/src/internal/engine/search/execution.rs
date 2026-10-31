@@ -44,7 +44,7 @@ impl BoundSearchRequest<'_> {
             .checked_add(Duration::from_micros(maximum_elapsed.as_microseconds()))
             .ok_or(SearchExecutionSetupError::DeadlineUnrepresentable)?;
         let prepared = self.prepare()?;
-        execute_prepared(prepared, deadline, cancellation).await
+        execute_prepared(prepared, deadline, cancellation, self.diagnostic_capture()).await
     }
 }
 
@@ -52,6 +52,7 @@ async fn execute_prepared(
     prepared: super::PreparedSearch,
     deadline: Instant,
     cancellation: &CancellationToken,
+    diagnostic_capture: bool,
 ) -> Result<SearchResponse, super::SearchSendError> {
     let effective_search = &prepared.policy_snapshot().effective_policy().search;
     let provider_count = prepared.providers().len();
@@ -86,8 +87,8 @@ async fn execute_prepared(
         }
     }
 
-    let worker = |job: ProviderJob, token: CancellationToken| async move {
-        execute_provider(job, &token).await
+    let worker = move |job: ProviderJob, token: CancellationToken| async move {
+        execute_provider(job, &token, diagnostic_capture).await
     };
     let mut scheduled = run_scheduler(
         jobs,

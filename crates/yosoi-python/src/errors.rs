@@ -20,7 +20,7 @@ pub use document::{document_error, document_profile_error, parse_error};
 pub use locator::{coordinate_error, plan_error, query_error};
 pub use operations::{
     map_error, policy_error, request_preparation_error, request_send_error, search_query_error,
-    search_send_error,
+    search_replay_error, search_send_error,
 };
 
 create_exception!(_native, YosoiError, PyException);

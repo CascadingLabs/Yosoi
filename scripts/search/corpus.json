@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "purpose": "Small public-query repair corpus; not a relevance benchmark. No personal, secret or user queries.",
+  "cases": [
+    {
+      "id": "ordinary",
+      "category": "ordinary",
+      "query": "photosynthesis",
+      "relevance_terms": [
+        "photosynthesis"
+      ]
+    },
+    {
+      "id": "intent",
+      "category": "intent_question",
+      "query": "how do plants convert sunlight into energy",
+      "relevance_terms": [
+        "photosynthesis",
+        "sunlight",
+        "chlorophyll"
+      ]
+    },
+    {
+      "id": "history",
+      "category": "intent_question",
+      "query": "history of photosynthesis",
+      "relevance_terms": [
+        "photosynthesis",
+        "ingenhousz",
+        "priestley"
+      ]
+    },
+    {
+      "id": "quoted_operator",
+      "category": "quotes_operators",
+      "query": "\"photosynthesis\" site:edu",
+      "relevance_terms": [
+        "photosynthesis"
+      ]
+    },
+    {
+      "id": "unicode",
+      "category": "unicode",
+      "query": "光合成 仕組み",
+      "relevance_terms": [
+        "光合成",
+        "葉緑体"
+      ]
+    },
+    {
+      "id": "sparse",
+      "category": "sparse",
+      "query": "\"yosoi synthetic public corpus rare phrase 731902\"",
+      "relevance_terms": [
+        "yosoi",
+        "731902"
+      ]
+    }
+  ]
+}

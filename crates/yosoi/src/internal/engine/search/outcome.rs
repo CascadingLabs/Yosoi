@@ -13,7 +13,10 @@ use crate::internal::types::CaptureId;
 
 use crate::internal::engine::{BrowserFailureReason, request::RequestId};
 
-use super::{SearchPage, SearchRequestId};
+use super::{
+    SearchCapture, SearchCaptureRetention, SearchPage, SearchParserDiagnostic, SearchRequestId,
+};
+use crate::internal::documents::DocumentClass;
 
 /// Content-free details of the acquisition chosen for one provider.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -88,6 +91,16 @@ pub struct RequestAttemptSummary {
     pub source_bytes: Option<u64>,
     /// Bounded underlying failure classification, absent when none was recorded.
     pub diagnostic: Option<SearchAttemptDiagnostic>,
+    /// Structural parser failure, separate from acquisition failures and provider blocks.
+    pub parser_diagnostic: Option<SearchParserDiagnostic>,
+    /// Representation selected for provider parsing, when available.
+    pub document_class: Option<DocumentClass>,
+    /// Retained bytes of the document selected for parsing, when available.
+    pub document_bytes: Option<u64>,
+    /// Whether the capture was complete, independent of parser success.
+    pub capture_complete: Option<bool>,
+    /// Explicit diagnostic document retention state.
+    pub capture_retention: SearchCaptureRetention,
     /// Whether the acquisition finished, failed, or never started.
     pub terminal: RequestAttemptTerminal,
 }
@@ -121,7 +134,7 @@ pub enum ProviderCharge {
 }
 
 /// Provider-level reason that a started search did not yield usable results.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchFailure {
     /// The provider reported throttling or a rate-limit response.
@@ -195,6 +208,7 @@ pub struct ProviderResult {
     /// Shorter provider query attempted after a detected off-query response.
     pub(in crate::internal::engine) recovery_query: Option<String>,
     pub(in crate::internal::engine) attempts: Vec<RequestAttemptSummary>,
+    pub(in crate::internal::engine) captures: Vec<SearchCapture>,
     pub(in crate::internal::engine) outcome: ProviderOutcome,
     pub(in crate::internal::engine) charge: ProviderCharge,
 }
@@ -225,6 +239,7 @@ impl ProviderResult {
             request_id: None,
             recovery_query: None,
             attempts: Vec::new(),
+            captures: Vec::new(),
             outcome: ProviderOutcome::NotStarted(reason),
             charge: ProviderCharge::Unknown,
         }
@@ -262,6 +277,13 @@ impl ProviderResult {
         &self.attempts
     }
 
+    /// Borrows opt-in bounded evidence, including original and recovery documents.
+    ///
+    /// Empty captures do not establish absence: inspect each attempt's retention state.
+    pub fn captures(&self) -> &[SearchCapture] {
+        &self.captures
+    }
+
     /// Borrows the terminal provider interpretation; acquisition success alone is insufficient.
     pub const fn outcome(&self) -> &ProviderOutcome {
         &self.outcome
@@ -282,6 +304,7 @@ impl fmt::Debug for ProviderResult {
             .field("request_id", &self.request_id)
             .field("recovery_attempted", &self.recovery_query.is_some())
             .field("attempt_count", &self.attempts.len())
+            .field("capture_count", &self.captures.len())
             .field("outcome", &self.outcome)
             .field("charge", &self.charge)
             .finish()

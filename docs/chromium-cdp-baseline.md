@@ -3,6 +3,20 @@
 Status date: 2026-09-15. CAS-373 is the accepted milestone-5 compatibility
 baseline and is ready for Final Boss review.
 
+## Runtime launch admission, 2026-10-27
+
+Regular Chrome and Chromium versions 153 and newer are eligible for launch.
+Admission no longer depends on an exact-version allowlist, a review snapshot,
+or the system clock. This supersedes the runtime admission rules in the
+historical reviews below and permits installed Stable browsers such as
+Chromium 154.0.8037.97 on Arch Linux.
+
+Testing-only distributions, explicitly non-Stable identities, malformed
+versions, and versions below 153 remain rejected. Sandbox and isolation
+requirements remain enforced. Launch admission is separate from certification:
+the monthly review and exact browser/controller/CDP evidence requirements
+below still govern certification and release promotion.
+
 ## Stable launch eligibility review, 2026-10-24 UTC
 
 Google promoted regular Chrome 156 to Stable on October 20. The current Linux

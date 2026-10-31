@@ -42,7 +42,7 @@ pub fn command(command: Command) -> Command {
             "  yosoi map https://example.com --mode pages\n  yosoi map https://example.com --mode passive --json",
         ),
         "search" => Some(
-            "  yosoi search \"rust ownership\" --providers brave\n  yosoi search \"rust ownership\" --providers brave,bing --output json",
+            "  yosoi search \"rust ownership\" --providers brave\n  yosoi search \"rust ownership\" --providers brave,bing --output json\n  yosoi search replay search-REQUEST_ID.json",
         ),
         "locate" => Some(
             "  yosoi locate --file page.html --format html --css \"h1\"\n  yosoi locate --file data.json --format json --json-pointer /title",

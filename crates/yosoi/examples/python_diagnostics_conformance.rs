@@ -13,7 +13,9 @@ use yosoi::{
         DirectHttpRedirectErrorKind, DirectHttpTransportErrorKind, NotStartedReason, PartialReason,
         UnavailableReason, UnknownReason, UnprojectableReason, WebArtifactFamily,
     },
-    search::SearchAttemptDiagnostic,
+    search::{
+        SearchAttemptDiagnostic, SearchCaptureRetention, SearchParserDiagnostic, SearchParserStatus,
+    },
 };
 
 fn record<T: Serialize>(
@@ -478,6 +480,52 @@ fn main() -> Result<(), Box<dyn Error>> {
         ),
     ] {
         record(&mut output, "SearchAttemptDiagnostic", name, &value)?;
+    }
+
+    for (name, value) in [
+        ("MissingDocument", SearchParserDiagnostic::MissingDocument),
+        ("UnrecognizedPage", SearchParserDiagnostic::UnrecognizedPage),
+        (
+            "IncompleteDocument",
+            SearchParserDiagnostic::IncompleteDocument,
+        ),
+        ("NoUsableHits", SearchParserDiagnostic::NoUsableHits),
+        ("QueryMismatch", SearchParserDiagnostic::QueryMismatch),
+        ("OutputLimit", SearchParserDiagnostic::OutputLimit),
+        (
+            "UnsupportedDocumentClass",
+            SearchParserDiagnostic::UnsupportedDocumentClass,
+        ),
+        ("InvalidPageUrl", SearchParserDiagnostic::InvalidPageUrl),
+        (
+            "InvalidConfiguration",
+            SearchParserDiagnostic::InvalidConfiguration,
+        ),
+        ("LocateFailed", SearchParserDiagnostic::LocateFailed),
+        (
+            "InvalidLocatorResult",
+            SearchParserDiagnostic::InvalidLocatorResult,
+        ),
+        ("Unknown", SearchParserDiagnostic::Unknown),
+    ] {
+        record(&mut output, "SearchParserDiagnostic", name, &value)?;
+    }
+    for (name, value) in [
+        ("Disabled", SearchCaptureRetention::Disabled),
+        ("Retained", SearchCaptureRetention::Retained),
+        ("ByteLimit", SearchCaptureRetention::ByteLimit),
+        ("MissingDocument", SearchCaptureRetention::MissingDocument),
+    ] {
+        record(&mut output, "SearchCaptureRetention", name, &value)?;
+    }
+    for (name, value) in [
+        ("Results", SearchParserStatus::Results),
+        ("Empty", SearchParserStatus::Empty),
+        ("Failed", SearchParserStatus::Failed),
+        ("Cancelled", SearchParserStatus::Cancelled),
+        ("NotStarted", SearchParserStatus::NotStarted),
+    ] {
+        record(&mut output, "SearchParserStatus", name, &value)?;
     }
 
     let bytes = serde_json::to_vec_pretty(&output)?;

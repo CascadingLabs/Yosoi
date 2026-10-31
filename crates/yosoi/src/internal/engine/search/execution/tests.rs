@@ -9,7 +9,7 @@ use crate::internal::engine::search::new as new_search;
 use crate::internal::engine::{
     request::execution::AttemptDiagnostic, search::SearchAttemptDiagnostic,
 };
-use crate::internal::policy::policy::ProviderDefaultsStatus;
+use crate::internal::policy::policy::{AcquisitionKind, ProviderDefaultsStatus, search::Provider};
 use tokio_util::sync::CancellationToken;
 
 use tokio::{
@@ -18,21 +18,132 @@ use tokio::{
 };
 
 use super::prepare::{is_supported_duckduckgo_acquisition, per_provider_output_quota};
-use super::response::{
-    search_attempt_diagnostic, search_failure_for_attempt, search_parse_failure,
-};
+use super::response::{search_attempt_diagnostic, search_failure_for_attempt};
 use super::scheduler::{ScheduledJob, SchedulerStopReason, SchedulerTermination, run_scheduler};
 
+#[tokio::test]
+async fn loopback_documents_have_bounded_opt_in_replay_evidence() -> Result<(), Box<dyn Error>> {
+    use crate::internal::{
+        engine::{request, search::SearchCaptureRetention},
+        policy::Policy,
+        web_capture::RequestedWebTarget,
+    };
+    use tokio::{
+        io::{AsyncReadExt as _, AsyncWriteExt as _},
+        net::TcpListener,
+    };
+    let body = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/internal/engine/tests/fixtures/search-diagnostics/bing-synthetic-original.html"
+    ));
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await?;
+        let mut header = Vec::new();
+        while !header.ends_with(b"\r\n\r\n") {
+            if header.len() >= 8_192 {
+                return Err(io::Error::other("fixture header exceeded bound"));
+            }
+            header.push(socket.read_u8().await?);
+        }
+        let head = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            body.len()
+        );
+        socket.write_all(head.as_bytes()).await?;
+        socket.write_all(body).await?;
+        Ok::<(), io::Error>(())
+    });
+    let policy = Policy::default();
+    let response = request::new(format!("http://{address}/synthetic"))
+        .bind(&policy)
+        .send()
+        .await?;
+    server.await??;
+    let target =
+        RequestedWebTarget::parse("https://www.bing.com/search?q=history+of+photosynthesis")?;
+    let profile = super::super::SearchProfileFacts {
+        acquisition: Some(AcquisitionKind::DirectHttp),
+        defaults_status: ProviderDefaultsStatus::Exact,
+        defaults_version: None,
+        effective_request_policy: Some(policy.effective_identity()?),
+    };
+    for (limit, retention, expected_captures) in [
+        (None, SearchCaptureRetention::Disabled, 0),
+        (
+            Some(body.len().saturating_sub(1)),
+            SearchCaptureRetention::ByteLimit,
+            0,
+        ),
+        (Some(body.len()), SearchCaptureRetention::Retained, 1),
+    ] {
+        let result = super::response::provider_result_from_response(
+            Provider::Bing,
+            &policy,
+            &target,
+            super::response::ProviderResponseLimits {
+                results: 5,
+                output_bytes: 1_048_576,
+                capture_bytes: limit,
+            },
+            profile,
+            &response,
+        );
+        let attempt = result.attempts().first().ok_or("missing attempt")?;
+        assert_eq!(attempt.capture_retention, retention);
+        assert_eq!(
+            attempt.parser_diagnostic,
+            Some(super::super::SearchParserDiagnostic::QueryMismatch)
+        );
+        assert_eq!(attempt.document_bytes, Some(u64::try_from(body.len())?));
+        assert_eq!(result.captures().len(), expected_captures);
+        for capture in result.captures() {
+            let replayed = super::super::diagnostics::parse_document(
+                capture.provider,
+                &capture.document,
+                &capture.replay_policy.policy(),
+                &capture.provider_page_url,
+                capture.replay_policy.result_limit,
+                capture.replay_policy.output_limit,
+            );
+            assert_eq!(capture.observed.decision(), replayed.decision());
+        }
+    }
+    Ok(())
+}
+
 #[test]
-fn provider_output_limit_is_reported_as_budget_exhausted() {
-    assert_eq!(
-        search_parse_failure(true),
-        super::super::SearchFailure::BudgetExhausted
+fn provider_output_limit_is_reported_as_budget_exhausted() -> Result<(), Box<dyn Error>> {
+    use crate::internal::{
+        engine::Document,
+        policy::{Policy, policy::search::Provider},
+    };
+    let document = Document::html(
+        "synthetic-output-limit",
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/internal/engine/tests/fixtures/search-diagnostics/bing-synthetic-recovery.html"
+        ))
+        .to_vec(),
+    )?;
+    let parsed = super::super::parse_document(
+        Provider::Bing,
+        &document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=photosynthesis",
+        5,
+        1,
     );
     assert_eq!(
-        search_parse_failure(false),
-        super::super::SearchFailure::MalformedResponse
+        parsed.decision().failure,
+        Some(super::super::SearchFailure::BudgetExhausted)
     );
+    assert_eq!(
+        parsed.parser_diagnostic,
+        Some(super::super::SearchParserDiagnostic::OutputLimit)
+    );
+    Ok(())
 }
 
 #[test]
@@ -277,6 +388,7 @@ fn aggregate_output_cap_keeps_order_and_marks_truncation() -> Result<(), Box<dyn
             request_id: None,
             recovery_query: None,
             attempts: Vec::new(),
+            captures: Vec::new(),
             outcome: ProviderOutcome::Results(SearchPage::new(
                 hits,
                 Vec::new(),
