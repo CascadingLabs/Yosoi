@@ -139,12 +139,11 @@ fn add_text_tokens(tokens: &mut HashSet<String>, value: &str) {
     }
 }
 
-fn topic_words_match(query_word: &str, result_word: &str) -> bool {
+fn topic_words_match(query_word: &str, normalized_result_word: &str) -> bool {
     let query_word = normalize_topic_word(query_word);
-    let result_word = normalize_topic_word(result_word);
-    query_word == result_word
+    query_word == normalized_result_word
         || matches!(
-            (query_word.as_str(), result_word.as_str()),
+            (query_word.as_str(), normalized_result_word),
             ("airplane", "plane") | ("plane", "airplane")
         )
 }

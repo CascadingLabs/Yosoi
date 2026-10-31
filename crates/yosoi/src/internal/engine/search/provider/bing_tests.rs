@@ -525,6 +525,38 @@ fn captured_bing_pages_preserve_hits_and_report_unknown_relevance() -> Result<()
 }
 
 #[test]
+fn exact_topic_words_ending_in_s_keep_supported_relevance() -> Result<(), Box<dyn Error>> {
+    for topic in ["business", "access", "process"] {
+        let query = format!("history of {topic}");
+        let rows = (1..=3)
+            .map(|rank| {
+                organic_row(
+                    &format!("https://example.org/result-{rank}"),
+                    &format!("History of {topic}"),
+                    "An overview of the subject.",
+                )
+            })
+            .collect::<String>();
+        let document = Document::html("bing-exact-topic.html", rows.into_bytes())?;
+        for authored_query in [query.as_str(), topic] {
+            let mut page_url = url::Url::parse("https://www.bing.com/search")?;
+            page_url.query_pairs_mut().append_pair("q", authored_query);
+            let page = require_supported_page(parse(
+                &document,
+                &Policy::default(),
+                page_url.as_str(),
+                3,
+                16 * 1024 * 1024,
+            )?)?;
+            assert_eq!(page.hits().len(), 3);
+            assert!(recovered_page_matches_query(&page, authored_query));
+            assert!(!super::has_clear_topic_loss(page.hits(), authored_query));
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn history_scientific_name_and_how_to_intents_have_positive_controls() -> Result<(), Box<dyn Error>>
 {
     let relevant_history = Document::html(

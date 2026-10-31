@@ -350,6 +350,15 @@ SearchIssueKind = Literal[
     "query_relevance_unknown",
     "query_relaxed",
 ]
+"""Extraction and query-relevance issues retained alongside provider results.
+
+Categories cover rejected destinations, incomplete extraction, output bounds,
+uncertain query relevance, and query relaxation. ``query_relevance_unknown`` means
+the visible evidence could not verify the original query; it does not establish
+that the results are irrelevant. ``query_relaxed`` marks results adopted from a
+rewritten query. Inspect coverage and attempts before treating either as complete
+results.
+"""
 
 
 class SearchIssue(ImmutableModel):
