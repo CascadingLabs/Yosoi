@@ -375,11 +375,50 @@ async fn bidi_firefox_navigation_preserves_lifecycle_loss_and_cancellation() {
     assert!(report.cleanup_complete);
     assert_loss_accounting_is_honest(&report);
 
+    let mut cancellation_events = session
+        .connection
+        .subscribe()
+        .expect("observe native cancellation scope");
+    let cancellation_deadline = Instant::now()
+        .checked_add(NAVIGATION_DEADLINE)
+        .expect("bounded native event deadline");
     let navigation = page
         .start_navigation(&fixture.url("/hold"), options(128, NAVIGATION_DEADLINE))
         .await
         .expect("pending navigation");
     fixture.wait_until_held().await;
+    // The HTTP request can arrive before the BiDi observer applies its native
+    // navigation identity. Keep the response held, but establish that identity
+    // before asserting that an acknowledged stop can settle this owned scope.
+    loop {
+        let event = cancellation_events
+            .next(&token, cancellation_deadline)
+            .await
+            .expect("native navigation started while its response is held");
+        if event.method == "browsingContext.navigationStarted"
+            && event
+                .params
+                .get("context")
+                .and_then(serde_json::Value::as_str)
+                == Some(page.context.as_str())
+        {
+            assert!(
+                event
+                    .params
+                    .get("navigation")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some(),
+                "held navigation must have a native identity"
+            );
+            break;
+        }
+    }
+    assert!(
+        page.navigation_pending(&token, cancellation_deadline)
+            .await
+            .expect("native identity is applied before stopping"),
+        "the held navigation must remain uncommitted"
+    );
     let report = navigation.cancel().await.expect("cancel report");
     assert_eq!(report.termination, NavigationTermination::Cancelled);
     assert!(
