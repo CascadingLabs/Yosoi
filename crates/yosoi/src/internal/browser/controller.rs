@@ -1,5 +1,6 @@
 //! Private provider boundary. Chrome keeps its existing implementation.
 
+#[cfg(not(yosoi_dev_support))]
 use super::page::SurfaceInput;
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
@@ -372,6 +373,7 @@ impl Page {
     native_method!(fn screenshot_png() -> Vec<u8>, |page, token, deadline| page.screenshot_png(&token, deadline).await);
     native_method!(fn click_unique_element(selector: &str) -> (), |page, token, deadline| page.click_unique_element(selector, &token, deadline).await);
     native_method!(fn type_into_unique_element(selector: &str, text: &str) -> (), |page, token, deadline| page.type_into_unique_element(selector, text, &token, deadline).await);
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_script(
         &self,
         operation: &str,
@@ -383,6 +385,7 @@ impl Page {
             Self::Bidi(_) => Err(unsupported("Surface browser script")),
         }
     }
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_input(&self, input: &SurfaceInput) -> Result<()> {
         match self {
             Self::Chrome(page) => page.surface_input(input).await,
@@ -390,6 +393,7 @@ impl Page {
             Self::Bidi(_) => Err(unsupported("Surface native input")),
         }
     }
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_ax(&self, depth: Option<i64>) -> Result<serde_json::Value> {
         match self {
             Self::Chrome(page) => page.surface_ax(depth).await,

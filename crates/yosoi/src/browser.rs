@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Browser-specific Surface connections over existing native Session/Work ownership.
-#[cfg(feature = "browser")]
+#[cfg(all(feature = "browser", not(yosoi_dev_support)))]
 pub mod surface {
     pub use crate::surface::consume_session;
 }
