@@ -13,6 +13,7 @@ use std::{
 
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
+use yosoi::policy::respectfulness as traffic;
 use yosoi::{
     CountLimit, DocumentId, Policy, StepLimit,
     browser::{BrowserConfig, BrowserEngine, MoliProfile},
@@ -1014,6 +1015,133 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         Coordination::LocalProcesses,
         json!({}),
     )?);
+
+    let respect_group = traffic::Group {
+        concurrency: Some(2),
+        spacing_ms: Some(100),
+        budgets: vec![traffic::RateBudget {
+            requests: 10,
+            window_ms: 60_000,
+        }],
+        ..traffic::Group::new("wire", [r"^https://example\.com/"])
+    };
+    let respect = traffic::Respectfulness::new(vec![respect_group.clone()])?;
+    output.push(constructed_case(
+        "respectfulness-group",
+        "traffic::Group",
+        "Rust traffic group",
+        respect_group,
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-policy",
+        "traffic::Respectfulness",
+        "Rust traffic policy",
+        respect.clone(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-budget",
+        "traffic::RateBudget",
+        "Rust rolling budget",
+        traffic::RateBudget {
+            requests: 2,
+            window_ms: 1000,
+        },
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-retry",
+        "traffic::Retry",
+        "Rust retry policy",
+        traffic::Retry::default(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-cooldown",
+        "traffic::Cooldown",
+        "Rust cooldown policy",
+        traffic::Cooldown {
+            statuses: vec![429],
+            fallback_ms: 1000,
+            transport_errors: true,
+        },
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "policy-with-respectfulness",
+        "yosoi::Policy",
+        "Rust Policy with traffic rules",
+        Policy {
+            respectfulness: Some(respect),
+            ..Policy::default()
+        },
+        json!({}),
+    )?);
+    for (name, failure) in [
+        (
+            "limited",
+            traffic::RespectfulnessError::Limited {
+                group: "wire".to_owned(),
+                reason: traffic::LimitReason::RateBudget,
+                next_eligible_at_ms: Some(2000),
+            },
+        ),
+        (
+            "blocked",
+            traffic::RespectfulnessError::Limited {
+                group: "wire".to_owned(),
+                reason: traffic::LimitReason::Blocked,
+                next_eligible_at_ms: None,
+            },
+        ),
+        ("unmatched", traffic::RespectfulnessError::Unmatched),
+        (
+            "unsupported",
+            traffic::RespectfulnessError::UnsupportedBrowser,
+        ),
+        (
+            "configuration",
+            traffic::RespectfulnessError::ConfigurationMismatch {
+                group: "wire".to_owned(),
+            },
+        ),
+        (
+            "registry",
+            traffic::RespectfulnessError::Registry {
+                variant: "Busy".to_owned(),
+                message: "busy".to_owned(),
+            },
+        ),
+        ("state", traffic::RespectfulnessError::InvalidState),
+        (
+            "setup",
+            traffic::RespectfulnessError::Setup {
+                message: "range".to_owned(),
+            },
+        ),
+    ] {
+        output.push(constructed_case(
+            &format!("respectfulness-error-{name}"),
+            "traffic::RespectfulnessError",
+            "Rust traffic failure",
+            failure.clone(),
+            json!({}),
+        )?);
+        output.push(constructed_case(
+            &format!("respectfulness-event-{name}"),
+            "traffic::Event",
+            "Rust traffic event",
+            traffic::Event {
+                kind: traffic::EventKind::Rejected,
+                groups: vec!["wire".to_owned()],
+                registry_id: None,
+                status: None,
+                error: Some(failure),
+            },
+            json!({}),
+        )?);
+    }
 
     Ok(output)
 }

@@ -241,6 +241,7 @@ class PageRequest:
         self,
         policy_json: str | None = None,
         cancellation: CancellationToken | None = None,
+        registry: NativeRegistry | None = None,
     ) -> Awaitable[Response]: ...
 
 class Response:
@@ -272,6 +273,7 @@ class SearchRequest:
         cancellation: CancellationToken | None = None,
         diagnostic_archive: str | None = None,
         capture: bool = False,
+        registry: NativeRegistry | None = None,
     ) -> Awaitable[SearchResponse]: ...
 
 class SearchResponse:

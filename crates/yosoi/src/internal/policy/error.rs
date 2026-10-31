@@ -140,4 +140,7 @@ pub enum PolicyError {
     /// Canonical JSON serialization failed.
     #[error("could not serialize policy values: {0}")]
     Serialization(String),
+    /// Respectfulness groups, matching expressions or constraints are invalid.
+    #[error("invalid respectfulness policy: {0}")]
+    InvalidRespectfulness(String),
 }

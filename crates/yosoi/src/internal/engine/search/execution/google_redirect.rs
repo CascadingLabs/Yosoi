@@ -1,5 +1,9 @@
 //! Bounded one-hop resolution for Google-owned result wrappers.
 
+use crate::policy::respectfulness::Event as TrafficEvent;
+
+use crate::registry::Registry as RuntimeRegistry;
+
 use std::{collections::HashMap, future::Future, num::NonZeroU16};
 
 use crate::internal::direct_http::ObservedHeaderValue;
@@ -30,6 +34,7 @@ const MAX_GOOGLE_REDIRECT_REQUESTS_PER_SEARCH: usize = 8;
 const MAX_GOOGLE_REDIRECT_RESPONSE_BYTES: u64 = 16_384;
 
 pub(super) struct GoogleResolution {
+    pub(super) respectfulness: Vec<TrafficEvent>,
     pub(super) destinations: HashMap<NonZeroU16, SearchResultUrl>,
     pub(super) failed_redirects: HashMap<NonZeroU16, SearchIssueKind>,
     pub(super) attempts: Vec<RequestAttemptSummary>,
@@ -44,6 +49,7 @@ enum RedirectResponse {
 }
 
 struct RedirectAttempt {
+    respectfulness: Vec<TrafficEvent>,
     outcome: RedirectResponse,
     attempts: Vec<RequestAttemptSummary>,
 }
@@ -51,6 +57,7 @@ struct RedirectAttempt {
 pub(super) async fn resolve(
     page: &GoogleParsedPage,
     policy: &Policy,
+    registry: Option<&RuntimeRegistry>,
     result_limit: usize,
     cancellation: &CancellationToken,
 ) -> GoogleResolution {
@@ -59,10 +66,12 @@ pub(super) async fn resolve(
             destinations: HashMap::new(),
             failed_redirects: HashMap::new(),
             attempts: Vec::new(),
+            respectfulness: Vec::new(),
             failure: Some(SearchFailure::ProviderUnavailable),
             cancelled: false,
         };
     };
+    let registry = registry.cloned();
     let request_limit = google_redirect_request_limit(result_limit);
     resolve_candidates(
         page,
@@ -70,14 +79,20 @@ pub(super) async fn resolve(
         cancellation,
         move |placement, wrapper, token| {
             let request_policy = request_policy.clone();
+            let registry = registry.clone();
             async move {
                 let request = new_request(wrapper.as_str());
-                let response = request
-                    .bind(&request_policy)
+                let bound = request.bind(&request_policy);
+                let bound = match &registry {
+                    Some(registry) => bound.with_registry(registry),
+                    None => bound,
+                };
+                let response = bound
                     .send_cancellable(&token)
                     .await
                     .map_err(|error| request_error_failure(&error))?;
                 Ok(RedirectAttempt {
+                    respectfulness: response.respectfulness().to_vec(),
                     outcome: resolve_response(&wrapper, &response),
                     attempts: attempt_summaries(&response, placement),
                 })
@@ -102,6 +117,7 @@ where
         destinations: HashMap::new(),
         failed_redirects: HashMap::new(),
         attempts: Vec::new(),
+        respectfulness: Vec::new(),
         failure: None,
         cancelled: false,
     };
@@ -125,6 +141,7 @@ where
                 break;
             }
         };
+        resolution.respectfulness.extend(attempt.respectfulness);
         resolution.attempts.extend(attempt.attempts);
         match attempt.outcome {
             RedirectResponse::Resolved(destination) => {
@@ -181,6 +198,7 @@ pub(super) fn apply(
     result_limit: usize,
     output_limit: usize,
 ) -> ProviderResult {
+    result.respectfulness.extend(resolution.respectfulness);
     result.attempts.extend(resolution.attempts);
     let outcome = page.finish(
         &resolution.destinations,
@@ -222,6 +240,7 @@ fn redirect_request_policy(policy: &Policy) -> Option<Policy> {
 
 const fn request_error_failure(error: &RequestSendError) -> SearchFailure {
     match error {
+        RequestSendError::Respectfulness(_) => SearchFailure::Respectfulness,
         RequestSendError::StandardSetup(_) => SearchFailure::ProviderUnavailable,
         RequestSendError::Preparation(_) => SearchFailure::MalformedResponse,
     }
@@ -462,6 +481,7 @@ mod tests {
                         Ok(RedirectAttempt {
                             outcome: RedirectResponse::Failed(failure),
                             attempts: Vec::new(),
+                            respectfulness: Vec::new(),
                         })
                     }
                 },
@@ -509,7 +529,7 @@ mod tests {
         let page = parsed_wrapper_page(1, 5)?;
         let token = CancellationToken::new();
         token.cancel();
-        let resolution = resolve(&page, &Policy::default(), 5, &token).await;
+        let resolution = resolve(&page, &Policy::default(), None, 5, &token).await;
         assert!(resolution.cancelled);
         assert!(
             resolution.attempts.is_empty(),

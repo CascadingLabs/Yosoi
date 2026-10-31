@@ -4,6 +4,10 @@
 //! policy, and gives each effective acquisition a fresh capture identity. It
 //! does not contact a provider or perform any other I/O.
 
+use crate::internal::respectfulness::Runtime as RespectRuntime;
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+use crate::registry::Registry as RuntimeRegistry;
+
 use std::{borrow::Cow, fmt};
 
 use crate::internal::policy::policy::{AcquisitionKind, DocumentRequest, DocumentSelectionKind};
@@ -138,6 +142,10 @@ impl PageRequest {
             id: self.id,
             target: self.target,
             policy,
+            registry: policy
+                .respectfulness
+                .as_ref()
+                .map(|_| RuntimeRegistry::default()),
         }
     }
 
@@ -152,11 +160,12 @@ impl PageRequest {
 }
 
 /// A page request borrowing one complete policy value.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct BoundPageRequest<'policy> {
     id: RequestId,
     target: WebTarget,
     policy: &'policy Policy,
+    registry: Option<RuntimeRegistry>,
 }
 
 impl fmt::Debug for BoundPageRequest<'_> {
@@ -171,6 +180,20 @@ impl fmt::Debug for BoundPageRequest<'_> {
 }
 
 impl<'policy> BoundPageRequest<'policy> {
+    pub(crate) fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
+        self.registry = Some(registry.clone());
+        self
+    }
+
+    pub(crate) fn respectfulness_runtime(&self) -> Result<Option<RespectRuntime>, TrafficError> {
+        self.policy
+            .respectfulness
+            .as_ref()
+            .map(|policy| {
+                RespectRuntime::new(policy.clone(), self.registry.clone().unwrap_or_default())
+            })
+            .transpose()
+    }
     /// Returns this bound request's logical identity.
     pub const fn id(&self) -> RequestId {
         self.id
@@ -349,6 +372,9 @@ pub enum RequestPreparationError {
     /// The complete authored policy failed validation or snapshot creation.
     #[error("invalid request policy")]
     InvalidPolicy(#[source] PolicyError),
+    /// Required request interception is unavailable for the selected acquisition.
+    #[error(transparent)]
+    Respectfulness(#[from] TrafficError),
 }
 
 fn prepare_with_policy(
@@ -356,6 +382,17 @@ fn prepare_with_policy(
     authored_target: &WebTarget,
     policy: &Policy,
 ) -> Result<PreparedPageRequest, RequestPreparationError> {
+    if policy.respectfulness.is_some()
+        && policy
+            .page
+            .acquisitions
+            .iter()
+            .any(|acquisition| matches!(acquisition.kind(), AcquisitionKind::Browser { .. }))
+    {
+        return Err(RequestPreparationError::Respectfulness(
+            TrafficError::UnsupportedBrowser,
+        ));
+    }
     let target = RequestedWebTarget::parse(authored_target.as_str())
         .map_err(RequestPreparationError::InvalidTarget)?;
     let policy_snapshot =

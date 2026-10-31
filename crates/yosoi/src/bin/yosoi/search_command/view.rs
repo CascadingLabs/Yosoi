@@ -163,6 +163,7 @@ pub(super) struct RequestAttemptView {
 
 #[derive(Debug, Serialize)]
 pub(super) struct ProviderView<'a> {
+    pub(super) respectfulness: &'a [yosoi::policy::respectfulness::Event],
     pub(super) provider: &'static str,
     pub(super) identity: ProviderIdentityView<'a>,
     pub(super) status: ProviderStatus,

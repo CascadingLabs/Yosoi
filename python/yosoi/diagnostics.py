@@ -164,6 +164,7 @@ type ProjectionReason = Annotated[
 
 class _DirectHttpTransportUnit(ImmutableModel):
     kind: Literal[
+        "respectfulness",
         "dns",
         "connect",
         "tls",
@@ -190,6 +191,7 @@ type TransportDiagnostic = Annotated[
 
 class _RequestDiagnosticUnit(ImmutableModel):
     kind: Literal[
+        "respectfulness_failed",
         "missing_execution_context",
         "policy_resolution_failed",
         "direct_http_body_failed",
@@ -240,6 +242,7 @@ class _SearchBrowserFailure(ImmutableModel):
 
 type SearchAttemptDiagnostic = (
     Literal[
+        "respectfulness_failed",
         "missing_execution_context",
         "policy_resolution_failed",
         "direct_http_transport",

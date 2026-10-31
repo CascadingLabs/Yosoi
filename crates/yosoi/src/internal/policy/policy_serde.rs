@@ -1,4 +1,4 @@
-use super::policy::Network;
+use super::policy::{Network, respectfulness::Respectfulness};
 use crate::browser as browser_config;
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer, de::Error as _, ser::Error as SerError,
@@ -16,6 +16,7 @@ impl Serialize for Policy {
     {
         self.validate().map_err(SerError::custom)?;
         PolicyRef {
+            respectfulness: &self.respectfulness,
             network: &self.network,
             browser: &self.browser,
             default_action_timeout_ms: self.default_action_timeout_ms,
@@ -39,6 +40,7 @@ impl<'de> Deserialize<'de> for Policy {
     {
         let values = PolicyValues::deserialize(deserializer)?;
         let policy = Self {
+            respectfulness: values.respectfulness,
             network: values.network,
             browser: values.browser,
             default_action_timeout_ms: values.default_action_timeout_ms,
@@ -58,6 +60,8 @@ impl<'de> Deserialize<'de> for Policy {
 
 #[derive(Serialize)]
 struct PolicyRef<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    respectfulness: &'a Option<Respectfulness>,
     #[serde(skip_serializing_if = "Network::is_default")]
     network: &'a Network,
     #[serde(skip_serializing_if = "browser_config::BrowserConfig::is_default")]
@@ -77,6 +81,8 @@ struct PolicyRef<'a> {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PolicyValues {
+    #[serde(default)]
+    respectfulness: Option<Respectfulness>,
     #[serde(default)]
     network: Network,
     #[serde(default)]

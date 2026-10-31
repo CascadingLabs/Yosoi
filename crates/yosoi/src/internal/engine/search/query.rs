@@ -1,3 +1,5 @@
+use crate::registry::Registry as RuntimeRegistry;
+
 use std::fmt;
 
 use crate::internal::policy::Policy;
@@ -84,11 +86,15 @@ impl SearchRequest {
     }
 
     /// Binds query intent to one complete borrowed Policy declaration.
-    pub const fn bind(self, policy: &Policy) -> BoundSearchRequest<'_> {
+    pub fn bind(self, policy: &Policy) -> BoundSearchRequest<'_> {
         BoundSearchRequest {
             request: self,
             policy,
             diagnostic_capture: false,
+            registry: policy
+                .respectfulness
+                .as_ref()
+                .map(|_| RuntimeRegistry::default()),
         }
     }
 }
@@ -98,6 +104,7 @@ pub struct BoundSearchRequest<'policy> {
     request: SearchRequest,
     policy: &'policy Policy,
     diagnostic_capture: bool,
+    registry: Option<RuntimeRegistry>,
 }
 
 impl fmt::Debug for BoundSearchRequest<'_> {
@@ -111,6 +118,14 @@ impl fmt::Debug for BoundSearchRequest<'_> {
 }
 
 impl<'policy> BoundSearchRequest<'policy> {
+    pub fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
+        self.registry = Some(registry.clone());
+        self
+    }
+    pub(crate) const fn registry(&self) -> Option<&RuntimeRegistry> {
+        self.registry.as_ref()
+    }
+
     /// Opts into bounded query/page-content retention for parser diagnostics.
     pub const fn with_diagnostic_capture(mut self) -> Self {
         self.diagnostic_capture = true;

@@ -1,3 +1,5 @@
+use crate::internal::direct_http::DirectHttpTransportErrorKind as HttpTransportKind;
+
 use crate::internal::policy::{
     Policy,
     policy::{
@@ -30,6 +32,9 @@ pub(super) fn request_error_result(
     error: &RequestSendError,
 ) -> ProviderResult {
     match error {
+        RequestSendError::Respectfulness(_) => {
+            super::response::failed_provider(route, SearchFailure::Respectfulness)
+        }
         RequestSendError::StandardSetup(_) => {
             ProviderResult::not_started(route, SearchUnavailableReason::RequestSetupFailed)
         }
@@ -45,6 +50,7 @@ pub(super) fn request_error_result(
             recovery_query: None,
             attempts: Vec::new(),
             captures: Vec::new(),
+            respectfulness: Vec::new(),
             outcome: ProviderOutcome::Failed(SearchFailure::MalformedResponse),
             charge: ProviderCharge::Unknown,
         },
@@ -287,6 +293,7 @@ pub(super) fn provider_result_from_response(
         recovery_query: None,
         attempts,
         captures,
+        respectfulness: response.respectfulness().to_vec(),
         outcome,
         charge: ProviderCharge::Unknown,
     }
@@ -419,11 +426,15 @@ pub(super) const fn search_attempt_diagnostic(
     diagnostic: AttemptDiagnostic,
 ) -> SearchAttemptDiagnostic {
     match diagnostic {
+        AttemptDiagnostic::RespectfulnessFailed => SearchAttemptDiagnostic::RespectfulnessFailed,
         AttemptDiagnostic::MissingExecutionContext => {
             SearchAttemptDiagnostic::MissingExecutionContext
         }
         AttemptDiagnostic::PolicyResolutionFailed => {
             SearchAttemptDiagnostic::PolicyResolutionFailed
+        }
+        AttemptDiagnostic::DirectHttpTransport(HttpTransportKind::Respectfulness) => {
+            SearchAttemptDiagnostic::RespectfulnessFailed
         }
         AttemptDiagnostic::DirectHttpTransport(_) => SearchAttemptDiagnostic::DirectHttpTransport,
         AttemptDiagnostic::DirectHttpBodyFailed => SearchAttemptDiagnostic::DirectHttpBodyFailed,
@@ -451,9 +462,13 @@ pub(super) const fn search_attempt_diagnostic(
 
 pub(super) const fn search_failure_for_attempt(diagnostic: AttemptDiagnostic) -> SearchFailure {
     match diagnostic {
+        AttemptDiagnostic::RespectfulnessFailed => SearchFailure::Respectfulness,
         AttemptDiagnostic::MissingExecutionContext
         | AttemptDiagnostic::PolicyResolutionFailed
         | AttemptDiagnostic::BrowserFeatureDisabled => SearchFailure::ProviderUnavailable,
+        AttemptDiagnostic::DirectHttpTransport(HttpTransportKind::Respectfulness) => {
+            SearchFailure::Respectfulness
+        }
         AttemptDiagnostic::DirectHttpTransport(_)
         | AttemptDiagnostic::DirectHttpBodyFailed
         | AttemptDiagnostic::DirectHttpFinalizationFailed
@@ -527,6 +542,7 @@ pub(super) fn failed_provider(
         recovery_query: None,
         attempts: Vec::new(),
         captures: Vec::new(),
+        respectfulness: Vec::new(),
         outcome: ProviderOutcome::Failed(failure),
         charge: ProviderCharge::Unknown,
     }

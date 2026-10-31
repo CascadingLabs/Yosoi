@@ -22,8 +22,10 @@ from .policy import (
     Policy,
     PolicyIdentity,
     ProviderDefaultsStatus,
+    RespectfulnessEvent,
     Tuning,
 )
+from .registry import Registry
 from .request import _token
 
 Provider = Literal["brave", "bing", "duck_duck_go", "google"]
@@ -442,6 +444,7 @@ class Failed(ImmutableModel):
 
     status: Literal["failed"]
     value: Literal[
+        "respectfulness",
         "rate_limited",
         "challenge",
         "provider_unavailable",
@@ -529,6 +532,7 @@ class SearchParserDecision(ImmutableModel):
     status: SearchParserStatus
     failure: (
         Literal[
+            "respectfulness",
             "rate_limited",
             "challenge",
             "provider_unavailable",
@@ -883,6 +887,10 @@ class ProviderResult(ImmutableModel):
     )
     outcome: ProviderOutcome
     charge: ProviderCharge
+    respectfulness: tuple[RespectfulnessEvent, ...] = Field(
+        default=(),
+        description="Traffic admission/response/retry history for this provider.",
+    )
 
     def __repr__(self) -> str:
         """Return structural diagnostics with retained content redacted."""
@@ -1041,7 +1049,15 @@ class BoundSearchRequest:
         """
         self.request = request
         self._policy_json = policy.to_json()
+        self._registry = Registry() if policy.respectfulness is not None else None
         self._capture = False
+
+    def with_registry(self, registry: Registry) -> BoundSearchRequest:
+        """Return a binding sharing traffic state with other SDK callers."""
+        bound = BoundSearchRequest(self.request, self.policy)
+        bound._registry = registry.clone()
+        bound._capture = self._capture
+        return bound
 
     @property
     def id(self) -> str:
@@ -1067,6 +1083,7 @@ class BoundSearchRequest:
         The original binding remains unchanged, and no provider request is sent.
         """
         bound = BoundSearchRequest(self.request, self.policy)
+        bound._registry = self._registry.clone() if self._registry is not None else None
         bound._capture = True
         return bound
 
@@ -1107,6 +1124,7 @@ class BoundSearchRequest:
             _token(cancellation),
             str(diagnostic_archive.root) if diagnostic_archive is not None else None,
             capture=self._capture or capture,
+            registry=self._registry._handle if self._registry is not None else None,
         )
         return SearchResponse._from_native(value)
 

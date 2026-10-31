@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+
 mod archived;
 mod attempt;
 mod capture_facts;
@@ -25,6 +27,9 @@ use crate::internal::engine::{
 /// Request preparation or standard adapter setup failed before execution.
 #[derive(Debug, Error)]
 pub enum RequestSendError {
+    /// Respectfulness setup or registry binding failed before execution.
+    #[error(transparent)]
+    Respectfulness(#[from] TrafficError),
     #[error(transparent)]
     Preparation(#[from] RequestPreparationError),
     /// The package-owned adapter context could not be assembled before execution.

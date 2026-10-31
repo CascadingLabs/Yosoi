@@ -66,6 +66,8 @@ impl DocumentChoice {
 #[derive(Debug, Args)]
 #[allow(clippy::struct_excessive_bools)] // Clap output modes are mutually exclusive flags.
 pub struct RequestArgs {
+    #[command(flatten)]
+    pub registry: crate::registry_args::RegistryArgs,
     /// HTTP or HTTPS URL to request.
     pub url: String,
     /// Replace the Policy's ordered acquisitions. Repeat to run several.
@@ -171,6 +173,10 @@ pub async fn run(args: RequestArgs, profile: Option<&str>) -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
+    let request = match args.registry.open()? {
+        Some(registry) => request.with_registry(&registry),
+        None => request,
+    };
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);
     tokio::pin!(send);

@@ -1,5 +1,6 @@
 //! Search forwards query intent to the SDK and preserves provider slot outcomes.
 
+use crate::registry::NativeRegistry;
 use std::{fmt, sync::Arc};
 
 use pyo3::prelude::*;
@@ -73,6 +74,7 @@ async fn response_json(
             "request_id": provider.request_id().map(|value| value.to_string()),
             "recovery_query": provider.recovery_query(), "attempts": attempts, "captures": captures,
             "outcome": provider.outcome(), "charge": provider.charge(),
+            "respectfulness": provider.respectfulness(),
         })
     }).collect();
     serde_json::to_string(&json!({
@@ -226,7 +228,7 @@ impl NativeSearch {
             .map_err(|error| errors::search_send_error(py, &error))
     }
 
-    #[pyo3(signature = (policy_json=None, cancellation=None, diagnostic_archive=None, capture=false))]
+    #[pyo3(signature = (policy_json=None, cancellation=None, diagnostic_archive=None, capture=false, registry=None))]
     fn send<'py>(
         &self,
         py: Python<'py>,
@@ -234,11 +236,17 @@ impl NativeSearch {
         cancellation: Option<&NativeCancellation>,
         diagnostic_archive: Option<String>,
         capture: bool,
+        registry: Option<&NativeRegistry>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let policy = policy::parse(policy_json)?;
         let request = self.inner.clone();
+        let registry = registry.map(NativeRegistry::clone_registry);
         async_runtime::bridge(py, cancellation, move |token| async move {
             let bound = request.bind(&policy);
+            let bound = match &registry {
+                Some(registry) => bound.with_registry(registry),
+                None => bound,
+            };
             let bound = if capture || diagnostic_archive.is_some() {
                 bound.with_diagnostic_capture()
             } else {

@@ -1,3 +1,5 @@
+use crate::internal::respectfulness::Operation as RespectOperation;
+
 use crate::internal::archive as yosoi_archive;
 
 use crate::internal::archive::{
@@ -40,6 +42,7 @@ impl RequestExecutor {
                 source: Box::new(source),
             })?;
         let mut attempts = Vec::with_capacity(prepared.attempts().len());
+        let mut events = Vec::new();
         let mut progress = ArchivedRequestProgress::new(policy_ref.clone());
         let mut termination = if cancellation.is_cancelled() {
             ResponseTermination::Cancelled
@@ -60,16 +63,26 @@ impl RequestExecutor {
                 continue;
             }
 
+            let operation = self
+                .respectfulness
+                .as_ref()
+                .map(|runtime| RespectOperation::new(runtime.clone()));
             let outcome = self
                 .execute_attempt_archived(
                     &prepared,
                     attempt,
                     cancellation,
+                    operation.clone(),
                     archive,
                     u64::try_from(index).unwrap_or(u64::MAX),
                     &mut progress,
                 )
                 .await?;
+            if let Some(operation) = operation
+                && let Ok(observed) = operation.events()
+            {
+                events.extend(observed);
+            }
             let observed_cancellation = outcome.observed_cancellation();
             attempts.push(outcome);
             if observed_cancellation {
@@ -78,13 +91,14 @@ impl RequestExecutor {
             }
         }
 
-        let run_record = request_run_record(&prepared, &policy_ref, termination, &attempts)
+        let mut run_record = request_run_record(&prepared, &policy_ref, termination, &attempts)
             .map_err(|source| ArchivedRequestError::InvalidRequestRunRecord {
                 request_id,
                 progress: Box::new(progress.clone()),
                 source: Box::new(source),
             })?;
-        let response = Response::new(&prepared, attempts, termination);
+        run_record.set_respectfulness(events.clone());
+        let response = Response::new(&prepared, attempts, termination).with_respectfulness(events);
         let request_run_ref = match archive.write(&run_record).await {
             Ok(reference) => reference,
             Err(source) => {
@@ -107,6 +121,7 @@ impl RequestExecutor {
         prepared: &PreparedPageRequest,
         attempt: &PreparedAttempt,
         cancellation: &CancellationToken,
+        operation: Option<RespectOperation>,
         archive: &Archive,
         attempt_index: u64,
         progress: &mut ArchivedRequestProgress,
@@ -124,7 +139,7 @@ impl RequestExecutor {
                 None,
             ));
         };
-        let resolved = match PolicyResolver::resolve(prepared, attempt, context) {
+        let mut resolved = match PolicyResolver::resolve(prepared, attempt, context) {
             Ok(resolved) => resolved,
             Err(error) => {
                 return Ok(AttemptOutcome::failed(
@@ -140,6 +155,9 @@ impl RequestExecutor {
                 ));
             }
         };
+        if let Some(operation) = operation {
+            resolved.attach_respectfulness(operation);
+        }
         let capture = match resolved.execute(cancellation).await {
             Ok(capture) => capture,
             Err(error) => {
@@ -282,7 +300,12 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<ArchivedResponse, ArchivedRequestError> {
         let prepared = self.prepare().map_err(RequestSendError::from)?;
-        let executor = standard::for_prepared(&prepared).map_err(RequestSendError::from)?;
+        let executor = standard::for_prepared(&prepared)
+            .map_err(RequestSendError::from)?
+            .with_respectfulness(
+                self.respectfulness_runtime()
+                    .map_err(RequestSendError::from)?,
+            );
         executor
             .execute_prepared_archived(prepared, cancellation, archive)
             .await
@@ -296,6 +319,10 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<ArchivedResponse, ArchivedRequestError> {
         let prepared = self.prepare().map_err(RequestSendError::from)?;
+        let executor = executor.clone().with_respectfulness(
+            self.respectfulness_runtime()
+                .map_err(RequestSendError::from)?,
+        );
         executor
             .execute_prepared_archived(prepared, cancellation, archive)
             .await

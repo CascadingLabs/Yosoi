@@ -1,3 +1,6 @@
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+use crate::registry::Registry as RuntimeRegistry;
+
 use super::{CancellationToken, RequestId, Response, WebTarget};
 use crate::internal::engine as internal_engine;
 use crate::internal::engine::request as implementation;
@@ -100,6 +103,13 @@ pub struct BoundPageRequest<'policy> {
     request: PageRequest,
 }
 impl BoundPageRequest<'_> {
+    /// Shares operational traffic state with other callers. Default enabled policies
+    /// use memory scoped to this bound handle; supplying JSONL enables process sharing.
+    pub fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
+        self.inner = self.inner.with_registry(registry);
+        self
+    }
+
     /// Borrows a caller-owned Session while retaining this request's complete Policy.
     /// Sending acquires temporary Work without closing the caller's browser owner.
     pub fn in_session<'session>(
@@ -157,6 +167,16 @@ impl BoundPageRequest<'_> {
 /// A request's target or policy could not be prepared.
 #[derive(Debug)]
 pub struct RequestPreparationError(internal_engine::RequestPreparationError);
+impl RequestPreparationError {
+    /// Returns a typed traffic-enforcement failure when preparation rejected an
+    /// unsupported acquisition. Other preparation failures return None.
+    pub const fn respectfulness(&self) -> Option<&TrafficError> {
+        match &self.0 {
+            internal_engine::RequestPreparationError::Respectfulness(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 impl fmt::Display for RequestPreparationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -167,6 +187,18 @@ impl Error for RequestPreparationError {}
 /// The standard request execution could not be initialized.
 #[derive(Debug)]
 pub struct RequestSendError(internal_engine::RequestSendError);
+impl RequestSendError {
+    /// Returns typed traffic setup/enforcement details without parsing Display text.
+    pub const fn respectfulness(&self) -> Option<&TrafficError> {
+        match &self.0 {
+            internal_engine::RequestSendError::Respectfulness(error)
+            | internal_engine::RequestSendError::Preparation(
+                internal_engine::RequestPreparationError::Respectfulness(error),
+            ) => Some(error),
+            _ => None,
+        }
+    }
+}
 impl fmt::Display for RequestSendError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)

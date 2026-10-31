@@ -21,6 +21,8 @@ pub mod map;
 pub mod network;
 #[path = "../../../crates/yosoi/src/internal/policy/mod.rs"]
 pub mod policy;
+#[path = "../../../crates/yosoi/src/internal/respectfulness/mod.rs"]
+pub mod respectfulness;
 #[path = "../../../crates/yosoi/src/internal/types/mod.rs"]
 pub mod types;
 #[path = "../../../crates/yosoi/src/internal/web_capture/mod.rs"]

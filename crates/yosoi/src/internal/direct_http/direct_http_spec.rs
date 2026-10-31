@@ -1,5 +1,7 @@
 //! Explicit, validated runtime input for one Direct HTTP capture attempt.
 
+use crate::internal::respectfulness::Operation as RespectOperation;
+
 use crate::internal::network::Relay;
 use crate::internal::policy::policy::Network;
 use std::sync::Arc;
@@ -183,6 +185,7 @@ impl DirectHttpOutputSchemas {
 /// Complete validated runtime input for one Direct HTTP capture occurrence.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResolvedDirectHttpCaptureSpec {
+    pub(crate) respectfulness: Option<RespectOperation>,
     pub(crate) network: Network,
     pub(crate) relay: Option<Arc<Relay>>,
     request: WebCaptureRequest,
@@ -269,6 +272,7 @@ impl ResolvedDirectHttpCaptureSpec {
         validate_output_schemas(artifacts, retention, &output_schemas)?;
 
         Ok(Self {
+            respectfulness: None,
             network: Network::default(),
             relay: None,
             direct_strategy: direct_strategy.clone(),

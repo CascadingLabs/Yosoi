@@ -1,3 +1,5 @@
+use crate::internal::respectfulness::Operation as RespectOperation;
+
 mod applied;
 mod browser;
 mod direct_http;
@@ -72,6 +74,12 @@ impl fmt::Debug for ResolvedPolicyAttempt {
 }
 
 impl ResolvedPolicyAttempt {
+    pub(crate) fn attach_respectfulness(&mut self, operation: RespectOperation) {
+        if let ResolvedPolicySpec::DirectHttp { spec, .. } = &mut self.spec {
+            spec.respectfulness = Some(operation);
+        }
+    }
+
     pub(in crate::internal::engine) const fn new(
         spec: ResolvedPolicySpec,
         applied_policy: AppliedPolicy,

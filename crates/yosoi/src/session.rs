@@ -744,6 +744,11 @@ impl SessionBuilder {
         self,
         cancellation: &CancellationToken,
     ) -> Result<Session, SessionError> {
+        if self.policy.respectfulness.is_some() {
+            return Err(SessionError::Unsupported(
+                "per-request respectfulness enforcement for browser sessions is unavailable",
+            ));
+        }
         self.settings.validate()?;
         let execution = match self.execution_pool {
             Some(pool) => pool,

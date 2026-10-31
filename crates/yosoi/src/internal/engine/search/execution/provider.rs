@@ -1,3 +1,5 @@
+use crate::registry::Registry as RuntimeRegistry;
+
 use crate::internal::engine::request::{execution::AttemptOutcome, new as new_request};
 use crate::internal::engine::search::{
     ProviderOutcome, ProviderResult, SearchFailure, SearchIssueKind, SearchProfileFacts,
@@ -21,6 +23,7 @@ pub(super) async fn execute_provider(
         return execute_google(job, cancellation, diagnostic_capture).await;
     }
     let ProviderJob {
+        registry,
         route,
         provider,
         request,
@@ -32,6 +35,10 @@ pub(super) async fn execute_provider(
         profile,
     } = job;
     let bound = request.bind(&policy);
+    let bound = registry.as_ref().map_or_else(
+        || bound.clone(),
+        |registry| bound.clone().with_registry(registry),
+    );
     let response = match bound.send_cancellable(cancellation).await {
         Ok(response) => response,
         Err(error) => return request_error_result(&route, profile, &error),
@@ -76,6 +83,7 @@ pub(super) async fn execute_provider(
         result_limit,
         output_limit,
         diagnostic_capture,
+        registry.as_ref(),
         cancellation,
     )
     .await
@@ -119,16 +127,18 @@ pub(super) async fn execute_bing_recovery(
     result_limit: usize,
     output_limit: usize,
     diagnostic_capture: bool,
+    registry: Option<&RuntimeRegistry>,
     cancellation: &CancellationToken,
 ) -> ProviderResult {
     let original_has_results = matches!(result.outcome, ProviderOutcome::Results(_));
     result.recovery_query = Some(recovery_query);
     let recovery_request = new_request(recovery_request_target);
-    let Ok(recovery_response) = recovery_request
-        .bind(policy)
-        .send_cancellable(cancellation)
-        .await
-    else {
+    let bound = recovery_request.bind(policy);
+    let bound = match registry {
+        Some(registry) => bound.with_registry(registry),
+        None => bound,
+    };
+    let Ok(recovery_response) = bound.send_cancellable(cancellation).await else {
         return result;
     };
     let retained_bytes = result
@@ -159,6 +169,7 @@ pub(super) async fn execute_bing_recovery(
             .clone_into(&mut capture.original_provider_page_url);
     }
     result.captures.extend(recovered.captures);
+    result.respectfulness.extend(recovered.respectfulness);
     result.attempts.extend(recovered.attempts);
     match recovered.outcome {
         ProviderOutcome::Results(page)
@@ -192,6 +203,7 @@ async fn execute_google(
     diagnostic_capture: bool,
 ) -> ProviderResult {
     let ProviderJob {
+        registry,
         route,
         request,
         policy,
@@ -201,7 +213,12 @@ async fn execute_google(
         profile,
         ..
     } = job;
-    let response = match request.bind(&policy).send_cancellable(cancellation).await {
+    let bound = request.bind(&policy);
+    let bound = match &registry {
+        Some(registry) => bound.with_registry(registry),
+        None => bound,
+    };
+    let response = match bound.send_cancellable(cancellation).await {
         Ok(response) => response,
         Err(error) => return request_error_result(&route, profile, &error),
     };
@@ -261,7 +278,13 @@ async fn execute_google(
             return result;
         }
     };
-    let resolution =
-        super::google_redirect::resolve(&parsed, &policy, result_limit, cancellation).await;
+    let resolution = super::google_redirect::resolve(
+        &parsed,
+        &policy,
+        registry.as_ref(),
+        result_limit,
+        cancellation,
+    )
+    .await;
     super::google_redirect::apply(result, parsed, resolution, result_limit, output_limit)
 }

@@ -115,6 +115,7 @@ impl NativeResponse {
             "requested_target": response.requested_target(),
             "policy_snapshot": snapshot(response.policy_snapshot()),
             "termination": response.termination(), "attempts": attempts,
+            "respectfulness": response.respectfulness(),
         }))
         .map_err(|error| errors::RequestError::new_err(error.to_string()))
     }

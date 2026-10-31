@@ -239,6 +239,7 @@ async fn run_bing_recovery_case_with_legacy_failure(
         5,
         1_048_576,
         true,
+        None,
         &CancellationToken::new(),
     )
     .await;
@@ -694,6 +695,7 @@ async fn cancellation_during_recovery_keeps_original_partial_and_records_attempt
             5,
             1_048_576,
             true,
+            None,
             &task_cancellation,
         )
         .await
@@ -1223,6 +1225,7 @@ fn aggregate_output_cap_keeps_order_and_marks_truncation() -> Result<(), Box<dyn
             recovery_query: None,
             attempts: Vec::new(),
             captures: Vec::new(),
+            respectfulness: Vec::new(),
             outcome: ProviderOutcome::Results(SearchPage::new(
                 hits,
                 Vec::new(),

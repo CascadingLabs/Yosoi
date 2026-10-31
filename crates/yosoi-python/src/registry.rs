@@ -46,6 +46,12 @@ pub struct NativeRegistry {
     registry: Registry,
 }
 
+impl NativeRegistry {
+    pub(crate) fn clone_registry(&self) -> Registry {
+        self.registry.clone()
+    }
+}
+
 #[pymethods]
 impl NativeRegistry {
     #[new]

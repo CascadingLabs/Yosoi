@@ -1,5 +1,10 @@
 //! Serial execution of the acquisitions authored by one page request.
 
+use crate::internal::respectfulness::Operation as RespectOperation;
+use crate::internal::respectfulness::Runtime as RespectRuntime;
+use crate::policy::respectfulness::Event as TrafficEvent;
+use crate::policy::respectfulness::EventKind as TrafficEventKind;
+
 use crate::internal::direct_http as internal_direct_http;
 use crate::internal::engine as internal_engine;
 use crate::internal::web_capture as internal_web_capture;
@@ -58,15 +63,22 @@ pub(in crate::internal::engine) fn direct_http_executor_with_user_agent(
 /// certified capabilities.
 #[derive(Clone, Default)]
 pub struct RequestExecutor {
+    respectfulness: Option<RespectRuntime>,
     direct_http: Option<DirectHttpResolutionInputs>,
     browser_headless: Option<BrowserResolutionInputs>,
     browser_headful: Option<BrowserResolutionInputs>,
 }
 
 impl RequestExecutor {
+    fn with_respectfulness(mut self, runtime: Option<RespectRuntime>) -> Self {
+        self.respectfulness = runtime;
+        self
+    }
+
     /// Creates an executor with no acquisition-specific configuration.
     pub const fn new() -> Self {
         Self {
+            respectfulness: None,
             direct_http: None,
             browser_headless: None,
             browser_headful: None,
@@ -120,6 +132,7 @@ impl RequestExecutor {
         #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
     ) -> Response {
         let mut attempts = Vec::with_capacity(prepared.attempts().len());
+        let mut respectfulness_events = Vec::new();
         let mut termination = if cancellation.is_cancelled() {
             ResponseTermination::Cancelled
         } else {
@@ -139,15 +152,32 @@ impl RequestExecutor {
                 continue;
             }
 
+            let operation = self
+                .respectfulness
+                .as_ref()
+                .map(|runtime| RespectOperation::new(runtime.clone()));
             let outcome = self
                 .execute_attempt(
                     &prepared,
                     attempt,
                     cancellation,
+                    operation.clone(),
                     #[cfg(feature = "browser")]
                     control,
                 )
                 .await;
+            if let Some(operation) = operation {
+                match operation.events() {
+                    Ok(events) => respectfulness_events.extend(events),
+                    Err(error) => respectfulness_events.push(TrafficEvent {
+                        kind: TrafficEventKind::Rejected,
+                        groups: Vec::new(),
+                        registry_id: None,
+                        status: None,
+                        error: Some(error),
+                    }),
+                }
+            }
             let observed_cancellation = outcome.observed_cancellation();
             attempts.push(outcome);
             if observed_cancellation {
@@ -156,7 +186,7 @@ impl RequestExecutor {
             }
         }
 
-        Response::new(&prepared, attempts, termination)
+        Response::new(&prepared, attempts, termination).with_respectfulness(respectfulness_events)
     }
 
     async fn execute_attempt(
@@ -164,6 +194,7 @@ impl RequestExecutor {
         prepared: &PreparedPageRequest,
         attempt: &PreparedAttempt,
         cancellation: &CancellationToken,
+        operation: Option<RespectOperation>,
         #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
     ) -> AttemptOutcome {
         let Some(context) = self.context_for(attempt) else {
@@ -180,7 +211,7 @@ impl RequestExecutor {
             );
         };
 
-        let resolved = match PolicyResolver::resolve(prepared, attempt, context) {
+        let mut resolved = match PolicyResolver::resolve(prepared, attempt, context) {
             Ok(resolved) => resolved,
             Err(error) => {
                 return AttemptOutcome::failed(
@@ -196,6 +227,10 @@ impl RequestExecutor {
                 );
             }
         };
+
+        if let Some(operation) = operation {
+            resolved.attach_respectfulness(operation);
+        }
 
         #[cfg(feature = "browser")]
         let executed = match control {
@@ -278,6 +313,7 @@ impl fmt::Debug for RequestExecutor {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("RequestExecutor")
+            .field("respectfulness_configured", &self.respectfulness.is_some())
             .field("direct_http_configured", &self.direct_http.is_some())
             .field("headless_configured", &self.browser_headless.is_some())
             .field("headful_configured", &self.browser_headful.is_some())
@@ -321,7 +357,8 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
-        let executor = standard::for_prepared(&prepared)?;
+        let executor =
+            standard::for_prepared(&prepared)?.with_respectfulness(self.respectfulness_runtime()?);
         Ok(executor
             .execute_prepared_on_control(prepared, cancellation, control)
             .await)
@@ -339,7 +376,8 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
-        let executor = standard::for_prepared(&prepared)?;
+        let executor =
+            standard::for_prepared(&prepared)?.with_respectfulness(self.respectfulness_runtime()?);
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 
@@ -350,6 +388,9 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
+        let executor = executor
+            .clone()
+            .with_respectfulness(self.respectfulness_runtime()?);
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 }
@@ -416,6 +457,9 @@ fn execution_failure_facts(
                     evidence.facts().main_document_status(),
                 )),
             )
+        }
+        PolicyCaptureExecutionError::Respectfulness(_) => {
+            (AttemptDiagnostic::RespectfulnessFailed, None)
         }
         PolicyCaptureExecutionError::BrowserFeatureDisabled => {
             (AttemptDiagnostic::BrowserFeatureDisabled, None)

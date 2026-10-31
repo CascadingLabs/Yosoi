@@ -7,6 +7,7 @@ mod policy_command;
 mod policy_store;
 mod presentation;
 mod progress;
+mod registry_args;
 mod request_command;
 mod search_command;
 mod self_command;

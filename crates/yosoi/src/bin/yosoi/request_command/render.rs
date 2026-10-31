@@ -190,6 +190,7 @@ pub(super) fn json(
             "version": identity.version(),
             "sha256": identity.digest().to_string(),
         },
+        "respectfulness": response.respectfulness(),
         "termination": termination_label(response.termination()),
         "attempts": attempts,
     });
@@ -322,6 +323,7 @@ const fn termination_label(termination: ResponseTermination) -> &'static str {
 
 fn diagnostic_label(diagnostic: AttemptDiagnostic) -> String {
     match diagnostic {
+        AttemptDiagnostic::RespectfulnessFailed => "respectfulness enforcement failed".to_owned(),
         AttemptDiagnostic::BrowserFailure(reason) => browser_diagnostics::name(reason).to_owned(),
         other => format!("{other:?}"),
     }

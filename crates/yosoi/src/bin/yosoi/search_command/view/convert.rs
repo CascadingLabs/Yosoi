@@ -160,6 +160,7 @@ impl<'a> ProviderView<'a> {
         let identity = result.identity();
         let profile = result.profile();
         Self {
+            respectfulness: result.respectfulness(),
             provider: provider_name(result.provider()),
             identity: ProviderIdentityView {
                 endpoint: identity.endpoint,

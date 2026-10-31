@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+
 use crate::internal::direct_http as yosoi_web_capture_direct_http;
 
 use std::{error::Error, fmt};
@@ -13,6 +15,8 @@ use super::DirectHttpRedirectErrorKind;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum DirectHttpTransportErrorKind {
+    /// A required traffic rule, Registry transaction or admission boundary failed.
+    Respectfulness,
     /// Hostname resolution did not produce a usable transport destination.
     Dns,
     /// Connection establishment failed before a usable HTTP exchange.
@@ -44,6 +48,13 @@ pub struct DirectHttpTransportError {
 }
 
 impl DirectHttpTransportError {
+    pub(crate) fn respectfulness(error: TrafficError) -> Self {
+        Self {
+            kind: DirectHttpTransportErrorKind::Respectfulness,
+            source: Some(Box::new(error)),
+        }
+    }
+
     pub(in crate::internal::direct_http) fn from_wreq(error: wreq::Error) -> Self {
         let kind = if error.is_timeout() {
             DirectHttpTransportErrorKind::Timeout
@@ -130,6 +141,9 @@ impl DirectHttpTransportError {
 
     const fn message(&self) -> &'static str {
         match self.kind {
+            DirectHttpTransportErrorKind::Respectfulness => {
+                "direct HTTP respectfulness enforcement failed"
+            }
             DirectHttpTransportErrorKind::Dns => "direct HTTP DNS resolution failed",
             DirectHttpTransportErrorKind::Connect => "direct HTTP connection failed",
             DirectHttpTransportErrorKind::Tls => "direct HTTP TLS negotiation failed",
@@ -179,6 +193,9 @@ impl Error for DirectHttpTransportError {
 impl StructuredWebCaptureError for DirectHttpTransportError {
     fn code(&self) -> WebCaptureErrorCode {
         let code = match self.kind {
+            DirectHttpTransportErrorKind::Respectfulness => {
+                "web_capture.direct_http.respectfulness"
+            }
             DirectHttpTransportErrorKind::Dns => "web_capture.direct_http.dns",
             DirectHttpTransportErrorKind::Connect => "web_capture.direct_http.connect",
             DirectHttpTransportErrorKind::Tls => "web_capture.direct_http.tls",

@@ -716,6 +716,34 @@
     {
       "rustPath": "yosoi::registry::Coordination",
       "pythonTarget": "yosoi.registry.Coordination"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::Group",
+      "pythonTarget": "yosoi.policy.RespectfulnessGroup"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::Respectfulness",
+      "pythonTarget": "yosoi.policy.Respectfulness"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::RateBudget",
+      "pythonTarget": "yosoi.policy.RateBudget"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::Retry",
+      "pythonTarget": "yosoi.policy.RespectfulnessRetry"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::Cooldown",
+      "pythonTarget": "yosoi.policy.RespectfulnessCooldown"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::RespectfulnessError",
+      "pythonTarget": "yosoi.policy.RespectfulnessFailure"
+    },
+    {
+      "rustPath": "yosoi::policy::respectfulness::Event",
+      "pythonTarget": "yosoi.policy.RespectfulnessEvent"
     }
   ]
 }

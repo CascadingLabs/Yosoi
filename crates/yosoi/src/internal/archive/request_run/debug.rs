@@ -6,6 +6,7 @@ impl fmt::Debug for RequestRunRecord {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("RequestRunRecord")
+            .field("respectfulness_events", &self.respectfulness.len())
             .field("request_id", &self.request_id)
             .field("target_origin", &"[redacted]")
             .field("policy", &self.policy)

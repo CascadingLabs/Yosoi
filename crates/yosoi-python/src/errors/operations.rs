@@ -111,6 +111,7 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
         E::InvalidEffectiveSearchRoute => ("InvalidEffectiveSearchRoute", json!({})),
         E::ArchivedIdentityMismatch => ("ArchivedIdentityMismatch", json!({})),
         E::ArchivedSnapshotMismatch => ("ArchivedSnapshotMismatch", json!({})),
+        E::InvalidRespectfulness(message) => ("InvalidRespectfulness", json!({"message":message})),
         E::Serialization(message) => ("Serialization", json!({"message": message})),
     }
 }
@@ -133,7 +134,10 @@ pub fn request_preparation_error(py: Python<'_>, error: &SdkRequestPreparationEr
         RequestError::new_err(error.to_string()),
         "yosoi::request::RequestPreparationError",
         None,
-        json!({"opaque": true}),
+        error.respectfulness().map_or_else(
+            || json!({"opaque":true}),
+            |details| json!({"respectfulness":details}),
+        ),
         &source_chain(error),
     )
 }
@@ -144,7 +148,10 @@ pub fn request_send_error(py: Python<'_>, error: &SdkRequestSendError) -> PyErr 
         RequestError::new_err(error.to_string()),
         "yosoi::request::RequestSendError",
         None,
-        json!({"opaque": true}),
+        error.respectfulness().map_or_else(
+            || json!({"opaque":true}),
+            |details| json!({"respectfulness":details}),
+        ),
         &source_chain(error),
     )
 }
@@ -181,6 +188,7 @@ pub fn search_query_error(py: Python<'_>, error: &SdkSearchQueryError) -> PyErr 
 pub fn search_send_error(py: Python<'_>, error: &SdkSearchSendError) -> PyErr {
     use SdkSearchSendError as E;
     let (variant, details) = match error {
+        E::Respectfulness(source) => ("Respectfulness", json!({"respectfulness":source})),
         E::NoProviderConfigured => ("NoProviderConfigured", json!({})),
         E::Policy(source) => {
             let (variant, details) = policy_error_details(source);

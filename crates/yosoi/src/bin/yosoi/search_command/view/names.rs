@@ -32,6 +32,7 @@ pub(in crate::search_command) const fn attempt_diagnostic_name(
     diagnostic: SearchAttemptDiagnostic,
 ) -> &'static str {
     match diagnostic {
+        SearchAttemptDiagnostic::RespectfulnessFailed => "respectfulness_failed",
         SearchAttemptDiagnostic::MissingExecutionContext => "missing_execution_context",
         SearchAttemptDiagnostic::PolicyResolutionFailed => "policy_resolution_failed",
         SearchAttemptDiagnostic::DirectHttpTransport => "direct_http_transport",
@@ -52,6 +53,7 @@ pub(in crate::search_command) const fn attempt_diagnostic_name(
 
 pub(in crate::search_command) const fn failure_name(failure: SearchFailure) -> &'static str {
     match failure {
+        SearchFailure::Respectfulness => "respectfulness",
         SearchFailure::RateLimited => "rate_limited",
         SearchFailure::Challenge => "challenge",
         SearchFailure::ProviderUnavailable => "provider_unavailable",

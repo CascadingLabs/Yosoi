@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::Event as TrafficEvent;
+
 use crate::internal::engine as yosoi_engine;
 
 use super::{Attempt, RequestId, ResponseTermination};
@@ -9,6 +11,12 @@ pub struct Response {
     inner: yosoi_engine::Response,
 }
 impl Response {
+    /// Admission, retry, response-feedback and release records, including failures
+    /// that precede an eventual successful attempt. Empty when disabled.
+    pub fn respectfulness(&self) -> &[TrafficEvent] {
+        self.inner.respectfulness()
+    }
+
     pub(crate) const fn from_internal(inner: yosoi_engine::Response) -> Self {
         Self { inner }
     }
@@ -44,6 +52,11 @@ pub struct ResponseRef<'response> {
     pub(crate) inner: &'response yosoi_engine::Response,
 }
 impl<'response> ResponseRef<'response> {
+    /// Borrows content-free respectfulness accounting retained by this response.
+    pub fn respectfulness(self) -> &'response [TrafficEvent] {
+        self.inner.respectfulness()
+    }
+
     /// Returns the request identity.
     pub const fn request_id(self) -> RequestId {
         self.inner.request_id()
