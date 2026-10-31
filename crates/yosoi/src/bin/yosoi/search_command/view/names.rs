@@ -91,6 +91,7 @@ pub(in crate::search_command) const fn issue_name(kind: SearchIssueKind) -> &'st
         SearchIssueKind::MissingRequiredField => "missing_required_field",
         SearchIssueKind::UnrecognizedResultRow => "unrecognized_result_row",
         SearchIssueKind::OutputLimit => "output_limit",
+        SearchIssueKind::QueryRelevanceUnknown => "query_relevance_unknown",
         SearchIssueKind::QueryRelaxed => "query_relaxed",
     }
 }

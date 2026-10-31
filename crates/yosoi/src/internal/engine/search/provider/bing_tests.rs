@@ -4,11 +4,11 @@
 )]
 use std::{env, error::Error, fs, io, num::NonZeroU16, path::PathBuf};
 
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 use super::destination::decode_unpadded_url_safe_base64;
-use super::recovery::query_anchor;
 use super::{
     BingDestinationError, BingParseError, decode_destination, parse, recovered_page_matches_query,
     recovery_query,
@@ -33,6 +33,11 @@ const SPONSORED_CONTROL: &str = include_str!(
 );
 const MISSING_HREF_CONTROL: &str =
     include_str!("../../tests/fixtures/search-providers/fixtures/bing-synthetic-missing-href.html");
+const HISTORY_GENERAL_OFF_QUERY: &str = include_str!(
+    "../../tests/fixtures/search-providers/fixtures/bing-history-general-off-query.html"
+);
+const COTTON_ONLY_OFF_QUERY: &str =
+    include_str!("../../tests/fixtures/search-providers/fixtures/bing-cotton-only-off-query.html");
 const OBSERVATIONS: &str = include_str!("../../tests/fixtures/search-providers/observations.json");
 const DECODER_VECTORS: &str =
     include_str!("../../tests/fixtures/search-providers/bing-ck-a-negative-vectors.json");
@@ -84,6 +89,86 @@ fn replace_two_redacted_wrappers(
         return Err(io::Error::other("row fixture has more than two wrappers").into());
     }
     Ok(format!("{first}u={first_u}{middle}u={second_u}{last}"))
+}
+
+fn query_fidelity_destinations(name: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let observations: Value = serde_json::from_str(OBSERVATIONS)?;
+    let destinations = observations
+        .get("provenance")
+        .and_then(|value| value.get("bing_query_fidelity"))
+        .and_then(|value| value.get("captures"))
+        .and_then(|value| value.get(name))
+        .and_then(|value| value.get("destination_urls"))
+        .and_then(Value::as_array)
+        .ok_or_else(|| io::Error::other("query-fidelity destination list is missing"))?;
+    let mut output = Vec::with_capacity(destinations.len());
+    for destination in destinations {
+        let destination = destination
+            .as_str()
+            .ok_or_else(|| io::Error::other("query-fidelity destination is not text"))?;
+        output.push(destination.to_owned());
+    }
+    Ok(output)
+}
+
+fn replace_redacted_destination_wrappers(
+    markup: &str,
+    destinations: &[String],
+) -> Result<String, Box<dyn Error>> {
+    let encoded_destinations = destinations
+        .iter()
+        .map(|destination| format!("a1{}", URL_SAFE_NO_PAD.encode(destination.as_bytes())))
+        .collect::<Vec<_>>();
+    let parts = markup.split("u=REDACTED").collect::<Vec<_>>();
+    let placeholders = parts
+        .len()
+        .checked_sub(1)
+        .ok_or_else(|| io::Error::other("query-fidelity fixture has no rows"))?;
+    if placeholders != encoded_destinations.len() {
+        return Err(
+            io::Error::other("query-fidelity destination count does not match rows").into(),
+        );
+    }
+
+    let mut output = String::new();
+    for (index, part) in parts.iter().enumerate() {
+        output.push_str(part);
+        if let Some(encoded) = encoded_destinations.get(index) {
+            output.push_str("u=");
+            output.push_str(encoded);
+        }
+    }
+    Ok(output)
+}
+
+fn require_query_relevance_unknown(outcome: ProviderOutcome) -> Result<SearchPage, Box<dyn Error>> {
+    let ProviderOutcome::Results(page) = outcome else {
+        return Err(io::Error::other("uncertain relevance should retain result hits").into());
+    };
+    if page.coverage().web() != WebCoverage::Partial
+        || !page
+            .issues()
+            .iter()
+            .any(|issue| issue.kind == SearchIssueKind::QueryRelevanceUnknown)
+    {
+        return Err(io::Error::other("uncertain relevance must be explicit and partial").into());
+    }
+    Ok(page)
+}
+
+fn require_supported_page(outcome: ProviderOutcome) -> Result<SearchPage, Box<dyn Error>> {
+    let ProviderOutcome::Results(page) = outcome else {
+        return Err(io::Error::other("visible query evidence should retain result hits").into());
+    };
+    if page.coverage().web() != WebCoverage::Complete
+        || page
+            .issues()
+            .iter()
+            .any(|issue| issue.kind == SearchIssueKind::QueryRelevanceUnknown)
+    {
+        return Err(io::Error::other("visible query evidence should not be uncertain").into());
+    }
+    Ok(page)
 }
 
 fn retained_capture_record(name: &str) -> Result<(String, String, usize, u16), Box<dyn Error>> {
@@ -169,7 +254,7 @@ fn synthetic_positive_vector_decodes_and_populates_one_row() -> Result<(), Box<d
     let outcome = parse(
         &document,
         &Policy::default(),
-        "https://www.bing.com/search?q=fixture",
+        "https://www.bing.com/search?q=captured+title",
         10,
         16 * 1024 * 1024,
     )?;
@@ -242,26 +327,415 @@ fn decoder_rejects_unknown_wrapper_shapes_and_destination_credentials() -> Resul
     Ok(())
 }
 
-#[test]
-fn query_anchor_favors_distinctive_tail_terms() {
-    assert_eq!(
-        query_anchor("history of cotton candy").as_deref(),
-        Some("cotton")
-    );
-    assert_eq!(
-        query_anchor("how to make sourdough bread").as_deref(),
-        Some("sourdough")
-    );
-    assert_eq!(query_anchor("what is a quokka").as_deref(), Some("quokka"));
-    assert_eq!(query_anchor("rust").as_deref(), None);
-    assert_eq!(
-        query_anchor("site:example.org cotton candy").as_deref(),
-        None
-    );
+fn organic_row(destination: &str, title: &str, snippet: &str) -> String {
+    let encoded = URL_SAFE_NO_PAD.encode(destination.as_bytes());
+    format!(
+        r#"<li class="b_algo"><h2><a href="https://www.bing.com/ck/a?u=a1{encoded}">{title}</a></h2><div class="b_caption"><p class="b_lineclamp2">{snippet}</p></div></li>"#
+    )
 }
 
 #[test]
-fn off_query_organic_rows_are_rejected_without_discarding_relevant_rows()
+fn normal_multiword_query_control_requires_one_topic_complete_row() -> Result<(), Box<dyn Error>> {
+    let document = Document::html(
+        "bing-normal-query-control.html",
+        [
+            organic_row(
+                "https://www.rust-lang.org/",
+                "The Rust Programming Language",
+                "A language empowering everyone to build reliable and efficient software.",
+            ),
+            organic_row(
+                "https://doc.rust-lang.org/book/",
+                "The Rust Programming Language Book",
+                "Learn the Rust programming language.",
+            ),
+            organic_row(
+                "https://doc.rust-lang.org/",
+                "Rust Documentation",
+                "Documentation for the Rust programming language.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    let page = require_supported_page(parse(
+        &document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=rust+programming+language",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(page.hits().len(), 3);
+    Ok(())
+}
+
+#[test]
+fn destination_query_and_fragment_cannot_echo_query_relevance() -> Result<(), Box<dyn Error>> {
+    let document = Document::html(
+        "bing-url-query-echo-control.html",
+        [
+            organic_row(
+                "https://example.org/result-1?topic=cotton+candy#history",
+                "Example report one",
+                "A generic report summary.",
+            ),
+            organic_row(
+                "https://example.org/result-2?topic=cotton+candy#history",
+                "Example report two",
+                "A second generic summary.",
+            ),
+            organic_row(
+                "https://example.org/result-3?topic=cotton+candy#history",
+                "Example report three",
+                "A third generic summary.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    let page = require_query_relevance_unknown(parse(
+        &document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=history+of+cotton+candy",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(page.hits().len(), 3);
+    Ok(())
+}
+
+#[test]
+fn captured_bing_pages_preserve_hits_and_report_unknown_relevance() -> Result<(), Box<dyn Error>> {
+    let history_destinations = query_fidelity_destinations("history_original")?;
+    let history_markup =
+        replace_redacted_destination_wrappers(HISTORY_GENERAL_OFF_QUERY, &history_destinations)?;
+    let history_document = Document::html(
+        "bing-history-general-off-query.html",
+        history_markup.into_bytes(),
+    )?;
+    let history_page = require_query_relevance_unknown(parse(
+        &history_document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=history+of+cotton+candy",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(history_page.hits().len(), 5);
+
+    let cotton_destinations = query_fidelity_destinations("cotton_history_subject_first")?;
+    let cotton_markup =
+        replace_redacted_destination_wrappers(COTTON_ONLY_OFF_QUERY, &cotton_destinations)?;
+    let cotton_document = Document::html(
+        "bing-cotton-only-off-query.html",
+        cotton_markup.into_bytes(),
+    )?;
+    let cotton_page = require_query_relevance_unknown(parse(
+        &cotton_document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=cotton+candy+history",
+        10,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(cotton_page.hits().len(), 7);
+
+    let quoted_page = require_query_relevance_unknown(parse(
+        &cotton_document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=%22cotton+candy%22+history",
+        10,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(quoted_page.hits().len(), 7);
+    let operator_page = require_query_relevance_unknown(parse(
+        &cotton_document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=intitle%3A%22cotton+candy%22+history",
+        10,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(operator_page.hits().len(), 7);
+
+    let split_topic = Document::html(
+        "bing-split-topic.html",
+        [
+            organic_row(
+                "https://example.org/cotton-fabric",
+                "Cotton Fabric Guide",
+                "Cotton is a natural fiber.",
+            ),
+            organic_row(
+                "https://example.org/candy-guide",
+                "Candy Guide",
+                "Candy is made with sugar.",
+            ),
+            organic_row(
+                "https://example.org/cotton-council",
+                "Cotton Council",
+                "Cotton is an agricultural crop.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    let split_page = require_query_relevance_unknown(parse(
+        &split_topic,
+        &Policy::default(),
+        "https://www.bing.com/search?q=cotton+candy",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(split_page.hits().len(), 3);
+
+    let topic_only = Document::html(
+        "bing-topic-only-ambiguous.html",
+        [
+            organic_row(
+                "https://example.org/cotton-candy-1",
+                "Cotton Candy Inc.",
+                "Cotton candy and spun sugar products.",
+            ),
+            organic_row(
+                "https://example.org/cotton-candy-2",
+                "Cotton Candy Recipes",
+                "Learn about cotton candy treats.",
+            ),
+            organic_row(
+                "https://example.org/cotton-candy-3",
+                "Cotton Candy Store",
+                "Cotton candy for parties and events.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    let topic_page = require_query_relevance_unknown(parse(
+        &topic_only,
+        &Policy::default(),
+        "https://www.bing.com/search?q=history+of+cotton+candy",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert!(!recovered_page_matches_query(
+        &topic_page,
+        "history of cotton candy"
+    ));
+    assert_eq!(recovery_query("\"cotton candy\" history"), None);
+    assert_eq!(recovery_query("intitle:\"cotton candy\" history"), None);
+    Ok(())
+}
+
+#[test]
+fn exact_topic_words_ending_in_s_keep_supported_relevance() -> Result<(), Box<dyn Error>> {
+    for topic in ["business", "access", "process"] {
+        let query = format!("history of {topic}");
+        let rows = (1..=3)
+            .map(|rank| {
+                organic_row(
+                    &format!("https://example.org/result-{rank}"),
+                    &format!("History of {topic}"),
+                    "An overview of the subject.",
+                )
+            })
+            .collect::<String>();
+        let document = Document::html("bing-exact-topic.html", rows.into_bytes())?;
+        for authored_query in [query.as_str(), topic] {
+            let mut page_url = url::Url::parse("https://www.bing.com/search")?;
+            page_url.query_pairs_mut().append_pair("q", authored_query);
+            let page = require_supported_page(parse(
+                &document,
+                &Policy::default(),
+                page_url.as_str(),
+                3,
+                16 * 1024 * 1024,
+            )?)?;
+            assert_eq!(page.hits().len(), 3);
+            assert!(recovered_page_matches_query(&page, authored_query));
+            assert!(!super::has_clear_topic_loss(page.hits(), authored_query));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn history_scientific_name_and_how_to_intents_have_positive_controls() -> Result<(), Box<dyn Error>>
+{
+    let relevant_history = Document::html(
+        "bing-cotton-candy-history.html",
+        [
+            organic_row(
+                "https://example.org/cotton-candy-origins",
+                "Cotton Candy Origins",
+                "The origins of cotton candy and how it became popular.",
+            ),
+            organic_row(
+                "https://example.org/cotton-candy-history",
+                "Cotton Candy History",
+                "A history of spun sugar and cotton candy.",
+            ),
+            organic_row(
+                "https://example.org/cotton-candy-timeline",
+                "Cotton Candy Timeline",
+                "A timeline of cotton candy history.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    let recovered_url = "https://www.bing.com/search?q=cotton+candy+history";
+    let recovered_page = require_supported_page(parse(
+        &relevant_history,
+        &Policy::default(),
+        recovered_url,
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert!(recovered_page_matches_query(
+        &recovered_page,
+        "history of cotton candy"
+    ));
+
+    let relevant_scientific_name = Document::html(
+        "bing-sunflower-scientific-name.html",
+        [
+            organic_row(
+                "https://example.org/sunflower-name-1",
+                "Sunflower Botanical Name",
+                "The botanical name of the sunflower is Helianthus annuus.",
+            ),
+            organic_row(
+                "https://example.org/sunflower-name-2",
+                "Scientific Name of Sunflower",
+                "Learn the sunflower's scientific name.",
+            ),
+            organic_row(
+                "https://example.org/sunflower-name-3",
+                "Binomial Name for Sunflower",
+                "The binomial name of a sunflower.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    require_supported_page(parse(
+        &relevant_scientific_name,
+        &Policy::default(),
+        "https://www.bing.com/search?q=sunflower+scientific+name",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+
+    let relevant_how_to = Document::html(
+        "bing-sourdough-how-to.html",
+        [
+            organic_row(
+                "https://example.org/sourdough-recipe-1",
+                "Sourdough Bread Recipe",
+                "Step-by-step instructions for making sourdough bread.",
+            ),
+            organic_row(
+                "https://example.org/sourdough-recipe-2",
+                "How to Make Sourdough Bread",
+                "A practical guide to sourdough bread.",
+            ),
+            organic_row(
+                "https://example.org/sourdough-recipe-3",
+                "Sourdough Bread Tutorial",
+                "Learn how to prepare sourdough bread.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    require_supported_page(parse(
+        &relevant_how_to,
+        &Policy::default(),
+        "https://www.bing.com/search?q=sourdough+bread+how+to+make",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    Ok(())
+}
+
+#[test]
+fn paper_airplane_plural_and_plane_synonym_remain_supported() -> Result<(), Box<dyn Error>> {
+    let document = Document::html(
+        "bing-paper-plane-history.html",
+        [
+            organic_row(
+                "https://example.org/paper-plane-origins",
+                "Paper Plane Origins",
+                "The origins of paper planes and the history of the folded toy.",
+            ),
+            organic_row(
+                "https://example.org/paper-airplane-history",
+                "History of Paper Airplanes",
+                "Paper airplanes have a long history.",
+            ),
+            organic_row(
+                "https://example.org/paper-airplane-timeline",
+                "Paper Airplane Timeline",
+                "A timeline of paper airplane designs.",
+            ),
+        ]
+        .concat()
+        .into_bytes(),
+    )?;
+    require_supported_page(parse(
+        &document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=history+of+paper+airplanes",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires retained local HTTP-200 Bing captures; no network I/O"]
+fn replay_retained_history_captures_keep_uncertain_rows_partial() -> Result<(), Box<dyn Error>> {
+    let captures = [
+        (
+            "YS_BING_HISTORY_CAPTURE_PATH",
+            "history of cotton candy",
+            "c03c3da7bcee4eee24338be717263de8ab9d35fbc787821cf791393fabd0369a",
+        ),
+        (
+            "YS_BING_HISTORY_REORDERED_CAPTURE_PATH",
+            "history cotton candy",
+            "661699944674f88096dcae4fd0a48c76956fcebb2db8d41c106053fddc984bb8",
+        ),
+        (
+            "YS_BING_COTTON_ONLY_CAPTURE_PATH",
+            "cotton candy history",
+            "825049ad98372b08192c72d5baebb5b3e5927d9ac5bd057d0b9c1d44b10f8480",
+        ),
+        (
+            "YS_BING_HISTORY_CHROME_CAPTURE_PATH",
+            "history of cotton candy",
+            "ceae4dcbd6903ea0971ee66625d6431e42fce8911af2b0f2b11a8cf365b42295",
+        ),
+    ];
+    for (variable, query, expected_hash) in captures {
+        let path = env::var_os(variable)
+            .map(PathBuf::from)
+            .ok_or_else(|| io::Error::other(format!("{variable} is required")))?;
+        let bytes = fs::read(path)?;
+        assert_eq!(format!("{:x}", Sha256::digest(&bytes)), expected_hash);
+        let document = Document::html("bing-history-retained-capture.html", bytes)?;
+        let page_url = format!("https://www.bing.com/search?q={}", query.replace(' ', "+"));
+        require_query_relevance_unknown(parse(
+            &document,
+            &Policy::default(),
+            &page_url,
+            10,
+            16 * 1024 * 1024,
+        )?)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn make_only_rows_are_uncertain_but_a_topic_complete_recipe_is_supported()
 -> Result<(), Box<dyn Error>> {
     fn row(encoded: &str, title: &str) -> String {
         format!(
@@ -276,16 +750,14 @@ fn off_query_organic_rows_are_rejected_without_discarding_relevant_rows()
         "bing-off-query.html",
         format!("{first}{second}{third}").into_bytes(),
     )?;
-    assert!(matches!(
-        parse(
-            &unrelated,
-            &Policy::default(),
-            page_url,
-            5,
-            16 * 1024 * 1024
-        ),
-        Err(BingParseError::QueryMismatch)
-    ));
+    let unrelated_page = require_query_relevance_unknown(parse(
+        &unrelated,
+        &Policy::default(),
+        page_url,
+        5,
+        16 * 1024 * 1024,
+    )?)?;
+    assert_eq!(unrelated_page.hits().len(), 3);
 
     let relevant = Document::html(
         "bing-relevant.html",
@@ -298,10 +770,13 @@ fn off_query_organic_rows_are_rejected_without_discarding_relevant_rows()
         )
         .into_bytes(),
     )?;
-    assert!(matches!(
-        parse(&relevant, &Policy::default(), page_url, 5, 16 * 1024 * 1024),
-        Ok(ProviderOutcome::Results(_))
-    ));
+    require_supported_page(parse(
+        &relevant,
+        &Policy::default(),
+        page_url,
+        5,
+        16 * 1024 * 1024,
+    )?)?;
     Ok(())
 }
 
@@ -309,22 +784,33 @@ fn off_query_organic_rows_are_rejected_without_discarding_relevant_rows()
 fn recovery_query_preserves_distinctive_terms_and_refuses_operators() {
     assert_eq!(
         recovery_query("how to make sourdough bread"),
-        Some("sourdough bread".to_owned())
+        Some("sourdough bread how to make".to_owned())
     );
     assert_eq!(
         recovery_query("history of paper airplanes"),
-        Some("paper airplanes".to_owned())
+        Some("paper airplanes history".to_owned())
     );
     assert_eq!(
         recovery_query("scientific name for sunflower"),
-        Some("sunflower".to_owned())
+        Some("sunflower scientific name".to_owned())
     );
+    assert_eq!(
+        recovery_query("history of cotton candy"),
+        Some("cotton candy history".to_owned())
+    );
+    assert_eq!(
+        recovery_query("history cotton candy"),
+        Some("cotton candy history".to_owned())
+    );
+    assert_eq!(recovery_query("cotton candy history"), None);
     assert_eq!(
         recovery_query("what is a quokka"),
         Some("quokka".to_owned())
     );
     assert_eq!(recovery_query("site:example.com sourdough bread"), None);
     assert_eq!(recovery_query("\"history of paper airplanes\""), None);
+    assert_eq!(recovery_query("sourdough bread"), None);
+    assert_eq!(recovery_query("historia del algodón de azúcar"), None);
 }
 
 #[test]
@@ -355,8 +841,8 @@ fn recovered_single_word_page_must_match_the_original_query() -> Result<(), Box<
 }
 
 #[test]
-#[ignore = "requires the retained local HTTP-200 off-query Bing page; no network I/O"]
-fn replay_retained_off_query_page() -> Result<(), Box<dyn Error>> {
+#[ignore = "requires the retained local HTTP-200 Bing page; no network I/O"]
+fn replay_retained_make_page_reports_unknown_relevance() -> Result<(), Box<dyn Error>> {
     let path = env::var_os("YS_BING_OFF_QUERY_CAPTURE_PATH")
         .map(PathBuf::from)
         .ok_or_else(|| io::Error::other("YS_BING_OFF_QUERY_CAPTURE_PATH is required"))?;
@@ -366,16 +852,13 @@ fn replay_retained_off_query_page() -> Result<(), Box<dyn Error>> {
         "8a9b6cdf7c7e1961d9649100582542b508ac106bd7353bed0ef7c4cce96a6154"
     );
     let document = Document::html("bing-retained-off-query.html", bytes)?;
-    assert!(matches!(
-        parse(
-            &document,
-            &Policy::default(),
-            "https://www.bing.com/search?q=how+to+make+sourdough+bread",
-            5,
-            16 * 1024 * 1024,
-        ),
-        Err(BingParseError::QueryMismatch)
-    ));
+    require_query_relevance_unknown(parse(
+        &document,
+        &Policy::default(),
+        "https://www.bing.com/search?q=how+to+make+sourdough+bread",
+        5,
+        16 * 1024 * 1024,
+    )?)?;
     Ok(())
 }
 
@@ -465,7 +948,7 @@ fn rejected_duplicate_keeps_later_rank_and_row_fields() -> Result<(), Box<dyn Er
     let outcome = parse(
         &document,
         &Policy::default(),
-        "https://www.bing.com/search?q=fixture",
+        "https://www.bing.com/search?q=captured+title",
         10,
         16 * 1024 * 1024,
     )?;
@@ -503,7 +986,7 @@ fn captured_multirow_fixture_keeps_fields_with_their_source_row() -> Result<(), 
     let outcome = parse(
         &document,
         &Policy::default(),
-        "https://www.bing.com/search?q=fixture",
+        "https://www.bing.com/search?q=captured+title",
         10,
         16 * 1024 * 1024,
     )?;
@@ -533,19 +1016,21 @@ fn captured_multirow_fixture_keeps_fields_with_their_source_row() -> Result<(), 
     );
     assert_eq!(first_hit.placement_index().get(), 1);
     assert_eq!(second_hit.placement_index().get(), 2);
-    let capped = parse(
-        &document,
-        &Policy::default(),
-        "https://www.bing.com/search?q=fixture",
-        1,
-        16 * 1024 * 1024,
-    )?;
-    let ProviderOutcome::Results(capped_page) = capped else {
-        return Err(io::Error::other("expected one capped organic result").into());
-    };
-    assert_eq!(capped_page.hits().len(), 1);
-    assert_eq!(capped_page.coverage().web(), WebCoverage::Complete);
-    assert_eq!(capped_page.issues().len(), 0);
+    for result_limit in [1, 2] {
+        let capped = parse(
+            &document,
+            &Policy::default(),
+            "https://www.bing.com/search?q=captured+title",
+            result_limit,
+            16 * 1024 * 1024,
+        )?;
+        let ProviderOutcome::Results(capped_page) = capped else {
+            return Err(io::Error::other("expected capped organic results").into());
+        };
+        assert_eq!(capped_page.hits().len(), result_limit);
+        assert_eq!(capped_page.coverage().web(), WebCoverage::Complete);
+        assert_eq!(capped_page.issues().len(), 0);
+    }
     Ok(())
 }
 

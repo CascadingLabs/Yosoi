@@ -10,6 +10,78 @@
       "notes_source_present_in_merge_checkout": false,
       "notes_source_local_workspace": "cas-502-four-provider-search-spike/design/search-provider-spike/README.md"
     },
+    "bing_query_fidelity": {
+      "observed_on": "2026-10-26",
+      "acquisition_example": {
+        "source_revision": "c81a25d2c2d6",
+        "source_sha256": "539b4d118e2c095327b44f6703a87d2936166613922d6c1940a2da99015ccb99",
+        "binary_sha256": "a307e1eab9d35e0ecc50f3a343e81b2f074e843f2b5597d994c0efaf0ee25b21"
+      },
+      "captures": {
+        "history_original": {
+          "query": "history of cotton candy",
+          "request_id": "4f428ac0-b825-41ba-a2bf-3d99d7541ce4",
+          "capture_id": "e759528f-164e-41cc-8e02-35ebb2f712a5",
+          "status": 200,
+          "bytes": 122372,
+          "sha256": "c03c3da7bcee4eee24338be717263de8ab9d35fbc787821cf791393fabd0369a",
+          "acquisition": "Yosoi Requests Direct HTTP, ResponseDocument, no proxy",
+          "retained_local_path": ".generated/search-evidence/bing-history-cotton-candy-original/attempt-0-ResponseDocument.data",
+          "sanitized_fixture": "fixtures/bing-history-general-off-query.html",
+          "fixture_source_rows": [1, 2, 3, 4, 5],
+          "destination_urls": [
+            "https://history.google.com/",
+            "https://www.history.com/",
+            "https://en.wikipedia.org/wiki/History",
+            "https://www.youtube.com/@history",
+            "https://www.history.com/topics"
+          ],
+          "observation": "The five fixture rows are general history results. Their titles, snippets, and destinations contain neither cotton nor candy."
+        },
+        "history_connective_only": {
+          "query": "history cotton candy",
+          "request_id": "dd9ab33f-a364-4b1d-88f4-fe635d293608",
+          "capture_id": "1db73e99-1428-41d0-a880-f6639dd5ede4",
+          "status": 200,
+          "bytes": 121785,
+          "sha256": "661699944674f88096dcae4fd0a48c76956fcebb2db8d41c106053fddc984bb8",
+          "acquisition": "Yosoi Requests Direct HTTP, ResponseDocument, no proxy",
+          "retained_local_path": ".generated/search-evidence/bing-history-cotton-candy-semantic/attempt-0-ResponseDocument.data",
+          "sanitized_fixture": "fixtures/bing-history-general-off-query.html",
+          "fixture_source_rows": [1, 2, 3, 4, 5],
+          "destination_urls": [
+            "https://history.google.com/",
+            "https://www.history.com/",
+            "https://en.wikipedia.org/wiki/History",
+            "https://www.youtube.com/@history",
+            "https://www.history.com/topics"
+          ],
+          "observation": "The five fixture rows are identical to the original-query rows and remain general history results without visible cotton/candy topic terms."
+        },
+        "cotton_history_subject_first": {
+          "query": "cotton candy history",
+          "request_id": "c395ba94-6069-41fa-a324-74b06729d8a0",
+          "capture_id": "c752d7dc-0ddc-447f-9b30-269b5a3988b0",
+          "status": 200,
+          "bytes": 114605,
+          "sha256": "825049ad98372b08192c72d5baebb5b3e5927d9ac5bd057d0b9c1d44b10f8480",
+          "acquisition": "Yosoi Requests Direct HTTP, ResponseDocument, no proxy",
+          "retained_local_path": ".generated/search-evidence/bing-cotton-candy-history-subject-first/attempt-0-ResponseDocument.data",
+          "sanitized_fixture": "fixtures/bing-cotton-only-off-query.html",
+          "fixture_source_rows": [1, 2, 3, 4, 5, 6, 7],
+          "destination_urls": [
+            "https://en.wikipedia.org/wiki/Cotton",
+            "https://www.britannica.com/topic/cotton-fibre-and-plant",
+            "https://cottonon.com/US/",
+            "https://www.masterclass.com/articles/what-is-cotton",
+            "https://en.wikipedia.org/wiki/History_of_cotton",
+            "https://www.cotton.org/pubs/cottoncounts/story/",
+            "https://www.cotton.org/"
+          ],
+          "observation": "All seven fixture rows concern cotton fiber, plants, textiles, or cotton organizations. No result title, snippet, or destination mentions candy or spun sugar."
+        }
+      }
+    },
     "captures": {
       "brave_standard_http": {
         "artifact": "yosoi-search-spike-brave-standard.html",

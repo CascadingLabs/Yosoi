@@ -2,7 +2,7 @@ use std::{error::Error, slice};
 
 use super::report::{exit_code, render_human, render_json, render_stats};
 use super::search_for_cli;
-use super::view::names::failure_name;
+use super::view::names::{failure_name, issue_name};
 use super::view::{
     ChargeView, CoverageView, FeatureView, HitView, IssueView, PolicyIdentityView,
     ProviderIdentityView, ProviderProfileView, ProviderStatus, ProviderView, RequestAttemptView,
@@ -22,7 +22,7 @@ use yosoi::{
         self, AcquisitionKind,
         search::{Provider, Search},
     },
-    search::{SearchCaptureRetention, SearchFailure},
+    search::{SearchCaptureRetention, SearchFailure, SearchIssueKind},
 };
 
 pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
@@ -160,6 +160,14 @@ fn default_search_runs_three_preview_routes_at_five_each() -> Result<(), Box<dyn
 #[test]
 fn query_mismatch_is_a_distinct_provider_failure() {
     assert_eq!(failure_name(SearchFailure::QueryMismatch), "query_mismatch");
+}
+
+#[test]
+fn query_relevance_unknown_issue_has_a_stable_wire_name() {
+    assert_eq!(
+        issue_name(SearchIssueKind::QueryRelevanceUnknown),
+        "query_relevance_unknown"
+    );
 }
 
 #[test]

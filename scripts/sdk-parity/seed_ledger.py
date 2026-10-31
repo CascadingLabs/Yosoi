@@ -209,7 +209,7 @@ VALUE_TARGETS = {
     "yosoi::search::SearchCaptureRetention": "yosoi.search.SearchCaptureRetention",
     "yosoi::search::SearchParserDiagnostic": "yosoi.search.SearchParserDiagnostic",
     "yosoi::search::SearchParserStatus": "yosoi.search.SearchParserStatus",
-    "yosoi::search::SearchIssueKind": "yosoi.search.SearchIssue.kind",
+    "yosoi::search::SearchIssueKind": "yosoi.search.SearchIssueKind",
     "yosoi::documents::AccessibilityCompleteness": "yosoi.outcomes.Completeness",
     "yosoi::documents::DocumentEpoch": "yosoi.scalars.DocumentEpoch",
     "yosoi::documents::DocumentError": "yosoi.errors.DocumentError",

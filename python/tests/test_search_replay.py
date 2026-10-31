@@ -32,7 +32,7 @@ def test_replay_policy_accepts_valid_search_output_budget_over_64_mib():
 
 
 def test_original_and_recovery_documents_have_distinct_parser_decisions():
-    """A mismatch and a shorter-query success remain separate replay decisions."""
+    """An uncertain result and a shorter-query success remain separate decisions."""
     policy = search.SearchReplayPolicy()
     original = search.replay_document(
         "bing",
@@ -50,8 +50,14 @@ def test_original_and_recovery_documents_have_distinct_parser_decisions():
         "https://www.bing.com/search?q=photosynthesis",
         policy,
     )
-    assert original.parser_diagnostic == "query_mismatch"
-    assert original.decision().status == "failed"
+    assert original.parser_diagnostic is None
+    assert original.decision().status == "results"
+    assert original.decision().partial
+    assert isinstance(original.outcome, search.Results)
+    assert any(
+        issue.kind == "query_relevance_unknown"
+        for issue in original.outcome.value.issues
+    )
     assert recovery.decision().status == "results"
     assert recovery.decision().hit_count == 3
 

@@ -21,6 +21,14 @@ Search returns candidates; fetching their destination pages is a separate step.
 
 One provider can succeed while another is challenged or unavailable. Preserve those outcomes so your application can explain what it found.
 
+Bing can return an HTTP response whose visible titles, snippets, and destination
+host/path do not confirm the requested topic or intent. URL query and fragment
+text is excluded because it can echo the authored query. In that case Search keeps the hits,
+marks web coverage partial, and adds `query_relevance_unknown`. This means the
+captured result text was insufficient to verify the query; it does not prove
+that a destination page is irrelevant. Quoted or operator queries are not
+automatically rewritten.
+
 Current built-in provider routes are previews pending certification.
 
 ## Configure the provider

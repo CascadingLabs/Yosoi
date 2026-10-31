@@ -20,6 +20,8 @@ from yosoi.search import (
     SearchCoverage,
     SearchHit,
     SearchHitMetadata,
+    SearchIssue,
+    SearchIssueKind,
     SearchPage,
     SearchProfileFacts,
     SearchResponse,
@@ -32,6 +34,23 @@ def _assert_hidden_from_display(value: object, *secrets: str) -> None:
     for rendered in (repr(value), str(value)):
         for secret in secrets:
             assert secret not in rendered
+
+
+def test_query_relevance_unknown_issue_has_a_python_wire_value() -> None:
+    from pydantic import TypeAdapter
+
+    issue = SearchIssue(placement_index=None, kind="query_relevance_unknown")
+    kind_adapter = TypeAdapter(SearchIssueKind)
+
+    assert issue.model_dump(mode="json") == {
+        "placement_index": None,
+        "kind": "query_relevance_unknown",
+    }
+    assert (
+        kind_adapter.validate_python("query_relevance_unknown")
+        == "query_relevance_unknown"
+    )
+    assert SearchIssue.model_fields["kind"].annotation is SearchIssueKind
 
 
 def test_search_result_url_redacts_repr_but_keeps_display_and_explicit_access() -> None:

@@ -328,7 +328,7 @@ impl fmt::Debug for LocalPlace {
     }
 }
 
-/// Nonfatal extraction issue explaining rejected evidence or reduced coverage.
+/// Nonfatal extraction issue or uncertainty about query relevance.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchIssueKind {
@@ -342,12 +342,15 @@ pub enum SearchIssueKind {
     UnrecognizedResultRow,
     /// A configured output budget limited retained results or features.
     OutputLimit,
-    /// Bing supplied off-query rows for the original query; these hits came
-    /// from one shorter, disclosed content-term query.
+    /// Visible title, snippet, or destination path could not confirm the requested topic and intent.
+    /// Hits remain available with partial coverage; this is not a mismatch.
+    QueryRelevanceUnknown,
+    /// Bing returned partial results after one disclosed alternate query.
     QueryRelaxed,
 }
 
-/// Bounded structural evidence of an extraction issue, without response excerpts.
+/// Bounded evidence of an extraction issue or uncertain query relevance,
+/// without response excerpts.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct SearchIssue {
     /// One-based affected placement, or `None` for an issue spanning the response.

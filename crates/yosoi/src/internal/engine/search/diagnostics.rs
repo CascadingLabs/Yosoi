@@ -28,7 +28,7 @@ pub enum SearchParserDiagnostic {
     IncompleteDocument,
     /// Recognized rows yielded no valid organic destinations.
     NoUsableHits,
-    /// Parsed results did not satisfy the provider's query fidelity check.
+    /// Legacy parser classification for results that failed a query fidelity check.
     QueryMismatch,
     /// A normalized output budget prevented a usable result.
     OutputLimit,
@@ -278,7 +278,6 @@ pub fn parse_document(
             bing::BingParseError::OutputLimit => D::OutputLimit,
             bing::BingParseError::InvalidPageUrl => D::InvalidPageUrl,
             bing::BingParseError::UnrecognizedPage => D::UnrecognizedPage,
-            bing::BingParseError::QueryMismatch => D::QueryMismatch,
             bing::BingParseError::NoUsableHits => D::NoUsableHits,
             bing::BingParseError::IncompleteDocument => D::IncompleteDocument,
             bing::BingParseError::LocateFailed => D::LocateFailed,

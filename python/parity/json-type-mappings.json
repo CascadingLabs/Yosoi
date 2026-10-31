@@ -651,7 +651,7 @@
     },
     {
       "rustPath": "yosoi::search::SearchIssueKind",
-      "pythonTarget": "yosoi.search.SearchIssue.kind"
+      "pythonTarget": "yosoi.search.SearchIssueKind"
     },
     {
       "rustPath": "yosoi::search::SearchPage",

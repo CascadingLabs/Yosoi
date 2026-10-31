@@ -341,26 +341,39 @@ galleries, and local packs. Reported destinations are not fetched by these value
 """
 
 
+SearchIssueKind = Literal[
+    "invalid_destination",
+    "duplicate_destination",
+    "missing_required_field",
+    "unrecognized_result_row",
+    "output_limit",
+    "query_relevance_unknown",
+    "query_relaxed",
+]
+"""Extraction and query-relevance issues retained alongside provider results.
+
+Categories cover rejected destinations, incomplete extraction, output bounds,
+uncertain query relevance, and query relaxation. ``query_relevance_unknown`` means
+the visible evidence could not verify the original query; it does not establish
+that the results are irrelevant. ``query_relaxed`` marks results adopted from a
+rewritten query. Inspect coverage and attempts before treating either as complete
+results.
+"""
+
+
 class SearchIssue(ImmutableModel):
-    """A bounded structural extraction issue without raw response excerpts.
+    """A bounded extraction or query-relevance issue without raw excerpts.
 
     Attributes:
         placement_index: One-based affected placement, or None for a response-wide
             issue.
         kind: Classifies invalid or duplicate destinations, missing fields, unrecognized
-            rows, output limits, or query relaxation. Inspect coverage before claiming
-            completeness.
+            rows, output limits, uncertain query relevance, or query relaxation. Inspect
+            coverage before claiming completeness.
     """
 
     placement_index: Rank | None
-    kind: Literal[
-        "invalid_destination",
-        "duplicate_destination",
-        "missing_required_field",
-        "unrecognized_result_row",
-        "output_limit",
-        "query_relaxed",
-    ]
+    kind: SearchIssueKind
 
 
 class SearchPage(ImmutableModel):
@@ -839,8 +852,8 @@ class ProviderResult(ImmutableModel):
         identity: Recorded provider and adapter identities.
         profile: Route-selection and effective-policy facts.
         request_id: Underlying Request identity, absent if no Request started.
-        recovery_query: Shorter query used for off-query recovery, when attempted; may
-            contain user content.
+        recovery_query: Alternative Bing query used for off-query recovery, when
+            attempted; may contain user content.
         attempts: Underlying acquisitions, including any recovery Request attempts.
         captures: Opt-in Archive records for original and recovery projected documents.
         diagnostic_captures: Owning in-memory capture views, excluded from JSON.
