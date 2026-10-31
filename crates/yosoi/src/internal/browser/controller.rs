@@ -1,5 +1,6 @@
 //! Private provider boundary. Chrome keeps its existing implementation.
 
+use super::page::SurfaceInput;
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
 use std::sync::atomic;
@@ -371,6 +372,31 @@ impl Page {
     native_method!(fn screenshot_png() -> Vec<u8>, |page, token, deadline| page.screenshot_png(&token, deadline).await);
     native_method!(fn click_unique_element(selector: &str) -> (), |page, token, deadline| page.click_unique_element(selector, &token, deadline).await);
     native_method!(fn type_into_unique_element(selector: &str, text: &str) -> (), |page, token, deadline| page.type_into_unique_element(selector, text, &token, deadline).await);
+    pub(crate) async fn surface_script(
+        &self,
+        operation: &str,
+        input: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        match self {
+            Self::Chrome(page) => page.surface_script(operation, input).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface browser script")),
+        }
+    }
+    pub(crate) async fn surface_input(&self, input: &SurfaceInput) -> Result<()> {
+        match self {
+            Self::Chrome(page) => page.surface_input(input).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface native input")),
+        }
+    }
+    pub(crate) async fn surface_ax(&self, depth: Option<i64>) -> Result<serde_json::Value> {
+        match self {
+            Self::Chrome(page) => page.surface_ax(depth).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface accessibility capture")),
+        }
+    }
     native_method!(fn frame_urls() -> Vec<String>, |page, token, deadline| page.frames(&token, deadline).await.map(|frames| frames.into_iter().map(|frame| frame.url).collect()));
     pub async fn navigate_until_dom_content_loaded(
         &self,
