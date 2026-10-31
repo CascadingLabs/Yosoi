@@ -50,6 +50,8 @@ pub(super) fn validate_tree(
     }
     if command.get_subcommands().next().is_some()
         && local_args.iter().any(|arg| arg.is_positional())
+        && !(command.is_args_conflicts_with_subcommands_set()
+            && command.is_subcommand_negates_reqs_set())
     {
         return Err(SyntaxError::AmbiguousPositionals(
             command.get_name().to_owned(),

@@ -15,7 +15,7 @@ use std::{
     path::PathBuf,
 };
 
-use clap::{ArgAction, Args, ValueEnum};
+use clap::{ArgAction, Args, Subcommand, ValueEnum};
 use yosoi::policy::search::Provider;
 
 use std::{
@@ -63,9 +63,25 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true, subcommand_negates_reqs = true)]
+pub struct SearchCommandArgs {
+    #[command(flatten)]
+    pub query: SearchArgs,
+    #[command(subcommand)]
+    pub command: Option<SearchCommand>,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SearchCommand {
+    /// Replay saved Search parser decisions offline from an Archive manifest.
+    Replay(evidence::ReplayArgs),
+}
+
+#[derive(Debug, Args)]
 pub struct SearchArgs {
     /// Text to search for.
-    pub query: String,
+    #[arg(required = true)]
+    pub query: Option<String>,
     /// Explicitly retain bounded query/page evidence in this Archive for offline replay.
     #[arg(long)]
     pub diagnostic_archive: Option<PathBuf>,
@@ -97,7 +113,11 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
     let timer = RunTimer::start();
     let (policy, profile_name) =
         policy_for_search(&args, profile).map_err(SearchCommandError::Setup)?;
-    let request = ys::search::new(args.query)
+    let query = args
+        .query
+        .context("Search query is required")
+        .map_err(SearchCommandError::Setup)?;
+    let request = ys::search::new(query)
         .context("invalid Search query")
         .map_err(SearchCommandError::Setup)?
         .bind(&policy);

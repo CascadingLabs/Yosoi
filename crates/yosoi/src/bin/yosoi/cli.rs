@@ -49,9 +49,7 @@ enum Commands {
     /// Discover scoped pages or passive subdomains.
     Map(map_command::MapArgs),
     /// Search selected providers for a query.
-    Search(search_command::SearchArgs),
-    /// Replay saved Search parser decisions offline from an Archive manifest.
-    SearchReplay(search_command::evidence::ReplayArgs),
+    Search(search_command::SearchCommandArgs),
     /// Locate values in a file or one typed Yosoi Document on stdin.
     Locate(locate_command::LocateArgs),
     /// Inspect web/video evidence and drive controllable surfaces through bounded JSON.
@@ -108,16 +106,18 @@ pub async fn run() -> ExitCode {
                     Err(error) => report_app_error(&error),
                 }
             }
-            Some(Commands::SearchReplay(args)) => match search_command::evidence::run(args).await {
-                Ok(code) => code,
-                Err(error) => report_app_error(&error),
-            },
-            Some(Commands::Search(args)) => {
-                match search_command::run(args, cli.profile.as_deref()).await {
+            Some(Commands::Search(args)) => match args.command {
+                Some(search_command::SearchCommand::Replay(args)) => {
+                    match search_command::evidence::run(args).await {
+                        Ok(code) => code,
+                        Err(error) => report_app_error(&error),
+                    }
+                }
+                None => match search_command::run(args.query, cli.profile.as_deref()).await {
                     Ok(code) => code,
                     Err(error) => search_command::report_error(&error),
-                }
-            }
+                },
+            },
             Some(Commands::Locate(args)) => {
                 match locate_command::run(&args, cli.profile.as_deref()) {
                     Ok(code) => code,
@@ -221,6 +221,85 @@ mod tests {
     }
 
     #[test]
+    fn search_replay_parses_nested_case_folded_syntax() -> Result<(), Box<dyn Error>> {
+        let command = Cli::command();
+        let args = [
+            "SeArCh",
+            "RePlAy",
+            "Capture.JSON",
+            "--ARCHIVE-ROOT",
+            "Archive",
+        ]
+        .into_iter()
+        .map(OsString::from);
+        let normalized = syntax::normalize_args(&command, args)?;
+        let cli = Cli::try_parse_from(iter::once(OsString::from("yosoi")).chain(normalized))?;
+        let Some(Commands::Search(args)) = cli.command else {
+            return Err("parsed command was not Search".into());
+        };
+        let Some(super::search_command::SearchCommand::Replay(args)) = args.command else {
+            return Err("parsed command was not Search replay".into());
+        };
+        assert_eq!(args.manifest.to_str(), Some("Capture.JSON"));
+        assert_eq!(
+            args.archive_root.as_deref().and_then(|path| path.to_str()),
+            Some("Archive")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn search_replay_rejects_missing_manifest_and_live_search_options() {
+        for args in [
+            vec!["yosoi", "search", "replay"],
+            vec![
+                "yosoi",
+                "search",
+                "--providers",
+                "bing",
+                "replay",
+                "capture.json",
+            ],
+            vec![
+                "yosoi",
+                "search",
+                "replay",
+                "capture.json",
+                "--providers",
+                "bing",
+            ],
+            vec!["yosoi", "search-replay", "capture.json"],
+            vec!["yosoi", "search"],
+        ] {
+            assert!(
+                Cli::try_parse_from(args.clone()).is_err(),
+                "accepted {args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn search_can_query_a_subcommand_name_after_double_dash() -> Result<(), Box<dyn Error>> {
+        let cli = Cli::try_parse_from(["yosoi", "search", "--", "REPLAY"])?;
+        let Some(Commands::Search(args)) = cli.command else {
+            return Err("parsed command was not Search".into());
+        };
+        assert!(args.command.is_none());
+        assert_eq!(args.query.query.as_deref(), Some("REPLAY"));
+        let normalized = syntax::normalize_args(
+            &Cli::command(),
+            ["search", "query", "REPLAY"]
+                .into_iter()
+                .map(OsString::from),
+        )?;
+        assert_eq!(
+            normalized,
+            ["search", "query", "REPLAY"].map(OsString::from)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn search_help_lists_explicit_provider_and_limit_options() -> Result<(), Box<dyn Error>> {
         let mut command = Cli::command();
         let search = command
@@ -264,7 +343,8 @@ mod tests {
         let Some(Commands::Search(args)) = cli.command else {
             return Err("parsed command was not Search".into());
         };
-        assert_eq!(args.query, "Rust Ownership");
+        let args = args.query;
+        assert_eq!(args.query.as_deref(), Some("Rust Ownership"));
         assert_eq!(
             args.providers,
             [ProviderChoice::Brave, ProviderChoice::DuckDuckGo]
@@ -293,6 +373,7 @@ mod tests {
         let Some(Commands::Search(args)) = cli.command else {
             return Err("parsed command was not Search".into());
         };
+        let args = args.query;
         assert_eq!(
             args.providers,
             [ProviderChoice::Brave, ProviderChoice::Bing]
@@ -315,6 +396,7 @@ mod tests {
         let Some(Commands::Search(args)) = cli.command else {
             return Err("parsed command was not Search".into());
         };
+        let args = args.query;
         assert_eq!(args.providers, Vec::<ProviderChoice>::new());
         assert_eq!(args.per_provider_limit, None);
         assert_eq!(args.max_in_flight, None);

@@ -137,7 +137,7 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
-        query: "unused fixture query".to_owned(),
+        query: Some("unused fixture query".to_owned()),
         diagnostic_archive: None,
         providers,
         reporting: StatsArgs { enabled: false },

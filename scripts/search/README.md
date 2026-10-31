@@ -7,7 +7,7 @@ projected document bytes are retained only after an explicit capture opt-in.
 ```bash
 yosoi search 'history of photosynthesis' --providers bing --max-in-flight 1 \
   --diagnostic-archive .generated/search-evidence --output json
-yosoi search-replay .generated/search-evidence/search-REQUEST_ID.json
+yosoi search replay .generated/search-evidence/search-REQUEST_ID.json
 ```
 
 The first command contacts the provider. The replay command performs zero network

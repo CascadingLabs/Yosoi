@@ -70,6 +70,7 @@ pub fn normalize_args(
     let mut globals: Vec<&Arg> = Vec::new();
     let mut pending_value = false;
     let mut options_done = false;
+    let mut positionals_started = false;
 
     for arg in args {
         if pending_value {
@@ -88,6 +89,7 @@ pub fn normalize_args(
             if has_non_utf8_option_token(&arg, current, &globals) {
                 return Err(SyntaxError::NonUtf8OptionToken);
             }
+            positionals_started |= current.get_arguments().any(|arg| arg.is_positional());
             output.push(arg);
             continue;
         };
@@ -129,16 +131,18 @@ pub fn normalize_args(
             continue;
         }
 
-        if let Some(subcommand) = find_subcommand(current, text) {
+        if let Some(subcommand) = find_subcommand(current, text).filter(|_| !positionals_started) {
             output.push(OsString::from(subcommand.get_name()));
             globals.extend(current.get_arguments().filter(|arg| arg.is_global_set()));
             current = subcommand;
         } else if current.has_subcommands()
+            && !positionals_started
             && !current.is_disable_help_subcommand_set()
             && text.eq_ignore_ascii_case("help")
         {
             output.push(OsString::from("help"));
         } else {
+            positionals_started |= current.get_arguments().any(|arg| arg.is_positional());
             output.push(arg);
         }
     }
