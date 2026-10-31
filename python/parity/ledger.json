@@ -32173,6 +32173,486 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.View.total_rows."
+    },
+    {
+      "rustPath": "yosoi::registry",
+      "symbolKey": "page:module:yosoi::registry",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry."
+    },
+    {
+      "rustPath": "yosoi::registry::Change",
+      "symbolKey": "page:enum:yosoi::registry::Change",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Change",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Change."
+    },
+    {
+      "rustPath": "yosoi::registry::Change::Put",
+      "symbolKey": "member:variant:yosoi::registry::Change::Put@signature:ac0c4e9d7e2dd30a44ad8bfd55282356cf87f16b95364e8507960fdea0b567e2@source:a5decfaba6e682df3ac8b71b466d4cbb3c30a4876de2c6bbd2f8c4dba1756dc7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Put",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "value",
+          "pythonArgument": "value",
+          "conversion": "Python JsonValue converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "variant-tag:kind",
+          "rust": "variant Put",
+          "python": "kind=put"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Put maps to the corresponding Python tagged value yosoi.registry.Put. The Python discriminator value is 'kind=put'."
+    },
+    {
+      "rustPath": "yosoi::registry::Change::Remove",
+      "symbolKey": "member:variant:yosoi::registry::Change::Remove@signature:52759ae7aff36423f8157a6f56f83e4d131a5e3a5ffbae721638f9ca5c92b71a@source:ac3d4699e44a9a3d8f918dc6375af7b4ea25be897f78e780f0ab564013e771e3",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Remove",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "variant-tag:kind",
+          "rust": "variant Remove",
+          "python": "kind=remove"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Remove maps to the corresponding Python tagged value yosoi.registry.Remove. The Python discriminator value is 'kind=remove'."
+    },
+    {
+      "rustPath": "yosoi::registry::Coordination",
+      "symbolKey": "page:enum:yosoi::registry::Coordination",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Coordination",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Coordination."
+    },
+    {
+      "rustPath": "yosoi::registry::Coordination::Distributed",
+      "symbolKey": "member:variant:yosoi::registry::Coordination::Distributed@signature:04e1ef7d1eaf20adebaaed1f44590c54e2e662b3982d478d8304f361f1a1c221@source:c9eee40a1fe9ecb77596a4e8329087d2f277e94a469776224a6c5815513a2226",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Coordination",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Distributed maps to the corresponding Python tagged value yosoi.registry.Coordination. The Python discriminator value is 'distributed'."
+    },
+    {
+      "rustPath": "yosoi::registry::Coordination::Instance",
+      "symbolKey": "member:variant:yosoi::registry::Coordination::Instance@signature:425f233626b3cd02e48954803f450ad165ac9d36d44181cd6ec2f3166573f606@source:3b1d6b6fab86bef06ca45b2420d391ebfa1870b2104e73f61e2f0c34833339f5",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Coordination",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Instance maps to the corresponding Python tagged value yosoi.registry.Coordination. The Python discriminator value is 'instance'."
+    },
+    {
+      "rustPath": "yosoi::registry::Coordination::LocalProcesses",
+      "symbolKey": "member:variant:yosoi::registry::Coordination::LocalProcesses@signature:92f78082a0e47c4543d61d759457c814570c4c3ea30962c83e51d36662cebf62@source:3ddbb4fe6c474ac7982d5edd0859fea9b57a99e72abfb0fa904b4bcb1ee79924",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Coordination",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant LocalProcesses maps to the corresponding Python tagged value yosoi.registry.Coordination. The Python discriminator value is 'local_processes'."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry",
+      "symbolKey": "page:struct:yosoi::registry::Registry",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Registry."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::commit",
+      "symbolKey": "member:function:yosoi::registry::Registry::commit@signature:f455d53097b51871dfa62cf70be2d7be825ade46dd436469043c083d0f22ac85@source:4adf925ae1e79eac966f9e02bb3436539d25b55e21ca80ac2d252a07b054838d",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.commit",
+      "argumentMappings": [
+        {
+          "rustArgument": "expected",
+          "pythonArgument": "expected",
+          "conversion": "Preserve registry identity and unsigned 64-bit commit sequence."
+        },
+        {
+          "rustArgument": "changes",
+          "pythonArgument": "changes",
+          "conversion": "Serialize ordered Put/Remove DTOs to the native atomic batch without retries or partial application."
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.commit."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::compact",
+      "symbolKey": "member:function:yosoi::registry::Registry::compact@signature:088d25354e7b8d4055ddd54c55cab97ef2a55f50e553e847cc4a0eac55ed237e@source:d0545d2b7215a0119feec1b1083b58a755d788e870d92e69233f956ac749eb20",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.compact",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.compact."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::coordination",
+      "symbolKey": "member:function:yosoi::registry::Registry::coordination@signature:4fb9e3cddb5fbb68895ae14e64374fdfa03c085131c7b62f826221f9d40e2d8d@source:e0aa0260903d2f24188b9b1823e0c175b9d96e10316cc753cd775e528126218f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.coordination",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.coordination."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::global_jsonl",
+      "symbolKey": "member:function:yosoi::registry::Registry::global_jsonl@signature:e0cab41db8c3ecadeff82d922bbf4a3b4ff4e95316e8db7f9b4cedb94eaa6eaa@source:ba02ccb77b1ce17d5040f5419f7a5a51852548ea2be3bf66c08ab1785ef11fb9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.global_jsonl",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.global_jsonl."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::jsonl",
+      "symbolKey": "member:function:yosoi::registry::Registry::jsonl@signature:1691c26d64cbb4e4f1523f712069193b90e546e29d373b846971e2a6a16c052a@source:84c586f45a4eb285068d7c49da1c4b4439e41fb58e57d8cea6fa947aa8fb1105",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.jsonl",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "Filesystem path selects the same local JSONL journal; Python str or PathLike[str] becomes the native Rust Path."
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.jsonl."
+    },
+    {
+      "rustPath": "yosoi::registry::Registry::snapshot",
+      "symbolKey": "member:function:yosoi::registry::Registry::snapshot@signature:afccd932414bb26eeed8bbb41785821e9412ac8af74b614b8cbef8b98eaadf90@source:02f90d9fb4945fc6d2991a79e3b41f3aa29b9224840a8744c2dd779b8858b6fe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Registry.snapshot",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.snapshot."
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError",
+      "symbolKey": "page:enum:yosoi::registry::RegistryError",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.RegistryError."
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::Busy",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Busy@signature:2b9cf77b67940911033d20da888c871c41dc5052fc13be9b8cb892662a555d72@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant Busy in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Busy",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::CapacityExceeded",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::CapacityExceeded@signature:dd3801c4294df100f2253090572a1a96fbd8b7db8cef45dd2f17ccf03d8181c5@source:6ae22f2628b712b34fe89a2a1aeb4e1e786d754a1f17186bdb189f10fcaf4a25",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant CapacityExceeded in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "CapacityExceeded",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::Conflict",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Conflict@signature:014659ab9d98c8fea5fed2a5a3bc3c41d6478904a9184c65a57769c439940d14@source:804ef963d9c08760bc7d39e902a14c399ef70138397bf83214bca22d97080e8c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant Conflict in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Conflict",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::InvalidKey",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::InvalidKey@signature:99614aa077e4bd14b6ac2568f1a9c06a9225757e83307bae0a4ee2a15f641a98@source:af24d49f2c0979b8e33fe4fcb6cd5e62fbfcbc26917d067132d56ffb9e162301",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant InvalidKey in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "InvalidKey",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::InvalidState",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::InvalidState@signature:bfd93652d490bc16bce3fce7c753e3b80739d841a114bec87ee41135da41dde8@source:5f280456bb4822b35e1fe8eea51045998da1ca374501cf2fb413c2f8e25d511b",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant InvalidState in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "InvalidState",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::Io",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Io@signature:8a68f3b084ca49121d3786c6c6d91285627eddbdb8a571c02a3ac8429249c126@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant Io in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Io",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "source_chain",
+            "conversion": "Retain the underlying Rust source error messages in order."
+          }
+        ]
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::Json",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Json@signature:87ddc7e555c63b07140da768b56d246b9a36fbd077e64cac8019885f9aeaecc1@source:4cecb7e1aba21039f5f70158f4e372d5e9b2fdf1f4e0d905ae4ff74dc322813f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant Json in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Json",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "source_chain",
+            "conversion": "Retain the underlying Rust source error messages in order."
+          }
+        ]
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::NoGlobalLocation",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::NoGlobalLocation@signature:3808397c315091e6c6f812199419dcdc60ec7708eeaa8888f49fa7e3221c5dce@source:f0bcfca3fa444ae49890c6823d97aba5effea785afd1467aaaee2e03c4750529",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant NoGlobalLocation in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "NoGlobalLocation",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::RegistryError::Poisoned",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Poisoned@signature:6dc21afe4edec3c11b085c474e88026cefc74581cca0c738a9fcca1466b7ff99@source:38f981d1490713acd654298a545b67d9bd5262be743e09df5c894648383ae384",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.RegistryError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Raised RegistryError retains Rust variant Poisoned in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Poisoned",
+        "rustType": "yosoi::registry::RegistryError",
+        "pythonFields": []
+      }
+    },
+    {
+      "rustPath": "yosoi::registry::Revision",
+      "symbolKey": "page:struct:yosoi::registry::Revision",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Revision",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Revision."
+    },
+    {
+      "rustPath": "yosoi::registry::Revision::registry_id",
+      "symbolKey": "member:struct_field:yosoi::registry::Revision::registry_id@signature:0431af9f60c2a147409c917efc20b7bebf8362027332540ff67c45484fe170cf@source:6242b14cf874897ee06726ddd6c17091d2bf70fc443cd16134a15c7d9438535b",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Revision.registry_id",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field registry_id maps to Python field registry_id."
+    },
+    {
+      "rustPath": "yosoi::registry::Revision::sequence",
+      "symbolKey": "member:struct_field:yosoi::registry::Revision::sequence@signature:f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e@source:de65a894419c1a6a81f98a127608c6a32836d6b811aa603ca1889126b2890991",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Revision.sequence",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field sequence maps to Python field sequence."
+    },
+    {
+      "rustPath": "yosoi::registry::Snapshot",
+      "symbolKey": "page:struct:yosoi::registry::Snapshot",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Snapshot",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Snapshot."
+    },
+    {
+      "rustPath": "yosoi::registry::Snapshot::entries",
+      "symbolKey": "member:struct_field:yosoi::registry::Snapshot::entries@signature:675a15966b0923baf6cf566f51d8dbef944237793d10874c187368d2aef99b8c@source:3d88c3a656c000c9291da742bbb036322b945a477663610a166ed48d0e508815",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Snapshot.entries",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field entries maps to Python field entries."
+    },
+    {
+      "rustPath": "yosoi::registry::Snapshot::revision",
+      "symbolKey": "member:struct_field:yosoi::registry::Snapshot::revision@signature:dececff90b8cbb88fcd98c69486eaaf18bd8714716f994085c8be9aa01a7c3c0@source:3ff3d9990dcdb984b3c7d515957039457ed7ea2149da5ec4d4155ace0c34effe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.registry.Snapshot.revision",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field revision maps to Python field revision."
     }
   ],
   "surfaceContract": "surface-contract.json"
