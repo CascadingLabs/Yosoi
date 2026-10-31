@@ -136,6 +136,29 @@ CARGO_BUILD_JOBS=1 RAYON_NUM_THREADS=1 cargo test --locked -p yosoi \
 The example is registered with `test = true`, so its offline tests also run in
 the existing hosted Rust suites. No tests require the live shop.
 
+The 16 focused tests include exact threshold and weighted-component arithmetic,
+symmetry, missing/empty evidence, required root evidence, oracle-order independence,
+collection completeness/uniqueness, the 64-node ancestry boundary, and Archive
+replay. Oracle entries may be reordered; controls select the mug by identity.
+Incomplete, duplicate, or unknown product IDs fail before evaluation writes results.
+
+### Depth limits and nested-root follow-up
+
+The spike's field-to-root traversal accepts at most **64 nodes including the
+selected field and root**. Longer paths fail explicitly. Descendant features
+cover three element levels; this feature horizon is distinct from a traversal
+limit. Component and text traversals stop after 10,000 visits. Live capture
+normalization separately rejects DOM depth above 64, while the SDK conservative
+document budget permits depth 1,024. These guards do not establish a supported
+contract-nesting depth or prove recursive Contract composition.
+
+The Structural Fingerprinting project tracks required stress testing of nested
+parent/child roots, repeated siblings/arrays, optional nested fields, identical
+field names across roots, and out-of-root decoys. Test below/at/above each depth
+limit through extraction and Archive replay; measure time/memory as depth and
+width grow. Distinguish explicit budget errors from stack overflow, silent
+truncation, or lost lineage before claiming nested-root support.
+
 ## Repeat the live experiment
 
 Set `CHROME` to an admitted regular Stable executable; no launch-policy changes

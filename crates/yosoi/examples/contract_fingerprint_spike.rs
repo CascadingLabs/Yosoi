@@ -21,7 +21,7 @@ async fn main() -> Result {
         [mode, output, oracle] if mode == "evaluate" => spike::evaluate(Path::new(output), Path::new(oracle)).await,
         [mode, output] if mode == "sensitivity" => spike::sensitivity(Path::new(output)).await,
         [mode, output] if mode == "replay" => spike::replay(Path::new(output)).await,
-        _ => Err(io::Error::other("usage: contract_fingerprint_spike capture OUTPUT ID | freeze OUTPUT | evaluate OUTPUT ORACLE | replay OUTPUT").into()),
+        _ => Err(io::Error::other("usage: contract_fingerprint_spike capture OUTPUT ID | freeze OUTPUT | evaluate OUTPUT ORACLE | sensitivity OUTPUT | replay OUTPUT").into()),
     }
 }
 

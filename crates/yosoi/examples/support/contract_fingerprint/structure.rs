@@ -68,6 +68,7 @@ impl Dom {
         let index: BTreeMap<u64, &Node> = self.nodes.iter().map(|node| (node.id, node)).collect();
         let mut relation = Vec::new();
         let mut current = selected;
+        let mut reached_root = false;
         // All relations stop at the selected contract root, never at the document root.
         for _ in 0..64 {
             let node = index
@@ -75,14 +76,15 @@ impl Dom {
                 .ok_or_else(|| super::error("missing ancestor"))?;
             relation.push(symbol(node));
             if current == root {
+                reached_root = true;
                 break;
             }
             current = node
                 .parent
                 .ok_or_else(|| super::error("field lies outside contract root"))?;
         }
-        if current != root {
-            return fail("field-to-root depth exceeds 64");
+        if !reached_root {
+            return fail("field-to-root path exceeds 64 nodes including root");
         }
         relation.reverse();
         let mut features = BTreeSet::from([format!("relation:{}", relation.join("/"))]);

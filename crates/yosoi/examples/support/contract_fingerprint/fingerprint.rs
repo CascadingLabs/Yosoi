@@ -85,6 +85,14 @@ pub(super) fn compare(a: &Fingerprint, b: &Fingerprint) -> Result<Comparison> {
     if a.profile != PROFILE || b.profile != PROFILE || a.schema_checksum != b.schema_checksum {
         return fail("incompatible fingerprint profile or contract schema");
     }
+    if [a, b].iter().any(|fingerprint| {
+        fingerprint
+            .components
+            .get("root")
+            .is_none_or(BTreeSet::is_empty)
+    }) {
+        return fail("fingerprint requires nonempty contract-root evidence");
+    }
     let keys: BTreeSet<&String> = a.components.keys().chain(b.components.keys()).collect();
     if keys.is_empty() {
         return fail("empty fingerprint has no comparison evidence");

@@ -210,3 +210,159 @@ fn snapshot_local_ids_cannot_substitute_a_different_document() -> Result {
     }
     Ok(())
 }
+
+#[test]
+fn fingerprints_without_a_root_cannot_match() -> Result {
+    let (_, frozen, _) = fixture()?;
+    let mut fingerprint = frozen.references[0].fingerprint.clone();
+    fingerprint.components.remove("root");
+    assert!(fingerprint::compare(&fingerprint, &fingerprint).is_err());
+    Ok(())
+}
+
+#[test]
+fn weighted_jaccard_has_an_inclusive_component_threshold() -> Result {
+    use std::collections::BTreeMap;
+    let features = |count: usize| (0..count).map(|n| format!("path:{n}")).collect();
+    let make = |count| fingerprint::Fingerprint {
+        profile: fingerprint::PROFILE.into(),
+        schema_checksum: "same-schema".into(),
+        components: BTreeMap::from([("root".into(), features(count))]),
+    };
+    let reference = make(20);
+    let at = fingerprint::compare(&reference, &make(17))?;
+    assert!((at.similarity - 0.85).abs() < f64::EPSILON);
+    assert!(at.eligible);
+    assert!(!fingerprint::compare(&reference, &make(16))?.eligible);
+    Ok(())
+}
+
+#[test]
+fn a_weak_field_is_not_hidden_by_a_strong_root() -> Result {
+    use std::collections::{BTreeMap, BTreeSet};
+    let features = |values: &[&str]| {
+        values
+            .iter()
+            .map(|v| (*v).to_owned())
+            .collect::<BTreeSet<_>>()
+    };
+    let a = fingerprint::Fingerprint {
+        profile: fingerprint::PROFILE.into(),
+        schema_checksum: "same-schema".into(),
+        components: BTreeMap::from([
+            ("root".into(), features(&["path:root"])),
+            (
+                "field".into(),
+                features(&["relation:root/field", "path:field"]),
+            ),
+        ]),
+    };
+    let mut b = a.clone();
+    b.components.insert(
+        "field".into(),
+        features(&["relation:root/field", "path:field", "path:extra"]),
+    );
+    let comparison = fingerprint::compare(&a, &b)?;
+    // Relation weight 2 yields field Jaccard 3/4; root hierarchy weight 2
+    // yields aggregate (2 + 3/4)/3, above the threshold.
+    assert!((comparison.components["field"] - 0.75).abs() < f64::EPSILON);
+    assert!(comparison.similarity > fingerprint::THRESHOLD);
+    assert!(!comparison.eligible);
+    assert_eq!(comparison, fingerprint::compare(&b, &a)?);
+    Ok(())
+}
+
+#[test]
+fn empty_and_one_sided_components_abstain() -> Result {
+    let (_, frozen, _) = fixture()?;
+    let original = &frozen.references[0].fingerprint;
+    for missing in [true, false] {
+        let mut changed = original.clone();
+        if missing {
+            changed.components.remove("price");
+        } else {
+            changed
+                .components
+                .insert("price".into(), Default::default());
+        }
+        let comparison = fingerprint::compare(original, &changed)?;
+        assert!(comparison.coverage < 1.0);
+        assert!(!comparison.eligible);
+        assert_eq!(comparison, fingerprint::compare(&changed, original)?);
+    }
+    let mut empty = original.clone();
+    empty.components.clear();
+    assert!(fingerprint::compare(&empty, &empty).is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn evaluation_is_independent_of_oracle_order() -> Result {
+    let evidence = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../experiments/contract-fingerprints/fixtures/evidence");
+    let staged = stage_archive(&evidence)?;
+    let output = staged.path();
+    fs::rename(output.join("store"), output.join("archive"))?;
+    for entry in fs::read_dir(&evidence)? {
+        let entry = entry?;
+        if entry
+            .path()
+            .extension()
+            .is_some_and(|extension| extension == "json")
+        {
+            fs::copy(entry.path(), output.join(entry.file_name()))?;
+        }
+    }
+    let oracle_path = output.join("oracle.json");
+    let mut oracle: Vec<Expected> = serde_json::from_slice(&fs::read(&oracle_path)?)?;
+    oracle.reverse();
+    fs::write(&oracle_path, serde_json::to_vec(&oracle)?)?;
+    evaluate(output, &oracle_path).await?;
+    replay(output).await?;
+    Ok(())
+}
+
+#[test]
+fn root_ancestry_limit_includes_the_root_in_its_64_nodes() -> Result {
+    let document = seed()?;
+    let mut dom = Dom::read(&document)?;
+    let template = dom
+        .nodes
+        .iter()
+        .find(|node| node.kind == "element")
+        .ok_or_else(|| super::super::error("element missing"))?
+        .clone();
+    dom.nodes.clear();
+    dom.root = 1;
+    for id in 1_u64..=65 {
+        let mut node = template.clone();
+        node.id = id;
+        node.parent = id.checked_sub(1).filter(|parent| *parent != 0);
+        node.children.clear();
+        node.tag_name = Some(if id == 1 { "main" } else { "div" }.into());
+        dom.nodes.push(node);
+    }
+    for depth in [63, 64] {
+        let signature = dom.signature(depth, 1)?;
+        assert!(
+            signature
+                .iter()
+                .any(|feature| feature.starts_with("relation:main["))
+        );
+    }
+    // Previously the loop advanced to root #1 after visiting #2 and returned
+    // success without ever adding the root symbol to the relation.
+    assert!(dom.signature(65, 1).is_err());
+    Ok(())
+}
+
+#[test]
+fn invalid_oracle_ids_are_rejected_before_evaluation() {
+    let ids = [
+        "obj-001", "obj-002", "obj-003", "obj-004", "obj-005", "obj-006",
+    ];
+    assert!(verify_ids(ids.into_iter()).is_ok());
+    assert!(verify_ids(ids.into_iter().take(5)).is_err());
+    assert!(verify_ids(ids.into_iter().chain(["obj-002"])).is_err());
+    assert!(verify_ids(["../obj-002"].into_iter()).is_err());
+}

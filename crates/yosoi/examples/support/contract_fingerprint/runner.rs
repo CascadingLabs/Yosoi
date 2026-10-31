@@ -190,16 +190,29 @@ fn evaluate_case(frozen: &Frozen, document: &Document, expected: &Expected) -> R
 }
 
 fn verify_collection(cases: &[Case]) -> Result {
+    verify_ids(cases.iter().map(|case| case.id.as_str()))
+}
+
+fn verify_ids<'a>(ids: impl Iterator<Item = &'a str>) -> Result {
     let expected: BTreeSet<&str> = [
         "obj-001", "obj-002", "obj-003", "obj-004", "obj-005", "obj-006",
     ]
     .into_iter()
     .collect();
-    let actual: BTreeSet<&str> = cases.iter().map(|case| case.id.as_str()).collect();
-    if cases.len() != expected.len() || actual != expected {
+    let ids: Vec<&str> = ids.collect();
+    let actual: BTreeSet<&str> = ids.iter().copied().collect();
+    if ids.len() != expected.len() || actual != expected {
         return fail("collection coverage or uniqueness failed");
     }
     Ok(())
+}
+
+fn mug_index(oracle: &[Expected]) -> Result<usize> {
+    verify_ids(oracle.iter().map(|item| item.id.as_str()))?;
+    oracle
+        .iter()
+        .position(|item| item.id == "obj-002")
+        .ok_or_else(|| super::error("mug oracle missing"))
 }
 
 pub async fn evaluate(output: &Path, oracle_path: &Path) -> Result {
@@ -207,6 +220,7 @@ pub async fn evaluate(output: &Path, oracle_path: &Path) -> Result {
     let frozen_ref = read_ref(&output.join("frozen.ref.json"))?;
     let frozen = load_frozen(&archive, &frozen_ref).await?;
     let expected: Vec<Expected> = serde_json::from_slice(&fs::read(oracle_path)?)?;
+    let mug = mug_index(&expected)?;
     let oracle = save_json(&archive, "qscrape-oracle-v1", &expected).await?;
     let started = Instant::now();
     let mut cases = Vec::new();
@@ -222,13 +236,13 @@ pub async fn evaluate(output: &Path, oracle_path: &Path) -> Result {
         &archive
             .read_document(
                 &sources
-                    .get(1)
+                    .get(mug)
                     .ok_or_else(|| super::error("mug source missing"))?
                     .clone(),
             )
             .await?,
         expected
-            .get(1)
+            .get(mug)
             .ok_or_else(|| super::error("mug oracle missing"))?,
     )?;
     let report = Report {
@@ -268,6 +282,7 @@ pub async fn replay(output: &Path) -> Result {
     }
     let frozen = load_frozen(&archive, &report.frozen).await?;
     let oracle: Vec<Expected> = read_json(&archive, &report.oracle).await?;
+    let mug = mug_index(&oracle)?;
     if report.sources.len() != oracle.len() {
         return fail("source/oracle count mismatch");
     }
@@ -283,12 +298,12 @@ pub async fn replay(output: &Path) -> Result {
             .read_document(
                 report
                     .sources
-                    .get(1)
+                    .get(mug)
                     .ok_or_else(|| super::error("mug source missing"))?,
             )
             .await?,
         oracle
-            .get(1)
+            .get(mug)
             .ok_or_else(|| super::error("mug oracle missing"))?,
     )?;
     if cases != report.cases || controls != report.controls {
@@ -385,6 +400,10 @@ async fn sensitivity_result(
     let report: Report = read_json(archive, baseline).await?;
     let frozen = load_frozen(archive, &report.frozen).await?;
     let oracle: Vec<Expected> = read_json(archive, &report.oracle).await?;
+    verify_ids(oracle.iter().map(|item| item.id.as_str()))?;
+    if report.sources.len() != oracle.len() {
+        return fail("source/oracle count mismatch");
+    }
     let mut documents = Vec::new();
     for source in &report.sources {
         documents.push(archive.read_document(source).await?);
