@@ -138,7 +138,7 @@ fn cli_args(
 ) -> SearchArgs {
     SearchArgs {
         query: Some("unused fixture query".to_owned()),
-        diagnostic_archive: None,
+        diagnostics: None,
         providers,
         reporting: StatsArgs { enabled: false },
         per_provider_limit,

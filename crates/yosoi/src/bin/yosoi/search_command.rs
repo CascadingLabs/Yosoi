@@ -82,11 +82,11 @@ pub struct SearchArgs {
     /// Text to search for.
     #[arg(required = true)]
     pub query: Option<String>,
-    /// Explicitly retain bounded query/page evidence in this Archive for offline replay.
-    #[arg(long)]
-    pub diagnostic_archive: Option<PathBuf>,
+    /// Optionally save bounded query/page evidence for offline replay.
+    #[arg(short = 'd', long, value_name = "DIR")]
+    pub diagnostics: Option<PathBuf>,
     /// Ordered providers, as a comma-separated enum list.
-    #[arg(short = 'p', long = "providers", value_enum, value_delimiter = ',', action = ArgAction::Append)]
+    #[arg(short = 'p', long = "providers", visible_alias = "provider", value_enum, value_delimiter = ',', action = ArgAction::Append)]
     pub providers: Vec<ProviderChoice>,
     #[command(flatten)]
     pub reporting: StatsArgs,
@@ -122,7 +122,7 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
         .map_err(SearchCommandError::Setup)?
         .bind(&policy);
 
-    let request = if args.diagnostic_archive.is_some() {
+    let request = if args.diagnostics.is_some() {
         request.with_diagnostic_capture()
     } else {
         request
@@ -173,7 +173,7 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
             .map_err(SearchCommandError::Output)?;
     }
 
-    if let Some(root) = &args.diagnostic_archive {
+    if let Some(root) = &args.diagnostics {
         let manifest = evidence::save(root, &response, &envelope)
             .await
             .context("Search results were written, but diagnostic capture failed")

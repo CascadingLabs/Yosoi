@@ -86,7 +86,7 @@ def cli_search(args: argparse.Namespace, case: dict, provider: str) -> dict:
         "5",
         "--output",
         "json",
-        "--diagnostic-archive",
+        "--diagnostics",
         str(args.output_dir),
     ]
     result = subprocess.run(

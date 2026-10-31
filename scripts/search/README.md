@@ -6,7 +6,7 @@ projected document bytes are retained only after an explicit capture opt-in.
 
 ```bash
 yosoi search 'history of photosynthesis' --providers bing --max-in-flight 1 \
-  --diagnostic-archive .generated/search-evidence --output json
+  --diagnostics .generated/search-evidence --output json
 yosoi search replay .generated/search-evidence/search-REQUEST_ID.json
 ```
 
@@ -17,6 +17,10 @@ and compares the original content-free decision with the current parser decision
 Exit 1 means a decision changed; exit 2 means no replay documents were retained.
 HTTP blocks remain blocks, independently of their page markup. A successful HTTP
 response or zero accepted rows cannot establish an actual empty result.
+
+`--diagnostics DIR` (or `-d DIR`) is optional. Omit it for ordinary searches
+without retained replay documents; `--stats` / `-s` independently reports statistics.
+Select providers with `--providers`, its alias `--provider`, or `-p`.
 
 The bounded diagnostic manifest keeps provider statuses, attempt/capture facts,
 coverage, and counts; normalized result text is written only to ordinary Search

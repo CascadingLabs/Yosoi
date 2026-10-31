@@ -27,7 +27,7 @@ const MAX_RECORDS: usize = 256;
 
 #[derive(Debug, Args)]
 pub struct ReplayArgs {
-    /// JSON manifest written by search --diagnostic-archive.
+    /// JSON manifest written by search --diagnostics.
     pub manifest: PathBuf,
     /// Archive root override; otherwise use the manifest's parent directory.
     #[arg(long)]

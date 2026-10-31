@@ -359,26 +359,28 @@ mod tests {
     #[test]
     fn search_provider_short_flag_and_stats_long_flag_parse_together() -> Result<(), Box<dyn Error>>
     {
-        let cli = Cli::try_parse_from([
-            "yosoi",
-            "search",
-            "query",
-            "-p",
-            "brave,bing",
-            "--stats",
-            "--profile",
-            "daily",
-        ])?;
-        assert_eq!(cli.profile.as_deref(), Some("daily"));
-        let Some(Commands::Search(args)) = cli.command else {
-            return Err("parsed command was not Search".into());
-        };
-        let args = args.query;
-        assert_eq!(
-            args.providers,
-            [ProviderChoice::Brave, ProviderChoice::Bing]
-        );
-        assert!(args.reporting.enabled);
+        for provider_option in ["--providers", "--provider", "-p"] {
+            let cli = Cli::try_parse_from([
+                "yosoi",
+                "search",
+                "query",
+                provider_option,
+                "brave,bing",
+                "--stats",
+                "--profile",
+                "daily",
+            ])?;
+            assert_eq!(cli.profile.as_deref(), Some("daily"));
+            let Some(Commands::Search(args)) = cli.command else {
+                return Err("parsed command was not Search".into());
+            };
+            let args = args.query;
+            assert_eq!(
+                args.providers,
+                [ProviderChoice::Brave, ProviderChoice::Bing]
+            );
+            assert!(args.reporting.enabled);
+        }
         Ok(())
     }
 
@@ -391,6 +393,27 @@ mod tests {
     }
 
     #[test]
+    fn search_diagnostics_accepts_long_and_short_options_with_a_directory()
+    -> Result<(), Box<dyn Error>> {
+        for option in ["--diagnostics", "-d"] {
+            let cli = Cli::try_parse_from(["yosoi", "search", "query", option, "Evidence", "-s"])?;
+            let Some(Commands::Search(args)) = cli.command else {
+                return Err("parsed command was not Search".into());
+            };
+            assert_eq!(
+                args.query
+                    .diagnostics
+                    .as_deref()
+                    .and_then(|path| path.to_str()),
+                Some("Evidence")
+            );
+            assert!(args.query.reporting.enabled);
+            assert!(Cli::try_parse_from(["yosoi", "search", "query", option]).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn search_flags_can_be_omitted_for_a_saved_policy_profile() -> Result<(), Box<dyn Error>> {
         let cli = Cli::try_parse_from(["yosoi", "search", "query"])?;
         let Some(Commands::Search(args)) = cli.command else {
@@ -400,6 +423,7 @@ mod tests {
         assert_eq!(args.providers, Vec::<ProviderChoice>::new());
         assert_eq!(args.per_provider_limit, None);
         assert_eq!(args.max_in_flight, None);
+        assert_eq!(args.diagnostics, None);
         assert_eq!(args.output, OutputFormat::Human);
         assert!(!args.reporting.enabled);
         Ok(())
