@@ -1,0 +1,60 @@
+[
+  {
+    "id": "obj-001",
+    "name": "Arc desk lamp",
+    "price_cents": 6800,
+    "color": "Burnt orange",
+    "material": "Powder-coated steel",
+    "stock": {
+      "Available": 12
+    }
+  },
+  {
+    "id": "obj-002",
+    "name": "Loop ceramic mug",
+    "price_cents": 2400,
+    "color": "Chalk",
+    "material": "Glazed stoneware",
+    "stock": {
+      "Available": 8
+    }
+  },
+  {
+    "id": "obj-003",
+    "name": "Grid notebook",
+    "price_cents": 1800,
+    "color": "Moss",
+    "material": "Recycled paper, cloth cover",
+    "stock": {
+      "Available": 24
+    }
+  },
+  {
+    "id": "obj-004",
+    "name": "Daybreak tote",
+    "price_cents": 3200,
+    "color": "Sand",
+    "material": "Heavyweight cotton canvas",
+    "stock": {
+      "Available": 5
+    }
+  },
+  {
+    "id": "obj-005",
+    "name": "Pebble catchall",
+    "price_cents": 2800,
+    "color": "Terracotta",
+    "material": "Unglazed terracotta",
+    "stock": "Unavailable"
+  },
+  {
+    "id": "obj-006",
+    "name": "Still glass bottle",
+    "price_cents": 3600,
+    "color": "Smoke",
+    "material": "Borosilicate glass, silicone",
+    "stock": {
+      "Available": 9
+    }
+  }
+]

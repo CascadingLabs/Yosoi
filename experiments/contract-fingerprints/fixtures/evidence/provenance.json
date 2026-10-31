@@ -1,0 +1,62 @@
+{
+  "browser": "Google Chrome 156.0.8078.47 regular Stable",
+  "source_base": "44a7451a",
+  "captures": [
+    {
+      "id": "obj-001",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-001/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "06c13d9ae2f9fabbe7de568df2d14eb825404f6877d71f0e6d16b94dac628372",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    },
+    {
+      "id": "obj-002",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-002/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "ab85dad52b3574b9203d358b66c24c56a8bf0e1c926a76f7368aa76c1ef12eb5",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    },
+    {
+      "id": "obj-003",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-003/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "aad978d126a35380ab0bd2004a10bff4bdd6db05f079960b9268919890eed06a",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    },
+    {
+      "id": "obj-004",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-004/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "ebe4d7713558b37f3a86bf2e02e79c12761f3c1b041c1e3f2d12af6d828c4e5f",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    },
+    {
+      "id": "obj-005",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-005/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "d5b27c2a26c06c6c907596bd7b67b6b89bec2f47028fd73b75ef6606aa2e83d9",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    },
+    {
+      "id": "obj-006",
+      "url": "https://qscrape.dev/eshop/javascript/product/obj-006/",
+      "epoch": 1,
+      "sdk": "0.4.0",
+      "dom_sha256": "178ad13d12c9b008fa958c5fb793e99c39330c714676b337ce044c495000fd35",
+      "navigation_status": "observed",
+      "readiness_status": "observed"
+    }
+  ],
+  "oracle_url": "https://qscrape.dev/api/eshop/products/",
+  "oracle_sha256": "5cdcec754eb2dd15ab1d6205c49443769b28e21ec2a5cc03f1f4b01350697317"
+}
