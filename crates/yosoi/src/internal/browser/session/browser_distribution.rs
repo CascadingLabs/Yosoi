@@ -1,8 +1,4 @@
-use std::{
-    path::Path,
-    path::PathBuf,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::{path::Path, path::PathBuf, result::Result as StdResult, time::Duration};
 
 use crate::internal::browser::vendor::chromiumoxide::detection::{
     DetectionOptions, default_executable,
@@ -53,28 +49,10 @@ pub(super) async fn browser_identity(executable: &Path) -> Result<String> {
     Ok(version)
 }
 
-// Regular Linux Stable release history, reviewed 2026-10-24 UTC. Only the
-// current and preceding milestones are eligible. The snapshot expires after
-// 30 days; each superseded release has its own 30-day deadline.
-// Source: https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases
-const STABLE_RELEASES: &[(&str, u64)] = &[
-    ("156.0.8078.47", 1_792_800_000),
-    ("155.0.8059.84", 1_792_526_230),
-    ("155.0.8059.79", 1_792_096_815),
-    ("155.0.8059.39", 1_791_924_291),
-];
-const REVIEWED_AT: u64 = 1_792_800_000; // 2026-10-24 UTC
-const MAX_AGE: u64 = 30 * 24 * 60 * 60;
+// Launch admission is independent of the exact browser/CDP certification tuple.
+const MINIMUM_CHROME_MILESTONE: u32 = 153;
 
 pub(super) fn supported_version(identity: &str) -> Result<&str> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| VoidCrawlError::LaunchFailed("invalid system clock".into()))?
-        .as_secs();
-    supported_version_at(identity, now)
-}
-
-fn supported_version_at(identity: &str, now: u64) -> Result<&str> {
     if identity.contains("Chrome for Testing") {
         return Err(VoidCrawlError::LaunchFailed(
             "testing-only browser distributions are prohibited".into(),
@@ -103,16 +81,19 @@ fn supported_version_at(identity: &str, now: u64) -> Result<&str> {
             "non-Stable browser distribution".into(),
         ));
     }
-    if now < REVIEWED_AT || now.saturating_sub(REVIEWED_AT) > MAX_AGE {
+    let components = version
+        .split('.')
+        .map(str::parse::<u32>)
+        .collect::<StdResult<Vec<_>, _>>()
+        .map_err(|_| VoidCrawlError::LaunchFailed("invalid browser version".into()))?;
+    let [milestone, _, _, _] = components.as_slice() else {
         return Err(VoidCrawlError::LaunchFailed(
-            "Stable eligibility review is expired".into(),
+            "invalid browser version".into(),
         ));
-    }
-    if !STABLE_RELEASES.iter().any(|(release, last_served)| {
-        *release == version && now.saturating_sub(*last_served) <= MAX_AGE
-    }) {
+    };
+    if *milestone < MINIMUM_CHROME_MILESTONE {
         return Err(VoidCrawlError::LaunchFailed(
-            "browser is outside the reviewed Stable version/age window".into(),
+            "regular Chrome/Chromium 153 or newer is required".into(),
         ));
     }
     Ok(version)
@@ -123,38 +104,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn stable_identity_and_age_window_are_enforced() {
+    fn regular_chrome_from_milestone_153_is_admitted() {
         for identity in [
+            "Google Chrome 153.0.0.0",
+            "Google Chrome 153.0.8010.52",
+            "Chromium 154.0.8037.97 Arch Linux",
             "Google Chrome 155.0.8059.39",
             "Chromium 155.0.8059.39 Arch Linux",
             "Google Chrome 156.0.8078.47",
             "Chromium 156.0.8078.47 Arch Linux",
             "Google Chrome 155.0.8059.84",
             "Chromium 155.0.8059.79 built on Debian GNU/Linux 13 (trixie)",
+            "Chromium 154.0.8037.97 built on Debian GNU/Linux 12 (bookworm)",
+            "Google Chrome 200.0.9999.1",
+            "Chromium 200.1.2.3",
         ] {
-            assert!(supported_version_at(identity, REVIEWED_AT).is_ok());
+            assert!(supported_version(identity).is_ok(), "{identity}");
         }
+    }
+
+    #[test]
+    fn old_non_stable_and_malformed_browsers_are_rejected() {
         for identity in [
+            "Google Chrome 152.999.999.999",
             "Google Chrome 152.0.7977.82",
-            "Google Chrome 154.0.8037.97",
-            "Google Chrome 153.0.8010.52",
-            "Google Chrome 155.0.8059.26",
+            "Chromium 152.0.7977.82 Arch Linux",
             "Google Chrome 154.0.8037.97 beta",
             "Google Chrome Canary 154.0.8037.97",
             "Google Chrome for Testing 154.0.8037.97",
             "Not Chrome 154.0.8037.97",
+            "Google Chrome 153",
+            "Google Chrome 153.0.0",
+            "Google Chrome 153.0.0.0.1",
+            "Google Chrome 153.0.x.1",
+            "Google Chrome 153..0.1",
+            "Google Chrome 4294967296.0.0.1",
+            "Google Chrome ",
         ] {
-            assert!(
-                supported_version_at(identity, REVIEWED_AT).is_err(),
-                "{identity}"
-            );
+            assert!(supported_version(identity).is_err(), "{identity}");
         }
-        assert!(
-            supported_version_at("Google Chrome 155.0.8059.39", 1_791_924_291 + MAX_AGE + 1)
-                .is_err()
-        );
-        assert!(
-            supported_version_at("Google Chrome 155.0.8059.39", REVIEWED_AT + MAX_AGE + 1).is_err()
-        );
     }
 }

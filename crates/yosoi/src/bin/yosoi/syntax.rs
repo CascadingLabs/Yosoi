@@ -89,7 +89,7 @@ pub fn normalize_args(
             if has_non_utf8_option_token(&arg, current, &globals) {
                 return Err(SyntaxError::NonUtf8OptionToken);
             }
-            positionals_started |= current.get_arguments().any(|arg| arg.is_positional());
+            positionals_started |= current.get_arguments().any(Arg::is_positional);
             output.push(arg);
             continue;
         };
@@ -142,7 +142,7 @@ pub fn normalize_args(
         {
             output.push(OsString::from("help"));
         } else {
-            positionals_started |= current.get_arguments().any(|arg| arg.is_positional());
+            positionals_started |= current.get_arguments().any(Arg::is_positional);
             output.push(arg);
         }
     }
