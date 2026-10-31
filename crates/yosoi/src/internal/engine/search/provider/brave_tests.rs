@@ -2,7 +2,14 @@
     clippy::panic_in_result_fn,
     reason = "assertions intentionally report Brave parser test failures"
 )]
-use std::{error::Error, io};
+use std::{
+    env,
+    error::Error,
+    fs, io,
+    path::{Path, PathBuf},
+};
+
+use crate::internal::documents::DocumentEpoch;
 
 use super::{BraveParseError, parse};
 use crate::internal::engine::{
@@ -19,6 +26,18 @@ const SPONSORED_CONTROL: &str = include_str!(
 );
 const MISSING_HREF_CONTROL: &str = include_str!(
     "../../tests/fixtures/search-providers/fixtures/brave-synthetic-missing-href.html"
+);
+const BROWSER_POSITIVE_SOURCE: &str = include_str!(
+    "../../tests/fixtures/search-providers/fixtures/brave-browser-positive-response.html"
+);
+const BROWSER_POSITIVE_DOM: &str = include_str!(
+    "../../tests/fixtures/search-providers/fixtures/brave-browser-positive-rendered-dom.json"
+);
+const BROWSER_OFF_QUERY_SOURCE: &str = include_str!(
+    "../../tests/fixtures/search-providers/fixtures/brave-browser-off-query-response.html"
+);
+const BROWSER_OFF_QUERY_DOM: &str = include_str!(
+    "../../tests/fixtures/search-providers/fixtures/brave-browser-off-query-rendered-dom.json"
 );
 
 #[test]
@@ -62,6 +81,22 @@ fn zero_rows_are_unrecognized_not_empty() -> Result<(), Box<dyn Error>> {
             16 * 1024 * 1024,
         ),
         Err(BraveParseError::UnrecognizedPage)
+    ));
+    Ok(())
+}
+
+#[test]
+fn unsupported_document_classes_are_rejected_explicitly() -> Result<(), Box<dyn Error>> {
+    let document = Document::text("brave-text-document.txt", b"not an HTML document".to_vec())?;
+    assert!(matches!(
+        parse(
+            &document,
+            &Policy::default(),
+            "https://search.brave.com/search?q=fixture",
+            10,
+            16 * 1024 * 1024,
+        ),
+        Err(BraveParseError::UnsupportedDocumentClass)
     ));
     Ok(())
 }
@@ -179,6 +214,283 @@ fn captured_multirow_fixture_keeps_fields_with_their_source_row() -> Result<(), 
     assert_eq!(capped_page.hits().len(), 1);
     assert_eq!(capped_page.coverage().web(), WebCoverage::Complete);
     assert_eq!(capped_page.issues().len(), 0);
+    Ok(())
+}
+
+#[test]
+fn paired_browser_documents_keep_the_observed_brave_rows_in_sync() -> Result<(), Box<dyn Error>> {
+    let response_document = Document::html(
+        "brave-browser-response.html",
+        BROWSER_POSITIVE_SOURCE.as_bytes().to_vec(),
+    )?;
+    let rendered_dom = Document::rendered_dom(
+        "brave-browser-rendered-dom.json",
+        DocumentEpoch::try_from(1_u64)?,
+        BROWSER_POSITIVE_DOM.as_bytes().to_vec(),
+    )?;
+    let provider_page_url = "https://search.brave.com/search?q=rust+programming+language";
+    let source_outcome = parse(
+        &response_document,
+        &Policy::default(),
+        provider_page_url,
+        10,
+        16 * 1024 * 1024,
+    )?;
+    let dom_outcome = parse(
+        &rendered_dom,
+        &Policy::default(),
+        provider_page_url,
+        10,
+        16 * 1024 * 1024,
+    )?;
+    let ProviderOutcome::Results(source_page) = source_outcome else {
+        return Err(io::Error::other("expected Brave response-document results").into());
+    };
+    let ProviderOutcome::Results(dom_page) = dom_outcome else {
+        return Err(io::Error::other("expected Brave rendered-DOM results").into());
+    };
+
+    assert_eq!(source_page.hits().len(), 3);
+    assert_eq!(source_page.hits().len(), dom_page.hits().len());
+    for (source_hit, dom_hit) in source_page.hits().iter().zip(dom_page.hits()) {
+        assert_eq!(source_hit.url(), dom_hit.url());
+        assert_eq!(source_hit.title(), dom_hit.title());
+        assert_eq!(source_hit.snippet(), dom_hit.snippet());
+        assert_eq!(source_hit.organic_rank(), dom_hit.organic_rank());
+        assert_eq!(source_hit.placement_index(), dom_hit.placement_index());
+    }
+
+    let first = source_page
+        .hits()
+        .first()
+        .ok_or_else(|| io::Error::other("missing first browser-captured Brave hit"))?;
+    let second = source_page
+        .hits()
+        .get(1)
+        .ok_or_else(|| io::Error::other("missing second browser-captured Brave hit"))?;
+    let third = source_page
+        .hits()
+        .get(2)
+        .ok_or_else(|| io::Error::other("missing third browser-captured Brave hit"))?;
+    assert_eq!(first.title(), Some("Rust Programming Language"));
+    assert_eq!(first.snippet(), Some("[redacted captured snippet 1]"));
+    assert_eq!(
+        second.title(),
+        Some("Rust (programming language) - Wikipedia")
+    );
+    assert_eq!(second.snippet(), Some("[redacted captured snippet 2]"));
+    assert_eq!(
+        third.title(),
+        Some(
+            "r/learnrust on Reddit: Rust - A Living Hell - The Perspective From A Programmer Of 30 Years"
+        )
+    );
+    assert_eq!(third.snippet(), None);
+    Ok(())
+}
+
+#[test]
+fn paired_browser_off_query_documents_have_the_same_parser_interpretation()
+-> Result<(), Box<dyn Error>> {
+    let response_document = Document::html(
+        "brave-browser-off-query-response.html",
+        BROWSER_OFF_QUERY_SOURCE.as_bytes().to_vec(),
+    )?;
+    let rendered_dom = Document::rendered_dom(
+        "brave-browser-off-query-rendered-dom.json",
+        DocumentEpoch::try_from(1_u64)?,
+        BROWSER_OFF_QUERY_DOM.as_bytes().to_vec(),
+    )?;
+    let provider_page_url =
+        "https://search.brave.com/search?q=%22brave-cas630-no-match-probe-20261026-xqjv%22";
+    let source_outcome = parse(
+        &response_document,
+        &Policy::default(),
+        provider_page_url,
+        10,
+        16 * 1024 * 1024,
+    );
+    let dom_outcome = parse(
+        &rendered_dom,
+        &Policy::default(),
+        provider_page_url,
+        10,
+        16 * 1024 * 1024,
+    );
+
+    assert_eq!(source_outcome, dom_outcome);
+    Ok(())
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct ParserSummary {
+    classification: String,
+    hits: usize,
+    titles: Vec<String>,
+    snippets: usize,
+    issues: usize,
+    web_coverage: Option<WebCoverage>,
+}
+
+fn parser_summary(outcome: Result<ProviderOutcome, BraveParseError>) -> ParserSummary {
+    match outcome {
+        Ok(ProviderOutcome::Results(page)) => ParserSummary {
+            classification: "results".to_owned(),
+            hits: page.hits().len(),
+            titles: page
+                .hits()
+                .iter()
+                .take(3)
+                .filter_map(|hit| hit.title())
+                .map(str::to_owned)
+                .collect(),
+            snippets: page
+                .hits()
+                .iter()
+                .filter(|hit| hit.snippet().is_some())
+                .count(),
+            issues: page.issues().len(),
+            web_coverage: Some(page.coverage().web()),
+        },
+        Ok(ProviderOutcome::Empty) => ParserSummary {
+            classification: "empty".to_owned(),
+            hits: 0,
+            titles: Vec::new(),
+            snippets: 0,
+            issues: 0,
+            web_coverage: None,
+        },
+        Ok(ProviderOutcome::Failed(failure)) => ParserSummary {
+            classification: format!("failed:{failure:?}"),
+            hits: 0,
+            titles: Vec::new(),
+            snippets: 0,
+            issues: 0,
+            web_coverage: None,
+        },
+        Ok(ProviderOutcome::Cancelled) => ParserSummary {
+            classification: "cancelled".to_owned(),
+            hits: 0,
+            titles: Vec::new(),
+            snippets: 0,
+            issues: 0,
+            web_coverage: None,
+        },
+        Ok(ProviderOutcome::NotStarted(reason)) => ParserSummary {
+            classification: format!("not_started:{reason:?}"),
+            hits: 0,
+            titles: Vec::new(),
+            snippets: 0,
+            issues: 0,
+            web_coverage: None,
+        },
+        Err(error) => ParserSummary {
+            classification: format!("parse_error:{error:?}"),
+            hits: 0,
+            titles: Vec::new(),
+            snippets: 0,
+            issues: 0,
+            web_coverage: None,
+        },
+    }
+}
+
+fn read_capture_target_and_status(capture_dir: &Path) -> Result<(String, u16), Box<dyn Error>> {
+    let manifest_bytes = fs::read(capture_dir.join("manifest.json"))?;
+    let manifest: serde_json::Value = serde_json::from_slice(&manifest_bytes)?;
+    let target = manifest
+        .get("target")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| io::Error::other("capture manifest has no target"))?
+        .to_owned();
+    let attempt = manifest
+        .get("attempts")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|attempts| attempts.first())
+        .ok_or_else(|| io::Error::other("capture manifest has no attempt"))?;
+    let status = attempt
+        .get("status")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| io::Error::other("capture attempt has no HTTP status"))?;
+    Ok((target, u16::try_from(status)?))
+}
+
+fn read_source_document(capture_dir: &Path) -> Result<Document, Box<dyn Error>> {
+    Ok(Document::html(
+        "retained-brave-response.html",
+        fs::read(capture_dir.join("attempt-0-ResponseDocument.data"))?,
+    )?)
+}
+
+fn read_rendered_dom_document(capture_dir: &Path) -> Result<Document, Box<dyn Error>> {
+    let bytes = fs::read(capture_dir.join("attempt-0-RenderedDom.data"))?;
+    let metadata: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let epoch = metadata
+        .get("document_epoch")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| io::Error::other("retained rendered DOM has no epoch"))?;
+    Ok(Document::rendered_dom(
+        "retained-brave-rendered-dom.json",
+        DocumentEpoch::try_from(epoch)?,
+        bytes,
+    )?)
+}
+
+#[test]
+#[ignore = "local-only; replays retained Brave Request documents without network or browser I/O"]
+fn replay_retained_brave_browser_and_http_captures_serially() -> Result<(), Box<dyn Error>> {
+    let root = env::var_os("YS_BRAVE_CAPTURE_DIR")
+        .map(PathBuf::from)
+        .ok_or_else(|| {
+            io::Error::other("set YS_BRAVE_CAPTURE_DIR to the retained capture directory")
+        })?;
+    for capture_name in ["brave-1", "brave-2"] {
+        let capture_dir = root.join(capture_name);
+        let (target, status) = read_capture_target_and_status(&capture_dir)?;
+        assert_eq!(
+            status, 200,
+            "{capture_name} was not a completed success capture"
+        );
+        let response_document = read_source_document(&capture_dir)?;
+        let rendered_dom = read_rendered_dom_document(&capture_dir)?;
+        let source_summary = parser_summary(parse(
+            &response_document,
+            &Policy::default(),
+            &target,
+            10,
+            16 * 1024 * 1024,
+        ));
+        let dom_summary = parser_summary(parse(
+            &rendered_dom,
+            &Policy::default(),
+            &target,
+            10,
+            16 * 1024 * 1024,
+        ));
+        eprintln!(
+            "capture={capture_name} status={status} source={source_summary:?} rendered_dom={dom_summary:?}"
+        );
+        assert_eq!(
+            source_summary, dom_summary,
+            "{capture_name} document classes differ"
+        );
+    }
+
+    let http_dir = root.join("brave-http-quoted-1");
+    let (target, status) = read_capture_target_and_status(&http_dir)?;
+    assert_eq!(
+        status, 200,
+        "direct-HTTP comparison was not a completed success capture"
+    );
+    let response_document = read_source_document(&http_dir)?;
+    let summary = parser_summary(parse(
+        &response_document,
+        &Policy::default(),
+        &target,
+        10,
+        16 * 1024 * 1024,
+    ));
+    eprintln!("capture=brave-http-quoted-1 status={status} source={summary:?}");
     Ok(())
 }
 
