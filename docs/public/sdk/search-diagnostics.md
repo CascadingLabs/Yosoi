@@ -146,7 +146,12 @@ and Archive documents; they start no Requests executor or browser.
 ### Rust
 
 ```rust
-use std::{env, error::Error, fs, path::PathBuf};
+use std::{
+    env,
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 use yosoi::{Archive, search::SearchReplay};
 
 #[tokio::main(flavor = "current_thread")]
@@ -159,7 +164,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .ok_or("Missing replay records")?
             .clone(),
     )?;
-    let archive = Archive::open(manifest.parent().ok_or("Missing Archive root")?).await?;
+    let root = manifest
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let archive = Archive::open(root).await?;
     for record in records {
         let replayed = record.replay(&archive).await?.decision();
         println!(
