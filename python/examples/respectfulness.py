@@ -8,9 +8,7 @@ group = ys.policy.RespectfulnessGroup(
     concurrency=1,
     spacing_ms=2000,
     budgets=[ys.policy.RateBudget(requests=10, window_ms=60_000)],
-    cooldown=ys.policy.RespectfulnessCooldown(
-        statuses=[429, 503], fallback_ms=30_000
-    ),
+    cooldown=ys.policy.RespectfulnessCooldown(statuses=[429, 503], fallback_ms=30_000),
 )
 policy = ys.Policy(respectfulness=ys.policy.Respectfulness(groups=[group]))
 registry = ys.registry.Registry()

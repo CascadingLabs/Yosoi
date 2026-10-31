@@ -33,6 +33,7 @@ use crate::{
     policy_store::PolicyStore,
     presentation::Theme,
     progress::Spinner,
+    registry_args::RegistryArgs,
     stats::{RunTimer, StatsArgs},
 };
 
@@ -82,7 +83,7 @@ pub enum SearchCommand {
 #[derive(Debug, Args)]
 pub struct SearchArgs {
     #[command(flatten)]
-    pub registry: crate::registry_args::RegistryArgs,
+    pub registry: RegistryArgs,
     /// Text to search for.
     #[arg(required = true)]
     pub query: Option<String>,

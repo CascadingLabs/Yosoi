@@ -76,7 +76,7 @@ async fn archives_locator_value_and_validated_contract() -> TestResult {
     let temporary = tempdir()?;
     let root = temporary.path().join(".yosoi");
     let archive = ys::Archive::open(&root).await?;
-    let contract_ref = write_author_result(&archive, service.url("/author")).await?;
+    let contract_ref = Box::pin(write_author_result(&archive, service.url("/author"))).await?;
     let request_count = service.requests().await.len();
     service.shutdown().await;
     if request_count != 1 {
@@ -105,7 +105,11 @@ async fn archives_contract_validation_issues() -> TestResult {
     .await;
     let temporary = tempdir()?;
     let archive = ys::Archive::open(temporary.path().join(".yosoi")).await?;
-    let contract_ref = write_author_result(&archive, service.url("/author-missing-rate")).await?;
+    let contract_ref = Box::pin(write_author_result(
+        &archive,
+        service.url("/author-missing-rate"),
+    ))
+    .await?;
     let request_count = service.requests().await.len();
     service.shutdown().await;
     if request_count != 1 {
@@ -270,7 +274,7 @@ fn subprocess_evaluation_result_writer() -> TestResult {
     let runtime = Builder::new_current_thread().enable_all().build()?;
     runtime.block_on(async move {
         let archive = ys::Archive::open(root).await?;
-        let contract_ref = write_author_result(&archive, target).await?;
+        let contract_ref = Box::pin(write_author_result(&archive, target)).await?;
         fs::write(reference, contract_ref.to_string())?;
         Ok::<_, Box<dyn Error + Send + Sync>>(())
     })

@@ -11,6 +11,7 @@ use super::view::{
 use super::{OutputFormat, ProviderChoice, SearchArgs};
 use crate::{
     presentation::Theme,
+    registry_args::RegistryArgs,
     stats::{RunTimer, StatsArgs},
 };
 use std::{
@@ -141,7 +142,7 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
-        registry: crate::registry_args::RegistryArgs::default(),
+        registry: RegistryArgs::default(),
         query: Some("unused fixture query".to_owned()),
         diagnostics: None,
         providers,

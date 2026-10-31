@@ -5,6 +5,7 @@
 
 use std::{
     error::Error,
+    io,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -15,9 +16,10 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
     sync::{Notify, oneshot},
+    task::JoinHandle,
     time::{Duration, timeout},
 };
-use yosoi::prelude as ys;
+use yosoi::{prelude as ys, request::Attempt};
 use ys::{
     policy::respectfulness::{Cooldown, EventKind, Group, RateBudget, Respectfulness, Retry},
     registry::Registry,
@@ -27,7 +29,7 @@ type TestResult = Result<(), Box<dyn Error>>;
 
 async fn server(
     responses: Vec<&'static str>,
-) -> Result<(String, Arc<AtomicUsize>, tokio::task::JoinHandle<()>), Box<dyn Error>> {
+) -> Result<(String, Arc<AtomicUsize>, JoinHandle<()>), Box<dyn Error>> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let url = format!("http://{}/", listener.local_addr()?);
     let calls = Arc::new(AtomicUsize::new(0));
@@ -79,14 +81,14 @@ async fn concurrency_lease_covers_the_response_body() -> TestResult {
             stream.read_exact(&mut byte).await?;
             head.extend_from_slice(&byte);
             if head.len() > 8192 {
-                return Err(std::io::Error::other("oversized test head"));
+                return Err(io::Error::other("oversized test head"));
             }
         }
         stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: close\r\n\r\nh").await?;
         let _ = started.send(());
         released.notified().await;
         stream.write_all(b"i").await?;
-        Ok::<_, std::io::Error>(())
+        Ok::<_, io::Error>(())
     });
     let policy = ys::Policy {
         respectfulness: Some(Respectfulness::new(vec![group(&url)])?),
@@ -126,11 +128,7 @@ async fn concurrency_lease_covers_the_response_body() -> TestResult {
     );
     release.notify_one();
     assert_eq!(
-        first
-            .await??
-            .attempts()
-            .next()
-            .and_then(|attempt| attempt.status()),
+        first.await??.attempts().next().and_then(Attempt::status),
         Some(200)
     );
     task.await??;
@@ -161,10 +159,7 @@ async fn sdk_spacing_rejection_precedes_a_second_outbound_request() -> TestResul
         .with_registry(&registry)
         .send()
         .await?;
-    assert_eq!(
-        first.attempts().next().and_then(|attempt| attempt.status()),
-        Some(200)
-    );
+    assert_eq!(first.attempts().next().and_then(Attempt::status), Some(200));
     let second = ys::request::new(url)
         .bind(&policy)
         .with_registry(&registry)
@@ -217,10 +212,7 @@ async fn explicit_retry_preserves_prior_429_and_charges_both_starts() -> TestRes
         .send()
         .await?;
     assert_eq!(
-        response
-            .attempts()
-            .next()
-            .and_then(|attempt| attempt.status()),
+        response.attempts().next().and_then(Attempt::status),
         Some(200)
     );
     let statuses: Vec<_> = response

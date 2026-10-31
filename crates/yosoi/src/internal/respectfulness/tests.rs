@@ -3,12 +3,11 @@
     reason = "Assertions intentionally fail behavioral tests."
 )]
 
-use crate::registry::Registry as RuntimeRegistry;
+use crate::registry::Registry;
 
 use std::error::Error;
 
 use crate::policy::respectfulness::{Cooldown, Group, RateBudget, Respectfulness, Unmatched};
-use RuntimeRegistry;
 
 use super::{LimitReason, RespectfulnessError, Runtime, canonical_url, retry_after_at};
 

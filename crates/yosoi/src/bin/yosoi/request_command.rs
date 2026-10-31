@@ -21,6 +21,7 @@ use crate::{
     policy_store::PolicyStore,
     presentation::Theme,
     progress::Spinner,
+    registry_args::RegistryArgs,
     stats::{RunTimer, StatsArgs},
     stream_output::{Destination, cli_target, destination},
 };
@@ -67,7 +68,7 @@ impl DocumentChoice {
 #[allow(clippy::struct_excessive_bools)] // Clap output modes are mutually exclusive flags.
 pub struct RequestArgs {
     #[command(flatten)]
-    pub registry: crate::registry_args::RegistryArgs,
+    pub registry: RegistryArgs,
     /// HTTP or HTTPS URL to request.
     pub url: String,
     /// Replace the Policy's ordered acquisitions. Repeat to run several.
