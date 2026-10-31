@@ -14,7 +14,7 @@ use crate::internal::{
     web_capture::{CaptureCompleteness, CaptureEnvironment},
 };
 
-use super::provider::{bing, brave, duckduckgo};
+use super::provider::{bing, brave, duckduckgo, google};
 
 /// Precise parser stage, independent of transport success and provider availability.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -245,6 +245,26 @@ pub fn parse_document(
 ) -> SearchReplayResult {
     use SearchParserDiagnostic as D;
     let parsed = match provider {
+        Provider::Google => google::parse(
+            document,
+            policy,
+            provider_page_url,
+            result_limit,
+            output_limit,
+        )
+        .map_err(|error| match error {
+            google::GoogleParseError::ZeroResultLimit | google::GoogleParseError::InvalidPlan => {
+                D::InvalidConfiguration
+            }
+            google::GoogleParseError::OutputLimit => D::OutputLimit,
+            google::GoogleParseError::InvalidPageUrl => D::InvalidPageUrl,
+            google::GoogleParseError::UnsupportedDocumentClass => D::UnsupportedDocumentClass,
+            google::GoogleParseError::UnrecognizedPage => D::UnrecognizedPage,
+            google::GoogleParseError::NoUsableHits => D::NoUsableHits,
+            google::GoogleParseError::IncompleteDocument => D::IncompleteDocument,
+            google::GoogleParseError::LocateFailed => D::LocateFailed,
+            google::GoogleParseError::InvalidLocatorResult => D::InvalidLocatorResult,
+        }),
         Provider::Brave => brave::parse(
             document,
             policy,

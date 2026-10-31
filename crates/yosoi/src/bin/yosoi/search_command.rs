@@ -40,6 +40,7 @@ use view::SearchEnvelope;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum ProviderChoice {
+    Google,
     Brave,
     Bing,
     #[value(name = "duckduckgo")]
@@ -49,6 +50,7 @@ pub enum ProviderChoice {
 impl ProviderChoice {
     const fn into_provider(self) -> Provider {
         match self {
+            Self::Google => Provider::Google,
             Self::Brave => Provider::Brave,
             Self::Bing => Provider::Bing,
             Self::DuckDuckGo => Provider::DuckDuckGo,

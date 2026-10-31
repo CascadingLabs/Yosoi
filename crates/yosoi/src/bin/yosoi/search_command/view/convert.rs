@@ -197,6 +197,7 @@ impl<'a> ProviderView<'a> {
                         RequestAttemptTerminal::Failed => "failed",
                         RequestAttemptTerminal::NotStarted => "not_started",
                     },
+                    resolution_placement: attempt.resolution_placement.map(NonZeroU16::get),
                 })
                 .collect(),
             hits,

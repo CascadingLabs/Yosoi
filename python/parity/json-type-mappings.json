@@ -614,6 +614,10 @@
       "pythonTarget": "yosoi.search.ProviderOutcome"
     },
     {
+      "rustPath": "yosoi::search::RequestAttemptSummary",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary"
+    },
+    {
       "rustPath": "yosoi::search::RequestAttemptTerminal",
       "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal"
     },

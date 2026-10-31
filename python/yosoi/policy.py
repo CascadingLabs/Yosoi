@@ -624,11 +624,14 @@ class Provider(StrEnum):
         bing: Bing public search route.
         duck_duck_go: DuckDuckGo public search route. Selection does not guarantee
             availability or certification.
+        google: Google rendered web search route. Preview availability does not
+            establish certification.
     """
 
     brave = "brave"
     bing = "bing"
     duck_duck_go = "duck_duck_go"
+    google = "google"
 
     def defaults_status(self) -> ProviderDefaultsStatus:
         """Return registry availability/certification without executing a search."""
@@ -698,7 +701,7 @@ class Search(Model):
     """Ordered provider selection with shared search resource budgets.
 
     Attributes:
-        providers: Authored provider slots, at most three and without duplicates after
+        providers: Authored provider slots, at most four and without duplicates after
             validation.
         max_in_flight: Positive maximum simultaneous provider work.
         max_browser_in_flight: Positive maximum browser-backed provider work, separate
@@ -712,7 +715,7 @@ class Search(Model):
         maximum_elapsed: Positive shared search elapsed budget in microseconds.
     """
 
-    providers: Annotated[list[ProviderSelection], Field(max_length=3)] = _field(
+    providers: Annotated[list[ProviderSelection], Field(max_length=4)] = _field(
         "search", "providers"
     )
     max_in_flight: PositiveInt = _field("search", "max_in_flight")
@@ -921,7 +924,9 @@ class AcquisitionKind(ImmutableModel):
     """
 
     kind: Literal["direct_http", "browser"]
-    mode: Literal["headless", "headful"] | None = None
+    mode: Literal["headless", "headful"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def _validate_variant(self) -> Self:
@@ -1473,7 +1478,7 @@ class _SnapshotProfileSelection(ImmutableModel):
 
 
 class _SnapshotProviderSelection(ImmutableModel):
-    provider: Literal["brave", "bing", "duck_duck_go"]
+    provider: Literal["brave", "bing", "duck_duck_go", "google"]
     profile: _SnapshotProfileSelection
 
 
@@ -1538,7 +1543,7 @@ class _SnapshotEffectivePage(ImmutableModel):
 
 
 class _SnapshotEffectiveProviderRoute(ImmutableModel):
-    provider: Literal["brave", "bing", "duck_duck_go"]
+    provider: Literal["brave", "bing", "duck_duck_go", "google"]
     profile: _SnapshotProviderRequestProfile | None
     profile_selection_kind: Literal["current", "exact"]
     defaults_status: ProviderDefaultsStatus

@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, num::NonZeroU16};
 
 use crate::internal::policy::{
     EffectivePolicyIdentity,
@@ -103,6 +103,44 @@ pub struct RequestAttemptSummary {
     pub capture_retention: SearchCaptureRetention,
     /// Whether the acquisition finished, failed, or never started.
     pub terminal: RequestAttemptTerminal,
+    /// One-based result placement resolved by this request, or `None` when the
+    /// acquisition was not a provider-redirect resolution. JSON serialization omits
+    /// this field when it is `None`.
+    pub resolution_placement: Option<NonZeroU16>,
+}
+
+impl serde::Serialize for RequestAttemptSummary {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct as _;
+
+        let mut summary = serializer.serialize_struct(
+            "RequestAttemptSummary",
+            if self.resolution_placement.is_some() {
+                13
+            } else {
+                12
+            },
+        )?;
+        summary.serialize_field("request_id", &self.request_id.to_string())?;
+        summary.serialize_field("capture_id", &self.capture_id.to_string())?;
+        summary.serialize_field("acquisition", &self.acquisition)?;
+        summary.serialize_field("http_status", &self.http_status)?;
+        summary.serialize_field("source_bytes", &self.source_bytes)?;
+        summary.serialize_field("diagnostic", &self.diagnostic)?;
+        summary.serialize_field("parser_diagnostic", &self.parser_diagnostic)?;
+        summary.serialize_field("document_class", &self.document_class)?;
+        summary.serialize_field("document_bytes", &self.document_bytes)?;
+        summary.serialize_field("capture_complete", &self.capture_complete)?;
+        summary.serialize_field("capture_retention", &self.capture_retention)?;
+        summary.serialize_field("terminal", &self.terminal)?;
+        if let Some(placement) = self.resolution_placement {
+            summary.serialize_field("resolution_placement", &placement.get())?;
+        }
+        summary.end()
+    }
 }
 
 /// Execution state of an acquisition, independent of provider parsing success.

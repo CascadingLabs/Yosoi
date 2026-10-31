@@ -229,6 +229,7 @@ const fn document_request_value(value: DocumentRequest) -> &'static str {
 
 const fn provider_name(value: Provider) -> &'static str {
     match value {
+        Provider::Google => "google",
         Provider::Brave => "brave",
         Provider::Bing => "bing",
         Provider::DuckDuckGo => "duck_duck_go",

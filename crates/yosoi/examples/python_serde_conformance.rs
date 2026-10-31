@@ -8,6 +8,7 @@ use std::{
     collections::BTreeMap,
     error::Error,
     io::{self, Write},
+    num::NonZeroU16,
 };
 
 use serde::{Serialize, de::DeserializeOwned};
@@ -24,15 +25,16 @@ use yosoi::{
     },
     map::{LimitReached, MapTermination},
     policy::{
-        AddressableByteLimit, BrowserLimits, DirectHttpRedirects, Documents, EventLimit, Filters,
-        IpFamily, Limits, Locators, Map, MaximumElapsed, Network, Page, RedirectHopLimit, Request,
-        Scope, SourceLimits, Tuning,
+        AcquisitionKind, AddressableByteLimit, BrowserLimits, DirectHttpRedirects, Documents,
+        EventLimit, Filters, IpFamily, Limits, Locators, Map, MaximumElapsed, Network, Page,
+        RedirectHopLimit, Request, Scope, SourceLimits, Tuning,
         search::{Provider, Search},
     },
+    request::{CaptureId, new as new_request},
     search::{
-        ProviderOutcome, SearchCaptureRetention, SearchFailure, SearchIssue, SearchIssueKind,
-        SearchParserDecision, SearchParserDiagnostic, SearchParserStatus, SearchReplay,
-        SearchReplayPolicy, SearchReplayResult,
+        ProviderOutcome, RequestAttemptSummary, RequestAttemptTerminal, SearchCaptureRetention,
+        SearchFailure, SearchIssue, SearchIssueKind, SearchParserDecision, SearchParserDiagnostic,
+        SearchParserStatus, SearchReplay, SearchReplayPolicy, SearchReplayResult,
     },
 };
 
@@ -506,6 +508,25 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         "default-policy-search",
         "yosoi::policy::search::Search",
     )?;
+    output.push(serialize_only_case(
+        "policy-search-provider-google",
+        "yosoi::policy::search::Provider",
+        "Rust Provider::Google",
+        Provider::Google,
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "policy-search-four-provider-selections",
+        "yosoi::policy::search::Search",
+        "Rust Search::new with Brave, Bing, DuckDuckGo, and Google",
+        Search::new([
+            Provider::Brave,
+            Provider::Bing,
+            Provider::DuckDuckGo,
+            Provider::Google,
+        ])?,
+        json!({}),
+    )?);
     default_case::<EventLimit>(
         &mut output,
         "default-event-limit",
@@ -874,6 +895,67 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         "yosoi::search::SearchIssueKind",
         "Rust SearchIssueKind::QueryRelevanceUnknown (Serialize only)",
         SearchIssueKind::QueryRelevanceUnknown,
+        json!({}),
+    )?);
+    for (name, construction, kind) in [
+        (
+            "search-issue-kind-redirect-resolution-failed",
+            "Rust SearchIssueKind::RedirectResolutionFailed (Serialize only)",
+            SearchIssueKind::RedirectResolutionFailed,
+        ),
+        (
+            "search-issue-kind-redirect-resolution-limit",
+            "Rust SearchIssueKind::RedirectResolutionLimit (Serialize only)",
+            SearchIssueKind::RedirectResolutionLimit,
+        ),
+        (
+            "search-issue-kind-redirect-challenge",
+            "Rust SearchIssueKind::RedirectChallenge (Serialize only)",
+            SearchIssueKind::RedirectChallenge,
+        ),
+    ] {
+        output.push(serialize_only_case(
+            name,
+            "yosoi::search::SearchIssueKind",
+            construction,
+            kind,
+            json!({}),
+        )?);
+    }
+
+    let request_id = new_request("https://example.org/serde-attempt").id();
+    let capture_id = CaptureId::random();
+    let attempt = RequestAttemptSummary {
+        request_id,
+        capture_id,
+        acquisition: AcquisitionKind::DirectHttp,
+        http_status: Some(302),
+        source_bytes: Some(0),
+        diagnostic: None,
+        parser_diagnostic: None,
+        document_class: None,
+        document_bytes: None,
+        capture_complete: Some(true),
+        capture_retention: SearchCaptureRetention::Disabled,
+        terminal: RequestAttemptTerminal::Completed,
+        resolution_placement: None,
+    };
+    output.push(serialize_only_case(
+        "search-attempt-summary-resolution-placement-absent",
+        "yosoi::search::RequestAttemptSummary",
+        "Rust RequestAttemptSummary without provider redirect association",
+        attempt,
+        json!({"absentPaths": ["resolution_placement"]}),
+    )?);
+    let placement = NonZeroU16::new(3).ok_or("invalid fixture placement")?;
+    output.push(serialize_only_case(
+        "search-attempt-summary-resolution-placement-present",
+        "yosoi::search::RequestAttemptSummary",
+        "Rust RequestAttemptSummary with provider redirect association",
+        RequestAttemptSummary {
+            resolution_placement: Some(placement),
+            ..attempt
+        },
         json!({}),
     )?);
 

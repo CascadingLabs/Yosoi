@@ -345,7 +345,14 @@ pub enum SearchIssueKind {
     /// Visible title, snippet, or destination path could not confirm the requested topic and intent.
     /// Hits remain available with partial coverage; this is not a mismatch.
     QueryRelevanceUnknown,
-    /// Bing returned partial results after one disclosed alternate query.
+    /// A provider-owned redirect could not be resolved to a validated destination.
+    RedirectResolutionFailed,
+    /// The per-search limit of eight Google wrapper requests left this row unattempted.
+    RedirectResolutionLimit,
+    /// A Google result wrapper redirected to an observed Google challenge endpoint.
+    RedirectChallenge,
+    /// Bing supplied off-query rows for the original query; these hits came
+    /// from one shorter, disclosed content-term query.
     QueryRelaxed,
 }
 

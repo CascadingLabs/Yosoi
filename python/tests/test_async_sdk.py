@@ -184,6 +184,24 @@ def test_invalid_request_and_search_preflight_raise_public_exceptions() -> None:
         ys.search.new("valid").bind(Policy(search=Search(providers=[]))).check()
 
 
+def test_google_and_existing_provider_choices_bind_in_one_search() -> None:
+    providers = [
+        ProviderSelection(provider=name)
+        for name in ("bing", "brave", "duck_duck_go", "google")
+    ]
+    policy = Policy(search=Search(providers=providers, max_total_results=20))
+    ys.search.new("rust language").bind(policy).check()
+    snapshot = policy.snapshot()
+    assert snapshot.policy.search.providers[-1].provider == "google"
+    assert snapshot.effective_policy.search.providers[-1].provider == "google"
+    assert [selection.provider for selection in policy.search.providers] == [
+        "bing",
+        "brave",
+        "duck_duck_go",
+        "google",
+    ]
+
+
 def test_cancelling_one_task_keeps_its_shared_token_sibling_running() -> None:
     async def run() -> None:
         ready = asyncio.Event()
