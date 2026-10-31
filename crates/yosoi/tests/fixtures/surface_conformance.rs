@@ -5,7 +5,10 @@ use std::{env, error::Error, fs, io};
 use yosoi::{
     Archive,
     documents::{Document, DocumentEpoch},
-    surface::{ArchiveLimits, ArchivedSource, Budget, Limits, Outcome, SessionPolicy, Surface},
+    surface::{
+        ArchiveLimits, ArchivedSource, Budget, DocumentPolicies, Limits, Outcome, SessionPolicy,
+        Surface,
+    },
 };
 
 #[derive(Deserialize)]
@@ -45,6 +48,40 @@ async fn main() -> Result<(), Box<dyn Error>> {
         };
         let index = Surface::new(&document)?;
         let found = index.find(&case.query, None, Budget::default())?;
+        let mut policies = DocumentPolicies::default();
+        for policy in [
+            &mut policies.dom,
+            &mut policies.ax,
+            &mut policies.html,
+            &mut policies.xml,
+            &mut policies.json,
+            &mut policies.text,
+            &mut policies.network,
+        ] {
+            policy.response_bytes = 1024;
+        }
+        let bounded = Surface::with_policy(&document, &policies)?;
+        let bounded_found = bounded.find(
+            &case.query,
+            None,
+            Budget {
+                bytes: 65_536,
+                items: 20,
+            },
+        )?;
+        let mut rejection = policies.clone();
+        for policy in [
+            &mut rejection.dom,
+            &mut rejection.ax,
+            &mut rejection.html,
+            &mut rejection.xml,
+            &mut rejection.json,
+            &mut rejection.text,
+            &mut rejection.network,
+        ] {
+            policy.max_nodes = 1;
+        }
+        let policy_result = json!({"configuration":policies,"limits":policies.html.limits()?,"found":bounded_found,"node_limit_rejected":Surface::with_policy(&document,&rejection).is_err()});
         let details = found
             .entries
             .iter()
@@ -71,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "identity":index.identity(),"representation":index.representation(),
             "source_bytes":index.source_bytes(),"node_count":index.node_count(),
             "coverage":index.coverage(),"root":index.root()},
-            "overview":index.overview(None,Budget::default())?,"found":found,"details":details,"archive":archived}));
+            "overview":index.overview(None,Budget::default())?,"found":found,"details":details,"archive":archived,"document_policy":policy_result}));
     }
     println!("{}", serde_json::to_string_pretty(&values)?);
     Ok(())

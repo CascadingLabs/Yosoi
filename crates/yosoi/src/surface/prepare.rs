@@ -104,6 +104,14 @@ pub(super) fn document(document: &Document, limits: Limits) -> Result<Surface, S
                 .map_err(|e| SurfaceError::Parse(e.to_string()))?;
             let value: Value =
                 serde_json::from_str(&source).map_err(|e| SurfaceError::Parse(e.to_string()))?;
+            if value.get("schema").and_then(Value::as_str) == Some("yosoi.network.v1") {
+                coverage = Coverage {
+                    complete: false,
+                    reason: Some(
+                        "browser_network_log_window; completeness is unestablished".into(),
+                    ),
+                };
+            }
             json_node(&value, "$".into(), "", None, 0, &mut builder)?;
             json = Some(value);
             "application/json; normalization=serde-json"
@@ -173,6 +181,7 @@ pub(super) fn document(document: &Document, limits: Limits) -> Result<Surface, S
     reduce(&mut data, limits.overview_depth)?;
     Ok(Surface {
         data: Arc::new(data),
+        response_bytes: None,
     })
 }
 

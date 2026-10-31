@@ -41,9 +41,12 @@ pub(in crate::internal::browser) mod observation_watch;
 mod screenshot;
 mod screenshot_types;
 mod shared;
+mod surface;
 mod targets;
 mod viewport;
 mod visual_snapshot;
+
+pub use surface::SurfaceInput;
 
 #[path = "page/document_identity.rs"]
 mod document_identity;

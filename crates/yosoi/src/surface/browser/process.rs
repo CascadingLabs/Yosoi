@@ -3,7 +3,7 @@ use crate::internal::browser::session::browser_distribution::supported_chrome_ex
 use crate::surface::connection::{Result, Trace};
 use crate::{
     documents::{Document, DocumentEpoch},
-    surface::{Limits, Surface},
+    surface::{DocumentPolicies, Surface},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use rustls::crypto::{CryptoProvider, ring};
@@ -24,12 +24,17 @@ pub struct Browser {
     pub capabilities: Value,
     driver: Child,
     profile: tempfile::TempDir,
+    pub(super) documents: DocumentPolicies,
 }
 impl Browser {
     pub fn session_key(&self) -> &str {
         &self.session
     }
-    pub async fn open(headless: bool) -> Result<Self> {
+    pub(super) async fn open_with_policy(
+        headless: bool,
+        documents: DocumentPolicies,
+    ) -> Result<Self> {
+        documents.validate()?;
         if CryptoProvider::get_default().is_none() {
             ring::default_provider()
                 .install_default()
@@ -71,6 +76,7 @@ impl Browser {
             capabilities: Value::Null,
             driver,
             profile,
+            documents,
         };
         let mut flags = vec![
             "--no-first-run".to_owned(),
@@ -144,7 +150,7 @@ impl Browser {
         epoch: u64,
         trace: &mut Trace,
     ) -> Result<(Surface, Document, Value)> {
-        let captured = self.script("capture", json!({"epoch":epoch})).await?;
+        let captured = self.script("capture", json!({"epoch":epoch,"limits":self.documents.dom,"html_limits":self.documents.html})).await?;
         let wire = captured
             .get("wire")
             .ok_or_else(|| io::Error::other("capture lacks DOM evidence"))?;
@@ -153,13 +159,7 @@ impl Browser {
             DocumentEpoch::try_from(epoch)?,
             serde_json::to_vec(wire)?,
         )?;
-        let index = match Surface::with_limits(
-            &document,
-            Limits {
-                input_bytes: 32 * 1024 * 1024,
-                ..Limits::default()
-            },
-        ) {
+        let index = match Surface::with_limits(&document, self.documents.dom.limits()?) {
             Ok(index) => index,
             Err(error) => {
                 let artifact = trace.output.join(format!("rejected-capture-{epoch}.json"));

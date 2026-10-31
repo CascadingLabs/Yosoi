@@ -3,6 +3,7 @@
 use super::{BrowserExecutionManagerError, RuntimeBrowserTabLease};
 use crate::browser as browser_config;
 use crate::internal::browser::controller as provider;
+use crate::internal::browser::page::SurfaceInput;
 use serde_json::Value;
 use std::fmt;
 use std::str as std_str;
@@ -182,6 +183,37 @@ impl RuntimeBrowserControl {
     /// it grants no live browser authority or claim about current availability.
     pub fn execution_identity(&self) -> Option<browser_config::BrowserExecutionIdentity> {
         self.page.execution_identity()
+    }
+    /// Runs a fixed bundled Surface evidence operation on this controlled tab.
+    pub(crate) async fn surface_script(
+        &self,
+        operation: &str,
+        input: &Value,
+    ) -> Result<Value, BrowserControlError> {
+        self.check_authority()?;
+        let value = self.page.surface_script(operation, input).await?;
+        self.check_authority()?;
+        Ok(value)
+    }
+    /// Dispatches native input to a node from the current bundled Surface capture.
+    pub(crate) async fn surface_input(
+        &self,
+        input: &SurfaceInput,
+    ) -> Result<(), BrowserControlError> {
+        self.check_authority()?;
+        self.page.surface_input(input).await?;
+        self.check_authority()?;
+        Ok(())
+    }
+    /// Captures the raw browser AX tree from the same controlled tab.
+    pub(crate) async fn surface_ax(
+        &self,
+        depth: Option<i64>,
+    ) -> Result<Value, BrowserControlError> {
+        self.check_authority()?;
+        let nodes = self.page.surface_ax(depth).await?;
+        self.check_authority()?;
+        Ok(nodes)
     }
     /// Checks the watch's original frame and loader-derived epoch against a
     /// fresh browser frame-tree read, including after worker admission.

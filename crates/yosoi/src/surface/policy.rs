@@ -58,6 +58,8 @@ use std::{error::Error, path::PathBuf};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct SurfacePolicy {
+    /// Per-representation capture, tree-depth and serialized response bounds.
+    pub documents: super::DocumentPolicies,
     /// Whether execution retains a portable outcome. Defaults to off.
     pub archive: ArchivePolicy,
     /// Bounded evidence retention, separate from response budgets.
@@ -70,6 +72,7 @@ pub struct SurfacePolicy {
 impl Default for SurfacePolicy {
     fn default() -> Self {
         Self {
+            documents: super::DocumentPolicies::default(),
             archive: ArchivePolicy::Off,
             archive_limits: ArchiveLimits::default(),
             archive_root: None,

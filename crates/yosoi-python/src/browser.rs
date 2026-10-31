@@ -51,6 +51,21 @@ pub struct NativeSession {
     state: SessionState,
 }
 
+impl NativeSession {
+    /// Clone the retained owner while its state guard proves it is still live.
+    /// This does not acquire another browser or take ownership from Python.
+    pub(crate) fn clone_for_surface(&self) -> PyResult<Session> {
+        let guard = self
+            .state
+            .try_lock()
+            .map_err(|_| BrowserError::new_err("browser Session is busy"))?;
+        guard
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| BrowserError::new_err("browser Session is closed"))
+    }
+}
+
 #[pymethods]
 impl NativeSession {
     #[pyo3(signature = (request, policy_json=None, cancellation=None))]
@@ -147,6 +162,24 @@ impl NativeSession {
 #[derive(Debug)]
 pub struct NativeWork {
     state: WorkState,
+}
+
+impl NativeWork {
+    /// Move the one native Work lease into a Surface binding exactly once.
+    /// The policy snapshot is the same retained Session policy; Surface reads
+    /// and actions continue through Work, while its separate SurfacePolicy is
+    /// passed to the Surface constructor.
+    pub(crate) fn take_for_surface(&self) -> PyResult<Work> {
+        let mut guard = self
+            .state
+            .try_lock()
+            .map_err(|_| BrowserError::new_err("browser Work is already executing an operation"))?;
+        let Some(lease) = guard.take() else {
+            return Err(BrowserError::new_err("browser Work lease is released"));
+        };
+        let NativeLease { work, policy: _policy } = lease;
+        Ok(work)
+    }
 }
 
 #[pymethods]
