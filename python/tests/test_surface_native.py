@@ -5,12 +5,17 @@ from __future__ import annotations
 import asyncio
 import os
 import unittest
+from typing import Any, cast
 
 import yosoi as ys
 
 
-async def target(source: ys.surface.BrowserSurface, query: str) -> dict:
-    page = await source.execute({"op": "find", "query": query})
+def as_json_object(value: object) -> dict[str, Any]:
+    return cast(dict[str, Any], value)
+
+
+async def target(source: ys.surface.BrowserSurface, query: str) -> dict[str, Any]:
+    page = as_json_object(await source.execute({"op": "find", "query": query}))
     entry = page["entries"][0]
     if entry["kind"] == "text":
         return await source.execute({"op": "parent", "reference": entry["reference"]})
@@ -24,7 +29,12 @@ async def target(source: ys.surface.BrowserSurface, query: str) -> dict:
 )
 class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
     async def test_facades_and_work_transfer_use_one_retained_native_session(self):
-        body = b'''<!doctype html><h1>Native Python</h1><input aria-label="Message" value="existing"><button onclick="this.nextElementSibling.textContent='Clicked'">Click here</button><p>Ready</p>'''
+        body = (
+            b"<!doctype html><h1>Native Python</h1>"
+            b'<input aria-label="Message" value="existing">'
+            b"<button onclick=\"this.nextElementSibling.textContent='Clicked'\">"
+            b"Click here</button><p>Ready</p>"
+        )
 
         async def serve(reader, writer):
             try:
@@ -48,7 +58,7 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                 )
                 source = await ys.browser.surface.consume_session(browser)
                 try:
-                    ready = await source.ready()
+                    ready = as_json_object(await source.ready())
                     self.assertEqual(ready["source"]["backend"], "native_session")
                     await source.execute({"op": "attach"})
                     await source.execute(
@@ -56,20 +66,37 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                     )
                     await source.execute({"op": "hot"})
                     url = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/"
-                    result = await source.execute(
-                        {"op": "navigate", "reference": ready["state"]["root"], "url": url}
+                    result = as_json_object(
+                        await source.execute(
+                            {
+                                "op": "navigate",
+                                "reference": ready["state"]["root"],
+                                "url": url,
+                            }
+                        )
                     )
                     self.assertEqual(result["receipt"]["status"], "Confirmed")
                     field = await target(source, "Message")
-                    result = await source.execute(
-                        {"op": "fill", "reference": field, "text": "replacement"}
+                    result = as_json_object(
+                        await source.execute(
+                            {"op": "fill", "reference": field, "text": "replacement"}
+                        )
                     )
                     self.assertEqual(result["receipt"]["status"], "Confirmed")
                     self.assertEqual(result["outcome"]["value"]["characters"], 11)
                     button = await target(source, "Click here")
-                    result = await source.execute(
-                        {"op": "click", "reference": button, "expect": {
-                            "kind": "text", "text": "Clicked", "present": True}}
+                    result = as_json_object(
+                        await source.execute(
+                            {
+                                "op": "click",
+                                "reference": button,
+                                "expect": {
+                                    "kind": "text",
+                                    "text": "Clicked",
+                                    "present": True,
+                                },
+                            }
+                        )
                     )
                     self.assertEqual(result["receipt"]["status"], "Confirmed")
                 finally:
@@ -79,7 +106,8 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                 try:
                     self.assertTrue(work._released)
                     self.assertEqual(
-                        (await source.ready())["source"]["backend"], "native_session"
+                        as_json_object(await source.ready())["source"]["backend"],
+                        "native_session",
                     )
                 finally:
                     await source.close()

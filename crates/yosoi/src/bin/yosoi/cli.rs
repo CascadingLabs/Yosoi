@@ -130,7 +130,7 @@ pub async fn run() -> ExitCode {
                         "--profile does not apply to the experimental surface driver"
                     ));
                 }
-                match surface_command::run(args).await {
+                match Box::pin(surface_command::run(args)).await {
                     Ok(code) => code,
                     Err(error) => report_app_error(&error),
                 }

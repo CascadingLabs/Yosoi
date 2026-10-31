@@ -177,7 +177,10 @@ impl NativeWork {
         let Some(lease) = guard.take() else {
             return Err(BrowserError::new_err("browser Work lease is released"));
         };
-        let NativeLease { work, policy: _policy } = lease;
+        let NativeLease {
+            work,
+            policy: _policy,
+        } = lease;
         Ok(work)
     }
 }

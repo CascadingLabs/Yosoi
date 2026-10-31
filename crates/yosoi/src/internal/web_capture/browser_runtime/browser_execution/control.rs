@@ -3,6 +3,7 @@
 use super::{BrowserExecutionManagerError, RuntimeBrowserTabLease};
 use crate::browser as browser_config;
 use crate::internal::browser::controller as provider;
+#[cfg(not(yosoi_dev_support))]
 use crate::internal::browser::page::SurfaceInput;
 use serde_json::Value;
 use std::fmt;
@@ -185,6 +186,7 @@ impl RuntimeBrowserControl {
         self.page.execution_identity()
     }
     /// Runs a fixed bundled Surface evidence operation on this controlled tab.
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_script(
         &self,
         operation: &str,
@@ -196,6 +198,7 @@ impl RuntimeBrowserControl {
         Ok(value)
     }
     /// Dispatches native input to a node from the current bundled Surface capture.
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_input(
         &self,
         input: &SurfaceInput,
@@ -206,6 +209,7 @@ impl RuntimeBrowserControl {
         Ok(())
     }
     /// Captures the raw browser AX tree from the same controlled tab.
+    #[cfg(not(yosoi_dev_support))]
     pub(crate) async fn surface_ax(
         &self,
         depth: Option<i64>,

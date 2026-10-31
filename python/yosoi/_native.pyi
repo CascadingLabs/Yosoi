@@ -361,7 +361,6 @@ def surface_browser_consume_session(
 def surface_browser_consume_work(
     work: BrowserWork, policy_json: str
 ) -> Awaitable[BrowserSurface]: ...
-
 def invoke_flow(
     flow_json: str,
     policy_json: str | None = None,
