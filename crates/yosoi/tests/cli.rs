@@ -14,6 +14,32 @@ fn run_yosoi(args: &[&str]) -> io::Result<Output> {
         .output()
 }
 
+#[test]
+fn search_replay_accepts_a_manifest_filename_in_the_current_directory() -> Result<(), Box<dyn Error>>
+{
+    let directory = tempfile::tempdir()?;
+    fs::write(
+        directory.path().join("manifest.json"),
+        br#"{"schema_version":1,"records":[]}"#,
+    )?;
+    let output = Command::new(env!("CARGO_BIN_EXE_yosoi"))
+        .current_dir(directory.path())
+        .args(["search", "replay", "manifest.json"])
+        .output()?;
+    if cfg!(not(unix)) {
+        assert_eq!(output.status.code(), Some(1));
+        assert!(String::from_utf8_lossy(&output.stderr).contains("not certified"));
+        return Ok(());
+    }
+    // An empty, valid evidence bundle has no documents to replay (exit 2).
+    // Opening its Archive must succeed rather than fail with EmptyRoot (exit 1).
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(report["record_count"], 0);
+    assert_eq!(report["network_requests"], 0);
+    Ok(())
+}
+
 fn assert_no_ansi(bytes: &[u8]) {
     assert!(
         !bytes.windows(2).any(|window| window == b"\x1b["),

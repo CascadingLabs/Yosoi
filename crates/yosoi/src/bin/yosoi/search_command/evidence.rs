@@ -173,8 +173,12 @@ pub async fn run(args: ReplayArgs) -> Result<ExitCode> {
     let root = args
         .archive_root
         .as_deref()
-        .or_else(|| args.manifest.parent())
-        .context("Search evidence manifest has no Archive parent")?;
+        .or_else(|| {
+            args.manifest
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
+        })
+        .unwrap_or_else(|| Path::new("."));
     let archive = Archive::open(root)
         .await
         .context("could not open Search replay Archive")?;
