@@ -23,6 +23,7 @@ ROOT_MODULES = {
     "map": "map",
     "policy": "policy",
     "request": "request",
+    "registry": "registry",
     "search": "search",
     "surface": "surface",
 }

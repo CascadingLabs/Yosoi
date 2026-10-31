@@ -700,6 +700,22 @@
     {
       "rustPath": "yosoi::search::WebCoverage",
       "pythonTarget": "yosoi.search.SearchCoverage.web"
+    },
+    {
+      "rustPath": "yosoi::registry::Revision",
+      "pythonTarget": "yosoi.registry.Revision"
+    },
+    {
+      "rustPath": "yosoi::registry::Snapshot",
+      "pythonTarget": "yosoi.registry.Snapshot"
+    },
+    {
+      "rustPath": "yosoi::registry::Change",
+      "pythonTarget": "yosoi.registry.Change"
+    },
+    {
+      "rustPath": "yosoi::registry::Coordination",
+      "pythonTarget": "yosoi.registry.Coordination"
     }
   ]
 }

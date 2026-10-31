@@ -12,6 +12,7 @@ from . import documents as documents
 from . import locators as locators
 from . import map as map
 from . import policy as policy
+from . import registry as registry
 from . import request as request
 from . import search as search
 from . import surface as surface
@@ -278,6 +279,7 @@ __all__ = [
     "locators",
     "map",
     "policy",
+    "registry",
     "request",
     "search",
     "surface",

@@ -21,6 +21,7 @@ NAMESPACES = (
     "map",
     "policy",
     "request",
+    "registry",
     "search",
     "surface",
 )
