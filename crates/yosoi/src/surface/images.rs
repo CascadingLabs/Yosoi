@@ -133,6 +133,7 @@ mod enabled {
             prepare::reduce(&mut data, limits.overview_depth)?;
             Ok(Self {
                 data: Arc::new(data),
+                response_bytes: None,
             })
         }
 

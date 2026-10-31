@@ -10,7 +10,9 @@
 pub mod archive;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
+mod document_policy;
 mod images;
+pub use document_policy::{DocumentPolicies, DocumentPolicy};
 pub mod model;
 mod outcome;
 mod policy;
@@ -297,6 +299,7 @@ enum Original {
 #[derive(Clone)]
 pub struct Surface {
     data: Arc<Data>,
+    response_bytes: Option<usize>,
 }
 impl fmt::Debug for Surface {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -311,6 +314,14 @@ impl fmt::Debug for Surface {
 }
 
 impl Surface {
+    fn response_budget(&self, budget: Budget) -> Budget {
+        Budget {
+            bytes: self
+                .response_bytes
+                .map_or(budget.bytes, |cap| budget.bytes.min(cap)),
+            items: budget.items,
+        }
+    }
     /// Combines named document/image views into one address space without claiming atomic capture.
     /// Each original source keeps its identity. Nested bundles are intentionally unsupported.
     pub fn combine(
@@ -432,6 +443,7 @@ impl Surface {
         prepare::reduce(&mut data, limits.overview_depth)?;
         Ok(Self {
             data: Arc::new(data),
+            response_bytes: None,
         })
     }
     /// Prepares any of Yosoi's six supported document classes with default limits.
@@ -442,6 +454,18 @@ impl Surface {
     /// Prepares evidence with explicit resource limits and interpreter-bound identity.
     pub fn with_limits(document: &Document, limits: Limits) -> Result<Self, SurfaceError> {
         prepare::document(document, limits)
+    }
+    /// Prepares a document with the limits selected by its declared representation.
+    /// This performs no I/O and rejects inputs exceeding their policy.
+    pub fn with_policy(
+        document: &Document,
+        policies: &DocumentPolicies,
+    ) -> Result<Self, SurfaceError> {
+        policies.validate()?;
+        let policy = policies.for_document(document);
+        let mut surface = Self::with_limits(document, policy.limits()?)?;
+        surface.response_bytes = Some(policy.response_bytes);
+        Ok(surface)
     }
     /// Returns the exact immutable capture identity.
     pub fn identity(&self) -> &str {
@@ -644,6 +668,7 @@ impl Surface {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Page, SurfaceError> {
+        let budget = self.response_budget(budget);
         if budget.items == 0 || budget.bytes == 0 {
             return Err(SurfaceError::BudgetTooSmall);
         }
@@ -767,6 +792,7 @@ impl Surface {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Inspection, SurfaceError> {
+        let budget = self.response_budget(budget);
         self.node(reference)?;
         let content = self.detail(reference.node)?;
         let offset = self.offset(token, "inspect", reference.node, "")?;

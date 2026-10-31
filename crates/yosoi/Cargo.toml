@@ -180,3 +180,7 @@ required-features = ["browser"]
 [[example]]
 name = "surface_conformance"
 path = "tests/fixtures/surface_conformance.rs"
+
+[[example]]
+name = "surface_evidence"
+required-features = ["browser"]

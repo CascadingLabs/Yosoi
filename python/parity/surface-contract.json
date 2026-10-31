@@ -35,6 +35,21 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::BrowserSurface::observe",
+      "kind": "function",
+      "signatureSha256": "a04b826b222de536c4933d5b94ff7c1d16f9a2d77ac405577554d692dc311cec",
+      "pythonTarget": "yosoi.BrowserSurface.observe",
+      "argumentMappings": [
+        {
+          "rustArgument": "representation",
+          "pythonArgument": "representation",
+          "conversion": "Python BrowserRepresentation converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.BrowserSurface.observe.",
+      "pythonTargetSha256": "f5847377c7b20ccc56c8833df476527aaf873ffeada4f20bd494db56ef41aa12"
+    },
+    {
       "rustPath": "yosoi::BrowserSurface::open",
       "kind": "function",
       "signatureSha256": "ebef499440216e913f1c3a24a364fe2a8c3227e1943587dc41d2ad8397a9be2a",
@@ -88,6 +103,26 @@
       "pythonTarget": "yosoi.BrowserSurface.ready",
       "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
       "pythonTargetSha256": "a7f52b010e792ae9d1512d471b7be3594a2ad5448997338c05b9ab2c9c020f33"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::read",
+      "kind": "function",
+      "signatureSha256": "f8cd3e8e1a4e84960360b1a16d6b15e27eda091971f9dc435e5a04a125222bdc",
+      "pythonTarget": "yosoi.BrowserSurface.read",
+      "argumentMappings": [
+        {
+          "rustArgument": "representation",
+          "pythonArgument": "representation",
+          "conversion": "Python BrowserRepresentation converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "request",
+          "pythonArgument": "request",
+          "conversion": "Python ReadRequest converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.BrowserSurface.read.",
+      "pythonTargetSha256": "2f8ee79251c5fb054b288318dda655dd23be63850fe18c2c75e57dd5eb3fe597"
     },
     {
       "rustPath": "yosoi::BrowserSurface",
@@ -699,6 +734,26 @@
       "pythonTargetSha256": "47408e3daeeb51311add26582424c86612559144c2040a605c5e922bef020636"
     },
     {
+      "rustPath": "yosoi::Surface::with_policy",
+      "kind": "function",
+      "signatureSha256": "3b0eed72433d771e694ec37c4477fdb376e9b4ce0033ed9802b703c13e9bc149",
+      "pythonTarget": "yosoi.Surface.with_policy",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python Document converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "policies",
+          "pythonArgument": "policies",
+          "conversion": "Python DocumentPolicies converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Surface.with_policy.",
+      "pythonTargetSha256": "363af6fb5e755e6e63e14faa9546375f7d0284e1cd7279b4332dc88cffabbb69"
+    },
+    {
       "rustPath": "yosoi::SurfaceBudget::bytes",
       "kind": "struct_field",
       "signatureSha256": "20bb5f60bacbdce775cb8320d546843ad2572993c3ab4d224f9bc75b6d1d5030",
@@ -1200,6 +1255,14 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::SurfacePolicy::documents",
+      "kind": "struct_field",
+      "signatureSha256": "6e72f2f81d4710efbae02cce47da9199dfcd2bc634fda8561376ed75521ceeb6",
+      "pythonTarget": "yosoi.SurfacePolicy.documents",
+      "rationale": "Rust field documents maps to Python field documents.",
+      "pythonTargetSha256": "bcef6ddcc66e06ed5b0690e0caf0fad48318ccd7e9f210971d2b470d680200a8"
+    },
+    {
       "rustPath": "yosoi::SurfacePolicy::fmt",
       "kind": "function",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
@@ -1227,7 +1290,7 @@
       "signatureSha256": "ac219bb17fd465659e38003aa2c8797fe645af7c065d51ad6bee88e20905e822",
       "pythonTarget": "yosoi.SurfacePolicy",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "35325108f5c6eb60bc445a9c09db94fd4659c7c590f9a9c31a8b20b84d1a7cf3"
+      "pythonTargetSha256": "7124ac6d4a736b92f2835b373ac12236473fa0d81e5c728d91978d8039b6259c"
     },
     {
       "rustPath": "yosoi::SurfaceSession::attach",
@@ -2097,7 +2160,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a542e6226d01b0b2e8aafea779a8357c6fa02436b6c81c5c940acfb8405537b2"
+      "pythonTargetSha256": "54be2c7833fac4536fd4818540ee3c458ab1691e93be7a33a536ff4429da0046"
     },
     {
       "rustPath": "yosoi::WebSurface::observation",
@@ -2149,12 +2212,44 @@
       "pythonTargetSha256": "422be4033e7b1d5837b9cf603aef7a986b11830bf01e3a2afed9546120061320"
     },
     {
+      "rustPath": "yosoi::WebSurface::with_policy",
+      "kind": "function",
+      "signatureSha256": "e82535803a99fafef16c5f7b92172fe32772a4ee28e5e161fa83a87aa414d894",
+      "pythonTarget": "yosoi.WebSurface",
+      "argumentMappings": [
+        {
+          "rustArgument": "index",
+          "pythonArgument": "index",
+          "conversion": "Python Surface retains the same Rust index"
+        },
+        {
+          "rustArgument": "source",
+          "pythonArgument": "source",
+          "conversion": "Python str is validated as the same SourceId"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python DocumentPolicy serializes to the Rust policy"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python WebSurface(index, source, policy) wraps the same Rust policy-bound reader; omission selects default policy.",
+      "pythonTargetSha256": "54be2c7833fac4536fd4818540ee3c458ab1691e93be7a33a536ff4429da0046"
+    },
+    {
       "rustPath": "yosoi::WebSurface",
       "kind": "struct",
       "signatureSha256": "13192ab5df4b3448c034a8c63a8be76034f9d9f174cac478ec6e31f049a5e688",
       "pythonTarget": "yosoi.WebSurface",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "a542e6226d01b0b2e8aafea779a8357c6fa02436b6c81c5c940acfb8405537b2"
+      "pythonTargetSha256": "54be2c7833fac4536fd4818540ee3c458ab1691e93be7a33a536ff4429da0046"
     },
     {
       "rustPath": "yosoi::surface::ActionLease::drop",
@@ -3286,6 +3381,196 @@
       "pythonTarget": "yosoi.surface.Cursor",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "cfd44340aedf993fc3c2d035dca66dc9d4db49b53fab7c4a3de83300fad1f2f7"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::ax",
+      "kind": "struct_field",
+      "signatureSha256": "4a49909d6b635e6ea35bfa15daed55adeb728db4f1ad81145607eac1b665e816",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.ax",
+      "rationale": "Rust field ax maps to Python field ax.",
+      "pythonTargetSha256": "99127fb6ca7c62dd8200e95307b96228b6b8d690f36814f9cc4ad74db44c8d2c"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::clone",
+      "kind": "function",
+      "signatureSha256": "a114ee679d400f1788fa78ab4bfe2ddf882a12e56e53c1b573f52f9814d5c225",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::dom",
+      "kind": "struct_field",
+      "signatureSha256": "bf8187b9078a3a4fb804315200aa5e5b3b00c7e9911eaac955a5ef636ead5bf8",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.dom",
+      "rationale": "Rust field dom maps to Python field dom.",
+      "pythonTargetSha256": "a2d363b261365e5923a9274280eeeeb42d902842c8c9328c94842f329d97503b"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::html",
+      "kind": "struct_field",
+      "signatureSha256": "95d2384a551b936604a6c78b90a3c20ec0cb98f8aa1b8247101db34a05b92664",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.html",
+      "rationale": "Rust field html maps to Python field html.",
+      "pythonTargetSha256": "83d0d3d4783f5ab223b385eb048d099710c13de7aaf64355c22ecb558d9a88b7"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::json",
+      "kind": "struct_field",
+      "signatureSha256": "8dfd11870429036f02464b30abb03b1d7359e0ef1a90acbf20e5774b5266c62e",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.json_document",
+      "rationale": "Rust field json maps to Python field json_document with serialization alias json.",
+      "pythonTargetSha256": "79c44c8cbc6febd0d08b79bcaf90d0d452ff84ea1d2bb0148059bc04d354bfa3"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::network",
+      "kind": "struct_field",
+      "signatureSha256": "bf2d648d8b35eee494328017f745ce7c98f7d356a7d3cf90bd5eac5bc159ff0b",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.network",
+      "rationale": "Rust field network maps to Python field network.",
+      "pythonTargetSha256": "9bbacb411f0d64199d7ef0ac531a5ddbdfda40edb2a8a4876581e1182f9ab8ec"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::text",
+      "kind": "struct_field",
+      "signatureSha256": "f9db571cf031ce7de64a196d0344b8bd015f40889772b779c45197febe14f07f",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.text",
+      "rationale": "Rust field text maps to Python field text.",
+      "pythonTargetSha256": "5a553f13dec76e5dbe07f3b0df5357d4ce3569e4c4a4bdd0c69752c1f5c150d2"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies::xml",
+      "kind": "struct_field",
+      "signatureSha256": "a18707cbefadf9578bbcd61c48368e69d68247e963fb2d369ae6c09f091c1f59",
+      "pythonTarget": "yosoi.surface.DocumentPolicies.xml",
+      "rationale": "Rust field xml maps to Python field xml.",
+      "pythonTargetSha256": "f29dee8d16dbd6786896368b56d5e88ccda2d4877ffa7b115985407d3e81f4bf"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicies",
+      "kind": "struct",
+      "signatureSha256": "1d259554b12e1be945fe36659a04109b56861798c9ac0700d332c56bdc8a2f20",
+      "pythonTarget": "yosoi.surface.DocumentPolicies",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.DocumentPolicies.",
+      "pythonTargetSha256": "47db3a982d13e322fd4a465bf692f78d98f423bf2169f7aaaa37dce02c8d794e"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::clone",
+      "kind": "function",
+      "signatureSha256": "832047c14c5ef3f45d7975b43dc4f1934008d8b9840a3f1e25e9ce861f7ba2cf",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::limits",
+      "kind": "function",
+      "signatureSha256": "059f71270d3ae665d9e5780e964e401e32e734b303e98f23974272b31159a8a7",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.limits",
+      "rationale": "Rust method maps to the matching Python method/property yosoi.surface.DocumentPolicy.limits.",
+      "pythonTargetSha256": "6971e330457a0411a16eaef9f61831b244020adefdd4a86c2c192ab1a55899a3"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::max_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "a9080b5d340386ec8206029367cbbd9e4dc9193ab6cb1781d16c4db69f33bf9e",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.max_bytes",
+      "rationale": "Rust field max_bytes maps to Python field max_bytes.",
+      "pythonTargetSha256": "616a3d22495a1f776ea0186f28278a3ba4a757dd8ad420fd28588f9fbb247cde"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::max_depth",
+      "kind": "struct_field",
+      "signatureSha256": "34ac736e4642eb8ff402307e1af2904029e49904cf775acbdc64d02c1c153c9a",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.max_depth",
+      "rationale": "Rust field max_depth maps to Python field max_depth.",
+      "pythonTargetSha256": "9d4bbcb6f5d63f772e81681ed7f786a415675bbd9a9f1672ffd81ff0baed4e41"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::max_nodes",
+      "kind": "struct_field",
+      "signatureSha256": "9ac48ca93fd34d480fade2cf9ee2acbdef5fe2044c3f0be7f7ec8397a3229e45",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.max_nodes",
+      "rationale": "Rust field max_nodes maps to Python field max_nodes.",
+      "pythonTargetSha256": "f02a6b619c365b1df454402d63958da2263353f5844c0ff5dc21390c0d8fdc6b"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::overview_depth",
+      "kind": "struct_field",
+      "signatureSha256": "cea828d4102d6115addd8ca12d3b2d1c9ab6d0151095f24fad9a568941c92654",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.overview_depth",
+      "rationale": "Rust field overview_depth maps to Python field overview_depth.",
+      "pythonTargetSha256": "009a892ab0271425b3d96703494efc67446bd7e1983be178acccfc1d1151178c"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::response_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "ecddcb67aabd4376906f1a154eba135233209d97a785898b815dd46c3a9a70c0",
+      "pythonTarget": "yosoi.surface.DocumentPolicy.response_bytes",
+      "rationale": "Rust field response_bytes maps to Python field response_bytes.",
+      "pythonTargetSha256": "f6c99d0b729cadf3fd7a05f5068b11b4240bb9b51d7bc984bc3bc7f3d935ed60"
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::DocumentPolicy",
+      "kind": "struct",
+      "signatureSha256": "be9f7472e9662bb5973256e096c0d5771c0ce1e302e13eda4f95fd29a5bdc916",
+      "pythonTarget": "yosoi.surface.DocumentPolicy",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.DocumentPolicy.",
+      "pythonTargetSha256": "a283922e366b97cdffaf14c98b19a2f38c0d635e9edd44a114705498d15b4f93"
     },
     {
       "rustPath": "yosoi::surface::Entry::clone",
@@ -4650,6 +4935,154 @@
       "pythonTarget": "yosoi.surface",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::clone",
+      "kind": "function",
+      "signatureSha256": "11436b2ccedf0ebd31d9459af2bfb2857119858149a12b05ff22aa4857c3005e",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::descriptor",
+      "kind": "struct_field",
+      "signatureSha256": "deb290a7cb854caecf781142fadac30a6d7df29293e4f659262d95b1c51bea58",
+      "pythonTarget": "yosoi.surface.BrowserObservation.descriptor",
+      "rationale": "Rust field descriptor maps to Python field descriptor.",
+      "pythonTargetSha256": "3b91442ff0864981094c70aeb8baf4e401f38f497423115424cb4983edfa715d"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::observation",
+      "kind": "struct_field",
+      "signatureSha256": "d3b474db429fec1bf8d0093bc4a7bad3478ddda18d7ef0ba2c7c4203544fdcd6",
+      "pythonTarget": "yosoi.surface.BrowserObservation.observation",
+      "rationale": "Rust field observation maps to Python field observation.",
+      "pythonTargetSha256": "feda56a32d3ebd373013659d863d7f9b40507096722ce4e2398d2c8349a6de05"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::root",
+      "kind": "struct_field",
+      "signatureSha256": "728696c30861dca38ae0bc523622ac0e2aacafdb0cac9e0e150461ff109dddeb",
+      "pythonTarget": "yosoi.surface.BrowserObservation.root",
+      "rationale": "Rust field root maps to Python field root.",
+      "pythonTargetSha256": "feb56978373b97437b8cb7695337bed6ab9c884c79bf78d163ae1bb6e45958de"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserObservation",
+      "kind": "struct",
+      "signatureSha256": "439ab570c9db085617d0cf101f59e7c197aa266dd5d1e43cbe369dc94d093b4d",
+      "pythonTarget": "yosoi.surface.BrowserObservation",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.BrowserObservation.",
+      "pythonTargetSha256": "4fe7df80eeb3f5d848477d19af8bdb16f6d83d563919a380c0c9d3c2a6ba6ff5"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::Ax",
+      "kind": "variant",
+      "signatureSha256": "0f341bc7cf9eb5bd73e51cf67ed8b4f3d031ad57549484baad241202ab839e7f",
+      "pythonTarget": "yosoi.surface.BrowserRepresentation",
+      "rationale": "Rust variant Ax maps to the corresponding Python tagged value yosoi.surface.BrowserRepresentation. The Python discriminator value is 'ax'.",
+      "pythonTargetSha256": "9afec2a47a44b33ae4a0f9746f9d5460a0d502280c756029c568fc7d78cd462d"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::Dom",
+      "kind": "variant",
+      "signatureSha256": "1111d58688186b7c2fce4f4d7f4d9316d408ccbfd7b8f29b57ae6600a3126ea9",
+      "pythonTarget": "yosoi.surface.BrowserRepresentation",
+      "rationale": "Rust variant Dom maps to the corresponding Python tagged value yosoi.surface.BrowserRepresentation. The Python discriminator value is 'dom'.",
+      "pythonTargetSha256": "9afec2a47a44b33ae4a0f9746f9d5460a0d502280c756029c568fc7d78cd462d"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::Network",
+      "kind": "variant",
+      "signatureSha256": "1744b96470b51bf30935e2748b237a708d226a0430063f92accf90961cd28d86",
+      "pythonTarget": "yosoi.surface.BrowserRepresentation",
+      "rationale": "Rust variant Network maps to the corresponding Python tagged value yosoi.surface.BrowserRepresentation. The Python discriminator value is 'network'.",
+      "pythonTargetSha256": "9afec2a47a44b33ae4a0f9746f9d5460a0d502280c756029c568fc7d78cd462d"
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::clone",
+      "kind": "function",
+      "signatureSha256": "67879b9614b419ed14519f91336bd0e8ff3b4d309a49a3ca0c435f084dd6435e",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::cmp",
+      "kind": "function",
+      "signatureSha256": "5405330be01144b49fb729686daf6a9e3ce0c4354c7f23141e005592193b9156",
+      "trait": "Ord",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::default",
+      "kind": "function",
+      "signatureSha256": "2a48450b233ea633ae25ec3f463e2f11fceda6bb5a5657d5c05ec02d1992597e",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::eq",
+      "kind": "function",
+      "signatureSha256": "940b9b183f9c56fe5998cdc128f1dbfc95410faf7887b5a88f6b7d142202163b",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::partial_cmp",
+      "kind": "function",
+      "signatureSha256": "1ddd4f99e51fe851b7950c024f431390e9694e33b9af169fe4c6a20367dd0125",
+      "trait": "PartialOrd",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::browser::BrowserRepresentation",
+      "kind": "enum",
+      "signatureSha256": "18786accf0d8633965602779ff2dc13ca763a20e8fb7a3f3ce11c152400e863e",
+      "pythonTarget": "yosoi.surface.BrowserRepresentation",
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.surface.BrowserRepresentation.",
+      "pythonTargetSha256": "9afec2a47a44b33ae4a0f9746f9d5460a0d502280c756029c568fc7d78cd462d"
     },
     {
       "rustPath": "yosoi::surface::browser::archive::rerun",

@@ -210,6 +210,10 @@ from .view import View as View
 __version__ = _distribution_version("yosoi")
 
 __all__ = [
+    "BrowserObservation",
+    "BrowserRepresentation",
+    "DocumentPolicies",
+    "DocumentPolicy",
     "BrowserSurface",
     "VideoSession",
     "SurfaceConnection",
@@ -303,7 +307,11 @@ __all__ = [
     "xpath",
 ]
 
+from .surface import BrowserObservation as BrowserObservation
+from .surface import BrowserRepresentation as BrowserRepresentation
 from .surface import BrowserSurface as BrowserSurface
+from .surface import DocumentPolicies as DocumentPolicies
+from .surface import DocumentPolicy as DocumentPolicy
 from .surface import ExecutionError as ExecutionError
 from .surface import SurfaceConnection as SurfaceConnection
 from .surface import SurfacePolicy as SurfacePolicy

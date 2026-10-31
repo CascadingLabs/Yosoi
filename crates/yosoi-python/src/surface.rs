@@ -166,11 +166,23 @@ impl NativeSurface {
         })
     }
 
-    fn web(&self, source: &str) -> PyResult<NativeWebSurface> {
+    #[pyo3(signature = (source, policy=None))]
+    fn web(&self, source: &str, policy: Option<&str>) -> PyResult<NativeWebSurface> {
         let source = surface::model::SourceId::new(source).map_err(failure)?;
-        surface::browser::WebSurface::new(self.inner.clone(), source)
+        let policy = policy.map(decode).transpose()?.unwrap_or_default();
+        surface::browser::WebSurface::with_policy(self.inner.clone(), source, policy)
             .map(|inner| NativeWebSurface { inner })
             .map_err(failure)
+    }
+    #[staticmethod]
+    fn with_policy(py: Python<'_>, document: &NativeDocument, policies: &str) -> PyResult<Self> {
+        let policies = decode(policies)?;
+        let document = document.borrowed()?.to_owned();
+        py.detach(|| {
+            surface::Surface::with_policy(&document, &policies)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
     }
 
     #[staticmethod]

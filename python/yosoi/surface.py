@@ -114,6 +114,101 @@ class Limits(ImmutableModel):
     )
 
 
+class DocumentPolicy(ImmutableModel):
+    """Independent retained-document, tree and read-response limits.
+
+    Supplied documents exceeding preparation limits are rejected. Native AX
+    captures are depth-limited and report partial coverage. Read limits bound
+    complete serialized results, independently of retained source bytes.
+    """
+
+    max_bytes: int = Field(
+        default=8388608,
+        strict=True,
+        ge=1,
+        le=134217728,
+        description="Maximum retained serialized document bytes.",
+    )
+    max_depth: int = Field(
+        default=96,
+        strict=True,
+        ge=1,
+        le=256,
+        description="Maximum tree depth; root is level zero.",
+    )
+    max_nodes: int = Field(
+        default=100000,
+        strict=True,
+        ge=1,
+        le=200000,
+        description="Maximum indexed nodes, including scalars.",
+    )
+    overview_depth: int = Field(
+        default=6,
+        strict=True,
+        ge=0,
+        le=256,
+        description="Automatic overview depth, capped to max_depth.",
+    )
+    response_bytes: int = Field(
+        default=65536,
+        strict=True,
+        ge=512,
+        le=65536,
+        description="Maximum complete serialized read-result bytes.",
+    )
+
+    def limits(self) -> Limits:
+        """Return preparation bounds with overview depth capped to tree depth."""
+        return Limits(
+            input_bytes=self.max_bytes,
+            nodes=self.max_nodes,
+            depth=self.max_depth,
+            overview_depth=min(self.overview_depth, self.max_depth),
+        )
+
+
+class DocumentPolicies(ImmutableModel):
+    """Separate SDK capture and response limits per evidence representation."""
+
+    dom: DocumentPolicy = Field(
+        default_factory=lambda: DocumentPolicy(max_bytes=33554432, max_nodes=200000),
+        description="Rendered DOM retention, tree and read bounds.",
+    )
+    ax: DocumentPolicy = Field(
+        default_factory=lambda: DocumentPolicy(max_nodes=100000),
+        description="Native accessibility evidence limits; at most 100000 nodes.",
+    )
+    html: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Source HTML preparation limits."
+    )
+    xml: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Source XML preparation limits."
+    )
+    json_document: DocumentPolicy = Field(
+        default_factory=DocumentPolicy,
+        alias="json",
+        description="Ordinary JSON preparation limits; serialized as json.",
+    )
+    text: DocumentPolicy = Field(
+        default_factory=DocumentPolicy, description="Plain text preparation limits."
+    )
+    network: DocumentPolicy = Field(
+        default_factory=DocumentPolicy,
+        description="Network event-document limits, independent of ordinary JSON.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_ax_nodes(self) -> Self:
+        if self.ax.max_nodes > 100000:
+            raise ValueError("AX supports at most 100000 nodes")
+        return self
+
+
+BrowserRepresentation = Literal["dom", "ax", "network"]
+"""Native browser evidence view; AX and network addresses are read-only."""
+
+
 class Coverage(ImmutableModel):
     """Source completeness, independent of how many entries fit on a page."""
 
@@ -415,6 +510,13 @@ class Surface:
         )
 
     @classmethod
+    def with_policy(cls, document: Document, policies: DocumentPolicies) -> Self:
+        """Prepare using Rust's policy selection for the declared document type."""
+        return cls._from_native(
+            _native.Surface.with_policy(document._handle, policies.model_dump_json())
+        )
+
+    @classmethod
     def _from_native(cls, handle: _native.Surface) -> Self:
         value = cls.__new__(cls)
         value._handle = handle
@@ -583,16 +685,21 @@ class Surface:
 
 
 class WebSurface:
-    """Shared read protocol over an immutable HTML or rendered-DOM index.
+    """Shared read protocol over immutable HTML, DOM, AX or network evidence.
 
     Args:
         index: Prepared document index; other document classes are rejected.
         source: Nonempty continuing-source identity, without browser authority.
+        policy: Optional independent serialized response limits.
     """
 
-    def __init__(self, index: Surface, source: str) -> None:
+    def __init__(
+        self, index: Surface, source: str, policy: DocumentPolicy | None = None
+    ) -> None:
         """Bind a web observation to its source; no browser is opened."""
-        self._handle = index._handle.web(source)
+        self._handle = index._handle.web(
+            source, (policy or DocumentPolicy()).model_dump_json()
+        )
 
     @property
     def descriptor(self) -> Descriptor:
@@ -1092,6 +1199,11 @@ def _require_browser() -> None:
 class SurfacePolicy(ImmutableModel):
     """Evidence retention and output bounds shared across source connections."""
 
+    documents: DocumentPolicies = Field(
+        default_factory=DocumentPolicies,
+        description="Per-type document bytes, depth, nodes and response bytes.",
+    )
+
     archive: ArchivePolicy = Field(
         default="off", description="Portable outcome retention, disabled by default."
     )
@@ -1155,8 +1267,55 @@ class SurfaceConnection:
         return None if value == "null" else Outcome.model_validate_json(value)
 
 
+class BrowserObservation(ImmutableModel):
+    """Exact browser evidence identity, capabilities, coverage and root address."""
+
+    descriptor: Descriptor = Field(description="Read capabilities and representation.")
+    observation: Observation = Field(description="Immutable identity and coverage.")
+    root: Reference = Field(description="Producer-issued root evidence address.")
+
+
 class BrowserSurface(SurfaceConnection):
     """An isolated live browser with source-specific actions and archive support."""
+
+    async def observe(
+        self, representation: BrowserRepresentation
+    ) -> BrowserObservation:
+        """Capture fresh evidence without acquiring live action authority.
+
+        AX is native and depth-limited. Network covers a best-effort log window
+        since session open or the last network observation. Views are captured
+        sequentially. Replacing a view invalidates its previous addresses.
+        """
+        return BrowserObservation.model_validate(
+            await self.execute({"op": "observe", "representation": representation})
+        )
+
+    async def read(
+        self, representation: BrowserRepresentation, request: ReadRequest
+    ) -> ReadResult:
+        """Read observed evidence under both caller and per-type policy bounds.
+
+        Results are capped at 65280 bytes by the connection envelope. AX and
+        network references do not grant live DOM targeting authority.
+        """
+        request = request.model_copy(
+            update={
+                "budget": request.budget.model_copy(
+                    update={"bytes": min(request.budget.bytes, 65280)}
+                )
+            }
+        )
+        return _RESULT.validate_python(
+            await self.execute(
+                {
+                    "op": "read_view",
+                    "representation": representation,
+                    "budget": max(1024, request.budget.bytes + 256),
+                    "request": request.model_dump(mode="json"),
+                }
+            )
+        )
 
     @classmethod
     async def open(

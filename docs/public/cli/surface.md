@@ -26,6 +26,40 @@ Send commands on standard input:
 
 The initial cursor is detached. `attach` enables a live reader; `hot` acquires the action slot. Reading and focusing do not grant action authority. Captures are explicit: `refresh` publishes current evidence, and effects attempt a fresh capture before reporting their outcome. A live reader can inspect without clicking.
 
+## Read AX and network evidence
+
+Observe a representation, then read it through the same bounded protocol:
+
+```json
+{"id":1,"op":"observe","representation":"ax"}
+{"id":2,"op":"read_view","representation":"ax","request":{"operation":{"kind":"search","query":"Search"},"budget":{"bytes":4096,"items":20}}}
+{"id":3,"op":"observe","representation":"network"}
+{"id":4,"op":"read_view","representation":"network","request":{"operation":{"kind":"overview"},"budget":{"bytes":4096,"items":20}}}
+```
+
+AX is native Chrome accessibility evidence with partial, depth-limited coverage.
+Network contains best-effort Chrome request/response and failure events since
+session open or the previous network observation. Response bodies are not
+collected. These views are read-only: their references cannot be passed to DOM
+actions or `focus_evidence`. Re-observing a view replaces its current addresses;
+other representations remain independently retained historical observations.
+
+Pass `--document-policy policy.json` to configure SDK limits before browser
+launch. For example, save this partial policy object as `policy.json`:
+
+```json
+{
+  "dom": { "max_bytes": 8388608, "max_depth": 96, "response_bytes": 16384 },
+  "ax": { "max_bytes": 524288, "max_depth": 8, "max_nodes": 10000, "response_bytes": 8192 },
+  "network": { "max_bytes": 262144, "max_depth": 24, "response_bytes": 8192 }
+}
+```
+
+Missing fields retain their defaults. Retained source bytes and serialized read
+bytes have separate limits; a larger command budget cannot bypass the SDK
+policy. Supplied document and DOM capture limits fail explicitly; AX depth and
+network log omissions retain incomplete coverage. See [per-type SDK policies](../sdk/surfaces.md#select-browser-evidence-and-per-type-limits).
+
 ## Follow a reference before acting
 
 Search with `read` and a search operation, then copy a returned shared reference into `focus_evidence`. The reply contains the cursor's native focus reference for action commands. Keep the two reference types distinct.
@@ -63,6 +97,6 @@ Replay reads saved evidence without opening a browser. Saved video frames replay
 
 Incomplete portable outcomes remain inspectable through the SDK, but CLI replay rejects them rather than claiming a complete reconstruction. Portable files preserve rejected and unknown operation receipts. See [Archiving a surface](../concepts/archiving-a-surface.md) for Rust and Python save/reload examples and retention limits.
 
-Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 16,384 bytes, and reject oversized input lines above 64 KiB.
+Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 65,536 bytes, and reject oversized input lines above 64 KiB.
 
 Use `yosoi surface --help` for command options. Continue with [Surfaces](../concepts/surfaces.md) for document and video walkthroughs, or [Archiving a surface](../concepts/archiving-a-surface.md) for portable outcomes.

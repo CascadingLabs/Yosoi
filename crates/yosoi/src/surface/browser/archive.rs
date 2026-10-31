@@ -4,8 +4,8 @@ use crate::{
     automation_record::{Observation, OperationStatus},
     documents::Document,
     surface::{
-        ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, ExecutionError, Limits, Outcome,
-        Surface, SurfacePolicy,
+        ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, DocumentPolicy, ExecutionError,
+        Outcome, Surface, SurfacePolicy,
         archive::{Capture, Loaded, Recording, capture_descriptors},
         connection::Result,
     },
@@ -127,21 +127,12 @@ pub(in crate::surface) async fn replay_loaded(
     for _ in 0..repeat {
         if captures.is_empty() {
             for source in &retained {
-                last = Some(source.restore_surface(Limits {
-                    input_bytes: 32 * 1024 * 1024,
-                    ..Limits::default()
-                })?);
+                last = Some(source.restore_surface(DocumentPolicy::maximum_limits())?);
             }
         }
         for capture in &captures {
             let document = archive.read_document(&capture.document).await?;
-            let surface = Surface::with_limits(
-                &document,
-                Limits {
-                    input_bytes: 32 * 1024 * 1024,
-                    ..Limits::default()
-                },
-            )?;
+            let surface = Surface::with_limits(&document, DocumentPolicy::maximum_limits())?;
             if surface.identity() != capture.surface {
                 return Err(io::Error::other(
                     "restored surface identity differs from recorded identity",
@@ -151,7 +142,11 @@ pub(in crate::surface) async fn replay_loaded(
             last = Some(surface);
         }
         for observation in record.observations() {
-            View::from_observation(observation, 20)?;
+            // AX and network observations are reconstructed from their typed
+            // Documents above; they deliberately have no captured HTML.
+            if observation.html.is_some() {
+                View::from_observation(observation, 20)?;
+            }
         }
     }
     let last = last.ok_or_else(|| io::Error::other("last surface absent"))?;
