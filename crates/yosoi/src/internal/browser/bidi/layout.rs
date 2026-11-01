@@ -281,8 +281,15 @@ impl Page {
         if before != after {
             return Err(SessionError::DocumentChanged);
         }
-        visual_snapshot::visual_snapshot(bytes, before, region, viewport, dpr)
-            .ok_or(SessionError::Serialization)
+        visual_snapshot::visual_snapshot(
+            bytes,
+            before,
+            region,
+            options.bbox.or(target_bbox),
+            viewport,
+            dpr,
+        )
+        .ok_or(SessionError::Serialization)
     }
 }
 

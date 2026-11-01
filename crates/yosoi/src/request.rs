@@ -1,7 +1,10 @@
 //! Author page requests, apply a policy, and inspect their results.
 
+#[path = "request/authoring.rs"]
 mod authoring;
+#[path = "request/outcomes.rs"]
 mod outcomes;
+#[path = "request/response.rs"]
 mod response;
 
 pub use crate::internal::engine::projection::{

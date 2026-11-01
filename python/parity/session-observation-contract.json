@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "yosoi-python-session-observation-semantic-contract",
+  "declarations": [
+    {
+      "rustPath": "yosoi::session::ActionKind::Record",
+      "pythonTarget": "SessionPolicy",
+      "semanticEquivalent": "The Python SessionPolicy maps the Rust Record action to the lowercase authoring name and back to the native enum spelling.",
+      "tests": ["test_session_policy_round_trips_the_native_record_action"]
+    },
+    {
+      "rustPath": "yosoi::Policy::observe",
+      "pythonTarget": "policy.ObservePolicy",
+      "semanticEquivalent": "Python Policy.observe serializes the native ObservePolicy schema; defaults remain absent and disabled, recording rules add independently bounded outputs, and native-tab capture is a separate explicit permission.",
+      "tests": [
+        "test_observation_defaults_are_disabled_and_omitted_from_policy_json",
+        "test_observation_recording_rules_are_additive_and_native_validated",
+        "test_observe_limits_reject_zero_and_non_integer_values"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::Work::screenshot_with",
+      "pythonTarget": "browser.ScreenshotOptions",
+      "semanticEquivalent": "Python screenshot region and target models retain the native tagged JSON forms, and the result pairs serializable capture metadata with a typed ImageDocument.",
+      "tests": [
+        "test_screenshot_options_use_native_tagged_target_and_region_shapes",
+        "test_capture_result_helpers_attach_typed_native_documents",
+        "test_work_forwards_screenshot_and_retains_multiple_recording_handles"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::Work::start_recording",
+      "pythonTarget": "browser.RecordingOptions",
+      "semanticEquivalent": "Each Python handle owns one recording output, stop returns typed video documents and timeline gaps, and a hard native duration bound reaps abandoned capture.",
+      "tests": [
+        "test_recording_options_match_native_finite_defaults",
+        "test_work_forwards_screenshot_and_retains_multiple_recording_handles",
+        "test_recording_stop_is_shielded_and_context_exit_retains_outcome"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::Session::evidence",
+      "pythonTarget": "browser.SessionEvidence",
+      "semanticEquivalent": "The Python snapshot retains automatic captures and explicit gaps keyed to operation receipts while keeping image bytes in native ImageDocument owners.",
+      "tests": [
+        "test_session_evidence_exposes_linked_captures_and_explicit_gaps",
+        "test_session_evidence_and_recording_outcomes_archive_separately"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::Session::recording_outcomes",
+      "pythonTarget": "browser.RecordingOutcome",
+      "semanticEquivalent": "Completed automatic outputs remain typed and readable after Session close; video segments and payload-free settled receipt markers remain separately typed, with lost_action_events preserving watch gaps.",
+      "tests": [
+        "test_session_evidence_exposes_linked_captures_and_explicit_gaps",
+        "test_session_evidence_and_recording_outcomes_archive_separately"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::RecordingOutcome::write_to",
+      "pythonTarget": "browser.RecordingOutcome.write_to",
+      "semanticEquivalent": "Recording manifests reference raw archived video documents and restore their exact bytes, timing, gaps, stop reason, and settled receipt markers without restoring live browser authority.",
+      "tests": ["test_session_evidence_and_recording_outcomes_archive_separately"]
+    },
+    {
+      "rustPath": "yosoi::session::RecordingAction",
+      "pythonTarget": "browser.RecordingAction",
+      "semanticEquivalent": "Recording actions preserve payload-free settled receipt markers and their observed timestamps, while lost_action_events reports bounded watch loss.",
+      "tests": [
+        "test_capture_result_helpers_attach_typed_native_documents",
+        "test_session_evidence_and_recording_outcomes_archive_separately"
+      ]
+    },
+    {
+      "rustPath": "yosoi::session::SessionEvidence::write_to",
+      "pythonTarget": "browser.SessionEvidence.write_to",
+      "semanticEquivalent": "Screenshot manifests reference raw archived image documents and preserve operation links and explicit gaps without restoring Session authority.",
+      "tests": ["test_session_evidence_and_recording_outcomes_archive_separately"]
+    }
+  ]
+}

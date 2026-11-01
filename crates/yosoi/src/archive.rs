@@ -7,7 +7,9 @@
 use crate::documents::Document;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 mod pixel_artifact;
+#[path = "archive/portable.rs"]
 mod portable;
+#[path = "archive/surface.rs"]
 mod surface;
 pub use crate::internal::archive::{
     Archive, ArchiveError, ArchiveRefError, AudioDocumentArchiveRef, BinaryDocumentArchiveRef,

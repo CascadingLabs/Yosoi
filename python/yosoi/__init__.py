@@ -133,6 +133,8 @@ from .contracts import Field as Field
 from .contracts import extract as extract
 from .contracts import extract_report as extract_report
 from .documents import MAX_SOURCE_BYTES as MAX_SOURCE_BYTES
+from .documents import DEFAULT_FILE_MAX_BYTES as DEFAULT_FILE_MAX_BYTES
+from .documents import MAX_FILE_BYTES as MAX_FILE_BYTES
 from .documents import AudioDocument as AudioDocument
 from .documents import BinaryDocument as BinaryDocument
 from .documents import Document as Document
@@ -143,6 +145,7 @@ from .documents import ImageDocument as ImageDocument
 from .documents import VideoDocument as VideoDocument
 from .documents import file_from_bytes as file_from_bytes
 from .documents import read_file as read_file
+from .errors import FileDocumentError as FileDocumentError
 from .locators import (
     Plan as Plan,
 )
@@ -182,7 +185,6 @@ from .locators import (
 from .locators import (
     xpath as xpath,
 )
-from .media import FileDocumentError as FileDocumentError
 from .policy import Continuation as Continuation
 from .policy import Continue as Continue
 from .policy import FlowPolicy as FlowPolicy
@@ -380,6 +382,8 @@ __all__ = [
     "DownloadError",
     "DownloadCapture",
     "DownloadOptions",
+    "DEFAULT_FILE_MAX_BYTES",
+    "MAX_FILE_BYTES",
     "file_from_bytes",
     "read_file",
     "Plan",

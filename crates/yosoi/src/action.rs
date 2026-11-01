@@ -1,7 +1,10 @@
 //! Constructors for the actions collected in a Flow.
 
+#[path = "action/builder.rs"]
 mod builder;
+#[path = "action/module.rs"]
 mod module;
+#[path = "action/source.rs"]
 mod source;
 
 pub use builder::AssertionBuilder;

@@ -6,14 +6,15 @@ use super::page::{
     DownloadCaptureError, NativeDownloadCapture,
     NetworkObservationSubscription as ChromeNetworkSubscription,
 };
+use super::page::{NativeTabMediaSource, NativeTabMediaSourceOptions};
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
 use std::result::Result as StdResult;
 use std::sync::atomic;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+#[cfg(feature = "browser-bidi")]
 use tokio::runtime::Handle as RuntimeHandle;
 use tokio::time::{Instant, timeout_at};
-#[cfg(feature = "browser-bidi")]
 use tokio_util::sync::CancellationToken;
 
 // Domain observations stay shared; the concrete process/page handles below do
@@ -66,6 +67,12 @@ impl BrowserSessionBuilder {
     pub fn proxy(mut self, address: SocketAddr) -> Self {
         self.proxy = Some(address);
         self.chrome = self.chrome.proxy(format!("socks5://{address}"));
+        self
+    }
+
+    /// Sets an environment value on the owned Chrome child without mutating this process.
+    pub(crate) fn env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.chrome = self.chrome.env(key, value);
         self
     }
 
@@ -418,6 +425,19 @@ impl Page {
             Self::Chrome(page) => page.ensure_download_context_available(),
             #[cfg(feature = "browser-bidi")]
             Self::Bidi(_) => Ok(()),
+        }
+    }
+
+    /// Starts the qualified Chrome self-tab MediaStream source.
+    pub(crate) async fn start_native_tab_media_source(
+        &self,
+        options: NativeTabMediaSourceOptions,
+        tab_closing: CancellationToken,
+    ) -> Result<NativeTabMediaSource> {
+        match self {
+            Self::Chrome(page) => NativeTabMediaSource::start(page, options, tab_closing).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("native tab MediaStream recording")),
         }
     }
 
