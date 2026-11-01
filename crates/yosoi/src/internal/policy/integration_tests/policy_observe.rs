@@ -3,7 +3,7 @@
 
 use std::io;
 
-use crate::browser::BrowserEngine;
+use crate::browser::{BrowserConfig, BrowserEngine};
 use crate::internal::policy::{
     Policy, PolicyError, PolicySnapshot,
     policy::{
@@ -70,7 +70,7 @@ fn default_observe_is_omitted_and_has_bounded_safe_defaults() -> TestResult {
     assert_eq!(policy.observe.screenshots.before, None);
     assert_eq!(policy.observe.screenshots.after, None);
     assert_eq!(policy.observe.screenshots.failure, None);
-    assert!(policy.observe.recordings.is_empty());
+    assert_eq!(policy.observe.recordings, Vec::<RecordingRule>::new());
     assert_eq!(policy.observe.limits.max_sources, 33);
     assert_eq!(policy.observe.limits.max_recordings, 5);
     assert_eq!(policy.observe.limits.max_buffer_bytes.get(), 16_000_000);
@@ -183,9 +183,9 @@ fn observe_changes_identity_without_rewriting_legacy_disabled_identity() -> Test
 #[test]
 fn default_observe_preserves_the_browser_identity_and_active_observe_uses_v9() -> TestResult {
     let browser = Policy {
-        browser: crate::browser::BrowserConfig {
+        browser: BrowserConfig {
             engine: BrowserEngine::Firefox,
-            ..crate::browser::BrowserConfig::default()
+            ..BrowserConfig::default()
         },
         ..Policy::default()
     };
@@ -208,7 +208,7 @@ fn native_tab_permission_alone_does_not_enable_automatic_observation() -> TestRe
     policy.observe.native_tab_capture = true;
 
     assert!(!policy.observe.enabled);
-    assert!(policy.observe.recordings.is_empty());
+    assert_eq!(policy.observe.recordings, Vec::<RecordingRule>::new());
     assert!(policy.validate().is_ok());
     assert_eq!(policy.effective_identity()?.version(), 9);
     Ok(())
@@ -241,7 +241,7 @@ fn observe_rejects_zero_or_conflicting_source_output_buffer_and_rule_bounds() ->
     let mut value = policy_value()?;
     set_observe(
         &mut value,
-        json!({"enabled":true,"limits":{"max_recordings":1},"recordings":[rule.clone(),rule.clone()]}),
+        json!({"enabled":true,"limits":{"max_recordings":1},"recordings":[rule.clone(),rule]}),
     )?;
     assert!(serde_json::from_value::<Policy>(value).is_err());
 

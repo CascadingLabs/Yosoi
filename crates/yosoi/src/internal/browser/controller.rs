@@ -5,8 +5,10 @@ use super::page::SurfaceInput;
 use super::page::{NativeTabMediaSource, NativeTabMediaSourceOptions};
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
+#[cfg(feature = "browser-bidi")]
 use std::sync::atomic;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+#[cfg(feature = "browser-bidi")]
 use tokio::runtime::Handle as RuntimeHandle;
 use tokio::time::{Instant, timeout_at};
 use tokio_util::sync::CancellationToken;

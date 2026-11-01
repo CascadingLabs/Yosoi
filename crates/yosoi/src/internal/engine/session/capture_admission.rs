@@ -87,10 +87,15 @@ impl Drop for CaptureBufferPermit {
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
+
     use super::*;
     #[test]
-    fn source_output_and_buffer_reservations_release_independently()
-    -> Result<(), Box<dyn std::error::Error>> {
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
+    fn source_output_and_buffer_reservations_release_independently() -> Result<(), Box<dyn Error>> {
         let limits = ObserveLimits {
             max_sources: 1,
             max_recordings: 2,

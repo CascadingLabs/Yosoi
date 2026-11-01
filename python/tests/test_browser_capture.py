@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -17,9 +17,11 @@ from yosoi.browser import (
     _recording_outcome_from_native,
     _screenshot_capture_from_native,
 )
+from yosoi.errors import rust_error_details
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"native image bytes"
 MP4 = b"\x00\x00\x00\x10ftypmp42"
+ID3 = b"ID3\x04\x00\x00\x00\x00\x00\x00"
 
 
 def test_session_observation_contract_targets_public_python_symbols_and_tests() -> None:
@@ -195,6 +197,62 @@ def test_capture_result_helpers_attach_typed_native_documents() -> None:
     assert outcome.stop_reason == "requested"
     assert outcome.actions[0].operation_id == "receipt-id"
     assert outcome.lost_action_events == 2
+
+
+def test_file_factory_preserves_native_variant_and_exact_media_values() -> None:
+    fixtures = (
+        ("image", PNG, ys.ImageDocument),
+        ("video", MP4, ys.VideoDocument),
+        ("audio", ID3, ys.AudioDocument),
+        ("binary", b"opaque binary payload", ys.BinaryDocument),
+    )
+    for kind, payload, expected_type in fixtures:
+        metadata = (
+            ys.FileMetadata()
+            .with_filename(f"capture.{kind}")
+            .with_declared_media_type("application/octet-stream")
+            .with_source("parity-fixture")
+            .with_capture_id(f"capture-{kind}")
+            .with_session_id("session-parity")
+            .with_tab_id("tab-parity")
+            .with_download_id(f"download-{kind}")
+        )
+        document = ys.file_from_bytes(f"file-{kind}", payload, metadata=metadata)
+
+        assert isinstance(document, expected_type)
+        assert document.bytes == payload
+        assert document.byte_len == len(payload)
+        assert document.sha256 == document.metadata.sha256
+        assert document.metadata.filename == f"capture.{kind}"
+        assert document.metadata.declared_media_type == "application/octet-stream"
+        assert document.metadata.source == "parity-fixture"
+        assert document.metadata.capture_id == f"capture-{kind}"
+        assert document.metadata.session_id == "session-parity"
+        assert document.metadata.tab_id == "tab-parity"
+        assert document.metadata.download_id == f"download-{kind}"
+
+
+def test_file_metadata_builders_preserve_native_facts_and_validate_utf8_bytes() -> None:
+    image = ys.ImageDocument.from_bytes("metadata-owner", PNG)
+    metadata = image.metadata
+    changed = metadata.with_filename("new.png").with_source("local-capture")
+
+    assert metadata.filename is None
+    assert metadata.source is None
+    assert changed.filename == "new.png"
+    assert changed.source == "local-capture"
+    assert changed.detected_media_type == metadata.detected_media_type
+    assert changed.sha256 == metadata.sha256
+
+    with pytest.raises(ys.FileDocumentError) as rejected:
+        ys.FileMetadata().with_filename("é" * 513)
+    details = rust_error_details(rejected.value)
+    assert details is not None
+    assert details.rust_type == "yosoi::documents::FileDocumentError"
+    assert details.variant == "MetadataTooLong"
+    assert details.details["field"] == "filename"
+    assert details.details["maximum"] == 1_024
+    assert details.details["observed"] == 1_026
 
 
 def test_session_evidence_exposes_linked_captures_and_explicit_gaps() -> None:
@@ -491,7 +549,7 @@ class _FakeSession:
 def test_work_forwards_screenshot_and_retains_multiple_recording_handles() -> None:
     async def run() -> None:
         native = _FakeNativeWork()
-        work = ys.Work(_FakeSession())
+        work = ys.Work(cast(ys.Session, _FakeSession()))
         work._handle = native
 
         screenshot = await work.screenshot_with()
@@ -516,7 +574,7 @@ def test_work_forwards_screenshot_and_retains_multiple_recording_handles() -> No
 def test_recording_stop_is_shielded_and_context_exit_retains_outcome() -> None:
     async def run() -> None:
         native = _FakeNativeWork()
-        work = ys.Work(_FakeSession())
+        work = ys.Work(cast(ys.Session, _FakeSession()))
         work._handle = native
         recording = await work.start_recording()
         native_handle = native.recordings[0]

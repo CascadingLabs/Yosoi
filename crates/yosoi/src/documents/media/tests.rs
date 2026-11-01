@@ -2,6 +2,7 @@ use super::{
     AudioDocument, BinaryDocument, FileDocument, FileDocumentError, FileLimits, FileMetadata,
     ImageDocument, VideoDocument, file_from_bytes, read_file,
 };
+use tokio::fs;
 
 const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
 const MP4_SIGNATURE: [u8; 12] = [0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2'];
@@ -132,9 +133,7 @@ fn file_metadata_keeps_declared_and_detected_types_separate() {
 async fn read_file_bounds_the_read_and_records_only_the_basename() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let path = directory.path().join("blob.bin");
-    tokio::fs::write(&path, b"12345")
-        .await
-        .expect("write test file");
+    fs::write(&path, b"12345").await.expect("write test file");
 
     let too_large = read_file("file-1", &path, FileLimits { max_bytes: 4 }).await;
     assert!(matches!(too_large, Err(FileDocumentError::TooLarge { .. })));

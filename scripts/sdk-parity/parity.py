@@ -37,6 +37,11 @@ PUBLIC_DUNDER_MEMBERS = {
     "__repr__",
     "__str__",
 }
+PUBLIC_MODULE_CONSTANTS = {
+    "yosoi.documents.DEFAULT_FILE_MAX_BYTES",
+    "yosoi.documents.MAX_FILE_BYTES",
+    "yosoi.policy.MAX_RECORDING_DURATION_MS",
+}
 
 
 class ParityError(ValueError):
@@ -982,12 +987,21 @@ def introspect_python_package(
                 or name in exported
                 or _is_public_native_exception(value, module_name, package_name)
             )
+            is_public_constant = (
+                target in PUBLIC_MODULE_CONSTANTS
+                and isinstance(value, (bool, int, float, str))
+            )
             pep695_alias = getattr(typing, "TypeAliasType", None)
             is_type_alias = (
                 typing.get_origin(value) is not None
                 or (pep695_alias is not None and isinstance(value, pep695_alias))
             ) and not isinstance(value, types.ModuleType)
-            if not is_module and not is_public_object and not is_type_alias:
+            if (
+                not is_module
+                and not is_public_object
+                and not is_type_alias
+                and not is_public_constant
+            ):
                 continue
             identity = id(value)
             prior = candidates.get(identity)
@@ -995,6 +1009,8 @@ def introspect_python_package(
                 candidate_kind = (
                     "module"
                     if is_module
+                    else "constant"
+                    if is_public_constant
                     else "type-alias"
                     if is_type_alias
                     else "object"
@@ -1015,6 +1031,22 @@ def introspect_python_package(
                 targets[target] = {
                     "kind": "module",
                     "canonicalTarget": canonical_target,
+                }
+            continue
+
+        if candidate_kind == "constant":
+            record = {
+                "target": canonical_target,
+                "kind": "constant",
+                "aliases": aliases,
+                "value": _safe_default(value),
+            }
+            objects.append(record)
+            for target in aliases:
+                targets[target] = {
+                    "kind": "constant",
+                    "canonicalTarget": canonical_target,
+                    "value": _safe_default(value),
                 }
             continue
 

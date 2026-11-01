@@ -797,7 +797,8 @@ async fn capture(
         max_bytes: reservation.maximum_bytes(),
         expected_document_epoch,
     };
-    match work.capture_screenshot_unlocked(options).await {
+    // Keep the optional image pipeline out of every action future's inline state.
+    match Box::pin(work.capture_screenshot_unlocked(options)).await {
         Ok(capture) => reservation.commit_capture(operation_id, phase, capture),
         Err(error) => reservation.commit_gap(
             operation_id,
@@ -966,7 +967,7 @@ mod tests {
         maximum_bytes: u64,
         failure: EvidenceFailurePolicy,
     ) -> Result<SessionEvidenceStore, Box<dyn Error>> {
-        let mut policy = crate::policy::Policy::default();
+        let mut policy = Policy::default();
         policy.observe.failure = failure;
         policy.observe.limits.max_retained_bytes = AddressableByteLimit::try_from(maximum_bytes)?;
         Ok(SessionEvidenceStore::new(&policy))
@@ -998,6 +999,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn required_before_gap_waits_for_matching_operation_settlement() -> Result<(), Box<dyn Error>> {
         let store = store(128, EvidenceFailurePolicy::Require)?;
         store.begin_operation();
@@ -1016,6 +1021,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn continue_policy_never_gates_after_screenshot_or_recording_failures()
     -> Result<(), Box<dyn Error>> {
         let store = store(128, EvidenceFailurePolicy::Continue)?;
@@ -1039,6 +1048,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn background_recording_failure_gates_at_the_next_operation_boundary()
     -> Result<(), Box<dyn Error>> {
         let store = store(128, EvidenceFailurePolicy::Require)?;
@@ -1052,6 +1065,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn screenshot_and_video_reservations_share_and_refund_lifetime_bytes()
     -> Result<(), Box<dyn Error>> {
         let store = store(100, EvidenceFailurePolicy::Continue)?;
@@ -1087,6 +1104,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn evidence_entry_limit_counts_omitted_gaps_without_growing_the_vec()
     -> Result<(), Box<dyn Error>> {
         let store = store(128, EvidenceFailurePolicy::Continue)?;
@@ -1109,6 +1130,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions fail the test harness; Result propagates fallible fixture setup"
+    )]
     fn omitted_recordings_increment_the_gap_counter_and_defer_required_failure()
     -> Result<(), Box<dyn Error>> {
         let store = store(128, EvidenceFailurePolicy::Require)?;
@@ -1116,7 +1141,7 @@ mod tests {
         store.mark_required_failure();
 
         let snapshot = store.snapshot();
-        assert!(snapshot.entries.is_empty());
+        assert_eq!(snapshot.entries, Vec::<AutomaticEvidence>::new());
         assert_eq!(snapshot.omitted_entries(), 1);
         assert!(snapshot.has_gaps());
         assert!(!store.required_failure());

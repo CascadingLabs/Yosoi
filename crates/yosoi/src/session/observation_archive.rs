@@ -319,7 +319,7 @@ impl SessionEvidence {
 
 #[cfg(all(test, unix))]
 mod tests {
-    use std::path::PathBuf;
+    use std::{error::Error, path::PathBuf};
 
     use super::*;
     use crate::{
@@ -329,8 +329,9 @@ mod tests {
             RecordingStopReason,
         },
     };
+    use tokio::fs;
 
-    fn recording() -> Result<RecordingOutcome, Box<dyn std::error::Error>> {
+    fn recording() -> Result<RecordingOutcome, Box<dyn Error>> {
         // Opaque container signature tests Archive identity, not media decodability.
         let document = VideoDocument::from_bytes(
             "segment-0",
@@ -392,12 +393,12 @@ mod tests {
     async fn reject_oversize_manifest_before_payload_read(
         archive: &Archive,
         remove_payload: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         let reference =
             write_manifest(archive, "oversize-test", &serde_json::json!({"ok": true})).await?;
         let record_path = document_record_path(archive, &reference);
         let mut envelope: serde_json::Value =
-            serde_json::from_slice(&tokio::fs::read(&record_path).await?)?;
+            serde_json::from_slice(&fs::read(&record_path).await?)?;
         let record = envelope
             .get_mut("value")
             .and_then(serde_json::Value::as_object_mut)
@@ -406,13 +407,13 @@ mod tests {
             .checked_add(1)
             .ok_or("oversize manifest test length overflow")?;
         record.insert("byte_len".to_owned(), serde_json::Value::from(observed));
-        tokio::fs::write(&record_path, serde_json::to_vec(&envelope)?).await?;
+        fs::write(&record_path, serde_json::to_vec(&envelope)?).await?;
 
         let payload_path = document_payload_path(archive, &reference);
         if remove_payload {
-            tokio::fs::remove_file(payload_path).await?;
+            fs::remove_file(payload_path).await?;
         } else {
-            tokio::fs::write(payload_path, b"short").await?;
+            fs::write(payload_path, b"short").await?;
         }
 
         let result: Result<serde_json::Value, EvidenceArchiveError> =
@@ -428,8 +429,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions report manifest-bound failures; Result propagates fallible archive setup"
+    )]
     async fn manifest_reader_bounds_record_before_missing_or_short_payload()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         let directory = tempfile::tempdir()?;
         let archive = Archive::open(directory.path()).await?;
         let reference =
@@ -443,8 +448,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions report recording-archive regressions; Result propagates fallible setup"
+    )]
     async fn recording_archive_preserves_media_and_rejects_manifest_tampering()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         let directory = tempfile::tempdir()?;
         let archive = Archive::open(directory.path()).await?;
         let original = recording()?;
@@ -481,8 +490,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions report recording-archive validation regressions; Result propagates fallible setup"
+    )]
     async fn recording_archive_rejects_false_coverage_and_payload_metadata()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         let directory = tempfile::tempdir()?;
         let archive = Archive::open(directory.path()).await?;
         let mut original = recording()?;

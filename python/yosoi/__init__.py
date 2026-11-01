@@ -127,6 +127,8 @@ from .contracts import ExtractionPolicy as ExtractionPolicy
 from .contracts import Field as Field
 from .contracts import extract as extract
 from .contracts import extract_report as extract_report
+from .documents import DEFAULT_FILE_MAX_BYTES as DEFAULT_FILE_MAX_BYTES
+from .documents import MAX_FILE_BYTES as MAX_FILE_BYTES
 from .documents import AudioDocument as AudioDocument
 from .documents import BinaryDocument as BinaryDocument
 from .documents import Document as Document
@@ -304,6 +306,7 @@ __all__ = [
     "search",
     "surface",
     "Document",
+    "DEFAULT_FILE_MAX_BYTES",
     "FileDocumentError",
     "AudioDocument",
     "BinaryDocument",
@@ -311,6 +314,7 @@ __all__ = [
     "FileLimits",
     "FileMetadata",
     "ImageDocument",
+    "MAX_FILE_BYTES",
     "VideoDocument",
     "file_from_bytes",
     "read_file",

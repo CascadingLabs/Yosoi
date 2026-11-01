@@ -1148,9 +1148,9 @@ mod action_tests {
     fn markers_stay_inside_the_recorded_logical_interval_including_gaps() {
         let source_start = 1_700_000_000_000;
         let mut outcome = outcome(Some(source_start));
-        let before = source_start.checked_add(99).unwrap_or(u64::MAX);
-        let during_gap = source_start.checked_add(150).unwrap_or(u64::MAX);
-        let after = source_start.checked_add(401).unwrap_or(u64::MAX);
+        let before = source_start.saturating_add(99);
+        let during_gap = source_start.saturating_add(150);
+        let after = source_start.saturating_add(401);
         apply_recording_actions(
             &mut outcome,
             CollectedActions {

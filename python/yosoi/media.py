@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import builtins
 import json
+from collections.abc import Mapping
 from os import PathLike, fspath
-from typing import ClassVar, Literal, Self, cast
+from typing import Any, ClassVar, Literal, Self, cast
 
 from pydantic import Field, PrivateAttr, StrictStr
 
@@ -16,6 +18,10 @@ DEFAULT_FILE_LIMIT_BYTES = 64 * 1024 * 1024
 """Default retained file payload limit in bytes."""
 MAX_FILE_LIMIT_BYTES = 256 * 1024 * 1024
 """Absolute retained file payload limit in bytes."""
+DEFAULT_FILE_MAX_BYTES = DEFAULT_FILE_LIMIT_BYTES
+"""Rust-compatible alias for the default retained file payload limit."""
+MAX_FILE_BYTES = MAX_FILE_LIMIT_BYTES
+"""Rust-compatible alias for the absolute retained file payload limit."""
 
 
 class FileLimits(ImmutableModel):
@@ -93,6 +99,113 @@ class FileMetadata(ImmutableModel):
             exclude_none=True, exclude={"detected_media_type", "sha256"}
         )
 
+    def _with_value(self, field: str, value: str) -> Self:
+        """Return a native-validated immutable copy with one field changed."""
+        metadata_json = _native.file_metadata_with(
+            self.model_dump_json(exclude_none=True), field, value
+        )
+        return type(self).model_validate_json(metadata_json)
+
+    def with_filename(self, value: str) -> Self:
+        """Return a copy with a caller-provided filename.
+
+        Rust checks the UTF-8 byte bound while creating this copy.
+
+        Args:
+            value: Filename to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The filename exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("filename", value)
+
+    def with_declared_media_type(self, value: str) -> Self:
+        """Return a copy with a caller-declared MIME value.
+
+        Args:
+            value: MIME value to retain separately from detected type.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("declared_media_type", value)
+
+    def with_source(self, value: str) -> Self:
+        """Return a copy with a source label.
+
+        Args:
+            value: Source or acquisition label to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("source", value)
+
+    def with_capture_id(self, value: str) -> Self:
+        """Return a copy with an originating capture identity.
+
+        Args:
+            value: Capture identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("capture_id", value)
+
+    def with_session_id(self, value: str) -> Self:
+        """Return a copy with an originating browser Session identity.
+
+        Args:
+            value: Session identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("session_id", value)
+
+    def with_tab_id(self, value: str) -> Self:
+        """Return a copy with an originating browser tab identity.
+
+        Args:
+            value: Tab identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("tab_id", value)
+
+    def with_download_id(self, value: str) -> Self:
+        """Return a copy with an originating provider download identity.
+
+        Args:
+            value: Download identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("download_id", value)
+
 
 class _FileDocument(ImmutableModel):
     """Shared immutable metadata view over one Rust-owned file payload."""
@@ -146,14 +259,14 @@ class _FileDocument(ImmutableModel):
     def _construct(
         cls,
         id: str,
-        content: bytes,
+        content: builtins.bytes,
         metadata: FileMetadata | None,
         limits: FileLimits | None,
         *,
         infer: bool = False,
     ) -> _FileDocument:
         """Create a native payload owner with authored or inferred classification."""
-        if not isinstance(content, bytes):
+        if not isinstance(content, builtins.bytes):
             raise TypeError("file content must be bytes")
         selected_metadata = FileMetadata() if metadata is None else metadata
         if not isinstance(selected_metadata, FileMetadata):
@@ -179,7 +292,7 @@ class _FileDocument(ImmutableModel):
     def from_bytes(
         cls,
         id: str,
-        content: bytes,
+        content: builtins.bytes,
         *,
         metadata: FileMetadata | None = None,
         limits: FileLimits | None = None,
@@ -208,7 +321,7 @@ class _FileDocument(ImmutableModel):
         return cast(Self, cls._construct(id, content, metadata, limits))
 
     @property
-    def bytes(self) -> bytes:
+    def bytes(self) -> builtins.bytes:
         """Return a copy of the exact retained payload bytes."""
         return self._handle.bytes()
 
@@ -229,7 +342,7 @@ class _FileDocument(ImmutableModel):
     def model_copy(
         self,
         *,
-        update: dict[str, object] | None = None,
+        update: Mapping[str, Any] | None = None,
         deep: bool = False,
     ) -> Self:
         """Copy this document while keeping its Rust metadata and bytes consistent.
@@ -264,7 +377,7 @@ class _FileDocument(ImmutableModel):
             metadata=metadata,
             limits=self._limits,
         )
-        return cast(Self, result)
+        return result
 
 
 class ImageDocument(_FileDocument):
@@ -297,7 +410,7 @@ FileDocument = ImageDocument | VideoDocument | AudioDocument | BinaryDocument
 
 def file_from_bytes(
     id: str,
-    content: bytes,
+    content: builtins.bytes,
     *,
     metadata: FileMetadata | None = None,
     limits: FileLimits | None = None,
@@ -354,4 +467,4 @@ async def read_file(
     handle = await _native.read_file(id, native_path, selected_limits.model_dump_json())
     document = _FileDocument._from_native(handle)
     document._limits = selected_limits
-    return document
+    return cast(FileDocument, document)
