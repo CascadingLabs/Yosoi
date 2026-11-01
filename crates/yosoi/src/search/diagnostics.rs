@@ -19,6 +19,7 @@ use crate::{
 use super::{SearchCapture, SearchParserDecision, SearchReplayPolicy, SearchReplayResult};
 
 #[cfg(test)]
+#[path = "diagnostics/tests.rs"]
 mod tests;
 
 /// Persisted reference to one bounded Search document and its replay inputs.

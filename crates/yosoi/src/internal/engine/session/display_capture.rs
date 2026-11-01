@@ -57,7 +57,6 @@ enum DisplayEvent {
 pub(super) struct DisplaySource {
     id: String,
     frames_per_second: u32,
-    started: Instant,
     started_at_unix_ms: Option<u64>,
     sender: broadcast::Sender<DisplayEvent>,
     initial_receiver: Mutex<Option<broadcast::Receiver<DisplayEvent>>>,
@@ -103,7 +102,6 @@ impl DisplaySource {
         let source = Arc::new(Self {
             id: Uuid::new_v4().to_string(),
             frames_per_second,
-            started,
             started_at_unix_ms: unix_now_ms(),
             sender,
             initial_receiver: Mutex::new(Some(initial_receiver)),

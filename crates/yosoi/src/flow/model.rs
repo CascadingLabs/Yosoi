@@ -915,4 +915,5 @@ impl FailureCapturePolicy {
 }
 
 #[cfg(test)]
+#[path = "model/until_tests.rs"]
 mod until_tests;

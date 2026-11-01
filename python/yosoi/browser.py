@@ -961,9 +961,7 @@ def _recording_outcomes_from_native(
                     "native Session recording outcome omitted a video segment"
                 ) from error
         outcomes.append(
-            _recording_outcome_from_native(
-                json.dumps(metadata), owned_documents
-            )
+            _recording_outcome_from_native(json.dumps(metadata), owned_documents)
         )
     if next(documents, None) is not None:
         raise BrowserError("native Session returned an unreferenced video segment")

@@ -126,6 +126,24 @@ pub enum NativeTabMediaEvent {
     },
 }
 
+impl Debug for NativeTabMediaEvent {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        let (name, output) = match self {
+            Self::Chunk { output_id, .. } => ("Chunk", Some(output_id)),
+            Self::SegmentStarted { output_id, .. } => ("SegmentStarted", Some(output_id)),
+            Self::Navigation { output_id, .. } => ("Navigation", Some(output_id)),
+            Self::OutputStopped { output_id, .. } => ("OutputStopped", Some(output_id)),
+            Self::SegmentStopped { output_id, .. } => ("SegmentStopped", Some(output_id)),
+            Self::SourceFailure { .. } => ("SourceFailure", None),
+            Self::OutputFailure { output_id, .. } => ("OutputFailure", Some(output_id)),
+        };
+        formatter
+            .debug_struct(name)
+            .field("output_id", &output)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Native per-tab capture failure category.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum NativeTabMediaFailureReason {
@@ -136,6 +154,7 @@ pub enum NativeTabMediaFailureReason {
 }
 
 /// Receiver and first-segment metadata for one independent output.
+#[derive(Debug)]
 pub struct NativeTabMediaOutput {
     /// Logical recording output identity.
     pub output_id: String,
@@ -237,6 +256,18 @@ pub struct NativeTabMediaSourceOptions {
     pub cancellation: CancellationToken,
     /// Runtime used to own the source event task and cleanup guard.
     pub executor: RuntimeHandle,
+}
+
+impl Debug for NativeTabMediaSourceOptions {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("NativeTabMediaSourceOptions")
+            .field("id", &self.id)
+            .field("source_audio", &self.source_audio)
+            .field("frames_per_second", &self.frames_per_second)
+            .field("maximum_buffer_bytes", &self.maximum_buffer_bytes)
+            .finish_non_exhaustive()
+    }
 }
 
 struct SourceSetupGuard {

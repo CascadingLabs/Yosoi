@@ -23,14 +23,22 @@ use std::{
 use tokio::sync as tokio_sync;
 #[cfg(feature = "browser")]
 use tokio::time as tokio_time;
+#[path = "session/capture.rs"]
 mod capture;
+#[path = "session/evaluation.rs"]
 mod evaluation;
+#[path = "session/evidence.rs"]
 mod evidence;
+#[path = "session/javascript.rs"]
 mod javascript;
+#[path = "session/observation_archive.rs"]
 mod observation_archive;
+#[path = "session/recording.rs"]
 mod recording;
 #[cfg(feature = "browser")]
+#[path = "session/surface.rs"]
 mod surface;
+#[path = "session/until.rs"]
 mod until;
 
 pub use capture::{

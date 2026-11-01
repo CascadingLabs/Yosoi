@@ -5,7 +5,9 @@
 //! payload length and integrity; saved evidence never restores live authority.
 
 use crate::documents::Document;
+#[path = "archive/portable.rs"]
 mod portable;
+#[path = "archive/surface.rs"]
 mod surface;
 pub use crate::internal::archive::{
     Archive, ArchiveError, ArchiveRefError, AudioDocumentArchiveRef, BinaryDocumentArchiveRef,

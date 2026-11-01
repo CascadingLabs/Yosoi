@@ -13,9 +13,6 @@ use tokio::{
     time::{Duration, timeout},
 };
 
-const DISPLAY_WIDTH: u32 = 1280;
-const DISPLAY_HEIGHT: u32 = 720;
-
 #[derive(Debug, Error)]
 pub(super) enum PrivateDisplayError {
     #[cfg(target_os = "linux")]
@@ -247,8 +244,4 @@ impl Drop for PrivateDisplay {
             let _ = child.start_kill();
         }
     }
-}
-
-pub(super) const fn dimensions() -> (u32, u32) {
-    (DISPLAY_WIDTH, DISPLAY_HEIGHT)
 }

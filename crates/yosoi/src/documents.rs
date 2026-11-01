@@ -12,6 +12,7 @@ pub use crate::internal::documents::{
 };
 pub use crate::internal::engine::ParseError;
 
+#[path = "documents/media/mod.rs"]
 mod media;
 pub use media::{
     AudioDocument, BinaryDocument, DEFAULT_FILE_MAX_BYTES, FileDocument, FileDocumentError,

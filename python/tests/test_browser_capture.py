@@ -24,9 +24,7 @@ MP4 = b"\x00\x00\x00\x10ftypmp42"
 
 def test_session_observation_contract_targets_public_python_symbols_and_tests() -> None:
     contract_path = (
-        Path(__file__).parents[1]
-        / "parity"
-        / "session-observation-contract.json"
+        Path(__file__).parents[1] / "parity" / "session-observation-contract.json"
     )
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
     assert contract["kind"] == "yosoi-python-session-observation-semantic-contract"
@@ -51,9 +49,7 @@ def test_session_observation_contract_targets_public_python_symbols_and_tests() 
 def test_screenshot_options_use_native_tagged_target_and_region_shapes() -> None:
     target = ys.browser.TargetScreenshotRegion(
         value=ys.browser.RoleScreenshotTarget(
-            target=ys.browser.ScreenshotRoleValue(
-                role="button", name="Continue", nth=0
-            )
+            target=ys.browser.ScreenshotRoleValue(role="button", name="Continue", nth=0)
         )
     )
     options = ys.browser.ScreenshotOptions(region=target)

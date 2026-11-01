@@ -113,3 +113,51 @@ pub mod internal;
 /// Shared engine/profile declaration used by the embedded SDK component sources.
 #[path = "../../../crates/yosoi/src/browser.rs"]
 pub mod browser;
+
+// Embedded components share the same facade types as the SDK. Compile those
+// facades against this crate's embedded internals so development benchmarks do
+// not mix handles from two separately compiled runtime/type graphs.
+#[path = "../../../crates/yosoi/src/action.rs"]
+pub mod action;
+#[path = "../../../crates/yosoi/src/archive.rs"]
+pub mod archive;
+#[path = "../../../crates/yosoi/src/assertions.rs"]
+pub mod assertions;
+#[path = "../../../crates/yosoi/src/automation_record.rs"]
+pub mod automation_record;
+#[path = "../../../crates/yosoi/src/contracts.rs"]
+pub mod contracts;
+#[path = "../../../crates/yosoi/src/documents.rs"]
+pub mod documents;
+#[path = "../../../crates/yosoi/src/expect.rs"]
+pub mod expect;
+#[path = "../../../crates/yosoi/src/flow.rs"]
+pub mod flow;
+#[path = "../../../crates/yosoi/src/locators.rs"]
+pub mod locators;
+#[path = "../../../crates/yosoi/src/map.rs"]
+pub mod map;
+#[path = "../../../crates/yosoi/src/policy.rs"]
+pub mod policy;
+#[path = "../../../crates/yosoi/src/prelude.rs"]
+pub mod prelude;
+#[path = "../../../crates/yosoi/src/request.rs"]
+pub mod request;
+#[path = "../../../crates/yosoi/src/search.rs"]
+pub mod search;
+#[path = "../../../crates/yosoi/src/session.rs"]
+pub mod session;
+#[path = "../../../crates/yosoi/src/surface/mod.rs"]
+pub mod surface;
+#[path = "../../../crates/yosoi/src/timing.rs"]
+pub mod timing;
+#[path = "../../../crates/yosoi/src/view.rs"]
+pub mod view;
+
+extern crate self as yosoi;
+
+#[doc(hidden)]
+#[path = "../../../crates/yosoi/src/macro_support.rs"]
+pub mod __macro;
+
+pub use crate::internal::engine::Archive;

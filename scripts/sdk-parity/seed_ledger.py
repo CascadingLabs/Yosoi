@@ -116,6 +116,7 @@ def _ledger_with_source_root(
 
 
 ERROR_TARGETS = {
+    "ArchiveRefError": "yosoi.errors.ArchiveError",
     "CoordinateError": "yosoi.errors.LocatorError",
     "ContractLocatorError": "yosoi.errors.ContractError",
     "ContractSchemaError": "yosoi.errors.ContractError",
