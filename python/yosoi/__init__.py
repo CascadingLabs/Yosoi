@@ -9,6 +9,7 @@ from . import archive as archive
 from . import browser as browser
 from . import contracts as contracts
 from . import documents as documents
+from . import downloads as downloads
 from . import locators as locators
 from . import map as map
 from . import policy as policy
@@ -17,7 +18,11 @@ from . import search as search
 from . import surface as surface
 from . import view as view
 from .archive import Archive as Archive
+from .archive import AudioDocumentArchiveRef as AudioDocumentArchiveRef
 from .archive import AutomationRecord as AutomationRecord
+from .archive import BinaryDocumentArchiveRef as BinaryDocumentArchiveRef
+from .archive import ImageDocumentArchiveRef as ImageDocumentArchiveRef
+from .archive import VideoDocumentArchiveRef as VideoDocumentArchiveRef
 from .browser import (
     BoundFlow as BoundFlow,
 )
@@ -27,6 +32,9 @@ from .browser import (
 from .browser import (
     BrowserError as BrowserError,
 )
+from .browser import DownloadCapture as DownloadCapture
+from .browser import DownloadError as DownloadError
+from .browser import DownloadOptions as DownloadOptions
 from .browser import (
     Flow as Flow,
 )
@@ -123,7 +131,17 @@ from .contracts import ExtractionPolicy as ExtractionPolicy
 from .contracts import Field as Field
 from .contracts import extract as extract
 from .contracts import extract_report as extract_report
+from .documents import MAX_SOURCE_BYTES as MAX_SOURCE_BYTES
+from .documents import AudioDocument as AudioDocument
+from .documents import BinaryDocument as BinaryDocument
 from .documents import Document as Document
+from .documents import FileDocument as FileDocument
+from .documents import FileLimits as FileLimits
+from .documents import FileMetadata as FileMetadata
+from .documents import ImageDocument as ImageDocument
+from .documents import VideoDocument as VideoDocument
+from .documents import file_from_bytes as file_from_bytes
+from .documents import read_file as read_file
 from .locators import (
     Plan as Plan,
 )
@@ -163,6 +181,7 @@ from .locators import (
 from .locators import (
     xpath as xpath,
 )
+from .media import FileDocumentError as FileDocumentError
 from .policy import Continuation as Continuation
 from .policy import Continue as Continue
 from .policy import FlowPolicy as FlowPolicy
@@ -235,6 +254,10 @@ __all__ = [
     "view",
     "Archive",
     "AutomationRecord",
+    "ImageDocumentArchiveRef",
+    "VideoDocumentArchiveRef",
+    "AudioDocumentArchiveRef",
+    "BinaryDocumentArchiveRef",
     "View",
     "__version__",
     "CancellationToken",
@@ -279,6 +302,7 @@ __all__ = [
     "contracts",
     "browser",
     "documents",
+    "downloads",
     "locators",
     "map",
     "policy",
@@ -286,6 +310,20 @@ __all__ = [
     "search",
     "surface",
     "Document",
+    "FileDocument",
+    "ImageDocument",
+    "VideoDocument",
+    "AudioDocument",
+    "BinaryDocument",
+    "FileMetadata",
+    "FileLimits",
+    "MAX_SOURCE_BYTES",
+    "FileDocumentError",
+    "DownloadError",
+    "DownloadCapture",
+    "DownloadOptions",
+    "file_from_bytes",
+    "read_file",
     "Plan",
     "Policy",
     "Continuation",

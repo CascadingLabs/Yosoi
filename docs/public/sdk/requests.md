@@ -6,6 +6,8 @@ order: 2
 
 # Requests
 
+For image, video, audio and opaque files, see [Media documents and downloads](media-documents.md).
+
 A request describes a URL to acquire. Creating it performs no I/O. Sending it validates the target and Policy, then runs the selected acquisitions.
 
 ## Example: requests

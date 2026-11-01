@@ -15,6 +15,7 @@ use yosoi::{
 use crate::{
     documents::{DocumentSource, NativeDocument},
     errors,
+    media::{self, NativeFileDocument},
 };
 
 #[derive(Clone, Debug)]
@@ -138,5 +139,24 @@ impl NativeResponse {
             .nth(attempt)
             .ok_or_else(|| errors::RequestError::new_err("attempt index is out of range"))?;
         Ok(attempt.body_bytes().map(|bytes| PyBytes::new(py, bytes)))
+    }
+
+    fn file_document(
+        &self,
+        py: Python<'_>,
+        attempt_index: usize,
+        limits_json: &str,
+    ) -> PyResult<NativeFileDocument> {
+        let limits = media::decode_limits(py, limits_json)?;
+        let attempt = self
+            .source
+            .borrowed()?
+            .attempts()
+            .nth(attempt_index)
+            .ok_or_else(|| errors::RequestError::new_err("attempt index is out of range"))?;
+        attempt
+            .file_document(limits)
+            .map(NativeFileDocument::new)
+            .map_err(|error| media::file_document_error(&error))
     }
 }

@@ -29,7 +29,13 @@ from .diagnostics import (
 )
 from .diagnostics import UnavailableReason as UnavailableReason
 from .diagnostics import UnprojectableReason as UnprojectableReason
-from .documents import Document, DocumentProfile
+from .documents import (
+    Document,
+    DocumentProfile,
+    FileDocument,
+    FileLimits,
+    _FileDocument,
+)
 from .identities import (
     ActivityId as ActivityId,
 )
@@ -221,6 +227,39 @@ class Attempt(ImmutableModel):
     not_started_reason: NotStartedReason | None
     diagnostic: Diagnostic | None
     documents: tuple[AttemptDocument, ...]
+    _handle: _native.Response | None = PrivateAttr(default=None)
+    _attempt_index: int | None = PrivateAttr(default=None)
+
+    def file_document(self, limits: FileLimits | None = None) -> FileDocument:
+        """Classify a complete retained Direct HTTP body without another request.
+
+        Args:
+            limits: Maximum file payload size; defaults to 64 MiB with a 256 MiB hard
+                cap. The original retained response body remains owned by Rust.
+
+        Returns:
+            A concrete media or binary document sharing native payload ownership.
+
+        Raises:
+            RequestError: This Attempt was not created from a native Response handle.
+            FileDocumentError: No complete body was retained, or conversion violates
+                the selected size or metadata limits. An HTTP error status can still
+                have a body; inspect ``http_status`` separately.
+            pydantic.ValidationError: Native media metadata cannot form its typed view.
+        """
+        if self._handle is None or self._attempt_index is None:
+            raise _native.RequestError(
+                "file_document requires an Attempt retained by a native Response"
+            )
+        selected_limits = FileLimits() if limits is None else limits
+        if not isinstance(selected_limits, FileLimits):
+            raise TypeError("limits must be FileLimits")
+        handle = self._handle.file_document(
+            self._attempt_index, selected_limits.model_dump_json()
+        )
+        document = _FileDocument._from_native(handle)
+        document._limits = selected_limits
+        return document
 
 
 class Response(ImmutableModel):
@@ -270,6 +309,9 @@ class Response(ImmutableModel):
                     )
         response = cls.model_validate(value)
         response._handle = handle
+        for attempt_index, attempt in enumerate(response.attempts):
+            attempt._handle = handle
+            attempt._attempt_index = attempt_index
         return response
 
     @property

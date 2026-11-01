@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +14,13 @@ SPEC = importlib.util.spec_from_file_location("sdk_contract", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 sdk_contract = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(sdk_contract)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+SEED_SPEC = importlib.util.spec_from_file_location(
+    "sdk_parity_seed_ledger", Path(__file__).with_name("seed_ledger.py")
+)
+assert SEED_SPEC is not None and SEED_SPEC.loader is not None
+seed_ledger = importlib.util.module_from_spec(SEED_SPEC)
+SEED_SPEC.loader.exec_module(seed_ledger)
 
 
 def rust_item(
@@ -143,6 +151,17 @@ def evidence_documents(*, stale_suite: str | None = None) -> list[dict[str, Any]
 
 
 class SdkContractTests(unittest.TestCase):
+    def test_media_documents_suite_is_required_without_replacing_existing_suites(self):
+        self.assertIn(
+            "run_media_documents_conformance.py", sdk_contract.REQUIRED_SUITES
+        )
+        for existing in (
+            "run_conformance.py",
+            "run_webtarget_conformance.py",
+            "run_surface_conformance.py",
+        ):
+            self.assertIn(existing, sdk_contract.REQUIRED_SUITES)
+
     def test_existing_sdk_modules_and_request_reuse_cannot_be_exempted(self) -> None:
         for namespace in sdk_contract.NAMESPACES:
             item = rust_item(f"yosoi::{namespace}", "module", "module")
@@ -616,6 +635,247 @@ class CompactSurfaceContractTests(unittest.TestCase):
             path = Path(directory) / "runtime-ledger.json"
             path.write_text(json.dumps(ledger))
             self.assertEqual(parity.load_ledger(path), ledger)
+
+
+class MediaMappingTableTests(unittest.TestCase):
+    def test_sdk_contract_pins_concrete_model_output_binding_kind(self):
+        inventory_report, _rust, python, _ledger = make_inputs()
+        target_path = "yosoi.ImageDocument"
+        python["targets"][target_path] = {
+            "kind": "class",
+            "canonicalTarget": target_path,
+            "signature": {"display": "ImageDocument", "parameters": []},
+            "fields": [],
+        }
+        variant = rust_item(
+            "yosoi::documents::FileDocument::Image",
+            "variant",
+            "Image(ImageDocument)",
+            surface="member",
+            parent="yosoi::documents::FileDocument",
+        )
+        inventory_report["coverage"]["items"].append(
+            {
+                **variant,
+                "status": "mapped",
+                "python": {"target": target_path},
+                "mapping": {
+                    "decision": "mapped",
+                    "pythonTarget": target_path,
+                    "semanticEquivalent": (
+                        "FileDocument::Image is the Python ImageDocument class."
+                    ),
+                    "rationale": "The concrete target retains the entire Rust payload.",
+                    "review": None,
+                    "outputBinding": {"kind": "concrete-model"},
+                },
+            }
+        )
+
+        contract = sdk_contract.build_contract(inventory_report)
+        declaration = next(
+            item
+            for item in contract["declarations"]
+            if item["rustPath"] == variant["rustPath"]
+        )
+        self.assertEqual(declaration["mapping"]["outputBindingKind"], "concrete-model")
+        sdk_contract._validate_contract(contract)
+
+        invalid = copy.deepcopy(contract)
+        concrete = next(
+            item
+            for item in invalid["declarations"]
+            if item["rustPath"] == variant["rustPath"]
+        )
+        concrete["mapping"]["outputBindingKind"] = "unknown-binding"
+        with self.assertRaisesRegex(ValueError, "output binding kind"):
+            sdk_contract._validate_contract(invalid)
+
+    def test_file_document_variants_map_to_concrete_python_classes(self):
+        for variant, target in seed_ledger.FILE_DOCUMENT_VARIANT_TARGETS[
+            "yosoi::documents::FileDocument"
+        ].items():
+            entry = seed_ledger._file_document_variant_entry(
+                {
+                    "rustPath": f"yosoi::documents::FileDocument::{variant}",
+                    "symbolKey": f"symbol:FileDocument::{variant}",
+                    "parentRustPath": "yosoi::documents::FileDocument",
+                    "rustArguments": [{"name": "0", "type": target.rsplit(".", 1)[-1]}],
+                },
+                {"targets": {target: {"kind": "class"}}},
+            )
+            self.assertIsNotNone(entry)
+            self.assertEqual(entry["decision"], "mapped")
+            self.assertEqual(entry["pythonTarget"], target)
+            self.assertEqual(entry["outputBinding"]["kind"], "concrete-model")
+            self.assertEqual(
+                entry["outputBinding"]["pythonFields"][0]["pythonFieldPath"], "$"
+            )
+            self.assertEqual(len(entry["outputBinding"]["behaviorEvidence"]), 2)
+            self.assertIn("concrete immutable model", entry["rationale"])
+
+    def test_file_document_errors_map_exact_payload_fields(self):
+        target = seed_ledger.ERROR_TARGETS["FileDocumentError"]
+        python = {"targets": {target: {"kind": "class"}}}
+        for variant, fields in seed_ledger.FILE_DOCUMENT_ERROR_VARIANT_FIELDS.items():
+            item = {
+                "rustPath": f"yosoi::documents::FileDocumentError::{variant}",
+                "symbolKey": f"symbol:FileDocumentError::{variant}",
+                "parentRustPath": "yosoi::documents::FileDocumentError",
+                "rustArguments": [
+                    {"name": argument, "type": "str"} for argument in fields
+                ],
+            }
+            entry = seed_ledger._file_document_error_variant_entry(item, python)
+            self.assertIsNotNone(entry, variant)
+            binding = entry["outputBinding"]
+            self.assertEqual(binding["tag"], variant)
+            self.assertEqual(
+                {field["rustArgument"] for field in binding["pythonFields"]},
+                set(fields),
+            )
+            self.assertEqual(entry["decision"], "mapped")
+        io_entry = seed_ledger._file_document_error_variant_entry(
+            {
+                "rustPath": "yosoi::documents::FileDocumentError::Io",
+                "symbolKey": "symbol:FileDocumentError::Io",
+                "parentRustPath": "yosoi::documents::FileDocumentError",
+                "rustArguments": [
+                    {"name": "path", "type": "PathBuf"},
+                    {"name": "source", "type": "io::Error"},
+                ],
+            },
+            python,
+        )
+        self.assertIn(
+            "source_chain.[*]",
+            [
+                field["pythonFieldPath"]
+                for field in io_entry["outputBinding"]["pythonFields"]
+            ],
+        )
+
+    def test_file_document_error_output_bindings_match_public_error_details(self):
+        details_target = "yosoi.errors.RustErrorDetails"
+        targets = {
+            seed_ledger.ERROR_TARGETS["FileDocumentError"]: {"kind": "class"},
+            details_target: {"kind": "class", "fields": []},
+        }
+        for field, annotation in (
+            ("rust_type", "str"),
+            ("variant", "str | None"),
+            ("details", "Mapping[str, Any]"),
+            ("source_chain", "tuple[str, ...]"),
+        ):
+            targets[f"{details_target}.{field}"] = {
+                "kind": "field",
+                "annotation": annotation,
+                "field": {"name": field, "annotation": annotation},
+            }
+        for variant, argument_names in (
+            ("TooLarge", ["maximum", "observed"]),
+            ("Document", ["0"]),
+            ("Io", ["path", "source"]),
+        ):
+            item = {
+                "kind": "variant",
+                "rustPath": f"yosoi::documents::FileDocumentError::{variant}",
+                "parentRustPath": "yosoi::documents::FileDocumentError",
+                "rustArguments": [
+                    {"name": name, "type": "str", "receiver": False}
+                    for name in argument_names
+                ],
+            }
+            entry = seed_ledger._file_document_error_variant_entry(
+                {**item, "symbolKey": f"file-error:{variant}"}, {"targets": targets}
+            )
+            problem = seed_ledger.parity._mapping_configuration_problem(
+                item,
+                entry,
+                targets[seed_ledger.ERROR_TARGETS["FileDocumentError"]],
+                targets,
+            )
+            self.assertIsNone(problem, f"{variant}: {problem}")
+
+    def test_media_builders_factories_and_constants_have_explicit_mappings(self):
+        for media_type in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        ):
+            for constructor in (
+                "from_bytes",
+                "from_bytes_with_limits",
+                "from_bytes_with_metadata",
+            ):
+                self.assertEqual(
+                    seed_ledger.MEMBER_TARGETS[
+                        f"yosoi::documents::{media_type}::{constructor}"
+                    ],
+                    f"yosoi.documents.{media_type}.from_bytes",
+                )
+        for builder, field in seed_ledger.FILE_METADATA_BUILDER_FIELDS.items():
+            path = f"yosoi::documents::FileMetadata::{builder}"
+            self.assertEqual(
+                seed_ledger.MEMBER_TARGETS[path], "yosoi.documents.FileMetadata"
+            )
+            self.assertEqual(seed_ledger.ARGUMENT_ALIASES[(path, "value")], field)
+            self.assertIn((path, "value"), seed_ledger.ARGUMENT_CONVERSIONS)
+        self.assertEqual(
+            seed_ledger.MEMBER_TARGETS["yosoi::request::Attempt::file_document"],
+            "yosoi.request.Attempt.file_document",
+        )
+        self.assertEqual(
+            seed_ledger.REFRESH_EXISTING_MEMBER_MAPPINGS,
+            {"yosoi::Archive::read", "yosoi::Archive::write"},
+        )
+        self.assertIn(
+            "ImageDocumentArchiveRef",
+            seed_ledger.MEMBER_SEMANTIC_EQUIVALENTS["yosoi::Archive::write"],
+        )
+        self.assertEqual(
+            seed_ledger.VALUE_TARGETS["yosoi::documents::MAX_SOURCE_BYTES"],
+            "yosoi.documents.FileMetadata.source",
+        )
+        self.assertEqual(
+            seed_ledger.VALUE_TARGETS["yosoi::documents::DEFAULT_FILE_MAX_BYTES"],
+            "yosoi.documents.FileLimits.max_bytes",
+        )
+        self.assertIn("yosoi::documents::read_file", seed_ledger.VALUE_TARGETS)
+        self.assertIn("yosoi::documents::file_from_bytes", seed_ledger.VALUE_TARGETS)
+
+    def test_only_the_owner_approved_media_traits_are_reviewed(self):
+        dispositions = seed_ledger.REVIEWED_MEDIA_TRAIT_DISPOSITIONS
+        self.assertEqual(len(dispositions), 23)
+        targets = {
+            disposition["pythonTarget"]: {"kind": "class"}
+            for disposition in dispositions.values()
+        }
+        python = {"targets": targets}
+
+        for (rust_path, trait), disposition in dispositions.items():
+            entry = seed_ledger._reviewed_media_trait_entry(
+                {
+                    "rustPath": rust_path,
+                    "symbolKey": f"member:{rust_path}@trait:{trait}",
+                    "kind": "function",
+                    "trait": trait,
+                },
+                python,
+            )
+            self.assertIsNotNone(entry, (rust_path, trait))
+            self.assertEqual(entry["decision"], "language-specific")
+            self.assertEqual(entry["review"]["status"], "reviewed")
+            self.assertEqual(entry["review"]["reviewer"], "Codex owner")
+            self.assertEqual(
+                entry["review"]["rationale"], disposition["rationale"]
+            )
+            self.assertEqual(
+                entry["review"]["pythonEquivalent"],
+                disposition["pythonEquivalent"],
+            )
+            self.assertNotIn("evidence", entry)
 
 
 if __name__ == "__main__":

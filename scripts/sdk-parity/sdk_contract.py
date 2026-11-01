@@ -263,6 +263,7 @@ REQUIRED_SUITES = (
     "run_serde_conformance.py",
     "run_document_errors_conformance.py",
     "run_webtarget_conformance.py",
+    "run_media_documents_conformance.py",
     "run_surface_conformance.py",
 )
 
@@ -588,6 +589,9 @@ def build_contract(inventory_report: dict[str, Any]) -> dict[str, Any]:
                 ),
             },
         }
+        output_binding_kind = (mapping.get("outputBinding") or {}).get("kind")
+        if output_binding_kind is not None:
+            declaration["mapping"]["outputBindingKind"] = output_binding_kind
         if mechanic is not None:
             declaration["mechanic"] = mechanic
         deferred = _deferred_beta_surface(item)
@@ -760,6 +764,26 @@ def _validate_contract(contract: Any) -> dict[str, Any]:
         if mapping.get("decision") == "mapped" and not target:
             raise ValueError(
                 f"mapped SDK declaration has no Python target: {declaration['id']}"
+            )
+        output_binding_kind = mapping.get("outputBindingKind")
+        if output_binding_kind not in {
+            None,
+            "error-details",
+            "outcome-view",
+            "concrete-model",
+        }:
+            raise ValueError(
+                f"invalid output binding kind for SDK declaration {declaration['id']}"
+            )
+        if output_binding_kind == "concrete-model" and (
+            declaration["kind"] != "variant"
+            or mapping.get("decision") != "mapped"
+            or not target
+            or not mapping.get("ledgerMappingSha256")
+        ):
+            raise ValueError(
+                "concrete-model mappings require a mapped Rust enum variant and a "
+                f"pinned ledger binding: {declaration['id']}"
             )
         for field in ("semanticEquivalent", "rationale"):
             value = mapping.get(field)

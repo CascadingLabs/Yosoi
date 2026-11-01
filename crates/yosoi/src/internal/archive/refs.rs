@@ -340,6 +340,13 @@ uuid_archive_ref!(
     "Reference to one immutable archived Contract result."
 );
 
+#[path = "refs/media.rs"]
+mod media;
+pub use media::{
+    AudioDocumentArchiveRef, BinaryDocumentArchiveRef, FileDocumentArchiveRef,
+    ImageDocumentArchiveRef, VideoDocumentArchiveRef,
+};
+
 #[cfg(test)]
 #[path = "refs/tests.rs"]
 mod tests;

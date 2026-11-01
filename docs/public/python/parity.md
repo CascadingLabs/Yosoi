@@ -41,7 +41,7 @@ uv run --no-sync python scripts/sdk-parity/run_sdk_parity.py --output-dir .gener
 ```
 
 The command generates the compiler inventory, prepares an output-only runtime
-ledger, builds the nine Rust fixture executables serially, runs their Python
+ledger, builds the the required Rust fixture executables serially, runs their Python
 comparisons, and enforces the SDK report. It never rewrites the reviewed ledger
 or SDK contract. The Python CI workflow runs this gate on normal Python 3.14
 and uploads the report, runtime pins, compiler reference, and raw evidence even

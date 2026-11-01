@@ -8,7 +8,9 @@ use crate::documents::Document;
 mod portable;
 mod surface;
 pub use crate::internal::archive::{
-    Archive, ArchiveError, ArchiveRefError, DocumentArchiveRef, PlanArchiveRef,
+    Archive, ArchiveError, ArchiveRefError, AudioDocumentArchiveRef, BinaryDocumentArchiveRef,
+    DocumentArchiveRef, FileDocumentArchiveRef, ImageDocumentArchiveRef, MAX_ARCHIVED_FILE_BYTES,
+    PlanArchiveRef, VideoDocumentArchiveRef,
 };
 
 impl Archive {

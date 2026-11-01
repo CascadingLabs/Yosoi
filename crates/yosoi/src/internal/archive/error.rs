@@ -12,6 +12,7 @@ use crate::internal::archive::{
     ArchiveRefError, ContractRunRecordError, EvaluationRunError, LocatorRunRecordError,
     RequestRunRecordError,
 };
+use crate::internal::media_documents::FileDocumentError;
 
 /// Typed failures from the local Archive boundary.
 #[derive(Debug, Error)]
@@ -98,6 +99,9 @@ pub enum ArchiveError {
     #[error("invalid archived Document")]
     /// Invalid archived Document.
     InvalidDocument(#[source] DocumentError),
+    /// Invalid archived media or binary file document.
+    #[error("invalid archived file document")]
+    InvalidFileDocument(#[source] FileDocumentError),
     #[error("invalid EvaluationRunRecord")]
     /// Invalid EvaluationRunRecord.
     InvalidEvaluationRun(#[source] EvaluationRunError),
