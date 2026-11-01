@@ -968,7 +968,7 @@ mod tests {
             BinaryDocument, Document, DocumentId, DocumentProfile, FileDocument, FileLimits,
             FileMetadata,
         },
-        surface::{ArchiveLimits, Outcome},
+        surface::{ArchiveLimits, NetworkObservationPolicy, Outcome},
     };
     use std::error::Error;
 
@@ -1026,7 +1026,35 @@ mod tests {
                 serde_json::to_vec(&serde_json::json!({
                     "schema": "yosoi.network.v1",
                     "schema_version": 1,
-                    "response_window_id": "recording:2",
+                    "session_id": "session-unit",
+                    "tab_id": "tab-unit",
+                    "subscription_id": "subscription-unit",
+                    "window_id": "recording:2",
+                    "first_sequence": null,
+                    "last_sequence": null,
+                    "started_at_unix_us": 1,
+                    "ended_at_unix_us": 2,
+                    "events": [],
+                    "in_flight_at_start": [],
+                    "in_flight": [],
+                    "gaps": [],
+                    "coverage": {
+                        "complete": false,
+                        "reason": "unit fixture has prior-window payloads",
+                        "overflow": false,
+                        "dropped_events": 0,
+                        "disconnected": false,
+                        "expired": false,
+                        "instrumentation_escalated": false,
+                        "network_was_previously_enabled": true,
+                        "late_events": 0,
+                        "filtered_events": 0,
+                        "starts_not_observed": 0,
+                        "omitted_payload_links": 0,
+                        "start_boundary_unknown": true,
+                        "end_boundary_in_flight": false,
+                    },
+                    "retention": NetworkObservationPolicy::default().retention(),
                     "payloads": payloads,
                 }))?,
             )?)
@@ -1041,6 +1069,10 @@ mod tests {
                                 text_utf8_normalized: bool| {
             serde_json::json!({
                 "id": id,
+                "request_id": "request-unit",
+                "hop": 0,
+                "response_sequence": 1,
+                "response_window_id": "recording:1",
                 "state": state,
                 "document_id": document_id,
                 "document_kind": "html",
@@ -1064,6 +1096,10 @@ mod tests {
              provider_reported_body_bytes: Option<u64>| {
                 serde_json::json!({
                     "id": "opaque",
+                    "request_id": "request-unit",
+                    "hop": 0,
+                    "response_sequence": 1,
+                    "response_window_id": "recording:1",
                     "state": state,
                     "document_id": null,
                     "document_kind": null,
