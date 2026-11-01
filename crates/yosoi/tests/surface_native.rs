@@ -1,20 +1,43 @@
 #![cfg(feature = "browser")]
 //! Native Surface ownership, input and shared-pool scheduling against loopback only.
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use flate2::{Compression, write::GzEncoder};
 use futures::FutureExt;
 use serde_json::{Value, json};
-use std::{env, error::Error, io, sync::Arc, time::Duration};
+use sha2::{Digest, Sha256};
+use std::{
+    env,
+    error::Error,
+    fs,
+    io::{self, Write as _},
+    sync::Arc,
+    time::Duration,
+};
+#[cfg(feature = "cli")]
+use std::{
+    io::{BufRead, BufReader},
+    process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
+    sync::Mutex,
+};
+#[cfg(feature = "cli")]
+use tokio::task::spawn_blocking;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpListener,
+    net::{TcpListener, TcpStream},
     sync::{Notify, oneshot},
     task::{JoinHandle, JoinSet},
     time::timeout,
 };
 use yosoi::{
+    Archive,
+    automation_record::OperationStatus,
     browser::surface::consume_session as consume_browser_session,
     policy::{Acquisition, BrowserMode, DocumentRequest, Page, Policy},
     session::{self, ActionKind, ExecutionPool, SessionPolicy},
-    surface::{self, SurfaceConnection, SurfacePolicy, browser::BrowserSurface},
+    surface::{
+        self, NetworkEventKind, NetworkObservationPolicy, NetworkPayload, NetworkPayloadKind,
+        NetworkPayloadState, SurfaceConnection, SurfacePolicy, browser::BrowserSurface,
+    },
 };
 
 struct Fixture {
@@ -66,6 +89,176 @@ impl Fixture {
     }
 }
 
+struct NetworkFixture {
+    base: String,
+    slow_started: Arc<Notify>,
+    stop: oneshot::Sender<()>,
+    task: JoinHandle<()>,
+}
+
+impl NetworkFixture {
+    async fn start() -> Result<Self, Box<dyn Error>> {
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let base = format!("http://{}", listener.local_addr()?);
+        let (stop, mut stopped) = oneshot::channel();
+        let slow_started = Arc::new(Notify::new());
+        let release_slow = Arc::new(Notify::new());
+        let task_slow = Arc::clone(&slow_started);
+        let task_release = Arc::clone(&release_slow);
+        let task = tokio::spawn(async move {
+            let mut clients = JoinSet::new();
+            loop {
+                tokio::select! {
+                    _ = &mut stopped => break,
+                    accepted = listener.accept() => {
+                        let Ok((mut stream, _)) = accepted else { break; };
+                        let slow_started = Arc::clone(&task_slow);
+                        let release_slow = Arc::clone(&task_release);
+                        clients.spawn(async move {
+                            let mut bytes = [0; 8192];
+                            let Ok(count) = stream.read(&mut bytes).await else { return; };
+                            let request = String::from_utf8_lossy(bytes.get(..count).unwrap_or_default());
+                            let path = request.split_whitespace().nth(1).unwrap_or("/");
+                            match path.split('?').next().unwrap_or("/") {
+                                "/network" => {
+                                    let body = r#"<!doctype html><main><button aria-label="Start network requests">Start network requests</button><button aria-label="Release delayed response">Release delayed response</button><button aria-label="Start request after capture cancellation">Start request after capture cancellation</button><p id="state">ready</p><script>
+const state=document.getElementById('state');
+document.querySelectorAll('button')[0].addEventListener('click',()=>{state.textContent='network requests started';const slow=fetch('/slow').then(r=>r.json());const tasks=[fetch('/api?token=secret').then(r=>r.json()),fetch('/redirect').then(r=>r.json()),fetch('/fail').catch(()=>null),fetch('/gzip-json').then(r=>r.json()),fetch('/binary').then(r=>r.arrayBuffer()),fetch('/html').then(r=>r.text()),fetch('/legacy-html').then(r=>r.text()),fetch('/sniff-html').then(r=>r.text()),fetch('/misleading-png').then(r=>r.arrayBuffer())];Promise.all(tasks).then(()=>slow).then(()=>{state.textContent='network complete'}).catch(()=>{state.textContent='network requests failed'})});
+document.querySelectorAll('button')[1].addEventListener('click',()=>fetch('/release'));
+document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?after-cancel=1').then(()=>{state.textContent='post-cancel request complete'}));
+</script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
+                                "/cli-network" => {
+                                    let body = r#"<!doctype html><main><h1>CLI network</h1><script>fetch('/api?cli=1').then(()=>{document.title='request-complete'})</script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
+                                "/retention-page" => {
+                                    let body = r#"<!doctype html><main><button>Fetch retained JSON</button><p id="state">ready</p><script>let n=0;document.querySelector('button').addEventListener('click',()=>fetch('/api',{method:'POST'}).then(r=>r.json()).then(()=>{document.getElementById('state').textContent='retained request '+(++n)+' complete'}))</script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
+                                "/bomb-page" => {
+                                    let body = r#"<!doctype html><main><button aria-label="Start compressed body">Start compressed body</button><p id="state">ready</p><script>document.querySelector('button').addEventListener('click',()=>fetch('/gzip-bomb').then(r=>r.arrayBuffer()).then(()=>{document.getElementById('state').textContent='compressed response complete'}))</script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
+                                "/api" | "/redirected" => {
+                                    let body: &[u8] = if path.starts_with("/redirected") { br#"{"redirected":true}"# } else { br#"{"api":true}"# };
+                                    let headers = [("X-Public", "kept"), ("Set-Cookie", "secret=hidden")];
+                                    let _ = write_response(&mut stream, "200 OK", "application/json; charset=utf-8", &headers, body).await;
+                                }
+                                "/redirect" => {
+                                    let _ = write_response(&mut stream, "302 Found", "text/plain", &[("Location", "/redirected")], b"").await;
+                                }
+                                "/fail" => {}
+                                "/slow" => {
+                                    slow_started.notify_one();
+                                    release_slow.notified().await;
+                                    let _ = write_response(&mut stream, "200 OK", "application/json; charset=utf-8", &[], br#"{"slow":true}"#).await;
+                                }
+                                "/release" => {
+                                    release_slow.notify_one();
+                                    let _ = write_response(&mut stream, "200 OK", "text/plain; charset=utf-8", &[], b"released").await;
+                                }
+                                "/gzip-json" => {
+                                    let mut encoder = GzEncoder::new(Vec::new(), Compression::fast());
+                                    if encoder.write_all(br#"{"compressed":true}"#).is_err() { return; }
+                                    let Ok(body) = encoder.finish() else { return; };
+                                    let _ = write_response(&mut stream, "200 OK", "application/json; charset=utf-8", &[("Content-Encoding", "gzip")], &body).await;
+                                }
+                                "/gzip-bomb" => {
+                                    let decoded = vec![b'x'; 2 * 1024 * 1024];
+                                    let mut encoder = GzEncoder::new(Vec::new(), Compression::fast());
+                                    if encoder.write_all(&decoded).is_err() { return; }
+                                    let Ok(body) = encoder.finish() else { return; };
+                                    let _ = write_response(&mut stream, "200 OK", "text/plain; charset=utf-8", &[("Content-Encoding", "gzip")], &body).await;
+                                }
+                                "/binary" => {
+                                    let _ = write_response(&mut stream, "200 OK", "application/octet-stream", &[], b"\0\xff\x10opaque\0bytes").await;
+                                }
+                                "/html" => {
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], b"<!doctype html><main><h1>network body</h1></main>").await;
+                                }
+                                "/legacy-html" => {
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=windows-1252", &[], b"<!doctype html><main><p>caf\xe9</p></main>").await;
+                                }
+                                "/sniff-html" => {
+                                    let _ = write_response_without_content_type(&mut stream, "200 OK", &[], b"<!doctype html><main><p>sniffed HTML</p></main>").await;
+                                }
+                                "/misleading-png" => {
+                                    let body = STANDARD.decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p3sAAAAASUVORK5CYII=").unwrap_or_default();
+                                    let _ = write_response(&mut stream, "200 OK", "application/octet-stream", &[], &body).await;
+                                }
+                                _ => {
+                                    let _ = write_response(&mut stream, "404 Not Found", "text/plain; charset=utf-8", &[], b"missing").await;
+                                }
+                            }
+                        });
+                    }
+                    Some(_) = clients.join_next(), if !clients.is_empty() => {}
+                }
+            }
+            clients.abort_all();
+            while clients.join_next().await.is_some() {}
+        });
+        Ok(Self {
+            base,
+            slow_started,
+            stop,
+            task,
+        })
+    }
+
+    async fn close(self) {
+        let _ = self.stop.send(());
+        let _ = self.task.await;
+    }
+}
+
+async fn write_response(
+    stream: &mut TcpStream,
+    status: &str,
+    content_type: &str,
+    headers: &[(&str, &str)],
+    body: &[u8],
+) -> io::Result<()> {
+    let mut response = format!(
+        "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n",
+        body.len()
+    );
+    for (name, value) in headers {
+        response.push_str(name);
+        response.push_str(": ");
+        response.push_str(value);
+        response.push_str("\r\n");
+    }
+    response.push_str("\r\n");
+    stream.write_all(response.as_bytes()).await?;
+    stream.write_all(body).await?;
+    Ok(())
+}
+
+async fn write_response_without_content_type(
+    stream: &mut TcpStream,
+    status: &str,
+    headers: &[(&str, &str)],
+    body: &[u8],
+) -> io::Result<()> {
+    let mut response = format!(
+        "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n",
+        body.len()
+    );
+    for (name, value) in headers {
+        response.push_str(name);
+        response.push_str(": ");
+        response.push_str(value);
+        response.push_str("\r\n");
+    }
+    response.push_str("\r\n");
+    stream.write_all(response.as_bytes()).await?;
+    stream.write_all(body).await?;
+    Ok(())
+}
+
 fn enabled() -> bool {
     let enabled = env::var("YOSOI_BROWSER_TESTS").as_deref() == Ok("1");
     if !enabled {
@@ -104,6 +297,1277 @@ async fn hot(surface: &mut BrowserSurface) -> Result<(), Box<dyn Error>> {
         .execute(json!({"op":"focus","reference":root}))
         .await?;
     surface.execute(json!({"op":"hot"})).await?;
+    Ok(())
+}
+
+#[cfg(feature = "cli")]
+type CliProofError = Box<dyn Error + Send + Sync>;
+
+#[cfg(feature = "cli")]
+#[derive(Default)]
+struct CliDiagnostics {
+    current_operation: Option<String>,
+    last_reply: Option<Value>,
+}
+
+#[cfg(feature = "cli")]
+fn cli_exchange(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+    command: &Value,
+    diagnostics: &Mutex<CliDiagnostics>,
+) -> Result<Value, CliProofError> {
+    let operation_id = command
+        .get("id")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_owned();
+    diagnostics
+        .lock()
+        .map_err(|_| io::Error::other("CLI diagnostic lock was poisoned"))?
+        .current_operation = Some(operation_id);
+    serde_json::to_writer(&mut *input, command)?;
+    input.write_all(b"\n")?;
+    input.flush()?;
+    let mut line = String::new();
+    if output.read_line(&mut line)? == 0 {
+        return Err(io::Error::other("native Surface CLI closed before replying").into());
+    }
+    let reply: Value = serde_json::from_str(&line)?;
+    diagnostics
+        .lock()
+        .map_err(|_| io::Error::other("CLI diagnostic lock was poisoned"))?
+        .last_reply = Some(reply.clone());
+    if reply.get("ok").and_then(Value::as_bool) != Some(true) {
+        return Err(io::Error::other(format!("native Surface CLI command failed: {reply}")).into());
+    }
+    Ok(reply.get("result").cloned().unwrap_or(Value::Null))
+}
+
+#[cfg(feature = "cli")]
+fn cli_network_window(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+    diagnostics: &Mutex<CliDiagnostics>,
+) -> Result<Value, CliProofError> {
+    let observation = cli_exchange(
+        input,
+        output,
+        &json!({"id":"observe-network","op":"observe","representation":"network","budget":16384}),
+        diagnostics,
+    )?;
+    let root = observation
+        .get("root")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI network observation omitted its root"))?;
+    let inspected = cli_exchange(
+        input,
+        output,
+        &json!({
+            "id":"inspect-network",
+            "op":"read_view",
+            "representation":"network",
+            "budget":16384,
+            "request":{
+                "operation":{"kind":"inspect","reference":root},
+                "budget":{"bytes":16000,"items":1}
+            }
+        }),
+        diagnostics,
+    )?;
+    let content = inspected
+        .pointer("/data/content")
+        .and_then(Value::as_str)
+        .ok_or_else(|| io::Error::other("CLI network inspection omitted window JSON"))?;
+    Ok(serde_json::from_str(content)?)
+}
+
+#[cfg(feature = "cli")]
+fn cli_native_root(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+    id: &str,
+    diagnostics: &Mutex<CliDiagnostics>,
+) -> Result<Value, CliProofError> {
+    cli_exchange(
+        input,
+        output,
+        &json!({"id":format!("refresh-{id}"),"op":"refresh"}),
+        diagnostics,
+    )?;
+    let status = cli_exchange(
+        input,
+        output,
+        &json!({"id":format!("status-{id}"),"op":"status"}),
+        diagnostics,
+    )?;
+    status
+        .get("root")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI status omitted its native Surface root").into())
+}
+
+#[cfg(feature = "cli")]
+fn run_native_network_cli(
+    mut input: ChildStdin,
+    stdout: ChildStdout,
+    base: &str,
+    diagnostics: &Mutex<CliDiagnostics>,
+) -> Result<(), CliProofError> {
+    if let Ok(mut state) = diagnostics.lock() {
+        state.current_operation = Some("ready".to_owned());
+    }
+    let mut output = BufReader::new(stdout);
+    let mut ready = String::new();
+    if output.read_line(&mut ready)? == 0 {
+        return Err(io::Error::other("native Surface CLI omitted its ready response").into());
+    }
+    let ready: Value = serde_json::from_str(&ready)?;
+    if ready.pointer("/result/source/networkObservation/supported") != Some(&Value::Bool(true)) {
+        return Err(
+            io::Error::other("native CLI did not advertise qualified network support").into(),
+        );
+    }
+    let subscription = cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"subscribe","op":"network_subscribe","retain_bodies":true}),
+        diagnostics,
+    )?;
+    if subscription.get("provider").and_then(Value::as_str) != Some("chrome_cdp") {
+        return Err(io::Error::other("native CLI subscription did not identify Chrome CDP").into());
+    }
+    cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"attach","op":"attach"}),
+        diagnostics,
+    )?;
+    cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"hot","op":"hot"}),
+        diagnostics,
+    )?;
+    let root = cli_native_root(&mut input, &mut output, "one", diagnostics)?;
+    let navigated = cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
+        diagnostics,
+    )?;
+    if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(
+            io::Error::other(format!("CLI navigation was not confirmed: {navigated}")).into(),
+        );
+    }
+
+    let mut after_sequence = 0_u64;
+    let mut captured_body = None;
+    for _ in 0..32 {
+        let waited = cli_exchange(
+            &mut input,
+            &mut output,
+            &json!({"id":"wait-network","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            diagnostics,
+        )?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            continue;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("CLI network wait omitted its sequence"))?;
+        let window = cli_network_window(&mut input, &mut output, diagnostics)?;
+        captured_body = window
+            .get("payloads")
+            .and_then(Value::as_array)
+            .and_then(|payloads| {
+                payloads.iter().find(|payload| {
+                    payload.get("document_kind").and_then(Value::as_str) == Some("json")
+                        && matches!(
+                            payload.get("state").and_then(Value::as_str),
+                            Some("retained" | "truncated")
+                        )
+                })
+            })
+            .cloned();
+        if captured_body.is_some() {
+            break;
+        }
+    }
+    let payload = captured_body
+        .ok_or_else(|| io::Error::other("native CLI did not retain its loopback JSON body"))?;
+    let chunk = cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({
+            "id":"read-body",
+            "op":"network_payload",
+            "reference":payload,
+            "offset":0,
+            "max_bytes":8192,
+            "budget":16384
+        }),
+        diagnostics,
+    )?;
+    let encoded = chunk
+        .get("data_base64")
+        .and_then(Value::as_str)
+        .ok_or_else(|| io::Error::other("native CLI body chunk omitted base64 data"))?;
+    let decoded = STANDARD.decode(encoded)?;
+    if !decoded
+        .windows(b"\"api\":true".len())
+        .any(|bytes| bytes == b"\"api\":true")
+    {
+        return Err(
+            io::Error::other("native CLI body chunk did not contain the loopback JSON").into(),
+        );
+    }
+
+    cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"cancel","op":"network_cancel"}),
+        diagnostics,
+    )?;
+    let rearmed = cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"subscribe-again","op":"network_subscribe","retain_bodies":true}),
+        diagnostics,
+    )?;
+    if rearmed.get("active").and_then(Value::as_bool) != Some(true) {
+        return Err(io::Error::other("native CLI could not rearm network capture").into());
+    }
+    let root = cli_native_root(&mut input, &mut output, "two", diagnostics)?;
+    let navigated = cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
+        diagnostics,
+    )?;
+    if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(io::Error::other(format!(
+            "rearmed CLI navigation was not confirmed: {navigated}"
+        ))
+        .into());
+    }
+    let mut fresh_request_seen = false;
+    let mut after_sequence = 0_u64;
+    for _ in 0..24 {
+        let waited = cli_exchange(
+            &mut input,
+            &mut output,
+            &json!({"id":"wait-fresh","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            diagnostics,
+        )?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            continue;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("fresh CLI network wait omitted its sequence"))?;
+        let window = cli_network_window(&mut input, &mut output, diagnostics)?;
+        if window
+            .pointer("/coverage/network_was_previously_enabled")
+            .and_then(Value::as_bool)
+            != Some(true)
+            || window
+                .pointer("/coverage/instrumentation_escalated")
+                .and_then(Value::as_bool)
+                != Some(false)
+            || window
+                .pointer("/retention/provider_resource_buffer_bytes")
+                .and_then(Value::as_u64)
+                != Some(u64::try_from(
+                    surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+                )?)
+        {
+            return Err(io::Error::other(
+                "rearmed CLI capture did not preserve shared Page instrumentation bounds",
+            )
+            .into());
+        }
+        fresh_request_seen = window
+            .get("events")
+            .and_then(Value::as_array)
+            .is_some_and(|events| {
+                events.iter().any(|event| {
+                    event.pointer("/kind/kind").and_then(Value::as_str) == Some("request_started")
+                        && event
+                            .pointer("/kind/url")
+                            .and_then(Value::as_str)
+                            .is_some_and(|url| url.ends_with("/api"))
+                })
+            });
+        if fresh_request_seen {
+            break;
+        }
+    }
+    if !fresh_request_seen {
+        return Err(
+            io::Error::other("fresh request was not observed after CLI cancellation").into(),
+        );
+    }
+    cli_exchange(
+        &mut input,
+        &mut output,
+        &json!({"id":"close","op":"close"}),
+        diagnostics,
+    )?;
+    Ok(())
+}
+
+#[cfg(feature = "cli")]
+fn child_wait(child: &Mutex<Child>) -> io::Result<ExitStatus> {
+    child
+        .lock()
+        .map_err(|_| io::Error::other("native CLI child lock was poisoned"))?
+        .wait()
+}
+
+#[cfg(feature = "cli")]
+fn cli_diagnostic_summary(diagnostics: &Mutex<CliDiagnostics>) -> String {
+    diagnostics.lock().map_or_else(
+        |_| "diagnostic state unavailable".to_owned(),
+        |state| {
+            format!(
+                "operation={:?}; last_reply={:?}",
+                state.current_operation, state.last_reply
+            )
+        },
+    )
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The proof asserts event relationships and keeps the managed Session alive until every network and Archive owner is released."
+)]
+async fn native_network_windows_link_bounded_bodies_and_replay_offline()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let page = Page::new(vec![
+        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+    ])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let native = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy {
+            operation_timeout_ms: 15_000,
+            ..SessionPolicy::default()
+        })
+        .acquire()
+        .await?;
+    let output = tempfile::tempdir()?;
+    let proof = Box::pin(async {
+        let work = Box::pin(native.work()).await?;
+        let navigated = work.navigate(&format!("{}/network", fixture.base)).await?;
+        if navigated.status != OperationStatus::Observed {
+            return Err(io::Error::other("native network fixture navigation was not observed").into());
+        }
+        let network_policy = NetworkObservationPolicy {
+            retain_bodies: true,
+            retain_url_path: true,
+            retain_url_query: false,
+            header_allowlist: vec!["x-public".into(), "set-cookie".into()],
+            max_windows: 8,
+            ..NetworkObservationPolicy::default()
+        };
+        let mut surface = BrowserSurface::consume_work(
+            work,
+            SurfacePolicy {
+                archive: surface::ArchivePolicy::Enabled,
+                archive_root: Some(output.path().join("archive")),
+                output: Some(output.path().join("surface")),
+                network_observation: network_policy,
+                ..SurfacePolicy::default()
+            },
+        )
+        .await?;
+        let subscription = surface.subscribe_network(None).await?;
+        assert!(subscription.active);
+        assert_eq!(subscription.provider, "chrome_cdp");
+        hot(&mut surface).await?;
+        let start = reference(&mut surface, "Start network requests").await?;
+        let clicked = surface
+            .execute(json!({"op":"click","reference":start,"expect":{"kind":"text","text":"network requests started","present":true}}))
+            .await?;
+        if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+            return Err(io::Error::other(format!(
+                "network fixture action was not confirmed: {clicked}"
+            ))
+            .into());
+        }
+        timeout(Duration::from_secs(5), fixture.slow_started.notified()).await?;
+
+        let mut after_sequence = 0_u64;
+        let mut first = None;
+        for _ in 0..16 {
+            let waited = surface.wait_network_event(after_sequence, 5_000).await?;
+            if waited.get("state").and_then(Value::as_str) != Some("event") {
+                return Err(io::Error::other("network start event timed out").into());
+            }
+            after_sequence = waited
+                .get("sequence")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| io::Error::other("network wait omitted its sequence"))?;
+            let (_, window) = surface.observe_network().await?;
+            if window
+                .in_flight
+                .iter()
+                .any(|request| request.url.ends_with("/slow"))
+            {
+                first = Some(window);
+                break;
+            }
+        }
+        let first = first.ok_or_else(|| io::Error::other("slow request did not cross a window boundary"))?;
+        assert!(first.coverage.start_boundary_unknown);
+        assert!(!first.coverage.complete);
+        assert!(first.in_flight.iter().any(|request| request.url.ends_with("/slow")));
+        assert!(first.events.iter().filter_map(|event| match &event.kind {
+            NetworkEventKind::RequestStarted { url, .. } => Some(url.as_str()),
+            _ => None,
+        }).all(|url| !url.contains("token=secret")), "the retained URL must not preserve the query token");
+        assert!(first.retention.retain_url_path);
+        assert!(!first.retention.retain_url_query);
+        assert_eq!(first.retention.retained_header_names, ["x-public"]);
+        assert!(first.events.iter().filter_map(|event| match &event.kind {
+            NetworkEventKind::ResponseReceived { headers, .. } => Some(headers),
+            _ => None,
+        }).flatten().any(|header| header.name == "x-public"));
+        assert!(!first.events.iter().filter_map(|event| match &event.kind {
+            NetworkEventKind::ResponseReceived { headers, .. } => Some(headers),
+            _ => None,
+        }).flatten().any(|header| header.name == "set-cookie"));
+
+        let release = reference(&mut surface, "Release delayed response").await?;
+        let released = surface
+            .execute(json!({"op":"click","reference":release,"expect":{"kind":"text","text":"network complete","present":true}}))
+            .await?;
+        if released.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+            return Err(io::Error::other("delayed network request did not complete").into());
+        }
+        let waited = surface.wait_network_event(after_sequence, 5_000).await?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            return Err(io::Error::other("network completion event timed out").into());
+        }
+        let (_, second) = surface.observe_network().await?;
+        assert!(second
+            .in_flight_at_start
+            .iter()
+            .any(|request| request.url.ends_with("/slow")));
+        assert!(!second
+            .in_flight
+            .iter()
+            .any(|request| request.url.ends_with("/slow")));
+        let all_events: Vec<_> = first.events.iter().chain(&second.events).collect();
+        assert!(all_events.iter().any(|event| matches!(
+            &event.kind,
+            NetworkEventKind::Redirect { status: 302, from_url, to_url, .. }
+                if from_url.ends_with("/redirect") && to_url.ends_with("/redirected")
+        )));
+        assert!(all_events.iter().any(|event| matches!(
+            &event.kind,
+            NetworkEventKind::Failed { .. }
+        )));
+        assert!(all_events.iter().any(|event| matches!(
+            &event.kind,
+            NetworkEventKind::ResponseReceived {
+                content_encoding: Some(encoding), ..
+            } if encoding.eq_ignore_ascii_case("gzip")
+        )));
+
+        let payload_refs: Vec<_> = first
+            .payloads
+            .iter()
+            .chain(&second.payloads)
+            .filter(|payload| matches!(payload.state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated))
+            .cloned()
+            .collect();
+        let html = payload_refs
+            .iter()
+            .find(|payload| payload.document_kind == Some(NetworkPayloadKind::Html))
+            .ok_or_else(|| io::Error::other("HTML response body was not linked"))?;
+        let json_body = payload_refs
+            .iter()
+            .find(|payload| {
+                payload.document_kind == Some(NetworkPayloadKind::Json)
+                    && payload.content_encoding.is_none()
+            })
+            .ok_or_else(|| io::Error::other("JSON response body was not linked"))?;
+        let gzip = payload_refs
+            .iter()
+            .find(|payload| {
+                payload.document_kind == Some(NetworkPayloadKind::Json)
+                    && payload.content_encoding.as_deref() == Some("gzip")
+            })
+            .ok_or_else(|| io::Error::other("compressed JSON response was not linked"))?;
+        let binary = payload_refs
+            .iter()
+            .find(|payload| {
+                payload.document_kind == Some(NetworkPayloadKind::File)
+                    && payload.declared_media_type.as_deref() == Some("application/octet-stream")
+                    && payload.detected_media_type.is_none()
+            })
+            .ok_or_else(|| io::Error::other("binary response body was not linked"))?;
+        let legacy_html = payload_refs
+            .iter()
+            .find(|payload| {
+                payload
+                    .browser_effective_charset
+                    .as_deref()
+                    == Some("windows-1252")
+            })
+            .ok_or_else(|| io::Error::other("legacy-charset HTML response body was not linked"))?;
+        assert_eq!(legacy_html.document_kind, Some(NetworkPayloadKind::Html));
+        assert_eq!(
+            legacy_html.projection_basis,
+            Some(surface::NetworkProjectionBasis::RequestsDeclared)
+        );
+        assert_eq!(
+            legacy_html.declared_media_type.as_deref(),
+            Some("text/html; charset=windows-1252")
+        );
+        assert_eq!(legacy_html.browser_effective_mime.as_deref(), Some("text/html"));
+        assert_eq!(
+            legacy_html.browser_effective_charset.as_deref(),
+            Some("windows-1252")
+        );
+        assert_eq!(legacy_html.detected_media_type.as_deref(), Some("text/html"));
+        let sniffed_html = payload_refs
+            .iter()
+            .find(|payload| {
+                payload.declared_media_type.is_none()
+                    && payload.document_kind == Some(NetworkPayloadKind::Html)
+                    && payload.detected_media_type.as_deref() == Some("text/html")
+            })
+            .ok_or_else(|| io::Error::other(format!("missing Content-Type HTML was not sniffed; payloads={payload_refs:?}")))?;
+        assert_eq!(
+            sniffed_html.projection_basis,
+            Some(surface::NetworkProjectionBasis::RequestsSniffed)
+        );
+        assert_eq!(sniffed_html.browser_effective_mime, None);
+        assert_eq!(sniffed_html.browser_effective_charset, None);
+        assert!(sniffed_html.provider_base64_encoded);
+        assert!(!sniffed_html.text_utf8_normalized);
+        let misleading_png = payload_refs
+            .iter()
+            .find(|payload| {
+                payload.declared_media_type.as_deref() == Some("application/octet-stream")
+                    && payload.detected_media_type.as_deref() == Some("image/png")
+            })
+            .ok_or_else(|| io::Error::other("octet-stream PNG response was not linked"))?;
+        assert!(misleading_png.browser_effective_mime.is_some());
+        assert_eq!(misleading_png.detected_media_type.as_deref(), Some("image/png"));
+        assert_eq!(misleading_png.document_kind, Some(NetworkPayloadKind::File));
+        assert_eq!(
+            misleading_png.projection_basis,
+            Some(surface::NetworkProjectionBasis::TypedFileMagic)
+        );
+        assert!(!legacy_html.provider_base64_encoded);
+        assert!(legacy_html.text_utf8_normalized);
+        for reference in [
+            html,
+            json_body,
+            gzip,
+            binary,
+            legacy_html,
+            sniffed_html,
+            misleading_png,
+        ] {
+            let live = surface.network_payload(reference, 8192).await?;
+            let digest = format!("{:x}", Sha256::digest(live.bytes()));
+            assert_eq!(
+                reference.sha256.as_deref(),
+                Some(digest.as_str())
+            );
+        }
+        assert!(binary.provider_base64_encoded);
+        assert_eq!(gzip.byte_provenance, surface::NetworkByteProvenance::CdpDecodedResponseBody);
+        let legacy_live = surface.network_payload(legacy_html, 8192).await?;
+        assert!(legacy_live.bytes().windows("café".len()).any(|window| window == "café".as_bytes()));
+
+        surface.cancel_network().await?;
+        assert!(surface.observe_network().await.is_err());
+        let rearmed = surface.subscribe_network(None).await?;
+        assert!(rearmed.active);
+        let after_cancel = reference(&mut surface, "Start request after capture cancellation").await?;
+        let clicked = surface
+            .execute(json!({"op":"click","reference":after_cancel,"expect":{"kind":"text","text":"post-cancel request complete","present":true}}))
+            .await?;
+        if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+            return Err(io::Error::other("post-cancel request did not complete").into());
+        }
+        let waited = surface.wait_network_event(0, 5_000).await?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            return Err(io::Error::other("rearmed request watcher did not receive an event").into());
+        }
+        let (_, rearmed_window) = surface.observe_network().await?;
+        assert!(!rearmed_window.coverage.instrumentation_escalated);
+        assert!(rearmed_window.coverage.network_was_previously_enabled);
+        assert!(rearmed_window.events.iter().any(|event| matches!(
+            &event.kind,
+            NetworkEventKind::RequestStarted { url, .. }
+                if url.ends_with("/api")
+        )));
+
+        let portable = output.path().join("surface/surface.yosoi");
+        let outcome = surface.close().await?.ok_or_else(|| io::Error::other("network outcome missing"))?;
+        outcome.validate()?;
+        assert!(surface.observe_network().await.is_err());
+        let fresh_work = Box::pin(native.work()).await?;
+        let navigated = fresh_work.navigate(&format!("{}/api", fixture.base)).await?;
+        if navigated.status != OperationStatus::Observed {
+            return Err(io::Error::other("fresh Work could not navigate after network Surface close").into());
+        }
+        fresh_work.release().await?;
+        Ok::<_, Box<dyn Error>>((json_body.clone(), binary.clone(), portable))
+    })
+    .await;
+    let closed = native.close().await;
+    fixture.close().await;
+    let (json_body, binary, portable) = proof?;
+    closed?;
+    fs::remove_dir_all(output.path().join("archive"))?;
+    let fresh = tempfile::tempdir()?;
+    let archive = Archive::open(fresh.path()).await?;
+    let imported = archive.import_file(&portable).await?;
+    let restored = archive.read(&imported).await?;
+    let offline_json = NetworkPayload::from_outcome(&restored, &json_body, 8 * 1024 * 1024)?;
+    assert!(
+        offline_json
+            .bytes()
+            .windows(b"\"api\":true".len())
+            .any(|window| window == b"\"api\":true")
+    );
+    let offline_file = NetworkPayload::from_outcome(&restored, &binary, 8 * 1024 * 1024)?;
+    assert_eq!(offline_file.bytes(), b"\0\xff\x10opaque\0bytes");
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The proof verifies provider buffer limits on one managed browser tab and explicitly closes Session, Work and the local fixture."
+)]
+async fn native_network_skips_compressed_body_over_retention_limit_before_read()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let page = Page::new(vec![
+        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+    ])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let native = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy {
+            operation_timeout_ms: 15_000,
+            ..SessionPolicy::default()
+        })
+        .acquire()
+        .await?;
+    let proof = Box::pin(async {
+        let work = Box::pin(native.work()).await?;
+        let receipt = work
+            .navigate(&format!("{}/bomb-page", fixture.base))
+            .await?;
+        if receipt.status != OperationStatus::Observed {
+            return Err(io::Error::other("compressed-body fixture did not load").into());
+        }
+        let mut surface = BrowserSurface::consume_work(
+            work,
+            SurfacePolicy {
+                network_observation: NetworkObservationPolicy {
+                    retain_bodies: true,
+                    retain_url_path: true,
+                    max_body_bytes: 1024,
+                    max_total_body_bytes: 4096,
+                    ..NetworkObservationPolicy::default()
+                },
+                ..SurfacePolicy::default()
+            },
+        )
+        .await?;
+        let subscription = surface.subscribe_network(None).await?;
+        assert!(subscription.active);
+        let configured = surface.ready()?;
+        assert_eq!(configured["source"]["networkObservation"]["active"], true);
+        hot(&mut surface).await?;
+        let button = reference(&mut surface, "Start compressed body").await?;
+        let result = surface
+            .execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":"compressed response complete","present":true}}))
+            .await?;
+        if result.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+            return Err(io::Error::other("compressed response did not complete in the page").into());
+        }
+        let mut after_sequence = 0_u64;
+        let mut body_reference = None;
+        let mut retained_window = None;
+        for _ in 0..12 {
+            let waited = surface.wait_network_event(after_sequence, 5_000).await?;
+            if waited.get("state").and_then(Value::as_str) != Some("event") {
+                return Err(io::Error::other("compressed response events timed out").into());
+            }
+            after_sequence = waited
+                .get("sequence")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| io::Error::other("network wait omitted sequence"))?;
+            let (_, window) = surface.observe_network().await?;
+            let response_id = window.events.iter().find_map(|event| match &event.kind {
+                NetworkEventKind::ResponseReceived { url, .. } if url.ends_with("/gzip-bomb") => {
+                    Some((event.request_id.clone(), event.hop, event.sequence))
+                }
+                _ => None,
+            });
+            if let Some((request_id, hop, response_sequence)) = response_id
+                && let Some(reference) = window.payloads.iter().find(|payload| {
+                    payload.request_id == request_id
+                        && payload.hop == hop
+                        && payload.response_sequence == response_sequence
+                        && payload.state != NetworkPayloadState::NotRequested
+                })
+            {
+                body_reference = Some(reference.clone());
+                retained_window = Some(window);
+                break;
+            }
+        }
+        let reference = body_reference
+            .ok_or_else(|| io::Error::other("compressed response had no inspectable body state"))?;
+        let window = retained_window
+            .ok_or_else(|| io::Error::other("compressed response window was not retained"))?;
+        assert_eq!(
+            window.retention.provider_resource_buffer_bytes,
+            surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES
+        );
+        assert_eq!(
+            window.retention.provider_total_buffer_bytes,
+            surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES
+        );
+        assert_eq!(window.retention.max_body_bytes, 1024);
+        assert_eq!(window.retention.max_total_body_bytes, 4096);
+        assert_eq!(reference.state, NetworkPayloadState::Unavailable);
+        assert_eq!(reference.retained_bytes, 0);
+        assert!(reference
+            .provider_reported_body_bytes
+            .is_some_and(|bytes| bytes > 1024));
+        assert_eq!(
+            reference.reason.as_deref(),
+            Some("response_body_exceeds_retention_limit_before_read")
+        );
+        assert_eq!(reference.content_encoding.as_deref(), Some("gzip"));
+        surface.cancel_network().await?;
+        surface.close().await?;
+        Ok::<(), Box<dyn Error>>(())
+    })
+    .await;
+    let closed = native.close().await;
+    fixture.close().await;
+    proof?;
+    closed?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The proof asserts session caps, frozen-window reachability, and rearm lifecycle before releasing the native owner."
+)]
+async fn native_network_session_payload_caps_survive_rearms_and_evict_old_references()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let acquisition = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
+    let native = session::new().bind(&acquisition).acquire().await?;
+    let proof = Box::pin(async {
+        let work = Box::pin(native.work()).await?;
+        let navigated = work.navigate(&format!("{}/retention-page", fixture.base)).await?;
+        assert_eq!(navigated.status, OperationStatus::Observed);
+        let mut surface = BrowserSurface::consume_work(work, SurfacePolicy {
+            network_observation: NetworkObservationPolicy {
+                retain_bodies: true, max_windows: 1, max_response_bodies: 1,
+                max_total_body_bytes: 12, allowed_methods: vec!["POST".into()],
+                ..NetworkObservationPolicy::default()
+            }, ..SurfacePolicy::default()
+        }).await?;
+        let mut first_body = None;
+        let mut first_observation = None;
+        for (round, expected_count) in [(1, 0_usize), (2, 1), (3, 0)] {
+            let armed = surface.subscribe_network(None).await?;
+            assert_eq!(armed.session_max_response_bodies, Some(1));
+            assert_eq!(armed.session_max_total_body_bytes, Some(12));
+            assert_eq!(armed.session_retained_response_bodies, Some(expected_count));
+            assert_eq!(armed.session_retained_body_bytes, Some(if expected_count == 0 { 0 } else { 12 }));
+            if round == 1 { hot(&mut surface).await?; }
+            if round == 2 {
+                let reference = first_body.as_ref().ok_or_else(|| io::Error::other("first payload missing"))?;
+                assert_eq!(surface.network_payload(reference, 8192).await?.bytes(), br#"{"api":true}"#);
+            }
+            let button = reference(&mut surface, "Fetch retained JSON").await?;
+            let clicked = surface.execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":format!("retained request {round} complete"),"present":true}})).await?;
+            assert_eq!(clicked.pointer("/receipt/status").and_then(Value::as_str), Some("Confirmed"));
+            let mut sequence = 0;
+            let mut captured = None;
+            let mut post_request = None;
+            for _ in 0..12 {
+                let waited = surface.wait_network_event(sequence, 5_000).await?;
+                assert_eq!(waited.get("state").and_then(Value::as_str), Some("event"));
+                sequence = waited.get("sequence").and_then(Value::as_u64).ok_or_else(|| io::Error::other("network sequence missing"))?;
+                let (observation, window) = surface.observe_network().await?;
+                for event in &window.events {
+                    if matches!(&event.kind, NetworkEventKind::RequestStarted { method, .. } if method == "POST") {
+                        post_request = Some(event.request_id.clone());
+                    }
+                }
+                assert_eq!(window.retention.session_max_response_bodies, Some(1));
+                assert_eq!(window.retention.session_max_total_body_bytes, Some(12));
+                if let Some(payload) = window.payloads.iter().find(|payload| post_request.as_ref() == Some(&payload.request_id) && payload.state != NetworkPayloadState::NotRequested) {
+                    captured = Some((observation, payload.clone()));
+                    break;
+                }
+            }
+            let (observation, payload) = captured.ok_or_else(|| io::Error::other("POST response body state missing"))?;
+            if round == 2 {
+                assert_eq!(payload.state, NetworkPayloadState::Unavailable);
+                assert_eq!(payload.reason.as_deref(), Some("response_body_session_retention_limit"));
+                assert_eq!(payload.retained_bytes, 0);
+                let old_body = first_body.as_ref().ok_or_else(|| io::Error::other("first payload missing"))?;
+                assert!(surface.network_payload(old_body, 8192).await.is_err());
+                let old_observation: &surface::browser::BrowserObservation = first_observation.as_ref().ok_or_else(|| io::Error::other("first observation missing"))?;
+                assert!(surface.read(surface::browser::BrowserRepresentation::Network, surface::model::ReadRequest {
+                    operation: surface::model::ReadOperation::Inspect { reference: old_observation.root.clone() },
+                    budget: surface::Budget::default(), continuation: None,
+                }).await.is_err());
+            } else {
+                assert_eq!(payload.state, NetworkPayloadState::Retained);
+                assert_eq!(surface.network_payload(&payload, 8192).await?.bytes(), br#"{"api":true}"#);
+                if round == 1 {
+                    first_body = Some(payload);
+                    first_observation = Some(observation);
+                }
+            }
+            surface.cancel_network().await?;
+        }
+        surface.close().await?;
+        Ok::<(), Box<dyn Error>>(())
+    }).await;
+    let closed = native.close().await;
+    fixture.close().await;
+    proof?;
+    closed?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The loopback proof asserts overflow metadata and releases the browser owner before the fixture."
+)]
+async fn native_network_event_overflow_is_visible_in_frozen_coverage() -> Result<(), Box<dyn Error>>
+{
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let page = Page::new(vec![
+        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+    ])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let native = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy {
+            operation_timeout_ms: 15_000,
+            ..SessionPolicy::default()
+        })
+        .acquire()
+        .await?;
+    let work = Box::pin(native.work()).await?;
+    let navigated = work.navigate(&format!("{}/network", fixture.base)).await?;
+    if navigated.status != OperationStatus::Observed {
+        return Err(io::Error::other("overflow fixture navigation was not observed").into());
+    }
+    let mut surface = BrowserSurface::consume_work(
+        work,
+        SurfacePolicy {
+            network_observation: NetworkObservationPolicy {
+                max_events: 1,
+                retain_url_path: true,
+                ..NetworkObservationPolicy::default()
+            },
+            ..SurfacePolicy::default()
+        },
+    )
+    .await?;
+    surface.subscribe_network(None).await?;
+    hot(&mut surface).await?;
+    let button = reference(&mut surface, "Start network requests").await?;
+    let clicked = surface
+        .execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":"network requests started","present":true}}))
+        .await?;
+    if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(io::Error::other(format!(
+            "overflow fixture request action was not confirmed: {clicked}"
+        ))
+        .into());
+    }
+    let mut after_sequence = 0_u64;
+    let mut overflow_window = None;
+    for _ in 0..24 {
+        let waited = surface.wait_network_event(after_sequence, 5_000).await?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            break;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("overflow wait omitted sequence"))?;
+        let (_, window) = surface.observe_network().await?;
+        if window.coverage.overflow {
+            overflow_window = Some(window);
+            break;
+        }
+    }
+    let window = overflow_window
+        .ok_or_else(|| io::Error::other("network journal did not report its event cap"))?;
+    assert!(window.coverage.dropped_events > 0);
+    assert!(
+        window
+            .gaps
+            .iter()
+            .any(|gap| gap.reason == "event_retention_limit")
+    );
+    surface.cancel_network().await?;
+    surface.close().await?;
+    native.close().await?;
+    fixture.close().await;
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The loopback proof asserts explicit body omissions and releases the browser owner before the fixture."
+)]
+async fn native_network_body_disabled_keeps_response_link_as_explicit_omission()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let page = Page::new(vec![
+        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+    ])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let native = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy {
+            operation_timeout_ms: 15_000,
+            ..SessionPolicy::default()
+        })
+        .acquire()
+        .await?;
+    let work = Box::pin(native.work()).await?;
+    let navigated = work.navigate(&format!("{}/network", fixture.base)).await?;
+    if navigated.status != OperationStatus::Observed {
+        return Err(io::Error::other("no-body fixture navigation was not observed").into());
+    }
+    let mut surface = BrowserSurface::consume_work(
+        work,
+        SurfacePolicy {
+            network_observation: NetworkObservationPolicy {
+                retain_url_path: true,
+                ..NetworkObservationPolicy::default()
+            },
+            ..SurfacePolicy::default()
+        },
+    )
+    .await?;
+    surface.subscribe_network(Some(false)).await?;
+    hot(&mut surface).await?;
+    let button = reference(&mut surface, "Start network requests").await?;
+    let clicked = surface
+        .execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":"network requests started","present":true}}))
+        .await?;
+    if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(io::Error::other(format!(
+            "no-body fixture request action was not confirmed: {clicked}"
+        ))
+        .into());
+    }
+    let mut after_sequence = 0_u64;
+    let mut omission = None;
+    for _ in 0..24 {
+        let waited = surface.wait_network_event(after_sequence, 5_000).await?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            break;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("no-body wait omitted sequence"))?;
+        let (_, window) = surface.observe_network().await?;
+        let response = window.events.iter().find_map(|event| match &event.kind {
+            NetworkEventKind::ResponseReceived { url, .. } if url.ends_with("/api") => {
+                Some((event.request_id.as_str(), event.hop, event.sequence))
+            }
+            _ => None,
+        });
+        let reference = response.and_then(|(request_id, hop, sequence)| {
+            window
+                .payloads
+                .iter()
+                .find(|payload| {
+                    payload.request_id == request_id
+                        && payload.hop == hop
+                        && payload.response_sequence == sequence
+                })
+                .cloned()
+        });
+        if let Some(reference) = reference {
+            omission = Some((window, reference));
+            break;
+        }
+    }
+    let (_, reference) = omission
+        .ok_or_else(|| io::Error::other("body-disabled response omission was not inspectable"))?;
+    assert_eq!(reference.state, NetworkPayloadState::NotRequested);
+    assert_eq!(reference.reason.as_deref(), Some("body_retention_disabled"));
+    assert!(reference.document_id.is_none());
+    assert!(reference.sha256.is_none());
+    assert_eq!(reference.retained_bytes, 0);
+    assert!(reference.projection_basis.is_none());
+    surface.cancel_network().await?;
+    surface.close().await?;
+    native.close().await?;
+    fixture.close().await;
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The loopback proof asserts authority-loss coverage and reacquires a fresh tab before cleanup."
+)]
+async fn native_network_authority_loss_freezes_coverage_and_releases_the_page()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let page = Page::new(vec![
+        Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+    ])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let native = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy {
+            maximum_tabs: 2,
+            operation_timeout_ms: 15_000,
+            ..SessionPolicy::default()
+        })
+        .acquire()
+        .await?;
+    let tab = native.new_tab().await?;
+    let work = tab.work().await?;
+    let navigated = work.navigate(&format!("{}/network", fixture.base)).await?;
+    if navigated.status != OperationStatus::Observed {
+        return Err(io::Error::other("native network fixture did not load").into());
+    }
+    let mut surface = BrowserSurface::consume_work(
+        work,
+        SurfacePolicy {
+            network_observation: NetworkObservationPolicy::default(),
+            ..SurfacePolicy::default()
+        },
+    )
+    .await?;
+    surface.subscribe_network(None).await?;
+    hot(&mut surface).await?;
+    let stale_button = reference(&mut surface, "Start network requests").await?;
+
+    tab.close().await?;
+    assert!(surface.wait_network_event(0, 5_000).await.is_err());
+    let (_, window) = surface.observe_network().await?;
+    assert!(window.coverage.disconnected);
+    assert!(
+        window
+            .gaps
+            .iter()
+            .any(|gap| gap.reason == "native_work_authority_lost")
+    );
+    assert!(
+        surface
+            .execute(json!({"op":"click","reference":stale_button}))
+            .await
+            .is_err()
+    );
+    surface.close().await?;
+
+    let fresh_tab = native.new_tab().await?;
+    let fresh_work = fresh_tab.work().await?;
+    let navigated = fresh_work
+        .navigate(&format!("{}/api", fixture.base))
+        .await?;
+    if navigated.status != OperationStatus::Observed {
+        return Err(io::Error::other(
+            "fresh Work could not navigate after prior capture authority loss",
+        )
+        .into());
+    }
+    fresh_work.release().await?;
+    fresh_tab.close().await?;
+    native.close().await?;
+    fixture.close().await;
+    Ok(())
+}
+
+#[cfg(feature = "cli")]
+#[tokio::test(flavor = "current_thread")]
+async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let proof = Box::pin(async {
+        let temporary = tempfile::tempdir()?;
+        let policy_file = temporary.path().join("network-policy.json");
+        fs::write(
+            &policy_file,
+            br#"{"retain_bodies":true,"retain_url_path":true,"max_events":256}"#,
+        )?;
+        let output = temporary.path().join("output");
+        let archive = temporary.path().join("archive");
+        let mut child = Command::new(env!("CARGO_BIN_EXE_yosoi"))
+            .args(["surface", "native-web", "--url"])
+            .arg(format!("{}/network", fixture.base))
+            .args(["--headless", "--network-bodies", "--output"])
+            .arg(&output)
+            .arg("--archive")
+            .arg(&archive)
+            .arg("--network-policy")
+            .arg(&policy_file)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()?;
+        let input = child
+            .stdin
+            .take()
+            .ok_or_else(|| io::Error::other("native Surface CLI stdin is unavailable"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| io::Error::other("native Surface CLI stdout is unavailable"))?;
+        let child = Arc::new(Mutex::new(child));
+        let diagnostics = Arc::new(Mutex::new(CliDiagnostics::default()));
+        let worker = spawn_blocking({
+            let base = fixture.base.clone();
+            let diagnostics = Arc::clone(&diagnostics);
+            move || run_native_network_cli(input, stdout, &base, &diagnostics)
+        });
+        let mut worker = worker;
+        let proof_result = match timeout(Duration::from_secs(60), &mut worker).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(error)) => {
+                if let Ok(mut child) = child.lock() {
+                    let _ = child.kill();
+                }
+                let child_for_wait = Arc::clone(&child);
+                let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
+                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+                return Err(io::Error::other(error.to_string()).into());
+            }
+            Err(_) => {
+                if let Ok(mut child) = child.lock() {
+                    let _ = child.kill();
+                }
+                let _ = timeout(Duration::from_secs(5), &mut worker).await;
+                let child_for_wait = Arc::clone(&child);
+                let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
+                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+                return Err(io::Error::other(format!(
+                    "native network CLI proof exceeded its timeout: {}",
+                    cli_diagnostic_summary(&diagnostics)
+                ))
+                .into());
+            }
+        };
+        if let Err(error) = proof_result {
+            if let Ok(mut child) = child.lock() {
+                let _ = child.kill();
+            }
+            let child_for_wait = Arc::clone(&child);
+            let waiter = spawn_blocking(move || child_wait(&child_for_wait));
+            let _ = timeout(Duration::from_secs(5), waiter).await;
+            return Err(io::Error::other(error.to_string()).into());
+        }
+        let child_for_wait = Arc::clone(&child);
+        let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
+        let status = if let Ok(joined) = timeout(Duration::from_secs(15), &mut waiter).await {
+            joined
+                .map_err(|error| io::Error::other(error.to_string()))?
+                .map_err(|error| io::Error::other(error.to_string()))?
+        } else {
+            if let Ok(mut child) = child.lock() {
+                let _ = child.kill();
+            }
+            let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+            return Err(io::Error::other("native network CLI did not shut down").into());
+        };
+        if !status.success() {
+            return Err(
+                io::Error::other(format!("native network CLI exited with {status}")).into(),
+            );
+        }
+        if !output.join("surface.yosoi").is_file() {
+            return Err(io::Error::other(
+                "native network CLI omitted its portable Archive outcome",
+            )
+            .into());
+        }
+        Ok::<(), Box<dyn Error>>(())
+    })
+    .await;
+    fixture.close().await;
+    proof?;
     Ok(())
 }
 

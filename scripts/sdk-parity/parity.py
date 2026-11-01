@@ -15,6 +15,7 @@ import hashlib
 import importlib
 import inspect
 import json
+import math
 import pkgutil
 import re
 import sys
@@ -961,6 +962,7 @@ def introspect_python_package(
             sys.path.remove(python_root_entry)
 
     candidates: dict[int, tuple[Any, set[str], str]] = {}
+    module_constants: dict[str, Any] = {}
     for module in modules:
         module_name = module.__name__
         exported = set(getattr(module, "__all__", ()))
@@ -968,6 +970,12 @@ def introspect_python_package(
             if name.startswith("_"):
                 continue
             target = f"{module_name}.{name}"
+            if name.isupper() and type(value) in {str, int, float, bool, type(None)}:
+                if not isinstance(value, float) or math.isfinite(value):
+                    # Equal primitive values do not make independently named
+                    # constants aliases (for example, two distinct byte caps).
+                    module_constants[target] = value
+                continue
             is_module = isinstance(
                 value, types.ModuleType
             ) and value.__name__.startswith(f"{package_name}.")
@@ -1085,6 +1093,21 @@ def introspect_python_package(
                     "value": enum_value["value"],
                 }
 
+    for target, value in sorted(module_constants.items()):
+        description = {
+            "kind": "module-constant",
+            "canonicalTarget": target,
+            "value": value,
+        }
+        targets[target] = description
+        objects.append(
+            {
+                "target": target,
+                "kind": "module-constant",
+                "aliases": [target],
+                "value": value,
+            }
+        )
     _add_union_properties(targets)
     objects.sort(key=lambda item: item["target"])
     surface_material = {
@@ -1910,7 +1933,7 @@ def _concrete_model_behavior_problem(
         if suffix == ".py":
             pattern = rf"^\s*(?:async\s+)?def\s+{re.escape(test)}\s*\("
         elif suffix == ".rs":
-            pattern = rf"^\s*(?:pub\s+)?fn\s+{re.escape(test)}\s*\("
+            pattern = rf"^\s*(?:pub\s+)?(?:async\s+)?fn\s+{re.escape(test)}\s*\("
         else:
             return "concrete-model behavior evidence must link Python or Rust tests"
         if re.search(pattern, content, re.MULTILINE) is None:

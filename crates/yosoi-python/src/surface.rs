@@ -99,6 +99,10 @@ pub struct NativeSurface {
 
 #[pymethods]
 impl NativeSurface {
+    fn is_network_observation(&self) -> bool {
+        self.inner.is_network_observation()
+    }
+
     #[new]
     fn new(py: Python<'_>, document: &NativeDocument, limits: &str) -> PyResult<Self> {
         let limits = decode(limits)?;
@@ -723,7 +727,40 @@ impl NativeWebSurface {
     }
 }
 
+#[pyfunction]
+fn surface_network_policy_validate(value: &str) -> PyResult<()> {
+    let policy: surface::NetworkObservationPolicy = decode(value)?;
+    policy.validate().map_err(failure)
+}
+
+#[pyfunction]
+fn surface_network_policy_retention(value: &str) -> PyResult<String> {
+    let policy: surface::NetworkObservationPolicy = decode(value)?;
+    encode(&policy.retention())
+}
+
+#[pyfunction]
+fn surface_network_window_validate(value: &str) -> PyResult<()> {
+    let window: surface::NetworkWindow = decode(value)?;
+    window.validate().map_err(failure)
+}
+
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add(
+        "NETWORK_OBSERVATION_SCHEMA",
+        surface::NETWORK_OBSERVATION_SCHEMA,
+    )?;
+    module.add(
+        "NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES",
+        surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+    )?;
+    module.add(
+        "NETWORK_PROVIDER_TOTAL_BUFFER_BYTES",
+        surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
+    )?;
+    module.add_function(wrap_pyfunction!(surface_network_policy_validate, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_network_policy_retention, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_network_window_validate, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_new, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_file_document, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_capture, module)?)?;

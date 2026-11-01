@@ -15,6 +15,15 @@ mod document_policy;
 mod image_session;
 mod images;
 pub use document_policy::{DocumentPolicies, DocumentPolicy};
+pub mod network;
+pub use network::{
+    NETWORK_OBSERVATION_SCHEMA, NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+    NETWORK_PROVIDER_TOTAL_BUFFER_BYTES, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
+    NetworkEventKind, NetworkGap, NetworkHeader, NetworkInFlight, NetworkObservation,
+    NetworkObservationPolicy, NetworkPayload, NetworkPayloadKind, NetworkPayloadRef,
+    NetworkPayloadState, NetworkPayloadValue, NetworkProjectionBasis, NetworkProviderClock,
+    NetworkRetention, NetworkSubscription, NetworkWindow,
+};
 pub mod model;
 mod outcome;
 pub mod pixels;
@@ -47,7 +56,7 @@ pub use session::*;
 
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 use crate::documents::ImageDocument;
-use crate::documents::{Document, DocumentId, DocumentProfile};
+use crate::documents::{Document, DocumentId, DocumentProfile, DocumentSchemaProfile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -512,6 +521,18 @@ impl Surface {
     /// Returns declared source coverage.
     pub fn coverage(&self) -> &Coverage {
         &self.data.coverage
+    }
+    /// Returns whether this index was prepared from the explicit network-window profile.
+    ///
+    /// Ordinary source JSON remains JSON even if its values happen to resemble
+    /// a network observation envelope.
+    pub fn is_network_observation(&self) -> bool {
+        matches!(
+            &self.data.original,
+            Some(Original::Document { profile, .. })
+                if profile.schema()
+                    == DocumentSchemaProfile::YosoiNetworkObservationV1
+        )
     }
     /// Returns the document/root evidence reference.
     pub fn root(&self) -> Reference {

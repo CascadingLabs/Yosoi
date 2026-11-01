@@ -1,8 +1,10 @@
 //! JSON-lines transport over the public Surface runtime.
 use clap::{Args, Subcommand, ValueEnum};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     error::Error,
+    fs,
     io::{self, BufRead, Read},
     path::PathBuf,
     process::ExitCode,
@@ -18,13 +20,20 @@ use tokio::{
     sync::mpsc::{Receiver, channel},
 };
 use yosoi::archive::PixelArtifactArchiveRef;
-use yosoi::documents::{Document, DocumentEpoch};
+use yosoi::documents::{Document, DocumentEpoch, DocumentSchemaProfile};
 use yosoi::surface::{
     ArchivePolicy, DocumentPolicies, DocumentPolicy, ImageSession, Limits as SurfaceLimits,
-    PixelLimits, Surface, SurfaceConnection, SurfacePolicy, archive as surface_archive,
+    NetworkPayloadRef, NetworkPayloadState, NetworkWindow, PixelLimits, Surface, SurfaceConnection,
+    SurfacePolicy, archive as surface_archive,
     browser::{BrowserSurface, WebSurface, archive as browser_archive},
     model::{ReadRequest, SourceId, SurfaceRead},
     video::VideoSession,
+};
+use yosoi::{
+    Archive,
+    automation_record::OperationStatus,
+    policy::{Acquisition, BrowserMode, Page, Policy},
+    session::{self, SessionPolicy},
 };
 type Result<T> = StdResult<T, Box<dyn Error + Send + Sync>>;
 #[derive(Debug, Args)]
@@ -83,6 +92,27 @@ enum SurfaceCommand {
         #[arg(long)]
         archive: Option<PathBuf>,
     },
+    /// Open a managed native Session with qualified Chrome CDP event support.
+    NativeWeb {
+        /// Initial HTTP(S) document to open in the managed native Session.
+        #[arg(long)]
+        url: String,
+        /// Launch regular Chrome or Chromium headlessly.
+        #[arg(long)]
+        headless: bool,
+        /// Local evidence directory; stores trace.json and rejected captures.
+        #[arg(long, default_value = ".local/surface-native-session")]
+        output: PathBuf,
+        /// Enable archive policy, checkpoint each command, and export output/surface.yosoi on close.
+        #[arg(long)]
+        archive: Option<PathBuf>,
+        /// Allow opt-in network subscriptions to retain bounded response bodies.
+        #[arg(long)]
+        network_bodies: bool,
+        /// JSON file with NetworkObservationPolicy filters, redaction and independent bounds.
+        #[arg(long)]
+        network_policy: Option<PathBuf>,
+    },
     /// Explore an immutable local video through the shared bounded read protocol.
     Video {
         #[arg(long)]
@@ -135,6 +165,21 @@ enum SurfaceCommand {
         /// Optional output directory for archived video PNG evidence.
         #[arg(long)]
         output: Option<PathBuf>,
+    },
+    /// Restore one retained network payload from a portable Surface outcome, offline.
+    Payload {
+        /// Portable `.yosoi` file produced by a recorded network run.
+        #[arg(long)]
+        record: PathBuf,
+        /// Payload id copied from a NetworkPayloadRef in the archived NetworkWindow.
+        #[arg(long)]
+        id: String,
+        /// Destination file for the exact restored Document or FileDocument bytes.
+        #[arg(long)]
+        file: PathBuf,
+        /// Maximum restored source bytes.
+        #[arg(long, default_value_t = 67108864)]
+        max_bytes: u64,
     },
     /// Repeat recorded click intentions with fresh references and a fresh session per iteration.
     Repeat {
@@ -244,6 +289,126 @@ async fn drive(mut surface: impl SurfaceConnection) -> Result<()> {
     closed?;
     Ok(())
 }
+async fn drive_native(
+    url: String,
+    headless: bool,
+    output: PathBuf,
+    archive: Option<PathBuf>,
+    retain_network_bodies: bool,
+    network_policy_file: Option<PathBuf>,
+) -> Result<()> {
+    let mut surface_policy = policy(output, archive);
+    if let Some(path) = network_policy_file {
+        surface_policy.network_observation = serde_json::from_slice(&fs::read(path)?)?;
+    }
+    if retain_network_bodies {
+        surface_policy.network_observation.retain_bodies = true;
+    }
+    surface_policy.network_observation.validate()?;
+    let browser_mode = if headless {
+        BrowserMode::Headless
+    } else {
+        BrowserMode::Headful
+    };
+    let acquisition_policy = Policy {
+        page: Page::new(vec![Acquisition::Browser(browser_mode)])?,
+        ..Policy::default()
+    };
+    let session = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy::default())
+        .acquire()
+        .await?;
+    let result = Box::pin(drive_native_work(&session, &url, surface_policy)).await;
+    let closed = session.close().await;
+    drop(session);
+    result?;
+    closed?;
+    Ok(())
+}
+
+async fn drive_native_work(
+    session: &session::Session,
+    url: &str,
+    surface_policy: SurfacePolicy,
+) -> Result<()> {
+    let work = session.work().await?;
+    let receipt = work.navigate(url).await?;
+    if receipt.status != OperationStatus::Observed {
+        drop(work);
+        return Err(
+            io::Error::other("native browser did not observe its initial navigation").into(),
+        );
+    }
+    Box::pin(drive(
+        BrowserSurface::consume_work(work, surface_policy).await?,
+    ))
+    .await
+}
+
+async fn export_network_payload(
+    record: PathBuf,
+    id: String,
+    file: PathBuf,
+    max_bytes: u64,
+) -> Result<()> {
+    if id.is_empty() || id.len() > 1024 || max_bytes == 0 {
+        return Err(io::Error::other("network payload id and byte limit must be nonempty").into());
+    }
+    let temporary = tempfile::tempdir()?;
+    let archive = Archive::open(temporary.path()).await?;
+    let reference = archive.import_file(record).await?;
+    let outcome = archive.read(&reference).await?;
+    let mut payload_reference: Option<NetworkPayloadRef> = None;
+    for source in &outcome.sources {
+        if source.profile.is_none_or(|profile| {
+            profile.schema() != DocumentSchemaProfile::YosoiNetworkObservationV1
+        }) {
+            continue;
+        }
+        let document = source.restore(max_bytes)?;
+        let window = NetworkWindow::from_document(&document)?;
+        if let Some(payload) = window.payloads.iter().find(|payload| {
+            payload.id == id
+                && matches!(
+                    payload.state,
+                    NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+                )
+        }) {
+            payload_reference = Some(payload.clone());
+            break;
+        }
+    }
+    let payload_reference = payload_reference.ok_or_else(|| {
+        io::Error::other("retained network payload id is absent from the outcome")
+    })?;
+    if payload_reference.document_id.as_deref() != Some(id.as_str()) {
+        return Err(io::Error::other("network payload source key does not match its id").into());
+    }
+    let source = outcome
+        .sources
+        .iter()
+        .find(|source| source.key == payload_reference.id)
+        .ok_or_else(|| io::Error::other("network payload source is absent from the outcome"))?;
+    let bytes = if source.file_kind.is_some() {
+        outcome
+            .source_file_document(&id, max_bytes)?
+            .bytes()
+            .to_vec()
+    } else if source.profile.is_some() {
+        outcome.source_document(&id, max_bytes)?.bytes().to_vec()
+    } else {
+        return Err(
+            io::Error::other("network payload source has no supported Document kind").into(),
+        );
+    };
+    fs::write(&file, &bytes)?;
+    println!(
+        "{}",
+        json!({"payload_id":id,"file":file,"bytes":bytes.len(),"sha256":format!("{:x}", Sha256::digest(&bytes)),"declared_media_type":payload_reference.declared_media_type,"mode":"offline"})
+    );
+    Ok(())
+}
 
 fn document_value(
     reader: &impl SurfaceRead,
@@ -252,7 +417,7 @@ fn document_value(
     outer_budget: usize,
 ) -> Result<Value> {
     match operation {
-        "describe" | "status" => Ok(serde_json::json!({
+        "describe" | "status" => Ok(json!({
             "descriptor": reader.descriptor(),
             "observation": reader.observation(),
             "root": reader.root_reference(),
@@ -271,7 +436,7 @@ fn document_value(
                 .min(65_536);
             Ok(serde_json::to_value(reader.read(&request)?)?)
         }
-        "close" => Ok(serde_json::json!({"closing": true})),
+        "close" => Ok(json!({"closing": true})),
         _ => Err(io::Error::other(
             "immutable document reader supports describe and read only; use a live browser binding for actions",
         )
@@ -280,7 +445,7 @@ fn document_value(
 }
 
 async fn drive_document(reader: WebSurface) -> Result<()> {
-    let ready = serde_json::json!({
+    let ready = json!({
         "event": "ready",
         "descriptor": reader.descriptor(),
         "observation": reader.observation(),
@@ -471,6 +636,24 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             ))
             .await
         }
+        SurfaceCommand::NativeWeb {
+            url,
+            headless,
+            output,
+            archive,
+            network_bodies,
+            network_policy,
+        } => {
+            Box::pin(drive_native(
+                url,
+                headless,
+                output,
+                archive,
+                network_bodies,
+                network_policy,
+            ))
+            .await
+        }
         SurfaceCommand::Video {
             file,
             output,
@@ -546,6 +729,12 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             println!("{}", serde_json::to_string(&value)?);
             Ok(())
         }
+        SurfaceCommand::Payload {
+            record,
+            id,
+            file,
+            max_bytes,
+        } => export_network_payload(record, id, file, max_bytes).await,
         SurfaceCommand::Export { record, file } => surface_archive::export(&record, &file)
             .await
             .map_err(Into::into),

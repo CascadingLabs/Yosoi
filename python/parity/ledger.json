@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "b15927a1abd2403203155a476696a983975e9038",
-    "inventorySignature": "72cb0c45bc17e45645d385cd0702b1c5f5120a87d2b4c35506f7bb161d82a35b",
-    "featureProfileDigest": "8975bd7231ffd51613e3fd2865ac6182651410161d82efb253b76db14d1a0f5d"
+    "sourceRevision": "1b1ef091fcfbb69027756f15de32cef5312c69e9",
+    "inventorySignature": "2a8eda5e2e16294099bcb4be104f5cffb4d42ead534cff76b1008a8959a4dd92",
+    "featureProfileDigest": "b254e1fdf9e6f317e099d345e015017d5cf0323adb8e73de9b970dbe4916c270"
   },
   "pythonPin": {
-    "surfaceDigest": "a361bdb1b975ae96f736190dc81dce6fb18f58986c2775fd40290ca80705492a",
-    "implementationDigest": "adeae724792acacf4e1913a271913bca666cbd224a5b843df864883b4e1d880e"
+    "surfaceDigest": "85ba9dab572e127b9c84ca240cffd9901fb970d15fb403fda1a382148ccae322",
+    "implementationDigest": "cd6e6efad9524ae8d22406a8adc1b6fe4cc3a7fa7d297388381c2063ac3eacb6"
   },
   "entries": [
     {
@@ -35216,7 +35216,7 @@
     },
     {
       "rustPath": "yosoi::DocumentProfile::network_observation_v1",
-      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:131a0590ef06ad73cec79255deb8d102d8aa6f20a5afa14fbcc4e65df0535f80",
+      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:5c7d8ae74ad01c68b2dd28e50b12bf890924e083c256850584cc3437d4f1a5d1",
       "decision": "mapped",
       "pythonTarget": "yosoi.documents.DocumentProfile.network_observation",
       "argumentMappings": [],

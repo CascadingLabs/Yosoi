@@ -29,6 +29,9 @@ required-features = ["browser"]
 name = "image_surface_conformance"
 required-features = ["surface-images"]
 
+[[example]]
+name = "network_conformance"
+
 [features]
 default = []
 surface-images = ["dep:image"]
