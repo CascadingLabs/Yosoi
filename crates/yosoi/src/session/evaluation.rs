@@ -49,14 +49,19 @@ impl Work {
         target: &JsTarget,
         snapshot: &JavaScriptSourceSnapshot,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, "")?;
         snapshot
             .validate(self.session.settings().maximum_input_bytes)
             .map_err(|_| SessionError::InvalidInput)?;
         self.authorize(ActionKind::Evaluate, snapshot.source())?;
-        self.evaluate_authorized_targeted(target, snapshot.source(), "evaluate_file")
-            .await
+        self.evaluate_authorized_targeted(
+            target,
+            snapshot.source(),
+            "evaluate_file",
+            operation.id(),
+        )
+        .await
     }
 
     /// Executes a retained local module bundle on the current main frame and world.
@@ -80,7 +85,7 @@ impl Work {
         target: &JsTarget,
         bundle: &JavaScriptModuleBundle,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, "")?;
         if target.world == JsWorld::Isolated {
             return Err(SessionError::Unsupported("isolated JavaScript world"));
@@ -90,7 +95,7 @@ impl Work {
             self.session.settings().maximum_input_bytes,
         )?;
         self.authorize(ActionKind::Evaluate, "")?;
-        self.evaluate_authorized_targeted(target, &source, "evaluate_module")
+        self.evaluate_authorized_targeted(target, &source, "evaluate_module", operation.id())
             .await
     }
 
@@ -100,9 +105,9 @@ impl Work {
         source: &str,
         kind: &'static str,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Evaluate, source)?;
-        self.evaluate_authorized_targeted(target, source, kind)
+        self.evaluate_authorized_targeted(target, source, kind, operation.id())
             .await
     }
 
@@ -111,6 +116,7 @@ impl Work {
         target: &JsTarget,
         source: &str,
         kind: &'static str,
+        operation_id: &str,
     ) -> Result<OperationReceipt, SessionError> {
         if target.world == JsWorld::Isolated {
             return Err(SessionError::Unsupported("isolated JavaScript world"));
@@ -136,6 +142,13 @@ impl Work {
                     Some(pattern.as_str())
                 }
             };
+            super::evidence::capture_before(
+                self,
+                operation_id,
+                None,
+                target.expected_document_epoch,
+            )
+            .await;
             let result = self
                 .call(self.control.evaluate_json_in(source, frame))
                 .await
@@ -151,11 +164,12 @@ impl Work {
                     }
                     Ok(value)
                 });
-            self.receipt(kind, result).await
+            self.receipt_with_id(operation_id.to_owned(), kind, result, None)
+                .await
         }
         #[cfg(not(feature = "browser"))]
         {
-            let _ = (source, kind);
+            let _ = (source, kind, operation_id);
             Err(SessionError::BrowserFeatureDisabled)
         }
     }

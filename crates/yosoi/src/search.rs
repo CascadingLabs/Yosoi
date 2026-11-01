@@ -1,5 +1,6 @@
 //! Find candidate URLs and inspect each provider's bounded, typed outcome.
 
+#[path = "search/diagnostics.rs"]
 mod diagnostics;
 pub use diagnostics::{SearchReplay, SearchReplayError, replay_document};
 

@@ -19,7 +19,14 @@ from pydantic import (
 
 from . import _native
 from ._models import ImmutableModel
-from .browser import FlowOutcome, Observation, OperationReceipt, SessionPolicy
+from .browser import (
+    FlowOutcome,
+    Observation,
+    OperationReceipt,
+    RecordingOutcome,
+    SessionEvidence,
+    SessionPolicy,
+)
 from .documents import (
     AudioDocument,
     BinaryDocument,
@@ -271,6 +278,75 @@ class Archive:
     def root(self) -> Path:
         """Return the canonical absolute root without opening a file."""
         return Path(self._handle.root)
+
+    async def _write_session_evidence(
+        self, value: SessionEvidence
+    ) -> DocumentArchiveRef:
+        """Persist one typed screenshot snapshot and its exact image documents."""
+        entries = []
+        documents = []
+        for entry in value.entries:
+            capture = entry.capture
+            entries.append(
+                {
+                    "operation_id": entry.operation_id,
+                    "phase": entry.phase,
+                    "capture": (
+                        None
+                        if capture is None
+                        else capture.model_dump(mode="json", exclude={"document"})
+                    ),
+                    "gap": entry.gap,
+                }
+            )
+            if capture is not None:
+                documents.append(capture.document._handle)
+        metadata = {
+            "entries": entries,
+            "retained_bytes": value.retained_bytes,
+            "maximum_bytes": value.maximum_bytes,
+            "omitted_entries": value.omitted_entries,
+        }
+        reference = await self._handle.write_session_evidence(
+            json.dumps(metadata), documents
+        )
+        return DocumentArchiveRef(value=reference)
+
+    async def _read_session_evidence(
+        self, reference: str
+    ) -> tuple[str, list[_native.FileDocument]]:
+        """Restore a screenshot manifest and ordered native image payload owners."""
+        return await self._handle.read_session_evidence(reference)
+
+    async def _write_recording_outcome(
+        self, value: RecordingOutcome
+    ) -> DocumentArchiveRef:
+        """Persist one typed recording manifest and its exact video documents."""
+        metadata = {
+            "id": value.id,
+            "source": value.source.model_dump(mode="json"),
+            "segments": [
+                segment.model_dump(mode="json", exclude={"document"})
+                for segment in value.segments
+            ],
+            "gaps": [gap.model_dump(mode="json") for gap in value.gaps],
+            "actions": [action.model_dump(mode="json") for action in value.actions],
+            "lost_action_events": value.lost_action_events,
+            "stopped_at_unix_ms": value.stopped_at_unix_ms,
+            "stop_reason": value.stop_reason,
+            "complete": value.complete,
+        }
+        documents = [segment.document._handle for segment in value.segments]
+        reference = await self._handle.write_recording_outcome(
+            json.dumps(metadata), documents
+        )
+        return DocumentArchiveRef(value=reference)
+
+    async def _read_recording_outcome(
+        self, reference: str
+    ) -> tuple[str, list[_native.FileDocument]]:
+        """Restore a recording manifest and ordered native video payload owners."""
+        return await self._handle.read_recording_outcome(reference)
 
     @overload
     async def write(self, value: Document) -> DocumentArchiveRef: ...

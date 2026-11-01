@@ -3,17 +3,14 @@ use super::network::{CapturedNetworkBody, NetworkBodyCandidate, NetworkCapture};
 use super::network_payloads::NetworkPayloadStore;
 use crate::{
     automation_record::OperationStatus,
-    documents::{
-        Document, DocumentEpoch, FileDocument, FileLimits, FileMetadata, ImageDocument,
-        file_from_bytes,
-    },
+    documents::{Document, DocumentEpoch, FileDocument, FileLimits, FileMetadata, file_from_bytes},
     internal::browser::page::SurfaceInput,
     internal::web_capture::{
         CharsetDeclaration, ClassificationBasis, ClassificationExtent, DeclarationDisagreement,
         MediaDeclaration, SourceClassificationOutcome, SourceFormat, SourceMediaType, XmlProfile,
         classify_source_bytes, parse_media_declaration,
     },
-    session::{ActionKind, Work},
+    session::{ActionKind, ScreenshotCaptureMetadata, ScreenshotOptions, Work},
     surface::{
         DocumentPolicies, DocumentPolicy, NETWORK_OBSERVATION_SCHEMA, NetworkObservationPolicy,
         NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue,
@@ -666,8 +663,8 @@ impl NativeBrowser {
         Ok((index, document, location))
     }
 
-    pub async fn input(&self, input: SurfaceInput) -> Result<String> {
-        let receipt = self.work()?.surface_input(&input).await?;
+    pub async fn input(&self, input: SurfaceInput, capture_epoch: u64) -> Result<String> {
+        let receipt = self.work()?.surface_input(&input, capture_epoch).await?;
         if receipt.status != OperationStatus::Observed {
             return Err(io::Error::other(format!(
                 "native Surface dispatch {:?}: {:?}",
@@ -690,33 +687,28 @@ impl NativeBrowser {
         Ok(receipt.id)
     }
 
-    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
-        let receipt = self.work()?.screenshot().await?;
-        if receipt.status != OperationStatus::Observed {
-            return Err(io::Error::other("native screenshot did not complete").into());
-        }
-        let bytes = receipt
-            .observation
-            .and_then(|value| value.screenshot)
-            .ok_or_else(|| io::Error::other("native screenshot evidence missing"))?;
+    pub async fn screenshot_capture_artifact(
+        &self,
+    ) -> Result<(PixelArtifact, ScreenshotCaptureMetadata)> {
         let pixel_limits = PixelLimits::default().validate()?;
         let max_bytes = u64::try_from(pixel_limits.max_output_bytes)
             .map_err(|_| io::Error::other("native screenshot byte limit is unsupported"))?;
-        let document = ImageDocument::from_bytes_with_limits(
-            format!("surface-screenshot-{}", receipt.id),
-            bytes,
-            FileLimits::new(max_bytes)?,
-        )?;
-        let dimensions = ImageReader::new(Cursor::new(document.bytes()))
+        let capture = self
+            .work()?
+            .screenshot_with(ScreenshotOptions::default().max_bytes(max_bytes))
+            .await?;
+        let metadata = capture.metadata;
+        let dimensions = ImageReader::new(Cursor::new(capture.document.bytes()))
             .with_guessed_format()?
             .into_dimensions()?;
-        PixelArtifact::from_image_document(
-            document,
+        let artifact = PixelArtifact::from_image_document(
+            capture.document,
             dimensions.0,
             dimensions.1,
             PixelOrientation::ExifUnapplied,
         )
-        .map_err(|error| io::Error::other(error.to_string()).into())
+        .map_err(|error| io::Error::other(error.to_string()))?;
+        Ok((artifact, metadata))
     }
 
     pub async fn close(&mut self) -> Result<()> {

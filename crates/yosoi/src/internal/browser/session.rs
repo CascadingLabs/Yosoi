@@ -288,6 +288,7 @@ pub struct BrowserSessionBuilder {
     mode: BrowserMode,
     stealth: StealthConfig,
     extra_args: Vec<String>,
+    process_env: Vec<(String, String)>,
     chrome_executable: Option<String>,
     proxy: Option<String>,
     no_sandbox: bool,
@@ -310,6 +311,7 @@ impl Default for BrowserSessionBuilder {
             mode: BrowserMode::Headless,
             stealth: StealthConfig::chrome_like(),
             extra_args: Vec::new(),
+            process_env: Vec::new(),
             chrome_executable: None,
             proxy: None,
             no_sandbox: false,
@@ -358,6 +360,12 @@ impl BrowserSessionBuilder {
     /// it reduces security and stability.
     pub fn arg(mut self, arg: impl Into<String>) -> Self {
         self.extra_args.push(arg.into());
+        self
+    }
+
+    /// Sets one environment variable for the launched browser process only.
+    pub fn env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.process_env.push((key.into(), value.into()));
         self
     }
 
@@ -450,6 +458,7 @@ impl BrowserSessionBuilder {
             self.mode,
             self.stealth,
             self.extra_args,
+            self.process_env,
             self.chrome_executable,
             self.proxy,
             self.no_sandbox,
@@ -615,6 +624,7 @@ impl BrowserSession {
         mode: BrowserMode,
         stealth: StealthConfig,
         extra_args: Vec<String>,
+        process_env: Vec<(String, String)>,
         chrome_executable: Option<String>,
         proxy: Option<String>,
         no_sandbox: bool,
@@ -690,6 +700,9 @@ impl BrowserSession {
                 }
 
                 builder = builder.chrome_executable(&chrome_executable);
+                for (key, value) in &process_env {
+                    builder = builder.env(key, value);
+                }
 
                 if no_sandbox {
                     builder = builder.no_sandbox();

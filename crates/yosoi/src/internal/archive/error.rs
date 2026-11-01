@@ -8,11 +8,11 @@ use crate::internal::web_capture::{CaptureBundleError, WebArtifactRef, WebCaptur
 use thiserror::Error;
 use tokio::task::JoinError;
 
+use crate::documents::FileDocumentError;
 use crate::internal::archive::{
     ArchiveRefError, ContractRunRecordError, EvaluationRunError, LocatorRunRecordError,
     RequestRunRecordError,
 };
-use crate::internal::media_documents::FileDocumentError;
 
 /// Typed failures from the local Archive boundary.
 #[derive(Debug, Error)]

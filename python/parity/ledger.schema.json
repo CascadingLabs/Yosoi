@@ -3,27 +3,96 @@
   "$id": "https://yosoi.dev/schemas/python-rust-sdk-parity-ledger-v1.json",
   "title": "Yosoi Python/Rust SDK parity ledger",
   "type": "object",
-  "required": ["schemaVersion", "kind", "sourcePin", "pythonPin", "entries"],
+  "required": [
+    "schemaVersion",
+    "kind",
+    "sourcePin",
+    "pythonPin",
+    "entries"
+  ],
   "properties": {
-    "surfaceContract": {"const": "surface-contract.json"},
-    "schemaVersion": {"const": 1},
-    "kind": {"const": "python-rust-sdk-parity-ledger"},
+    "surfaceContract": {
+      "const": "surface-contract.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "python-rust-sdk-parity-ledger"
+    },
     "sourcePin": {
       "type": "object",
-      "required": ["sourceRevision", "inventorySignature", "featureProfileDigest"],
+      "required": [
+        "sourceRevision",
+        "inventorySignature",
+        "featureProfileDigest"
+      ],
       "properties": {
-        "sourceRevision": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{40}$"}, {"type": "null"}]},
-        "inventorySignature": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]},
-        "featureProfileDigest": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}
+        "sourceRevision": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inventorySignature": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "featureProfileDigest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
       },
       "additionalProperties": false
     },
     "pythonPin": {
       "type": "object",
-      "required": ["surfaceDigest", "implementationDigest"],
+      "required": [
+        "surfaceDigest",
+        "implementationDigest"
+      ],
       "properties": {
-        "surfaceDigest": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]},
-        "implementationDigest": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}
+        "surfaceDigest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "implementationDigest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
       },
       "additionalProperties": false
     },
@@ -31,151 +100,415 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["rustPath", "decision", "argumentMappings", "defaults", "units", "cardinality"],
+        "required": [
+          "rustPath",
+          "decision",
+          "argumentMappings",
+          "defaults",
+          "units",
+          "cardinality"
+        ],
         "properties": {
-          "rustPath": {"type": "string", "minLength": 1},
-          "symbolKey": {"type": "string", "minLength": 1},
-          "trait": {"type": "string", "minLength": 1},
-          "decision": {"enum": ["mapped", "language-specific"]},
-          "mappingDirection": {"enum": ["input", "output"]},
-          "pythonTarget": {"type": "string", "minLength": 1},
-          "semanticEquivalent": {"type": "string", "minLength": 1},
-          "fixedArguments": {"type": "object", "additionalProperties": true},
+          "rustPath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbolKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trait": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "enum": [
+              "mapped",
+              "language-specific"
+            ]
+          },
+          "mappingDirection": {
+            "enum": [
+              "input",
+              "output"
+            ]
+          },
+          "pythonTarget": {
+            "type": "string",
+            "minLength": 1
+          },
+          "semanticEquivalent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fixedArguments": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "receiverMapping": {
             "type": "object",
-            "required": ["rustArgument", "pythonArgument", "conversion"],
+            "required": [
+              "rustArgument",
+              "pythonArgument",
+              "conversion"
+            ],
             "properties": {
-              "rustArgument": {"type": "string", "minLength": 1},
-              "pythonArgument": {"type": "string", "minLength": 1},
-              "conversion": {"type": "string", "minLength": 1}
+              "rustArgument": {
+                "type": "string",
+                "minLength": 1
+              },
+              "pythonArgument": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conversion": {
+                "type": "string",
+                "minLength": 1
+              }
             },
             "additionalProperties": false
           },
           "variantBinding": {
             "type": "object",
-            "required": ["discriminator", "tag", "input"],
+            "required": [
+              "discriminator",
+              "tag",
+              "input"
+            ],
             "properties": {
-              "discriminator": {"type": "string", "minLength": 1},
-              "tag": {"type": "string", "minLength": 1},
-              "derivedFields": {"const": ["message"]},
-              "input": {"const": "TypeAdapter.validate_python"}
+              "discriminator": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tag": {
+                "type": "string",
+                "minLength": 1
+              },
+              "derivedFields": {
+                "const": [
+                  "message"
+                ]
+              },
+              "input": {
+                "const": "TypeAdapter.validate_python"
+              }
             },
             "additionalProperties": false
           },
           "outputBinding": {
-            "type": "object",
-            "required": ["kind", "discriminator", "tag", "pythonFields"],
-            "properties": {
-              "kind": {"enum": ["error-details", "outcome-view", "concrete-model"]},
-              "schemaTarget": {"type": "string", "minLength": 1},
-              "discriminator": {"type": "string", "minLength": 1},
-              "tag": {"type": "string", "minLength": 1},
-              "rustType": {"type": "string", "minLength": 1},
-              "behaviorEvidence": {
-                "type": "array",
-                "minItems": 1,
-                "items": {
-                  "type": "object",
-                  "required": ["path", "test"],
-                  "properties": {
-                    "path": {"type": "string", "minLength": 1},
-                    "test": {"type": "string", "minLength": 1}
-                  },
-                  "additionalProperties": false
-                }
-              },
-              "pythonFields": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["rustArgument", "pythonFieldPath", "conversion"],
-                  "properties": {
-                    "rustArgument": {"type": "string", "minLength": 1},
-                    "pythonFieldPath": {"type": "string", "minLength": 1},
-                    "conversion": {"type": "string", "minLength": 1}
-                  },
-                  "additionalProperties": false
-                }
-              }
-            },
-            "allOf": [
+            "oneOf": [
               {
-                "if": {"properties": {"kind": {"const": "error-details"}}},
-                "then": {"required": ["schemaTarget", "rustType"]}
-              },
-              {
-                "if": {"properties": {"kind": {"const": "concrete-model"}}},
-                "then": {
-                  "required": ["schemaTarget", "rustType", "behaviorEvidence"],
-                  "properties": {
-                    "pythonFields": {
-                      "minItems": 1,
-                      "maxItems": 1,
-                      "items": {
-                        "properties": {
-                          "pythonFieldPath": {"const": "$"}
+                "type": "object",
+                "required": [
+                  "kind",
+                  "discriminator",
+                  "tag",
+                  "pythonFields"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "error-details",
+                      "outcome-view",
+                      "concrete-model"
+                    ]
+                  },
+                  "schemaTarget": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "discriminator": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tag": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "rustType": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "behaviorEvidence": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "path",
+                        "test"
+                      ],
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "test": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "pythonFields": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "rustArgument",
+                        "pythonFieldPath",
+                        "conversion"
+                      ],
+                      "properties": {
+                        "rustArgument": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "pythonFieldPath": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "conversion": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "error-details"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "schemaTarget",
+                        "rustType"
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "concrete-model"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "schemaTarget",
+                        "rustType",
+                        "behaviorEvidence"
+                      ],
+                      "properties": {
+                        "pythonFields": {
+                          "minItems": 1,
+                          "maxItems": 1,
+                          "items": {
+                            "properties": {
+                              "pythonFieldPath": {
+                                "const": "$"
+                              }
+                            }
+                          }
                         }
                       }
                     }
+                  },
+                  {
+                    "if": {
+                      "not": {
+                        "properties": {
+                          "kind": {
+                            "const": "concrete-model"
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "not": {
+                        "required": [
+                          "behaviorEvidence"
+                        ]
+                      }
+                    }
                   }
-                }
+                ],
+                "additionalProperties": false
               },
               {
-                "if": {
-                  "not": {"properties": {"kind": {"const": "concrete-model"}}}
+                "required": [
+                  "kind",
+                  "schemaTarget",
+                  "rustType"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "union-member"
+                  },
+                  "schemaTarget": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "rustType": {
+                    "type": "string",
+                    "minLength": 1
+                  }
                 },
-                "then": {"not": {"required": ["behaviorEvidence"]}}
+                "additionalProperties": false
               }
-            ],
-            "additionalProperties": false
+            ]
           },
-          "rustSignatureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "rustSignatureSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
           "argumentMappings": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["rustArgument", "pythonArgument", "conversion"],
+              "required": [
+                "rustArgument",
+                "pythonArgument",
+                "conversion"
+              ],
               "properties": {
-                "rustArgument": {"type": "string", "minLength": 1},
-                "pythonArgument": {"type": "string", "minLength": 1},
-                "conversion": {"type": "string", "minLength": 1}
+                "rustArgument": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "pythonArgument": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "conversion": {
+                  "type": "string",
+                  "minLength": 1
+                }
               },
               "additionalProperties": true
             }
           },
-          "defaults": {"type": "array", "items": {"$ref": "#/$defs/mappingDetail"}},
-          "units": {"type": "array", "items": {"$ref": "#/$defs/mappingDetail"}},
-          "cardinality": {"type": "array", "items": {"$ref": "#/$defs/mappingDetail"}},
-          "rationale": {"type": "string"},
+          "defaults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/mappingDetail"
+            }
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/mappingDetail"
+            }
+          },
+          "cardinality": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/mappingDetail"
+            }
+          },
+          "rationale": {
+            "type": "string"
+          },
           "review": {
             "type": "object",
-            "required": ["status", "rationale", "pythonEquivalent"],
+            "required": [
+              "status",
+              "rationale",
+              "pythonEquivalent"
+            ],
             "properties": {
-              "status": {"enum": ["proposed", "reviewed"]},
-              "reviewer": {"type": "string"},
-              "reviewedAt": {"type": "string", "format": "date-time"},
-              "rationale": {"type": "string", "minLength": 1},
-              "pythonEquivalent": {"type": "string"}
+              "status": {
+                "enum": [
+                  "proposed",
+                  "reviewed"
+                ]
+              },
+              "reviewer": {
+                "type": "string"
+              },
+              "reviewedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              },
+              "pythonEquivalent": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
         },
         "allOf": [
           {
-            "if": {"required": ["mappingDirection"], "properties": {"mappingDirection": {"const": "output"}}},
-            "then": {"required": ["outputBinding"]}
+            "if": {
+              "required": [
+                "mappingDirection"
+              ],
+              "properties": {
+                "mappingDirection": {
+                  "const": "output"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "outputBinding"
+              ]
+            }
           },
           {
-            "if": {"required": ["outputBinding"]},
-            "then": {"properties": {"mappingDirection": {"const": "output"}}}
+            "if": {
+              "required": [
+                "outputBinding"
+              ]
+            },
+            "then": {
+              "properties": {
+                "mappingDirection": {
+                  "const": "output"
+                }
+              }
+            }
           },
           {
-            "if": {"properties": {"decision": {"const": "mapped"}}},
-            "then": {"required": ["pythonTarget"]}
+            "if": {
+              "properties": {
+                "decision": {
+                  "const": "mapped"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "pythonTarget"
+              ]
+            }
           },
           {
-            "if": {"properties": {"decision": {"const": "language-specific"}}},
-            "then": {"required": ["review"]}
+            "if": {
+              "properties": {
+                "decision": {
+                  "const": "language-specific"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "review"
+              ]
+            }
           }
         ],
         "additionalProperties": false
@@ -185,8 +518,15 @@
   "$defs": {
     "mappingDetail": {
       "type": "object",
-      "required": ["id"],
-      "properties": {"id": {"type": "string", "minLength": 1}},
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
       "additionalProperties": true
     }
   },

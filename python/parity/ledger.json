@@ -35296,6 +35296,999 @@
       "units": [],
       "cardinality": [],
       "rationale": "The network schema enum variant is retained as the exact public Python profile literal yosoi_network_observation_v1."
+    },
+    {
+      "rustPath": "yosoi::Policy::observe",
+      "symbolKey": "member:struct_field:yosoi::Policy::observe@signature:cb845481558ec40f2460d8a8bbdd6466b3c6bdcf5ea6af27965f6eb784490652@source:3e2cdee1624e9446ef8d815064fb70b67f8f91707176d15b89692082938eae1c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Policy.observe",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field observe maps to Python field observe."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::BrowserVisibleAudioUnsupported",
+      "symbolKey": "member:variant:yosoi::PolicyError::BrowserVisibleAudioUnsupported@signature:893a405d1966952462014757a73842cf85a81f87226fd842b6351595c615b583@source:c13f1cbdffdcef58a72387e0ed3dd197acc2c11677eaeeb6e97d087ba9678a64",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant BrowserVisibleAudioUnsupported maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::InvalidObservationRecordingDuration",
+      "symbolKey": "member:variant:yosoi::PolicyError::InvalidObservationRecordingDuration@signature:39f20b3bdc46b3c42aff9c0a4335999e89c71f7b637b6ea5ed0923a88a99f790@source:44c10bd396574c049f0143adfa581e01024a2b66a82d599935eaa8935958b295",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [
+        {
+          "id": "duration-unit:InvalidObservationRecordingDuration",
+          "rust": "seconds and nanoseconds",
+          "python": "Duration.seconds and Duration.nanoseconds"
+        }
+      ],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidObservationRecordingDuration maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeObserve",
+      "symbolKey": "member:variant:yosoi::PolicyError::LegacyIdentityCannotIncludeObserve@signature:d7babaef99a60636ede31a1a53230ffc89458bfe307df498068dfe2f547633b5@source:b24b6200afeadde7426c4e96106fac36ba50ef9b9628eb1ee7a695c5b7e9d019",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant LegacyIdentityCannotIncludeObserve maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::NativeTabCaptureNotPermitted",
+      "symbolKey": "member:variant:yosoi::PolicyError::NativeTabCaptureNotPermitted@signature:c79c7cc4a06bda18c6424645a0600ee47f2c75a3b6b15775c293cfafac2bb65f@source:7d314fa3cde578e78552115fe7536116edb6e525ba8cf6f0feb58aaa42c4121f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant NativeTabCaptureNotPermitted maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::ObservationRulesExceedRecordingLimit",
+      "symbolKey": "member:variant:yosoi::PolicyError::ObservationRulesExceedRecordingLimit@signature:37701e55c315684e849ccb294f1e9ec243fb11c78055a437415d1b632c96c1a1@source:82e3bc82e7d20017c6574696e615b317e7852bb2db3b1e89cf1a8fdc79b866bc",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "ObservationRulesExceedRecordingLimit",
+        "rustType": "yosoi_policy::PolicyError",
+        "pythonFields": [
+          {
+            "rustArgument": "configured",
+            "pythonFieldPath": "details.configured",
+            "conversion": "Exact number of configured recording rules."
+          },
+          {
+            "rustArgument": "maximum",
+            "pythonFieldPath": "details.maximum",
+            "conversion": "Exact configured maximum recording count."
+          }
+        ]
+      },
+      "semanticEquivalent": "The native Python exception preserves the Rust variant, structured details and source chain through rust_error_details().",
+      "rationale": "The native PolicyError preserves configured and maximum recording counts in RustErrorDetails; test_observation_recording_limit_error_preserves_configured_counts checks both values."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::TooManyObservationRecordingRules",
+      "symbolKey": "member:variant:yosoi::PolicyError::TooManyObservationRecordingRules@signature:c89f11a8b0022987f1e03ee532bfe32cb80419ca97ac18e44c472e3d12cba348@source:0e2a148c1826a10acd0f615dda80a3ee6691a9c24e63a19621f47e3b267e0d9f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant TooManyObservationRecordingRules maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::ZeroObservationRecordingLimit",
+      "symbolKey": "member:variant:yosoi::PolicyError::ZeroObservationRecordingLimit@signature:2b0ddef8af599d22ffe037f362407f2ee600d3dd19b17b7a13f4ea27277bcccb@source:4fd42bede1c7d9bf600a13651358dce63f7d09a3428a7dac7c9f2618ee27da31",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant ZeroObservationRecordingLimit maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::PolicyError::ZeroObservationSourceLimit",
+      "symbolKey": "member:variant:yosoi::PolicyError::ZeroObservationSourceLimit@signature:636811d158c3ff357fe0280bc9ac65ef7a6b1741d296fcd31e1e4c3e08a8172a@source:9da7806588c65eb2bd3fb2dbee102d230196cfe26696495b5256e41297d1af91",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.PolicyError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant ZeroObservationSourceLimit maps to the corresponding Python tagged value yosoi.errors.PolicyError."
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError",
+      "symbolKey": "page:enum:yosoi::archive::ArchiveRefError",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.ArchiveError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.errors.ArchiveError."
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError::InvalidFormat",
+      "symbolKey": "member:variant:yosoi::archive::ArchiveRefError::InvalidFormat@signature:937159a0783581a0f0af03c7e48a25673d157b95cfd2749953860f6340ce085d@source:80895d81a911de0b2c5c5311bc62a6690f772033fd2ddbed1d71f01394c70316",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.ArchiveError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidFormat maps to the corresponding Python tagged value yosoi.errors.ArchiveError."
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError::InvalidKey",
+      "symbolKey": "member:variant:yosoi::archive::ArchiveRefError::InvalidKey@signature:99614aa077e4bd14b6ac2568f1a9c06a9225757e83307bae0a4ee2a15f641a98@source:ad3b1c69c02e999dfa9a8ecdf3425f314cc509ef59ea4e623e80656516b5b1cd",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.ArchiveError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidKey maps to the corresponding Python tagged value yosoi.errors.ArchiveError."
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError::InvalidSyntax",
+      "symbolKey": "member:variant:yosoi::archive::ArchiveRefError::InvalidSyntax@signature:1cd1b47e4746eef424400795ef0daa8b1301b4682383c8259d3fb8f0d7afbde4@source:266d3f0c47c31a1357b98f9fecb312546642691c546c950cd7a992ad16201903",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.errors.ArchiveError",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant InvalidSyntax maps to the corresponding Python tagged value yosoi.errors.ArchiveError."
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError::fmt",
+      "symbolKey": "member:function:yosoi::archive::ArchiveRefError::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:31beef6f94309844f5aa7ee58217aa8f57b1c56530c791a96bfac5a91ea69b4e",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.errors.ArchiveError"
+    },
+    {
+      "rustPath": "yosoi::archive::ArchiveRefError::fmt",
+      "symbolKey": "member:function:yosoi::archive::ArchiveRefError::fmt@signature:2653e7ab50af9f961a708d2db3b3bd062e8f00d17290d0a8127aa19b81156c7d@trait:Display@source:31beef6f94309844f5aa7ee58217aa8f57b1c56530c791a96bfac5a91ea69b4e",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "__formatter",
+          "pythonArgument": "__formatter",
+          "conversion": "Language-specific Display input __formatter needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python str(value) for the corresponding public value."
+      },
+      "trait": "Display",
+      "pythonTarget": "yosoi.errors.ArchiveError"
+    },
+    {
+      "rustPath": "yosoi::policy::EvidenceFailurePolicy",
+      "symbolKey": "page:enum:yosoi::policy::EvidenceFailurePolicy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.EvidenceFailurePolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.EvidenceFailurePolicy."
+    },
+    {
+      "rustPath": "yosoi::policy::EvidenceFailurePolicy::Continue",
+      "symbolKey": "member:variant:yosoi::policy::EvidenceFailurePolicy::Continue@signature:31fbef162594de01bab0cd525c51f74de7bcb15063029fa1a54b2cf5944c80d8@source:45163eada1edbd80837198012a56272563a47734dec5c5f5b9e0b21b99be6f6c",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.EvidenceFailurePolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Continue maps to the corresponding Python tagged value yosoi.policy.EvidenceFailurePolicy. The Python discriminator value is 'continue'."
+    },
+    {
+      "rustPath": "yosoi::policy::EvidenceFailurePolicy::Require",
+      "symbolKey": "member:variant:yosoi::policy::EvidenceFailurePolicy::Require@signature:c93d34f3176d65652d6265daef9c7f30b5d2f743da06b0aea83d708278e27e6d@source:a5543de82e1ba732d636c6a7e05b04bc78a1a17059037331864fcc2a20b92e81",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.EvidenceFailurePolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Require maps to the corresponding Python tagged value yosoi.policy.EvidenceFailurePolicy. The Python discriminator value is 'require'."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits",
+      "symbolKey": "page:struct:yosoi::policy::ObserveLimits",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.ObserveLimits."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::clone",
+      "symbolKey": "member:function:yosoi::policy::ObserveLimits::clone@signature:93480d592a63c544afb8b31ee9bde03fed0f160f31c72b427f35f41fea7dde1b@trait:Clone@source:5fb0e9e7ede936c6f8612eebd0c1ab9f21fafbe8df1f14e56f4d8be27668dd04",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::default",
+      "symbolKey": "member:function:yosoi::policy::ObserveLimits::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:3ee8685723390969602b21c38d2f57e3ae828dfefd279f5423208d2b548279b2",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
+      "trait": "Default",
+      "semanticEquivalent": "Rust Default value and Python authoring default value."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::eq",
+      "symbolKey": "member:function:yosoi::policy::ObserveLimits::eq@signature:49890f068ae15d3680a4a79ceb977c37688e1704d9a5ccaa96def8785a0d918c@trait:PartialEq@source:5fb0e9e7ede936c6f8612eebd0c1ab9f21fafbe8df1f14e56f4d8be27668dd04",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.ObserveLimits"
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::fmt",
+      "symbolKey": "member:function:yosoi::policy::ObserveLimits::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:5fb0e9e7ede936c6f8612eebd0c1ab9f21fafbe8df1f14e56f4d8be27668dd04",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.ObserveLimits"
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::max_buffer_bytes",
+      "symbolKey": "member:struct_field:yosoi::policy::ObserveLimits::max_buffer_bytes@signature:f77b613719a98a72a63eb64e6acbea6002dd0c2df90896a5ff2f8acb5b37610b@source:05bce12857c7d43e736fdbb438315c0bb45d02018c3935c8a4f57815acdff8f3",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits.max_buffer_bytes",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_buffer_bytes maps to Python field max_buffer_bytes."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::max_recordings",
+      "symbolKey": "member:struct_field:yosoi::policy::ObserveLimits::max_recordings@signature:0cb267356918d3bb085b99c08080a2d7bfe5689e19394b598663411fb9572f31@source:fc756d9a2bfc53306835a85ba460ae3a31f0e889b3bb314d1f3eb50c8cf782e2",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits.max_recordings",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_recordings maps to Python field max_recordings."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::max_retained_bytes",
+      "symbolKey": "member:struct_field:yosoi::policy::ObserveLimits::max_retained_bytes@signature:00951838cd7d1480ecacb694466db62344142423df2e0d209a9c47a0a680cba0@source:e25a18cb90780f9a9feb2494995c8ca39c62ac35557cefa667eace67c565dabe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits.max_retained_bytes",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_retained_bytes maps to Python field max_retained_bytes."
+    },
+    {
+      "rustPath": "yosoi::policy::ObserveLimits::max_sources",
+      "symbolKey": "member:struct_field:yosoi::policy::ObserveLimits::max_sources@signature:97043a2895fe21201c12019c8b005bf9d8111b9f700fd01b5b4ffdfe34f914bf@source:cce31fdda5135328b1c46cac005d8e2fa36500116bf9a827a4a54e6686d957b8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObserveLimits.max_sources",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_sources maps to Python field max_sources."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy",
+      "symbolKey": "page:struct:yosoi::policy::ObservePolicy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.ObservePolicy."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::clone",
+      "symbolKey": "member:function:yosoi::policy::ObservePolicy::clone@signature:0085f9322f09b7f6c0904d4a007366aa42ff124ae4d730ac5250d0aaf3291409@trait:Clone@source:8beb1d9cf0935e6f308d37053babd34134718678a2ddb8785b7588a5a4fabb92",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::default",
+      "symbolKey": "member:function:yosoi::policy::ObservePolicy::default@signature:28be6149192e242486038874cbffa747af811b54268796fb3a0f10405dcb3291@trait:Default@source:8beb1d9cf0935e6f308d37053babd34134718678a2ddb8785b7588a5a4fabb92",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
+      "trait": "Default",
+      "semanticEquivalent": "Rust Default value and Python authoring default value."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::enabled",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::enabled@signature:bb2025e746ba4f67d4a4be920cef71d6f2ef6923225b6d35e95044a60439970c@source:e2bc86a8513b82b6529aac329baf0932113926cd28f837528b688451a404c740",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.enabled",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field enabled maps to Python field enabled."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::eq",
+      "symbolKey": "member:function:yosoi::policy::ObservePolicy::eq@signature:9dedb06ffcc6d4de803952bb482c1b840cf8980d516d9e86235bdbff8404e43e@trait:PartialEq@source:8beb1d9cf0935e6f308d37053babd34134718678a2ddb8785b7588a5a4fabb92",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.ObservePolicy"
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::failure",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::failure@signature:012b0f592a3661b7e65db277ad1865779bec0ab546e3fdb15807cab172818f74@source:63bda0377f0af228eb7df6ebfd390e42dce369c23694520d6a1f1a3af9842685",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.failure",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field failure maps to Python field failure."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::fmt",
+      "symbolKey": "member:function:yosoi::policy::ObservePolicy::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:8beb1d9cf0935e6f308d37053babd34134718678a2ddb8785b7588a5a4fabb92",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.ObservePolicy"
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::limits",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::limits@signature:cd53c055bf69f9fb21b389d09c5f82b1c817bcf8d2e47b631c710f6a0d9629d8@source:610a6a7efd5de58156b3bf24c7a351720a4debc3bc3554897e803c2e5e37ba9f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.limits",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field limits maps to Python field limits."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::native_tab_capture",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::native_tab_capture@signature:1c01f688e6c856d3e2152f6fcc7038bceadc58bd23fa24db424801132531ef70@source:d2007d7946dbcc96035b032681fb8fa1bfcde382fb1e415f615815a4a6eb0cc8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.native_tab_capture",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field native_tab_capture maps to Python field native_tab_capture."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::recordings",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::recordings@signature:db8c0ecbbc75eb5d18c676e8aafc70647491f5a3f576b2d4b210ebf3ef47587f@source:850fa892c07f6959e1dd64c3eb1f3c0c37a7e2e80c8aee8c81b48c04d8d2d7f6",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.recordings",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "sequence:recordings",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Rust field recordings maps to Python field recordings."
+    },
+    {
+      "rustPath": "yosoi::policy::ObservePolicy::screenshots",
+      "symbolKey": "member:struct_field:yosoi::policy::ObservePolicy::screenshots@signature:f660138e6c104c5591c308229e10a3685e43f0369d3a250c4096787242c12f44@source:c4c1317af1f14e1662adbf708a75779fa0514bfcb50181b0ccd8efe589c99fae",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ObservePolicy.screenshots",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field screenshots maps to Python field screenshots."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingMode",
+      "symbolKey": "page:enum:yosoi::policy::RecordingMode",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingMode",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.RecordingMode."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingMode::BrowserVisible",
+      "symbolKey": "member:variant:yosoi::policy::RecordingMode::BrowserVisible@signature:b8c7b012a821984eacd1fc11facb687db84c1a51f3fe5a0e41773bac6aaa9771@source:b4ef042211b97f5e7a59dbb12af6e37774bb17516366efa23dc47f9638863f37",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingMode",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant BrowserVisible maps to the corresponding Python tagged value yosoi.policy.RecordingMode. The Python discriminator value is 'browser_visible'."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingMode::EachTab",
+      "symbolKey": "member:variant:yosoi::policy::RecordingMode::EachTab@signature:e370ba7d487c62a4f4f3c55f38fd4c7f5b5aac0c139a68706980d26b53e55bc9@source:5fdccd7de1817150416b12ec2c6112d3cb95fb32c906eea330a374f4d17eaa56",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingMode",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant EachTab maps to the corresponding Python tagged value yosoi.policy.RecordingMode. The Python discriminator value is 'each_tab'."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule",
+      "symbolKey": "page:struct:yosoi::policy::RecordingRule",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.RecordingRule."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::clone",
+      "symbolKey": "member:function:yosoi::policy::RecordingRule::clone@signature:4c50469bdd5d8b063ed926e71137c365a6522c4f55cee5388285135e436b03e8@trait:Clone@source:af0acf4fcfb4357a2905042e8c8351182151fc30128ac47867ce871d52792ee9",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::default",
+      "symbolKey": "member:function:yosoi::policy::RecordingRule::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:c790646974e3d0623419621f727735c96b68c1d384c566bc84862ac3a84fbae4",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
+      "trait": "Default",
+      "semanticEquivalent": "Rust Default value and Python authoring default value."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::eq",
+      "symbolKey": "member:function:yosoi::policy::RecordingRule::eq@signature:167273e4c466b20c90bc631cf5bd584aead239e09620445925a035be0cbba684@trait:PartialEq@source:af0acf4fcfb4357a2905042e8c8351182151fc30128ac47867ce871d52792ee9",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.RecordingRule"
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::fmt",
+      "symbolKey": "member:function:yosoi::policy::RecordingRule::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:af0acf4fcfb4357a2905042e8c8351182151fc30128ac47867ce871d52792ee9",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.RecordingRule"
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::include_audio",
+      "symbolKey": "member:struct_field:yosoi::policy::RecordingRule::include_audio@signature:0660227a7f60f5fb3a04380caf644753f8ca97a0c65af2942d62db7b3abbb8cb@source:325f0c416c42c9b4fc2280aa8f3bea3059365da34ecadaa6ac899568c4a32c35",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule.include_audio",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field include_audio maps to Python field include_audio."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::max_bytes",
+      "symbolKey": "member:struct_field:yosoi::policy::RecordingRule::max_bytes@signature:2ec02963a3f3332c95b550b3ef3536edca51e74f99a26ffbb21ea0216fb56536@source:ee8d8325afbc88d32741a1d2cbd5315f827ae7ef551823d6f43359e1e7442b08",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule.max_bytes",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_bytes maps to Python field max_bytes."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::max_duration_ms",
+      "symbolKey": "member:struct_field:yosoi::policy::RecordingRule::max_duration_ms@signature:c29ca21b1ee0ac91746bf4a688993e26a062396df790cddee37dc314b69845d4@source:625d508b2bca58f02eb216f9d458daa8e4d9bf999d198a22900ebec91d21d888",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule.max_duration_ms",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field max_duration_ms maps to Python field max_duration_ms."
+    },
+    {
+      "rustPath": "yosoi::policy::RecordingRule::mode",
+      "symbolKey": "member:struct_field:yosoi::policy::RecordingRule::mode@signature:9bfd24c6dc21d6ad82033cd1eeeaf5ddbe7676ed5ed0d3c033900fe5c7976b40@source:d145172087457f3a43bd05dc679fed24ea2a6b9e4c7c65268ae102fd4f979912",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.RecordingRule.mode",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field mode maps to Python field mode."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy",
+      "symbolKey": "page:struct:yosoi::policy::ScreenshotPolicy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.ScreenshotPolicy."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::after",
+      "symbolKey": "member:struct_field:yosoi::policy::ScreenshotPolicy::after@signature:3160d5dc01dd28e3f4d272f291bf5fa219ea96bd953a3638d1812e0f48af20d3@source:a04a872079ab7f5126873d869089ae3b5dfaded672d76de5d5190c729a86481e",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy.after",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:after",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field after maps to Python field after."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::before",
+      "symbolKey": "member:struct_field:yosoi::policy::ScreenshotPolicy::before@signature:db562b4c5650e7c1de19f46f8856c41e4e05a3bf90a2c4c9604d0a843e614002@source:29048b11535f1d5ea7a7f915a27c316c3d68e20f101961605eec74032b533e73",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy.before",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:before",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field before maps to Python field before."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::clone",
+      "symbolKey": "member:function:yosoi::policy::ScreenshotPolicy::clone@signature:6b623ad64a39d1fd1b9b86a987bee0704618f31dddc8dc0a98277553b7093c4c@trait:Clone@source:501d685c85f28385240899470c8d28d7e6dee00ae82d1ce5e91ceab35e6d8e61",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy.clone",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+      "trait": "Clone",
+      "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::default",
+      "symbolKey": "member:function:yosoi::policy::ScreenshotPolicy::default@signature:51dcb70615e33f6717685dadc07ec3f524f99e5f6cd25d7032204048251fafc0@trait:Default@source:501d685c85f28385240899470c8d28d7e6dee00ae82d1ce5e91ceab35e6d8e61",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
+      "trait": "Default",
+      "semanticEquivalent": "Rust Default value and Python authoring default value."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::eq",
+      "symbolKey": "member:function:yosoi::policy::ScreenshotPolicy::eq@signature:ed226ab101e0111b266dc69e974ad1b7d1a292f1a7ea3c37b63ed557e745f6cc@trait:PartialEq@source:501d685c85f28385240899470c8d28d7e6dee00ae82d1ce5e91ceab35e6d8e61",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "other",
+          "pythonArgument": "other",
+          "conversion": "Language-specific PartialEq input other needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+      },
+      "trait": "PartialEq",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy"
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::failure",
+      "symbolKey": "member:struct_field:yosoi::policy::ScreenshotPolicy::failure@signature:db8d70957242fec1c0201803f72d148cb83654d27d92eac7f9ec61cb3020dfec@source:b3c17932ff9bdb984242fa0c5d8849994d0b87640b2e38b62b1bb49211470be7",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy.failure",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:failure",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust field failure maps to Python field failure."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotPolicy::fmt",
+      "symbolKey": "member:function:yosoi::policy::ScreenshotPolicy::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:501d685c85f28385240899470c8d28d7e6dee00ae82d1ce5e91ceab35e6d8e61",
+      "decision": "language-specific",
+      "argumentMappings": [
+        {
+          "rustArgument": "f",
+          "pythonArgument": "f",
+          "conversion": "Language-specific Debug input f needs owner-reviewed semantics"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+      "review": {
+        "status": "proposed",
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "pythonEquivalent": "Python repr(value) for the corresponding public value."
+      },
+      "trait": "Debug",
+      "pythonTarget": "yosoi.policy.ScreenshotPolicy"
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotScope",
+      "symbolKey": "page:enum:yosoi::policy::ScreenshotScope",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotScope",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.ScreenshotScope."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotScope::Target",
+      "symbolKey": "member:variant:yosoi::policy::ScreenshotScope::Target@signature:978354db0c00fc78c3a5524f462a73bc425df3fb2767e51a5f46352ae26ae6f9@source:56020883261f71fbe5c69f25994b6775eb490d862984769c8ba93f2f36890d88",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotScope",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Target maps to the corresponding Python tagged value yosoi.policy.ScreenshotScope. The Python discriminator value is 'target'."
+    },
+    {
+      "rustPath": "yosoi::policy::ScreenshotScope::Viewport",
+      "symbolKey": "member:variant:yosoi::policy::ScreenshotScope::Viewport@signature:91e53b9065718a3c8684d13770c4f7a8c4ccf357ebca9cc9bd79e7f7f8b2fa17@source:8001d81ebbe2d29c8940836dfec69e43a05eb95af5a4e48882f4aa1aec0ee9c5",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.ScreenshotScope",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust variant Viewport maps to the corresponding Python tagged value yosoi.policy.ScreenshotScope. The Python discriminator value is 'viewport'."
+    },
+    {
+      "rustPath": "yosoi::policy::observe",
+      "symbolKey": "page:module:yosoi::policy::observe",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy."
+    },
+    {
+      "rustPath": "yosoi::policy::observe::MAX_RECORDING_DURATION_MS",
+      "symbolKey": "page:constant:yosoi::policy::observe::MAX_RECORDING_DURATION_MS",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy.MAX_RECORDING_DURATION_MS",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.MAX_RECORDING_DURATION_MS."
+    },
+    {
+      "rustPath": "yosoi::session::Session::evidence",
+      "symbolKey": "member:function:yosoi::session::Session::evidence@signature:7fb78df2bd94346fe2db0dd00c1b3ce40929504c61ea58958bd8ca73badfbc91@source:a17a7d1acc89b40a1e8c70e7605253a0be0d5f4a3f3ff26bc165a601056dd750",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Session.evidence",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Session.evidence."
+    },
+    {
+      "rustPath": "yosoi::session::Session::new_tab",
+      "symbolKey": "member:function:yosoi::session::Session::new_tab@signature:fe700bedc4877555bb233cc61a2b743193fce64b8d6ff3beb2d869c0464a2cff@source:378e81fd2e6821f59dd2985f3fdb88eb10c7dfb4920c0549b942c201e2fb5661",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Session.new_tab",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Session.new_tab."
+    },
+    {
+      "rustPath": "yosoi::session::Session::recording_outcomes",
+      "symbolKey": "member:function:yosoi::session::Session::recording_outcomes@signature:166ade0acbb1a42bd1f42fa795f353147a2c8026cdb43e54515053850f61fc92@source:92d0788cbe34dab98f6fd088e7a20b95c76336c653441c5966a2aca452ffa408",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Session.recording_outcomes",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "sequence:recording_outcomes",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Session.recording_outcomes."
+    },
+    {
+      "rustPath": "yosoi::session::Session::start_recording",
+      "symbolKey": "member:function:yosoi::session::Session::start_recording@signature:36fe384992a672d8b2559c87416691a7ddfde9f592556e53cb52ab3ae3717b32@source:3453b0c3aca90272c0df9bf124cc369de6f664b4f1ba888b28855ce0abf275c8",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Session.start_recording",
+      "argumentMappings": [
+        {
+          "rustArgument": "scope",
+          "pythonArgument": "scope",
+          "conversion": "Python RecordingScope converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "options",
+          "pythonArgument": "options",
+          "conversion": "Python RecordingOptions | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:options",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Session.start_recording."
+    },
+    {
+      "rustPath": "yosoi::session::Work::screenshot_with",
+      "symbolKey": "member:function:yosoi::session::Work::screenshot_with@signature:88f3baa042302e89d3ba390d5436bb89929fb5c26a5597c6d64ee2c6fa10e2e3@source:6a8b96d9fb18e548232c107636d17683b950330fd15ed7c65fba1f94dcff3c0e",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Work.screenshot_with",
+      "argumentMappings": [
+        {
+          "rustArgument": "options",
+          "pythonArgument": "options",
+          "conversion": "Python ScreenshotOptions | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:options",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Work.screenshot_with."
+    },
+    {
+      "rustPath": "yosoi::session::Work::start_recording",
+      "symbolKey": "member:function:yosoi::session::Work::start_recording@signature:5d12c9a261bb0725ef01aed8ecafb2a005e56f868cf1b51febf5e1a388aae8b0@source:22da9110fc5ac57621c7c8b32512ef3fc93ba4bb3dfa324eb730761569da6a62",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Work.start_recording",
+      "argumentMappings": [
+        {
+          "rustArgument": "options",
+          "pythonArgument": "options",
+          "conversion": "Python RecordingOptions | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:options",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust method maps to the matching Python method/property yosoi.Work.start_recording."
     }
   ],
   "surfaceContract": "surface-contract.json"

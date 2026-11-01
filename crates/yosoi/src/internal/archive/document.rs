@@ -61,31 +61,48 @@ impl ArchiveReference for DocumentArchiveRef {
         archive: &'a Archive,
         reference: &'a Self,
     ) -> Result<Self::Value, ArchiveError> {
-        if reference.format_version() != ARCHIVE_FORMAT_VERSION {
-            return Err(ArchiveError::UnsupportedFormat {
-                found: reference.format_version(),
-                supported: ARCHIVE_FORMAT_VERSION,
-            });
-        }
-        let record: DocumentRecord = archive
-            .read_record(
-                RecordKind::Document,
-                DOCUMENT_RECORD_VERSION,
-                reference.key(),
-            )
-            .await?;
-        enforce_document_bound(record.byte_len)?;
-        let bytes = archive
-            .read_document_payload(reference.key(), record.byte_len)
-            .await?;
-        if Sha256Digest::digest(&bytes) != record.sha256 {
-            return Err(ArchiveError::DocumentPayloadDigestMismatch {
-                key: reference.logical_key().to_owned(),
-            });
-        }
-        Document::from_profile(record.id, record.profile, bytes)
-            .map_err(ArchiveError::InvalidDocument)
+        read_document_bounded(archive, reference, MAX_ARCHIVED_DOCUMENT_BYTES).await
     }
+}
+
+/// Reads a native archived Document after checking its recorded length against `maximum`.
+///
+/// The immutable record is validated before payload access, so callers with a smaller
+/// materialization limit can reject oversized values without opening or allocating the payload.
+pub async fn read_document_bounded(
+    archive: &Archive,
+    reference: &DocumentArchiveRef,
+    maximum: u64,
+) -> Result<Document, ArchiveError> {
+    if reference.format_version() != ARCHIVE_FORMAT_VERSION {
+        return Err(ArchiveError::UnsupportedFormat {
+            found: reference.format_version(),
+            supported: ARCHIVE_FORMAT_VERSION,
+        });
+    }
+    let record: DocumentRecord = archive
+        .read_record(
+            RecordKind::Document,
+            DOCUMENT_RECORD_VERSION,
+            reference.key(),
+        )
+        .await?;
+    let maximum = maximum.min(MAX_ARCHIVED_DOCUMENT_BYTES);
+    if record.byte_len > maximum {
+        return Err(ArchiveError::DocumentTooLarge {
+            maximum,
+            observed: record.byte_len,
+        });
+    }
+    let bytes = archive
+        .read_document_payload(reference.key(), record.byte_len)
+        .await?;
+    if Sha256Digest::digest(&bytes) != record.sha256 {
+        return Err(ArchiveError::DocumentPayloadDigestMismatch {
+            key: reference.logical_key().to_owned(),
+        });
+    }
+    Document::from_profile(record.id, record.profile, bytes).map_err(ArchiveError::InvalidDocument)
 }
 
 const fn enforce_document_bound(observed: u64) -> Result<(), ArchiveError> {

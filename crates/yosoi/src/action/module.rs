@@ -1,7 +1,12 @@
+#[path = "module/bundle.rs"]
 mod bundle;
+#[path = "module/graph.rs"]
 mod graph;
+#[path = "module/parser.rs"]
 mod parser;
+#[path = "module/types.rs"]
 mod types;
+#[path = "module/validation.rs"]
 mod validation;
 
 use super::JavaScriptSourceSnapshot;
@@ -13,4 +18,5 @@ pub use types::{
 };
 
 #[cfg(test)]
+#[path = "module/tests.rs"]
 mod tests;

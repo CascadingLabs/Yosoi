@@ -8,6 +8,7 @@ use crate::internal::browser::page::SurfaceInput;
 use crate::internal::browser::page::{
     DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult, ObservationResponseBody,
 };
+use crate::internal::browser::page::{NativeTabMediaSource, NativeTabMediaSourceOptions};
 use serde_json::Value;
 use std::fmt;
 use std::str as std_str;
@@ -634,6 +635,27 @@ impl RuntimeBrowserControl {
     pub async fn screenshot(&self) -> Result<Vec<u8>, BrowserControlError> {
         self.check_authority()?;
         Ok(self.page.screenshot_png().await?)
+    }
+
+    /// Captures provider-native visual metadata and PNG bytes for one tab.
+    pub async fn visual_snapshot(
+        &self,
+        options: provider::ScreenshotOptions,
+    ) -> Result<provider::VisualSnapshot, BrowserControlError> {
+        self.check_authority()?;
+        Ok(self.page.visual_snapshot(options).await?)
+    }
+
+    /// Starts native MediaStream capture for this explicitly authorized tab.
+    pub async fn start_native_tab_media_source(
+        &self,
+        options: NativeTabMediaSourceOptions,
+    ) -> Result<NativeTabMediaSource, BrowserControlError> {
+        self.check_authority()?;
+        Ok(self
+            .page
+            .start_native_tab_media_source(options, self.closing.clone())
+            .await?)
     }
 }
 

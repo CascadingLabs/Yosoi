@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
+from . import _native
 from ._native import (
     ArchiveError as ArchiveError,
 )
@@ -50,6 +51,9 @@ from ._native import (
 from ._native import (
     YosoiError as YosoiError,
 )
+
+FileDocumentError = _native.FileDocumentError
+"""Native failure to validate, read, retain or restore an immutable media payload."""
 
 
 @dataclass(frozen=True, slots=True)
