@@ -197,14 +197,14 @@ Both programs print encoded bytes, returned pixels, and local processing time fo
 
 The known-pixel Rust fixtures also compare a tiny raster with a dense dashboard. These are one local run with millisecond timing resolution; index construction is included in the overview-plus-crop path. The tiny fixture encodes a pixel-drawn `λ` label. The dashboard contains a 2×2 red marker.
 
-| Fixture and delivery | Encoded bytes | Pixels sent | Measured processing |
-| --- | ---: | ---: | ---: |
-| Tiny raster, direct decode | 374 | 256 | 0 ms |
-| Tiny raster, overview only | 285 | 64 | 0 ms resize |
-| Tiny raster, overview plus exact crop | 643 | 208 | 0 ms including index, resize and crop |
-| Dense dashboard, direct decode | 42,799 | 2,073,600 | 53 ms |
-| Dense dashboard, overview only | 1,621 | 57,600 | 327 ms resize |
-| Dense dashboard, overview plus exact crop | 1,815 | 57,924 | 380 ms including index, resize and crop |
+| Fixture and delivery                      | Encoded bytes | Pixels sent |                     Measured processing |
+| ----------------------------------------- | ------------: | ----------: | --------------------------------------: |
+| Tiny raster, direct decode                |           374 |         256 |                                    0 ms |
+| Tiny raster, overview only                |           285 |          64 |                             0 ms resize |
+| Tiny raster, overview plus exact crop     |           643 |         208 |   0 ms including index, resize and crop |
+| Dense dashboard, direct decode            |        42,799 |   2,073,600 |                                   53 ms |
+| Dense dashboard, overview only            |         1,621 |      57,600 |                           327 ms resize |
+| Dense dashboard, overview plus exact crop |         1,815 |      57,924 | 380 ms including index, resize and crop |
 
 The tiny raster is cheaper to send directly than to send its overview and crop; its crop still reproduces the pixel label exactly. In the dense dashboard, resizing loses the exact marker pixel, while the mapped source crop recovers it. The combined overview and crop use fewer bytes and pixels than the original raster in that fixture. The timings are local measurements, not performance guarantees or model-token estimates.
 
