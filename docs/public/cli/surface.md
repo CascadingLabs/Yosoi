@@ -7,6 +7,34 @@ description: Drive bounded web and video observations through a persistent JSON-
 
 `yosoi surface` keeps a reader alive while a coding agent sends one JSON command per line. Replies include the caller's optional `id`, an explicit success or error, and bounded evidence. Errors leave the session available for the next valid command.
 
+## Read an immutable local Document
+
+Use `document` to apply the same shared read protocol to a local Document file,
+without opening a browser:
+
+```sh
+yosoi surface document --format xml --file catalog.xml --id catalog --source file:catalog
+```
+
+`--format` accepts `html`, `xml`, `json`, `text`, `rendered-dom` and
+`accessibility-tree`. The last two require a positive `--epoch`. The command
+prints a ready descriptor and then accepts JSON Lines requests on standard
+input. `describe` returns the descriptor, observation and producer-issued root
+reference. `read` accepts the same typed request used by Rust and Python:
+
+```json
+{"id":1,"op":"describe"}
+{"id":2,"op":"read","request":{"operation":{"kind":"search","query":"lamp"},"budget":{"bytes":4096,"items":20}}}
+```
+
+Use references returned by these reads in later `inspect`, `expand` or `parent`
+requests. Search is literal, and continuations remain bound to their original
+operation and scope. `--max-bytes`, `--max-depth`, `--max-nodes` and
+`--overview-depth` limit preparation; `--response-bytes` limits each complete
+shared-read result independently. The outer JSON Lines reply budget remains
+bounded as described below. This local reader exposes no live actions. Use
+`surface web` only when the owning browser binding is needed for live effects.
+
 ## Open a web surface
 
 ```sh
