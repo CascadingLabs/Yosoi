@@ -31,7 +31,7 @@ pub(super) fn render_human(
     let value = theme.value;
     let muted = theme.muted;
     if let Some(provider) = envelope.selected_provider {
-        writeln!(writer, "{heading}Auto selected {}{heading:#}", provider)?;
+        writeln!(writer, "{heading}Auto selected {provider}{heading:#}")?;
     }
     for provider in envelope.providers.iter().filter(|provider| {
         envelope
