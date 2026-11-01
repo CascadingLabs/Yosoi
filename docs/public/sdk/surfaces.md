@@ -13,12 +13,12 @@ Browser, image and video adapters own their source behavior. Stateful connection
 
 ## Choose the reader
 
-| Reader       | Input                                    | Supported operations                                                     |
-| ------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
-| Surface      | Any of the six Document classes          | Overview, expand, literal find, inspect, parent, coordinates             |
+| Reader       | Input                                    | Supported operations                                                             |
+| ------------ | ---------------------------------------- | -------------------------------------------------------------------------------- |
+| Surface      | Any of the six Document classes          | Overview, expand, literal find, inspect, parent, coordinates                     |
 | ImageSurface | Typed PNG/JPEG ImageDocument             | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
-| WebSurface   | Any of the six prepared Document classes | Shared describe/read protocol: overview, expand, search, inspect, parent |
-| VideoSurface | Frozen regular local video file          | Shared timeline reads, temporal addresses, frame and crop                |
+| WebSurface   | Any of the six prepared Document classes | Shared describe/read protocol: overview, expand, search, inspect, parent         |
+| VideoSurface | Frozen regular local video file          | Shared timeline reads, temporal addresses, frame and crop                        |
 
 `BrowserSurface`, `ImageSession`, and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class for web and video connections. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode, image pixel limits, and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
@@ -31,9 +31,9 @@ five read operations:
 | Source XML         | `yosoi.web.xml.v1`      | Namespace-aware names and exact source ranges          |
 | Source JSON        | `yosoi.web.json.v1`     | JSON scalar types; duplicate keys are rejected         |
 | Source text        | `yosoi.web.text.v1`     | Exact UTF-8 source ranges                              |
-| Rendered DOM       | `yosoi.web.document.v1` | Snapshot-local node identities and document epoch     |
+| Rendered DOM       | `yosoi.web.document.v1` | Snapshot-local node identities and document epoch      |
 | Accessibility tree | `yosoi.web.ax.v1`       | Snapshot-local identities, epoch and declared coverage |
-| Network window     | `yosoi.web.network.v1` | Bounded event window with incomplete coverage         |
+| Network window     | `yosoi.web.network.v1`  | Bounded event window with incomplete coverage          |
 
 All immutable readers advertise only read capabilities and set `controllable`
 to false. A live browser binding may add actions to its own descriptor after it
@@ -164,6 +164,11 @@ no body retention. The Page-level CDP provider buffers are shared by all
 Requests and Surface users and remain capped at 8 MiB per resource and 8 MiB
 aggregate, even when this subscription does not retain bodies. The window
 records those provider caps separately from the caller's body-retention limits.
+The initial body count and total byte limits also cap retained bodies across
+the Surface session. Rearming a subscription does not reset these caps.
+Cancelling preserves bodies linked by kept windows. Evicting their last window
+or closing the Surface invalidates those live references. Retention receipts
+report the fixed session caps separately from each subscription's limits.
 Network document capture uses the separate `documents.network` policy; its
 default retained input is 8 MiB and a shared read response defaults to 65,536
 bytes.
@@ -191,8 +196,12 @@ unsupported and truncated bodies remain explicit in the reference. After
 Archive retention, `Outcome.source_document` and
 `Outcome.source_file_document` restore a linked body without a browser;
 Python uses `Outcome.network_payload` to return the matching typed value.
+Typed payload reads require the exact reference retained in one of that
+Outcome's network windows, including its request, redirect hop and response
+sequence. A matching body digest alone does not establish that relationship.
 When CDP returns text rather than base64, the body is its Unicode text view
-encoded as UTF-8; `text_utf8_normalized` records that fact while `charset`
+encoded as UTF-8; `text_utf8_normalized` records that fact while
+`browser_effective_charset`
 records the CDP-reported effective charset separately from the raw header
 retained in `declared_media_type`. Yosoi does not decode that text a second
 time. Base64 responses retain decoded entity bytes, not wire bytes, and keep
@@ -220,7 +229,7 @@ Document with the `yosoi_network_observation_v1` profile has network semantics.
 | Shared observation/address pair | `surface::model::Reference`         | `surface.Reference`         |
 | Native index continuation       | `surface::Continuation`             | `surface.Continuation`      |
 | Shared opaque continuation      | `surface::model::ContinuationToken` | `surface.ContinuationToken` |
-| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo`  |
+| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo` |
 
 Native references bind a capture and node. Shared references bind an ObservationId and producer-issued address. WebSurface converts between its own native and shared references; it rejects references belonging to another observation or source binding. Do not parse address spelling, manufacture a replacement ID, or treat an old reference as a durable entity identifier.
 
@@ -259,11 +268,12 @@ Rust and Python WebSurface accept all six Document classes. The CLI's offline
 non-controllable. The live CLI browser adapter continues to own its separate
 Work and action capabilities.
 
-Consumed native Sessions support `BrowserSurface.observe` for DOM and AX.
+Consumed native Sessions support `BrowserSurface.observe` for DOM and AX,
+plus network windows after an explicit subscription.
 `read` explores a captured view under its policy. The isolated `open` provider
-currently supports DOM only. Live network capture remains reserved and is not
-advertised by either browser binding in this layer. A local network-shaped JSON
-Document can still be read and retains incomplete coverage.
+currently supports DOM only. BiDi does not advertise network capture. A local
+network-shaped JSON Document remains ordinary JSON; its shape alone does not
+grant network semantics.
 
 Views are sequential captures. Replacing a view rejects its previous references.
 AX references remain read-only and never become DOM action targets. DOM
