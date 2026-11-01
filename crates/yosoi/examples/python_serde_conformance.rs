@@ -375,7 +375,20 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
 
     // Public policy defaults. The nested cases each exercise the
     // direct Rust type and its own Python model, in addition to Policy itself.
-    default_case::<Policy>(&mut output, "default-policy", "yosoi::Policy")?;
+    let policy_default = Policy::default();
+    let policy_fields = json!({"respectfulness": &policy_default.respectfulness});
+    let mut policy_default_case = constructed_case(
+        "default-policy",
+        "yosoi::Policy",
+        "Rust Default::default",
+        policy_default,
+        json!({"absentPaths": ["respectfulness"]}),
+    )?;
+    policy_default_case
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Policy fixture must be an object"))?
+        .insert("field_observations".to_owned(), policy_fields);
+    output.push(policy_default_case);
     let network = Network::default();
     // Read the actual typed defaults before moving the value into its JSON
     // codec. Missing wire keys alone cannot prove the fields contain None.
@@ -1028,21 +1041,21 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
     let respect = traffic::Respectfulness::new(vec![respect_group.clone()])?;
     output.push(constructed_case(
         "respectfulness-group",
-        "traffic::Group",
+        "yosoi::policy::respectfulness::Group",
         "Rust traffic group",
         respect_group,
         json!({}),
     )?);
     output.push(constructed_case(
         "respectfulness-policy",
-        "traffic::Respectfulness",
+        "yosoi::policy::respectfulness::Respectfulness",
         "Rust traffic policy",
         respect.clone(),
         json!({}),
     )?);
     output.push(constructed_case(
         "respectfulness-budget",
-        "traffic::RateBudget",
+        "yosoi::policy::respectfulness::RateBudget",
         "Rust rolling budget",
         traffic::RateBudget {
             requests: 2,
@@ -1052,14 +1065,14 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
     )?);
     output.push(constructed_case(
         "respectfulness-retry",
-        "traffic::Retry",
+        "yosoi::policy::respectfulness::Retry",
         "Rust retry policy",
         traffic::Retry::default(),
         json!({}),
     )?);
     output.push(constructed_case(
         "respectfulness-cooldown",
-        "traffic::Cooldown",
+        "yosoi::policy::respectfulness::Cooldown",
         "Rust cooldown policy",
         traffic::Cooldown {
             statuses: vec![429],
@@ -1123,14 +1136,14 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
     ] {
         output.push(constructed_case(
             &format!("respectfulness-error-{name}"),
-            "traffic::RespectfulnessError",
+            "yosoi::policy::respectfulness::RespectfulnessError",
             "Rust traffic failure",
             failure.clone(),
             json!({}),
         )?);
         output.push(constructed_case(
             &format!("respectfulness-event-{name}"),
-            "traffic::Event",
+            "yosoi::policy::respectfulness::Event",
             "Rust traffic event",
             traffic::Event {
                 kind: traffic::EventKind::Rejected,

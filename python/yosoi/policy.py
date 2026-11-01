@@ -1284,7 +1284,9 @@ class RespectfulnessGroup(Model):
         description="Simultaneously applicable rolling-window budgets.",
     )
     cooldown: RespectfulnessCooldown | None = Field(
-        default=None, description="Optional response/error cooldown reactions."
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Optional response/error cooldown reactions.",
     )
     blocked: bool = Field(
         default=False, description="Reject every matching request without dispatch."
