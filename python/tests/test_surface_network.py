@@ -12,7 +12,7 @@ from yosoi import surface as sf
 
 @pytest.fixture
 def network_outcome():
-    body = ys.Document.json("network-body", b'{"offline":true}')
+    body = ys.Document.from_json("network-body", b'{"offline":true}')
     reference = sf.NetworkPayloadRef(
         id="network-body",
         request_id="request-1",
@@ -127,7 +127,7 @@ def test_offline_network_payload_rejects_foreign_outcome_and_json_magic(
     with pytest.raises(sf.SurfaceError, match="not retained by this Outcome"):
         foreign.network_payload(reference)
     assert foreign.network_payload(foreign_reference).value.data == body.data
-    ordinary = ys.Document.json("ordinary-window", window.model_dump_json())
+    ordinary = ys.Document.from_json("ordinary-window", window.model_dump_json())
     foreign = foreign.with_source(
         sf.ArchivedSource.from_document("ordinary-window", ordinary)
     )
