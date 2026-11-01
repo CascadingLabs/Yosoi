@@ -686,12 +686,15 @@ class Surface:
 
 
 class WebSurface:
-    """Shared read protocol over immutable HTML, DOM, AX or network evidence.
+    """Shared read protocol over any of the six immutable Document classes.
 
     Args:
-        index: Prepared document index; other document classes are rejected.
+        index: Prepared HTML, XML, JSON, text, rendered DOM or AX evidence.
         source: Nonempty continuing-source identity, without browser authority.
         policy: Optional independent serialized response limits.
+
+    Network-shaped JSON retains partial coverage. Every representation exposes
+    only the read capabilities supported by its prepared index.
     """
 
     def __init__(

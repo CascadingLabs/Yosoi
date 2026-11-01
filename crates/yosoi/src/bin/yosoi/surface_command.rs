@@ -1,5 +1,5 @@
 //! JSON-lines transport over the public Surface runtime.
-use clap::{Args, Subcommand};
+use clap::{Args, Subcommand, ValueEnum};
 use serde_json::{Value, json};
 use std::{
     error::Error,
@@ -12,13 +12,17 @@ use std::{
 #[cfg(unix)]
 use tokio::signal::unix::{SignalKind, signal as unix_signal};
 use tokio::{
-    io::{AsyncWriteExt, Stdout, stdout},
+    fs::File as AsyncFile,
+    io::{AsyncReadExt, AsyncWriteExt, Stdout, stdout},
     signal,
     sync::mpsc::{Receiver, channel},
 };
+use yosoi::documents::{Document, DocumentEpoch};
 use yosoi::surface::{
-    ArchivePolicy, SurfaceConnection, SurfacePolicy, archive as surface_archive,
-    browser::{BrowserSurface, archive as browser_archive},
+    ArchivePolicy, DocumentPolicies, DocumentPolicy, Surface, SurfaceConnection, SurfacePolicy,
+    archive as surface_archive,
+    browser::{BrowserSurface, WebSurface, archive as browser_archive},
+    model::{ReadRequest, SourceId, SurfaceRead},
     video::VideoSession,
 };
 type Result<T> = StdResult<T, Box<dyn Error + Send + Sync>>;
@@ -29,6 +33,39 @@ pub struct SurfaceArgs {
 }
 #[derive(Debug, Subcommand)]
 enum SurfaceCommand {
+    /// Read one immutable local Document through the shared SurfaceRead protocol.
+    Document {
+        /// Document profile used to interpret the file bytes.
+        #[arg(long, value_enum)]
+        format: DocumentFormat,
+        /// Local file containing the exact retained document bytes.
+        #[arg(long)]
+        file: PathBuf,
+        /// Immutable SDK Document identity.
+        #[arg(long, default_value = "document")]
+        id: String,
+        /// Continuing source identity for the shared observation.
+        #[arg(long, default_value = "local:document")]
+        source: String,
+        /// Positive document epoch required for rendered DOM and accessibility tree.
+        #[arg(long)]
+        epoch: Option<u64>,
+        /// Maximum retained source bytes before preparation.
+        #[arg(long, default_value_t = 8 * 1024 * 1024)]
+        max_bytes: usize,
+        /// Maximum prepared tree depth, counting root as zero.
+        #[arg(long, default_value_t = 96)]
+        max_depth: usize,
+        /// Maximum indexed nodes.
+        #[arg(long, default_value_t = 100_000)]
+        max_nodes: usize,
+        /// Maximum depth opened automatically in an overview.
+        #[arg(long, default_value_t = 6)]
+        overview_depth: usize,
+        /// Maximum complete serialized shared-read result bytes.
+        #[arg(long, default_value_t = 65_536)]
+        response_bytes: usize,
+    },
     /// Keep a browser alive; read JSON commands on stdin and emit JSON replies.
     #[command(alias = "drive")]
     Web {
@@ -87,6 +124,16 @@ enum SurfaceCommand {
         file: PathBuf,
     },
 }
+#[derive(Clone, Copy, Debug, ValueEnum)]
+#[value(rename_all = "kebab-case")]
+enum DocumentFormat {
+    Html,
+    Xml,
+    Json,
+    Text,
+    RenderedDom,
+    AccessibilityTree,
+}
 async fn reply(output: &mut Stdout, id: Value, result: Result<Value>, budget: usize) -> Result<()> {
     let value = match result {
         Ok(result) => json!({"id":id,"ok":true,"result":result}),
@@ -97,7 +144,7 @@ async fn reply(output: &mut Stdout, id: Value, result: Result<Value>, budget: us
     let bytes = serde_json::to_vec(&value)?;
     let bytes = if bytes.len() > budget {
         serde_json::to_vec(
-            &json!({"id":value.get("id"),"ok":false,"error":"response exceeds budget; use a continuation, smaller items, or a larger budget; effects are preserved in trace.json"}),
+            &json!({"id":value.get("id"),"ok":false,"error":"response exceeds budget; use a continuation, smaller items, or a larger budget"}),
         )?
     } else {
         bytes
@@ -166,6 +213,180 @@ async fn drive(mut surface: impl SurfaceConnection) -> Result<()> {
     closed?;
     Ok(())
 }
+
+fn document_value(
+    reader: &impl SurfaceRead,
+    operation: &str,
+    raw: &Value,
+    outer_budget: usize,
+) -> Result<Value> {
+    match operation {
+        "describe" | "status" => Ok(serde_json::json!({
+            "descriptor": reader.descriptor(),
+            "observation": reader.observation(),
+            "root": reader.root_reference(),
+            "controllable": false,
+        })),
+        "read" => {
+            let value = raw
+                .get("request")
+                .cloned()
+                .ok_or_else(|| io::Error::other("read requires a shared SurfaceRead request"))?;
+            let mut request: ReadRequest = serde_json::from_value(value)?;
+            request.budget.bytes = request
+                .budget
+                .bytes
+                .min(outer_budget.saturating_sub(256))
+                .min(65_536);
+            Ok(serde_json::to_value(reader.read(&request)?)?)
+        }
+        "close" => Ok(serde_json::json!({"closing": true})),
+        _ => Err(io::Error::other(
+            "immutable document reader supports describe and read only; use a live browser binding for actions",
+        )
+        .into()),
+    }
+}
+
+async fn drive_document(reader: WebSurface) -> Result<()> {
+    let ready = serde_json::json!({
+        "event": "ready",
+        "descriptor": reader.descriptor(),
+        "observation": reader.observation(),
+        "root": reader.root_reference(),
+        "controllable": false,
+        "protocol": "JSON lines; describe and read use the shared SurfaceRead contract",
+    });
+    let mut output = stdout();
+    reply(&mut output, Value::Null, Ok(ready), 4096).await?;
+    let mut input = command_input()?;
+    let interrupted = interruption();
+    tokio::pin!(interrupted);
+    loop {
+        let bytes = tokio::select! {
+            value = input.recv() => value.transpose()?,
+            value = &mut interrupted => { value?; None }
+        };
+        let Some(bytes) = bytes else { break };
+        if bytes.is_empty() {
+            break;
+        }
+        if bytes.len() > 65_536 {
+            reply(
+                &mut output,
+                Value::Null,
+                Err(io::Error::other("command exceeds 64 KiB; closing input").into()),
+                4096,
+            )
+            .await?;
+            break;
+        }
+        let raw: Value = match serde_json::from_slice(&bytes) {
+            Ok(value) => value,
+            Err(error) => {
+                reply(&mut output, Value::Null, Err(error.into()), 4096).await?;
+                continue;
+            }
+        };
+        let id = raw
+            .get("id")
+            .filter(|id| serde_json::to_vec(id).is_ok_and(|value| value.len() <= 64))
+            .cloned()
+            .unwrap_or(Value::Null);
+        let budget = raw
+            .get("budget")
+            .and_then(Value::as_u64)
+            .and_then(|value| usize::try_from(value).ok())
+            .filter(|value| (1024..=16_384).contains(value))
+            .unwrap_or(4096);
+        let operation = raw.get("op").and_then(Value::as_str).unwrap_or("");
+        let close = operation == "close";
+        let result = document_value(&reader, operation, &raw, budget);
+        let accepted = result.is_ok();
+        reply(&mut output, id, result, budget).await?;
+        if close && accepted {
+            break;
+        }
+    }
+    Ok(())
+}
+
+async fn read_document(
+    format: DocumentFormat,
+    file: PathBuf,
+    id: String,
+    source: String,
+    epoch: Option<u64>,
+    policy: DocumentPolicy,
+) -> Result<()> {
+    const MAX_DOCUMENT_BYTES: usize = 128 * 1024 * 1024;
+    let max_bytes = policy.max_bytes;
+    if !(1..=MAX_DOCUMENT_BYTES).contains(&max_bytes) {
+        return Err(io::Error::other("--max-bytes must be 1..134217728").into());
+    }
+    let input = AsyncFile::open(file).await?;
+    let read_limit = max_bytes
+        .checked_add(1)
+        .ok_or_else(|| io::Error::other("--max-bytes overflowed"))?;
+    let mut bytes = Vec::new();
+    AsyncReadExt::take(input, u64::try_from(read_limit)?)
+        .read_to_end(&mut bytes)
+        .await?;
+    if bytes.len() > max_bytes {
+        return Err(io::Error::other("document exceeds --max-bytes").into());
+    }
+    let document = match format {
+        DocumentFormat::Html => {
+            reject_epoch(epoch)?;
+            Document::html(id, bytes)?
+        }
+        DocumentFormat::Xml => {
+            reject_epoch(epoch)?;
+            Document::xml(id, bytes)?
+        }
+        DocumentFormat::Json => {
+            reject_epoch(epoch)?;
+            Document::json(id, bytes)?
+        }
+        DocumentFormat::Text => {
+            reject_epoch(epoch)?;
+            Document::text(id, bytes)?
+        }
+        DocumentFormat::RenderedDom => Document::rendered_dom(id, document_epoch(epoch)?, bytes)?,
+        DocumentFormat::AccessibilityTree => {
+            Document::accessibility_tree(id, document_epoch(epoch)?, bytes)?
+        }
+    };
+    let policies = DocumentPolicies {
+        dom: policy,
+        ax: policy,
+        html: policy,
+        xml: policy,
+        json: policy,
+        text: policy,
+        network: policy,
+    };
+    let index = Surface::with_policy(&document, &policies)?;
+    let reader = WebSurface::with_policy(index, SourceId::new(source)?, policy)?;
+    drive_document(reader).await
+}
+
+fn document_epoch(epoch: Option<u64>) -> Result<DocumentEpoch> {
+    let value = epoch.ok_or_else(|| {
+        io::Error::other("--epoch is required for rendered-dom and accessibility-tree")
+    })?;
+    Ok(DocumentEpoch::try_from(value)?)
+}
+
+fn reject_epoch(epoch: Option<u64>) -> Result<()> {
+    if epoch.is_some() {
+        return Err(io::Error::other(
+            "--epoch applies only to rendered-dom and accessibility-tree",
+        )
+        .into());
+    }
+    Ok(())
+}
 fn policy(output: PathBuf, archive: Option<PathBuf>) -> SurfacePolicy {
     SurfacePolicy {
         output: Some(output),
@@ -180,6 +401,34 @@ fn policy(output: PathBuf, archive: Option<PathBuf>) -> SurfacePolicy {
 }
 pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
     let result: Result<()> = match args.command {
+        SurfaceCommand::Document {
+            format,
+            file,
+            id,
+            source,
+            epoch,
+            max_bytes,
+            max_depth,
+            max_nodes,
+            overview_depth,
+            response_bytes,
+        } => {
+            read_document(
+                format,
+                file,
+                id,
+                source,
+                epoch,
+                DocumentPolicy {
+                    max_bytes,
+                    max_depth,
+                    max_nodes,
+                    overview_depth,
+                    response_bytes,
+                },
+            )
+            .await
+        }
         SurfaceCommand::Web {
             url,
             headless,
