@@ -101,7 +101,7 @@ pub(super) enum Operation {
     /// Read a bounded chunk from one separately retained network body payload.
     NetworkPayload {
         /// Exact response link copied from a frozen NetworkWindow.
-        reference: super::NetworkPayloadRef,
+        reference: Box<super::NetworkPayloadRef>,
         /// Byte offset into the retained body.
         offset: usize,
         /// Requested body bytes before base64 transport encoding.

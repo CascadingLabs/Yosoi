@@ -1,5 +1,6 @@
 use super::archive::repeating;
 use super::{backend::Browser, process::ELEMENT};
+use crate::archive::FileDocumentArchiveRef;
 use crate::documents::{Document, FileDocument, FileLimits, FileMetadata, file_from_bytes};
 use crate::session::{Session as NativeSession, Tab, Work};
 use crate::surface::{
@@ -63,12 +64,7 @@ fn request_observation(request: &model::ReadRequest) -> Option<String> {
 fn retained_network_payloads(
     browser: &Browser,
     snapshot: &Value,
-) -> Result<
-    Vec<(
-        crate::surface::NetworkPayloadRef,
-        crate::surface::NetworkPayload,
-    )>,
-> {
+) -> Result<Vec<(NetworkPayloadRef, NetworkPayload)>> {
     let Some(payloads) = snapshot
         .pointer("/network/payloads")
         .and_then(Value::as_array)
@@ -77,11 +73,10 @@ fn retained_network_payloads(
     };
     let mut retained = Vec::new();
     for value in payloads {
-        let reference: crate::surface::NetworkPayloadRef = serde_json::from_value(value.clone())?;
+        let reference: NetworkPayloadRef = serde_json::from_value(value.clone())?;
         if !matches!(
             reference.state,
-            crate::surface::NetworkPayloadState::Retained
-                | crate::surface::NetworkPayloadState::Truncated
+            NetworkPayloadState::Retained | NetworkPayloadState::Truncated
         ) {
             continue;
         }
@@ -214,9 +209,11 @@ impl Driver {
                 let view = match representation {
                     super::BrowserRepresentation::Dom => self.web_view()?,
                     super::BrowserRepresentation::Network => self.network_view(read)?,
-                    _ => self.evidence.get(representation).cloned().ok_or_else(|| {
-                        io::Error::other("observe this representation before reading it")
-                    })?,
+                    super::BrowserRepresentation::Ax => {
+                        self.evidence.get(representation).cloned().ok_or_else(|| {
+                            io::Error::other("observe this representation before reading it")
+                        })?
+                    }
                 };
                 let mut read = read.clone();
                 read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
@@ -334,9 +331,8 @@ impl Driver {
                         1,
                         None,
                     );
-                    pixel_source.file_archive = Some(
-                        crate::archive::FileDocumentArchiveRef::Image(image_reference),
-                    );
+                    pixel_source.file_archive =
+                        Some(FileDocumentArchiveRef::Image(image_reference));
                     recording.outcome.retain(pixel_source)?;
                     let mut metadata_source =
                         ArchivedSource::new(reference.document.to_string(), &document, None);
@@ -914,10 +910,10 @@ impl BrowserSurface {
         retain_bodies: Option<bool>,
     ) -> StdResult<NetworkSubscription, ExecutionError> {
         let mut command = json!({"op":"network_subscribe"});
-        if let Some(retain_bodies) = retain_bodies {
-            if let Some(fields) = command.as_object_mut() {
-                fields.insert("retain_bodies".into(), Value::Bool(retain_bodies));
-            }
+        if let Some(retain_bodies) = retain_bodies
+            && let Some(fields) = command.as_object_mut()
+        {
+            fields.insert("retain_bodies".into(), Value::Bool(retain_bodies));
         }
         let value = self.inner.execute(command).await?;
         serde_json::from_value(value).map_err(|error| ExecutionError::Operation(Box::new(error)))
@@ -1109,7 +1105,7 @@ impl BrowserSurface {
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
                 let file: FileDocument = file_from_bytes(id, content, metadata, limits)
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
-                NetworkPayloadValue::File(file)
+                NetworkPayloadValue::File(Box::new(file))
             }
             None => {
                 return Err(ExecutionError::Operation(
@@ -1232,7 +1228,7 @@ impl BrowserSurface {
                 return Err(source);
             }
         };
-        let network_evidence_limit = browser.network_window_limit().map_or(1, |limit| limit);
+        let network_evidence_limit = browser.network_window_limit().unwrap_or(1);
         Ok(Self {
             inner: Connection::new(
                 Driver {
@@ -1373,7 +1369,7 @@ impl BrowserSurface {
                 return Err(error);
             }
         };
-        let network_evidence_limit = browser.network_window_limit().map_or(1, |limit| limit);
+        let network_evidence_limit = browser.network_window_limit().unwrap_or(1);
         Ok(Self {
             inner: Connection::new(
                 Driver {

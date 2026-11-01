@@ -13,7 +13,12 @@ use image::{ImageFormat, ImageReader};
 use rustls::crypto::{CryptoProvider, ring};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{env, fs, io, process::Stdio, time::Duration};
+use std::{
+    env, fs,
+    io::{self, Cursor},
+    process::Stdio,
+    time::Duration,
+};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
@@ -204,7 +209,7 @@ impl Browser {
         if bytes.len() > limits.max_output_bytes {
             return Err(io::Error::other("screenshot exceeds pixel output byte limit").into());
         }
-        let mut reader = ImageReader::new(std::io::Cursor::new(&bytes)).with_guessed_format()?;
+        let mut reader = ImageReader::new(Cursor::new(&bytes)).with_guessed_format()?;
         if reader.format() != Some(ImageFormat::Png) {
             return Err(io::Error::other("browser screenshot is not PNG").into());
         }

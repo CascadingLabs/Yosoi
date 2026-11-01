@@ -29,6 +29,7 @@ use crate::internal::browser::vendor::chromiumoxide::{
     listeners::{EventDelivery, EventOverflowPolicy, EventStream},
 };
 use crate::internal::browser::{DocumentEpoch, DocumentScope, Result, VoidCrawlError};
+use crate::surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
 use base64::{engine::general_purpose::STANDARD, read::DecoderReader};
 use futures::{FutureExt, StreamExt, future::pending};
 use serde::{Deserialize, Serialize};
@@ -49,7 +50,7 @@ use tokio::time as tokio_time;
 const BINDING_NAME: &str = "__yosoi_observation_watch";
 const MAX_WATCH_EVENTS: usize = 4_096;
 const MAX_WATCH_BYTES: usize = 8 * 1024 * 1024;
-const MAX_RESPONSE_BODY_BYTES: usize = crate::surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
+const MAX_RESPONSE_BODY_BYTES: usize = NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
 const MAX_FILTERS: usize = 64;
 const MAX_URL_BYTES: usize = 16 * 1024;
 const MAX_PROVIDER_EVENT_CAPACITY: usize = 256;
@@ -1030,7 +1031,7 @@ impl Page {
             finished: Some(finished),
             failed: Some(failed),
             pending_events: VecDeque::new(),
-            _reservation: Some(reservation),
+            reservation: Some(reservation),
             active: true,
             network_was_previously_enabled,
         })
@@ -1361,7 +1362,7 @@ pub struct NetworkObservationSubscription {
     finished: Option<EventStream<EventLoadingFinished>>,
     failed: Option<EventStream<EventLoadingFailed>>,
     pending_events: VecDeque<NetworkObservationEvent>,
-    _reservation: Option<PageWatchReservation>,
+    reservation: Option<PageWatchReservation>,
     active: bool,
     network_was_previously_enabled: bool,
 }
@@ -1395,7 +1396,7 @@ impl NetworkObservationSubscription {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Request(event)),
                 Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "request_listener_overflow",
-                    dropped_events: u64::try_from(dropped.get()).ok(),
+                    dropped_events: Some(dropped.get()),
                 }),
                 None => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "request_listener_closed",
@@ -1406,7 +1407,7 @@ impl NetworkObservationSubscription {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Response(event)),
                 Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "response_listener_overflow",
-                    dropped_events: u64::try_from(dropped.get()).ok(),
+                    dropped_events: Some(dropped.get()),
                 }),
                 None => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "response_listener_closed",
@@ -1417,7 +1418,7 @@ impl NetworkObservationSubscription {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::DataReceived(event)),
                 Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "data_listener_overflow",
-                    dropped_events: u64::try_from(dropped.get()).ok(),
+                    dropped_events: Some(dropped.get()),
                 }),
                 None => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "data_listener_closed",
@@ -1428,7 +1429,7 @@ impl NetworkObservationSubscription {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Finished(event)),
                 Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "completion_listener_overflow",
-                    dropped_events: u64::try_from(dropped.get()).ok(),
+                    dropped_events: Some(dropped.get()),
                 }),
                 None => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "completion_listener_closed",
@@ -1439,7 +1440,7 @@ impl NetworkObservationSubscription {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Failed(event)),
                 Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "failure_listener_overflow",
-                    dropped_events: u64::try_from(dropped.get()).ok(),
+                    dropped_events: Some(dropped.get()),
                 }),
                 None => Ok(NetworkObservationEvent::ProviderGap {
                     reason: "failure_listener_closed",
@@ -1461,7 +1462,7 @@ impl NetworkObservationSubscription {
                     Some(Some(EventDelivery::Lagged { dropped })) => {
                         return Ok(NetworkObservationEvent::ProviderGap {
                             reason: "data_listener_overflow",
-                            dropped_events: u64::try_from(dropped.get()).ok(),
+                            dropped_events: Some(dropped.get()),
                         });
                     }
                     Some(None) => {
@@ -1502,7 +1503,7 @@ impl NetworkObservationSubscription {
         self.finished.take();
         self.failed.take();
         self.pending_events.clear();
-        self._reservation.take();
+        self.reservation.take();
     }
 }
 

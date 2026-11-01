@@ -178,7 +178,7 @@ impl NetworkPayloadStore {
         self.payloads.get(id)
     }
 
-    pub(super) fn apply_retention(&self, retention: &mut NetworkRetention) {
+    pub(super) const fn apply_retention(&self, retention: &mut NetworkRetention) {
         retention.session_max_response_bodies = Some(self.maximum_payloads);
         retention.session_max_total_body_bytes = Some(self.maximum_bytes);
     }

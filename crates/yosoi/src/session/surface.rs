@@ -1,17 +1,21 @@
 //! Trusted Surface adapters reuse Work admission without granting authored JavaScript.
 use super::{ActionKind, SessionError, Work};
+use crate::internal::browser::{
+    controller::NetworkObservationSubscription, page::ObservationResponseBody,
+};
 use crate::{automation_record::OperationReceipt, internal::browser::page::SurfaceInput};
 use serde_json::{Value, json};
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 const SCRIPT: &str = include_str!("../surface/browser/extract.js");
 
 impl Work {
-    pub(crate) fn surface_session_cancellation(&self) -> tokio_util::sync::CancellationToken {
+    pub(crate) fn surface_session_cancellation(&self) -> CancellationToken {
         self.session.inner.backend.cancellation()
     }
 
-    pub(crate) fn surface_authority_cancellation(&self) -> tokio_util::sync::CancellationToken {
+    pub(crate) fn surface_authority_cancellation(&self) -> CancellationToken {
         self.control.closing()
     }
 
@@ -23,8 +27,7 @@ impl Work {
         &self,
         max_events: usize,
         max_buffered_events: usize,
-    ) -> Result<crate::internal::browser::controller::NetworkObservationSubscription, SessionError>
-    {
+    ) -> Result<NetworkObservationSubscription, SessionError> {
         let _operation = self.operation()?;
         self.call(
             self.control
@@ -37,7 +40,7 @@ impl Work {
         &self,
         request_id: &str,
         max_bytes: usize,
-    ) -> Result<crate::internal::browser::page::ObservationResponseBody, SessionError> {
+    ) -> Result<ObservationResponseBody, SessionError> {
         let _operation = self.operation()?;
         self.call(
             self.control
@@ -104,7 +107,7 @@ impl Work {
         let requested = input
             .get("timeout_ms")
             .and_then(Value::as_u64)
-            .map_or(15000, |value| value);
+            .unwrap_or(15000);
         let timeout = Duration::from_millis(requested).min(self.timeout());
         if timeout.is_zero() {
             return Err(SessionError::Deadline);

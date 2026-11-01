@@ -1,11 +1,14 @@
 //! Versioned live network evidence, separate from ordinary source JSON.
 
 use crate::{
-    documents::{Document, DocumentClass, DocumentId, DocumentProfile, FileDocument},
+    documents::{
+        Document, DocumentClass, DocumentId, DocumentProfile, DocumentSchemaProfile, FileDocument,
+    },
     surface::SurfaceError,
 };
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
+use std::collections::BTreeSet;
 use url::Url;
 
 /// Schema identifier for frozen native network observation Documents.
@@ -145,7 +148,7 @@ impl NetworkWindow {
                 "network event sequence range differs from its events".into(),
             ));
         }
-        let mut payload_ids = std::collections::BTreeSet::new();
+        let mut payload_ids = BTreeSet::new();
         for payload in &self.payloads {
             if payload.id.is_empty()
                 || payload.request_id.is_empty()
@@ -207,7 +210,8 @@ impl NetworkWindow {
             }
             if payload.response_window_id == self.window_id
                 && !self.events.iter().any(|event| {
-                    event.sequence == payload.response_sequence
+                    let response_sequence_matches = event.sequence == payload.response_sequence;
+                    response_sequence_matches
                         && event.request_id == payload.request_id
                         && event.hop == payload.hop
                         && matches!(&event.kind, NetworkEventKind::ResponseReceived { .. })
@@ -239,9 +243,7 @@ impl NetworkWindow {
 
     /// Restores a typed window only from a Document with the dedicated schema profile.
     pub fn from_document(document: &Document) -> Result<Self, SurfaceError> {
-        if document.profile().schema()
-            != crate::documents::DocumentSchemaProfile::YosoiNetworkObservationV1
-        {
+        if document.profile().schema() != DocumentSchemaProfile::YosoiNetworkObservationV1 {
             return Err(SurfaceError::Invalid(
                 "document does not carry the network observation profile".into(),
             ));
@@ -374,6 +376,10 @@ pub struct NetworkInFlight {
 /// Explicit losses and limits for one window.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "Coverage records independent observed losses and boundary facts; combining them into exclusive states would lose simultaneous evidence."
+)]
 pub struct NetworkCoverage {
     /// Network event evidence never claims browser-wide or cross-target completeness.
     pub complete: bool,
@@ -737,7 +743,7 @@ pub enum NetworkPayloadValue {
     /// HTML or JSON projected through the existing immutable Document API.
     Document(Document),
     /// Binary or media bytes classified by the existing FileDocument factory.
-    File(FileDocument),
+    File(Box<FileDocument>),
 }
 
 impl NetworkPayloadValue {
@@ -815,9 +821,9 @@ impl NetworkPayload {
                 }
                 NetworkPayloadValue::Document(document)
             }
-            NetworkPayloadKind::File => {
-                NetworkPayloadValue::File(outcome.source_file_document(&reference.id, maximum)?)
-            }
+            NetworkPayloadKind::File => NetworkPayloadValue::File(Box::new(
+                outcome.source_file_document(&reference.id, maximum)?,
+            )),
         };
         let digest = match &value {
             NetworkPayloadValue::Document(document) => {

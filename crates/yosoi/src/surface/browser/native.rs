@@ -1,5 +1,5 @@
 //! Retained native Session/Work binding; it never launches a second browser.
-use super::network::NetworkCapture;
+use super::network::{CapturedNetworkBody, NetworkBodyCandidate, NetworkCapture};
 use super::network_payloads::NetworkPayloadStore;
 use crate::{
     automation_record::OperationStatus,
@@ -15,16 +15,26 @@ use crate::{
     },
     session::{ActionKind, Work},
     surface::{
-        DocumentPolicies, DocumentPolicy, NetworkObservationPolicy, NetworkPayloadKind,
-        NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue, NetworkProjectionBasis,
-        PixelArtifact, PixelLimits, PixelOrientation, Surface,
+        DocumentPolicies, DocumentPolicy, NETWORK_OBSERVATION_SCHEMA, NetworkObservationPolicy,
+        NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue,
+        NetworkProjectionBasis, NetworkWindow, PixelArtifact, PixelLimits, PixelOrientation,
+        Surface,
         connection::{Operation, Result, Trace},
     },
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use image::ImageReader;
 use serde_json::{Value, json};
-use std::{io, io::Cursor};
+use std::{io, io::Cursor, str};
+
+struct ProjectedNetworkBody {
+    payload: NetworkPayloadValue,
+    kind: NetworkPayloadKind,
+    document_id: String,
+    detected_media_type: Option<String>,
+    projection_basis: NetworkProjectionBasis,
+    reason: Option<String>,
+}
 
 pub(super) struct NativeBrowser {
     work: Option<Work>,
@@ -96,12 +106,15 @@ impl NativeBrowser {
             policy.retain_bodies = retain_bodies;
         }
         policy.validate()?;
-        let work = self.work()?;
-        let cancellation = work.surface_session_cancellation();
-        let authority_cancellation = work.surface_authority_cancellation();
-        let subscription = work
-            .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
-            .await?;
+        let (cancellation, authority_cancellation, subscription) = {
+            let work = self.work()?;
+            let cancellation = work.surface_session_cancellation();
+            let authority_cancellation = work.surface_authority_cancellation();
+            let subscription = work
+                .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
+                .await?;
+            (cancellation, authority_cancellation, subscription)
+        };
         let capture = NetworkCapture::start(
             subscription,
             self.session_id.clone(),
@@ -116,7 +129,7 @@ impl NativeBrowser {
         let fields = reply
             .as_object_mut()
             .ok_or_else(|| io::Error::other("network body summary is not an object"))?;
-        fields.extend(json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
+        fields.extend(json!({"active":true,"subscription_id":self.network.as_ref().map(NetworkCapture::subscription_id),
             "provider":"chrome_cdp","body_retention":self.network_policy.retain_bodies,
             "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}).as_object().ok_or_else(|| io::Error::other("network subscription summary is not an object"))?.clone());
         Ok(reply)
@@ -136,10 +149,10 @@ impl NativeBrowser {
             .as_ref()
             .ok_or_else(|| io::Error::other("native network subscription is not active"))?;
         let sequence = network.wait_for_event(after_sequence, timeout_ms).await?;
-        Ok(match sequence {
-            Some(sequence) => json!({"state":"event","sequence":sequence}),
-            None => json!({"state":"timeout","sequence":after_sequence}),
-        })
+        Ok(sequence.map_or_else(
+            || json!({"state":"timeout","sequence":after_sequence}),
+            |sequence| json!({"state":"event","sequence":sequence}),
+        ))
     }
 
     async fn capture_network_evidence(
@@ -156,7 +169,7 @@ impl NativeBrowser {
     }
 
     pub fn commit_network_window(&mut self, snapshot: &Value) -> Result<()> {
-        let window: crate::surface::NetworkWindow = serde_json::from_value(
+        let window: NetworkWindow = serde_json::from_value(
             snapshot
                 .get("network")
                 .cloned()
@@ -252,14 +265,14 @@ impl NativeBrowser {
                                 body.complete,
                                 text_utf8_normalized,
                             ) {
-                                Ok((
+                                Ok(ProjectedNetworkBody {
                                     payload,
                                     kind,
                                     document_id,
                                     detected_media_type,
                                     projection_basis,
                                     reason,
-                                )) if self.network_payloads.can_retain(bytes.len()) => (
+                                }) if self.network_payloads.can_retain(bytes.len()) => (
                                     Some(payload),
                                     Some(kind),
                                     bytes,
@@ -321,16 +334,17 @@ impl NativeBrowser {
                     .ok_or_else(|| io::Error::other("network subscription was canceled"))?
                     .retain_body(
                         &candidate,
-                        payload_id,
-                        &bytes,
-                        base64_encoded,
-                        text_utf8_normalized,
-                        state,
-                        kind,
-                        document_id,
-                        detected_media_type,
-                        projection_basis,
-                        reason,
+                        CapturedNetworkBody {
+                            bytes: &bytes,
+                            provider_base64_encoded: base64_encoded,
+                            text_utf8_normalized,
+                            state,
+                            document_kind: kind,
+                            document_id,
+                            detected_media_type,
+                            projection_basis,
+                            reason,
+                        },
                     )?;
                 if matches!(
                     reference.state,
@@ -359,7 +373,7 @@ impl NativeBrowser {
         let index = Surface::with_policy(&document, &self.documents)?;
         let mut snapshot = json!({"session_id":self.session_id,"tab_id":self.tab_id,
             "capture_sequence":epoch,"network_window_id":window_id,"network":window,
-            "network_schema":crate::surface::NETWORK_OBSERVATION_SCHEMA,"network_schema_version":1,
+            "network_schema":NETWORK_OBSERVATION_SCHEMA,"network_schema_version":1,
             "network_window_bytes":bytes.len()});
         let fields = snapshot
             .as_object_mut()
@@ -372,18 +386,11 @@ impl NativeBrowser {
     fn project_network_body(
         &self,
         payload_id: &str,
-        candidate: &super::network::NetworkBodyCandidate,
+        candidate: &NetworkBodyCandidate,
         bytes: &[u8],
         complete: bool,
         text_utf8_normalized: bool,
-    ) -> Result<(
-        NetworkPayloadValue,
-        NetworkPayloadKind,
-        String,
-        Option<String>,
-        NetworkProjectionBasis,
-        Option<String>,
-    )> {
+    ) -> Result<ProjectedNetworkBody> {
         let source_media_type = candidate
             .declared_media_type
             .clone()
@@ -408,7 +415,7 @@ impl NativeBrowser {
         // Preserve exact valid UTF-8 bytes when no conflicting charset requires
         // character decoding; keep the provider-normalization fact unchanged.
         let utf8_view = text_utf8_normalized
-            || (std::str::from_utf8(bytes).is_ok()
+            || (str::from_utf8(bytes).is_ok()
                 && (json
                     || matches!(
                         parse_media_declaration(&source_media_type),
@@ -439,15 +446,15 @@ impl NativeBrowser {
                 } else {
                     NetworkPayloadKind::Json
                 };
-                return Ok((
-                    NetworkPayloadValue::Document(document),
+                return Ok(ProjectedNetworkBody {
+                    payload: NetworkPayloadValue::Document(document),
                     kind,
-                    payload_id.to_owned(),
+                    document_id: payload_id.to_owned(),
                     detected_media_type,
-                    requests_projection_basis(&classification)
+                    projection_basis: requests_projection_basis(&classification)
                         .unwrap_or(NetworkProjectionBasis::OpaqueBytes),
-                    None,
-                ));
+                    reason: None,
+                });
             }
         }
         let metadata = FileMetadata::new()
@@ -486,14 +493,14 @@ impl NativeBrowser {
         } else {
             None
         };
-        Ok((
-            NetworkPayloadValue::File(file),
-            NetworkPayloadKind::File,
-            payload_id.to_owned(),
+        Ok(ProjectedNetworkBody {
+            payload: NetworkPayloadValue::File(Box::new(file)),
+            kind: NetworkPayloadKind::File,
+            document_id: payload_id.to_owned(),
             detected_media_type,
             projection_basis,
             reason,
-        ))
+        })
     }
 
     pub fn read_network_payload(
@@ -746,7 +753,7 @@ fn detected_source_media_type(classification: &SourceClassificationOutcome) -> O
     Some(media_type.to_owned())
 }
 
-fn requests_projection_basis(
+const fn requests_projection_basis(
     classification: &SourceClassificationOutcome,
 ) -> Option<NetworkProjectionBasis> {
     let SourceClassificationOutcome::Classified(classified) = classification else {

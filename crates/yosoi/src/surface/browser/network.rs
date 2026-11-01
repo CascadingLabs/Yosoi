@@ -6,23 +6,23 @@ use crate::{
     },
     surface::connection::Result,
     surface::{
-        NetworkByteProvenance, NetworkCoverage, NetworkEvent, NetworkEventKind, NetworkGap,
-        NetworkHeader, NetworkInFlight, NetworkObservationPolicy, NetworkPayloadKind,
-        NetworkPayloadRef, NetworkPayloadState, NetworkProviderClock, NetworkWindow, SurfaceError,
-        network::is_sensitive_header,
+        NETWORK_OBSERVATION_SCHEMA, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
+        NetworkEventKind, NetworkGap, NetworkHeader, NetworkInFlight, NetworkObservationPolicy,
+        NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkProjectionBasis,
+        NetworkProviderClock, NetworkWindow, SurfaceError, network::is_sensitive_header,
     },
 };
 use serde_json::Value;
 use sha2::Digest;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
-    io,
+    io, mem,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
-use tokio::time::Instant;
+use tokio::time::{Instant, sleep, timeout, timeout_at};
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
@@ -79,20 +79,34 @@ pub(super) struct NetworkSnapshot {
     pub body_candidates: Vec<NetworkBodyCandidate>,
 }
 
+pub(super) struct CapturedNetworkBody<'a> {
+    pub bytes: &'a [u8],
+    pub provider_base64_encoded: bool,
+    pub text_utf8_normalized: bool,
+    pub state: NetworkPayloadState,
+    pub document_kind: Option<NetworkPayloadKind>,
+    pub document_id: Option<String>,
+    pub detected_media_type: Option<String>,
+    pub projection_basis: Option<NetworkProjectionBasis>,
+    pub reason: Option<String>,
+}
+
+struct EventContext {
+    request_id: String,
+    hop: u32,
+    provider_time_us: Option<u64>,
+    request_start_observed: bool,
+    frame_id: Option<String>,
+    loader_id: Option<String>,
+}
+
 struct Journal {
     events: VecDeque<NetworkEvent>,
     event_bytes: usize,
     sequence: u64,
     total_retained_events: usize,
-    overflow: bool,
-    dropped_events: u64,
-    filtered_events: u64,
-    disconnected: bool,
-    expired: bool,
-    network_was_previously_enabled: bool,
-    late_events: u64,
+    coverage: NetworkCoverage,
     last_provider_time_us: Option<u64>,
-    start_boundary_unknown: bool,
     request_states: HashMap<String, RequestState>,
     body_sizes: HashMap<String, BodySizeState>,
     data_lengths_reliable: bool,
@@ -112,15 +126,23 @@ impl Journal {
             event_bytes: 0,
             sequence: 0,
             total_retained_events: 0,
-            overflow: false,
-            dropped_events: 0,
-            filtered_events: 0,
-            disconnected: false,
-            expired: false,
-            network_was_previously_enabled,
-            late_events: 0,
+            coverage: NetworkCoverage {
+                complete: false,
+                reason: "page_target_cdp_window_is_not_browser_wide_or_atomic".into(),
+                overflow: false,
+                dropped_events: 0,
+                filtered_events: 0,
+                disconnected: false,
+                expired: false,
+                instrumentation_escalated: !network_was_previously_enabled,
+                network_was_previously_enabled,
+                late_events: 0,
+                starts_not_observed: 0,
+                omitted_payload_links: 0,
+                start_boundary_unknown: true,
+                end_boundary_in_flight: false,
+            },
             last_provider_time_us: None,
-            start_boundary_unknown: true,
             request_states: HashMap::new(),
             body_sizes: HashMap::new(),
             data_lengths_reliable: true,
@@ -174,7 +196,7 @@ impl NetworkCapture {
         let task_stop = stop.clone();
         let task = tokio::spawn(async move {
             let mut subscription = subscription;
-            let lifetime = tokio::time::sleep(Duration::from_millis(lifetime_ms));
+            let lifetime = sleep(Duration::from_millis(lifetime_ms));
             tokio::pin!(lifetime);
             loop {
                 let event = tokio::select! {
@@ -185,7 +207,7 @@ impl NetworkCapture {
                     }
                     () = cancellation.cancelled() => {
                         if let Ok(mut state) = task_journal.lock() {
-                            state.disconnected = true;
+                            state.coverage.disconnected = true;
                             state.data_lengths_reliable = false;
                             push_gap(&mut state, "owning_session_cancelled", None);
                         }
@@ -195,7 +217,7 @@ impl NetworkCapture {
                     }
                     () = authority_cancellation.cancelled() => {
                         if let Ok(mut state) = task_journal.lock() {
-                            state.disconnected = true;
+                            state.coverage.disconnected = true;
                             state.data_lengths_reliable = false;
                             push_gap(&mut state, "native_work_authority_lost", None);
                         }
@@ -205,7 +227,7 @@ impl NetworkCapture {
                     }
                     () = &mut lifetime => {
                         if let Ok(mut state) = task_journal.lock() {
-                            state.expired = true;
+                            state.coverage.expired = true;
                             state.data_lengths_reliable = false;
                             push_gap(&mut state, "subscription_lifetime_limit", None);
                         }
@@ -227,8 +249,8 @@ impl NetworkCapture {
                     }
                     Err(_error) => {
                         if let Ok(mut state) = task_journal.lock() {
-                            state.disconnected = true;
-                            state.overflow = true;
+                            state.coverage.disconnected = true;
+                            state.coverage.overflow = true;
                             state.data_lengths_reliable = false;
                             push_gap(&mut state, "provider_event_stream_lost", None);
                         }
@@ -279,7 +301,10 @@ impl NetworkCapture {
                     .journal
                     .lock()
                     .map_err(|_| io::Error::other("network journal lock poisoned"))?;
-                (state.sequence, state.disconnected || state.expired)
+                (
+                    state.sequence,
+                    state.coverage.disconnected || state.coverage.expired,
+                )
             };
             if sequence > after_sequence {
                 return Ok(Some(sequence));
@@ -290,10 +315,7 @@ impl NetworkCapture {
                 )
                 .into());
             }
-            if tokio::time::timeout_at(deadline, &mut notified)
-                .await
-                .is_err()
-            {
+            if timeout_at(deadline, &mut notified).await.is_err() {
                 return Ok(None);
             }
         }
@@ -302,10 +324,10 @@ impl NetworkCapture {
     pub(super) fn snapshot(&mut self, max_window_bytes: usize) -> Result<NetworkSnapshot> {
         if self.task.as_ref().is_none_or(JoinHandle::is_finished)
             && let Ok(mut state) = self.journal.lock()
-            && !state.expired
-            && !state.disconnected
+            && !state.coverage.expired
+            && !state.coverage.disconnected
         {
-            state.disconnected = true;
+            state.coverage.disconnected = true;
             push_gap(&mut state, "subscription_task_stopped", None);
         }
         let window_id = format!("{}:{}", self.subscription_id, self.next_window);
@@ -449,7 +471,7 @@ impl NetworkCapture {
         )
         .map_err(|_| SurfaceError::Limit("network missing-start count"))?;
         let mut window = NetworkWindow {
-            schema: crate::surface::NETWORK_OBSERVATION_SCHEMA.into(),
+            schema: NETWORK_OBSERVATION_SCHEMA.into(),
             schema_version: 1,
             session_id: self.session_id.clone(),
             tab_id: self.tab_id.clone(),
@@ -462,27 +484,16 @@ impl NetworkCapture {
             events,
             in_flight_at_start: self.previous_in_flight.clone(),
             in_flight,
-            gaps: std::mem::take(&mut state.gaps),
+            gaps: mem::take(&mut state.gaps),
             coverage: NetworkCoverage {
-                complete: false,
-                reason: "page_target_cdp_window_is_not_browser_wide_or_atomic".into(),
-                overflow: state.overflow,
-                dropped_events: state.dropped_events,
-                disconnected: state.disconnected,
-                expired: state.expired,
-                instrumentation_escalated: !state.network_was_previously_enabled,
-                network_was_previously_enabled: state.network_was_previously_enabled,
-                late_events: state.late_events,
-                filtered_events: state.filtered_events,
                 starts_not_observed,
-                omitted_payload_links: 0,
-                start_boundary_unknown: state.start_boundary_unknown,
                 end_boundary_in_flight: !state.request_states.is_empty(),
+                ..state.coverage.clone()
             },
             retention: self.policy.retention(),
             payloads,
         };
-        state.start_boundary_unknown = false;
+        state.coverage.start_boundary_unknown = false;
         self.previous_in_flight.clone_from(&window.in_flight);
         self.next_window_start_unix_us = now;
         drop(state);
@@ -494,7 +505,9 @@ impl NetworkCapture {
                 .any(|payload| payload.id == candidate.payload_id)
                 && (candidate.response_window_id != window.window_id
                     || window.events.iter().any(|event| {
-                        event.sequence == candidate.response_sequence
+                        let response_sequence_matches =
+                            event.sequence == candidate.response_sequence;
+                        response_sequence_matches
                             && event.request_id == candidate.request_id
                             && event.hop == candidate.hop
                             && matches!(&event.kind, NetworkEventKind::ResponseReceived { .. })
@@ -508,19 +521,21 @@ impl NetworkCapture {
     }
 
     pub(super) fn retain_body(
-        &mut self,
+        &self,
         candidate: &NetworkBodyCandidate,
-        payload_id: String,
-        bytes: &[u8],
-        provider_base64_encoded: bool,
-        text_utf8_normalized: bool,
-        state: NetworkPayloadState,
-        document_kind: Option<NetworkPayloadKind>,
-        document_id: Option<String>,
-        detected_media_type: Option<String>,
-        projection_basis: Option<crate::surface::NetworkProjectionBasis>,
-        reason: Option<String>,
+        body: CapturedNetworkBody<'_>,
     ) -> Result<NetworkPayloadRef> {
+        let CapturedNetworkBody {
+            bytes,
+            provider_base64_encoded,
+            text_utf8_normalized,
+            state,
+            document_kind,
+            document_id,
+            detected_media_type,
+            projection_basis,
+            reason,
+        } = body;
         let mut journal = self
             .journal
             .lock()
@@ -548,6 +563,7 @@ impl NetworkCapture {
             journal.retained_response_bodies = journal.retained_response_bodies.saturating_add(1);
             journal.retained_body_bytes = journal.retained_body_bytes.saturating_add(bytes.len());
         }
+        drop(journal);
         let retained = if matches!(
             outcome_state,
             NetworkPayloadState::Retained | NetworkPayloadState::Truncated
@@ -562,7 +578,7 @@ impl NetworkCapture {
         );
         let body_capture_at_unix_us = Some(unix_micros()?);
         Ok(NetworkPayloadRef {
-            id: payload_id,
+            id: candidate.payload_id.clone(),
             request_id: candidate.request_id.clone(),
             hop: candidate.hop,
             response_sequence: candidate.response_sequence,
@@ -598,14 +614,11 @@ impl NetworkCapture {
 
     pub(super) async fn close(&mut self) -> Result<()> {
         self.stop.cancel();
-        if let Some(mut task) = self.task.take() {
-            if tokio::time::timeout(Duration::from_secs(2), &mut task)
-                .await
-                .is_err()
-            {
-                task.abort();
-                let _ = task.await;
-            }
+        if let Some(mut task) = self.task.take()
+            && timeout(Duration::from_secs(2), &mut task).await.is_err()
+        {
+            task.abort();
+            let _ = task.await;
         }
         Ok(())
     }
@@ -633,11 +646,12 @@ fn store_provider_event(
             reason,
             dropped_events,
         } => {
-            state.disconnected = true;
+            state.coverage.disconnected = true;
             state.data_lengths_reliable = false;
             if let Some(dropped) = dropped_events {
-                state.overflow = true;
-                state.dropped_events = state.dropped_events.saturating_add(dropped);
+                state.coverage.overflow = true;
+                state.coverage.dropped_events =
+                    state.coverage.dropped_events.saturating_add(dropped);
             }
             push_gap(&mut state, reason, dropped_events);
         }
@@ -645,12 +659,12 @@ fn store_provider_event(
             let id = event.request_id.inner().clone();
             let method = event.request.method.clone();
             let Some((origin, url)) = retained_url(&event.request.url, policy) else {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 ignore_request(&mut state, &id, policy);
                 return;
             };
             if !origin_allowed(&origin, policy) || !method_allowed(&method, policy) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 ignore_request(&mut state, &id, policy);
                 return;
             }
@@ -671,8 +685,8 @@ fn store_provider_event(
             }
             let prior = state.request_states.get(&id).cloned();
             if prior.is_none() && state.request_states.len() >= policy.max_events {
-                state.overflow = true;
-                state.dropped_events = state.dropped_events.saturating_add(1);
+                state.coverage.overflow = true;
+                state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
                 push_gap(&mut state, "in_flight_request_limit", Some(1));
                 return;
             }
@@ -685,61 +699,61 @@ fn store_provider_event(
                     let _ = emit(
                         &mut state,
                         policy,
-                        id.clone(),
-                        hop,
-                        provider_time(event.timestamp.inner()),
-                        true,
+                        EventContext {
+                            request_id: id.clone(),
+                            hop,
+                            provider_time_us: provider_time(*event.timestamp.inner()),
+                            request_start_observed: true,
+                            frame_id: event.frame_id.as_ref().map(|frame| frame.inner().clone()),
+                            loader_id: nonempty(event.loader_id.inner()),
+                        },
                         NetworkEventKind::Redirect {
                             from_url: prior.url.clone(),
                             to_url: url.clone(),
                             status,
                             headers: retained_headers(redirect.headers.inner(), policy),
                         },
-                        event.frame_id.as_ref().map(|frame| frame.inner().clone()),
-                        nonempty(event.loader_id.inner()),
                     );
                 }
-                hop = match hop.checked_add(1) {
-                    Some(next) => next,
-                    None => {
-                        state.overflow = true;
-                        push_gap(&mut state, "redirect_hop_exhausted", None);
-                        return;
-                    }
+                let Some(next_hop) = hop.checked_add(1) else {
+                    state.coverage.overflow = true;
+                    push_gap(&mut state, "redirect_hop_exhausted", None);
+                    return;
                 };
+                hop = next_hop;
             } else if let Some(prior) = prior.as_ref() {
-                hop = match prior.hop.checked_add(1) {
-                    Some(next) => next,
-                    None => {
-                        state.overflow = true;
-                        push_gap(&mut state, "redirect_hop_exhausted", None);
-                        return;
-                    }
+                let Some(next_hop) = prior.hop.checked_add(1) else {
+                    state.coverage.overflow = true;
+                    push_gap(&mut state, "redirect_hop_exhausted", None);
+                    return;
                 };
+                hop = next_hop;
             }
             let response_seen = prior.is_some_and(|request| request.response_seen);
             let sequence = emit(
                 &mut state,
                 policy,
-                id.clone(),
-                hop,
-                provider_time(event.timestamp.inner()),
-                true,
+                EventContext {
+                    request_id: id.clone(),
+                    hop,
+                    provider_time_us: provider_time(*event.timestamp.inner()),
+                    request_start_observed: true,
+                    frame_id: event.frame_id.as_ref().map(|frame| frame.inner().clone()),
+                    loader_id: nonempty(event.loader_id.inner()),
+                },
                 NetworkEventKind::RequestStarted {
                     url: url.clone(),
                     method: method.clone(),
                     resource_type: event.r#type.as_ref().map(|value| value.as_ref().to_owned()),
                     headers: retained_headers(event.request.headers.inner(), policy),
                 },
-                event.frame_id.as_ref().map(|frame| frame.inner().clone()),
-                nonempty(event.loader_id.inner()),
             );
             if sequence.is_some() {
                 state.request_states.insert(
                     id,
                     RequestState {
                         hop,
-                        url: url.clone(),
+                        url,
                         method,
                         response_seen,
                     },
@@ -749,7 +763,7 @@ fn store_provider_event(
         ProviderEvent::DataReceived(event) => {
             let id = event.request_id.inner().clone();
             if state.ignored_request_ids.contains(&id) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             let length = u64::try_from(event.data_length).ok();
@@ -786,19 +800,19 @@ fn store_provider_event(
         ProviderEvent::Response(event) => {
             let id = event.request_id.inner().clone();
             if state.ignored_request_ids.contains(&id) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             if !policy.allowed_methods.is_empty() && !state.request_states.contains_key(&id) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             let Some((origin, url)) = retained_url(&event.response.url, policy) else {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             };
             if !origin_allowed(&origin, policy) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             let existing = state.request_states.get(&id).cloned();
@@ -817,8 +831,8 @@ fn store_provider_event(
                 }
             }
             if existing.is_none() && state.request_states.len() >= policy.max_events {
-                state.overflow = true;
-                state.dropped_events = state.dropped_events.saturating_add(1);
+                state.coverage.overflow = true;
+                state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
                 push_gap(&mut state, "in_flight_request_limit", Some(1));
                 return;
             }
@@ -834,10 +848,14 @@ fn store_provider_event(
             let sequence = emit(
                 &mut state,
                 policy,
-                id.clone(),
-                hop,
-                provider_time(event.timestamp.inner()),
-                request_start_observed,
+                EventContext {
+                    request_id: id.clone(),
+                    hop,
+                    provider_time_us: provider_time(*event.timestamp.inner()),
+                    request_start_observed,
+                    frame_id: event.frame_id.as_ref().map(|frame| frame.inner().clone()),
+                    loader_id: nonempty(event.loader_id.inner()),
+                },
                 NetworkEventKind::ResponseReceived {
                     url: response_url.clone(),
                     status,
@@ -847,8 +865,6 @@ fn store_provider_event(
                     content_encoding: content_encoding.clone(),
                     headers: retained_headers(event.response.headers.inner(), policy),
                 },
-                event.frame_id.as_ref().map(|frame| frame.inner().clone()),
-                nonempty(event.loader_id.inner()),
             );
             if let Some(sequence) = sequence {
                 let key = (id.clone(), hop);
@@ -884,7 +900,7 @@ fn store_provider_event(
         ProviderEvent::Finished(event) => {
             let id = event.request_id.inner().clone();
             if state.ignored_request_ids.remove(&id) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             let request = state.request_states.remove(&id);
@@ -897,21 +913,23 @@ fn store_provider_event(
             let _ = emit(
                 &mut state,
                 policy,
-                id,
-                hop,
-                provider_time(event.timestamp.inner()),
-                request_start_observed,
+                EventContext {
+                    request_id: id,
+                    hop,
+                    provider_time_us: provider_time(*event.timestamp.inner()),
+                    request_start_observed,
+                    frame_id: None,
+                    loader_id: None,
+                },
                 NetworkEventKind::Finished {
                     encoded_data_length: finite_u64(event.encoded_data_length),
                 },
-                None,
-                None,
             );
         }
         ProviderEvent::Failed(event) => {
             let id = event.request_id.inner().clone();
             if state.ignored_request_ids.remove(&id) {
-                state.filtered_events = state.filtered_events.saturating_add(1);
+                state.coverage.filtered_events = state.coverage.filtered_events.saturating_add(1);
                 return;
             }
             let request = state.request_states.remove(&id);
@@ -920,16 +938,18 @@ fn store_provider_event(
             let _ = emit(
                 &mut state,
                 policy,
-                id,
-                hop,
-                provider_time(event.timestamp.inner()),
-                request_start_observed,
+                EventContext {
+                    request_id: id,
+                    hop,
+                    provider_time_us: provider_time(*event.timestamp.inner()),
+                    request_start_observed,
+                    frame_id: None,
+                    loader_id: None,
+                },
                 NetworkEventKind::Failed {
                     error: safe_error(&event.error_text),
                     canceled: event.canceled.as_ref().is_some_and(|canceled| *canceled),
                 },
-                None,
-                None,
             );
         }
     }
@@ -938,38 +958,35 @@ fn store_provider_event(
 fn emit(
     state: &mut Journal,
     policy: &NetworkObservationPolicy,
-    request_id: String,
-    hop: u32,
-    provider_time_us: Option<u64>,
-    request_start_observed: bool,
+    context: EventContext,
     kind: NetworkEventKind,
-    frame_id: Option<String>,
-    loader_id: Option<String>,
 ) -> Option<u64> {
-    let sequence = match state.sequence.checked_add(1) {
-        Some(sequence) => sequence,
-        None => {
-            state.overflow = true;
-            push_gap(state, "event_sequence_exhausted", None);
-            return None;
-        }
+    let EventContext {
+        request_id,
+        hop,
+        provider_time_us,
+        request_start_observed,
+        frame_id,
+        loader_id,
+    } = context;
+    let Some(sequence) = state.sequence.checked_add(1) else {
+        state.coverage.overflow = true;
+        push_gap(state, "event_sequence_exhausted", None);
+        return None;
     };
     state.sequence = sequence;
-    let observed_at_unix_us = match unix_micros() {
-        Ok(value) => value,
-        Err(_) => {
-            state.overflow = true;
-            state.dropped_events = state.dropped_events.saturating_add(1);
-            push_gap(state, "local_event_clock_unavailable", Some(1));
-            return None;
-        }
+    let Ok(observed_at_unix_us) = unix_micros() else {
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
+        push_gap(state, "local_event_clock_unavailable", Some(1));
+        return None;
     };
     if provider_time_us.is_some_and(|time| {
         state
             .last_provider_time_us
             .is_some_and(|prior| time < prior)
     }) {
-        state.late_events = state.late_events.saturating_add(1);
+        state.coverage.late_events = state.coverage.late_events.saturating_add(1);
     }
     if let Some(time) = provider_time_us {
         state.last_provider_time_us = Some(
@@ -990,30 +1007,29 @@ fn emit(
         loader_id,
         kind,
     };
-    let bytes = match serde_json::to_vec(&event) {
-        Ok(bytes) => bytes.len(),
-        Err(_) => {
-            state.overflow = true;
-            state.dropped_events = state.dropped_events.saturating_add(1);
-            push_gap(state, "event_serialization_failed", Some(1));
-            return None;
-        }
+    let Ok(serialized) = serde_json::to_vec(&event) else {
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
+        push_gap(state, "event_serialization_failed", Some(1));
+        return None;
     };
+    let bytes = serialized.len();
+    drop(serialized);
     let Some(next_event_bytes) = state.event_bytes.checked_add(bytes) else {
-        state.overflow = true;
-        state.dropped_events = state.dropped_events.saturating_add(1);
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
         push_gap(state, "event_byte_count_overflow", Some(1));
         return None;
     };
     let Some(next_event_count) = state.total_retained_events.checked_add(1) else {
-        state.overflow = true;
-        state.dropped_events = state.dropped_events.saturating_add(1);
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
         push_gap(state, "event_count_overflow", Some(1));
         return None;
     };
     if next_event_count > policy.max_events || next_event_bytes > policy.max_event_bytes {
-        state.overflow = true;
-        state.dropped_events = state.dropped_events.saturating_add(1);
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
         push_gap(state, "event_retention_limit", Some(1));
         return None;
     }
@@ -1038,8 +1054,8 @@ fn ignore_request(state: &mut Journal, request_id: &str, policy: &NetworkObserva
     if state.ignored_request_ids.len() < policy.max_events {
         state.ignored_request_ids.insert(request_id.to_owned());
     } else {
-        state.overflow = true;
-        state.dropped_events = state.dropped_events.saturating_add(1);
+        state.coverage.overflow = true;
+        state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
         push_gap(state, "filtered_request_tracking_limit", Some(1));
     }
 }
@@ -1200,14 +1216,10 @@ fn trim_window(window: &mut NetworkWindow, maximum: usize) -> Result<()> {
                 .iter_mut()
                 .find(|gap| gap.reason == "network_document_byte_limit")
             {
-                gap.dropped_events = Some(
-                    gap.dropped_events
-                        .map_or(0, |count| count)
-                        .saturating_add(1),
-                );
+                gap.dropped_events = Some(gap.dropped_events.unwrap_or(0).saturating_add(1));
             } else {
                 window.gaps.push(NetworkGap {
-                    after_sequence: window.last_sequence.map_or(0, |sequence| sequence),
+                    after_sequence: window.last_sequence.unwrap_or(0),
                     reason: "network_document_byte_limit".into(),
                     dropped_events: Some(1),
                 });
@@ -1230,24 +1242,20 @@ fn trim_window(window: &mut NetworkWindow, maximum: usize) -> Result<()> {
     }
 }
 
-fn provider_time(seconds: &f64) -> Option<u64> {
-    if !seconds.is_finite() || *seconds < 0.0 {
-        return None;
-    }
-    let micros = (*seconds * 1_000_000.0).round();
-    if micros > u64::MAX as f64 {
-        None
-    } else {
-        Some(micros as u64)
-    }
+fn provider_time(seconds: f64) -> Option<u64> {
+    finite_u64(seconds * 1_000_000.0)
 }
 
 fn finite_u64(value: f64) -> Option<u64> {
-    if !value.is_finite() || value < 0.0 || value > u64::MAX as f64 {
-        None
-    } else {
-        Some(value.round() as u64)
+    if !value.is_finite() || value < 0.0 {
+        return None;
     }
+    // The standard checked converter rejects non-finite/out-of-range values.
+    // Rounded integer units are represented as whole seconds solely to obtain
+    // their exact u64 representation without a saturating numeric cast.
+    Duration::try_from_secs_f64(value.round())
+        .ok()
+        .map(|integer| integer.as_secs())
 }
 
 fn unix_micros() -> Result<u64> {
@@ -1276,9 +1284,27 @@ fn safe_error(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::retained_headers;
+    use super::{finite_u64, provider_time, retained_headers};
     use crate::surface::{NetworkHeader, NetworkObservationPolicy};
     use serde_json::{Map, Value};
+    use std::time::Duration;
+
+    #[test]
+    fn provider_numeric_values_are_rounded_without_saturating_out_of_range() {
+        assert_eq!(provider_time(1.000_000_6), Some(1_000_001));
+        assert_eq!(finite_u64(1.4), Some(1));
+        assert_eq!(finite_u64(1.5), Some(2));
+        assert_eq!(finite_u64(f64::from(u32::MAX)), Some(u64::from(u32::MAX)));
+        for invalid in [
+            f64::NAN,
+            f64::INFINITY,
+            f64::MAX,
+            -1.0,
+            Duration::MAX.as_secs_f64(),
+        ] {
+            assert_eq!(finite_u64(invalid), None);
+        }
+    }
 
     #[test]
     fn sensitive_header_aliases_never_survive_explicit_allowlists() {
