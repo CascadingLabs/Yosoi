@@ -3,17 +3,16 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{ErrorKind, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
+    process,
     sync::{Mutex, MutexGuard},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::values::MAX_STATE_BYTES;
-use super::{
-    Caller, Change, Coordination, RegistryError, Revision, Snapshot, Transaction,
-    TransactionContext,
-};
+use super::{Caller, Change, RegistryError, Revision, Snapshot, Transaction, TransactionContext};
 
 const VERSION: u16 = 2;
 const MAX_JOURNAL_BYTES: u64 = 64 * 1024 * 1024;
@@ -46,8 +45,8 @@ pub(super) struct Jsonl {
 }
 
 struct Lock<'a> {
-    _local: MutexGuard<'a, ()>,
     _file: File,
+    _local: MutexGuard<'a, ()>,
 }
 
 impl Jsonl {
@@ -72,10 +71,10 @@ impl Jsonl {
             transaction_lock: Mutex::new(()),
             caller: Caller {
                 instance_id: Uuid::new_v4(),
-                pid: Some(std::process::id()),
+                pid: Some(process::id()),
             },
         };
-        let _lock = backend.lock()?;
+        let lock = backend.lock()?;
         match file_options().create_new(true).open(&backend.path) {
             Ok(mut file) => {
                 let record = Record {
@@ -99,11 +98,11 @@ impl Jsonl {
             }
             Err(error) => return Err(error.into()),
         }
-        drop(_lock);
+        drop(lock);
         Ok(backend)
     }
 
-    pub(super) fn caller(&self) -> &Caller {
+    pub(super) const fn caller(&self) -> &Caller {
         &self.caller
     }
     pub(super) fn path(&self) -> &Path {
@@ -115,8 +114,8 @@ impl Jsonl {
         sequence: u64,
         context: TransactionContext,
     ) -> Result<Transaction, RegistryError> {
-        let elapsed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
+        let elapsed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .map_err(|_| RegistryError::InvalidState)?;
         let seconds = i64::try_from(elapsed.as_secs()).map_err(|_| RegistryError::InvalidState)?;
         let at = chrono::DateTime::from_timestamp(seconds, elapsed.subsec_nanos())
@@ -205,10 +204,6 @@ impl Jsonl {
 }
 
 impl Jsonl {
-    pub(super) fn coordination(&self) -> Coordination {
-        Coordination::LocalProcesses
-    }
-
     pub(super) fn snapshot(&self) -> Result<Snapshot, RegistryError> {
         let _lock = self.lock()?;
         Ok(self.read()?.0)

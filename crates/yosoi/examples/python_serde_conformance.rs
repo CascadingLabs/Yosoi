@@ -1007,19 +1007,13 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
             json!({}),
         )?);
     }
-    for (name, coordination) in [
-        ("instance", Coordination::Instance),
-        ("local", Coordination::LocalProcesses),
-        ("distributed", Coordination::Distributed),
-    ] {
-        output.push(constructed_case(
-            &format!("registry-coordination-{name}"),
-            "yosoi::registry::Coordination",
-            "Rust Registry coordination DTO",
-            coordination,
-            json!({}),
-        )?);
-    }
+    output.push(constructed_case(
+        "registry-coordination-local",
+        "yosoi::registry::Coordination",
+        "Rust Registry coordination DTO",
+        Coordination::LocalProcesses,
+        json!({}),
+    )?);
 
     Ok(output)
 }

@@ -198,4 +198,5 @@ def test_context_is_committed_with_the_batch(registry):
     assert transaction.caller == registry.caller
     assert transaction.sequence == 1
     assert transaction.context == context
-    assert transaction.at.utcoffset().total_seconds() == 0
+    offset = transaction.at.utcoffset()
+    assert offset is not None and offset.total_seconds() == 0

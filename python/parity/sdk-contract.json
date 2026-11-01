@@ -44958,9 +44958,9 @@
       "trait": null,
       "surface": "member",
       "parentRustPath": "yosoi::registry::Registry",
-      "signatureSha256": "4fb9e3cddb5fbb68895ae14e64374fdfa03c085131c7b62f826221f9d40e2d8d",
+      "signatureSha256": "db7f603f33b33588e6f0f86fa0bce787c11ade87a75174bfb101177d3ff65f15",
       "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::registry::Registry::coordination@signature:4fb9e3cddb5fbb68895ae14e64374fdfa03c085131c7b62f826221f9d40e2d8d@source:eef2b343c8284c705487d78347008e893e4a364ea9135e112d86c7b5971a3b03",
+      "symbolKey": "member:function:yosoi::registry::Registry::coordination@signature:db7f603f33b33588e6f0f86fa0bce787c11ade87a75174bfb101177d3ff65f15@source:eef2b343c8284c705487d78347008e893e4a364ea9135e112d86c7b5971a3b03",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",

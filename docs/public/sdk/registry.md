@@ -6,7 +6,7 @@ order: 10
 
 Registry lets cooperating callers read shared state, evaluate a decision, and commit all its changes together. Every Registry uses a JSONL file. The default is `yosoi/registry.jsonl` beneath the user state directory: `XDG_STATE_HOME`, falling back to `HOME/.local/state` on Unix, or `LOCALAPPDATA` on Windows. Supply a file path to keep a workload's state separate.
 
-## Commit a decision
+## Example
 
 ### Rust
 

@@ -58,8 +58,8 @@ impl Registry {
     }
 
     /// Returns the backend's actual coordination boundary.
-    pub fn coordination(&self) -> Coordination {
-        self.0.coordination()
+    pub const fn coordination(&self) -> Coordination {
+        Coordination::LocalProcesses
     }
 
     /// Reads a snapshot. Values are copied and cannot mutate registry state.

@@ -9,6 +9,8 @@ use std::{
     fs::{self, OpenOptions},
     io::{self, BufRead, BufReader, Read, Write},
     process::{self, Command, Stdio},
+    thread,
+    time::SystemTime,
 };
 
 use serde_json::json;
@@ -16,6 +18,29 @@ use serde_json::json;
 use super::{Change, Coordination, Registry, RegistryError};
 
 type TestResult = Result<(), Box<dyn Error>>;
+
+#[test]
+fn cloned_handles_serialize_concurrent_snapshots() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let registry = Registry::jsonl(directory.path().join("clones.jsonl"))?;
+    thread::scope(|scope| -> TestResult {
+        let threads: Vec<_> = (0..4)
+            .map(|_| {
+                let registry = registry.clone();
+                scope.spawn(move || -> Result<(), RegistryError> {
+                    for _ in 0..500 {
+                        registry.snapshot()?;
+                    }
+                    Ok(())
+                })
+            })
+            .collect();
+        for thread in threads {
+            thread.join().map_err(|_| "snapshot thread panicked")??;
+        }
+        Ok(())
+    })
+}
 
 fn put(key: &str, value: serde_json::Value) -> Change {
     Change::Put {
@@ -291,7 +316,7 @@ fn transaction_metadata_records_caller_and_complete_batch() -> TestResult {
         resources: vec!["provider".to_owned(), "domain".to_owned()],
         reservation: Some(super::Reservation {
             id: uuid::Uuid::new_v4(),
-            expires_at: std::time::SystemTime::now().into(),
+            expires_at: SystemTime::now().into(),
         }),
     };
     let before = first.snapshot()?;

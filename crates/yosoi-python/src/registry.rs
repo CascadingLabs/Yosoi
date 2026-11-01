@@ -52,10 +52,7 @@ impl NativeRegistry {
     #[pyo3(signature = (path=None))]
     fn new(py: Python<'_>, path: Option<String>) -> PyResult<Self> {
         let registry = py
-            .detach(|| match path {
-                Some(path) => Registry::jsonl(path),
-                None => Registry::new(),
-            })
+            .detach(|| path.map_or_else(Registry::new, Registry::jsonl))
             .map_err(failure)?;
         Ok(Self { registry })
     }
@@ -72,7 +69,7 @@ impl NativeRegistry {
         }
     }
 
-    fn coordination(&self) -> &'static str {
+    const fn coordination(&self) -> &'static str {
         match self.registry.coordination() {
             Coordination::LocalProcesses => "local_processes",
         }
