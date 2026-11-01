@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "a3b755c9e898d4a78a9ebcc24308101b43aee43d",
-    "inventorySignature": "2311d7743301a109e4d6de8481fca7c4e72aa6e731bc4325623b59e9dbfc3adb",
+    "sourceRevision": "1e45999208dcb73cf8baba34367595c2fd96f447",
+    "inventorySignature": "f8436a3dcbbe0cb926d1377d9f80f51faf06ec9fff625c5fe3ee6d77d4329353",
     "featureProfileDigest": "b254e1fdf9e6f317e099d345e015017d5cf0323adb8e73de9b970dbe4916c270"
   },
   "pythonPin": {
-    "surfaceDigest": "3d5b6dc497fdc98929848ad5500500d5822d8be88fbd8ee6242c93b309cde311",
-    "implementationDigest": "c036401df2027d02581ca3e6029923482222cc9e0a2d29e63ba2c0de114f112d"
+    "surfaceDigest": "85e0bec3b552c3a3785ec9dd2ddfafd011e22fbd3a325e6a0fbb7ff991ec91a2",
+    "implementationDigest": "424f8d6bc8cb6c138f9040a5010dcb1b919de0c0eb14c0c291e64a1318e961ea"
   },
   "entries": [
     {

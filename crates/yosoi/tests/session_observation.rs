@@ -273,7 +273,8 @@ async fn qualify(browser: &session::Session, fixture: &mut Fixture) -> Result<()
     let short = duplicate.stop().await?;
     assert!(
         !short.segments.is_empty(),
-        "second same-tab output must retain native media"
+        "second same-tab output must retain native media; outcome={:?}",
+        short.metadata()
     );
     let first = workers
         .first()

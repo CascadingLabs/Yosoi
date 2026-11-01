@@ -590,7 +590,10 @@ impl super::Work {
     ///
     /// Tab capture requires the bound Policy's explicit native-tab permission. The action worker
     /// permit is used only during source setup; the recording keeps its own bounded capture and
-    /// output tasks after Work releases this tab.
+    /// output tasks after Work releases this tab. It returns after the first bounded native media
+    /// chunk is accepted; the Work operation deadline and cancellation bound that startup wait.
+    /// If the source ends before media arrives, the operation returns
+    /// [`super::SessionError::EvidenceUnavailable`].
     pub async fn start_recording(
         &self,
         options: RecordingOptions,
@@ -695,6 +698,8 @@ impl super::Session {
     /// BrowserVisible requires a BrowserVisible recording rule at acquisition so the browser
     /// already runs on its private display. Tab capture requires
     /// Policy.observe.native_tab_capture=true and a retained tab ID from this Session.
+    /// A Tab recording returns after its first bounded native media chunk is accepted; if the
+    /// source ends before media arrives, this returns [`super::SessionError::EvidenceUnavailable`].
     /// ObservePolicy.enabled gates automatic rules only; this explicit method remains available.
     pub async fn start_recording(
         &self,

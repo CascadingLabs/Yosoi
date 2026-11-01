@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "a3b755c9e898d4a78a9ebcc24308101b43aee43d",
-    "inventorySignature": "2311d7743301a109e4d6de8481fca7c4e72aa6e731bc4325623b59e9dbfc3adb"
+    "revision": "1e45999208dcb73cf8baba34367595c2fd96f447",
+    "inventorySignature": "f8436a3dcbbe0cb926d1377d9f80f51faf06ec9fff625c5fe3ee6d77d4329353"
   },
   "scope": {
     "crate": "yosoi",
@@ -2998,7 +2998,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
+        "pythonTargetSha256": "c48343894dbe292caa5a1d9bb651fa62556fb58444169ee8c8ece186ccc87330",
         "semanticEquivalent": "Rust Default value and Python authoring default value.",
         "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
         "review": null,
@@ -3111,7 +3111,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
+        "pythonTargetSha256": "c48343894dbe292caa5a1d9bb651fa62556fb58444169ee8c8ece186ccc87330",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -3161,7 +3161,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
+        "pythonTargetSha256": "c48343894dbe292caa5a1d9bb651fa62556fb58444169ee8c8ece186ccc87330",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -4476,7 +4476,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "070bd645d596a7d8b552e2bf06b9ebafd634c4217efb42a1e27fc7b6635f3f4c",
+        "pythonTargetSha256": "c48343894dbe292caa5a1d9bb651fa62556fb58444169ee8c8ece186ccc87330",
         "semanticEquivalent": null,
         "rationale": "Python Policy fields obtain defaults from the native Rust SDK and validate through Rust.",
         "review": null,
@@ -35390,7 +35390,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.scalars.AddressableByteLimit",
-        "pythonTargetSha256": "07b0aa5f0ce3f668805438e31d024291cd2bee00d3277914a5b1d84cc95f306d",
+        "pythonTargetSha256": "5d45f811665963bb1350df5e73cf4730c7b1868a0c2058b92adca081a2bbe84a",
         "semanticEquivalent": null,
         "rationale": "Python renders this validated scalar using Python string/integer formatting rather than Rust wrapper syntax; the complete value is accessible via its getter. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -35442,7 +35442,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.scalars.AddressableByteLimit",
-        "pythonTargetSha256": "07b0aa5f0ce3f668805438e31d024291cd2bee00d3277914a5b1d84cc95f306d",
+        "pythonTargetSha256": "5d45f811665963bb1350df5e73cf4730c7b1868a0c2058b92adca081a2bbe84a",
         "semanticEquivalent": null,
         "rationale": "Rust Hash and Python hashing can differ in representation and runtime stability; owner review must decide whether value-level hash semantics are part of the parity contract.",
         "review": {
@@ -35567,7 +35567,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.scalars.AddressableByteLimit",
-        "pythonTargetSha256": "07b0aa5f0ce3f668805438e31d024291cd2bee00d3277914a5b1d84cc95f306d",
+        "pythonTargetSha256": "5d45f811665963bb1350df5e73cf4730c7b1868a0c2058b92adca081a2bbe84a",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.scalars.AddressableByteLimit.",
         "review": null,
@@ -41313,7 +41313,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.effective_policy",
-        "pythonTargetSha256": "e02ddd8bc78a28eb102987e37d36b9065d6bff4aa6ccd808a9fd5246d758bedd",
+        "pythonTargetSha256": "b6cf937af46b18adc2ed21e431e39186838c7e5709fb80fe15972af5a1433fb5",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.effective_policy.",
         "review": null,
@@ -41334,7 +41334,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
+        "pythonTargetSha256": "9f58fc6ea1cf9ac18bff41b9834c83630e0a8389cadfe09bc859b24327eabbb6",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -41363,7 +41363,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
+        "pythonTargetSha256": "9f58fc6ea1cf9ac18bff41b9834c83630e0a8389cadfe09bc859b24327eabbb6",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -41436,7 +41436,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot.policy",
-        "pythonTargetSha256": "0c843ea51b0adfa10ea8b9a55b8651a1bcdc07f3e213470aaa0bf79efc5cdc25",
+        "pythonTargetSha256": "ab5971f4042d11c5ae06e36963336d2bf739c4734f3d4143131320b97a7ab8af",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.PolicySnapshot.policy.",
         "review": null,
@@ -41457,7 +41457,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.PolicySnapshot",
-        "pythonTargetSha256": "ae731eb17ac2284cf428d292f9d98c6a32fa316a9f62094dbf259ef9a3cb3a49",
+        "pythonTargetSha256": "9f58fc6ea1cf9ac18bff41b9834c83630e0a8389cadfe09bc859b24327eabbb6",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.PolicySnapshot.",
         "review": null,
@@ -65429,7 +65429,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.MAX_RECORDING_DURATION_MS",
-        "pythonTargetSha256": "f5d983c6d835d0d8492c106ac0fc50e078e9d1c31d59326e2f3b0fd0ee09d9e3",
+        "pythonTargetSha256": "164e3b173bed6a712b58796c280f8d2782c36e041a562cdafb9e56693f618f33",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.MAX_RECORDING_DURATION_MS.",
         "review": null,

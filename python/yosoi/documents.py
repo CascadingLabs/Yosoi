@@ -11,9 +11,9 @@ from pydantic import Field, PrivateAttr, ValidationInfo, model_validator
 from . import _native
 from ._models import ImmutableModel
 from .locators import Plan
-from .media import MAX_SOURCE_BYTES as MAX_SOURCE_BYTES
 from .media import DEFAULT_FILE_MAX_BYTES as DEFAULT_FILE_MAX_BYTES
 from .media import MAX_FILE_BYTES as MAX_FILE_BYTES
+from .media import MAX_SOURCE_BYTES as MAX_SOURCE_BYTES
 from .media import AudioDocument as AudioDocument
 from .media import BinaryDocument as BinaryDocument
 from .media import FileDocument as FileDocument

@@ -263,7 +263,7 @@ class _FileDocument(ImmutableModel):
         self._handle = context
 
     @classmethod
-    def _from_native(cls, handle: _native.FileDocument) -> _FileDocument:
+    def _from_native(cls, handle: _native.FileDocument) -> FileDocument:
         """Build the concrete Python media type selected by the Rust enum."""
         kind = handle.kind()
         concrete = {
@@ -554,4 +554,4 @@ async def read_file(
     handle = await _native.read_file(id, native_path, selected_limits.model_dump_json())
     document = _FileDocument._from_native(handle)
     document._limits = selected_limits
-    return cast(FileDocument, document)
+    return document

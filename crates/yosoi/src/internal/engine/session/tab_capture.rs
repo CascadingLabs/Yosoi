@@ -276,6 +276,7 @@ impl TabCaptureRegistry {
             changed: Arc::clone(&self.output_changed),
         };
         let source_for_task = Arc::clone(&source);
+        let (first_media_sender, first_media_receiver) = oneshot::channel();
         let task = executor.spawn(async move {
             Ok(collect_output(CollectOutputTask {
                 registry,
@@ -293,13 +294,24 @@ impl TabCaptureRegistry {
                 session_cancellation,
                 tab_cancellation,
                 _output_activity: output_activity,
+                first_media: Some(first_media_sender),
             })
             .await)
         });
-        Ok(RecordingHandle {
+        let handle = RecordingHandle {
             stop: Some(stop),
             task: Some(task),
-        })
+        };
+        let first_media = tokio::select! {
+            biased;
+            () = setup_cancellation.cancelled() => Err(SessionError::Cancelled),
+            result = first_media_receiver => result.map_err(|_| SessionError::EvidenceUnavailable),
+        };
+        if let Err(error) = first_media {
+            let _ = handle.stop().await;
+            return Err(error);
+        }
+        Ok(handle)
     }
 
     async fn get_or_create_source(
@@ -543,6 +555,7 @@ struct CollectOutputTask {
     session_cancellation: CancellationToken,
     tab_cancellation: CancellationToken,
     _output_activity: OutputActivityGuard,
+    first_media: Option<oneshot::Sender<()>>,
 }
 
 #[derive(Clone, Copy)]
@@ -575,6 +588,7 @@ async fn collect_output(task: CollectOutputTask) -> RecordingOutcome {
         session_cancellation,
         tab_cancellation,
         _output_activity,
+        mut first_media,
     } = task;
     let started = source.started;
     let hard_deadline = TokioInstant::now()
@@ -708,6 +722,9 @@ async fn collect_output(task: CollectOutputTask) -> RecordingOutcome {
                         current_segment.last_sequence = Some(sequence);
                         current_segment.bytes.extend_from_slice(&bytes);
                         total_bytes = next_total;
+                        if let Some(ready) = first_media.take() {
+                            let _ = ready.send(());
+                        }
                     }
                     Ok(NativeTabMediaEvent::Navigation { output_id: event_id, segment, at })
                         if event_id == output_id =>

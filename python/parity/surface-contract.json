@@ -2860,7 +2860,7 @@
         {
           "rustArgument": "bytes",
           "pythonArgument": "content",
-          "conversion": "Python str is UTF-8 encoded; bytes are preserved"
+          "conversion": "Python bytes pass unchanged; str is rejected. ImageDocument dispatches to its typed preparation path."
         },
         {
           "rustArgument": "tile_side",
@@ -7265,7 +7265,7 @@
       "kind": "function",
       "signatureSha256": "735482a8c27be0e659f8d6df5b7de6a0f0f24a0ba1da34101c15983f9a77fa9a",
       "pythonTarget": "yosoi.surface.ImageCrop.png",
-      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "rationale": "Rust replaced the former ImageCrop::png struct field with an accessor to bytes retained by its validated PixelArtifact. Python maps that function to its read-only ImageCrop.png property, which returns those same bytes.",
       "pythonTargetSha256": "16e34af63a98a2bdaabaa4635623fd6b85027b7b7529ae7bdd8c0ce072bc45de"
     },
     {
@@ -13022,14 +13022,6 @@
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
-    },
-    {
-      "rustPath": "yosoi::surface::ImageCrop::png",
-      "kind": "struct_field",
-      "signatureSha256": "59cc765b13def68ae123de0680377395b78ff257654efc807690c68a339345d7",
-      "pythonTarget": "yosoi.surface.ImageCrop.png",
-      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "0c14d396e9b9cdf8299a27c315ba358a25ad86e1bca6fe1942e8206102e1c347"
     }
   ]
 }
