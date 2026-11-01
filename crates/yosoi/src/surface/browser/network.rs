@@ -294,13 +294,13 @@ impl NetworkCapture {
                     response.completed = true;
                 }
             }
-            if matches!(&event.kind, NetworkEventKind::ResponseReceived { .. })
-                && let Some(response) = state.response_links.get_mut(&key)
-                && response.sequence == event.sequence
-            {
-                response.window_id = Some(window_id.clone());
-                if state.completed.contains(&key) {
-                    response.completed = true;
+            if matches!(&event.kind, NetworkEventKind::ResponseReceived { .. }) {
+                let completed = state.completed.contains(&key);
+                if let Some(response) = state.response_links.get_mut(&key)
+                    && response.sequence == event.sequence
+                {
+                    response.window_id = Some(window_id.clone());
+                    response.completed |= completed;
                 }
             }
         }

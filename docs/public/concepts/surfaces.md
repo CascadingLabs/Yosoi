@@ -1,13 +1,13 @@
 ---
 title: Surfaces
-description: Explore documents and video in bounded views, then let an agent act through the CLI.
+description: Explore documents, images, and video in bounded views, then let an agent act through the CLI.
 ---
 
 # Surfaces
 
 A Surface gives an agent a small view of a larger source. The agent starts with an overview, zooms into a region, and reads exact evidence when it needs detail. Preparing the index needs no field contract, selector, model, or task description.
 
-A document offers structure and text. A video offers a timeline and requested pixels. Both return references tied to the exact observation being read. A reference identifies evidence; taking action requires a live adapter and separate control authority.
+A document offers structure and text. An image offers original pixels, bounded overviews, and crops. A video offers a timeline and requested pixels. Their references are tied to the exact observation being read. A reference identifies evidence; taking action requires a live adapter and separate control authority.
 
 ## Example: inspect the lamp
 
@@ -63,6 +63,129 @@ HTML, XML, JSON, text, rendered DOM and accessibility snapshots share overview, 
 The default response budget is 4,096 serialized UTF-8 bytes and 20 entries. A `next` continuation means evidence remains in that same operation. Pass it back unchanged with the original query and reference. Rust rejects a continuation from another capture, query or scope.
 
 An inspection can split JSON across UTF-8-aligned chunks. Join every chunk before parsing the complete value. A byte limit bounds transport size; token counts depend on the model's tokenizer. Source coverage is separate: a fully paged result can still describe incomplete captured evidence.
+
+## Example: read a dense image
+
+Place a PNG or JPEG dashboard screenshot at `dashboard.png`. An `ImageDocument` keeps those exact encoded bytes. `ImageSurface.read` uses the same bounded overview and expand protocol as other Surface readers. Pixel bytes travel separately as a `PixelArtifact`.
+
+### Rust
+
+```rust
+use std::{error::Error, fs, io, time::Instant};
+use yosoi::{
+    Archive,
+    documents::{FileDocument, FileLimits, read_file},
+    surface::{
+        Budget, ImageSurface, Limits, PixelArtifact, PixelLimits, PixelRect,
+        SurfaceRead, model::{ReadOperation, ReadRequest, ReadResult},
+    },
+};
+
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let file = read_file("dashboard", "dashboard.png", FileLimits::default()).await?;
+    let image = match file {
+        FileDocument::Image(image) => image,
+        _ => return Err(io::Error::other("dashboard.png is not a PNG or JPEG").into()),
+    };
+    let surface = ImageSurface::from_image_document(
+        &image, 256, Limits::default(), PixelLimits::default(),
+    )?;
+    let routing = surface.read(&ReadRequest {
+        operation: ReadOperation::Overview,
+        budget: Budget::default(),
+        continuation: None,
+    })?;
+    let ReadResult::Page(page) = routing else {
+        return Err(io::Error::other("image overview did not return a page").into());
+    };
+    println!("Image regions: {}", page.entries.len());
+
+    let started = Instant::now();
+    let direct = surface.direct_image()?;
+    let direct_time = started.elapsed();
+    let started = Instant::now();
+    let overview = surface.overview_image(640)?;
+    let overview_time = started.elapsed();
+    fs::write("dashboard-overview.png", overview.bytes())?;
+
+    // This rectangle is selected in the returned overview's pixel coordinates.
+    let detail_in_overview = PixelRect { x: 512, y: 140, width: 80, height: 50 };
+    let detail_in_source = overview.map_rect_to_source(detail_in_overview)?;
+    let started = Instant::now();
+    let crop = surface.crop_rect(detail_in_source, PixelLimits::default().max_output_bytes)?;
+    let crop_time = started.elapsed();
+    fs::write("dashboard-detail.png", crop.png())?;
+
+    println!(
+        "direct: {} bytes, {} pixels, {:?}; overview: {} bytes, {} pixels, {:?}; crop: {} bytes, {} pixels, {:?}",
+        direct.bytes().len(), direct.info().width * direct.info().height, direct_time,
+        overview.bytes().len(), overview.info().width * overview.info().height, overview_time,
+        crop.png().len(), crop.artifact.info().width * crop.artifact.info().height, crop_time,
+    );
+    let archive = Archive::open("dashboard-evidence").await?;
+    let reference = archive.write(&crop.artifact).await?;
+    let restored: PixelArtifact = archive.read(&reference).await?;
+    println!("Archived crop SHA-256: {}", restored.info().sha256);
+    Ok(())
+}
+```
+
+`direct_image` returns the original encoded raster when the caller wants all pixels. `overview_image` resizes explicitly with the triangle filter. `map_rect_to_source` turns a region selected from the overview back into source-raster pixel edges, then `crop_rect` returns those original-resolution pixels. The crop retains its parent identity, operation, dimensions, digest, and coordinate mapping. Archive stores the artifact bytes as an `ImageDocument` payload with a separate provenance record.
+
+### Python
+
+```python
+import asyncio
+from pathlib import Path
+from time import perf_counter
+
+import yosoi as ys
+from yosoi.documents import read_file
+from yosoi.surface import Overview, ReadRequest
+
+
+async def main() -> None:
+    image = await read_file("dashboard", "dashboard.png")
+    if not isinstance(image, ys.ImageDocument):
+        raise TypeError("dashboard.png is not a PNG or JPEG")
+    surface = ys.ImageSurface(image, tile_side=256)
+    page = surface.read(ReadRequest(operation=Overview()))
+    if page.kind != "page":
+        raise RuntimeError("image overview did not return a page")
+    print("Image regions:", len(page.data.entries))
+
+    started = perf_counter()
+    direct = surface.direct_image()
+    direct_time = perf_counter() - started
+    started = perf_counter()
+    overview = surface.overview_image(640)
+    overview_time = perf_counter() - started
+    Path("dashboard-overview.png").write_bytes(overview.bytes)
+
+    # This rectangle is selected in the returned overview's pixel coordinates.
+    detail_in_overview = ys.PixelRect(x=512, y=140, width=80, height=50)
+    detail_in_source = overview.map_rect_to_source(detail_in_overview)
+    started = perf_counter()
+    crop = surface.crop_rect(detail_in_source)
+    crop_time = perf_counter() - started
+    Path("dashboard-detail.png").write_bytes(crop.png)
+
+    print(
+        f"direct: {len(direct.bytes)} bytes, {direct.info.width * direct.info.height} pixels, {direct_time:.4f}s; "
+        f"overview: {len(overview.bytes)} bytes, {overview.info.width * overview.info.height} pixels, {overview_time:.4f}s; "
+        f"crop: {len(crop.png)} bytes, {crop.artifact.info.width * crop.artifact.info.height} pixels, {crop_time:.4f}s"
+    )
+    archive = await ys.Archive.open("dashboard-evidence")
+    reference = await archive.write(crop.artifact)
+    restored = await archive.read(reference)
+    print("Archived crop SHA-256:", restored.info.sha256)
+
+
+asyncio.run(main())
+```
+
+Both programs print encoded bytes, returned pixels, and local processing time for the exact values they produced. Those measurements describe this image and machine; they do not predict model-token savings. The small red marker in a dense screenshot can disappear in a resized overview, so callers can map an overview region back to the original pixels and crop that detail.
 
 ## Example: zoom into a recording
 

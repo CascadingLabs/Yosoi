@@ -12,6 +12,8 @@ pub use crate::internal::archive::{
     DocumentArchiveRef, FileDocumentArchiveRef, ImageDocumentArchiveRef, MAX_ARCHIVED_FILE_BYTES,
     PlanArchiveRef, VideoDocumentArchiveRef,
 };
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use crate::surface::pixels::PixelArtifactArchiveRef;
 
 impl Archive {
     /// Saves an SDK Document with its exact identity, profile and bytes.

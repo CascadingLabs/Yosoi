@@ -17,7 +17,8 @@ use tokio::{
     sync::mpsc::{Receiver, channel},
 };
 use yosoi::surface::{
-    ArchivePolicy, SurfaceConnection, SurfacePolicy, archive as surface_archive,
+    ArchivePolicy, ImageSession, Limits as SurfaceLimits, PixelLimits, SurfaceConnection,
+    SurfacePolicy, archive as surface_archive,
     browser::{BrowserSurface, archive as browser_archive},
     video::VideoSession,
 };
@@ -81,6 +82,29 @@ enum SurfaceCommand {
         archive: Option<PathBuf>,
         #[arg(long, default_value_t = 1920)]
         max_side: u32,
+    },
+    /// Read a typed PNG/JPEG image through the shared bounded Surface protocol.
+    Image {
+        #[arg(long)]
+        file: PathBuf,
+        #[arg(long, default_value = ".local/surface-image")]
+        output: PathBuf,
+        #[arg(long)]
+        archive: Option<PathBuf>,
+        #[arg(long, default_value_t = 256)]
+        tile_side: u32,
+        #[arg(long, default_value_t = 8192)]
+        max_side: u32,
+        #[arg(long, default_value_t = 67108864)]
+        max_decoded_bytes: usize,
+        #[arg(long, default_value_t = 16777216)]
+        max_output_pixels: u64,
+        #[arg(long, default_value_t = 8388608)]
+        max_output_bytes: usize,
+        #[arg(long, default_value_t = 32)]
+        max_retained_artifacts: usize,
+        #[arg(long, default_value_t = 8388608)]
+        max_source_bytes: usize,
     },
     /// Rebuild and verify captured surfaces offline; never opens a browser.
     Replay {
@@ -285,6 +309,41 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             archive,
             max_side,
         } => drive(VideoSession::open(&file, policy(output, archive), max_side).await?).await,
+        SurfaceCommand::Image {
+            file,
+            output,
+            archive,
+            tile_side,
+            max_side,
+            max_decoded_bytes,
+            max_output_pixels,
+            max_output_bytes,
+            max_retained_artifacts,
+            max_source_bytes,
+        } => {
+            let limits = PixelLimits {
+                max_side,
+                max_decoded_bytes,
+                max_output_pixels,
+                max_output_bytes,
+                max_retained_artifacts,
+            };
+            let surface_limits = SurfaceLimits {
+                input_bytes: max_source_bytes,
+                ..SurfaceLimits::default()
+            };
+            drive(
+                ImageSession::open(
+                    &file,
+                    policy(output, archive),
+                    tile_side,
+                    surface_limits,
+                    limits,
+                )
+                .await?,
+            )
+            .await
+        }
         SurfaceCommand::Replay {
             record,
             repeat,

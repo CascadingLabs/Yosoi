@@ -6,6 +6,9 @@ use pyo3::{create_exception, prelude::*};
 use serde::{Serialize, de::DeserializeOwned};
 use yosoi::surface::{self, model::SurfaceRead};
 
+use crate::media::NativeFileDocument;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+use crate::{archive::NativeArchive, async_runtime};
 use crate::{
     documents::{DocumentSource, NativeDocument},
     errors,
@@ -228,16 +231,290 @@ impl NativeSurface {
     }
 
     #[cfg(any(feature = "browser", feature = "surface-video"))]
+    #[staticmethod]
+    #[pyo3(signature = (document, tile_side, limits, pixel_limits))]
+    fn from_image_document(
+        py: Python<'_>,
+        document: &NativeFileDocument,
+        tile_side: u32,
+        limits: &str,
+        pixel_limits: &str,
+    ) -> PyResult<Self> {
+        let document = match document.inner.as_ref() {
+            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            _ => {
+                return Err(failure(surface::SurfaceError::Invalid(
+                    "from_image_document requires an ImageDocument".into(),
+                )));
+            }
+        };
+        let limits = decode(limits)?;
+        let pixel_limits = decode(pixel_limits)?;
+        py.detach(|| {
+            surface::Surface::from_image_document_with_pixel_limits(
+                &document,
+                tile_side,
+                limits,
+                pixel_limits,
+            )
+            .map(|inner| Self { inner })
+            .map_err(failure)
+        })
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    fn direct_image(&self) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .direct_image()
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    fn overview_image(&self, max_side: u32) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .overview_image(max_side)
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    fn resize_image(&self, width: u32, height: u32) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .resize_image(width, height)
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
     fn crop<'py>(
         &self,
         py: Python<'py>,
         reference: &str,
         max_png_bytes: usize,
-    ) -> PyResult<(String, Bound<'py, PyBytes>)> {
+    ) -> PyResult<(String, NativePixelArtifact)> {
         let reference = decode(reference)?;
         let crop = py.detach(|| self.inner.crop(&reference, max_png_bytes).map_err(failure))?;
-        let info = encode(&serde_json::json!({"reference":crop.reference,"rect":crop.rect}))?;
-        Ok((info, PyBytes::new(py, &crop.png)))
+        let info = encode(&serde_json::json!({
+            "reference": crop.reference,
+            "rect": crop.rect,
+        }))?;
+        Ok((
+            info,
+            NativePixelArtifact {
+                inner: crop.artifact,
+            },
+        ))
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    fn crop_rect<'py>(
+        &self,
+        py: Python<'py>,
+        rect: &str,
+        max_png_bytes: usize,
+    ) -> PyResult<(String, NativePixelArtifact)> {
+        let rect = decode(rect)?;
+        let crop = py.detach(|| self.inner.crop_image(rect, max_png_bytes).map_err(failure))?;
+        let info = encode(&serde_json::json!({
+            "reference": crop.reference,
+            "rect": crop.rect,
+        }))?;
+        Ok((
+            info,
+            NativePixelArtifact {
+                inner: crop.artifact,
+            },
+        ))
+    }
+}
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pyclass(frozen, module = "yosoi._native", name = "PixelArtifact")]
+#[derive(Clone, Debug)]
+pub struct NativePixelArtifact {
+    inner: surface::PixelArtifact,
+}
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pymethods]
+impl NativePixelArtifact {
+    fn info(&self) -> PyResult<String> {
+        encode(self.inner.info())
+    }
+
+    fn bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        PyBytes::new(py, self.inner.bytes())
+    }
+
+    fn document(&self) -> NativeFileDocument {
+        NativeFileDocument::new(yosoi::documents::FileDocument::Image(
+            self.inner.document().clone(),
+        ))
+    }
+
+    fn map_rect_to_source(&self, rect: &str) -> PyResult<String> {
+        encode(&self.inner.map_rect_to_source(&decode(rect)?).map_err(failure)?)
+    }
+
+    fn write_to<'py>(
+        &self,
+        py: Python<'py>,
+        archive: &NativeArchive,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = self.inner.clone();
+        let archive = archive.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(
+                &inner
+                    .write_to(&archive)
+                    .await
+                    .map_err(crate::archive::archive_error)?,
+            )
+        })
+    }
+
+    #[staticmethod]
+    fn read_from<'py>(
+        py: Python<'py>,
+        archive: &NativeArchive,
+        reference: &str,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let reference: surface::pixels::PixelArtifactArchiveRef = decode(reference)?;
+        let archive = archive.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            surface::PixelArtifact::read_from(&archive, &reference)
+                .await
+                .map(|inner| Self { inner })
+                .map_err(crate::archive::archive_error)
+        })
+    }
+}
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pyclass(frozen, module = "yosoi._native", name = "ImageSurface")]
+#[derive(Clone, Debug)]
+pub struct NativeImageSurface {
+    inner: surface::ImageSurface,
+}
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pymethods]
+impl NativeImageSurface {
+    #[staticmethod]
+    fn from_image_document(
+        py: Python<'_>,
+        document: &NativeFileDocument,
+        tile_side: u32,
+        limits: &str,
+        pixel_limits: &str,
+    ) -> PyResult<Self> {
+        let document = match document.inner.as_ref() {
+            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            _ => {
+                return Err(failure(surface::SurfaceError::Invalid(
+                    "ImageSurface requires an ImageDocument".into(),
+                )));
+            }
+        };
+        let limits = decode(limits)?;
+        let pixel_limits = decode(pixel_limits)?;
+        py.detach(|| {
+            surface::ImageSurface::from_image_document(&document, tile_side, limits, pixel_limits)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    fn descriptor(&self) -> PyResult<String> {
+        encode(self.inner.descriptor())
+    }
+
+    fn observation(&self) -> PyResult<String> {
+        encode(self.inner.observation())
+    }
+
+    fn root_reference(&self) -> PyResult<String> {
+        encode(&self.inner.root_reference())
+    }
+
+    fn read(&self, py: Python<'_>, request: &str) -> PyResult<String> {
+        let request = decode(request)?;
+        py.detach(|| encode(&self.inner.read(&request).map_err(failure)?))
+    }
+
+    fn reference(&self, reference: &str) -> PyResult<String> {
+        encode(&self.inner.reference(&decode(reference)?).map_err(failure)?)
+    }
+
+    fn native_reference(&self, reference: &str) -> PyResult<String> {
+        encode(
+            &self
+                .inner
+                .native_reference(&decode(reference)?)
+                .map_err(failure)?,
+        )
+    }
+
+    fn direct_image(&self) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .direct_image()
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    fn overview_image(&self, max_side: u32) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .overview_image(max_side)
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    fn resize_image(&self, width: u32, height: u32) -> PyResult<NativePixelArtifact> {
+        self.inner
+            .resize_image(width, height)
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    }
+
+    fn crop(
+        &self,
+        py: Python<'_>,
+        reference: &str,
+        max_png_bytes: usize,
+    ) -> PyResult<(String, NativePixelArtifact)> {
+        let reference = decode(reference)?;
+        let crop = py.detach(|| self.inner.crop(&reference, max_png_bytes).map_err(failure))?;
+        let info = encode(&serde_json::json!({
+            "reference": crop.reference,
+            "rect": crop.rect,
+        }))?;
+        Ok((
+            info,
+            NativePixelArtifact {
+                inner: crop.artifact,
+            },
+        ))
+    }
+
+    fn crop_rect(
+        &self,
+        py: Python<'_>,
+        rect: &str,
+        max_png_bytes: usize,
+    ) -> PyResult<(String, NativePixelArtifact)> {
+        let rect = decode(rect)?;
+        let crop = py.detach(|| self.inner.crop_rect(rect, max_png_bytes).map_err(failure))?;
+        let info = encode(&serde_json::json!({
+            "reference": crop.reference,
+            "rect": crop.rect,
+        }))?;
+        Ok((
+            info,
+            NativePixelArtifact {
+                inner: crop.artifact,
+            },
+        ))
     }
 }
 
@@ -277,15 +554,30 @@ impl NativeWebSurface {
 
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(surface_source_new, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_source_file_document, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_capture, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_restore, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_source_restore_image, module)?)?;
+    module.add_function(wrap_pyfunction!(
+        surface_source_restore_file_document,
+        module
+    )?)?;
     module.add_function(wrap_pyfunction!(surface_source_restore_surface, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_new, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_with_source, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_validate, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_restore, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_outcome_source_document, module)?)?;
+    module.add_function(wrap_pyfunction!(
+        surface_outcome_source_file_document,
+        module
+    )?)?;
     module.add("SurfaceError", module.py().get_type::<SurfaceError>())?;
     module.add_class::<NativeSurface>()?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    module.add_class::<NativePixelArtifact>()?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    module.add_class::<NativeImageSurface>()?;
     module.add_class::<NativeWebSurface>()?;
     module.add("surface_video_enabled", cfg!(feature = "surface-video"))?;
     module.add("surface_browser_enabled", cfg!(feature = "browser"))?;
@@ -330,6 +622,38 @@ fn surface_outcome_restore(
 }
 
 #[pyfunction]
+fn surface_outcome_source_document(
+    py: Python<'_>,
+    value: &str,
+    key: &str,
+    maximum: u64,
+) -> PyResult<NativeDocument> {
+    py.detach(|| {
+        let outcome: surface::Outcome = decode(value)?;
+        let document = outcome.source_document(key, maximum).map_err(failure)?;
+        Ok(NativeDocument {
+            source: DocumentSource::Owned(Arc::new(document)),
+        })
+    })
+}
+
+#[pyfunction]
+fn surface_outcome_source_file_document(
+    py: Python<'_>,
+    value: &str,
+    key: &str,
+    maximum: u64,
+) -> PyResult<NativeFileDocument> {
+    py.detach(|| {
+        let outcome: surface::Outcome = decode(value)?;
+        outcome
+            .source_file_document(key, maximum)
+            .map(NativeFileDocument::new)
+            .map_err(failure)
+    })
+}
+
+#[pyfunction]
 #[pyo3(signature=(key, document, index=None))]
 fn surface_source_new(
     py: Python<'_>,
@@ -340,6 +664,24 @@ fn surface_source_new(
     let document = document.borrowed()?.to_owned();
     py.detach(|| {
         encode(&surface::ArchivedSource::new(
+            key,
+            &document,
+            index.map(|value| &value.inner),
+        ))
+    })
+}
+
+#[pyfunction]
+#[pyo3(signature=(key, document, index=None))]
+fn surface_source_file_document(
+    py: Python<'_>,
+    key: &str,
+    document: &NativeFileDocument,
+    index: Option<&NativeSurface>,
+) -> PyResult<String> {
+    let document = document.inner.as_ref().clone();
+    py.detach(|| {
+        encode(&surface::ArchivedSource::new_file_document(
             key,
             &document,
             index.map(|value| &value.inner),
@@ -358,6 +700,36 @@ fn surface_source_restore(py: Python<'_>, value: &str, maximum: u64) -> PyResult
         Ok(NativeDocument {
             source: DocumentSource::Owned(Arc::new(document)),
         })
+    })
+}
+
+#[pyfunction]
+fn surface_source_restore_image(
+    py: Python<'_>,
+    value: &str,
+    maximum: u64,
+) -> PyResult<NativeFileDocument> {
+    py.detach(|| {
+        let source: surface::ArchivedSource = decode(value)?;
+        source
+            .restore_image(maximum)
+            .map(|inner| NativeFileDocument::new(yosoi::documents::FileDocument::Image(inner)))
+            .map_err(failure)
+    })
+}
+
+#[pyfunction]
+fn surface_source_restore_file_document(
+    py: Python<'_>,
+    value: &str,
+    maximum: u64,
+) -> PyResult<NativeFileDocument> {
+    py.detach(|| {
+        let source: surface::ArchivedSource = decode(value)?;
+        source
+            .restore_file_document(maximum)
+            .map(NativeFileDocument::new)
+            .map_err(failure)
     })
 }
 #[pyfunction]

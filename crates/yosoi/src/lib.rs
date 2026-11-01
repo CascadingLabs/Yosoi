@@ -36,6 +36,15 @@ pub use policy::{
     StopScope,
 };
 pub use request::{CancellationToken, ResponseTermination};
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+pub use surface::ImageSession;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use surface::ImageSurface;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use surface::pixels::{
+    PixelArtifact, PixelArtifactInfo, PixelCoordinateKind, PixelCoordinateSpace,
+    PixelEdgeTransform, PixelLimits, PixelOperation, PixelOrientation, PixelSource, PixelTransform,
+};
 #[cfg(feature = "surface-video")]
 pub use surface::video::{DecodedFrame, VideoError, VideoPolicy, VideoSurface};
 pub use surface::{

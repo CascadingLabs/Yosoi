@@ -1,0 +1,319 @@
+//! Stateful, read-only exploration of one typed image document.
+
+use super::{
+    ArchivePolicy, ExecutionError, ImageSurface, Outcome, PixelArtifact, PixelLimits,
+    SurfaceConnection, SurfacePolicy,
+    connection::{AgentSurface, Connection, Operation, Request, Result, Trace, connection},
+    model::{self, ReadOperation, ReadRequest, SurfaceRead},
+};
+use crate::{
+    Archive,
+    archive::ImageDocumentArchiveRef,
+    documents::{FileDocument, FileLimits, ImageDocument, read_file},
+};
+use serde_json::{Value, json};
+use std::{
+    error::Error,
+    fmt::{self, Debug, Formatter},
+    fs, io,
+    path::{Path, PathBuf},
+    result::Result as StdResult,
+};
+
+struct ImageDriver {
+    surface: ImageSurface,
+    focus: model::Reference,
+    trace: Trace,
+    output: PathBuf,
+    pixel_limits: PixelLimits,
+    retained_artifacts: usize,
+    source_archive_ref: Option<ImageDocumentArchiveRef>,
+    archive: Option<Archive>,
+    attached: bool,
+}
+
+impl Debug for ImageDriver {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ImageDriver")
+            .field("surface", &self.surface.descriptor())
+            .field("retained_artifacts", &self.retained_artifacts)
+            .finish_non_exhaustive()
+    }
+}
+
+impl ImageDriver {
+    fn describe(&self) -> Value {
+        json!({
+            "descriptor": self.surface.descriptor(),
+            "observation": self.surface.observation(),
+            "root": self.surface.root_reference(),
+            "source": {
+                "document_id": self.surface.source_document().id(),
+                "sha256": self.surface.source_document().sha256(),
+                "bytes": self.surface.source_document().byte_len(),
+            },
+            "source_archive_ref": self.source_archive_ref,
+        })
+    }
+
+    fn status(&self) -> Value {
+        json!({
+            "descriptor": self.surface.descriptor(),
+            "observation": self.surface.observation(),
+            "source": {
+                "document_id": self.surface.source_document().id(),
+                "sha256": self.surface.source_document().sha256(),
+                "bytes": self.surface.source_document().byte_len(),
+            },
+            "root": self.surface.root_reference(),
+            "cursor": {
+                "attached": self.attached,
+                "mode": "reader",
+                "focus": self.focus,
+            },
+            "pixel_limits": self.pixel_limits,
+            "retained_artifacts": self.retained_artifacts,
+            "source_archive_ref": self.source_archive_ref,
+            "archive": self.archive.as_ref().map(|archive| archive.root()),
+        })
+    }
+
+    fn validate(&self, reference: &model::Reference) -> Result<()> {
+        self.surface.read(&ReadRequest {
+            operation: ReadOperation::Inspect {
+                reference: reference.clone(),
+            },
+            budget: model::Budget::default(),
+            continuation: None,
+        })?;
+        Ok(())
+    }
+
+    async fn pixels(&mut self, artifact: PixelArtifact) -> Result<Value> {
+        if self.retained_artifacts >= self.pixel_limits.max_retained_artifacts {
+            return Err(io::Error::other("retained image artifact limit exhausted").into());
+        }
+        let extension = match artifact.info().media_type.as_str() {
+            "image/png" => "png",
+            "image/jpeg" => "jpg",
+            _ => return Err(io::Error::other("unsupported artifact media type").into()),
+        };
+        let path = self
+            .output
+            .join(format!("image-{}.{}", artifact.info().sha256, extension));
+        fs::write(&path, artifact.bytes())?;
+        let archive_ref = if let Some(archive) = &self.archive {
+            Some(archive.write(&artifact).await?)
+        } else {
+            None
+        };
+        self.retained_artifacts = self
+            .retained_artifacts
+            .checked_add(1)
+            .ok_or_else(|| io::Error::other("retained image artifact counter exhausted"))?;
+        Ok(json!({
+            "artifact": {
+                "path": path,
+                "info": artifact.info(),
+                "archive_ref": archive_ref,
+            }
+        }))
+    }
+
+    async fn close(self) -> (Option<Outcome>, Result<()>) {
+        (None, Ok(()))
+    }
+}
+
+impl AgentSurface for ImageDriver {
+    fn ready(&mut self) -> Result<Value> {
+        let page = self.surface.read(&ReadRequest {
+            operation: ReadOperation::Overview,
+            budget: model::Budget::default(),
+            continuation: None,
+        })?;
+        self.trace.read("surface.open", &page)?;
+        Ok(json!({
+            "event": "ready",
+            "sdk": "ys::surface",
+            "representation": self.surface.descriptor().representation,
+            "state": self.status(),
+            "initial_read": page,
+            "protocol": "JSON lines; describe/read/focus_evidence use the shared reader; image/crop/overview_image/resize_image return bounded pixel artifacts; no control authority",
+        }))
+    }
+
+    async fn command(&mut self, request: &Request) -> Result<Value> {
+        match &request.operation {
+            Operation::Describe => Ok(self.describe()),
+            Operation::Status => Ok(self.status()),
+            Operation::Attach => {
+                self.attached = true;
+                Ok(self.status())
+            }
+            Operation::Detach => {
+                self.attached = false;
+                Ok(self.status())
+            }
+            Operation::Read { request: read } => {
+                let mut read = read.clone();
+                read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
+                Ok(serde_json::to_value(self.surface.read(&read)?)?)
+            }
+            Operation::FocusEvidence { reference } => {
+                self.validate(reference)?;
+                self.focus.clone_from(reference);
+                Ok(self.status())
+            }
+            Operation::ImageDirect => {
+                let artifact = self.surface.direct_image()?;
+                self.pixels(artifact).await
+            }
+            Operation::OverviewImage { max_side } => {
+                let artifact = self.surface.overview_image(*max_side)?;
+                self.pixels(artifact).await
+            }
+            Operation::ResizeImage { width, height } => {
+                let artifact = self.surface.resize_image(*width, *height)?;
+                self.pixels(artifact).await
+            }
+            Operation::CropImage { rect } => {
+                let crop = self.surface.crop_rect(*rect, self.pixel_limits.max_output_bytes)?;
+                self.focus = self.surface.reference(&crop.reference)?;
+                self.pixels(crop.artifact).await
+            }
+            Operation::Crop { reference, rect } => {
+                if reference != &self.surface.root_reference() {
+                    return Err(io::Error::other(
+                        "image coordinate crops require the exact root image reference; nested crops are unsupported",
+                    )
+                    .into());
+                }
+                let crop = self
+                    .surface
+                    .crop_rect(*rect, self.pixel_limits.max_output_bytes)?;
+                self.focus = crop.reference.clone();
+                self.pixels(crop.artifact).await
+            }
+            Operation::Close => Ok(json!({"closing": true})),
+            _ => Err(io::Error::other(
+                "capability unavailable on read-only image; use describe and the shared read protocol",
+            )
+            .into()),
+        }
+    }
+
+    fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
+        match result {
+            Ok(value) => {
+                if matches!(operation, Operation::Read { .. }) {
+                    self.trace.read_bytes = self
+                        .trace
+                        .read_bytes
+                        .saturating_add(serde_json::to_vec(value)?.len());
+                }
+                self.trace.event("cli.reply", value.clone());
+            }
+            Err(error) => self.trace.event(
+                "cli.error",
+                json!({"error":error.to_string().chars().take(512).collect::<String>()}),
+            ),
+        }
+        Ok(())
+    }
+
+    async fn persist_command(
+        &mut self,
+        _operation: &Operation,
+        result: Result<Value>,
+    ) -> Result<Value> {
+        result
+    }
+
+    fn trace(&mut self) -> &mut Trace {
+        &mut self.trace
+    }
+
+    fn outcome(&self) -> Option<Outcome> {
+        None
+    }
+
+    async fn close(self) -> (Option<Outcome>, Result<()>) {
+        ImageDriver::close(self).await
+    }
+}
+
+/// Read-only image connection using the shared JSON-lines Surface protocol.
+pub struct ImageSession {
+    inner: Connection<ImageDriver>,
+}
+
+impl ImageSession {
+    /// Opens one PNG/JPEG file and owns a typed source snapshot for its lifetime.
+    pub async fn open(
+        path: impl AsRef<Path> + Send + Sync,
+        policy: SurfacePolicy,
+        tile_side: u32,
+        limits: super::Limits,
+        pixel_limits: PixelLimits,
+    ) -> StdResult<Self, ExecutionError> {
+        let result = async {
+            policy.archive_limits.validate()?;
+            let pixel_limits = pixel_limits.validate()?;
+            let temporary = tempfile::tempdir()?;
+            let output = policy
+                .output
+                .clone()
+                .unwrap_or_else(|| temporary.path().join("artifacts"));
+            fs::create_dir_all(&output)?;
+            let root = (policy.archive == ArchivePolicy::Enabled).then(|| {
+                policy
+                    .archive_root
+                    .clone()
+                    .unwrap_or_else(|| temporary.path().join("archive"))
+            });
+            let max_bytes = u64::try_from(limits.input_bytes)
+                .map_err(|_| io::Error::other("image source limit does not fit u64"))?;
+            let file_limits = FileLimits::new(max_bytes)?;
+            let file = read_file("image-surface", path.as_ref(), file_limits).await?;
+            let document: ImageDocument = match file {
+                FileDocument::Image(document) => document,
+                _ => {
+                    return Err(
+                        io::Error::other("image Surface requires PNG or JPEG file bytes").into(),
+                    );
+                }
+            };
+            let surface =
+                ImageSurface::from_image_document(&document, tile_side, limits, pixel_limits)?;
+            let archive = match root {
+                Some(root) => Some(Archive::open(root).await?),
+                None => None,
+            };
+            let source_archive_ref = match &archive {
+                Some(archive) => Some(archive.write(&document).await?),
+                None => None,
+            };
+            let focus = surface.root_reference();
+            let driver = ImageDriver {
+                surface,
+                focus,
+                trace: Trace::new(&output),
+                output: output.clone(),
+                pixel_limits,
+                retained_artifacts: 0,
+                source_archive_ref,
+                archive,
+                attached: false,
+            };
+            Ok::<_, Box<dyn Error + Send + Sync>>(Self {
+                inner: Connection::new(driver, output, temporary),
+            })
+        }
+        .await;
+        result.map_err(ExecutionError::Operation)
+    }
+}
+
+connection!(ImageSession);

@@ -215,6 +215,8 @@ Source URLs are retained exactly up to 1 MiB of UTF-8 bytes; larger source decla
 
 Archive stores file metadata in versioned records and original bytes in its existing binary payload storage. Media does not need a JSON/base64 wrapper. Reads verify payload length and SHA-256, plus a separate digest binding the saved identity and interpretation metadata. Restoring a file requires no browser, network connection or media decoder.
 
+A `PixelArtifact` uses that same typed image payload store. Its PNG or JPEG bytes stay in the `ImageDocument` raw payload; Archive stores the versioned source and coordinate provenance beside a typed reference. `Archive.read` verifies the source digest, output dimensions and transform metadata before returning the artifact. No second image blob store or text-document wrapper is introduced for new typed image artifacts.
+
 Distinct typed references select image, video, audio and binary documents. Existing text-document records and historical Surface media envelopes remain readable through their original APIs; this foundation does not reinterpret or rewrite them.
 
 For executable local-file and HTTP examples, see `crates/yosoi/examples/media_documents.rs` and `python/examples/media_documents.py`. The paired browser examples are `crates/yosoi/examples/media_download.rs` and the Python browser mode in `python/examples/media_documents.py`.

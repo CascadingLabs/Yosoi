@@ -23,6 +23,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     PlainSerializer,
+    PrivateAttr,
     StrictBool,
     StrictStr,
     TypeAdapter,
@@ -35,13 +36,21 @@ from pydantic import (
 from . import _native
 from . import browser as _browser
 from ._models import ImmutableModel
-from .archive import Archive, AutomationRecord, DocumentArchiveRef, _rust_json
+from .archive import (
+    Archive,
+    AutomationRecord,
+    DocumentArchiveRef,
+    FileDocumentArchiveRef,
+    PixelArtifactArchiveRef,
+    _rust_json,
+)
 from .documents import (
     Document,
     DocumentProfile,
     FileDocument,
     FileLimits,
     FileMetadata,
+    ImageDocument,
     file_from_bytes,
 )
 from .locators import Plan
@@ -955,16 +964,67 @@ class Surface:
 
     @classmethod
     def from_image(
-        cls, content: bytes, tile_side: int = 256, limits: Limits | None = None
+        cls,
+        content: bytes | ImageDocument,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
     ) -> Self:
-        """Index PNG/JPEG pixels as bounded regions without OCR or EXIF rotation."""
+        """Index a typed image or legacy byte payload without OCR or EXIF rotation."""
         if not hasattr(_native.Surface, "from_image"):
             raise SurfaceError("this wheel has no image support")
+        if isinstance(content, ImageDocument):
+            return cls.from_image_document(
+                content,
+                tile_side=tile_side,
+                limits=limits,
+                pixel_limits=pixel_limits,
+            )
         return cls._from_native(
             _native.Surface.from_image(
                 content, tile_side, (limits or Limits()).model_dump_json()
             )
         )
+
+    @classmethod
+    def from_image_document(
+        cls,
+        document: ImageDocument,
+        *,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> Self:
+        """Prepare an exact ImageDocument; source identity excludes Surface options."""
+        if not hasattr(_native.Surface, "from_image_document"):
+            raise SurfaceError("this wheel has no image support")
+        selected_pixels = pixel_limits or PixelLimits()
+        return cls._from_native(
+            _native.Surface.from_image_document(
+                document._handle,
+                tile_side,
+                (limits or Limits()).model_dump_json(),
+                selected_pixels.model_dump_json(),
+            )
+        )
+
+    def direct_image(self) -> PixelArtifact:
+        """Return exact original bytes directly without tree navigation."""
+        if not hasattr(self._handle, "direct_image"):
+            raise SurfaceError("this wheel has no image support")
+        return PixelArtifact._from_native(self._handle.direct_image())
+
+    def overview_image(self, max_side: int) -> PixelArtifact:
+        """Return an aspect-preserving overview resized with the triangle filter."""
+        if not hasattr(self._handle, "overview_image"):
+            raise SurfaceError("this wheel has no image support")
+        return PixelArtifact._from_native(self._handle.overview_image(max_side))
+
+    def resize_image(self, width: int, height: int) -> PixelArtifact:
+        """Return an explicitly sized resize using the triangle filter."""
+        if not hasattr(self._handle, "resize_image"):
+            raise SurfaceError("this wheel has no image support")
+        return PixelArtifact._from_native(self._handle.resize_image(width, height))
 
     def crop(
         self, reference: NativeReference, max_png_bytes: int = 8388608
@@ -972,8 +1032,19 @@ class Surface:
         """Materialize an indexed image region; binary and text budgets are separate."""
         if not hasattr(self._handle, "crop"):
             raise SurfaceError("this wheel has no image support")
-        info, png = self._handle.crop(reference.model_dump_json(), max_png_bytes)
-        return ImageCrop(**json.loads(info), png=png)
+        info, artifact = self._handle.crop(reference.model_dump_json(), max_png_bytes)
+        return ImageCrop(
+            **json.loads(info), artifact=PixelArtifact._from_native(artifact)
+        )
+
+    def crop_rect(self, rect: PixelRect, max_png_bytes: int = 8388608) -> ImageCrop:
+        """Crop explicit bounds in the original image raster coordinate space."""
+        if not hasattr(self._handle, "crop_rect"):
+            raise SurfaceError("this wheel has no image support")
+        info, artifact = self._handle.crop_rect(rect.model_dump_json(), max_png_bytes)
+        return ImageCrop(
+            **json.loads(info), artifact=PixelArtifact._from_native(artifact)
+        )
 
 
 class WebSurface:
@@ -1026,7 +1097,7 @@ class WebSurface:
 
 
 class PixelRect(ImmutableModel):
-    """Crop in full decoded-frame pixels; source-video dimensions may differ."""
+    """Crop in the explicitly declared parent pixel coordinate space."""
 
     x: int = Field(
         strict=True, ge=0, le=2**32 - 1, description="Left pixel coordinate."
@@ -1038,12 +1109,316 @@ class PixelRect(ImmutableModel):
     )
 
 
+PixelCoordinateKind = Literal["original_raster", "decoded_canvas", "derived_canvas"]
+"""Coordinate plane name for one pixel artifact."""
+PixelOrientation = Literal[
+    "exif_unapplied", "decoder_applied", "not_applicable", "unknown"
+]
+"""Orientation action already applied before the named coordinate plane."""
+
+
+class PixelCoordinateSpace(ImmutableModel):
+    """Pixel dimensions, coordinate plane and orientation handling."""
+
+    kind: PixelCoordinateKind
+    width: int = Field(strict=True, gt=0, le=8192)
+    height: int = Field(strict=True, gt=0, le=8192)
+    orientation: PixelOrientation
+
+
+class ImageDocumentPixelSource(ImmutableModel):
+    """Identity and exact payload digest for a typed source image."""
+
+    kind: Literal["image_document"]
+    document_id: StrictStr
+    sha256: StrictStr
+
+
+class BrowserScreenshotPixelSource(ImmutableModel):
+    """Producer identity for one exact screenshot capture."""
+
+    kind: Literal["browser_screenshot"]
+    identity: StrictStr
+
+
+class VideoFramePixelSource(ImmutableModel):
+    """Source video and exact frame address with requested and measured time."""
+
+    kind: Literal["video_frame"]
+    source_document_id: StrictStr
+    source_sha256: StrictStr
+    observation: StrictStr
+    reference: StrictStr
+    requested_us: int = Field(strict=True, ge=0, le=2**64 - 1)
+    source_pts_us: int = Field(strict=True, ge=-(2**63), le=2**63 - 1)
+
+
+class LegacyVideoFramePixelSource(ImmutableModel):
+    """Older frame provenance without a typed VideoDocument identity."""
+
+    kind: Literal["legacy_video_frame"]
+    source_sha256: StrictStr | None
+    observation: StrictStr
+    reference: StrictStr
+    requested_us: int = Field(strict=True, ge=0, le=2**64 - 1)
+    source_pts_us: int = Field(strict=True, ge=-(2**63), le=2**63 - 1)
+
+
+PixelSource = Annotated[
+    ImageDocumentPixelSource
+    | BrowserScreenshotPixelSource
+    | VideoFramePixelSource
+    | LegacyVideoFramePixelSource,
+    Field(discriminator="kind"),
+]
+"""Typed source provenance for an exact root pixel artifact."""
+
+
+class PixelCropOperation(ImmutableModel):
+    """Explicit crop bounds in one parent pixel coordinate space."""
+
+    kind: Literal["crop"]
+    rect: PixelRect
+
+
+class PixelOverviewOperation(ImmutableModel):
+    """Aspect-preserving overview resize operation and maximum side."""
+
+    kind: Literal["overview"]
+    max_side: int = Field(strict=True, gt=0, le=8192)
+    filter: Literal["triangle"]
+
+
+class PixelResizeOperation(ImmutableModel):
+    """Exact output dimensions for an explicit resize."""
+
+    kind: Literal["resize"]
+    width: int = Field(strict=True, gt=0, le=8192)
+    height: int = Field(strict=True, gt=0, le=8192)
+    filter: Literal["triangle"]
+
+
+class PixelSourceOperation(ImmutableModel):
+    """Exact source pixels without a resize or crop."""
+
+    kind: Literal["source"]
+
+
+PixelOperation = Annotated[
+    PixelCropOperation
+    | PixelOverviewOperation
+    | PixelResizeOperation
+    | PixelSourceOperation,
+    Field(discriminator="kind"),
+]
+"""Explicit source, overview, resize or crop operation."""
+
+
+class PixelEdgeTransform(ImmutableModel):
+    """Integer-rational output-pixel-edge map to the parent coordinate plane."""
+
+    scale_x_numerator: int = Field(strict=True, gt=0, le=2**32 - 1)
+    scale_x_denominator: int = Field(strict=True, gt=0, le=2**32 - 1)
+    scale_y_numerator: int = Field(strict=True, gt=0, le=2**32 - 1)
+    scale_y_denominator: int = Field(strict=True, gt=0, le=2**32 - 1)
+    translate_x: int = Field(strict=True, ge=0, le=2**32 - 1)
+    translate_y: int = Field(strict=True, ge=0, le=2**32 - 1)
+
+
+class PixelTransform(ImmutableModel):
+    """Versioned derivation and exact parent coordinate mapping."""
+
+    version: Literal[1]
+    operation: PixelOperation
+    parent_identity: StrictStr | None = None
+    parent_sha256: StrictStr | None = None
+    parent_media_type: Literal["image/png", "image/jpeg"] | None = None
+    parent_space: PixelCoordinateSpace | None = None
+    output_to_parent: PixelEdgeTransform | None = None
+
+
+class PixelArtifactInfo(ImmutableModel):
+    """Pixel payload digest, source identity, dimensions and coordinate provenance."""
+
+    version: Literal[1]
+    identity: StrictStr
+    sha256: StrictStr
+    media_type: Literal["image/png", "image/jpeg"]
+    width: int = Field(strict=True, gt=0, le=8192)
+    height: int = Field(strict=True, gt=0, le=8192)
+    source: PixelSource
+    coordinate_space: PixelCoordinateSpace
+    source_space: PixelCoordinateSpace
+    transform: PixelTransform
+
+
+class PixelLimits(ImmutableModel):
+    """Decoder, output and retained-artifact limits, separate from text budgets."""
+
+    max_side: int = Field(default=8192, strict=True, ge=1, le=8192)
+    max_decoded_bytes: int = Field(default=67108864, strict=True, ge=1, le=67108864)
+    max_output_pixels: int = Field(default=16777216, strict=True, ge=1, le=16777216)
+    max_output_bytes: int = Field(default=8388608, strict=True, ge=1, le=33554432)
+    max_retained_artifacts: int = Field(default=32, strict=True, ge=1, le=1024)
+
+
+class PixelArtifact(ImmutableModel):
+    """Exact PNG/JPEG bytes and validated source/transform metadata."""
+
+    info: PixelArtifactInfo = Field(
+        description="Source identity and pixel coordinates."
+    )
+    content: bytes = Field(description="Exact encoded image bytes.")
+    _handle: _native.PixelArtifact = PrivateAttr()
+
+    def model_post_init(self, context: object) -> None:
+        """Bind the immutable Pydantic view to its Rust-owned artifact."""
+        if not hasattr(_native, "PixelArtifact") or not isinstance(
+            context, _native.PixelArtifact
+        ):
+            raise ValueError(
+                "construct PixelArtifact values through Surface or Archive"
+            )
+        if PixelArtifactInfo.model_validate_json(context.info()) != self.info:
+            raise ValueError("native PixelArtifact metadata does not match")
+        if context.bytes() != self.content:
+            raise ValueError("native PixelArtifact bytes do not match")
+        self._handle = context
+
+    @classmethod
+    def _from_native(cls, handle: _native.PixelArtifact) -> Self:
+        return cls.model_validate(
+            {"info": json.loads(handle.info()), "content": handle.bytes()},
+            context=handle,
+        )
+
+    @property
+    def bytes(self) -> bytes:
+        """Return a copy of exact encoded image bytes."""
+        return self.content
+
+    @property
+    def document(self) -> ImageDocument:
+        """Return the typed immutable ImageDocument owning this payload."""
+        return ImageDocument._from_native(self._handle.document())
+
+    def map_rect_to_source(self, rect: PixelRect) -> PixelRect:
+        """Map artifact pixel edges back to the root source pixel plane."""
+        return PixelRect.model_validate_json(
+            self._handle.map_rect_to_source(rect.model_dump_json())
+        )
+
+    async def write_to(self, archive: Archive) -> PixelArtifactArchiveRef:
+        """Store pixels in Archive with their source and transform metadata."""
+        return PixelArtifactArchiveRef.model_validate_json(
+            await self._handle.write_to(archive._handle)
+        )
+
+    @classmethod
+    async def read_from(
+        cls, archive: Archive, reference: PixelArtifactArchiveRef
+    ) -> Self:
+        """Restore verified pixel bytes without a source path or video decoder."""
+        if not hasattr(_native, "PixelArtifact"):
+            raise SurfaceError("this wheel has no image support")
+        handle = await _native.PixelArtifact.read_from(
+            archive._handle, reference.model_dump_json()
+        )
+        return cls._from_native(handle)
+
+
 class ImageCrop(ImmutableModel):
-    """Actual PNG evidence cropped from an indexed immutable image region."""
+    """Actual PNG artifact cropped from an indexed source coordinate region."""
 
     reference: NativeReference = Field(description="Exact selected image evidence.")
-    rect: PixelRect = Field(description="Bounds in original decoded image pixels.")
-    png: bytes = Field(description="Encoded PNG bytes, independent of text budgets.")
+    rect: PixelRect = Field(description="Bounds in the original raster pixel space.")
+    artifact: PixelArtifact = Field(
+        description="Typed crop pixels with parent provenance."
+    )
+
+    @property
+    def png(self) -> bytes:
+        """Return encoded PNG bytes, independent of text response budgets."""
+        return self.artifact.content
+
+
+class ImageSurface:
+    """Typed image reader using the shared bounded protocol and pixel artifacts."""
+
+    def __init__(
+        self,
+        document: ImageDocument,
+        *,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> None:
+        """Decode an ImageDocument under explicit index and pixel limits."""
+        if not hasattr(_native, "ImageSurface"):
+            raise SurfaceError("this wheel has no image support")
+        self._handle = _native.ImageSurface.from_image_document(
+            document._handle,
+            tile_side,
+            (limits or Limits()).model_dump_json(),
+            (pixel_limits or PixelLimits()).model_dump_json(),
+        )
+
+    @property
+    def descriptor(self) -> Descriptor:
+        """Return read and pixel capabilities available for this typed image."""
+        return Descriptor.model_validate_json(self._handle.descriptor())
+
+    @property
+    def observation(self) -> Observation:
+        """Return the immutable source-bound image interpretation."""
+        return Observation.model_validate_json(self._handle.observation())
+
+    @property
+    def root_reference(self) -> Reference:
+        """Return the shared reader reference for the complete source raster."""
+        return Reference.model_validate_json(self._handle.root_reference())
+
+    def read(self, request: ReadRequest) -> ReadResult:
+        """Read bounded image regions through the existing Surface read contract."""
+        return _RESULT.validate_json(self._handle.read(request.model_dump_json()))
+
+    def reference(self, reference: NativeReference) -> Reference:
+        """Convert an exact native index reference to this observation."""
+        return Reference.model_validate_json(
+            self._handle.reference(reference.model_dump_json())
+        )
+
+    def native_reference(self, reference: Reference) -> NativeReference:
+        """Resolve one shared reference; foreign observations are rejected."""
+        return NativeReference.model_validate_json(
+            self._handle.native_reference(reference.model_dump_json())
+        )
+
+    def direct_image(self) -> PixelArtifact:
+        """Return the original encoded bytes without tree navigation."""
+        return PixelArtifact._from_native(self._handle.direct_image())
+
+    def overview_image(self, max_side: int) -> PixelArtifact:
+        """Return an explicit resized overview under image output bounds."""
+        return PixelArtifact._from_native(self._handle.overview_image(max_side))
+
+    def resize_image(self, width: int, height: int) -> PixelArtifact:
+        """Return an explicitly sized resize under image output bounds."""
+        return PixelArtifact._from_native(self._handle.resize_image(width, height))
+
+    def crop(self, reference: Reference, max_png_bytes: int = 8388608) -> ImageCrop:
+        """Crop a shared reference in source-raster coordinates."""
+        info, artifact = self._handle.crop(reference.model_dump_json(), max_png_bytes)
+        return ImageCrop(
+            **json.loads(info), artifact=PixelArtifact._from_native(artifact)
+        )
+
+    def crop_rect(self, rect: PixelRect, max_png_bytes: int = 8388608) -> ImageCrop:
+        """Crop explicit bounds in the source raster coordinate space."""
+        info, artifact = self._handle.crop_rect(rect.model_dump_json(), max_png_bytes)
+        return ImageCrop(
+            **json.loads(info), artifact=PixelArtifact._from_native(artifact)
+        )
 
 
 class VideoPolicy(ImmutableModel):
@@ -1122,6 +1497,19 @@ _ArchiveDocument = Annotated[
     BeforeValidator(
         lambda value: (
             DocumentArchiveRef(value=value) if isinstance(value, str) else value
+        )
+    ),
+    PlainSerializer(lambda value: value.value, return_type=str),
+]
+
+
+_ArchiveFileDocument = Annotated[
+    FileDocumentArchiveRef,
+    BeforeValidator(
+        lambda value: (
+            TypeAdapter(FileDocumentArchiveRef).validate_python({"value": value})
+            if isinstance(value, str)
+            else value
         )
     ),
     PlainSerializer(lambda value: value.value, return_type=str),
@@ -1297,8 +1685,8 @@ class ArchiveLimits(ImmutableModel):
 class SourceInterpretation(ImmutableModel):
     """Interpreter for an exact document, image or named observation bundle."""
 
-    kind: Literal["document", "image", "bundle"] = Field(
-        default="document", description="Interpreter category."
+    kind: Literal["document", "image", "image_document", "file_document", "bundle"] = (
+        Field(default="document", description="Interpreter category.")
     )
     tile_side: int | None = Field(
         default=None,
@@ -1310,7 +1698,8 @@ class SourceInterpretation(ImmutableModel):
 
     @model_validator(mode="after")
     def _interpretation(self) -> Self:
-        if (self.kind == "image") != (self.tile_side is not None):
+        is_image = self.kind in ("image", "image_document")
+        if is_image != (self.tile_side is not None):
             raise ValueError("only image interpretations require tile_side")
         return self
 
@@ -1318,7 +1707,11 @@ class SourceInterpretation(ImmutableModel):
     def _wire(self) -> dict[str, object]:
         return {
             "kind": self.kind,
-            **({"tile_side": self.tile_side} if self.kind == "image" else {}),
+            **(
+                {"tile_side": self.tile_side}
+                if self.kind in ("image", "image_document")
+                else {}
+            ),
         }
 
 
@@ -1327,9 +1720,25 @@ class ArchivedSource(ImmutableModel):
 
     key: StrictStr = Field(description="Unique outcome-local source key.")
     document: DocumentId = Field(description="Original SDK document identity.")
-    profile: DocumentProfile = Field(description="Exact document profile and epoch.")
+    profile: DocumentProfile | None = Field(
+        default=None, description="Document profile, absent for typed images."
+    )
+    file_kind: Literal["image", "video", "audio", "binary"] | None = Field(
+        default=None, description="Concrete typed media family, absent for Documents."
+    )
+    file_metadata: FileMetadata | None = Field(
+        default=None, description="Typed media provenance, absent for Documents."
+    )
     sha256: StrictStr = Field(description="SHA-256 of decoded original bytes.")
-    content_base64: StrictStr = Field(description="Retained original bytes as base64.")
+    content_base64: StrictStr | None = Field(
+        default=None, description="Inline payload for portable or hydrated outcomes."
+    )
+    document_archive: _ArchiveDocument | None = Field(
+        default=None, description="Archive dependency in a stored Outcome record."
+    )
+    file_archive: _ArchiveFileDocument | None = Field(
+        default=None, description="Typed media dependency in a stored Outcome record."
+    )
     surface: StrictStr | None = Field(
         default=None,
         description="Prepared identity; absent for raw evidence envelopes.",
@@ -1351,6 +1760,22 @@ class ArchivedSource(ImmutableModel):
         )
 
     @classmethod
+    def from_file_document(
+        cls,
+        key: str,
+        document: FileDocument,
+        surface: Surface | None = None,
+    ) -> Self:
+        """Freeze typed media bytes and provenance without a text profile."""
+        return cls.model_validate_json(
+            _native.surface_source_file_document(
+                key,
+                document._handle,
+                None if surface is None else surface._handle,
+            )
+        )
+
+    @classmethod
     def capture(cls, key: str, surface: Surface) -> Self:
         """Retain a prepared document, image or bundle with its exact identity."""
         return cls.model_validate_json(
@@ -1361,6 +1786,18 @@ class ArchivedSource(ImmutableModel):
         """Verify and restore original bytes within a byte limit, without source I/O."""
         return Document._from_native(
             _native.surface_source_restore(_rust_json(self), maximum)
+        )
+
+    def restore_image(self, maximum: int = 64 * 1024 * 1024) -> ImageDocument:
+        """Restore a typed image without assigning it a text Document profile."""
+        return ImageDocument._from_native(
+            _native.surface_source_restore_image(_rust_json(self), maximum)
+        )
+
+    def restore_file_document(self, maximum: int = 64 * 1024 * 1024) -> FileDocument:
+        """Verify and restore a typed media payload without source I/O."""
+        return ImageDocument._from_native(
+            _native.surface_source_restore_file_document(_rust_json(self), maximum)
         )
 
     def restore_surface(self, limits: Limits | None = None) -> Surface:
@@ -1464,6 +1901,20 @@ class Outcome(ImmutableModel):
             _native.surface_outcome_restore(
                 _rust_json(self), key, (limits or Limits()).model_dump_json()
             )
+        )
+
+    def source_document(self, key: str, maximum: int = 64 * 1024 * 1024) -> Document:
+        """Restore a retained source Document by stable key."""
+        return Document._from_native(
+            _native.surface_outcome_source_document(_rust_json(self), key, maximum)
+        )
+
+    def source_file_document(
+        self, key: str, maximum: int = 64 * 1024 * 1024
+    ) -> FileDocument:
+        """Restore a retained typed media file by stable key."""
+        return ImageDocument._from_native(
+            _native.surface_outcome_source_file_document(_rust_json(self), key, maximum)
         )
 
     async def rerun(self, policy: SurfacePolicy, count: int = 1) -> tuple[Outcome, ...]:
