@@ -189,7 +189,7 @@ def test_video_session_execute_cancels_decoder_preserves_sibling_and_evidence(
                     for receipt in commands
                     if receipt.result["command"]["op"] == operation
                 )
-                assert rejected.status == "Rejected"
+                assert rejected.status == "rejected"
                 assert rejected.error == "video processing cancelled"
             finally:
                 await session.close()
