@@ -29,6 +29,10 @@ required-features = ["browser"]
 name = "image_surface_conformance"
 required-features = ["surface-images"]
 
+[[example]]
+name = "video_conformance"
+required-features = ["surface-video"]
+
 [features]
 default = []
 surface-images = ["dep:image"]

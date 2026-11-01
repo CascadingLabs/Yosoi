@@ -39,6 +39,7 @@ EXAMPLES: tuple[tuple[str, str, bool], ...] = (
     ),
     ("surface_conformance", "run_surface_conformance.py", False),
     ("image_surface_conformance", "run_image_surface_conformance.py", True),
+    ("video_conformance", "run_video_conformance.py", True),
 )
 
 

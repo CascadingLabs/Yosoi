@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "b15927a1abd2403203155a476696a983975e9038",
-    "inventorySignature": "72cb0c45bc17e45645d385cd0702b1c5f5120a87d2b4c35506f7bb161d82a35b",
-    "featureProfileDigest": "8975bd7231ffd51613e3fd2865ac6182651410161d82efb253b76db14d1a0f5d"
+    "sourceRevision": "bf39d974fe37f7ef33d8926712fa96eb4793655c",
+    "inventorySignature": "c315088a7b7b15bf5201d846021e7ab80551ed8e369dc0dac18b4da15137f61d",
+    "featureProfileDigest": "b254e1fdf9e6f317e099d345e015017d5cf0323adb8e73de9b970dbe4916c270"
   },
   "pythonPin": {
-    "surfaceDigest": "a361bdb1b975ae96f736190dc81dce6fb18f58986c2775fd40290ca80705492a",
-    "implementationDigest": "adeae724792acacf4e1913a271913bca666cbd224a5b843df864883b4e1d880e"
+    "surfaceDigest": "5325167f064cd5849216d9a6f65592295121dd40af448bac794e6102b8393be7",
+    "implementationDigest": "47155ca7fdb4f3480d01116a71cfb3ed643fedb96d510c2a949a56075a005600"
   },
   "entries": [
     {
@@ -35224,6 +35224,61 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust's network source profile is the same checked Python profile with source representation, JSON format and network schema."
+    },
+    {
+      "rustPath": "yosoi::documents::FileMetadata::probe_validated_video_container",
+      "symbolKey": "member:function:yosoi::documents::FileMetadata::probe_validated_video_container@signature:74b1155bb12cc622f70f1bf9181a54325d7988823fec2bf686309c7c1ae6d184@source:1e39feb9face48e491b7570e74cdcd0cb5ab746c0c746e1673b01cccb5b5ac16",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents.FileMetadata.probe_validated_video_container",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "optional-default:probe_validated_video_container",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control."
+    },
+    {
+      "rustPath": "yosoi::documents::VideoDocument::copy_with_metadata",
+      "symbolKey": "member:function:yosoi::documents::VideoDocument::copy_with_metadata@signature:1f3d4568cc6fb21da7b4e5fa5ac38d877518309a1616124c985f348187fe4d6d@source:0f3cc52aad50b920bc2ec2f8ae0038bacc3542c592efc7796d6fba6c4096a3f5",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents.VideoDocument.copy_with_metadata",
+      "argumentMappings": [
+        {
+          "rustArgument": "id",
+          "pythonArgument": "id",
+          "conversion": "Both APIs revalidate the replacement stable document identity."
+        },
+        {
+          "rustArgument": "metadata",
+          "pythonArgument": "metadata",
+          "conversion": "Both APIs accept optional FileMetadata; omission retains the source values, while Rust recomputes detector MIME, digest and probe provenance."
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Both APIs accept optional FileLimits; omission uses the 64 MiB default."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:metadata",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control."
     },
     {
       "rustPath": "yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1",
