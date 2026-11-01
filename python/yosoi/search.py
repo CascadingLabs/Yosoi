@@ -480,6 +480,8 @@ class NotStarted(ImmutableModel):
         "adapter_unavailable",
         "unsupported_capability",
         "request_setup_failed",
+        "not_selected",
+        "respectfulness",
         "cancelled",
         "deadline_reached",
     ]
@@ -932,6 +934,13 @@ class SearchResponse(ImmutableModel):
 
     request_id: str
     policy_identity: PolicyIdentity
+    routing: Literal["auto", "all"] = Field(
+        default="all", description="Authored routing mode."
+    )
+    selected_provider: Provider | None = Field(
+        default=None,
+        description="Chosen Auto provider, or None when no candidate was admitted.",
+    )
     termination: Literal["completed", "cancelled", "deadline_reached"]
     providers: tuple[ProviderResult, ...] = Field(repr=False)
 

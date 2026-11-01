@@ -1,3 +1,4 @@
+use crate::internal::respectfulness::Operation as RespectOperation;
 use crate::registry::Registry as RuntimeRegistry;
 
 use crate::internal::policy::{
@@ -31,6 +32,7 @@ pub enum SearchExecutionSetupError {
 
 pub(super) struct ProviderJob {
     pub(super) registry: Option<RuntimeRegistry>,
+    pub(super) initial_operation: Option<RespectOperation>,
     pub(super) route: EffectiveProviderRoute,
     pub(super) provider: Provider,
     pub(super) request: PageRequest,
@@ -81,6 +83,20 @@ pub(super) fn prepare_provider_job(
         ));
     };
     if page.acquisitions.is_empty() {
+        return Ok((
+            Some(ProviderResult::not_started(
+                route,
+                SearchUnavailableReason::UnsupportedCapability,
+            )),
+            None,
+        ));
+    }
+    if prepared.policy_snapshot().policy().respectfulness.is_some()
+        && page
+            .acquisitions
+            .iter()
+            .any(|acquisition| matches!(acquisition.kind(), AcquisitionKind::Browser { .. }))
+    {
         return Ok((
             Some(ProviderResult::not_started(
                 route,
@@ -170,6 +186,7 @@ pub(super) fn prepare_provider_job(
     Ok((
         None,
         Some(ProviderJob {
+            initial_operation: None,
             registry: prepared.registry.clone(),
             route: route.clone(),
             provider: route.provider(),

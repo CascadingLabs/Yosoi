@@ -28,6 +28,6 @@ pub mod search {
     pub use crate::internal::policy::policy::search::{
         EffectiveProviderRoute, EffectiveSearch, ProfileSelection, ProfileSelectionKind, Provider,
         ProviderDefaultsStatus, ProviderDefaultsVersion, ProviderRequestProfile, ProviderSelection,
-        Search,
+        Routing, Search,
     };
 }

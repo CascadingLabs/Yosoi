@@ -13,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     StrictBool,
+    ValidationInfo,
     model_serializer,
     model_validator,
 )
@@ -182,9 +183,12 @@ def _rust_component(
     arguments_json = (
         None if arguments is None else json.dumps(arguments, separators=(",", ":"))
     )
-    return json.loads(
+    value = json.loads(
         _native.policy_component(kind, component_json, operation, arguments_json)
     )
+    if kind == "search" and isinstance(value, dict) and "routing" not in value:
+        value["routing"] = "all"
+    return value
 
 
 class DocumentSelection(Model):
@@ -697,12 +701,15 @@ class ProviderSelection(Model):
         return cls.model_validate(value)
 
 
+SearchRouting = Literal["auto", "all"]
+"""Auto chooses one eligible candidate; All executes every authored provider."""
+
+
 class Search(Model):
     """Ordered provider selection with shared search resource budgets.
 
     Attributes:
-        providers: Authored provider slots, at most four and without duplicates after
-            validation.
+        providers: Ordered candidates or execution slots, without duplicates.
         max_in_flight: Positive maximum simultaneous provider work.
         max_browser_in_flight: Positive maximum browser-backed provider work, separate
             from total concurrency.
@@ -715,9 +722,12 @@ class Search(Model):
         maximum_elapsed: Positive shared search elapsed budget in microseconds.
     """
 
-    providers: Annotated[list[ProviderSelection], Field(max_length=4)] = _field(
-        "search", "providers"
+    routing: SearchRouting = Field(
+        default="auto",
+        exclude_if=lambda value: value == "all",
+        description="Auto selects one candidate; All executes every listed provider.",
     )
+    providers: list[ProviderSelection] = _field("search", "providers")
     max_in_flight: PositiveInt = _field("search", "max_in_flight")
     max_browser_in_flight: PositiveInt = _field("search", "max_browser_in_flight")
     max_results_per_provider: PositiveU16 = _field("search", "max_results_per_provider")
@@ -727,10 +737,67 @@ class Search(Model):
     )
     maximum_elapsed: MaximumElapsedValue = _field("search", "maximum_elapsed")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _historical_routing(cls, value: Any, info: ValidationInfo) -> Any:
+        if isinstance(value, dict) and "routing" not in value:
+            legacy_fields = {
+                "providers",
+                "max_in_flight",
+                "max_browser_in_flight",
+                "max_results_per_provider",
+                "max_total_results",
+                "max_retained_content_bytes",
+                "maximum_elapsed",
+            }
+            if info.mode == "json" or legacy_fields <= value.keys():
+                return {**value, "routing": "all"}
+        return value
+
+    @classmethod
+    def auto(cls, providers: list[Provider | str]) -> Self:
+        """Build a nonempty candidate list with one Auto selection per search.
+
+        Args:
+            providers: Ordered concrete providers eligible for rotation.
+
+        Returns:
+            A validated Auto routing policy.
+
+        Raises:
+            PolicyError: Candidates are empty, duplicated or unsupported.
+        """
+        return cls.model_validate(
+            _rust_component(
+                "search", None, "auto", [str(provider) for provider in providers]
+            )
+        )
+
+    @classmethod
+    def new(cls, providers: list[Provider | str]) -> Self:
+        """Build an explicit plan executing every supplied provider.
+
+        Args:
+            providers: Ordered concrete providers to execute.
+
+        Returns:
+            A validated All routing policy, matching Rust Search.new.
+
+        Raises:
+            PolicyError: Providers are duplicated or unsupported.
+        """
+        return cls.model_validate(
+            _rust_component(
+                "search", None, "new", [str(provider) for provider in providers]
+            )
+        )
+
     @classmethod
     def disabled(cls) -> Self:
         """Return a validated search declaration selecting no provider routes."""
-        return cls.model_validate(_rust_component("search", None, "disabled"))
+        return cls.model_validate(
+            {**_rust_component("search", None, "disabled"), "routing": "all"}
+        )
 
     def is_enabled(self) -> bool:
         """Return whether at least one provider is selected, not whether it can run."""
@@ -1063,6 +1130,11 @@ class EffectiveSearch(ImmutableModel):
         maximum_elapsed: Shared elapsed budget in microseconds.
     """
 
+    routing: SearchRouting = Field(
+        default="all",
+        exclude_if=lambda value: value == "all",
+        description="Authored Search routing mode.",
+    )
     providers: tuple[EffectiveProviderRoute, ...]
     max_in_flight: PositiveInt
     max_browser_in_flight: PositiveInt
@@ -1541,6 +1613,13 @@ class Policy(Model):
     map: Map = _field("map")
     search: Search = _field("search")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _historical_search(cls, value: Any, info: ValidationInfo) -> Any:
+        if info.mode == "json" and isinstance(value, dict) and "search" not in value:
+            return {**value, "search": Search.disabled()}
+        return value
+
     @model_serializer(mode="wrap")
     def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
         data = handler(self)
@@ -1724,6 +1803,9 @@ class _SnapshotProviderSelection(ImmutableModel):
 
 
 class _SnapshotSearch(ImmutableModel):
+    routing: SearchRouting = Field(
+        default="all", exclude_if=lambda value: value == "all"
+    )
     providers: tuple[_SnapshotProviderSelection, ...]
     max_in_flight: PositiveInt
     max_browser_in_flight: PositiveInt
@@ -1835,6 +1917,9 @@ class _SnapshotEffectiveProviderRoute(ImmutableModel):
 
 
 class _SnapshotEffectiveSearch(ImmutableModel):
+    routing: SearchRouting = Field(
+        default="all", exclude_if=lambda value: value == "all"
+    )
     providers: tuple[_SnapshotEffectiveProviderRoute, ...]
     max_in_flight: PositiveInt
     max_browser_in_flight: PositiveInt

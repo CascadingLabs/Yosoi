@@ -15,6 +15,9 @@ use crate::internal::types::BrowserMode;
 use common::{DEFAULT_POLICY_JSON, TestResult, default_policy_json_value};
 use serde_json::Value;
 
+const LEGACY_ALL_POLICY_JSON: &str = include_str!("fixtures/policy-v7-explicit-search.json");
+const DEFAULT_POLICY_IDENTITY_V10_SHA256: &str =
+    "1fab70c44b94ade918b9cbd240970795beb9c0a8a9684d33c81d12860e85678d";
 const DEFAULT_POLICY_IDENTITY_SHA256: &str =
     "a340f9711e02d7c1c8218814a7d810e7dc1a1584fb659a03cc45cc202a99e924";
 const DEFAULT_POLICY_IDENTITY_V6_SHA256: &str =
@@ -30,12 +33,18 @@ fn default_policy_has_stable_canonical_json_and_identity() -> TestResult {
     assert_eq!(canonical_json, DEFAULT_POLICY_JSON.trim());
 
     let identity = policy.effective_identity()?;
-    assert_eq!(identity.version(), 7);
+    assert_eq!(identity.version(), 10);
     assert_eq!(
         identity.digest().to_string(),
+        DEFAULT_POLICY_IDENTITY_V10_SHA256
+    );
+    let legacy: Policy = serde_json::from_str(LEGACY_ALL_POLICY_JSON)?;
+    assert_eq!(legacy.effective_identity()?.version(), 7);
+    assert_eq!(
+        legacy.effective_identity()?.digest().to_string(),
         DEFAULT_POLICY_IDENTITY_V7_SHA256
     );
-    let archived_v6 = policy.archived_v6_identity()?;
+    let archived_v6 = legacy.archived_v6_identity()?;
     assert_eq!(archived_v6.version(), 6);
     assert_eq!(
         archived_v6.digest().to_string(),
@@ -49,7 +58,7 @@ fn default_policy_has_stable_canonical_json_and_identity() -> TestResult {
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     );
-    let archived_v5 = policy.archived_v5_identity()?;
+    let archived_v5 = legacy.archived_v5_identity()?;
     assert_eq!(archived_v5.version(), 5);
     assert_eq!(
         archived_v5.digest().to_string(),
@@ -207,7 +216,7 @@ fn default_action_timeout_is_serde_defaulted_and_validated() -> TestResult {
     let policy = Policy::default();
     assert_eq!(policy.default_action_timeout_ms, 10_000);
 
-    let mut legacy: Value = serde_json::from_str(DEFAULT_POLICY_JSON)?;
+    let mut legacy: Value = serde_json::from_str(LEGACY_ALL_POLICY_JSON)?;
     legacy
         .as_object_mut()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "policy is not an object"))?

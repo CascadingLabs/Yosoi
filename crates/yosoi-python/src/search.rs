@@ -81,6 +81,7 @@ async fn response_json(
         "request_id": response.request_id().to_string(),
         "policy_identity": responses::identity(response.policy_identity()),
         "termination": response.termination(), "providers": providers,
+        "routing": response.routing(), "selected_provider": response.selected_provider(),
     }))
     .map_err(|error| {
         Python::attach(|py| {

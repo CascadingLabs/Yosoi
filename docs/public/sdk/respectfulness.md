@@ -99,7 +99,7 @@ Request responses expose `respectfulness` events. Each Search provider retains i
 
 Configured cooldowns honor supported `Retry-After` delay and date values, using the authored fallback when unavailable. Successful empty responses and uncertain parser results do not automatically trigger an HTTP-error cooldown.
 
-Retries are disabled by default. Explicit retry settings bound attempts and backoff, and every retry requires fresh admission. Redirect hops and same-provider recovery also consume the applicable budgets. Respectfulness does not choose another Search provider.
+Retries are disabled by default. Explicit retry settings bound attempts and backoff, and every retry requires fresh admission. Redirect hops and same-provider recovery also consume the applicable budgets. Respectfulness does not choose another Search provider. [Auto Search](search.md) consumes these admission rules to choose one eligible provider before execution.
 
 ## Matching and operational limits
 
@@ -113,4 +113,4 @@ Required Registry operations fail loudly on unavailable or corrupt state. Operat
 
 ## Supported acquisition paths
 
-Initial enforcement covers Direct HTTP Requests and Search child requests. Browser acquisitions currently return an explicit unsupported-enforcement error before dispatch. Sessions and Map do not yet accept an enabled Respectfulness policy. This keeps unsupported traffic visible while those consumers gain enforcement.
+Initial enforcement covers Direct HTTP Requests and Search child requests. Explicit browser acquisitions currently return an unsupported-enforcement error before dispatch. Auto Search records those candidates as unsupported and can choose a supported Direct HTTP candidate. Sessions and Map do not yet accept an enabled Respectfulness policy. This keeps unsupported traffic visible while those consumers gain enforcement.

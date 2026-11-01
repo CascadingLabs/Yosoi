@@ -178,7 +178,12 @@ fn provider_order_is_distinct_and_total_hit_bounds_cover_the_plan() -> TestResul
             .iter()
             .map(|route| route.provider)
             .collect::<Vec<_>>(),
-        vec![Provider::Brave, Provider::Bing, Provider::DuckDuckGo]
+        vec![
+            Provider::Google,
+            Provider::DuckDuckGo,
+            Provider::Bing,
+            Provider::Brave
+        ]
     );
     assert_eq!(default.max_results_per_provider().get(), 5);
     assert_eq!(default.max_total_results().get(), 15);

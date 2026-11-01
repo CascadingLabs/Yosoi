@@ -22,14 +22,16 @@ use yosoi::{
     Policy,
     policy::{
         self, AcquisitionKind,
-        search::{Provider, Search},
+        search::{Provider, Routing, Search},
     },
     search::{self, SearchCaptureRetention, SearchFailure, SearchIssueKind},
 };
 
 pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
     SearchEnvelope {
-        schema_version: 3,
+        routing: Routing::All,
+        selected_provider: None,
+        schema_version: 4,
         cli_version: env!("CARGO_PKG_VERSION"),
         policy_profile: Some("daily"),
         policy_identity: PolicyIdentityView {
@@ -142,6 +144,7 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
+        routing: None,
         registry: RegistryArgs::default(),
         query: Some("unused fixture query".to_owned()),
         diagnostics: None,
@@ -154,10 +157,11 @@ fn cli_args(
 }
 
 #[test]
-fn default_search_runs_three_preview_routes_at_five_each() -> Result<(), Box<dyn Error>> {
+fn default_search_rotates_four_preview_candidates_at_five_each() -> Result<(), Box<dyn Error>> {
     let args = cli_args(Vec::new(), None, None);
     let resolved = search_for_cli(&Search::default(), &args)?;
-    assert_eq!(resolved.providers().len(), 3);
+    assert_eq!(resolved.providers().len(), 4);
+    assert_eq!(resolved.routing, Routing::Auto);
     assert_eq!(resolved.max_results_per_provider().get(), 5);
     assert_eq!(resolved.max_total_results().get(), 15);
     Ok(())
@@ -315,7 +319,7 @@ fn json_formatter_keeps_provider_order_profile_facts_issues_and_unknown_cost()
         value
             .get("schema_version")
             .and_then(serde_json::Value::as_u64),
-        Some(3)
+        Some(4)
     );
     let providers = value
         .get("providers")

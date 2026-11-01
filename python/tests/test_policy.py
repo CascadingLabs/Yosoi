@@ -35,7 +35,8 @@ def test_policy_instances_have_independent_mutable_sections() -> None:
     first.documents.max_nodes = 42
     first.search.providers.clear()
     assert second.documents.max_nodes != 42
-    assert len(second.search.providers) == 3
+    assert len(second.search.providers) == 4
+    assert second.search.routing == "auto"
 
 
 def test_mutating_nested_policy_is_checked_again_when_used() -> None:
@@ -59,7 +60,7 @@ def test_malformed_browser_or_duplicate_acquisition_is_rejected_by_rust() -> Non
 
 
 def test_search_can_be_disabled_without_modifying_other_limits() -> None:
-    policy = Policy(search=Search(providers=[]))
+    policy = Policy(search=Search.disabled())
     assert json.loads(policy.to_json())["search"]["providers"] == []
 
 

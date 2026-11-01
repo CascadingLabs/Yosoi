@@ -30,14 +30,14 @@ from yosoi.browser import (
     SessionPolicy,
     WaitUntil,
 )
-from yosoi.policy import Acquisition, Page, Policy
+from yosoi.policy import Acquisition, Page, Policy, Search
 
 
 def test_optional_engine_identity_preserves_legacy_defaults() -> None:
-    default = Policy()
+    default = Policy(search=Search.disabled())
     assert default.identity().version == 7
     assert "browser" not in json.loads(default.to_json())
-    policy = Policy(browser=BrowserConfig(engine="firefox"))
+    policy = Policy(browser=BrowserConfig(engine="firefox"), search=Search.disabled())
     assert policy.identity().version == 8
     assert policy.identity() != default.identity()
     assert json.loads(policy.to_json())["browser"]["engine"] == "firefox"

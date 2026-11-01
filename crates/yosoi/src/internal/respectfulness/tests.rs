@@ -216,7 +216,7 @@ async fn policy_selected_file_records_reservation_owner_and_release() -> TestRes
     let path = directory.path().join("traffic.jsonl");
     let mut policy = Respectfulness::new(vec![group("owner")])?;
     policy.registry_path = Some(path.clone());
-    let registry = super::resolve_registry(&policy, None, &CancellationToken::new(), None)
+    let registry = super::resolve_registry(Some(&policy), None, &CancellationToken::new(), None)
         .await?
         .ok_or("unexpected cancellation")?;
     let runtime = Runtime::new(policy, registry.clone())?;
@@ -296,7 +296,7 @@ fn queued_registry_setup_observes_cancellation_and_deadline() -> TestResult {
                 .then(|| Instant::now().checked_add(Duration::from_millis(20)))
                 .flatten();
             let mut setup = Box::pin(super::resolve_registry(
-                &policy,
+                Some(&policy),
                 None,
                 &cancellation,
                 deadline,

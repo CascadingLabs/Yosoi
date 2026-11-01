@@ -16,7 +16,7 @@ use std::{
 };
 
 use clap::{ArgAction, Args, Subcommand, ValueEnum};
-use yosoi::policy::search::Provider;
+use yosoi::policy::search::{Provider, Routing};
 
 use std::{
     io::{self, Write},
@@ -60,6 +60,12 @@ impl ProviderChoice {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+pub enum RoutingChoice {
+    Auto,
+    All,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 pub enum OutputFormat {
     Human,
     Json,
@@ -82,6 +88,9 @@ pub enum SearchCommand {
 
 #[derive(Debug, Args)]
 pub struct SearchArgs {
+    /// Choose one eligible candidate (auto) or execute every listed provider (all).
+    #[arg(long, value_enum)]
+    pub routing: Option<RoutingChoice>,
     #[command(flatten)]
     pub registry: RegistryArgs,
     /// Text to search for.
@@ -90,7 +99,7 @@ pub struct SearchArgs {
     /// Optionally save bounded query/page evidence for offline replay.
     #[arg(short = 'd', long, value_name = "DIR")]
     pub diagnostics: Option<PathBuf>,
-    /// Ordered providers, as a comma-separated enum list.
+    /// Ordered Auto candidates, or execution slots with --routing all.
     #[arg(short = 'p', long = "providers", visible_alias = "provider", value_enum, value_delimiter = ',', action = ArgAction::Append)]
     pub providers: Vec<ProviderChoice>,
     #[command(flatten)]
@@ -227,6 +236,12 @@ fn policy_for_search(args: &SearchArgs, profile: Option<&str>) -> Result<(Policy
 
 fn search_for_cli(base: &Search, args: &SearchArgs) -> Result<Search> {
     let mut search = base.clone();
+    if let Some(routing) = args.routing {
+        search.routing = match routing {
+            RoutingChoice::Auto => Routing::Auto,
+            RoutingChoice::All => Routing::All,
+        };
+    }
     if !args.providers.is_empty() {
         let providers = args
             .providers
@@ -254,8 +269,12 @@ fn search_for_cli(base: &Search, args: &SearchArgs) -> Result<Search> {
     let per_provider_limit = args
         .per_provider_limit
         .unwrap_or_else(|| search.max_results_per_provider());
-    let provider_count =
-        u32::try_from(search.providers().len()).context("too many Search providers")?;
+    let provider_count = u32::try_from(if search.routing == Routing::Auto {
+        1
+    } else {
+        search.providers().len()
+    })
+    .context("too many Search providers")?;
     let required_total = u32::from(per_provider_limit.get())
         .checked_mul(provider_count)
         .ok_or_else(|| anyhow::anyhow!("Search result limits exceed the supported range"))?;

@@ -1,6 +1,10 @@
 //! Bounded execution for policy-selected Search providers.
 
-use crate::internal::respectfulness::resolve_registry;
+use crate::internal::respectfulness::{Operation as RespectOperation, resolve_registry};
+use crate::policy::{
+    respectfulness::{Event as TrafficEvent, EventKind, RespectfulnessError},
+    search::{EffectiveProviderRoute, Provider, Routing},
+};
 use std::{collections::VecDeque, time::Duration};
 
 use crate::internal::policy::policy::AddressableByteLimit;
@@ -12,6 +16,7 @@ use crate::internal::engine::search::{
     SearchTermination, SearchUnavailableReason,
 };
 
+mod auto;
 mod google_redirect;
 mod output;
 mod prepare;
@@ -46,12 +51,105 @@ impl BoundSearchRequest<'_> {
             .checked_add(Duration::from_micros(maximum_elapsed.as_microseconds()))
             .ok_or(SearchExecutionSetupError::DeadlineUnrepresentable)?;
         let mut prepared = self.prepare()?;
-        if let Some(policy) = &self.policy().respectfulness {
-            prepared.registry =
-                resolve_registry(policy, self.registry(), cancellation, Some(deadline)).await?;
+        if self.policy().respectfulness.is_some() || self.policy().search.routing == Routing::Auto {
+            prepared.registry = resolve_registry(
+                self.policy().respectfulness.as_ref(),
+                self.registry(),
+                cancellation,
+                Some(deadline),
+            )
+            .await?;
         }
         execute_prepared(prepared, deadline, cancellation, self.diagnostic_capture()).await
     }
+}
+
+async fn route_jobs(
+    prepared: &super::PreparedSearch,
+    jobs: &mut VecDeque<ScheduledJob<ProviderJob>>,
+    slots: &mut [Option<ProviderResult>],
+    cancellation: &CancellationToken,
+    deadline: Instant,
+) -> Result<Option<Provider>, super::SearchSendError> {
+    let effective_search = &prepared.policy_snapshot().effective_policy().search;
+    let provider_count = prepared.providers().len();
+    let mut selected_provider = None;
+    if effective_search.routing == Routing::Auto
+        && !cancellation.is_cancelled()
+        && Instant::now() < deadline
+    {
+        let registry = prepared.registry.clone().ok_or_else(|| {
+            super::SearchSendError::Respectfulness(RespectfulnessError::Setup {
+                message: "Auto Search has no bound registry".to_owned(),
+            })
+        })?;
+        let mut targets = vec![None; provider_count];
+        for job in jobs.iter() {
+            let target = targets
+                .get_mut(job.slot)
+                .ok_or(SearchExecutionSetupError::ProviderTarget)?;
+            *target = Some(job.payload.provider_target.as_str().to_owned());
+        }
+        let mut choice = auto::select(
+            prepared
+                .providers()
+                .iter()
+                .map(EffectiveProviderRoute::provider)
+                .collect(),
+            targets,
+            prepared.policy_snapshot().policy().respectfulness.clone(),
+            registry,
+            cancellation,
+            deadline,
+        )
+        .await?;
+        for (slot, error) in choice.rejected {
+            let route = prepared
+                .providers()
+                .get(slot)
+                .ok_or(SearchExecutionSetupError::ProviderTarget)?;
+            let mut result =
+                ProviderResult::not_started(route, SearchUnavailableReason::Respectfulness);
+            result.respectfulness.push(TrafficEvent {
+                kind: EventKind::Rejected,
+                groups: Vec::new(),
+                registry_id: None,
+                status: None,
+                error: Some(error),
+            });
+            *slots
+                .get_mut(slot)
+                .ok_or(SearchExecutionSetupError::ProviderTarget)? = Some(result);
+        }
+        if choice.slot.is_some() || (!cancellation.is_cancelled() && Instant::now() < deadline) {
+            let mut selected_jobs = VecDeque::new();
+            while let Some(mut job) = jobs.pop_front() {
+                if choice.slot == Some(job.slot) {
+                    selected_provider = Some(job.payload.provider);
+                    job.payload.initial_operation = choice.permit.take().map(|permit| {
+                        RespectOperation::from_permit(
+                            permit,
+                            job.payload.provider_target.as_str().to_owned(),
+                        )
+                    });
+                    selected_jobs.push_back(job);
+                } else {
+                    let slot = slots
+                        .get_mut(job.slot)
+                        .ok_or(SearchExecutionSetupError::ProviderTarget)?;
+                    if slot.is_none() {
+                        *slot = Some(ProviderResult::not_started(
+                            &job.payload.route,
+                            SearchUnavailableReason::NotSelected,
+                        ));
+                    }
+                }
+            }
+            *jobs = selected_jobs;
+        }
+    }
+
+    Ok(selected_provider)
 }
 
 async fn execute_prepared(
@@ -66,7 +164,14 @@ async fn execute_prepared(
         .max_retained_content_bytes()
         .as_usize()
         .map_err(|_| SearchExecutionSetupError::OutputBudgetTooSmall)?;
-    let per_provider_output_limit = per_provider_output_quota(total_output_limit, provider_count)?;
+    let per_provider_output_limit = per_provider_output_quota(
+        total_output_limit,
+        if effective_search.routing == Routing::Auto {
+            1
+        } else {
+            provider_count
+        },
+    )?;
     let output_limit = AddressableByteLimit::try_from(
         u64::try_from(per_provider_output_limit)
             .map_err(|_| SearchExecutionSetupError::OutputBudgetTooSmall)?,
@@ -92,6 +197,9 @@ async fn execute_prepared(
             });
         }
     }
+
+    let selected_provider =
+        route_jobs(&prepared, &mut jobs, &mut slots, cancellation, deadline).await?;
 
     let worker = move |job: ProviderJob, token: CancellationToken| async move {
         execute_provider(job, &token, diagnostic_capture).await
@@ -142,6 +250,8 @@ async fn execute_prepared(
         SchedulerTermination::DeadlineReached => SearchTermination::DeadlineReached,
     };
     Ok(SearchResponse {
+        routing: effective_search.routing,
+        selected_provider,
         request_id: prepared.request_id(),
         policy_identity: prepared.policy_snapshot().identity(),
         providers,

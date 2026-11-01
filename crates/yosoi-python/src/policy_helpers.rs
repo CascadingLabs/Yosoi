@@ -64,6 +64,15 @@ pub fn policy_component(
     args_json: Option<&str>,
 ) -> PyResult<String> {
     match (kind, operation) {
+        ("search", "auto" | "new") => {
+            let providers = decode_args::<Vec<Provider>>(py, args_json)?;
+            let search = if operation == "auto" {
+                Search::auto(providers)
+            } else {
+                Search::new(providers)
+            };
+            encode(py, &search.map_err(|error| sdk_error(py, &error))?)
+        }
         ("search", "disabled") => encode(py, &Search::disabled()),
         ("search", "is_enabled") => {
             let search = decode::<Search>(py, required(component_json)?)?;

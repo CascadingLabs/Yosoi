@@ -29,7 +29,7 @@ use yosoi::{
         AcquisitionKind, AddressableByteLimit, BrowserLimits, DirectHttpRedirects, Documents,
         EventLimit, Filters, IpFamily, Limits, Locators, Map, MaximumElapsed, Network, Page,
         RedirectHopLimit, Request, Scope, SourceLimits, Tuning,
-        search::{Provider, Search},
+        search::{Provider, Routing, Search},
     },
     registry::{Change, Coordination, Revision, Snapshot},
     request::{CaptureId, new as new_request},
@@ -530,18 +530,25 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         Provider::Google,
         json!({}),
     )?);
-    output.push(constructed_case(
+    let explicit_search = Search::new([
+        Provider::Brave,
+        Provider::Bing,
+        Provider::DuckDuckGo,
+        Provider::Google,
+    ])?;
+    let explicit_fields = json!({"routing": explicit_search.routing});
+    let mut explicit_case = constructed_case(
         "policy-search-four-provider-selections",
         "yosoi::policy::search::Search",
         "Rust Search::new with Brave, Bing, DuckDuckGo, and Google",
-        Search::new([
-            Provider::Brave,
-            Provider::Bing,
-            Provider::DuckDuckGo,
-            Provider::Google,
-        ])?,
-        json!({}),
-    )?);
+        explicit_search,
+        json!({"absentPaths": ["routing"]}),
+    )?;
+    explicit_case
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Search fixture must be an object"))?
+        .insert("field_observations".to_owned(), explicit_fields);
+    output.push(explicit_case);
     default_case::<EventLimit>(
         &mut output,
         "default-event-limit",
@@ -1156,6 +1163,15 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         )?);
     }
 
+    for (name, routing) in [("auto", Routing::Auto), ("all", Routing::All)] {
+        output.push(constructed_case(
+            &format!("search-routing-{name}"),
+            "yosoi::policy::search::Routing",
+            "Rust Search routing mode",
+            routing,
+            json!({}),
+        )?);
+    }
     Ok(output)
 }
 

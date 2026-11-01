@@ -23,7 +23,7 @@ use uuid::Uuid;
 
 use crate::{
     policy::respectfulness::{Group, Respectfulness, Unmatched},
-    registry::{Change, Registry, RegistryError, Reservation, TransactionContext},
+    registry::{Change, Registry, RegistryError, Reservation, Snapshot, TransactionContext},
 };
 
 /// Why matching traffic cannot start. These reasons never authorize dispatch.
@@ -190,6 +190,14 @@ pub struct Permit {
     pub expires_at_ms: u64,
 }
 
+/// A decision against one snapshot, committed by the consumer before dispatch.
+#[derive(Debug)]
+pub struct AdmissionPlan {
+    pub changes: Vec<Change>,
+    pub context: TransactionContext,
+    pub permit: Permit,
+}
+
 impl Runtime {
     pub fn new(policy: Respectfulness, registry: Registry) -> Result<Self, RespectfulnessError> {
         policy
@@ -272,18 +280,48 @@ impl Runtime {
         if expires_at_ms <= now_ms {
             return Err(setup("reservation deadline has elapsed"));
         }
-        let groups = self.matched(target)?;
-        let id = Uuid::new_v4().to_string();
-        if groups.is_empty() {
+        if self.matched(target)?.is_empty() {
             return Ok(Permit {
                 runtime: self.clone(),
-                id,
+                id: Uuid::new_v4().to_string(),
                 groups: Vec::new(),
                 registry_id: None,
                 expires_at_ms,
             });
         }
         let snapshot = self.0.registry.snapshot()?;
+        let plan = self.plan_at(&snapshot, target, now_ms, expires_at_ms)?;
+        self.0
+            .registry
+            .commit_with_context(&snapshot.revision, &plan.changes, &plan.context)?;
+        Ok(plan.permit)
+    }
+
+    pub fn plan_at(
+        &self,
+        snapshot: &Snapshot,
+        target: &str,
+        now_ms: u64,
+        expires_at_ms: u64,
+    ) -> Result<AdmissionPlan, RespectfulnessError> {
+        if expires_at_ms <= now_ms {
+            return Err(setup("reservation deadline has elapsed"));
+        }
+        let groups = self.matched(target)?;
+        let id = Uuid::new_v4().to_string();
+        if groups.is_empty() {
+            return Ok(AdmissionPlan {
+                changes: Vec::new(),
+                context: TransactionContext::default(),
+                permit: Permit {
+                    runtime: self.clone(),
+                    id,
+                    groups: Vec::new(),
+                    registry_id: None,
+                    expires_at_ms,
+                },
+            });
+        }
         let mut changes = Vec::new();
         for compiled in &groups {
             let mut state = load_state(snapshot.entries.get(&key(&compiled.group.id)), compiled)?;
@@ -368,15 +406,16 @@ impl Runtime {
             resources: groups.iter().map(|group| key(&group.group.id)).collect(),
             reservation: Some(reservation(&id, expires_at_ms)?),
         };
-        self.0
-            .registry
-            .commit_with_context(&snapshot.revision, &changes, &context)?;
-        Ok(Permit {
-            runtime: self.clone(),
-            id,
-            groups: groups.iter().map(|g| g.group.id.clone()).collect(),
-            registry_id: Some(snapshot.revision.registry_id),
-            expires_at_ms,
+        Ok(AdmissionPlan {
+            changes,
+            context,
+            permit: Permit {
+                runtime: self.clone(),
+                id,
+                groups: groups.iter().map(|g| g.group.id.clone()).collect(),
+                registry_id: Some(snapshot.revision.registry_id.clone()),
+                expires_at_ms,
+            },
         })
     }
 }
@@ -490,7 +529,7 @@ mod operation;
 pub use operation::Operation;
 
 pub async fn resolve_registry(
-    policy: &Respectfulness,
+    policy: Option<&Respectfulness>,
     registry: Option<&Registry>,
     cancellation: &CancellationToken,
     deadline: Option<Instant>,
@@ -501,8 +540,8 @@ pub async fn resolve_registry(
     if let Some(registry) = registry {
         return Ok(Some(registry.clone()));
     }
-    let policy = policy.clone();
-    let mut task = spawn_blocking(move || policy.open_registry());
+    let path = policy.and_then(|policy| policy.registry_path.clone());
+    let mut task = spawn_blocking(move || path.map_or_else(Registry::new, Registry::jsonl));
     let deadline_signal = async {
         if let Some(at) = deadline {
             let _ = timeout_at(at, pending::<()>()).await;

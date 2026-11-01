@@ -744,6 +744,10 @@
     {
       "rustPath": "yosoi::policy::respectfulness::Event",
       "pythonTarget": "yosoi.policy.RespectfulnessEvent"
+    },
+    {
+      "rustPath": "yosoi::policy::search::Routing",
+      "pythonTarget": "yosoi.policy.SearchRouting"
     }
   ]
 }

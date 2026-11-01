@@ -64,6 +64,7 @@ pub(in crate::internal::engine) fn direct_http_executor_with_user_agent(
 #[derive(Clone, Default)]
 pub struct RequestExecutor {
     respectfulness: Option<RespectRuntime>,
+    initial_operation: Option<RespectOperation>,
     direct_http: Option<DirectHttpResolutionInputs>,
     browser_headless: Option<BrowserResolutionInputs>,
     browser_headful: Option<BrowserResolutionInputs>,
@@ -75,10 +76,16 @@ impl RequestExecutor {
         self
     }
 
+    fn with_initial_operation(mut self, operation: Option<RespectOperation>) -> Self {
+        self.initial_operation = operation;
+        self
+    }
+
     /// Creates an executor with no acquisition-specific configuration.
     pub const fn new() -> Self {
         Self {
             respectfulness: None,
+            initial_operation: None,
             direct_http: None,
             browser_headless: None,
             browser_headful: None,
@@ -140,7 +147,7 @@ impl RequestExecutor {
         };
         let mut cancellation_observed = cancellation.is_cancelled();
 
-        for attempt in prepared.attempts() {
+        for (position, attempt) in prepared.attempts().iter().enumerate() {
             if cancellation_observed || cancellation.is_cancelled() {
                 termination = ResponseTermination::Cancelled;
                 cancellation_observed = true;
@@ -152,10 +159,16 @@ impl RequestExecutor {
                 continue;
             }
 
-            let operation = self
-                .respectfulness
-                .as_ref()
-                .map(|runtime| RespectOperation::new(runtime.clone()));
+            let initial = if position == 0 {
+                self.initial_operation.clone()
+            } else {
+                None
+            };
+            let operation = initial.or_else(|| {
+                self.respectfulness
+                    .as_ref()
+                    .map(|runtime| RespectOperation::new(runtime.clone()))
+            });
             let outcome = self
                 .execute_attempt(
                     &prepared,
@@ -313,6 +326,7 @@ impl fmt::Debug for RequestExecutor {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("RequestExecutor")
+            .field("initial_operation", &self.initial_operation)
             .field("respectfulness_configured", &self.respectfulness.is_some())
             .field("direct_http_configured", &self.direct_http.is_some())
             .field("headless_configured", &self.browser_headless.is_some())
@@ -358,7 +372,8 @@ impl BoundPageRequest<'_> {
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
         let executor = standard::for_prepared(&prepared)?
-            .with_respectfulness(self.respectfulness_runtime(cancellation).await?);
+            .with_respectfulness(self.respectfulness_runtime(cancellation).await?)
+            .with_initial_operation(self.initial_operation.clone());
         Ok(executor
             .execute_prepared_on_control(prepared, cancellation, control)
             .await)
@@ -377,7 +392,8 @@ impl BoundPageRequest<'_> {
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
         let executor = standard::for_prepared(&prepared)?
-            .with_respectfulness(self.respectfulness_runtime(cancellation).await?);
+            .with_respectfulness(self.respectfulness_runtime(cancellation).await?)
+            .with_initial_operation(self.initial_operation.clone());
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 
@@ -390,7 +406,8 @@ impl BoundPageRequest<'_> {
         let prepared = self.prepare()?;
         let executor = executor
             .clone()
-            .with_respectfulness(self.respectfulness_runtime(cancellation).await?);
+            .with_respectfulness(self.respectfulness_runtime(cancellation).await?)
+            .with_initial_operation(self.initial_operation.clone());
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 }

@@ -29,7 +29,18 @@ pub(super) fn render_human(
     let label = theme.label;
     let value = theme.value;
     let muted = theme.muted;
-    for provider in &envelope.providers {
+    if let Some(provider) = envelope.selected_provider {
+        writeln!(
+            writer,
+            "{heading}Auto selected {}{heading:#}",
+            provider_name(provider)
+        )?;
+    }
+    for provider in envelope
+        .providers
+        .iter()
+        .filter(|provider| provider.detail != Some("not_selected"))
+    {
         writeln!(writer, "{heading}{}:{heading:#}", provider.provider)?;
         let status = theme.status(provider.status.label());
         writeln!(

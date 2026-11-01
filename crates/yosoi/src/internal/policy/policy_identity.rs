@@ -1,4 +1,4 @@
-use super::policy::{Network, respectfulness::Respectfulness};
+use super::policy::{Network, respectfulness::Respectfulness, search::Routing};
 use crate::browser as browser_config;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -24,7 +24,10 @@ impl Policy {
     /// Computes the v6 identity used by archived policies without Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.effective_policy()?.archived_v6_identity()
@@ -34,7 +37,10 @@ impl Policy {
     /// default action timeout field.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.effective_policy()?.archived_v5_identity()
@@ -46,7 +52,10 @@ impl Policy {
     /// legacy archive schema, before a Search section existed.
     #[doc(hidden)]
     pub fn archived_v2_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -86,7 +95,10 @@ impl Policy {
     /// The v3 projection included Map but preceded Search.
     #[doc(hidden)]
     pub fn archived_v3_map_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -125,7 +137,10 @@ impl Policy {
     pub fn archived_v3_map_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -242,7 +257,9 @@ impl EffectivePolicy {
             })
             .collect();
         let json = serde_json::to_string(&EffectivePolicyIdentityEnvelopeRef {
-            schema_version: if self.respectfulness.is_some() {
+            schema_version: if self.search.routing == Routing::Auto {
+                10
+            } else if self.respectfulness.is_some() {
                 9
             } else if self.browser.is_default() {
                 POLICY_SCHEMA_VERSION
@@ -265,7 +282,9 @@ impl EffectivePolicy {
             },
         })
         .map_err(|error| PolicyError::Serialization(error.to_string()))?;
-        Ok(if self.respectfulness.is_some() {
+        Ok(if self.search.routing == Routing::Auto {
+            EffectivePolicyIdentity::from_auto_search_json(&json)
+        } else if self.respectfulness.is_some() {
             EffectivePolicyIdentity::from_respectfulness_json(&json)
         } else if self.browser.is_default() {
             EffectivePolicyIdentity::from_canonical_json(&json)
@@ -277,7 +296,10 @@ impl EffectivePolicy {
     /// Recomputes the v6 identity for snapshots archived before Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;
@@ -317,7 +339,10 @@ impl EffectivePolicy {
     /// default action timeouts became part of Policy.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;
@@ -358,7 +383,10 @@ impl EffectivePolicy {
     pub fn archived_v4_search_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if self.respectfulness.is_some() || !self.network.is_default() {
+        if self.search.routing == Routing::Auto
+            || self.respectfulness.is_some()
+            || !self.network.is_default()
+        {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;

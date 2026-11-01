@@ -2,7 +2,11 @@ use serde::Serialize;
 use yosoi::{
     EffectivePolicyIdentity,
     documents::DocumentClass,
-    policy::{AcquisitionKind, respectfulness::Event},
+    policy::{
+        AcquisitionKind,
+        respectfulness::Event,
+        search::{Provider, Routing},
+    },
     search::{SearchCaptureRetention, SearchParserDiagnostic},
 };
 
@@ -52,6 +56,8 @@ impl From<EffectivePolicyIdentity> for PolicyIdentityView {
 
 #[derive(Debug, Serialize)]
 pub(super) struct SearchEnvelope<'a> {
+    pub(super) routing: Routing,
+    pub(super) selected_provider: Option<Provider>,
     pub(super) schema_version: u16,
     pub(super) cli_version: &'static str,
     pub(super) policy_profile: Option<&'a str>,

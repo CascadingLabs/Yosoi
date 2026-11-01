@@ -23,6 +23,7 @@ pub(super) async fn execute_provider(
         return execute_google(job, cancellation, diagnostic_capture).await;
     }
     let ProviderJob {
+        initial_operation,
         registry,
         route,
         provider,
@@ -39,6 +40,10 @@ pub(super) async fn execute_provider(
         || bound.clone(),
         |registry| bound.clone().with_registry(registry),
     );
+    let bound = match initial_operation {
+        Some(operation) => bound.with_initial_operation(operation),
+        None => bound,
+    };
     let response = match bound.send_cancellable(cancellation).await {
         Ok(response) => response,
         Err(error) => return request_error_result(&route, profile, &error),
@@ -203,6 +208,7 @@ async fn execute_google(
     diagnostic_capture: bool,
 ) -> ProviderResult {
     let ProviderJob {
+        initial_operation,
         registry,
         route,
         request,
@@ -216,6 +222,10 @@ async fn execute_google(
     let bound = request.bind(&policy);
     let bound = match &registry {
         Some(registry) => bound.with_registry(registry),
+        None => bound,
+    };
+    let bound = match initial_operation {
+        Some(operation) => bound.with_initial_operation(operation),
         None => bound,
     };
     let response = match bound.send_cancellable(cancellation).await {

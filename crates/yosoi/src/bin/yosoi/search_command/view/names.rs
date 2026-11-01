@@ -68,6 +68,8 @@ pub(in crate::search_command) const fn unavailable_name(
     reason: SearchUnavailableReason,
 ) -> &'static str {
     match reason {
+        SearchUnavailableReason::NotSelected => "not_selected",
+        SearchUnavailableReason::Respectfulness => "respectfulness",
         SearchUnavailableReason::DefaultUncertified => "default_uncertified",
         SearchUnavailableReason::AdapterUnavailable => "adapter_unavailable",
         SearchUnavailableReason::UnsupportedCapability => "unsupported_capability",

@@ -5,7 +5,7 @@ mod provider;
 mod tests;
 
 pub use effective::{EffectiveProviderRoute, EffectiveSearch};
-pub use plan::Search;
+pub use plan::{Routing, Search};
 pub use provider::{
     PROVIDER_DEFAULTS_REGISTRY_VERSION, ProfileSelection, ProfileSelectionKind, Provider,
     ProviderDefaultsStatus, ProviderDefaultsVersion, ProviderRequestProfile, ProviderSelection,
