@@ -412,7 +412,7 @@ impl NativeBrowser {
         Ok((
             NetworkPayloadValue::File(file),
             NetworkPayloadKind::File,
-            candidate.request_id.clone(),
+            payload_id.to_owned(),
             detected_media_type,
             projection_basis,
             reason,

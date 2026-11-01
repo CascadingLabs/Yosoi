@@ -156,9 +156,24 @@ impl NetworkWindow {
                             != NetworkByteProvenance::CdpDecodedResponseBody
                         || (payload.provider_base64_encoded && payload.text_utf8_normalized) =>
                 {
-                    return Err(SurfaceError::Invalid(
-                        "retained network payload lacks its document and byte provenance".into(),
-                    ));
+                    let missing = if payload.document_id.as_deref() != Some(payload.id.as_str()) {
+                        "document_id"
+                    } else if payload.document_kind.is_none() {
+                        "document_kind"
+                    } else if payload.projection_basis.is_none() {
+                        "projection_basis"
+                    } else if payload.sha256.is_none() {
+                        "sha256"
+                    } else if payload.byte_provenance
+                        != NetworkByteProvenance::CdpDecodedResponseBody
+                    {
+                        "byte_provenance"
+                    } else {
+                        "encoding_provenance"
+                    };
+                    return Err(SurfaceError::Invalid(format!(
+                        "retained network payload has invalid {missing}"
+                    )));
                 }
                 NetworkPayloadState::NotRequested
                 | NetworkPayloadState::Unavailable

@@ -89,7 +89,6 @@ impl Fixture {
 struct NetworkFixture {
     base: String,
     slow_started: Arc<Notify>,
-    release_slow: Arc<Notify>,
     stop: oneshot::Sender<()>,
     task: JoinHandle<()>,
 }
@@ -121,7 +120,7 @@ impl NetworkFixture {
                                 "/network" => {
                                     let body = r#"<!doctype html><main><button aria-label="Start network requests">Start network requests</button><button aria-label="Release delayed response">Release delayed response</button><button aria-label="Start request after capture cancellation">Start request after capture cancellation</button><p id="state">ready</p><script>
 const state=document.getElementById('state');
-document.querySelectorAll('button')[0].addEventListener('click',()=>{state.textContent='network requests started';const slow=fetch('/slow').then(r=>r.json());const tasks=[fetch('/api?token=secret').then(r=>r.json()),fetch('/redirect').then(r=>r.json()),fetch('/fail').catch(()=>null),fetch('/gzip-json').then(r=>r.json()),fetch('/binary').then(r=>r.arrayBuffer()),fetch('/html').then(r=>r.text()),fetch('/legacy-html').then(r=>r.text()),fetch('/sniff-html').then(r=>r.text()),fetch('/misleading-png').then(r=>r.arrayBuffer())];Promise.all(tasks).then(()=>{state.textContent='fast network requests done';return slow}).then(()=>{state.textContent='network complete'}).catch(()=>{state.textContent='network requests failed'})});
+document.querySelectorAll('button')[0].addEventListener('click',()=>{state.textContent='network requests started';const slow=fetch('/slow').then(r=>r.json());const tasks=[fetch('/api?token=secret').then(r=>r.json()),fetch('/redirect').then(r=>r.json()),fetch('/fail').catch(()=>null),fetch('/gzip-json').then(r=>r.json()),fetch('/binary').then(r=>r.arrayBuffer()),fetch('/html').then(r=>r.text()),fetch('/legacy-html').then(r=>r.text()),fetch('/sniff-html').then(r=>r.text()),fetch('/misleading-png').then(r=>r.arrayBuffer())];Promise.all(tasks).then(()=>slow).then(()=>{state.textContent='network complete'}).catch(()=>{state.textContent='network requests failed'})});
 document.querySelectorAll('button')[1].addEventListener('click',()=>fetch('/release'));
 document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?after-cancel=1').then(()=>{state.textContent='post-cancel request complete'}));
 </script></main>"#;
@@ -197,7 +196,6 @@ document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?
         Ok(Self {
             base,
             slow_started,
-            release_slow,
             stop,
             task,
         })
@@ -299,11 +297,28 @@ async fn hot(surface: &mut BrowserSurface) -> Result<(), Box<dyn Error>> {
 type CliProofError = Box<dyn Error + Send + Sync>;
 
 #[cfg(feature = "cli")]
+#[derive(Default)]
+struct CliDiagnostics {
+    current_operation: Option<String>,
+    last_reply: Option<Value>,
+}
+
+#[cfg(feature = "cli")]
 fn cli_exchange(
     input: &mut ChildStdin,
     output: &mut BufReader<ChildStdout>,
     command: Value,
+    diagnostics: &Mutex<CliDiagnostics>,
 ) -> Result<Value, CliProofError> {
+    let operation_id = command
+        .get("id")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown")
+        .to_owned();
+    diagnostics
+        .lock()
+        .map_err(|_| io::Error::other("CLI diagnostic lock was poisoned"))?
+        .current_operation = Some(operation_id);
     serde_json::to_writer(&mut *input, &command)?;
     input.write_all(b"\n")?;
     input.flush()?;
@@ -312,6 +327,10 @@ fn cli_exchange(
         return Err(io::Error::other("native Surface CLI closed before replying").into());
     }
     let reply: Value = serde_json::from_str(&line)?;
+    diagnostics
+        .lock()
+        .map_err(|_| io::Error::other("CLI diagnostic lock was poisoned"))?
+        .last_reply = Some(reply.clone());
     if reply.get("ok").and_then(Value::as_bool) != Some(true) {
         return Err(io::Error::other(format!("native Surface CLI command failed: {reply}")).into());
     }
@@ -322,11 +341,13 @@ fn cli_exchange(
 fn cli_network_window(
     input: &mut ChildStdin,
     output: &mut BufReader<ChildStdout>,
+    diagnostics: &Mutex<CliDiagnostics>,
 ) -> Result<Value, CliProofError> {
     let observation = cli_exchange(
         input,
         output,
         json!({"id":"observe-network","op":"observe","representation":"network","budget":16384}),
+        diagnostics,
     )?;
     let root = observation
         .get("root")
@@ -345,6 +366,7 @@ fn cli_network_window(
                 "budget":{"bytes":16000,"items":1}
             }
         }),
+        diagnostics,
     )?;
     let content = inspected
         .pointer("/data/content")
@@ -354,11 +376,56 @@ fn cli_network_window(
 }
 
 #[cfg(feature = "cli")]
+fn cli_native_reference(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+    query: &str,
+    id: &str,
+    diagnostics: &Mutex<CliDiagnostics>,
+) -> Result<Value, CliProofError> {
+    cli_exchange(
+        input,
+        output,
+        json!({"id":format!("refresh-{id}"),"op":"refresh"}),
+        diagnostics,
+    )?;
+    let page = cli_exchange(
+        input,
+        output,
+        json!({"id":format!("find-{id}"),"op":"find","query":query}),
+        diagnostics,
+    )?;
+    let entry = page
+        .get("entries")
+        .and_then(Value::as_array)
+        .and_then(|entries| entries.first())
+        .ok_or_else(|| io::Error::other("CLI navigation target was not found"))?;
+    let reference = entry
+        .get("reference")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI navigation target omitted its reference"))?;
+    if entry.get("kind").and_then(Value::as_str) == Some("text") {
+        cli_exchange(
+            input,
+            output,
+            json!({"id":format!("parent-{id}"),"op":"parent","reference":reference}),
+            diagnostics,
+        )
+    } else {
+        Ok(reference)
+    }
+}
+
+#[cfg(feature = "cli")]
 fn run_native_network_cli(
     mut input: ChildStdin,
     stdout: ChildStdout,
     base: &str,
+    diagnostics: &Mutex<CliDiagnostics>,
 ) -> Result<(), CliProofError> {
+    if let Ok(mut state) = diagnostics.lock() {
+        state.current_operation = Some("ready".to_owned());
+    }
     let mut output = BufReader::new(stdout);
     let mut ready = String::new();
     if output.read_line(&mut ready)? == 0 {
@@ -374,6 +441,7 @@ fn run_native_network_cli(
         &mut input,
         &mut output,
         json!({"id":"subscribe","op":"network_subscribe","retain_bodies":true}),
+        diagnostics,
     )?;
     if subscription.get("provider").and_then(Value::as_str) != Some("chrome_cdp") {
         return Err(io::Error::other("native CLI subscription did not identify Chrome CDP").into());
@@ -382,21 +450,26 @@ fn run_native_network_cli(
         &mut input,
         &mut output,
         json!({"id":"attach","op":"attach"}),
+        diagnostics,
     )?;
-    cli_exchange(&mut input, &mut output, json!({"id":"hot","op":"hot"}))?;
-    let dom = cli_exchange(
+    cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"dom","op":"observe","representation":"dom","budget":16384}),
+        json!({"id":"hot","op":"hot"}),
+        diagnostics,
     )?;
-    let root = dom
-        .get("root")
-        .cloned()
-        .ok_or_else(|| io::Error::other("CLI DOM observation omitted its root"))?;
+    let root = cli_native_reference(
+        &mut input,
+        &mut output,
+        "Start network requests",
+        "one",
+        diagnostics,
+    )?;
     cli_exchange(
         &mut input,
         &mut output,
         json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
+        diagnostics,
     )?;
 
     let mut after_sequence = 0_u64;
@@ -406,6 +479,7 @@ fn run_native_network_cli(
             &mut input,
             &mut output,
             json!({"id":"wait-network","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            diagnostics,
         )?;
         if waited.get("state").and_then(Value::as_str) != Some("event") {
             continue;
@@ -414,7 +488,7 @@ fn run_native_network_cli(
             .get("sequence")
             .and_then(Value::as_u64)
             .ok_or_else(|| io::Error::other("CLI network wait omitted its sequence"))?;
-        let window = cli_network_window(&mut input, &mut output)?;
+        let window = cli_network_window(&mut input, &mut output, diagnostics)?;
         captured_body = window
             .get("payloads")
             .and_then(Value::as_array)
@@ -445,6 +519,7 @@ fn run_native_network_cli(
             "max_bytes":8192,
             "budget":16384
         }),
+        diagnostics,
     )?;
     let encoded = chunk
         .get("data_base64")
@@ -464,28 +539,23 @@ fn run_native_network_cli(
         &mut input,
         &mut output,
         json!({"id":"cancel","op":"network_cancel"}),
+        diagnostics,
     )?;
     let rearmed = cli_exchange(
         &mut input,
         &mut output,
         json!({"id":"subscribe-again","op":"network_subscribe","retain_bodies":true}),
+        diagnostics,
     )?;
     if rearmed.get("active").and_then(Value::as_bool) != Some(true) {
         return Err(io::Error::other("native CLI could not rearm network capture").into());
     }
-    let dom = cli_exchange(
-        &mut input,
-        &mut output,
-        json!({"id":"dom-again","op":"observe","representation":"dom","budget":16384}),
-    )?;
-    let root = dom
-        .get("root")
-        .cloned()
-        .ok_or_else(|| io::Error::other("CLI fresh DOM observation omitted its root"))?;
+    let root = cli_native_reference(&mut input, &mut output, "CLI network", "two", diagnostics)?;
     cli_exchange(
         &mut input,
         &mut output,
         json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
+        diagnostics,
     )?;
     let mut fresh_request_seen = false;
     let mut after_sequence = 0_u64;
@@ -494,6 +564,7 @@ fn run_native_network_cli(
             &mut input,
             &mut output,
             json!({"id":"wait-fresh","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            diagnostics,
         )?;
         if waited.get("state").and_then(Value::as_str) != Some("event") {
             continue;
@@ -502,7 +573,7 @@ fn run_native_network_cli(
             .get("sequence")
             .and_then(Value::as_u64)
             .ok_or_else(|| io::Error::other("fresh CLI network wait omitted its sequence"))?;
-        let window = cli_network_window(&mut input, &mut output)?;
+        let window = cli_network_window(&mut input, &mut output, diagnostics)?;
         if window
             .pointer("/coverage/network_was_previously_enabled")
             .and_then(Value::as_bool)
@@ -544,7 +615,12 @@ fn run_native_network_cli(
             io::Error::other("fresh request was not observed after CLI cancellation").into(),
         );
     }
-    cli_exchange(&mut input, &mut output, json!({"id":"close","op":"close"}))?;
+    cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"close","op":"close"}),
+        diagnostics,
+    )?;
     Ok(())
 }
 
@@ -554,6 +630,19 @@ fn child_wait(child: Arc<Mutex<Child>>) -> io::Result<ExitStatus> {
         .lock()
         .map_err(|_| io::Error::other("native CLI child lock was poisoned"))?
         .wait()
+}
+
+#[cfg(feature = "cli")]
+fn cli_diagnostic_summary(diagnostics: &Mutex<CliDiagnostics>) -> String {
+    diagnostics.lock().map_or_else(
+        |_| "diagnostic state unavailable".to_owned(),
+        |state| {
+            format!(
+                "operation={:?}; last_reply={:?}",
+                state.current_operation, state.last_reply
+            )
+        },
+    )
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -618,7 +707,10 @@ async fn native_network_windows_link_bounded_bodies_and_replay_offline()
             .execute(json!({"op":"click","reference":start,"expect":{"kind":"text","text":"network requests started","present":true}}))
             .await?;
         if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
-            return Err(io::Error::other("network fixture action was not confirmed").into());
+            return Err(io::Error::other(format!(
+                "network fixture action was not confirmed: {clicked}"
+            ))
+            .into());
         }
         timeout(Duration::from_secs(5), fixture.slow_started.notified()).await?;
 
@@ -1044,7 +1136,10 @@ async fn native_network_event_overflow_is_visible_in_frozen_coverage() -> Result
         .execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":"network requests started","present":true}}))
         .await?;
     if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
-        return Err(io::Error::other("overflow fixture request action was not confirmed").into());
+        return Err(io::Error::other(format!(
+            "overflow fixture request action was not confirmed: {clicked}"
+        ))
+        .into());
     }
     let mut after_sequence = 0_u64;
     let mut overflow_window = None;
@@ -1129,7 +1224,10 @@ async fn native_network_body_disabled_keeps_response_link_as_explicit_omission()
         .execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":"network requests started","present":true}}))
         .await?;
     if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
-        return Err(io::Error::other("no-body fixture request action was not confirmed").into());
+        return Err(io::Error::other(format!(
+            "no-body fixture request action was not confirmed: {clicked}"
+        ))
+        .into());
     }
     let mut after_sequence = 0_u64;
     let mut omission = None;
@@ -1223,6 +1321,8 @@ async fn native_network_authority_loss_freezes_coverage_and_releases_the_page()
     )
     .await?;
     surface.subscribe_network(None).await?;
+    hot(&mut surface).await?;
+    let stale_button = reference(&mut surface, "Start network requests").await?;
 
     tab.close().await?;
     assert!(surface.wait_network_event(0, 5_000).await.is_err());
@@ -1234,7 +1334,12 @@ async fn native_network_authority_loss_freezes_coverage_and_releases_the_page()
             .iter()
             .any(|gap| gap.reason == "native_work_authority_lost")
     );
-    assert!(surface.execute(json!({"op":"status"})).await.is_err());
+    assert!(
+        surface
+            .execute(json!({"op":"click","reference":stale_button}))
+            .await
+            .is_err()
+    );
     surface.close().await?;
 
     let fresh_tab = native.new_tab().await?;
@@ -1299,9 +1404,11 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
             .take()
             .ok_or_else(|| io::Error::other("native Surface CLI stdout is unavailable"))?;
         let child = Arc::new(Mutex::new(child));
+        let diagnostics = Arc::new(Mutex::new(CliDiagnostics::default()));
         let worker = tokio::task::spawn_blocking({
             let base = fixture.base.clone();
-            move || run_native_network_cli(input, stdout, &base)
+            let diagnostics = Arc::clone(&diagnostics);
+            move || run_native_network_cli(input, stdout, &base, &diagnostics)
         });
         let mut worker = worker;
         let proof_result = match timeout(Duration::from_secs(60), &mut worker).await {
@@ -1323,9 +1430,11 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
                 let child_for_wait = Arc::clone(&child);
                 let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
                 let _ = timeout(Duration::from_secs(5), &mut waiter).await;
-                return Err(
-                    io::Error::other("native network CLI proof exceeded its timeout").into(),
-                );
+                return Err(io::Error::other(format!(
+                    "native network CLI proof exceeded its timeout: {}",
+                    cli_diagnostic_summary(&diagnostics)
+                ))
+                .into());
             }
         };
         if let Err(error) = proof_result {
