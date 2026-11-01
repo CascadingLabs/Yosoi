@@ -45,7 +45,12 @@ fn conformance(registry: &Registry) -> TestResult {
     let untouched = registry.commit(&committed.revision, &[])?;
     assert_eq!(untouched, committed);
     assert!(matches!(
-        registry.commit(&Registry::default().snapshot()?.revision, &[]),
+        registry.commit(
+            &Registry::jsonl(tempfile::tempdir()?.path().join("other.jsonl"))?
+                .snapshot()?
+                .revision,
+            &[]
+        ),
         Err(RegistryError::Conflict)
     ));
     let removed = registry.commit(
@@ -61,19 +66,6 @@ fn conformance(registry: &Registry) -> TestResult {
     assert_eq!(
         serde_json::from_str::<super::Snapshot>(&serde_json::to_string(&removed)?)?,
         removed
-    );
-    Ok(())
-}
-
-#[test]
-fn memory_transactions_are_atomic_and_instance_scoped() -> TestResult {
-    let registry = Registry::default();
-    assert_eq!(registry.coordination(), Coordination::Instance);
-    conformance(&registry)?;
-    assert_eq!(registry.clone().snapshot()?, registry.snapshot()?);
-    assert_ne!(
-        Registry::default().snapshot()?.revision.registry_id,
-        registry.snapshot()?.revision.registry_id
     );
     Ok(())
 }
@@ -156,13 +148,9 @@ fn malformed_committed_records_and_unknown_versions_fail_loudly() -> TestResult 
 
 #[test]
 fn oversized_value_does_not_partially_commit() -> TestResult {
-    for persistent in [false, true] {
+    {
         let directory = tempfile::tempdir()?;
-        let registry = if persistent {
-            Registry::jsonl(directory.path().join("registry.jsonl"))?
-        } else {
-            Registry::default()
-        };
+        let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
         let original = registry.snapshot()?;
         assert!(matches!(
             registry.commit(
@@ -183,7 +171,7 @@ fn oversized_value_does_not_partially_commit() -> TestResult {
 fn accepted_nesting_replays_and_excess_nesting_cannot_poison_the_journal() -> TestResult {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("nested.jsonl");
-    for registry in [Registry::default(), Registry::jsonl(&path)?] {
+    for registry in [Registry::jsonl(&path)?] {
         let original = registry.snapshot()?;
         let mut value = json!(null);
         for _ in 0..32 {
@@ -287,5 +275,55 @@ fn child_commit() -> TestResult {
         Err(RegistryError::Busy | RegistryError::Conflict) => println!("REGISTRY_DECLINED"),
         Err(error) => return Err(error.into()),
     }
+    Ok(())
+}
+
+#[test]
+fn transaction_metadata_records_caller_and_complete_batch() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("metadata.jsonl");
+    let first = Registry::jsonl(&path)?;
+    let second = Registry::jsonl(&path)?;
+    assert_ne!(first.caller(), second.caller());
+    assert_eq!(first.caller(), first.clone().caller());
+    let context = super::TransactionContext {
+        operation: "respectfulness.reserve".to_owned(),
+        resources: vec!["provider".to_owned(), "domain".to_owned()],
+        reservation: Some(super::Reservation {
+            id: uuid::Uuid::new_v4(),
+            expires_at: std::time::SystemTime::now().into(),
+        }),
+    };
+    let before = first.snapshot()?;
+    first.commit_with_context(
+        &before.revision,
+        &[put("provider", json!(1)), put("domain", json!(1))],
+        &context,
+    )?;
+    let lines = fs::read_to_string(&path)?;
+    let record: serde_json::Value =
+        serde_json::from_str(lines.lines().nth(1).ok_or("missing transaction")?)?;
+    let transaction: super::Transaction =
+        serde_json::from_value(record.get("transaction").ok_or("missing envelope")?.clone())?;
+    assert_eq!(transaction.caller, *first.caller());
+    assert_eq!(transaction.sequence, 1);
+    assert_eq!(transaction.context, context);
+    assert_eq!(second.snapshot()?.entries.len(), 2);
+    // Invalid metadata must never append or change state.
+    let before = second.snapshot()?;
+    let invalid = super::TransactionContext {
+        operation: String::new(),
+        ..Default::default()
+    };
+    assert!(matches!(
+        second.commit_with_context(
+            &before.revision,
+            &[put("unexpected", json!(true))],
+            &invalid
+        ),
+        Err(RegistryError::InvalidKey)
+    ));
+    assert_eq!(second.snapshot()?, before);
+    assert_eq!(fs::read_to_string(path)?, lines);
     Ok(())
 }

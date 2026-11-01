@@ -3,21 +3,26 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{ErrorKind, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
+    sync::{Mutex, MutexGuard},
 };
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::values::MAX_STATE_BYTES;
-use super::{Backend, Change, Coordination, RegistryError, Revision, Snapshot};
+use super::{
+    Caller, Change, Coordination, RegistryError, Revision, Snapshot, Transaction,
+    TransactionContext,
+};
 
-const VERSION: u16 = 1;
+const VERSION: u16 = 2;
 const MAX_JOURNAL_BYTES: u64 = 64 * 1024 * 1024;
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Record {
     version: u16,
+    transaction: Transaction,
     event: Event,
 }
 
@@ -36,6 +41,13 @@ enum Event {
 pub(super) struct Jsonl {
     path: PathBuf,
     lock_path: PathBuf,
+    caller: Caller,
+    transaction_lock: Mutex<()>,
+}
+
+struct Lock<'a> {
+    _local: MutexGuard<'a, ()>,
+    _file: File,
 }
 
 impl Jsonl {
@@ -57,12 +69,24 @@ impl Jsonl {
         let backend = Self {
             path,
             lock_path: lock_name.into(),
+            transaction_lock: Mutex::new(()),
+            caller: Caller {
+                instance_id: Uuid::new_v4(),
+                pid: Some(std::process::id()),
+            },
         };
         let _lock = backend.lock()?;
         match file_options().create_new(true).open(&backend.path) {
             Ok(mut file) => {
                 let record = Record {
                     version: VERSION,
+                    transaction: backend.transaction(
+                        0,
+                        TransactionContext {
+                            operation: "checkpoint".to_owned(),
+                            ..TransactionContext::default()
+                        },
+                    )?,
                     event: Event::Checkpoint {
                         snapshot: Snapshot::empty(),
                     },
@@ -75,10 +99,42 @@ impl Jsonl {
             }
             Err(error) => return Err(error.into()),
         }
+        drop(_lock);
         Ok(backend)
     }
 
-    fn lock(&self) -> Result<File, RegistryError> {
+    pub(super) fn caller(&self) -> &Caller {
+        &self.caller
+    }
+    pub(super) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    fn transaction(
+        &self,
+        sequence: u64,
+        context: TransactionContext,
+    ) -> Result<Transaction, RegistryError> {
+        let elapsed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| RegistryError::InvalidState)?;
+        let seconds = i64::try_from(elapsed.as_secs()).map_err(|_| RegistryError::InvalidState)?;
+        let at = chrono::DateTime::from_timestamp(seconds, elapsed.subsec_nanos())
+            .ok_or(RegistryError::InvalidState)?;
+        Ok(Transaction {
+            id: Uuid::new_v4(),
+            sequence,
+            at,
+            caller: self.caller.clone(),
+            context,
+        })
+    }
+
+    fn lock(&self) -> Result<Lock<'_>, RegistryError> {
+        let local = self
+            .transaction_lock
+            .lock()
+            .map_err(|_| RegistryError::InvalidState)?;
         let file = file_options()
             .create(true)
             .truncate(false)
@@ -87,7 +143,10 @@ impl Jsonl {
             fs::TryLockError::WouldBlock => RegistryError::Busy,
             fs::TryLockError::Error(error) => RegistryError::Io(error),
         })?;
-        Ok(file)
+        Ok(Lock {
+            _local: local,
+            _file: file,
+        })
     }
 
     /// Ignore only a final unterminated write. Every newline-terminated record
@@ -117,6 +176,11 @@ impl Jsonl {
             if record.version != VERSION {
                 return Err(RegistryError::InvalidState);
             }
+            record
+                .transaction
+                .context
+                .validate()
+                .map_err(|_| RegistryError::InvalidState)?;
             state = Some(match (state, record.event) {
                 (None, Event::Checkpoint { snapshot }) => {
                     snapshot.validate()?;
@@ -129,6 +193,9 @@ impl Jsonl {
                 }
                 _ => return Err(RegistryError::InvalidState),
             });
+            if state.as_ref().map(|s| s.revision.sequence) != Some(record.transaction.sequence) {
+                return Err(RegistryError::InvalidState);
+            }
             committed_bytes = committed_bytes
                 .checked_add(byte_count(line.len())?)
                 .ok_or(RegistryError::CapacityExceeded)?;
@@ -137,23 +204,30 @@ impl Jsonl {
     }
 }
 
-impl Backend for Jsonl {
-    fn coordination(&self) -> Coordination {
+impl Jsonl {
+    pub(super) fn coordination(&self) -> Coordination {
         Coordination::LocalProcesses
     }
 
-    fn snapshot(&self) -> Result<Snapshot, RegistryError> {
+    pub(super) fn snapshot(&self) -> Result<Snapshot, RegistryError> {
         let _lock = self.lock()?;
         Ok(self.read()?.0)
     }
 
-    fn commit(&self, expected: &Revision, changes: &[Change]) -> Result<Snapshot, RegistryError> {
+    pub(super) fn commit(
+        &self,
+        expected: &Revision,
+        changes: &[Change],
+        context: &TransactionContext,
+    ) -> Result<Snapshot, RegistryError> {
+        context.validate()?;
         let _lock = self.lock()?;
         let (state, committed_bytes) = self.read()?;
         let next = state.changed(expected, changes)?;
         if !changes.is_empty() {
             let record = Record {
                 version: VERSION,
+                transaction: self.transaction(next.revision.sequence, context.clone())?,
                 event: Event::Commit {
                     expected: expected.clone(),
                     changes: changes.to_vec(),
@@ -167,7 +241,7 @@ impl Backend for Jsonl {
         Ok(next)
     }
 
-    fn compact(&self) -> Result<(), RegistryError> {
+    pub(super) fn compact(&self) -> Result<(), RegistryError> {
         let _lock = self.lock()?;
         let (snapshot, _) = self.read()?;
         let mut staging_name = self.path.as_os_str().to_owned();
@@ -179,6 +253,13 @@ impl Backend for Jsonl {
                 &mut file,
                 &Record {
                     version: VERSION,
+                    transaction: self.transaction(
+                        snapshot.revision.sequence,
+                        TransactionContext {
+                            operation: "checkpoint".to_owned(),
+                            ..TransactionContext::default()
+                        },
+                    )?,
                     event: Event::Checkpoint { snapshot },
                 },
             )?;

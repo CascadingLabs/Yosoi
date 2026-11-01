@@ -1,4 +1,4 @@
-"""Offline Registry SDK example: memory by default, JSONL with an explicit path."""
+"""Offline Registry SDK example: JSONL by default or with an explicit path."""
 
 from __future__ import annotations
 

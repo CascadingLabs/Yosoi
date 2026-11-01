@@ -1,4 +1,4 @@
-"""Transactional registry DTOs and shared memory/JSONL handles backed by Rust.
+"""Transactional registry DTOs and shared JSONL handles backed by Rust.
 
 Read a snapshot, evaluate a decision, then commit against its exact revision.
 A Conflict requires reevaluation before retrying. Perform external work only
@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from datetime import datetime
 from os import PathLike, fspath
+from pathlib import Path
 from typing import Annotated, Literal, Self
+from uuid import UUID
 
 from pydantic import Field, JsonValue, StrictStr
 
@@ -20,6 +23,10 @@ from ._models import ImmutableModel
 from .errors import RegistryError as RegistryError
 
 __all__ = [
+    "Caller",
+    "TransactionContext",
+    "Transaction",
+    "Reservation",
     "Change",
     "Coordination",
     "Put",
@@ -30,7 +37,7 @@ __all__ = [
     "Snapshot",
 ]
 
-Coordination = Literal["instance", "local_processes", "distributed"]
+Coordination = Literal["local_processes"]
 """Actual backend sharing scope; this alone does not identify a registry."""
 
 
@@ -97,16 +104,70 @@ def _wire_changes(changes: Sequence[Change]) -> str:
     return json.dumps(wire, allow_nan=False)
 
 
+class Caller(ImmutableModel):
+    """Registry owner; clones preserve identity and PID is diagnostic only."""
+
+    instance_id: UUID = Field(
+        description="Unique handle owner, independent of PID reuse."
+    )
+    pid: int | None = Field(
+        default=None, ge=0, le=2**32 - 1, description="Optional process ID."
+    )
+
+
+class Reservation(ImmutableModel):
+    """Lease identity connecting admission, feedback, release and crash recovery."""
+
+    id: UUID = Field(description="Consumer-generated reservation UUID.")
+    expires_at: datetime = Field(description="UTC expiry for abandoned capacity.")
+
+
+class TransactionContext(ImmutableModel):
+    """Bounded application metadata for one atomic batch."""
+
+    operation: StrictStr = Field(
+        default="update", description="Consumer operation name."
+    )
+    resources: list[StrictStr] = Field(
+        default_factory=list, description="Shared group/resource keys."
+    )
+    reservation: Reservation | None = Field(
+        default=None, description="Optional lease identity and expiry."
+    )
+
+
+class Transaction(ImmutableModel):
+    """Envelope on a journal line; compaction replaces prior history with state."""
+
+    id: UUID = Field(description="Unique transaction UUID.")
+    sequence: int = Field(
+        ge=0, le=2**64 - 1, strict=True, description="Resulting state sequence."
+    )
+    at: datetime = Field(
+        description="UTC wall-clock timestamp; sequence determines ordering."
+    )
+    caller: Caller = Field(description="Owner writing this transaction.")
+    context: TransactionContext = Field(description="Consumer operation and resources.")
+
+
 class Registry:
     """Cloneable runtime handle, separate from portable Policy and registry DTOs.
 
-    A default instance is isolated in memory. Clones share state. JSONL handles
-    sharing a canonical file coordinate across local processes and survive exit.
+    The default is the per-user JSONL file. Explicit paths select another file.
+    Handles sharing a canonical file coordinate across processes and survive exit.
     """
 
-    def __init__(self) -> None:
-        """Create an isolated in-memory registry; no filesystem is accessed."""
-        self._handle = _native.NativeRegistry()
+    def __init__(self, path: str | PathLike[str] | None = None) -> None:
+        """Open a JSONL file, using the per-user state location when path is absent.
+
+        Args:
+            path: Journal file, or None for XDG_STATE_HOME/yosoi/registry.jsonl
+                (HOME/.local/state fallback; LOCALAPPDATA on Windows).
+
+        Raises:
+            RegistryError: Invalid location, contention, corrupt state or I/O failure.
+        """
+        self._handle = _native.NativeRegistry(None if path is None else fspath(path))
 
     @classmethod
     def jsonl(cls, path: str | PathLike[str]) -> Self:
@@ -126,17 +187,15 @@ class Registry:
         instance._handle = _native.NativeRegistry.jsonl(fspath(path))
         return instance
 
-    @classmethod
-    def global_jsonl(cls) -> Self:
-        """Opt into the standard per-user persistent journal.
+    @property
+    def caller(self) -> Caller:
+        """Return this owner's identity, retained by clones."""
+        return Caller.model_validate_json(self._handle.caller_json())
 
-        Uses XDG_STATE_HOME or HOME/.local/state on Unix, LOCALAPPDATA on Windows.
-        Raises RegistryError if no absolute state location exists or opening fails.
-        This never changes the default backend of independently created registries.
-        """
-        instance = cls.__new__(cls)
-        instance._handle = _native.NativeRegistry.global_jsonl()
-        return instance
+    @property
+    def path(self) -> Path:
+        """Return the canonical journal file used for coordination."""
+        return Path(self._handle.path())
 
     @property
     def coordination(self) -> Coordination:
@@ -172,13 +231,42 @@ class Registry:
                 signed/unsigned 64-bit range. No commit is attempted.
         """
         return Snapshot.model_validate_json(
-            self._handle.commit_json(expected.model_dump_json(), _wire_changes(changes))
+            self._handle.commit_json(
+                expected.model_dump_json(),
+                _wire_changes(changes),
+                TransactionContext().model_dump_json(),
+            )
+        )
+
+    def commit_with_context(
+        self, expected: Revision, changes: Sequence[Change], context: TransactionContext
+    ) -> Snapshot:
+        """Commit a batch and its metadata under the same lock.
+
+        Args:
+            expected: Exact revision evaluated by the caller.
+            changes: Mutations applied together.
+            context: Bounded operation, resource keys and optional lease metadata.
+
+        Returns:
+            The committed snapshot.
+
+        Raises:
+            RegistryError: Conflict, contention, invalid metadata or storage failure.
+            ValueError: Unsupported JSON numeric values.
+        """
+        return Snapshot.model_validate_json(
+            self._handle.commit_json(
+                expected.model_dump_json(),
+                _wire_changes(changes),
+                context.model_dump_json(),
+            )
         )
 
     def compact(self) -> None:
         """Compact history without changing identity/state/revision.
 
-        A no-op in memory. JSONL uses the same process lock as transactions and
+        JSONL uses the same process lock as transactions and
         atomically replaces the journal. Raises RegistryError on backend failure.
         """
         self._handle.compact()

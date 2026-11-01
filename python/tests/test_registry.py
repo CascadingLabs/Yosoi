@@ -12,11 +12,9 @@ import pytest
 import yosoi as ys
 
 
-@pytest.fixture(params=["memory", "jsonl"])
-def registry(request: pytest.FixtureRequest, tmp_path: Path) -> ys.registry.Registry:
-    if request.param == "jsonl":
-        return ys.registry.Registry.jsonl(tmp_path / "registry.jsonl")
-    return ys.registry.Registry()
+@pytest.fixture
+def registry(tmp_path: Path) -> ys.registry.Registry:
+    return ys.registry.Registry(tmp_path / "registry.jsonl")
 
 
 def test_atomic_commit_conflict_and_snapshot_ownership(registry: ys.registry.Registry):
@@ -50,8 +48,8 @@ def test_failed_batch_does_not_commit_and_noop_keeps_revision(registry):
     assert registry.commit(original.revision, []) == original
 
 
-def test_registry_identity_prevents_cross_instance_commit(registry):
-    unrelated = ys.registry.Registry().snapshot()
+def test_registry_identity_prevents_cross_instance_commit(registry, tmp_path):
+    unrelated = ys.registry.Registry(tmp_path / "other.jsonl").snapshot()
     with pytest.raises(ys.registry.RegistryError) as failure:
         registry.commit(unrelated.revision, [])
     assert failure.value.variant == "Conflict"
@@ -78,12 +76,16 @@ def test_remove_and_compact_preserve_logical_state(registry):
     assert ys.registry.Snapshot.model_validate_json(final.model_dump_json()) == final
 
 
-def test_memory_is_the_default_and_independent_instances_are_isolated():
-    first, second = ys.registry.Registry(), ys.registry.Registry()
-    assert first.coordination == "instance"
-    assert (
-        first.snapshot().revision.registry_id != second.snapshot().revision.registry_id
+def test_default_is_shared_jsonl_with_distinct_callers(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "LOCALAPPDATA" if os.name == "nt" else "XDG_STATE_HOME", str(tmp_path)
     )
+    first, second = ys.registry.Registry(), ys.registry.Registry()
+    assert first.coordination == "local_processes"
+    assert first.snapshot() == second.snapshot()
+    assert first.path == second.path == (tmp_path / "yosoi/registry.jsonl").resolve()
+    assert first.caller != second.caller
+    assert first.clone().caller == first.caller
 
 
 def test_jsonl_is_shared_with_a_new_process_and_survives_compaction(tmp_path):
@@ -132,18 +134,16 @@ def test_jsonl_recovers_partial_tail_but_rejects_corrupt_committed_record(tmp_pa
 
 
 @pytest.mark.skipif(os.name == "nt", reason="XDG user location is Unix-specific")
-def test_global_jsonl_is_opt_in_and_uses_configured_user_state(tmp_path, monkeypatch):
+def test_default_uses_configured_user_state_and_rejects_relative_location(
+    tmp_path, monkeypatch
+):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-    memory = ys.registry.Registry()
-    assert not (tmp_path / "yosoi").exists()
-    registry = ys.registry.Registry.global_jsonl()
+    registry = ys.registry.Registry()
     path = tmp_path / "yosoi" / "registry.jsonl"
-    assert path.exists()
-    assert registry.snapshot() == ys.registry.Registry.jsonl(path).snapshot()
-    assert memory.coordination == "instance"
+    assert registry.snapshot() == ys.registry.Registry(path).snapshot()
     monkeypatch.setenv("XDG_STATE_HOME", "relative")
     with pytest.raises(ys.registry.RegistryError) as failure:
-        ys.registry.Registry.global_jsonl()
+        ys.registry.Registry()
     assert failure.value.variant == "NoGlobalLocation"
 
 
@@ -182,3 +182,20 @@ def test_json_integer_boundaries_survive_native_storage_exactly(registry, value)
     assert committed.entries["boundary"] == value
     assert type(committed.entries["boundary"]) is int
     assert registry.snapshot() == committed
+
+
+def test_context_is_committed_with_the_batch(registry):
+    context = ys.registry.TransactionContext(
+        operation="respectfulness.reserve", resources=["provider"]
+    )
+    registry.commit_with_context(
+        registry.snapshot().revision,
+        [ys.registry.Put(key="provider", value=1)],
+        context,
+    )
+    record = json.loads(registry.path.read_text().splitlines()[-1])
+    transaction = ys.registry.Transaction.model_validate(record["transaction"])
+    assert transaction.caller == registry.caller
+    assert transaction.sequence == 1
+    assert transaction.context == context
+    assert transaction.at.utcoffset().total_seconds() == 0

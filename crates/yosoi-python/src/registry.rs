@@ -1,7 +1,9 @@
 //! Registry bindings preserve native atomicity and release Python while doing I/O.
 
 use pyo3::{prelude::*, types::PyType};
-use yosoi::registry::{Change, Coordination, Registry, RegistryError, Revision};
+use yosoi::registry::{
+    Change, Coordination, Registry, RegistryError, Revision, TransactionContext,
+};
 
 use crate::errors;
 
@@ -11,7 +13,6 @@ fn failure(error: RegistryError) -> PyErr {
     let variant = match &error {
         RegistryError::Conflict => "Conflict",
         RegistryError::Busy => "Busy",
-        RegistryError::Poisoned => "Poisoned",
         RegistryError::InvalidKey => "InvalidKey",
         RegistryError::InvalidState => "InvalidState",
         RegistryError::CapacityExceeded => "CapacityExceeded",
@@ -48,21 +49,20 @@ pub struct NativeRegistry {
 #[pymethods]
 impl NativeRegistry {
     #[new]
-    fn new() -> Self {
-        Self {
-            registry: Registry::default(),
-        }
+    #[pyo3(signature = (path=None))]
+    fn new(py: Python<'_>, path: Option<String>) -> PyResult<Self> {
+        let registry = py
+            .detach(|| match path {
+                Some(path) => Registry::jsonl(path),
+                None => Registry::new(),
+            })
+            .map_err(failure)?;
+        Ok(Self { registry })
     }
 
     #[classmethod]
     fn jsonl(_class: &Bound<'_, PyType>, py: Python<'_>, path: String) -> PyResult<Self> {
         let registry = py.detach(|| Registry::jsonl(path)).map_err(failure)?;
-        Ok(Self { registry })
-    }
-
-    #[classmethod]
-    fn global_jsonl(_class: &Bound<'_, PyType>, py: Python<'_>) -> PyResult<Self> {
-        let registry = py.detach(Registry::global_jsonl).map_err(failure)?;
         Ok(Self { registry })
     }
 
@@ -74,10 +74,16 @@ impl NativeRegistry {
 
     fn coordination(&self) -> &'static str {
         match self.registry.coordination() {
-            Coordination::Instance => "instance",
             Coordination::LocalProcesses => "local_processes",
-            Coordination::Distributed => "distributed",
         }
+    }
+
+    fn caller_json(&self) -> PyResult<String> {
+        serde_json::to_string(self.registry.caller()).map_err(|error| failure(error.into()))
+    }
+
+    fn path(&self) -> String {
+        self.registry.path().to_string_lossy().into_owned()
     }
 
     fn snapshot_json(&self, py: Python<'_>) -> PyResult<String> {
@@ -85,13 +91,24 @@ impl NativeRegistry {
         serde_json::to_string(&snapshot).map_err(|error| failure(error.into()))
     }
 
-    fn commit_json(&self, py: Python<'_>, expected: &str, changes: &str) -> PyResult<String> {
+    fn commit_json(
+        &self,
+        py: Python<'_>,
+        expected: &str,
+        changes: &str,
+        context: &str,
+    ) -> PyResult<String> {
         let expected: Revision =
             serde_json::from_str(expected).map_err(|error| failure(error.into()))?;
         let changes: Vec<Change> =
             serde_json::from_str(changes).map_err(|error| failure(error.into()))?;
+        let context: TransactionContext =
+            serde_json::from_str(context).map_err(|error| failure(error.into()))?;
         let snapshot = py
-            .detach(|| self.registry.commit(&expected, &changes))
+            .detach(|| {
+                self.registry
+                    .commit_with_context(&expected, &changes, &context)
+            })
             .map_err(failure)?;
         serde_json::to_string(&snapshot).map_err(|error| failure(error.into()))
     }

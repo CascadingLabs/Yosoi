@@ -1,4 +1,4 @@
-//! Offline Registry SDK example: memory by default, JSONL with an explicit path.
+//! Offline Registry SDK example: JSONL by default or with an explicit path.
 
 use std::{env, error::Error};
 
@@ -9,7 +9,7 @@ use ys::registry::{Change, Registry};
 fn main() -> Result<(), Box<dyn Error>> {
     let registry = match env::args_os().nth(1) {
         Some(path) => Registry::jsonl(path)?,
-        None => Registry::default(),
+        None => Registry::new()?,
     };
     let before = registry.snapshot()?;
     let after = registry.commit(

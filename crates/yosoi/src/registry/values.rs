@@ -7,17 +7,13 @@ use uuid::Uuid;
 
 pub(super) const MAX_STATE_BYTES: usize = 4 * 1024 * 1024;
 
-/// Backend coordination boundary. Independent registries never implicitly share
-/// state, even when they declare the same boundary.
+/// Coordination boundary of a Registry file. Handles opening the same canonical
+/// file share state; this value alone does not identify which file is in use.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Coordination {
-    /// Only callers sharing this backend instance coordinate.
-    Instance,
     /// Cooperating local processes sharing the same persistent registry coordinate.
     LocalProcesses,
-    /// A backend coordinates clients across machines under its own contract.
-    Distributed,
 }
 
 /// Portable optimistic-concurrency token. Identity prevents a revision from one
@@ -177,9 +173,6 @@ pub enum RegistryError {
     /// A local file transaction is already running. No waiting/retry is hidden.
     #[error("registry is busy")]
     Busy,
-    /// An in-memory owner panicked while holding its lock.
-    #[error("registry state lock is poisoned")]
-    Poisoned,
     /// Keys must be nonempty, bounded and contain no control characters.
     #[error("invalid registry key")]
     InvalidKey,
@@ -199,4 +192,81 @@ pub enum RegistryError {
     /// JSON conversion failed before commit or while decoding a portable value.
     #[error("registry JSON conversion failed: {0}")]
     Json(#[from] serde_json::Error),
+}
+
+/// Identity of a live Registry owner. PID is diagnostic and may be reused;
+/// instance identity is a UUID generated when opening a handle.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Caller {
+    /// Unique handle owner; clones preserve this value.
+    pub instance_id: Uuid,
+    /// Optional local operating-system process ID, never proof of ownership.
+    pub pid: Option<u32>,
+}
+
+/// Bounded lease metadata for consumers that reserve a resource.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Reservation {
+    /// Consumer-generated identity connecting admission and release.
+    pub id: Uuid,
+    /// UTC expiry after which abandoned capacity can be reclaimed.
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Application context attached to one atomic batch. Resource keys identify
+/// shared groups; matching URLs need not be stored in the journal.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TransactionContext {
+    /// Consumer operation, for example `respectfulness.reserve`.
+    pub operation: String,
+    /// Stable resource/group keys affected by this operation.
+    pub resources: Vec<String>,
+    /// Lease identity and expiry, when reserving or releasing capacity.
+    pub reservation: Option<Reservation>,
+}
+
+impl Default for TransactionContext {
+    fn default() -> Self {
+        Self {
+            operation: "update".to_owned(),
+            resources: Vec::new(),
+            reservation: None,
+        }
+    }
+}
+
+impl TransactionContext {
+    pub(super) fn validate(&self) -> Result<(), RegistryError> {
+        validate_key(&self.operation)?;
+        if self.resources.len() > 4096 {
+            return Err(RegistryError::CapacityExceeded);
+        }
+        for resource in &self.resources {
+            validate_key(resource)?;
+        }
+        if serde_json::to_vec(self)?.len() > 64 * 1024 {
+            return Err(RegistryError::CapacityExceeded);
+        }
+        Ok(())
+    }
+}
+
+/// Standard envelope on every committed journal line, including checkpoints.
+/// Compaction discards previous envelopes while retaining the logical revision.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Transaction {
+    /// Unique transaction identity, distinct from caller and registry identities.
+    pub id: Uuid,
+    /// Resulting logical sequence. Checkpoints retain their snapshot's sequence.
+    pub sequence: u64,
+    /// UTC wall-clock commit timestamp; sequence defines ordering.
+    pub at: chrono::DateTime<chrono::Utc>,
+    /// Owner that wrote the transaction.
+    pub caller: Caller,
+    /// Consumer description of the atomic state changes.
+    pub context: TransactionContext,
 }
