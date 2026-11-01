@@ -377,7 +377,7 @@ class BoundPageRequest:
         """
         self.request = request
         self._policy_json = policy.to_json()
-        self._registry = Registry() if policy.respectfulness is not None else None
+        self._registry: Registry | None = None
 
     def with_registry(self, registry: Registry) -> BoundPageRequest:
         """Return a binding sharing this Registry; preserve the policy snapshot."""

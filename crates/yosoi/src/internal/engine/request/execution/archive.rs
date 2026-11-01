@@ -304,6 +304,7 @@ impl BoundPageRequest<'_> {
             .map_err(RequestSendError::from)?
             .with_respectfulness(
                 self.respectfulness_runtime()
+                    .await
                     .map_err(RequestSendError::from)?,
             );
         executor
@@ -321,6 +322,7 @@ impl BoundPageRequest<'_> {
         let prepared = self.prepare().map_err(RequestSendError::from)?;
         let executor = executor.clone().with_respectfulness(
             self.respectfulness_runtime()
+                .await
                 .map_err(RequestSendError::from)?,
         );
         executor

@@ -1299,6 +1299,14 @@ class Respectfulness(Model):
     Browser paths without per-request enforcement fail before dispatch.
     """
 
+    registry_path: str | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description=(
+            "JSONL file; absent uses the standard user file. "
+            "A bound Registry overrides it."
+        ),
+    )
     groups: list[RespectfulnessGroup] = Field(
         description="One through 32 distinct named groups."
     )
@@ -1766,6 +1774,9 @@ class _SnapshotRespectfulnessGroup(ImmutableModel):
 
 
 class _SnapshotRespectfulness(ImmutableModel):
+    registry_path: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     groups: tuple[_SnapshotRespectfulnessGroup, ...]
     unmatched: Literal["allow", "reject"]
     retry: _SnapshotRespectfulnessRetry

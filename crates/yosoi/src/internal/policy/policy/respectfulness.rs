@@ -1,6 +1,6 @@
 //! Declarative traffic matching and constraints; mutable state belongs to Registry.
 
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, path::PathBuf};
 
 use regex::RegexBuilder;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,10 @@ use crate::internal::policy::PolicyError;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Respectfulness {
+    /// JSONL registry file; absent selects the standard per-user state file.
+    /// An explicitly bound runtime Registry overrides this location.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry_path: Option<PathBuf>,
     /// Stable named groups; identity/configuration changes are explicit.
     pub groups: Vec<Group>,
     /// Treatment of canonical URLs that match no group.
@@ -29,6 +33,7 @@ impl Respectfulness {
     /// Creates and validates groups with unmatched URLs allowed and no retries.
     pub fn new(groups: Vec<Group>) -> Result<Self, PolicyError> {
         let policy = Self {
+            registry_path: None,
             groups,
             unmatched: Unmatched::Allow,
             retry: Retry::default(),
@@ -37,8 +42,26 @@ impl Respectfulness {
         Ok(policy)
     }
 
+    /// Opens the configured JSONL file, or the standard user file. No fallback
+    /// occurs after contention, corrupt state or an unavailable location.
+    pub(crate) fn open_registry(
+        &self,
+    ) -> Result<crate::registry::Registry, crate::registry::RegistryError> {
+        match &self.registry_path {
+            Some(path) => crate::registry::Registry::jsonl(path),
+            None => crate::registry::Registry::new(),
+        }
+    }
+
     pub(crate) fn validate(&self) -> Result<(), PolicyError> {
         let invalid = |message: &str| PolicyError::InvalidRespectfulness(message.to_owned());
+        if self
+            .registry_path
+            .as_ref()
+            .is_some_and(|path| path.as_os_str().is_empty())
+        {
+            return Err(invalid("registry path must not be empty"));
+        }
         if self.groups.is_empty() || self.groups.len() > 32 {
             return Err(invalid("respectfulness requires 1..=32 groups"));
         }

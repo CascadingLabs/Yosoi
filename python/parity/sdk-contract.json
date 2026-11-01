@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "0e309eaf16a83a329f1db4cb5ad2d1bec66288ef",
-    "inventorySignature": "a2b508de85662bfcc0932d82664920d1a20fd98930b579ce144a62ca2c9db5d3"
+    "revision": "c10c9b15bc0747e0eceb4b2cb6fda8a0940cbf92",
+    "inventorySignature": "263965582a271e74dada540c43221bdd3c5aee0ecb3badca443b8c0845eda466"
   },
   "scope": {
     "crate": "yosoi",
@@ -2978,7 +2978,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "3c3e499a69c6af865fa8a274c78f62dabdf21df2dd5d193e59bf12cdd989224f",
+        "pythonTargetSha256": "bdfeca4c9f98347c1c6d1e97f5259130edb54916a49b03901f6bc3b82e895b7d",
         "semanticEquivalent": "Rust Default value and Python authoring default value.",
         "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
         "review": null,
@@ -3091,7 +3091,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "3c3e499a69c6af865fa8a274c78f62dabdf21df2dd5d193e59bf12cdd989224f",
+        "pythonTargetSha256": "bdfeca4c9f98347c1c6d1e97f5259130edb54916a49b03901f6bc3b82e895b7d",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -3141,7 +3141,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "3c3e499a69c6af865fa8a274c78f62dabdf21df2dd5d193e59bf12cdd989224f",
+        "pythonTargetSha256": "bdfeca4c9f98347c1c6d1e97f5259130edb54916a49b03901f6bc3b82e895b7d",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -3277,7 +3277,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy.respectfulness",
-        "pythonTargetSha256": "030bf24d66a467180fc8d7ad221c1ded929790a1910e39d9d419bf2fe0cd1e69",
+        "pythonTargetSha256": "3297c495b555b2c4f3e4c7195d7aa80e053672910636ffb2f45a10e1f21bdd85",
         "semanticEquivalent": null,
         "rationale": "Rust field respectfulness maps to Python field respectfulness.",
         "review": null,
@@ -4491,7 +4491,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Policy",
-        "pythonTargetSha256": "3c3e499a69c6af865fa8a274c78f62dabdf21df2dd5d193e59bf12cdd989224f",
+        "pythonTargetSha256": "bdfeca4c9f98347c1c6d1e97f5259130edb54916a49b03901f6bc3b82e895b7d",
         "semanticEquivalent": null,
         "rationale": "Python Policy fields obtain defaults from the native Rust SDK and validate through Rust.",
         "review": null,
@@ -42251,8 +42251,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "6646e4a7ee2cdbec3f1def64aade3ef901a22b373499fa0358704efdba5112b6",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::clone@signature:6646e4a7ee2cdbec3f1def64aade3ef901a22b373499fa0358704efdba5112b6@trait:Clone@source:f986c8c336ab85f5598e181cb41e775ec7475a811d2d6b21ff2b259d868b7c0d",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::clone@signature:6646e4a7ee2cdbec3f1def64aade3ef901a22b373499fa0358704efdba5112b6@trait:Clone@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "mapped",
@@ -42277,7 +42277,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:f986c8c336ab85f5598e181cb41e775ec7475a811d2d6b21ff2b259d868b7c0d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42302,7 +42302,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "b62af2a02b6bc1df9969c1000803e17b2ac1d78be96ba25ab5489470a585cac9",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::eq@signature:b62af2a02b6bc1df9969c1000803e17b2ac1d78be96ba25ab5489470a585cac9@trait:PartialEq@source:f986c8c336ab85f5598e181cb41e775ec7475a811d2d6b21ff2b259d868b7c0d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::eq@signature:b62af2a02b6bc1df9969c1000803e17b2ac1d78be96ba25ab5489470a585cac9@trait:PartialEq@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -42330,8 +42330,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "37b09cf794c7d459cd2fb9ecb3421061a3565662e907eb5e6522d8f3e90a5959",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::fallback_ms@signature:37b09cf794c7d459cd2fb9ecb3421061a3565662e907eb5e6522d8f3e90a5959@source:7bf803ff3700e02c848eb93f4ed4f5c6b7e54820641623284095313b0acd4e56",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::fallback_ms@signature:37b09cf794c7d459cd2fb9ecb3421061a3565662e907eb5e6522d8f3e90a5959@source:1127c718cd5d7352c6739fd6c2bc0b438f545ad4b06dd1d1e56bb55d079c0014",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42352,7 +42352,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:f986c8c336ab85f5598e181cb41e775ec7475a811d2d6b21ff2b259d868b7c0d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -42381,7 +42381,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:f986c8c336ab85f5598e181cb41e775ec7475a811d2d6b21ff2b259d868b7c0d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Cooldown::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42405,8 +42405,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::statuses@signature:eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a@source:d778b1770802174925921562f1c24bf8255bc5dbb0dbbb49e02c38d65848fa7e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::statuses@signature:eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a@source:f7370d6537d7adb0846fb419a0594c40d05d1d9957da702033287b8c0e995e14",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42426,8 +42426,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Cooldown",
       "signatureSha256": "6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::transport_errors@signature:6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6@source:2d15ab10c9a2a118b5593bd783c1dacc663aad33f8c2695b604a6c23ad237d58",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Cooldown::transport_errors@signature:6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6@source:8be4b53afd22a7e7c54a9bddaf62b7a076e5b586416b0fae8ee3ddcc792e0eb9",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42447,7 +42447,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "a2342f62eeba178315077e73c639d7cc2ea98b032a6ed720982233c4dd40ab54",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::Cooldown",
       "classification": "sdk",
       "mapping": {
@@ -42468,8 +42468,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "25434634c42f958b45cd619fa21aea3b763c5e6616dd607630e7f75228bf70b8",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::clone@signature:25434634c42f958b45cd619fa21aea3b763c5e6616dd607630e7f75228bf70b8@trait:Clone@source:0911efb92ee129bcfb8cfb67f44256d7b9875a2c09ef7219fd619cf28f9f3d32",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::clone@signature:25434634c42f958b45cd619fa21aea3b763c5e6616dd607630e7f75228bf70b8@trait:Clone@source:1b8dcf2d550df01e23e4f3662e2666bb87438317aabf6e36f9dd092d1f80aa53",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "mapped",
@@ -42494,7 +42494,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:0911efb92ee129bcfb8cfb67f44256d7b9875a2c09ef7219fd619cf28f9f3d32",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:1b8dcf2d550df01e23e4f3662e2666bb87438317aabf6e36f9dd092d1f80aa53",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42519,7 +42519,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "a862d3bc79cdb4f19ef28d0bbade83db2706f2614fae344e4d6cbe7468c0e36d",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::eq@signature:a862d3bc79cdb4f19ef28d0bbade83db2706f2614fae344e4d6cbe7468c0e36d@trait:PartialEq@source:0911efb92ee129bcfb8cfb67f44256d7b9875a2c09ef7219fd619cf28f9f3d32",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::eq@signature:a862d3bc79cdb4f19ef28d0bbade83db2706f2614fae344e4d6cbe7468c0e36d@trait:PartialEq@source:1b8dcf2d550df01e23e4f3662e2666bb87438317aabf6e36f9dd092d1f80aa53",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -42547,8 +42547,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "26e8ea566136446f0f0354bc52d3fdd8513c5e3065a912062b1033645d60c8bd",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::error@signature:26e8ea566136446f0f0354bc52d3fdd8513c5e3065a912062b1033645d60c8bd@source:304bcdc63944c6bef2d49101e398c82d9489c7c87b3f15259bc9b3bbce52a13a",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::error@signature:26e8ea566136446f0f0354bc52d3fdd8513c5e3065a912062b1033645d60c8bd@source:e1131508cbeda293c742927c6961f5777933c0bce8fceaea5a181eff54f5dbb8",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42569,7 +42569,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:0911efb92ee129bcfb8cfb67f44256d7b9875a2c09ef7219fd619cf28f9f3d32",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:1b8dcf2d550df01e23e4f3662e2666bb87438317aabf6e36f9dd092d1f80aa53",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -42597,8 +42597,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "69b6fdc84259c8351d8900d3be98ded23783a266b6dcfb0852d474c143eb1a79",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::groups@signature:69b6fdc84259c8351d8900d3be98ded23783a266b6dcfb0852d474c143eb1a79@source:45154cb8beb7dbf88e64ef1e89946baf48f5a11bc6828ce0e3f6bb6aaf46be54",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::groups@signature:69b6fdc84259c8351d8900d3be98ded23783a266b6dcfb0852d474c143eb1a79@source:732efd91f0b7150c8572f8a9fdb1e7da5c9848b80427e7e43904a3666c2d2a31",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42618,8 +42618,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "a2aa3b9bdf981a47603fb642f15dec0656576def0cef840e427d833ea34ad392",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::kind@signature:a2aa3b9bdf981a47603fb642f15dec0656576def0cef840e427d833ea34ad392@source:d098bacad0ead6b31fc5e5a37c5064283a49ae884f24cf06e43c26418e45d55c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::kind@signature:a2aa3b9bdf981a47603fb642f15dec0656576def0cef840e427d833ea34ad392@source:159e444b7c4346d99790a946f251b21c2d2d698d93bbfb972cc7ad0a99b8c1de",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42639,8 +42639,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "1a86a2b13f6ce15371123dc2de71ae7aa1c3fc5dd58ca524463f39e3f063b04f",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::registry_id@signature:1a86a2b13f6ce15371123dc2de71ae7aa1c3fc5dd58ca524463f39e3f063b04f@source:3e47463d31bb656c1bd303b9fcffc86677cdb683d00f2ae07153ff3bddc6687c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::registry_id@signature:1a86a2b13f6ce15371123dc2de71ae7aa1c3fc5dd58ca524463f39e3f063b04f@source:7304b5f37049d52ad7cf276ed39821afe592e0f2a1f47e36498845c74f832601",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42661,7 +42661,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:0911efb92ee129bcfb8cfb67f44256d7b9875a2c09ef7219fd619cf28f9f3d32",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Event::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:1b8dcf2d550df01e23e4f3662e2666bb87438317aabf6e36f9dd092d1f80aa53",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42685,8 +42685,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Event",
       "signatureSha256": "b8942eb3a6e08ba992efd5b7eec627db0c758e80b8b096d45e8a106acafdce23",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::status@signature:b8942eb3a6e08ba992efd5b7eec627db0c758e80b8b096d45e8a106acafdce23@source:94c7789e66002d1732c77890f2dfc8269a2e02a7afb59eb387677d751d75547c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Event::status@signature:b8942eb3a6e08ba992efd5b7eec627db0c758e80b8b096d45e8a106acafdce23@source:aa1edb24fccd675997e903cbdb0f1df1ba7af0c13cca4258bd7eeabd1bea384d",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42706,8 +42706,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "2ffe01d265d045e45fdc5b8969b295db3f659c6d22ebc09e91c13805b59f0caf",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Admitted@signature:2ffe01d265d045e45fdc5b8969b295db3f659c6d22ebc09e91c13805b59f0caf@source:b98b8257fb8348c0f1012d1afeb13246ad1e11e462a65921742d7aad1920aaf9",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Admitted@signature:2ffe01d265d045e45fdc5b8969b295db3f659c6d22ebc09e91c13805b59f0caf@source:c40162a58d544226f3db3bdb247b1e52691b8edfb0e88466cd47207727d6ce3c",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42727,8 +42727,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "aea4a04a80426ed865ec2058b16854b9146166d22c1f3282a18f285941c42eba",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Rejected@signature:aea4a04a80426ed865ec2058b16854b9146166d22c1f3282a18f285941c42eba@source:ec90cdffab22dfa62136d93984d0ce875d7499ec7758a6f8690e2f886d2b088b",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Rejected@signature:aea4a04a80426ed865ec2058b16854b9146166d22c1f3282a18f285941c42eba@source:b6dc8ccaa82491d1a96d709956d89144c352d2ebabc5cd217241c5da0c054553",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42748,8 +42748,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "f33deea9b1009db3148f2614e5da59c03c6fe43df55972f3860d8b871e1b2ace",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Released@signature:f33deea9b1009db3148f2614e5da59c03c6fe43df55972f3860d8b871e1b2ace@source:f1580c044e386df41b1a48e8b526ecd04d3471c9375c2042f3529acc3d114e61",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Released@signature:f33deea9b1009db3148f2614e5da59c03c6fe43df55972f3860d8b871e1b2ace@source:b859d5c63c85432ab66988ecc4cacb9446ce1ff14c424c62ad548542a363700a",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42769,8 +42769,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "9061383b8e228ef3ac36ddc06d128d0fc5c93edf924cefb5a65392f6104798bd",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Response@signature:9061383b8e228ef3ac36ddc06d128d0fc5c93edf924cefb5a65392f6104798bd@source:d5375a482904e01b92a57a7b421750b521670ba41eb63e9b8851740744f284ed",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Response@signature:9061383b8e228ef3ac36ddc06d128d0fc5c93edf924cefb5a65392f6104798bd@source:279198f01225cdb438217dcf90707f0fe971413466b9d33473a4b37139cd0cc7",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42790,8 +42790,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Retry@signature:942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852@source:5dd2846b84e6bc2792162beb51e33e047bb54219e23c153194a2af4fa0f4bfe0",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::EventKind::Retry@signature:942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852@source:e809ed0f0ebd706350c7cd9101f7a33f7658508d467a9ee3869cb0c6d45e54a5",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42812,7 +42812,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "505766d6b2d84dfb7e702566c38d05faca293672e01b4abf5a0e395085f460fc",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::clone@signature:505766d6b2d84dfb7e702566c38d05faca293672e01b4abf5a0e395085f460fc@trait:Clone@source:a65dd154c3c02fc97a56ad00f8acb9c9a12f43d898aa55f867a1458426c5a6c2",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::clone@signature:505766d6b2d84dfb7e702566c38d05faca293672e01b4abf5a0e395085f460fc@trait:Clone@source:b3d3a09b5f938167b44ca823b9f8dcb0bacec19d98ced496426ea59a28a74aa6",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42837,7 +42837,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:a65dd154c3c02fc97a56ad00f8acb9c9a12f43d898aa55f867a1458426c5a6c2",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:b3d3a09b5f938167b44ca823b9f8dcb0bacec19d98ced496426ea59a28a74aa6",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42862,7 +42862,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "79213bb6e6bfa75f43dd979845d4c1a00bbb791b68ab82fe4c8877ab62419c5f",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::eq@signature:79213bb6e6bfa75f43dd979845d4c1a00bbb791b68ab82fe4c8877ab62419c5f@trait:PartialEq@source:a65dd154c3c02fc97a56ad00f8acb9c9a12f43d898aa55f867a1458426c5a6c2",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::eq@signature:79213bb6e6bfa75f43dd979845d4c1a00bbb791b68ab82fe4c8877ab62419c5f@trait:PartialEq@source:b3d3a09b5f938167b44ca823b9f8dcb0bacec19d98ced496426ea59a28a74aa6",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42887,7 +42887,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:a65dd154c3c02fc97a56ad00f8acb9c9a12f43d898aa55f867a1458426c5a6c2",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:b3d3a09b5f938167b44ca823b9f8dcb0bacec19d98ced496426ea59a28a74aa6",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42912,7 +42912,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::EventKind",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:a65dd154c3c02fc97a56ad00f8acb9c9a12f43d898aa55f867a1458426c5a6c2",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::EventKind::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:b3d3a09b5f938167b44ca823b9f8dcb0bacec19d98ced496426ea59a28a74aa6",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -42936,7 +42936,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "c209bab2ceaac48e14f35471b65cd35d22e194bcd28a284b8c5f830c9bfe425a",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:enum:yosoi::policy::respectfulness::EventKind",
       "classification": "sdk",
       "mapping": {
@@ -42957,7 +42957,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "c29922f63483e0a3add5447fbf60b408234b379edd6e3403508e557aec4537da",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::Event",
       "classification": "sdk",
       "mapping": {
@@ -42978,8 +42978,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "6a6894c3f527b679047d27057fa6bdcaaa8e22e24505b4497e6387e60d56ddcf",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::blocked@signature:6a6894c3f527b679047d27057fa6bdcaaa8e22e24505b4497e6387e60d56ddcf@source:7dbfd1a6c3429d3bd41be1f7d6913b8e1dd78dd78720883237a0eb890bf4e29b",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::blocked@signature:6a6894c3f527b679047d27057fa6bdcaaa8e22e24505b4497e6387e60d56ddcf@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -42999,8 +42999,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "18f1ede33ebf0b830e074fb60cab42bdb294b27219eb9d47a5a28c325c16fb1b",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::budgets@signature:18f1ede33ebf0b830e074fb60cab42bdb294b27219eb9d47a5a28c325c16fb1b@source:356f746dede2101af53500c646805698376c0abc97e6a3f59411df72c35c0219",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::budgets@signature:18f1ede33ebf0b830e074fb60cab42bdb294b27219eb9d47a5a28c325c16fb1b@source:b5c242401ce05e8d1cb4f8ec9130784ec36bb841bb30c5ac0925a6d0417fa71a",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43020,8 +43020,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "2b200a05e39c3537ee391bf9a04d0ddb207f6159ac5fe0fb9b002ee6e1b259b4",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::clone@signature:2b200a05e39c3537ee391bf9a04d0ddb207f6159ac5fe0fb9b002ee6e1b259b4@trait:Clone@source:39b8e8ef6657bdc8853fb9218dfc16dc004fb2711351cb1c940b8e82d7886218",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::clone@signature:2b200a05e39c3537ee391bf9a04d0ddb207f6159ac5fe0fb9b002ee6e1b259b4@trait:Clone@source:a79cceca3ca21038b2301933e428f7894aefa7f2475dd5995ac01b5becd61190",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "mapped",
@@ -43045,8 +43045,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "a06e9d380e53d5d305ee65c6293818f57712b74ee57b2dae792ddde1c126e5c9",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::concurrency@signature:a06e9d380e53d5d305ee65c6293818f57712b74ee57b2dae792ddde1c126e5c9@source:1b6dce91cb5a6f08d26902cc1df5e46f19332c7e8e247636dcad7f830e464e26",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::concurrency@signature:a06e9d380e53d5d305ee65c6293818f57712b74ee57b2dae792ddde1c126e5c9@source:3ec823900330dcbde393af532738b1cefbef5f0d799464b2fb0d74b37e4a542b",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43066,8 +43066,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "4ac5edec39466f864f203d50be32e65149cdb1580ea4324a132eba6062a88538",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::cooldown@signature:4ac5edec39466f864f203d50be32e65149cdb1580ea4324a132eba6062a88538@source:b41bcc4f8fce88f1f6f8bd4762baba6874e7b073efaf02b33d2346fe1d13a40b",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::cooldown@signature:4ac5edec39466f864f203d50be32e65149cdb1580ea4324a132eba6062a88538@source:adeeb16e0e15ad42aecb9e8070cc3a9eda169c295611aa03f48a031151aba33a",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43088,7 +43088,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:39b8e8ef6657bdc8853fb9218dfc16dc004fb2711351cb1c940b8e82d7886218",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:a79cceca3ca21038b2301933e428f7894aefa7f2475dd5995ac01b5becd61190",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -43113,7 +43113,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "b907ff92e68c773f1673a51b188608892e31c120f5b3877a06a204c903a8ee94",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::eq@signature:b907ff92e68c773f1673a51b188608892e31c120f5b3877a06a204c903a8ee94@trait:PartialEq@source:39b8e8ef6657bdc8853fb9218dfc16dc004fb2711351cb1c940b8e82d7886218",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::eq@signature:b907ff92e68c773f1673a51b188608892e31c120f5b3877a06a204c903a8ee94@trait:PartialEq@source:a79cceca3ca21038b2301933e428f7894aefa7f2475dd5995ac01b5becd61190",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -43142,7 +43142,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:39b8e8ef6657bdc8853fb9218dfc16dc004fb2711351cb1c940b8e82d7886218",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:a79cceca3ca21038b2301933e428f7894aefa7f2475dd5995ac01b5becd61190",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -43170,8 +43170,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "6a9e1e13b373f57f68a0bab57fa4bd0984bdbc13b98572aea489f55e6b326f78",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::id@signature:6a9e1e13b373f57f68a0bab57fa4bd0984bdbc13b98572aea489f55e6b326f78@source:d931b258b71a439f4b13cf6bf94d7dab8c0885aa445aee381ba67145e712a232",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::id@signature:6a9e1e13b373f57f68a0bab57fa4bd0984bdbc13b98572aea489f55e6b326f78@source:a1d5259ea4189fe7636eb769bb625810e33758508d75622809d8736b44d0898a",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43191,8 +43191,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "233ea9d7e76af8c805f084262db064e389f5adf27789568b546a526cc50cfd75",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::new@signature:233ea9d7e76af8c805f084262db064e389f5adf27789568b546a526cc50cfd75@source:f5ef1b8ba91541b2aa20c23b51aaf18ed1f58ef0d7f59d479e3055d5e1a0f1de",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::new@signature:233ea9d7e76af8c805f084262db064e389f5adf27789568b546a526cc50cfd75@source:c4de5c5fbbddb56f8cecda5b58f0f905022c3cc55c4d1063c898b01c72b18d9f",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43212,8 +43212,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "3450c9f381b51c7ab310822a60b88eef71c3cba0454e6c8323efb48b920177fc",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::patterns@signature:3450c9f381b51c7ab310822a60b88eef71c3cba0454e6c8323efb48b920177fc@source:ca5657a8904f063320bb098a6fb1642f4ab22f1dbbd076aa0a936714d1c43bc3",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::patterns@signature:3450c9f381b51c7ab310822a60b88eef71c3cba0454e6c8323efb48b920177fc@source:20f0a159325e0e06901f4e921ec7b01ceb2ae50733ef0802a2eb1950d5383745",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43234,7 +43234,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:39b8e8ef6657bdc8853fb9218dfc16dc004fb2711351cb1c940b8e82d7886218",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Group::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:a79cceca3ca21038b2301933e428f7894aefa7f2475dd5995ac01b5becd61190",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -43258,8 +43258,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Group",
       "signatureSha256": "c84c2f28c5057a144dafbc1ad09d8be06627d7c257962f2e21171082d8382a53",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::spacing_ms@signature:c84c2f28c5057a144dafbc1ad09d8be06627d7c257962f2e21171082d8382a53@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Group::spacing_ms@signature:c84c2f28c5057a144dafbc1ad09d8be06627d7c257962f2e21171082d8382a53@source:7581efe1d57f28688b386390028acbdd65c3ca39b8c299bb1239a7d2fad52bc1",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43279,7 +43279,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "611da1528ea2d93c01de0f541cb7391a13abef6cc0f025c8ef0d2c243a229fa9",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::Group",
       "classification": "sdk",
       "mapping": {
@@ -43300,7 +43300,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::LimitReason",
       "signatureSha256": "18f2a0947f9d6523991b29b450307f22773f57d65f7efb98d48a167df04d6b1d",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::LimitReason::Blocked@signature:18f2a0947f9d6523991b29b450307f22773f57d65f7efb98d48a167df04d6b1d@source:1eea887ec36f3c6279fdffdba77960fff7d251047cf87662320c1a8344bc0c4b",
       "classification": "sdk",
       "mapping": {
@@ -43321,7 +43321,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::LimitReason",
       "signatureSha256": "8708492f3ef5c138d635939ee1a71b0a17d25f56920c64ea44122ef2c966be73",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::LimitReason::Concurrency@signature:8708492f3ef5c138d635939ee1a71b0a17d25f56920c64ea44122ef2c966be73@source:540267dd285f036fcd61778f72044678c80be76d057ce0cdfea812ff589c46f3",
       "classification": "sdk",
       "mapping": {
@@ -43342,7 +43342,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::LimitReason",
       "signatureSha256": "0924a671165fef5acccb9188c5083837af59548ec6a7c5c3be29dad06cc9acb1",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::LimitReason::Cooldown@signature:0924a671165fef5acccb9188c5083837af59548ec6a7c5c3be29dad06cc9acb1@source:4db897c697900a616510b0a31dac10b117b310f55e40353d8514ed6171c3d6b9",
       "classification": "sdk",
       "mapping": {
@@ -43363,7 +43363,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::LimitReason",
       "signatureSha256": "e8396fc50a0788a61a5af42288e3f22bbb233a9cb1205d0b04e4ee2837d3e6db",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::LimitReason::RateBudget@signature:e8396fc50a0788a61a5af42288e3f22bbb233a9cb1205d0b04e4ee2837d3e6db@source:a5a03dc2a300c02f0e57bd67dabca08a252b52cba12212edadffdcff1bba1324",
       "classification": "sdk",
       "mapping": {
@@ -43384,7 +43384,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::LimitReason",
       "signatureSha256": "62a822a5830967227de02c62b8fcece522de83983a87c15d42944dd5ccea7174",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::LimitReason::Spacing@signature:62a822a5830967227de02c62b8fcece522de83983a87c15d42944dd5ccea7174@source:3c813a4533fb7a2f6ba32723511024907877acaf7a2d6e9ea164402ddf32bb23",
       "classification": "sdk",
       "mapping": {
@@ -43530,7 +43530,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "63c6ee84d500c0786e9eb4008e48d5f8329640331e726099038b639dd29a2f6f",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:enum:yosoi::policy::respectfulness::LimitReason",
       "classification": "sdk",
       "mapping": {
@@ -43551,8 +43551,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "95404b160bc016324970118c9fc999a8f72dbc74790babb231578fb02ea18f1e",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::clone@signature:95404b160bc016324970118c9fc999a8f72dbc74790babb231578fb02ea18f1e@trait:Clone@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::clone@signature:95404b160bc016324970118c9fc999a8f72dbc74790babb231578fb02ea18f1e@trait:Clone@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "mapped",
@@ -43577,7 +43577,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -43602,7 +43602,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "484859ca1fdce4fb9ca1bde8b1904187b8874956ed9bd8b3fe1a730c193def72",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::eq@signature:484859ca1fdce4fb9ca1bde8b1904187b8874956ed9bd8b3fe1a730c193def72@trait:PartialEq@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::eq@signature:484859ca1fdce4fb9ca1bde8b1904187b8874956ed9bd8b3fe1a730c193def72@trait:PartialEq@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -43631,7 +43631,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -43659,8 +43659,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "e1d71739dc3d464f0e2c24702cac602410d488d1eb017771bf69bed2fe9810b2",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::RateBudget::requests@signature:e1d71739dc3d464f0e2c24702cac602410d488d1eb017771bf69bed2fe9810b2@source:0873214a23ef7b43b44dfaa847f0c35d288586838c224ee6aa2f923e71cd1da3",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::RateBudget::requests@signature:e1d71739dc3d464f0e2c24702cac602410d488d1eb017771bf69bed2fe9810b2@source:6e57a92d5798a0e9e4e534e4bd2f1db3f3c80ff30f46b6c8166c33f3ba1fc436",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43681,7 +43681,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:7b06b72b2025bd1e8794ba5b557640750e388fc3e2fb21217c1ff2b016dba69d",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RateBudget::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -43705,8 +43705,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RateBudget",
       "signatureSha256": "19775b49d8983bd1f71bf15e80bd2efbb004457e5ecdebaa7fbef4e869cbe108",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::RateBudget::window_ms@signature:19775b49d8983bd1f71bf15e80bd2efbb004457e5ecdebaa7fbef4e869cbe108@source:cddabd7d969ae7619ab8911bf339cfcc21396366c97b9794adb5343fbc8fd774",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::RateBudget::window_ms@signature:19775b49d8983bd1f71bf15e80bd2efbb004457e5ecdebaa7fbef4e869cbe108@source:212fda4a015a3488ee1ec9c9a26612d9ec82a99565fd54d01588738f94a03b79",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43726,7 +43726,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "e64911a585f8c3c9410e8480a4ff37984efa462a65ee112caa59d5f87f6a5376",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::RateBudget",
       "classification": "sdk",
       "mapping": {
@@ -43747,7 +43747,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
       "signatureSha256": "3b9f8f5997d04ffc91ad1db2eb27efd938b5dc329732d1fb7f2c6d6ca9200ce2",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:function:yosoi::policy::respectfulness::Respectfulness::clone@signature:3b9f8f5997d04ffc91ad1db2eb27efd938b5dc329732d1fb7f2c6d6ca9200ce2@trait:Clone@source:897f089892e938bfe74d88ca62df5090f77a11d5b09e125ea09988d46821fca1",
       "classification": "trait-mechanic",
       "mapping": {
@@ -43803,7 +43803,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.Respectfulness",
-        "pythonTargetSha256": "0727ed1138814d082fbcbb2a93ceee4a673a51768023af09ed45c9137c73da9e",
+        "pythonTargetSha256": "839860313b7aeb999e61c916b9e26519c22f854dc0a16454ac3ffe88c2283627",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -43832,7 +43832,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.policy.Respectfulness",
-        "pythonTargetSha256": "0727ed1138814d082fbcbb2a93ceee4a673a51768023af09ed45c9137c73da9e",
+        "pythonTargetSha256": "839860313b7aeb999e61c916b9e26519c22f854dc0a16454ac3ffe88c2283627",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
         "review": {
@@ -43855,8 +43855,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
       "signatureSha256": "c11356a17e3272940cae08e2b4260a66b10c04ac193fca7548e1adc871f54063",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::groups@signature:c11356a17e3272940cae08e2b4260a66b10c04ac193fca7548e1adc871f54063@source:c73257007dc5b48665290274dd69802991a68ce33b565931674bd2eec6f504f4",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::groups@signature:c11356a17e3272940cae08e2b4260a66b10c04ac193fca7548e1adc871f54063@source:8e7065a5342551fe1cd1b80c06c4f78f65fa75c94acc8a16a23594fda6dfc374",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43876,17 +43876,38 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
       "signatureSha256": "db69f6e831c96e5f6b91cedfac5236ee896ff0f7b822aec7f83439017f338c2d",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Respectfulness::new@signature:db69f6e831c96e5f6b91cedfac5236ee896ff0f7b822aec7f83439017f338c2d@source:06dbdbdde108e29f7ed58a01b683ba8b726fb5b842d27449ef04886aeaff684c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Respectfulness::new@signature:db69f6e831c96e5f6b91cedfac5236ee896ff0f7b822aec7f83439017f338c2d@source:99e20ec68f0b6366d40b7af04ca789b4120e8f2f8e7c05e5a75761895cd7c8e9",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.Respectfulness",
-        "pythonTargetSha256": "0727ed1138814d082fbcbb2a93ceee4a673a51768023af09ed45c9137c73da9e",
+        "pythonTargetSha256": "839860313b7aeb999e61c916b9e26519c22f854dc0a16454ac3ffe88c2283627",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.policy.Respectfulness.",
         "review": null,
         "ledgerMappingSha256": "2fa92f3d8e7266478e990a755ac36bd1c1a03c8ec1016fb89bc8f4155339aa0f"
+      }
+    },
+    {
+      "id": "yosoi::policy::respectfulness::Respectfulness::registry_path|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::policy::respectfulness::Respectfulness::registry_path",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
+      "signatureSha256": "391ee4a3e003f01357ee582e3cdfd5ab7601aefec1f1c524d8b831eef6c64e6c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::registry_path@signature:391ee4a3e003f01357ee582e3cdfd5ab7601aefec1f1c524d8b831eef6c64e6c@source:74ecccf2bb8a5f683492bf2d7b5827d99f454eadfc462df0ffa40444ceac989a",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.policy.Respectfulness.registry_path",
+        "pythonTargetSha256": "626452e8991e3310f7b338bf6d1e92d350847c20bf292e182d066e445a1443b6",
+        "semanticEquivalent": null,
+        "rationale": "Rust field registry_path maps to Python field registry_path.",
+        "review": null,
+        "ledgerMappingSha256": "d69c06096b341bcaf23eca131d30febf58f4f23959871a23c432e5905cb31172"
       }
     },
     {
@@ -43897,8 +43918,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
       "signatureSha256": "c9e9282236ef9f833677b1aa40289886addf09b3a61c552480c2be215a4cb143",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::retry@signature:c9e9282236ef9f833677b1aa40289886addf09b3a61c552480c2be215a4cb143@source:959312f5ccfc577424e53ecc897c58d0c7a6f0f2b34acd8972b345d437c9c678",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::retry@signature:c9e9282236ef9f833677b1aa40289886addf09b3a61c552480c2be215a4cb143@source:d3e75cef4df3649a03eabaca266d468fcee10d1d72592f25218fdc92ecc38727",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43943,8 +43964,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Respectfulness",
       "signatureSha256": "dc7b564fda40f5f1b2a46a0425654fdf6a1bdba3148aa2fd928539d45d55aad8",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::unmatched@signature:dc7b564fda40f5f1b2a46a0425654fdf6a1bdba3148aa2fd928539d45d55aad8@source:aa08210a25ed9443761305dbc9c27236bced5942b3a5c5574188429ebcb7a935",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Respectfulness::unmatched@signature:dc7b564fda40f5f1b2a46a0425654fdf6a1bdba3148aa2fd928539d45d55aad8@source:915e1224effda584b5996f1e5fdc2d62a5b421f4e22399c53c3fbade0eb81761",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -43964,7 +43985,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "010308b8c3aff3e6b0ffa3e1f3cc8f8d1b123610f485553d136af8847a03d5ee",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::ConfigurationMismatch@signature:010308b8c3aff3e6b0ffa3e1f3cc8f8d1b123610f485553d136af8847a03d5ee@source:93791ebd5a793b0145d5d45d672d50a40c6e1f2d20c8dc86d5b924c3c0afdc04",
       "classification": "sdk",
       "mapping": {
@@ -43985,7 +44006,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "bfd93652d490bc16bce3fce7c753e3b80739d841a114bec87ee41135da41dde8",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::InvalidState@signature:bfd93652d490bc16bce3fce7c753e3b80739d841a114bec87ee41135da41dde8@source:762f44c28c8a59a7e1e069db4a97f98e8536be9e90332193dffbe826b74ec337",
       "classification": "sdk",
       "mapping": {
@@ -44006,7 +44027,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "cfc06fd77897249c7fedbf706ab7f26d43aded72b251011eb7c5e4cc10ecfbba",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::Limited@signature:cfc06fd77897249c7fedbf706ab7f26d43aded72b251011eb7c5e4cc10ecfbba@source:d5a2ab4df54dc0e14cab9a42e549622bc4066c32f6a241a92012dd93aa9ba083",
       "classification": "sdk",
       "mapping": {
@@ -44027,7 +44048,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "55adc605487f6d6ce174a128057e1112399ad185a1b5dbbd49362d459c68c188",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::Registry@signature:55adc605487f6d6ce174a128057e1112399ad185a1b5dbbd49362d459c68c188@source:6ba3a3b040d948112c3e6802d6db3cd5bbf52866e37f654de27c6b21be5690d4",
       "classification": "sdk",
       "mapping": {
@@ -44048,7 +44069,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "44830bf21579e748ff213953cbec06e0c318dfcabc2b4700c4b182c6c45d123a",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::Setup@signature:44830bf21579e748ff213953cbec06e0c318dfcabc2b4700c4b182c6c45d123a@source:75466d735b118e053b189d9875877cb288b09988897f96ee35e702f3e2dbc416",
       "classification": "sdk",
       "mapping": {
@@ -44069,7 +44090,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "453d3844b3f9b2bb82a91e8fa654f75522cb7e8065c5a71643d613841d165663",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::Unmatched@signature:453d3844b3f9b2bb82a91e8fa654f75522cb7e8065c5a71643d613841d165663@source:ace9bc841e86e078a3c957cabff7541d7a56cdf10b779129f9fd0a897af66227",
       "classification": "sdk",
       "mapping": {
@@ -44090,7 +44111,7 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "0df935dfe17095868ed38fab84a58efa3a57d5eead716d1476f4e6dc1a89ecbb",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "member:variant:yosoi::policy::respectfulness::RespectfulnessError::UnsupportedBrowser@signature:0df935dfe17095868ed38fab84a58efa3a57d5eead716d1476f4e6dc1a89ecbb@source:76f98bb5a508576926c4431e945476af7722740cb6f79ea1bd6a5510040a37fb",
       "classification": "sdk",
       "mapping": {
@@ -44237,7 +44258,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::RespectfulnessError",
       "signatureSha256": "e50d74bbb0303c7d2a546b2e6a517dfd56cdc5c42c1b5ca26841383b7c56a7b6",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::RespectfulnessError::from@signature:e50d74bbb0303c7d2a546b2e6a517dfd56cdc5c42c1b5ca26841383b7c56a7b6@trait:From@source:6c61e4726c1bc18368c50e54289b2b04adb27bcdc85cd8ae4d9c8563c4261e16",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::RespectfulnessError::from@signature:e50d74bbb0303c7d2a546b2e6a517dfd56cdc5c42c1b5ca26841383b7c56a7b6@trait:From@source:42e509f4ce4c0fd29a729a6b388a09c8a0130724a1fb00e2d75d068ad0e86e97",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44286,7 +44307,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "1937a712a59c301fca6c642b84f4d1c0f0701e938ecf8c63751fa4de6f08e17a",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:enum:yosoi::policy::respectfulness::RespectfulnessError",
       "classification": "sdk",
       "mapping": {
@@ -44307,13 +44328,13 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "be592115c92f002de415f8f84c3f718aed38af7aee8177ba63e0428c7e00bc85",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::Respectfulness",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.policy.Respectfulness",
-        "pythonTargetSha256": "0727ed1138814d082fbcbb2a93ceee4a673a51768023af09ed45c9137c73da9e",
+        "pythonTargetSha256": "839860313b7aeb999e61c916b9e26519c22f854dc0a16454ac3ffe88c2283627",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.policy.Respectfulness.",
         "review": null,
@@ -44328,8 +44349,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "212beccf3ea62dfeae19d9fcceb760bcdb412cb33471efadb6a9d9d572d01d96",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::backoff_ms@signature:212beccf3ea62dfeae19d9fcceb760bcdb412cb33471efadb6a9d9d572d01d96@source:8e67f1e08fa3fe0076ec8dc5751e87d7fb93119682a9b4b0ec8afbc94fd643ce",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::backoff_ms@signature:212beccf3ea62dfeae19d9fcceb760bcdb412cb33471efadb6a9d9d572d01d96@source:99e4a84d83318a6074c14fa0266d70c02e6af1f7fbd2e903c66e37c959211536",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44349,8 +44370,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "59b3786b37326b03a5c23a44f51a1509f63b0bb9f9b6a281f6cf543f6b76dc37",
-      "baselineStatus": "stale",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::clone@signature:59b3786b37326b03a5c23a44f51a1509f63b0bb9f9b6a281f6cf543f6b76dc37@trait:Clone@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::clone@signature:59b3786b37326b03a5c23a44f51a1509f63b0bb9f9b6a281f6cf543f6b76dc37@trait:Clone@source:2c606b89fb21205a7a5d05127a89ba1b1f9125b3b9d1da5c1875bed8af7c99a9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "mapped",
@@ -44375,7 +44396,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:489ba71b03be796298fa558d347a40cc89fcf743399c9659aa5dfbce90f917bf",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:c28d5162be2ae308e2fc736f4bea3745a3396349cfaf1e08d659bc25e77e2d8d",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -44404,7 +44425,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:2c606b89fb21205a7a5d05127a89ba1b1f9125b3b9d1da5c1875bed8af7c99a9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44429,7 +44450,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "3573b0cef0250e1ce0116ee169c02acf753787adbffb41f5a931ecf06694d153",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::eq@signature:3573b0cef0250e1ce0116ee169c02acf753787adbffb41f5a931ecf06694d153@trait:PartialEq@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::eq@signature:3573b0cef0250e1ce0116ee169c02acf753787adbffb41f5a931ecf06694d153@trait:PartialEq@source:2c606b89fb21205a7a5d05127a89ba1b1f9125b3b9d1da5c1875bed8af7c99a9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -44458,7 +44479,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:2c606b89fb21205a7a5d05127a89ba1b1f9125b3b9d1da5c1875bed8af7c99a9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "language-specific",
@@ -44486,8 +44507,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "9039fd6e61744de498b0de75a1f20b682ab46a4ddb126ee84e46134a5711e893",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::max_attempts@signature:9039fd6e61744de498b0de75a1f20b682ab46a4ddb126ee84e46134a5711e893@source:6e57a92d5798a0e9e4e534e4bd2f1db3f3c80ff30f46b6c8166c33f3ba1fc436",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::max_attempts@signature:9039fd6e61744de498b0de75a1f20b682ab46a4ddb126ee84e46134a5711e893@source:31b73d46071bb2a8c13cf5c1ddd7b3cf5c6eab7a5c481a79a7528e760f5d1d06",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44508,7 +44529,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:d6a1abe625f507d92d5e18a0a638af721d1c553ed37c7a36769ce2ebcfe08ebc",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Retry::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:2c606b89fb21205a7a5d05127a89ba1b1f9125b3b9d1da5c1875bed8af7c99a9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44532,8 +44553,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::statuses@signature:eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a@source:212fda4a015a3488ee1ec9c9a26612d9ec82a99565fd54d01588738f94a03b79",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::statuses@signature:eeb641734162cbb9a96c8a947f1799405211540e62671b1cc9842933194c694a@source:a88610884c313a725c9aa18d66c34fcc3ddf975cc72759a11febca6d2f98fa69",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44553,8 +44574,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Retry",
       "signatureSha256": "6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6",
-      "baselineStatus": "stale",
-      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::transport_errors@signature:6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6@source:4bdd417d316ce43270146cd53f66fa6972aa224d479234d720902d719f6a9fd2",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::policy::respectfulness::Retry::transport_errors@signature:6454c9a3c7af9406d4942fce8f5e08ad7c1d864028c68510c4db9c4d42e25ee6@source:60e5a251c708ffc9fbdd0d4ee3040067b48a4a02d314e91ded57da66d1313779",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44574,7 +44595,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "bab8dec1a5f3c7d7d64ff52be8c351305f9389673a6cd58737787a89af4a7066",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:struct:yosoi::policy::respectfulness::Retry",
       "classification": "sdk",
       "mapping": {
@@ -44595,8 +44616,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "e213c161d5cefa520c8dd4155c9569076d9a40406111465136a6f1b207045761",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::Unmatched::Allow@signature:e213c161d5cefa520c8dd4155c9569076d9a40406111465136a6f1b207045761@source:5c5a29c7759b52697c0e27c8ae70c9785e30c1b92285d8994288f1c7c7f748f0",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::Unmatched::Allow@signature:e213c161d5cefa520c8dd4155c9569076d9a40406111465136a6f1b207045761@source:064ddf89ae90f4c5c35e8a69c7e0ec842c4f39adc89f17f9805294e4c60fa0cf",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44616,8 +44637,8 @@
       "surface": "member",
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "ab604a360777735fe2993aec7d4ffae415f1515b0a4c989269603fd3d5c07b61",
-      "baselineStatus": "stale",
-      "symbolKey": "member:variant:yosoi::policy::respectfulness::Unmatched::Reject@signature:ab604a360777735fe2993aec7d4ffae415f1515b0a4c989269603fd3d5c07b61@source:09c0a218270976f08e6c4f110543548f33c20067289ec9bd3fa924e6996dcde3",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::policy::respectfulness::Unmatched::Reject@signature:ab604a360777735fe2993aec7d4ffae415f1515b0a4c989269603fd3d5c07b61@source:7987e2a0b8f68cf1ee186aa1abee79b2f52e960edf04ab644edb25405936d29d",
       "classification": "sdk",
       "mapping": {
         "decision": "mapped",
@@ -44638,7 +44659,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "5dcc3284e0bb51752b5f957fbc70ecb1d6031e77de2ad5231776fd2cc22c1364",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::clone@signature:5dcc3284e0bb51752b5f957fbc70ecb1d6031e77de2ad5231776fd2cc22c1364@trait:Clone@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::clone@signature:5dcc3284e0bb51752b5f957fbc70ecb1d6031e77de2ad5231776fd2cc22c1364@trait:Clone@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44663,7 +44684,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "c67a90cec7ba28b26d172a0ea7cfba0b1d8de69446a21d94bb8ac9440963539e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::default@signature:c67a90cec7ba28b26d172a0ea7cfba0b1d8de69446a21d94bb8ac9440963539e@trait:Default@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::default@signature:c67a90cec7ba28b26d172a0ea7cfba0b1d8de69446a21d94bb8ac9440963539e@trait:Default@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44688,7 +44709,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44713,7 +44734,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "99248e9982225212d6ddf3b678dfd23214e565732a2da217b9d21a8e6a8def9e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::eq@signature:99248e9982225212d6ddf3b678dfd23214e565732a2da217b9d21a8e6a8def9e@trait:PartialEq@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::eq@signature:99248e9982225212d6ddf3b678dfd23214e565732a2da217b9d21a8e6a8def9e@trait:PartialEq@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44738,7 +44759,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44763,7 +44784,7 @@
       "parentRustPath": "yosoi::policy::respectfulness::Unmatched",
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:632ac3795f84ca5abb5136fb5b387230e414dc5d14405b85fbb0aeff04821f61",
+      "symbolKey": "member:function:yosoi::policy::respectfulness::Unmatched::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:237a8ab06a9a518aec8a275a1ffea8af6969202ca22ed3c77d814b1e9f5c6064",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",
@@ -44787,7 +44808,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "dc748c3d4b243a8a87dddcca2d988f931c015c806f4bc78ce2cc44e401a296bf",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:enum:yosoi::policy::respectfulness::Unmatched",
       "classification": "sdk",
       "mapping": {
@@ -44808,7 +44829,7 @@
       "surface": "item",
       "parentRustPath": null,
       "signatureSha256": "38127837019e215e540a4ef13a3b5540ca386d1640c13d29410464e94b50b6c7",
-      "baselineStatus": "stale",
+      "baselineStatus": "mapped",
       "symbolKey": "page:module:yosoi::policy::respectfulness",
       "classification": "sdk",
       "mapping": {

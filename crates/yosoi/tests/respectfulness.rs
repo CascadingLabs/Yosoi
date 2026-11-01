@@ -94,7 +94,8 @@ async fn concurrency_lease_covers_the_response_body() -> TestResult {
         respectfulness: Some(Respectfulness::new(vec![group(&url)])?),
         ..ys::Policy::default()
     };
-    let registry = Registry::default();
+    let directory = tempfile::tempdir()?;
+    let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
     let first_policy = policy.clone();
     let first_registry = registry.clone();
     let first_url = url.clone();
@@ -127,9 +128,12 @@ async fn concurrency_lease_covers_the_response_body() -> TestResult {
             )))
     );
     release.notify_one();
+    let first_response = first.await??;
     assert_eq!(
-        first.await??.attempts().next().and_then(Attempt::status),
-        Some(200)
+        first_response.attempts().next().and_then(Attempt::status),
+        Some(200),
+        "{:?}",
+        first_response.respectfulness()
     );
     task.await??;
     Ok(())
@@ -149,22 +153,16 @@ async fn sdk_spacing_rejection_precedes_a_second_outbound_request() -> TestResul
         spacing_ms: Some(60_000),
         ..group(&url)
     };
+    let mut respect = Respectfulness::new(vec![group])?;
+    let directory = tempfile::tempdir()?;
+    respect.registry_path = Some(directory.path().join("registry.jsonl"));
     let policy = ys::Policy {
-        respectfulness: Some(Respectfulness::new(vec![group])?),
+        respectfulness: Some(respect),
         ..ys::Policy::default()
     };
-    let registry = Registry::default();
-    let first = ys::request::new(url.clone())
-        .bind(&policy)
-        .with_registry(&registry)
-        .send()
-        .await?;
+    let first = ys::request::new(url.clone()).bind(&policy).send().await?;
     assert_eq!(first.attempts().next().and_then(Attempt::status), Some(200));
-    let second = ys::request::new(url)
-        .bind(&policy)
-        .with_registry(&registry)
-        .send()
-        .await?;
+    let second = ys::request::new(url).bind(&policy).send().await?;
     assert!(
         second
             .respectfulness()
@@ -205,7 +203,8 @@ async fn explicit_retry_preserves_prior_429_and_charges_both_starts() -> TestRes
         respectfulness: Some(respect),
         ..ys::Policy::default()
     };
-    let registry = Registry::default();
+    let directory = tempfile::tempdir()?;
+    let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
     let response = ys::request::new(url.clone())
         .bind(&policy)
         .with_registry(&registry)
@@ -263,7 +262,13 @@ async fn redirect_hop_requires_its_own_admission() -> TestResult {
         respectfulness: Some(Respectfulness::new(vec![group])?),
         ..ys::Policy::default()
     };
-    let response = ys::request::new(url).bind(&policy).send().await?;
+    let directory = tempfile::tempdir()?;
+    let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
+    let response = ys::request::new(url)
+        .bind(&policy)
+        .with_registry(&registry)
+        .send()
+        .await?;
     assert!(
         response
             .respectfulness()
@@ -288,5 +293,64 @@ fn policy_identity_and_wire_keep_disabled_behavior_compatible() -> TestResult {
     let restored: ys::Policy = serde_json::from_str(&policy.to_canonical_json()?)?;
     assert_eq!(restored, policy);
     assert_eq!(restored.effective_identity()?, policy.effective_identity()?);
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn registry_failure_prevents_requests_and_search_and_explicit_handle_overrides_path()
+-> TestResult {
+    use ys::policy::search::{Provider, ProviderRequestProfile, ProviderSelection};
+    let directory = tempfile::tempdir()?;
+    let corrupt = directory.path().join("corrupt.jsonl");
+    std::fs::write(&corrupt, "broken\n")?;
+    let mut respect = Respectfulness::new(vec![Group {
+        blocked: true,
+        ..Group::new("blocked", ["^https?://"])
+    }])?;
+    respect.registry_path = Some(corrupt);
+    let mut policy = ys::Policy {
+        respectfulness: Some(respect),
+        ..ys::Policy::default()
+    };
+    policy.search.providers = vec![ProviderSelection::exact(
+        Provider::Google,
+        ProviderRequestProfile::new(policy.page.clone(), policy.request, policy.documents)?,
+    )];
+    let request_error = ys::request::new("http://127.0.0.1:1/")
+        .bind(&policy)
+        .send()
+        .await
+        .err()
+        .ok_or("request should fail before dispatch")?;
+    assert!(
+        matches!(request_error.respectfulness(), Some(ys::policy::respectfulness::RespectfulnessError::Registry { variant, .. }) if variant == "InvalidState")
+    );
+    let search_error = ys::search::new("offline registry check")?
+        .bind(&policy)
+        .send()
+        .await
+        .err()
+        .ok_or("search should fail before provider work")?;
+    assert!(
+        matches!(search_error, ys::search::SearchSendError::Respectfulness(ys::policy::respectfulness::RespectfulnessError::Registry { variant, .. }) if variant == "InvalidState")
+    );
+    let registry = Registry::jsonl(directory.path().join("override.jsonl"))?;
+    let response = ys::request::new("http://127.0.0.1:1/")
+        .bind(&policy)
+        .with_registry(&registry)
+        .send()
+        .await?;
+    assert!(
+        response
+            .respectfulness()
+            .iter()
+            .any(|event| event.error.as_ref().is_some_and(|error| matches!(
+                error,
+                ys::policy::respectfulness::RespectfulnessError::Limited {
+                    reason: ys::policy::respectfulness::LimitReason::Blocked,
+                    ..
+                }
+            )))
+    );
     Ok(())
 }

@@ -91,10 +91,7 @@ impl SearchRequest {
             request: self,
             policy,
             diagnostic_capture: false,
-            registry: policy
-                .respectfulness
-                .as_ref()
-                .map(|_| RuntimeRegistry::default()),
+            registry: None,
         }
     }
 }

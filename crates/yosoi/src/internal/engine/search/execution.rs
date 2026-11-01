@@ -44,7 +44,12 @@ impl BoundSearchRequest<'_> {
         let deadline = started_at
             .checked_add(Duration::from_micros(maximum_elapsed.as_microseconds()))
             .ok_or(SearchExecutionSetupError::DeadlineUnrepresentable)?;
-        let prepared = self.prepare()?;
+        let mut prepared = self.prepare()?;
+        if let Some(policy) = &self.policy().respectfulness {
+            prepared.registry = Some(
+                crate::internal::respectfulness::resolve_registry(policy, self.registry()).await?,
+            );
+        }
         execute_prepared(prepared, deadline, cancellation, self.diagnostic_capture()).await
     }
 }

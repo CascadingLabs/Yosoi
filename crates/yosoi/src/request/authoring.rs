@@ -104,7 +104,7 @@ pub struct BoundPageRequest<'policy> {
 }
 impl BoundPageRequest<'_> {
     /// Shares operational traffic state with other callers. Default enabled policies
-    /// use memory scoped to this bound handle; supplying JSONL enables process sharing.
+    /// use the policy-selected JSONL file, or the standard user file.
     pub fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
         self.inner = self.inner.with_registry(registry);
         self

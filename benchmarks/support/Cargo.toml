@@ -96,7 +96,7 @@ tokio-util = { workspace = true, features = ["rt"] }
 tracing = { workspace = true, optional = true }
 unicode-width = { workspace = true, optional = true }
 url = { workspace = true, features = ["serde"] }
-uuid = { workspace = true }
+uuid = { workspace = true, features = ["serde"] }
 which = { workspace = true, optional = true }
 wreq = { workspace = true }
 yosoi-contracts-derive = { workspace = true }

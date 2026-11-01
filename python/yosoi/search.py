@@ -1049,7 +1049,7 @@ class BoundSearchRequest:
         """
         self.request = request
         self._policy_json = policy.to_json()
-        self._registry = Registry() if policy.respectfulness is not None else None
+        self._registry: Registry | None = None
         self._capture = False
 
     def with_registry(self, registry: Registry) -> BoundSearchRequest:

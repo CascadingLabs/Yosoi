@@ -22,16 +22,15 @@ fn group(id: &str) -> Group {
 
 #[test]
 fn regex_groups_share_subdomain_capacity_and_release_it() -> TestResult {
-    for persistent in [false, true] {
+    {
         let directory = tempfile::tempdir()?;
-        let registry = if persistent {
-            Registry::jsonl(directory.path().join("state.jsonl"))?
-        } else {
-            Registry::default()
-        };
+        let registry = Registry::jsonl(directory.path().join("state.jsonl"))?;
         let policy = Respectfulness::new(vec![group("domain")])?;
         let first = Runtime::new(policy.clone(), registry.clone())?;
-        let second = Runtime::new(policy, registry)?;
+        let second = Runtime::new(
+            policy,
+            Registry::jsonl(directory.path().join("state.jsonl"))?,
+        )?;
         let permit = first.reserve_at("https://www.example.com/one", 1000, 2000)?;
         assert!(matches!(
             second.reserve_at("https://api.example.com/two", 1001, 2001),
@@ -50,7 +49,8 @@ fn regex_groups_share_subdomain_capacity_and_release_it() -> TestResult {
 
 #[test]
 fn overlapping_constraints_reserve_all_or_none() -> TestResult {
-    let registry = Registry::default();
+    let directory = tempfile::tempdir()?;
+    let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
     let blocked = Group {
         blocked: true,
         ..group("blocked")
@@ -81,7 +81,11 @@ fn rate_budget_counts_starts_and_spacing_survives_release() -> TestResult {
         }],
         ..group("rate")
     };
-    let runtime = Runtime::new(Respectfulness::new(vec![g])?, Registry::default())?;
+    let directory = tempfile::tempdir()?;
+    let runtime = Runtime::new(
+        Respectfulness::new(vec![g])?,
+        Registry::jsonl(directory.path().join("registry.jsonl"))?,
+    )?;
     runtime
         .reserve_at("http://example.com/", 1000, 5000)?
         .finish_at(1001, Some(200), None, false)?;
@@ -120,7 +124,11 @@ fn response_cooldown_honors_retry_after_without_penalizing_empty_success() -> Te
         }),
         ..group("feedback")
     };
-    let runtime = Runtime::new(Respectfulness::new(vec![g])?, Registry::default())?;
+    let directory = tempfile::tempdir()?;
+    let runtime = Runtime::new(
+        Respectfulness::new(vec![g])?,
+        Registry::jsonl(directory.path().join("registry.jsonl"))?,
+    )?;
     runtime
         .reserve_at("https://example.com/", 1000, 10000)?
         .finish_at(1001, Some(200), None, false)?;
@@ -186,12 +194,65 @@ fn canonical_matching_and_unmatched_behavior_are_explicit() -> TestResult {
     assert!(canonical_url("https://user:secret@example.com/").is_err());
     let mut policy = Respectfulness::new(vec![group("one")])?;
     policy.unmatched = Unmatched::Reject;
-    let runtime = Runtime::new(policy, Registry::default())?;
+    let directory = tempfile::tempdir()?;
+    let runtime = Runtime::new(
+        policy,
+        Registry::jsonl(directory.path().join("registry.jsonl"))?,
+    )?;
     assert_eq!(
         runtime
             .reserve_at("https://other.example/", 1000, 2000)
             .err(),
         Some(RespectfulnessError::Unmatched)
+    );
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn policy_selected_file_records_reservation_owner_and_release() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("traffic.jsonl");
+    let mut policy = Respectfulness::new(vec![group("owner")])?;
+    policy.registry_path = Some(path.clone());
+    let registry = super::resolve_registry(&policy, None).await?;
+    let runtime = Runtime::new(policy, registry.clone())?;
+    let permit = runtime.reserve_at("https://example.com/private?token=secret", 1000, 2000)?;
+    permit.finish_at(1001, Some(200), None, false)?;
+    let text = std::fs::read_to_string(&path)?;
+    assert!(!text.contains("secret"));
+    let transactions = text
+        .lines()
+        .skip(1)
+        .map(
+            |line| -> Result<crate::registry::Transaction, Box<dyn Error>> {
+                let record: serde_json::Value = serde_json::from_str(line)?;
+                Ok(serde_json::from_value(
+                    record.get("transaction").ok_or("missing envelope")?.clone(),
+                )?)
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(transactions.len(), 2);
+    let admission = transactions.first().ok_or("missing admission")?;
+    let release = transactions.last().ok_or("missing release")?;
+    assert_eq!(admission.caller, *registry.caller());
+    assert_eq!(release.caller, admission.caller);
+    assert_eq!(admission.context.operation, "respectfulness.reserve");
+    assert_eq!(release.context.operation, "respectfulness.release");
+    assert_eq!(release.context.reservation, admission.context.reservation);
+    assert_eq!(
+        admission.context.resources,
+        vec!["respectfulness/v1/group/owner"]
+    );
+    assert_eq!(
+        admission
+            .context
+            .reservation
+            .as_ref()
+            .ok_or("missing lease")?
+            .expires_at
+            .timestamp_millis(),
+        2000
     );
     Ok(())
 }

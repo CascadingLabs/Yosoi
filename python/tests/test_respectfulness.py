@@ -57,10 +57,8 @@ def test_native_regex_and_shared_group_configuration_are_validated():
         )
 
 
-@pytest.mark.parametrize("persistent", [False, True])
-def test_requests_share_the_bound_registry_and_reject_before_dispatch(
-    tmp_path, persistent
-):
+@pytest.mark.parametrize("binding", ["policy_path", "bound_registry"])
+def test_requests_share_the_registry_and_reject_before_dispatch(tmp_path, binding):
     async def run():
         calls = 0
 
@@ -79,18 +77,17 @@ def test_requests_share_the_bound_registry_and_reject_before_dispatch(
         async with await asyncio.start_server(handle, "127.0.0.1", 0) as server:
             url = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/"
             policy = policy_for(url, spacing_ms=60_000)
-            registry = (
-                ys.registry.Registry.jsonl(tmp_path / "traffic.jsonl")
-                if persistent
-                else ys.registry.Registry()
-            )
-            first = (
-                await ys.request.new(url).bind(policy).with_registry(registry).send()
-            )
+            path = tmp_path / "traffic.jsonl"
+            assert policy.respectfulness is not None
+            policy.respectfulness.registry_path = str(path)
+            registry = ys.registry.Registry(path)
+            bound = ys.request.new(url).bind(policy)
+            if binding == "bound_registry":
+                bound = bound.with_registry(registry)
+            first = await bound.send()
             assert first.attempts[0].http_status == 200
-            second = (
-                await ys.request.new(url).bind(policy).with_registry(registry).send()
-            )
+            # A fresh binding and independent handle must see the same budget.
+            second = await ys.request.new(url).bind(policy).send()
             rejected = [
                 event for event in second.respectfulness if event.kind == "rejected"
             ]
@@ -102,7 +99,7 @@ def test_requests_share_the_bound_registry_and_reject_before_dispatch(
     asyncio.run(run())
 
 
-def test_explicit_retry_retains_the_prior_error_and_charges_again():
+def test_explicit_retry_retains_the_prior_error_and_charges_again(tmp_path):
     async def run():
         calls = 0
 
@@ -134,6 +131,7 @@ def test_explicit_retry_retains_the_prior_error_and_charges_again():
                 ),
             )
             assert policy.respectfulness is not None
+            policy.respectfulness.registry_path = str(tmp_path / "retry.jsonl")
             policy.respectfulness.retry = ys.policy.RespectfulnessRetry(
                 max_attempts=2, statuses=[429], backoff_ms=1
             )

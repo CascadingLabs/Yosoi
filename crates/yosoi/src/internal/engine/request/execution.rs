@@ -357,8 +357,8 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
-        let executor =
-            standard::for_prepared(&prepared)?.with_respectfulness(self.respectfulness_runtime()?);
+        let executor = standard::for_prepared(&prepared)?
+            .with_respectfulness(self.respectfulness_runtime().await?);
         Ok(executor
             .execute_prepared_on_control(prepared, cancellation, control)
             .await)
@@ -376,8 +376,8 @@ impl BoundPageRequest<'_> {
         cancellation: &CancellationToken,
     ) -> Result<Response, RequestSendError> {
         let prepared = self.prepare()?;
-        let executor =
-            standard::for_prepared(&prepared)?.with_respectfulness(self.respectfulness_runtime()?);
+        let executor = standard::for_prepared(&prepared)?
+            .with_respectfulness(self.respectfulness_runtime().await?);
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 
@@ -390,7 +390,7 @@ impl BoundPageRequest<'_> {
         let prepared = self.prepare()?;
         let executor = executor
             .clone()
-            .with_respectfulness(self.respectfulness_runtime()?);
+            .with_respectfulness(self.respectfulness_runtime().await?);
         Ok(executor.execute_prepared(prepared, cancellation).await)
     }
 }

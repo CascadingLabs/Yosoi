@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use crate::{
     policy::respectfulness::{Group, Respectfulness, Unmatched},
-    registry::{Change, Registry, RegistryError},
+    registry::{Change, Registry, RegistryError, Reservation, TransactionContext},
 };
 
 /// Why matching traffic cannot start. These reasons never authorize dispatch.
@@ -87,7 +87,6 @@ impl From<RegistryError> for RespectfulnessError {
         let variant = match &error {
             RegistryError::Conflict => "Conflict",
             RegistryError::Busy => "Busy",
-            RegistryError::Poisoned => "Poisoned",
             RegistryError::InvalidKey => "InvalidKey",
             RegistryError::InvalidState => "InvalidState",
             RegistryError::CapacityExceeded => "CapacityExceeded",
@@ -122,7 +121,9 @@ pub struct Runtime(Arc<Inner>);
 
 impl PartialEq for Runtime {
     fn eq(&self, other: &Self) -> bool {
-        self.0.policy == other.0.policy && self.0.registry.same_instance(&other.0.registry)
+        self.0.policy == other.0.policy
+            && self.0.registry.caller() == other.0.registry.caller()
+            && self.0.registry.path() == other.0.registry.path()
     }
 }
 impl Eq for Runtime {}
@@ -356,7 +357,14 @@ impl Runtime {
                     .map_err(|_| RespectfulnessError::InvalidState)?,
             });
         }
-        self.0.registry.commit(&snapshot.revision, &changes)?;
+        let context = TransactionContext {
+            operation: "respectfulness.reserve".to_owned(),
+            resources: groups.iter().map(|group| key(&group.group.id)).collect(),
+            reservation: Some(reservation(&id, expires_at_ms)?),
+        };
+        self.0
+            .registry
+            .commit_with_context(&snapshot.revision, &changes, &context)?;
         Ok(Permit {
             runtime: self.clone(),
             id,
@@ -454,16 +462,48 @@ impl Permit {
                     .map_err(|_| RespectfulnessError::InvalidState)?,
             });
         }
+        let context = TransactionContext {
+            operation: if release {
+                "respectfulness.release"
+            } else {
+                "respectfulness.feedback"
+            }
+            .to_owned(),
+            resources: self.groups.iter().map(|group| key(group)).collect(),
+            reservation: Some(reservation(&self.id, self.expires_at_ms)?),
+        };
         self.runtime
             .0
             .registry
-            .commit(&snapshot.revision, &changes)?;
+            .commit_with_context(&snapshot.revision, &changes, &context)?;
         Ok(())
     }
 }
 
 mod operation;
 pub use operation::Operation;
+
+pub async fn resolve_registry(
+    policy: &Respectfulness,
+    registry: Option<&Registry>,
+) -> Result<Registry, RespectfulnessError> {
+    if let Some(registry) = registry {
+        return Ok(registry.clone());
+    }
+    let policy = policy.clone();
+    tokio::task::spawn_blocking(move || policy.open_registry())
+        .await
+        .map_err(|error| setup(format!("registry setup task failed: {error}")))?
+        .map_err(RespectfulnessError::from)
+}
+
+fn reservation(id: &str, expires_at_ms: u64) -> Result<Reservation, RespectfulnessError> {
+    let id = Uuid::parse_str(id).map_err(|_| RespectfulnessError::InvalidState)?;
+    let timestamp = i64::try_from(expires_at_ms).map_err(|_| setup("lease timestamp overflow"))?;
+    let expires_at = DateTime::from_timestamp_millis(timestamp)
+        .ok_or_else(|| setup("invalid lease timestamp"))?;
+    Ok(Reservation { id, expires_at })
+}
 
 fn key(id: &str) -> String {
     format!("respectfulness/v1/group/{id}")

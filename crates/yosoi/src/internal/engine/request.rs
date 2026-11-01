@@ -142,10 +142,7 @@ impl PageRequest {
             id: self.id,
             target: self.target,
             policy,
-            registry: policy
-                .respectfulness
-                .as_ref()
-                .map(|_| RuntimeRegistry::default()),
+            registry: None,
         }
     }
 
@@ -185,14 +182,16 @@ impl<'policy> BoundPageRequest<'policy> {
         self
     }
 
-    pub(crate) fn respectfulness_runtime(&self) -> Result<Option<RespectRuntime>, TrafficError> {
-        self.policy
-            .respectfulness
-            .as_ref()
-            .map(|policy| {
-                RespectRuntime::new(policy.clone(), self.registry.clone().unwrap_or_default())
-            })
-            .transpose()
+    pub(crate) async fn respectfulness_runtime(
+        &self,
+    ) -> Result<Option<RespectRuntime>, TrafficError> {
+        let Some(policy) = &self.policy.respectfulness else {
+            return Ok(None);
+        };
+        let registry =
+            crate::internal::respectfulness::resolve_registry(policy, self.registry.as_ref())
+                .await?;
+        RespectRuntime::new(policy.clone(), registry).map(Some)
     }
     /// Returns this bound request's logical identity.
     pub const fn id(&self) -> RequestId {

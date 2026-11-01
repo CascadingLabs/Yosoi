@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         respectfulness: Some(Respectfulness::new(vec![group])?),
         ..ys::Policy::default()
     };
-    let registry = Registry::default();
+    let registry = Registry::new()?;
     let bound = ys::request::new("https://qscrape.dev/")
         .bind(&policy)
         .with_registry(&registry);

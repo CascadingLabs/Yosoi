@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         respectfulness: Some(Respectfulness::new(vec![group])?),
         ..ys::Policy::default()
     };
-    let registry = Registry::default();
+    let registry = Registry::new()?;
     let bound = ys::request::new("https://qscrape.dev/")
         .bind(&policy)
         .with_registry(&registry);
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-Pass the same Registry to other bindings with `with_registry`. Cloning its handle shares the backend. The borrowed Policy remains declarative; its snapshot does not contain the live Registry.
+Pass the same Registry to other bindings with `with_registry`. Cloning its handle retains its caller identity. The borrowed Policy remains declarative; its snapshot does not contain the live Registry.
 
 ### Python
 
@@ -78,18 +78,18 @@ The binding snapshots the Policy and retains a shared Registry handle. Later edi
 
 ## Choose the state lifetime
 
-The default backend is in memory. Independent registries are independent scopes, and state disappears when the last owner or process disappears.
+Every Registry uses JSONL. With no file override, Respectfulness shares the standard per-user registry across requests and CLI invocations. Set `registry_path` inside Respectfulness to select a workload-specific file; an explicit `with_registry` handle takes precedence.
 
-Choose `Registry.jsonl(path)` in Python or `Registry::jsonl(path)` in Rust for persistent local-process coordination. The global JSONL constructor uses the standard per-user location. Processes sharing the same canonical file share budgets and cooldowns.
+Choose `Registry.jsonl(path)` in Python or `Registry::jsonl(path)` in Rust for persistent local-process coordination. The default constructor uses the standard per-user location. Processes sharing the same canonical file share budgets and cooldowns.
 
 The CLI accepts Respectfulness through its existing Policy profile. Select persistent state explicitly:
 
 ```sh
-yosoi --profile research request https://qscrape.dev/ --registry-global --json
+yosoi --profile research request https://qscrape.dev/ --json
 yosoi --profile research search "example query" --providers bing --registry ./traffic.jsonl --output json
 ```
 
-Without a Registry flag, each CLI invocation uses isolated memory.
+Without a Registry flag, the CLI uses the file selected by the Respectfulness policy, or the standard per-user file. See [Registry](registry.md) for transaction records, ownership and recovery.
 
 ## Read a rejection or retry
 
