@@ -121,7 +121,7 @@ impl ImageSurface {
         };
         Ok(Self {
             index,
-            document: document.clone(),
+            document,
             source_artifact,
             descriptor,
             observation,

@@ -6,17 +6,18 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::Arc};
 
-use super::{
-    ArchiveLimits, Limits, NetworkPayloadKind, NetworkWindow, PixelArtifactInfo, Surface, SurfaceError,
-};
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 use super::PixelArtifact;
 use super::pixels::{PixelOperation, PixelSource};
+use super::{
+    ArchiveLimits, Limits, NetworkPayloadKind, NetworkPayloadState, NetworkWindow,
+    PixelArtifactInfo, Surface, SurfaceError,
+};
 use crate::internal::media_documents::{
     from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
 use crate::{
-    archive::DocumentArchiveRef,
+    archive::{DocumentArchiveRef, FileDocumentArchiveRef},
     automation_record::AutomationRecord,
     documents::{Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument},
     locators::Plan,
@@ -89,6 +90,8 @@ pub struct ArchivedSource {
     #[serde(default)]
     pub interpretation: SourceInterpretation,
     /// Identifier within this outcome, independent of a local Archive path.
+    /// Logical keys remain stable; keys used as Archive references follow
+    /// the references written into the destination Archive.
     pub key: String,
     /// Original SDK document identity.
     pub document: DocumentId,
@@ -114,7 +117,7 @@ pub struct ArchivedSource {
     pub document_archive: Option<DocumentArchiveRef>,
     /// Existing typed media reference used only inside a stored Outcome record.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub file_archive: Option<crate::archive::FileDocumentArchiveRef>,
+    pub file_archive: Option<FileDocumentArchiveRef>,
     /// Optional exact index identity when this source was prepared as a Surface.
     pub surface: Option<String>,
 }
@@ -879,8 +882,7 @@ fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(
     for payload in &window.payloads {
         if !matches!(
             payload.state,
-            crate::surface::NetworkPayloadState::Retained
-                | crate::surface::NetworkPayloadState::Truncated
+            NetworkPayloadState::Retained | NetworkPayloadState::Truncated
         ) {
             continue;
         }

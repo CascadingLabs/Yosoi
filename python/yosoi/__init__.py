@@ -199,6 +199,9 @@ from .surface import (
     ImageCrop as ImageCrop,
 )
 from .surface import (
+    ImageSession as ImageSession,
+)
+from .surface import (
     ImageSurface as ImageSurface,
 )
 from .surface import (
@@ -304,6 +307,7 @@ __all__ = [
     "PixelTransform",
     "ImageCrop",
     "ImageSurface",
+    "ImageSession",
     "archive",
     "view",
     "Archive",

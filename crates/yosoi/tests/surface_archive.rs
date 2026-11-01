@@ -297,7 +297,7 @@ async fn combined_document_and_image_restore_the_same_pixels_and_references() ->
         Limits::default(),
     )?;
     let projected = combined.project("screenshot", &pixels.root())?;
-    let expected = combined.crop(&projected, 4096)?.png;
+    let expected = combined.crop(&projected, 4096)?.png().to_vec();
     let identity = combined.identity().to_owned();
     let session = Session::new(combined, policy())?;
     let outcome = session
@@ -314,7 +314,7 @@ async fn combined_document_and_image_restore_the_same_pixels_and_references() ->
     let saved = fresh.read(&reference).await?;
     let restored = saved.surface(&identity, Limits::default())?;
     assert_eq!(restored.identity(), identity);
-    assert_eq!(restored.crop(&projected, 4096)?.png, expected);
+    assert_eq!(restored.crop(&projected, 4096)?.png(), expected);
     Ok(())
 }
 
@@ -370,8 +370,146 @@ async fn normal_write_rehomes_dependency_references_and_keeps_compiled_plans() -
         .parse()?;
     assert_ne!(reference.to_string(), source.to_string());
     assert_eq!(fresh.read_document(&reference).await?, document);
+    assert_eq!(
+        loaded
+            .surface(&reference.to_string(), Limits::default())?
+            .identity(),
+        surface.identity()
+    );
     let mut missing = loaded;
     missing.sources.clear();
     assert!(fresh.write(&missing).await.is_err());
+    Ok(())
+}
+
+#[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "The regression verifies logical keys stay stable while known Archive references are rehomed."
+)]
+async fn normal_write_preserves_logical_source_keys_when_rehoming_references() -> Result {
+    use yosoi::{
+        automation_record::{AutomationRecord, OperationReceipt, OperationStatus},
+        surface::{ArchivedSource, Outcome},
+    };
+
+    let root = tempfile::tempdir()?;
+    let original_path = root.path().join("original");
+    let original = Archive::open(&original_path).await?;
+    let document = Document::html("logical-page", b"<h1>Version</h1>".to_vec())?;
+    let surface = Surface::new(&document)?;
+    let original_reference = original.write_document(&document).await?;
+    let mut source = ArchivedSource::new("homepage", &document, Some(&surface));
+    source.document_archive = Some(original_reference.clone());
+    let mut outcome = Outcome::new("logical-key", ArchiveLimits::default())?.with_source(source)?;
+    outcome.record = AutomationRecord::new(
+        "logical-key",
+        Vec::new(),
+        vec![OperationReceipt {
+            browser: None,
+            id: "capture-1".into(),
+            kind: "surface.capture".into(),
+            status: OperationStatus::Observed,
+            result: Some(serde_json::json!({
+                "document": original_reference.to_string(),
+                "surface": surface.identity(),
+            })),
+            observation: None,
+            error: None,
+        }],
+    )?;
+
+    let label_document = Document::text("logical-archive-label", b"logical payload".to_vec())?;
+    let reference_shaped_label = original.write_document(&label_document).await?.to_string();
+    outcome = outcome.with_source(ArchivedSource::new(
+        reference_shaped_label.clone(),
+        &label_document,
+        None,
+    ))?;
+
+    let fresh = Archive::open(root.path().join("fresh")).await?;
+    let saved = fresh.write(&outcome).await?;
+    drop(original);
+    fs::remove_dir_all(original_path)?;
+    let loaded = fresh.read(&saved).await?;
+    let retained = loaded
+        .sources
+        .first()
+        .ok_or_else(|| io::Error::other("logical source missing"))?;
+    assert_eq!(retained.key, "homepage");
+    let fresh_reference = retained
+        .document_archive
+        .as_ref()
+        .ok_or_else(|| io::Error::other("rehomed Archive reference missing"))?;
+    assert_ne!(fresh_reference, &original_reference);
+    let fresh_reference = fresh_reference.to_string();
+    assert_eq!(
+        loaded
+            .record
+            .operations()
+            .first()
+            .and_then(|receipt| receipt.result.as_ref())
+            .and_then(|result| result.get("document"))
+            .and_then(serde_json::Value::as_str),
+        Some(fresh_reference.as_str())
+    );
+    assert_eq!(
+        loaded.surface("homepage", Limits::default())?.identity(),
+        surface.identity()
+    );
+    let label_source = loaded
+        .sources
+        .iter()
+        .find(|source| source.key == reference_shaped_label)
+        .ok_or_else(|| io::Error::other("reference-shaped logical label was rewritten"))?;
+    assert_eq!(label_source.restore(1024)?, label_document);
+    Ok(())
+}
+
+#[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "The regression verifies typed-file Archive references are rehomed and remain lookup keys."
+)]
+async fn normal_write_rehomes_reference_shaped_file_source_keys() -> Result {
+    use yosoi::{
+        archive::FileDocumentArchiveRef,
+        documents::{FileDocument, VideoDocument},
+        surface::{ArchivedSource, Outcome},
+    };
+
+    const MP4_SIGNATURE: [u8; 12] = [0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2'];
+    let root = tempfile::tempdir()?;
+    let original_path = root.path().join("original");
+    let original = Archive::open(&original_path).await?;
+    let video = VideoDocument::from_bytes("typed-video", MP4_SIGNATURE.to_vec())?;
+    let original_reference = FileDocumentArchiveRef::Video(original.write(&video).await?);
+    let mut source = ArchivedSource::new_file_document(
+        original_reference.to_string(),
+        &FileDocument::Video(video.clone()),
+        None,
+    );
+    source.file_archive = Some(original_reference.clone());
+    let outcome = Outcome::new("typed-file-key", ArchiveLimits::default())?.with_source(source)?;
+
+    let fresh = Archive::open(root.path().join("fresh")).await?;
+    let saved = fresh.write(&outcome).await?;
+    drop(original);
+    fs::remove_dir_all(original_path)?;
+    let loaded = fresh.read(&saved).await?;
+    let retained = loaded
+        .sources
+        .first()
+        .ok_or_else(|| io::Error::other("typed file source missing"))?;
+    let fresh_reference = retained
+        .file_archive
+        .as_ref()
+        .ok_or_else(|| io::Error::other("rehomed typed-file Archive reference missing"))?;
+    assert_ne!(fresh_reference, &original_reference);
+    assert_eq!(retained.key, fresh_reference.to_string());
+    assert_eq!(
+        loaded.source_file_document(&retained.key, ArchiveLimits::default().bytes)?,
+        FileDocument::Video(video)
+    );
     Ok(())
 }

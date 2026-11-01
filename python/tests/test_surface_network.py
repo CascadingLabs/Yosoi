@@ -88,6 +88,33 @@ def network_outcome():
 def test_offline_network_payload_accepts_exact_owned_reference(network_outcome):
     outcome, reference, body, _ = network_outcome
     assert outcome.network_payload(reference).value.data == body.data
+    assert sf.NetworkPayload.from_outcome(outcome, reference).value.data == body.data
+
+
+@pytest.mark.parametrize(
+    "choices",
+    [
+        {"allowed_origins": ("https://example.test/path",)},
+        {"allowed_origins": ("https://user@example.test",)},
+        {"allowed_methods": ("GÉT",)},
+        {"header_allowlist": ("x:token",)},
+    ],
+)
+def test_network_policy_uses_native_semantic_validation(choices):
+    policy = sf.NetworkObservationPolicy(**choices)
+    with pytest.raises(sf.SurfaceError):
+        policy.validate_policy()
+
+
+def test_network_retention_preserves_zero_count_and_filters_sensitive_headers():
+    policy = sf.NetworkObservationPolicy(
+        max_response_bodies=0,
+        header_allowlist=("Authorization", "X-API-TOKEN", "X-Public"),
+    )
+    policy.validate_policy()
+    receipt = policy.retention()
+    assert receipt.max_response_bodies == receipt.session_max_response_bodies == 0
+    assert receipt.retained_header_names == ("x-public",)
 
 
 @pytest.mark.parametrize(

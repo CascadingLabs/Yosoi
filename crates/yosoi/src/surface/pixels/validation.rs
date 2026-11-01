@@ -41,165 +41,161 @@ impl PixelArtifact {
                 "pixel artifact metadata does not match its typed image".into(),
             ));
         }
-        match &self.info.transform.operation {
-            PixelOperation::Source => {
-                if self.info.transform.parent_identity.is_some()
-                    || self.info.transform.parent_sha256.is_some()
-                    || self.info.transform.parent_media_type.is_some()
-                    || self.info.transform.parent_space.is_some()
-                    || self.info.transform.output_to_parent.is_some()
-                    || self.info.coordinate_space != self.info.source_space
-                {
-                    return Err(SurfaceError::Invalid(
-                        "source pixel artifact has derived transform metadata".into(),
-                    ));
-                }
+        if self.info.transform.operation == PixelOperation::Source {
+            if self.info.transform.parent_identity.is_some()
+                || self.info.transform.parent_sha256.is_some()
+                || self.info.transform.parent_media_type.is_some()
+                || self.info.transform.parent_space.is_some()
+                || self.info.transform.output_to_parent.is_some()
+                || self.info.coordinate_space != self.info.source_space
+            {
+                return Err(SurfaceError::Invalid(
+                    "source pixel artifact has derived transform metadata".into(),
+                ));
             }
-            _ => {
-                let parent_identity = self
-                    .info
-                    .transform
-                    .parent_identity
-                    .as_deref()
-                    .filter(|value| !value.is_empty())
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid("derived artifact lacks parent identity".into())
-                    })?;
-                let parent_sha256 = self
-                    .info
-                    .transform
-                    .parent_sha256
-                    .as_deref()
-                    .filter(|value| value.len() == 64)
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid("derived artifact lacks parent digest".into())
-                    })?;
-                let parent_media_type = self
-                    .info
-                    .transform
-                    .parent_media_type
-                    .as_deref()
-                    .filter(|value| matches!(*value, "image/png" | "image/jpeg"))
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid("derived artifact lacks parent media type".into())
-                    })?;
-                let parent = self.info.transform.parent_space.ok_or_else(|| {
-                    SurfaceError::Invalid("derived artifact lacks parent coordinates".into())
+        } else {
+            let parent_identity = self
+                .info
+                .transform
+                .parent_identity
+                .as_deref()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| {
+                    SurfaceError::Invalid("derived artifact lacks parent identity".into())
                 })?;
-                let map = self.info.transform.output_to_parent.ok_or_else(|| {
-                    SurfaceError::Invalid("derived artifact lacks coordinate transform".into())
+            let parent_sha256 = self
+                .info
+                .transform
+                .parent_sha256
+                .as_deref()
+                .filter(|value| value.len() == 64)
+                .ok_or_else(|| {
+                    SurfaceError::Invalid("derived artifact lacks parent digest".into())
                 })?;
-                if parent_identity == self.info.identity
-                    || parent.width == 0
-                    || parent.height == 0
-                    || parent.kind == PixelCoordinateKind::DerivedCanvas
-                    || parent != self.info.source_space
-                    || map.scale_x_numerator == 0
-                    || map.scale_x_denominator == 0
-                    || map.scale_y_numerator == 0
-                    || map.scale_y_denominator == 0
-                    || map
-                        .translate_x
-                        .checked_add(scale_ceil(
-                            self.info.width,
-                            map.scale_x_numerator,
-                            map.scale_x_denominator,
-                        )?)
-                        .is_none_or(|right| right > parent.width)
-                    || map
-                        .translate_y
-                        .checked_add(scale_ceil(
-                            self.info.height,
-                            map.scale_y_numerator,
-                            map.scale_y_denominator,
-                        )?)
-                        .is_none_or(|bottom| bottom > parent.height)
-                {
-                    return Err(SurfaceError::Invalid(
-                        "pixel artifact transform exceeds parent coordinates".into(),
-                    ));
-                }
-                let parent_info = PixelArtifactInfo {
+            let parent_media_type = self
+                .info
+                .transform
+                .parent_media_type
+                .as_deref()
+                .filter(|value| matches!(*value, "image/png" | "image/jpeg"))
+                .ok_or_else(|| {
+                    SurfaceError::Invalid("derived artifact lacks parent media type".into())
+                })?;
+            let parent = self.info.transform.parent_space.ok_or_else(|| {
+                SurfaceError::Invalid("derived artifact lacks parent coordinates".into())
+            })?;
+            let map = self.info.transform.output_to_parent.ok_or_else(|| {
+                SurfaceError::Invalid("derived artifact lacks coordinate transform".into())
+            })?;
+            if parent_identity == self.info.identity
+                || parent.width == 0
+                || parent.height == 0
+                || parent.kind == PixelCoordinateKind::DerivedCanvas
+                || parent != self.info.source_space
+                || map.scale_x_numerator == 0
+                || map.scale_x_denominator == 0
+                || map.scale_y_numerator == 0
+                || map.scale_y_denominator == 0
+                || map
+                    .translate_x
+                    .checked_add(scale_ceil(
+                        self.info.width,
+                        map.scale_x_numerator,
+                        map.scale_x_denominator,
+                    )?)
+                    .is_none_or(|right| right > parent.width)
+                || map
+                    .translate_y
+                    .checked_add(scale_ceil(
+                        self.info.height,
+                        map.scale_y_numerator,
+                        map.scale_y_denominator,
+                    )?)
+                    .is_none_or(|bottom| bottom > parent.height)
+            {
+                return Err(SurfaceError::Invalid(
+                    "pixel artifact transform exceeds parent coordinates".into(),
+                ));
+            }
+            let parent_info = PixelArtifactInfo {
+                version: 1,
+                identity: String::new(),
+                sha256: parent_sha256.to_owned(),
+                media_type: parent_media_type.to_owned(),
+                width: parent.width,
+                height: parent.height,
+                source: self.info.source.clone(),
+                coordinate_space: parent,
+                source_space: parent,
+                transform: PixelTransform {
                     version: 1,
-                    identity: String::new(),
-                    sha256: parent_sha256.to_owned(),
-                    media_type: parent_media_type.to_owned(),
-                    width: parent.width,
-                    height: parent.height,
-                    source: self.info.source.clone(),
-                    coordinate_space: parent,
-                    source_space: parent,
-                    transform: PixelTransform {
-                        version: 1,
-                        operation: PixelOperation::Source,
-                        parent_identity: None,
-                        parent_sha256: None,
-                        parent_media_type: None,
-                        parent_space: None,
-                        output_to_parent: None,
-                    },
-                };
-                if artifact_identity(&parent_info)? != parent_identity {
-                    return Err(SurfaceError::Invalid(
-                        "derived artifact parent identity is inconsistent".into(),
-                    ));
+                    operation: PixelOperation::Source,
+                    parent_identity: None,
+                    parent_sha256: None,
+                    parent_media_type: None,
+                    parent_space: None,
+                    output_to_parent: None,
+                },
+            };
+            if artifact_identity(&parent_info)? != parent_identity {
+                return Err(SurfaceError::Invalid(
+                    "derived artifact parent identity is inconsistent".into(),
+                ));
+            }
+            match &self.info.transform.operation {
+                PixelOperation::Crop { rect } => {
+                    if rect.width != self.info.width
+                        || rect.height != self.info.height
+                        || map.scale_x_numerator != 1
+                        || map.scale_x_denominator != 1
+                        || map.scale_y_numerator != 1
+                        || map.scale_y_denominator != 1
+                        || map.translate_x != rect.x
+                        || map.translate_y != rect.y
+                    {
+                        return Err(SurfaceError::Invalid(
+                            "crop transform does not match its parent rectangle".into(),
+                        ));
+                    }
                 }
-                match &self.info.transform.operation {
-                    PixelOperation::Crop { rect } => {
-                        if rect.width != self.info.width
-                            || rect.height != self.info.height
-                            || map.scale_x_numerator != 1
-                            || map.scale_x_denominator != 1
-                            || map.scale_y_numerator != 1
-                            || map.scale_y_denominator != 1
-                            || map.translate_x != rect.x
-                            || map.translate_y != rect.y
-                        {
-                            return Err(SurfaceError::Invalid(
-                                "crop transform does not match its parent rectangle".into(),
-                            ));
-                        }
-                    }
-                    PixelOperation::Overview { max_side, filter } => {
-                        if *max_side == 0
-                            || self.info.width > *max_side
-                            || self.info.height > *max_side
-                            || filter != "triangle"
-                            || resized_dimensions(parent.width, parent.height, *max_side)?
-                                != (self.info.width, self.info.height)
-                            || map.scale_x_numerator != parent.width
-                            || map.scale_x_denominator != self.info.width
-                            || map.scale_y_numerator != parent.height
-                            || map.scale_y_denominator != self.info.height
-                            || map.translate_x != 0
-                            || map.translate_y != 0
-                        {
-                            return Err(SurfaceError::Invalid(
-                                "overview dimensions exceed the requested side".into(),
-                            ));
-                        }
-                    }
-                    PixelOperation::Resize {
-                        width,
-                        height,
-                        filter,
-                    } if *width != self.info.width
-                        || *height != self.info.height
+                PixelOperation::Overview { max_side, filter } => {
+                    if *max_side == 0
+                        || self.info.width > *max_side
+                        || self.info.height > *max_side
                         || filter != "triangle"
+                        || resized_dimensions(parent.width, parent.height, *max_side)?
+                            != (self.info.width, self.info.height)
                         || map.scale_x_numerator != parent.width
                         || map.scale_x_denominator != self.info.width
                         || map.scale_y_numerator != parent.height
                         || map.scale_y_denominator != self.info.height
                         || map.translate_x != 0
-                        || map.translate_y != 0 =>
+                        || map.translate_y != 0
                     {
                         return Err(SurfaceError::Invalid(
-                            "resize parameters do not match artifact dimensions".into(),
+                            "overview dimensions exceed the requested side".into(),
                         ));
                     }
-                    PixelOperation::Source => {}
-                    PixelOperation::Resize { .. } => {}
                 }
+                PixelOperation::Resize {
+                    width,
+                    height,
+                    filter,
+                } if *width != self.info.width
+                    || *height != self.info.height
+                    || filter != "triangle"
+                    || map.scale_x_numerator != parent.width
+                    || map.scale_x_denominator != self.info.width
+                    || map.scale_y_numerator != parent.height
+                    || map.scale_y_denominator != self.info.height
+                    || map.translate_x != 0
+                    || map.translate_y != 0 =>
+                {
+                    return Err(SurfaceError::Invalid(
+                        "resize parameters do not match artifact dimensions".into(),
+                    ));
+                }
+                PixelOperation::Source | PixelOperation::Resize { .. } => {}
             }
         }
         if matches!(&self.info.transform.operation, PixelOperation::Source)
@@ -270,24 +266,16 @@ impl PixelArtifact {
                     orientation: PixelOrientation::ExifUnapplied,
                     ..
                 },
-            ) => {}
-            (
-                PixelSource::VideoFrame { .. },
+            )
+            | (
+                PixelSource::VideoFrame { .. } | PixelSource::LegacyVideoFrame { .. },
                 PixelCoordinateSpace {
                     kind: PixelCoordinateKind::DecodedCanvas,
                     orientation: PixelOrientation::DecoderApplied,
                     ..
                 },
-            ) => {}
-            (
-                PixelSource::LegacyVideoFrame { .. },
-                PixelCoordinateSpace {
-                    kind: PixelCoordinateKind::DecodedCanvas,
-                    orientation: PixelOrientation::DecoderApplied,
-                    ..
-                },
-            ) => {}
-            (
+            )
+            | (
                 PixelSource::BrowserScreenshot { .. },
                 PixelCoordinateSpace {
                     kind: PixelCoordinateKind::DecodedCanvas,
@@ -302,10 +290,8 @@ impl PixelArtifact {
                             PixelSource::ImageDocument { .. } => {
                                 space.orientation != PixelOrientation::ExifUnapplied
                             }
-                            PixelSource::VideoFrame { .. } => {
-                                space.orientation != PixelOrientation::DecoderApplied
-                            }
-                            PixelSource::LegacyVideoFrame { .. } => {
+                            PixelSource::VideoFrame { .. }
+                            | PixelSource::LegacyVideoFrame { .. } => {
                                 space.orientation != PixelOrientation::DecoderApplied
                             }
                             PixelSource::BrowserScreenshot { .. } => {

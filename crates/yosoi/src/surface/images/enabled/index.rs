@@ -61,7 +61,7 @@ impl Surface {
             return Err(SurfaceError::Limit("image input bytes"));
         }
         let digest = Sha256::digest(bytes);
-        let id = format!("surface-image-legacy-{:x}", digest);
+        let id = format!("surface-image-legacy-{digest:x}");
         let max_bytes = u64::try_from(limits.input_bytes)
             .map_err(|_| SurfaceError::Limit("image input bytes"))?;
         let document = ImageDocument::from_bytes_with_limits(
@@ -192,7 +192,7 @@ impl Surface {
         region(rect, None, 0, tile_side, limits, &mut nodes)?;
         let mut data = Data {
             original: Some(Original::PixelArtifact {
-                artifact: artifact.clone(),
+                artifact: Box::new(artifact.clone()),
                 tile_side,
             }),
             identity,
@@ -244,10 +244,7 @@ impl Surface {
                 "image Surface supports PNG and JPEG ImageDocuments".into(),
             ));
         }
-        let detected = match detected {
-            Some(value) => value.to_owned(),
-            None => "image/png-or-jpeg".to_owned(),
-        };
+        let detected = detected.map_or_else(|| "image/png-or-jpeg".to_owned(), str::to_owned);
         let mut reader = ImageReader::new(Cursor::new(bytes))
             .with_guessed_format()
             .map_err(|e| SurfaceError::Parse(e.to_string()))?;
@@ -289,14 +286,13 @@ impl Surface {
             width: pixels.width(),
             height: pixels.height(),
         };
+        let mut digest = Sha256::new();
         let identity = if legacy {
-            let mut digest = Sha256::new();
             digest.update(b"yosoi-image-index-v1");
             digest.update(tile_side.to_le_bytes());
             digest.update(bytes);
             format!("image-v1:{:x}", digest.finalize())
         } else {
-            let mut digest = Sha256::new();
             digest.update(b"yosoi-image-index-v2");
             digest.update(image_source_identity(&document)?.as_bytes());
             digest.update(tile_side.to_le_bytes());
@@ -314,7 +310,7 @@ impl Surface {
             }
         } else {
             Original::TypedImage {
-                document,
+                document: Box::new(document),
                 tile_side,
             }
         };
@@ -438,7 +434,7 @@ fn region(
     Ok(id)
 }
 
-fn coordinate_kind_name(kind: PixelCoordinateKind) -> &'static str {
+const fn coordinate_kind_name(kind: PixelCoordinateKind) -> &'static str {
     match kind {
         PixelCoordinateKind::OriginalRaster => "original_raster",
         PixelCoordinateKind::DecodedCanvas => "decoded_canvas",
@@ -446,7 +442,7 @@ fn coordinate_kind_name(kind: PixelCoordinateKind) -> &'static str {
     }
 }
 
-fn orientation_name(orientation: PixelOrientation) -> &'static str {
+const fn orientation_name(orientation: PixelOrientation) -> &'static str {
     match orientation {
         PixelOrientation::ExifUnapplied => "exif_unapplied",
         PixelOrientation::DecoderApplied => "decoder_applied",

@@ -245,13 +245,8 @@ impl DocumentProfile {
             (
                 DocumentRepresentation::Source,
                 SourceFormat::Json,
-                DocumentSchemaProfile::JsonRfc8259,
-                None,
-            ) => Ok(DocumentClass::SourceJson),
-            (
-                DocumentRepresentation::Source,
-                SourceFormat::Json,
-                DocumentSchemaProfile::YosoiNetworkObservationV1,
+                DocumentSchemaProfile::JsonRfc8259
+                | DocumentSchemaProfile::YosoiNetworkObservationV1,
                 None,
             ) => Ok(DocumentClass::SourceJson),
             (

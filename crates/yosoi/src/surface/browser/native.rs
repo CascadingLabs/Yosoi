@@ -113,6 +113,7 @@ impl NativeBrowser {
             let subscription = work
                 .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
                 .await?;
+            drop(work);
             (cancellation, authority_cancellation, subscription)
         };
         let capture = NetworkCapture::start(

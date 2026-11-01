@@ -25,6 +25,14 @@ path = "src/internal/browser/vendor/chromiumoxide_cdp/examples/generate.rs"
 name = "media_download"
 required-features = ["browser"]
 
+[[example]]
+name = "image_surface_conformance"
+required-features = ["surface-images"]
+
+[[example]]
+name = "network_conformance"
+required-features = ["surface-video"]
+
 [features]
 default = []
 surface-images = ["dep:image"]
