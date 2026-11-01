@@ -637,6 +637,30 @@ class Surface:
             raise SurfaceError("this wheel has no image support")
         return PixelArtifact._from_native(self._handle.direct_image())
 
+    @classmethod
+    def from_pixel_artifact(
+        cls,
+        artifact: PixelArtifact,
+        *,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> Self:
+        """Index a checked root artifact while preserving its source and pixel plane.
+
+        Derived artifacts are rejected; opening them as new roots would lose
+        their original coordinate meaning. Rust enforces decode and index bounds.
+        """
+        artifact._verify_native()
+        return cls._from_native(
+            _native.surface_index_pixel_artifact(
+                artifact._handle,
+                tile_side,
+                (limits or Limits()).model_dump_json(),
+                (pixel_limits or PixelLimits()).model_dump_json(),
+            )
+        )
+
     def overview_image(self, max_side: int) -> PixelArtifact:
         """Return an aspect-preserving overview resized with the triangle filter."""
         if not hasattr(self._handle, "overview_image"):
@@ -879,6 +903,24 @@ class PixelLimits(ImmutableModel):
     max_output_bytes: int = Field(default=8388608, strict=True, ge=1, le=33554432)
     max_retained_artifacts: int = Field(default=32, strict=True, ge=1, le=1024)
 
+    def validate_limits(self) -> Self:
+        """Return Rust-validated supported resource bounds or raise SurfaceError."""
+        return type(self).model_validate_json(
+            _native.surface_pixel_limits_validate(self.model_dump_json())
+        )
+
+    def check_pixels(self, width: int, height: int) -> int:
+        """Check pixel dimensions and decoder allocation, returning the pixel count."""
+        return _native.surface_pixel_limits_check_pixels(
+            self.model_dump_json(), width, height
+        )
+
+    def check_output(self, width: int, height: int, bytes: int) -> None:
+        """Reject output dimensions, pixel count or bytes beyond these bounds."""
+        _native.surface_pixel_limits_check_output(
+            self.model_dump_json(), width, height, bytes
+        )
+
 
 class PixelArtifact(ImmutableModel):
     """Exact PNG/JPEG bytes and validated source/transform metadata."""
@@ -895,9 +937,43 @@ class PixelArtifact(ImmutableModel):
 
     @classmethod
     def from_image_document(
+        cls,
+        document: ImageDocument,
+        limits: PixelLimits | None = None,
+        *,
+        width: int | None = None,
+        height: int | None = None,
+        orientation: PixelOrientation = "exif_unapplied",
+    ) -> Self:
+        """Create checked direct pixels without building a region index.
+
+        Omitted dimensions use the bounded decoder. Supplying width and height
+        uses Rust's explicit dimension/orientation constructor; both must match
+        the encoded raster, and custom decoder limits cannot accompany that form.
+        EXIF orientation remains unapplied for a typed ImageDocument.
+        """
+        if width is not None or height is not None:
+            if width is None or height is None or limits is not None:
+                raise ValueError(
+                    "explicit image dimensions require both sides and no decoder limits"
+                )
+            return cls._from_native(
+                _native.PixelArtifact.from_image_document_with_dimensions(
+                    document._handle,
+                    width,
+                    height,
+                    json.dumps(orientation),
+                )
+            )
+        if orientation != "exif_unapplied":
+            raise ValueError("the image decoder retains unapplied EXIF orientation")
+        return cls.decode_image_document(document, limits)
+
+    @classmethod
+    def decode_image_document(
         cls, document: ImageDocument, limits: PixelLimits | None = None
     ) -> Self:
-        """Decode a typed image into a direct pixel artifact without a region index."""
+        """Decode exact typed image bytes under limits without preparing an index."""
         if not hasattr(_native, "PixelArtifact"):
             raise SurfaceError("this wheel has no image support")
         return cls._from_native(
@@ -906,6 +982,78 @@ class PixelArtifact(ImmutableModel):
                 (limits or PixelLimits()).model_dump_json(),
             )
         )
+
+    @classmethod
+    def from_raster_document(
+        cls,
+        document: ImageDocument,
+        source: PixelSource,
+        coordinate_space: PixelCoordinateSpace,
+    ) -> Self:
+        """Bind encoded root pixels to explicit producer provenance checked in Rust.
+
+        The source describes the caller's producer; this constructor grants no
+        browser or video authority. Dimensions, orientation and source identity
+        must form a valid root raster. Returned bytes and metadata stay immutable.
+        """
+        return cls._from_native(
+            _native.PixelArtifact.from_raster_document(
+                document._handle,
+                TypeAdapter(PixelSource).dump_json(source).decode(),
+                coordinate_space.model_dump_json(),
+            )
+        )
+
+    @classmethod
+    def crop_from(
+        cls, parent: PixelArtifact, document: ImageDocument, rect: PixelRect
+    ) -> Self:
+        """Bind supplied crop pixels to a checked root artifact and source rectangle.
+
+        Rust checks encoded dimensions, source bounds and parent provenance;
+        nested derived parents are rejected. The caller owns the crop encoding.
+        """
+        parent._verify_native()
+        return cls._from_native(
+            _native.PixelArtifact.crop_from(
+                parent._handle, document._handle, rect.model_dump_json()
+            )
+        )
+
+    @classmethod
+    def resize_from(
+        cls,
+        parent: PixelArtifact,
+        document: ImageDocument,
+        operation: PixelOperation,
+        width: int,
+        height: int,
+    ) -> Self:
+        """Bind supplied resize pixels to explicit root-relative transform metadata.
+
+        Rust validates dimensions, operation parameters and parent provenance.
+        Nested derived parents are rejected; the caller owns the pixel encoding.
+        """
+        parent._verify_native()
+        return cls._from_native(
+            _native.PixelArtifact.resize_from(
+                parent._handle,
+                document._handle,
+                TypeAdapter(PixelOperation).dump_json(operation).decode(),
+                width,
+                height,
+            )
+        )
+
+    def source_identity(self) -> str:
+        """Return the root source identity independent of crop/resize operations."""
+        self._verify_native()
+        return self._handle.source_identity()
+
+    def validate_artifact(self) -> None:
+        """Validate exact encoded pixels and full provenance through Rust."""
+        self._verify_native()
+        self._handle.validate()
 
     def model_post_init(self, context: object) -> None:
         """Bind the immutable Pydantic view to its Rust-owned artifact."""
@@ -1064,6 +1212,19 @@ class ImageSurface:
         """Return the indexed root PixelArtifact with its source provenance."""
         return PixelArtifact._from_native(self._handle.source_artifact())
 
+    @property
+    def index(self) -> Surface:
+        """Return the exact immutable region index used by this shared reader."""
+        return Surface._from_native(self._handle.index())
+
+    @property
+    def source_document(self) -> ImageDocument:
+        """Return the typed image document whose exact pixels this reader indexes."""
+        document = ImageDocument._from_native(self._handle.source_document())
+        if not isinstance(document, ImageDocument):
+            raise SurfaceError("image reader source is not an ImageDocument")
+        return document
+
     def read(self, request: ReadRequest) -> ReadResult:
         """Read bounded image regions through the existing Surface read contract."""
         return _RESULT.validate_json(self._handle.read(request.model_dump_json()))
@@ -1105,6 +1266,37 @@ class ImageSurface:
         return ImageCrop(
             **json.loads(info), artifact=PixelArtifact._from_native(artifact)
         )
+
+
+def image_source_identity(document: ImageDocument) -> str:
+    """Return a typed image's stable source identity without decoding its pixels."""
+    return _native.surface_image_source_identity(document._handle)
+
+
+def pixel_source_identity(source: PixelSource) -> str:
+    """Return the stable root identity of a typed image-producing source."""
+    return _native.surface_pixel_source_identity(
+        TypeAdapter(PixelSource).dump_json(source).decode()
+    )
+
+
+def resize_transform(
+    parent: PixelArtifact, operation: PixelOperation, width: int, height: int
+) -> PixelTransform:
+    """Build rational output-to-parent edges for an explicit overview or resize.
+
+    This metadata operation does not encode pixels or create a derived artifact.
+    Rust checks positive dimensions and the accepted operation kind.
+    """
+    parent._verify_native()
+    return PixelTransform.model_validate_json(
+        _native.surface_resize_transform(
+            parent._handle,
+            TypeAdapter(PixelOperation).dump_json(operation).decode(),
+            width,
+            height,
+        )
+    )
 
 
 class VideoPolicy(ImmutableModel):
@@ -1471,6 +1663,29 @@ class ArchivedSource(ImmutableModel):
         )
 
     @classmethod
+    def from_image(
+        cls,
+        key: str,
+        document: ImageDocument,
+        *,
+        tile_side: int = 256,
+        surface: Surface | None = None,
+    ) -> Self:
+        """Freeze typed image bytes and their exact image index interpretation.
+
+        With a prepared Surface, tile_side must describe that index for exact
+        restoration. An unprepared source retains bytes without claiming an index.
+        """
+        return cls.model_validate_json(
+            _native.surface_source_image(
+                key,
+                document._handle,
+                tile_side,
+                None if surface is None else surface._handle,
+            )
+        )
+
+    @classmethod
     def from_pixel_artifact(
         cls,
         key: str,
@@ -1699,13 +1914,16 @@ class SurfacePolicy(ImmutableModel):
 
 
 class SurfaceConnection:
-    """Shared lifecycle for a source-specific browser or video connection.
+    """Shared lifecycle for a source-specific browser, image or video connection.
 
     Use a source's open factory, then await close or use async with. Cancellation
     stops waiting; it does not prove that a dispatched effect was undone.
     """
 
-    def __init__(self, handle: _native.BrowserSurface | _native.VideoSession) -> None:
+    def __init__(
+        self,
+        handle: _native.BrowserSurface | _native.VideoSession | _native.ImageSession,
+    ) -> None:
         """Wrap a native source connection; prefer its asynchronous factory."""
         self._handle = handle
 
@@ -1756,6 +1974,60 @@ class BrowserSurface(SurfaceConnection):
         return cls(
             await _native.BrowserSurface.open(
                 url, (policy or SurfacePolicy()).model_dump_json(), headless
+            )
+        )
+
+
+class ImageSession(SurfaceConnection):
+    """Read-only image connection using the existing bounded Surface protocol."""
+
+    @classmethod
+    async def open(
+        cls,
+        path: str | Path,
+        policy: SurfacePolicy | None = None,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> Self:
+        """Open a PNG/JPEG source and retain bounded image commands and outcomes.
+
+        The connection owns its snapshot and output directory until close.
+        Archive policy controls persistence; this reader grants no live control.
+        """
+        return cls(
+            await _native.ImageSession.open(
+                str(path),
+                (policy or SurfacePolicy()).model_dump_json(),
+                tile_side,
+                (limits or Limits()).model_dump_json(),
+                (pixel_limits or PixelLimits()).model_dump_json(),
+            )
+        )
+
+    @classmethod
+    async def open_pixel_artifact(
+        cls,
+        reference: PixelArtifactArchiveRef,
+        archive_root: str | Path,
+        policy: SurfacePolicy | None = None,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> Self:
+        """Open a saved root artifact without its source file or producer process.
+
+        Rust validates typed Archive bytes and preserves their source coordinates.
+        Derived artifacts are rejected. Close releases the connection resources.
+        """
+        return cls(
+            await _native.ImageSession.open_pixel_artifact(
+                reference.model_dump_json(),
+                str(archive_root),
+                (policy or SurfacePolicy()).model_dump_json(),
+                tile_side,
+                (limits or Limits()).model_dump_json(),
+                (pixel_limits or PixelLimits()).model_dump_json(),
             )
         )
 

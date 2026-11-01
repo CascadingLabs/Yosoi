@@ -853,6 +853,18 @@ SURFACE_ROOT_EXPORTS = (
     "VideoPolicy",
     "VideoError",
     "DecodedFrame",
+    "ImageSession",
+    "ImageSurface",
+    "PixelArtifact",
+    "PixelArtifactInfo",
+    "PixelCoordinateKind",
+    "PixelCoordinateSpace",
+    "PixelEdgeTransform",
+    "PixelLimits",
+    "PixelOperation",
+    "PixelOrientation",
+    "PixelSource",
+    "PixelTransform",
 )
 
 

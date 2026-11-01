@@ -424,6 +424,22 @@ def evidence_cases(
     for observed in comparisons:
         path = observed["rustPath"]
         item = items.get(path)
+        if item is None:
+            # rustdoc records aliases on the re-exported type; its methods use
+            # the canonical root path. Resolve only an explicit compiler alias.
+            parent, leaf = path.rsplit("::", 1)
+            owners = [
+                owner
+                for owner in rust.get("items", [])
+                if parent in owner.get("aliases", [])
+            ]
+            candidates = [items.get(f"{owner['rustPath']}::{leaf}") for owner in owners]
+            candidates = [
+                candidate for candidate in candidates if candidate is not None
+            ]
+            if len(candidates) == 1:
+                item = candidates[0]
+                path = item["rustPath"]
         entry = entries.get(item.get("symbolKey")) if item else None
         if item is None or entry is None or entry.get("rustPath") != path:
             raise ValueError(f"image conformance lacks a pinned mapping for {path}")

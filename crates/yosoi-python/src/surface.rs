@@ -19,6 +19,8 @@ use std::sync::Arc;
 mod browser;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+mod image;
 mod session;
 #[cfg(feature = "surface-video")]
 mod video;
@@ -351,6 +353,82 @@ pub struct NativePixelArtifact {
 #[pymethods]
 impl NativePixelArtifact {
     #[staticmethod]
+    fn from_image_document_with_dimensions(
+        py: Python<'_>,
+        document: &NativeFileDocument,
+        width: u32,
+        height: u32,
+        orientation: &str,
+    ) -> PyResult<Self> {
+        let document = image::document(document)?;
+        let orientation = decode(orientation)?;
+        py.detach(move || {
+            surface::PixelArtifact::from_image_document(document, width, height, orientation)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    #[staticmethod]
+    fn from_raster_document(
+        py: Python<'_>,
+        document: &NativeFileDocument,
+        source: &str,
+        coordinate_space: &str,
+    ) -> PyResult<Self> {
+        let document = image::document(document)?;
+        let source = decode(source)?;
+        let coordinate_space = decode(coordinate_space)?;
+        py.detach(move || {
+            surface::PixelArtifact::from_raster_document(document, source, coordinate_space)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    #[staticmethod]
+    fn crop_from(
+        py: Python<'_>,
+        parent: &Self,
+        document: &NativeFileDocument,
+        rect: &str,
+    ) -> PyResult<Self> {
+        let document = image::document(document)?;
+        let rect = decode(rect)?;
+        py.detach(|| {
+            surface::PixelArtifact::crop_from(&parent.inner, document, rect)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    #[staticmethod]
+    fn resize_from(
+        py: Python<'_>,
+        parent: &Self,
+        document: &NativeFileDocument,
+        operation: &str,
+        width: u32,
+        height: u32,
+    ) -> PyResult<Self> {
+        let document = image::document(document)?;
+        let operation = decode(operation)?;
+        py.detach(|| {
+            surface::PixelArtifact::resize_from(&parent.inner, document, operation, width, height)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    fn source_identity(&self) -> PyResult<String> {
+        self.inner.source_identity().map_err(failure)
+    }
+
+    fn validate(&self, py: Python<'_>) -> PyResult<()> {
+        py.detach(|| self.inner.validate().map_err(failure))
+    }
+
+    #[staticmethod]
     fn from_image_document(
         py: Python<'_>,
         document: &NativeFileDocument,
@@ -449,6 +527,18 @@ pub struct NativeImageSurface {
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 #[pymethods]
 impl NativeImageSurface {
+    fn index(&self) -> NativeSurface {
+        NativeSurface {
+            inner: self.inner.index().clone(),
+        }
+    }
+
+    fn source_document(&self) -> NativeFileDocument {
+        NativeFileDocument::new(yosoi::documents::FileDocument::Image(
+            self.inner.source_document().clone(),
+        ))
+    }
+
     #[staticmethod]
     fn from_image_document(
         py: Python<'_>,
@@ -662,6 +752,8 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<NativePixelArtifact>()?;
     #[cfg(any(feature = "browser", feature = "surface-video"))]
     module.add_class::<NativeImageSurface>()?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    image::register(module)?;
     module.add_class::<NativeWebSurface>()?;
     module.add("surface_video_enabled", cfg!(feature = "surface-video"))?;
     module.add("surface_browser_enabled", cfg!(feature = "browser"))?;
