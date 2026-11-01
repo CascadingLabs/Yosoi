@@ -342,7 +342,12 @@ impl NativePixelArtifact {
     }
 
     fn map_rect_to_source(&self, rect: &str) -> PyResult<String> {
-        encode(&self.inner.map_rect_to_source(&decode(rect)?).map_err(failure)?)
+        encode(
+            &self
+                .inner
+                .map_rect_to_source(&decode(rect)?)
+                .map_err(failure)?,
+        )
     }
 
     fn write_to<'py>(

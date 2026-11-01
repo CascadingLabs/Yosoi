@@ -1,7 +1,7 @@
 //! Stateful, read-only exploration of one typed image document.
 
 use super::{
-    ArchivePolicy, ExecutionError, ImageSurface, Outcome, PixelArtifact, PixelLimits,
+    ArchivePolicy, Budget, ExecutionError, ImageSurface, Outcome, PixelArtifact, PixelLimits,
     SurfaceConnection, SurfacePolicy,
     connection::{AgentSurface, Connection, Operation, Request, Result, Trace, connection},
     model::{self, ReadOperation, ReadRequest, SurfaceRead},
@@ -84,7 +84,7 @@ impl ImageDriver {
             operation: ReadOperation::Inspect {
                 reference: reference.clone(),
             },
-            budget: model::Budget::default(),
+            budget: Budget::default(),
             continuation: None,
         })?;
         Ok(())
@@ -130,7 +130,7 @@ impl AgentSurface for ImageDriver {
     fn ready(&mut self) -> Result<Value> {
         let page = self.surface.read(&ReadRequest {
             operation: ReadOperation::Overview,
-            budget: model::Budget::default(),
+            budget: Budget::default(),
             continuation: None,
         })?;
         self.trace.read("surface.open", &page)?;

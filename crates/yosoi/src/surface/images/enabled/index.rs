@@ -128,7 +128,7 @@ impl Surface {
             .decode()
             .map_err(|e| SurfaceError::Parse(e.to_string()))?;
         pixel_limits.check_pixels(pixels.width(), pixels.height())?;
-        let artifact = PixelArtifact::from_image_document(
+        let artifact = PixelArtifact::from_decoded_image_document(
             document.clone(),
             pixels.width(),
             pixels.height(),

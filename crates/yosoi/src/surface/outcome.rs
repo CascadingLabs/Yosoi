@@ -7,16 +7,14 @@ use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::Arc};
 
 use super::{ArchiveLimits, Limits, Surface, SurfaceError};
+use crate::internal::media_documents::{
+    from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
+};
 use crate::{
     archive::DocumentArchiveRef,
     automation_record::AutomationRecord,
-    documents::{
-        Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument,
-    },
+    documents::{Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument},
     locators::Plan,
-};
-use crate::internal::media_documents::{
-    from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
 
 /// Interpreter needed to reconstruct retained evidence, without live authority.
@@ -276,28 +274,27 @@ impl ArchivedSource {
             .clone()
             .ok_or_else(|| SurfaceError::Invalid("archived media metadata is missing".into()))?;
         let bytes = self.restore_bytes(maximum)?;
-        if u64::try_from(bytes.len()).map_err(|_| SurfaceError::Limit("source size"))? > maximum
-        {
+        if u64::try_from(bytes.len()).map_err(|_| SurfaceError::Limit("source size"))? > maximum {
             return Err(SurfaceError::Limit("archived source bytes"));
         }
         let bytes = Arc::new(bytes);
         let document = match kind {
             ArchivedFileKind::Image => {
-                from_archived_image(self.document.clone(), bytes, metadata)
+                { from_archived_image(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Image)
             }
-            .map(FileDocument::Image),
             ArchivedFileKind::Video => {
-                from_archived_video(self.document.clone(), bytes, metadata)
+                { from_archived_video(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Video)
             }
-            .map(FileDocument::Video),
             ArchivedFileKind::Audio => {
-                from_archived_audio(self.document.clone(), bytes, metadata)
+                { from_archived_audio(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Audio)
             }
-            .map(FileDocument::Audio),
             ArchivedFileKind::Binary => {
-                from_archived_binary(self.document.clone(), bytes, metadata)
+                { from_archived_binary(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Binary)
             }
-            .map(FileDocument::Binary),
         };
         document.map_err(|error| SurfaceError::Invalid(error.to_string()))
     }
@@ -769,7 +766,10 @@ mod tests {
             restored_binary.metadata().declared_media_type(),
             Some("application/octet-stream")
         );
-        assert_eq!(restored_binary.metadata().detected_media_type(), Some("image/png"));
+        assert_eq!(
+            restored_binary.metadata().detected_media_type(),
+            Some("image/png")
+        );
         Ok(())
     }
 }

@@ -1,8 +1,10 @@
 use crate::surface::SurfaceError;
 
 use super::{
-    identity::{artifact_identity, image_media_type, scale_ceil, valid_sha256, verify_dimensions},
-    limits::resized_dimensions,
+    identity::{
+        artifact_identity, image_media_type, scale_ceil, valid_sha256, verify_decoded_pixels,
+    },
+    limits::{PixelLimits, resized_dimensions},
     model::{
         PixelArtifact, PixelArtifactInfo, PixelCoordinateKind, PixelOperation, PixelSource,
         PixelTransform,
@@ -12,6 +14,16 @@ use super::{
 impl PixelArtifact {
     /// Validates byte digest, dimensions, identity, source and transform bounds.
     pub fn validate(&self) -> Result<(), SurfaceError> {
+        self.validate_metadata()?;
+        verify_decoded_pixels(
+            &self.document,
+            self.info.width,
+            self.info.height,
+            PixelLimits::default(),
+        )
+    }
+
+    pub(super) fn validate_metadata(&self) -> Result<(), SurfaceError> {
         if self.info.version != 1
             || self.info.transform.version != 1
             || self.info.width == 0
@@ -22,16 +34,13 @@ impl PixelArtifact {
             || self.info.source_space.height == 0
             || self.info.media_type != image_media_type(&self.document)?
             || self.info.sha256 != self.document.sha256()
-            || (!matches!(
-                &self.info.transform.operation,
-                PixelOperation::Source
-            ) && self.document.byte_len() > 32 * 1024 * 1024)
+            || (!matches!(&self.info.transform.operation, PixelOperation::Source)
+                && self.document.byte_len() > 32 * 1024 * 1024)
         {
             return Err(SurfaceError::Invalid(
                 "pixel artifact metadata does not match its typed image".into(),
             ));
         }
-        verify_dimensions(&self.document, self.info.width, self.info.height)?;
         match &self.info.transform.operation {
             PixelOperation::Source => {
                 if self.info.transform.parent_identity.is_some()

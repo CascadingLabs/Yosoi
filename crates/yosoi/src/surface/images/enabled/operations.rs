@@ -1,6 +1,8 @@
 use super::PixelRect;
 use crate::documents::{FileLimits, FileMetadata, ImageDocument};
-use crate::surface::{PixelArtifact, PixelLimits, PixelOperation, Reference, Surface, SurfaceError};
+use crate::surface::{
+    PixelArtifact, PixelLimits, PixelOperation, Reference, Surface, SurfaceError,
+};
 use image::{DynamicImage, ImageFormat};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
