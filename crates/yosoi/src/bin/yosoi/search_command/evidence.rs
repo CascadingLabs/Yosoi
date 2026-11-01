@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use yosoi::{
     Archive,
-    policy::search::{Provider, Routing},
+    policy::search::Routing,
     search::{SearchReplay, SearchResponse},
 };
 
@@ -49,7 +49,7 @@ struct EvidenceBundle<'a> {
 #[derive(Serialize)]
 struct SearchEvidenceSummary<'a> {
     routing: Routing,
-    selected_provider: Option<Provider>,
+    selected_provider: Option<&'static str>,
     policy_identity: &'a PolicyIdentityView,
     termination: &'a str,
     providers: Vec<ProviderEvidenceSummary<'a>>,

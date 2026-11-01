@@ -205,11 +205,7 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
         .map_err(SearchCommandError::Output)?;
     }
 
-    Ok(report::exit_code(
-        &envelope.providers,
-        envelope.termination,
-        interrupted,
-    ))
+    Ok(report::exit_code_for_search(&envelope, interrupted))
 }
 
 pub fn report_error(error: &SearchCommandError) -> ExitCode {

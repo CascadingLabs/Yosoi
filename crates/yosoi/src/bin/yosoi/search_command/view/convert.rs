@@ -26,7 +26,7 @@ impl<'a> SearchEnvelope<'a> {
         Self {
             schema_version: 4,
             routing: response.routing(),
-            selected_provider: response.selected_provider(),
+            selected_provider: response.selected_provider().map(provider_name),
             cli_version: env!("CARGO_PKG_VERSION"),
             policy_profile,
             policy_identity: response.policy_identity().into(),

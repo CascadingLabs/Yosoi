@@ -1,6 +1,6 @@
 use std::{error::Error, slice};
 
-use super::report::{exit_code, render_human, render_json, render_stats};
+use super::report::{exit_code, exit_code_for_search, render_human, render_json, render_stats};
 use super::search_for_cli;
 use super::view::names::{failure_name, issue_name};
 use super::view::{
@@ -542,4 +542,37 @@ fn google_redirect_issue_names_are_stable_for_cli_json() {
         super::view::names::issue_name(SearchIssueKind::RedirectChallenge),
         "redirect_challenge"
     );
+}
+
+#[test]
+fn successful_auto_selection_ignores_unselected_candidates_for_output_and_exit()
+-> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    envelope.routing = Routing::Auto;
+    envelope.selected_provider = Some("brave");
+    let selected = envelope.providers.first_mut().ok_or("selected provider")?;
+    selected.issues.clear();
+    selected.coverage = None;
+    let skipped = envelope.providers.get_mut(1).ok_or("skipped provider")?;
+    skipped.status = ProviderStatus::NotStarted;
+    skipped.detail = Some("not_selected");
+    assert_eq!(exit_code_for_search(&envelope, false), ExitCode::SUCCESS);
+    let mut output = Vec::new();
+    render_human(&mut output, &envelope, Theme::plain())?;
+    let output = String::from_utf8(output)?;
+    assert!(output.contains("Auto selected brave"));
+    assert!(!output.contains("bing:"));
+    Ok(())
+}
+
+#[test]
+fn failed_auto_selection_keeps_the_selected_providers_failure_exit() -> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    envelope.routing = Routing::Auto;
+    envelope.selected_provider = Some("brave");
+    let selected = envelope.providers.first_mut().ok_or("selected provider")?;
+    selected.status = ProviderStatus::Failed;
+    selected.detail = Some("rate_limited");
+    assert_eq!(exit_code_for_search(&envelope, false), ExitCode::from(1));
+    Ok(())
 }
