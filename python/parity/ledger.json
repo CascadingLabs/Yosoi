@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "595de50623252cfc0414a3c52ac3fa410869c50e",
-    "inventorySignature": "adcdd141fe41cffec71d4c724abb3f6cb735ac3eaa6f4e4bba8191dd39ea69b5",
+    "sourceRevision": "b15927a1abd2403203155a476696a983975e9038",
+    "inventorySignature": "72cb0c45bc17e45645d385cd0702b1c5f5120a87d2b4c35506f7bb161d82a35b",
     "featureProfileDigest": "8975bd7231ffd51613e3fd2865ac6182651410161d82efb253b76db14d1a0f5d"
   },
   "pythonPin": {
-    "surfaceDigest": "a31b654f73a347a40ee28b5d64584b2a6f3d1e2536ff31d8e2576c308cbdf343",
-    "implementationDigest": "d3590a404ac80b0cba55650466b48bff7be049000fe2bc520b6d45a669eb70e6"
+    "surfaceDigest": "a361bdb1b975ae96f736190dc81dce6fb18f58986c2775fd40290ca80705492a",
+    "implementationDigest": "adeae724792acacf4e1913a271913bca666cbd224a5b843df864883b4e1d880e"
   },
   "entries": [
     {
@@ -35213,6 +35213,34 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust method maps to the matching Python method/property yosoi.View.total_rows."
+    },
+    {
+      "rustPath": "yosoi::DocumentProfile::network_observation_v1",
+      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:131a0590ef06ad73cec79255deb8d102d8aa6f20a5afa14fbcc4e65df0535f80",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents.DocumentProfile.network_observation",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Rust's network source profile is the same checked Python profile with source representation, JSON format and network schema."
+    },
+    {
+      "rustPath": "yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1",
+      "symbolKey": "member:variant:yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1@signature:7dc2d23f4bdc6b07035f52391525a6d5e14f996e27710c6faf5de8272da020dc@source:01a879ed8e1f1c2021e453596433d01b79d39f5d6e8140bc0a47f1657c62793f",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "variant-tag:schema_profile",
+          "rust": "variant YosoiNetworkObservationV1",
+          "python": "schema_profile=yosoi_network_observation_v1"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The network schema enum variant is retained as the exact public Python profile literal yosoi_network_observation_v1."
     }
   ],
   "surfaceContract": "surface-contract.json"

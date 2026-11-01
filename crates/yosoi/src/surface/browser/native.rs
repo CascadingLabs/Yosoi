@@ -1,16 +1,17 @@
 //! Retained native Session/Work binding; it never launches a second browser.
 use crate::{
     automation_record::OperationStatus,
-    documents::{Document, DocumentEpoch},
+    documents::{Document, DocumentEpoch, FileLimits, ImageDocument},
     internal::browser::page::SurfaceInput,
     session::{ActionKind, Work},
     surface::{
-        DocumentPolicies, Surface,
+        DocumentPolicies, PixelArtifact, PixelLimits, PixelOrientation, Surface,
         connection::{Operation, Result, Trace},
     },
 };
+use image::ImageReader;
 use serde_json::{Value, json};
-use std::{fs, io, path::Path};
+use std::{io, io::Cursor};
 
 pub(super) struct NativeBrowser {
     work: Option<Work>,
@@ -183,7 +184,7 @@ impl NativeBrowser {
         Ok(receipt.id)
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot(&self) -> Result<PixelArtifact> {
         let receipt = self.work()?.screenshot().await?;
         if receipt.status != OperationStatus::Observed {
             return Err(io::Error::other("native screenshot did not complete").into());
@@ -192,8 +193,24 @@ impl NativeBrowser {
             .observation
             .and_then(|value| value.screenshot)
             .ok_or_else(|| io::Error::other("native screenshot evidence missing"))?;
-        fs::write(output.join(format!("{name}.png")), bytes)?;
-        Ok(())
+        let pixel_limits = PixelLimits::default().validate()?;
+        let max_bytes = u64::try_from(pixel_limits.max_output_bytes)
+            .map_err(|_| io::Error::other("native screenshot byte limit is unsupported"))?;
+        let document = ImageDocument::from_bytes_with_limits(
+            format!("surface-screenshot-{}", receipt.id),
+            bytes,
+            FileLimits::new(max_bytes)?,
+        )?;
+        let dimensions = ImageReader::new(Cursor::new(document.bytes()))
+            .with_guessed_format()?
+            .into_dimensions()?;
+        PixelArtifact::from_image_document(
+            document,
+            dimensions.0,
+            dimensions.1,
+            PixelOrientation::ExifUnapplied,
+        )
+        .map_err(|error| io::Error::other(error.to_string()).into())
     }
 
     pub async fn close(&mut self) -> Result<()> {

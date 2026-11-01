@@ -10,6 +10,7 @@ import yosoi as ys
         (ys.documents.DocumentProfile.source_html(), "source_html"),
         (ys.documents.DocumentProfile.source_xml(), "source_xml"),
         (ys.documents.DocumentProfile.source_json(), "source_json"),
+        (ys.documents.DocumentProfile.network_observation(), "source_json"),
         (ys.documents.DocumentProfile.source_text(), "source_text"),
         (ys.documents.DocumentProfile.rendered_dom(7), "rendered_dom"),
         (ys.documents.DocumentProfile.accessibility_tree(7), "accessibility_tree"),
@@ -27,6 +28,13 @@ def test_document_from_profile_retains_the_exact_profile() -> None:
     assert document.profile == profile
     assert document.document_class == "rendered_dom"
     assert document.byte_len == 2
+
+
+def test_network_observation_profile_is_distinct_source_json() -> None:
+    profile = ys.documents.DocumentProfile.network_observation()
+    assert profile.document_class == "source_json"
+    assert profile.schema_profile == "yosoi_network_observation_v1"
+    assert ys.documents.DocumentProfile.source_json().schema_profile == "json_rfc8259"
 
 
 @pytest.mark.parametrize(

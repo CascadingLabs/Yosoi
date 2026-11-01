@@ -7,7 +7,7 @@ description: Save policy-retained evidence in one portable file and reload it la
 
 A Surface session can retain the evidence behind its reads and actions. Enable `archive` in its policy, take an outcome, and pass that outcome to the same `Archive.write` and `Archive.read` calls used for other saved values.
 
-The local Archive stores immutable values. `export_file` packages one outcome into a single portable file. You can move that file, remove the original Archive directory, and import it into another Archive in a later process. Source bytes, document profiles, exact index identities, compiled Plans and operation certainty travel with the outcome.
+The local Archive stores immutable values. `export_file` packages one outcome into a single portable file. You can move that file, remove the original Archive directory, and import it into another Archive in a later process. Source bytes, document profiles, exact index identities, compiled Plans and operation certainty travel with the outcome. Normal Archive writes keep Documents and typed media in their existing raw payload stores; portable export follows the registered video and pixel-artifact record fields and includes those exact dependencies.
 
 ## Example: save a version lookup
 
