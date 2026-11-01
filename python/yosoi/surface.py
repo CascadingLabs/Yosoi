@@ -955,7 +955,10 @@ class PixelArtifact(ImmutableModel):
     def document(self) -> ImageDocument:
         """Return the typed immutable ImageDocument owning this payload."""
         self._verify_native()
-        return ImageDocument._from_native(self._handle.document())
+        document = ImageDocument._from_native(self._handle.document())
+        if not isinstance(document, ImageDocument):
+            raise SurfaceError("pixel artifact payload is not an ImageDocument")
+        return document
 
     def map_rect_to_source(self, rect: PixelRect) -> PixelRect:
         """Map artifact pixel edges back to the root source pixel plane."""
@@ -1503,9 +1506,12 @@ class ArchivedSource(ImmutableModel):
 
     def restore_image(self, maximum: int = 64 * 1024 * 1024) -> ImageDocument:
         """Restore a typed image without assigning it a text Document profile."""
-        return ImageDocument._from_native(
+        document = ImageDocument._from_native(
             _native.surface_source_restore_image(_rust_json(self), maximum)
         )
+        if not isinstance(document, ImageDocument):
+            raise SurfaceError("retained image source is not an ImageDocument")
+        return document
 
     def restore_file_document(self, maximum: int = 64 * 1024 * 1024) -> FileDocument:
         """Verify and restore a typed media payload without source I/O."""
