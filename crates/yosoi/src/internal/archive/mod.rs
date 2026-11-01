@@ -26,8 +26,6 @@ mod error;
 mod evaluation_run;
 mod locator_run;
 mod media;
-#[cfg(any(feature = "browser", feature = "surface-images"))]
-mod pixel_artifact;
 mod plan;
 mod policy;
 mod refs;
