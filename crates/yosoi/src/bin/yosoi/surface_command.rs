@@ -253,7 +253,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                     io::Error::other("--archive is required with --pixel-artifact-ref")
                 })?;
                 let reference: PixelArtifactArchiveRef = serde_json::from_str(&reference)?;
-                drive(
+                Box::pin(drive(
                     ImageSession::open_pixel_artifact(
                         &reference,
                         archive_root,
@@ -263,10 +263,10 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                         limits,
                     )
                     .await?,
-                )
+                ))
                 .await
             } else if let Some(file) = file {
-                drive(
+                Box::pin(drive(
                     ImageSession::open(
                         &file,
                         policy(output, archive),
@@ -275,7 +275,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                         limits,
                     )
                     .await?,
-                )
+                ))
                 .await
             } else {
                 Err(io::Error::other("--file or --pixel-artifact-ref is required").into())

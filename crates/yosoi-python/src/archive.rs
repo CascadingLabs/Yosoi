@@ -48,7 +48,7 @@ fn failure<E: Error + 'static>(error: E, rust_type: &str, variant: Option<&str>)
     })
 }
 
-pub(crate) fn archive_error(error: ArchiveError) -> PyErr {
+pub fn archive_error(error: ArchiveError) -> PyErr {
     let (variant, details) = match &error {
         ArchiveError::InvalidSurfaceOutcome(message) => (
             "InvalidSurfaceOutcome",

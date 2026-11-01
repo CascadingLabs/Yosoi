@@ -3,12 +3,12 @@
 #![cfg(unix)]
 use serde::Deserialize;
 use std::{error::Error, fs, io, result::Result as StdResult};
+use yosoi::automation_record::OperationStatus;
 use yosoi::{
     Archive,
     documents::{Document, DocumentEpoch},
     surface::{ArchiveLimits, ArchivePolicy, Budget, Limits, Session, SessionPolicy, Surface},
 };
-use yosoi::{archive::DocumentArchiveRef, automation_record::OperationStatus};
 
 type Result<T = ()> = StdResult<T, Box<dyn Error>>;
 
@@ -327,19 +327,37 @@ async fn normal_write_rehomes_dependency_references_and_keeps_compiled_plans() -
     fs::remove_dir_all(original)?;
     let loaded = fresh.read(&saved).await?;
     assert_eq!(loaded.plans, vec![plan]);
-    let reference: DocumentArchiveRef = loaded
+    let retained = loaded
         .sources
         .first()
-        .ok_or_else(|| io::Error::other("missing source"))?
-        .key
-        .parse()?;
-    assert_ne!(reference.to_string(), source.to_string());
-    assert_eq!(fresh.read_document(&reference).await?, document);
+        .ok_or_else(|| io::Error::other("missing source"))?;
+    assert_eq!(retained.key, source.to_string());
+    let reference = retained
+        .document_archive
+        .as_ref()
+        .ok_or_else(|| io::Error::other("rehomed Document reference missing"))?;
+    assert_ne!(reference, &source);
+    assert_eq!(fresh.read_document(reference).await?, document);
+    let rehomed_key = reference.to_string();
     assert_eq!(
         loaded
-            .surface(&reference.to_string(), Limits::default())?
+            .surface(&source.to_string(), Limits::default())?
             .identity(),
         surface.identity()
+    );
+    assert_eq!(
+        loaded.surface(&rehomed_key, Limits::default())?.identity(),
+        surface.identity()
+    );
+    assert_eq!(
+        loaded
+            .record
+            .operations()
+            .first()
+            .and_then(|receipt| receipt.result.as_ref())
+            .and_then(|result| result.get("document"))
+            .and_then(serde_json::Value::as_str),
+        Some(rehomed_key.as_str())
     );
     let mut missing = loaded;
     missing.sources.clear();
@@ -422,6 +440,20 @@ async fn normal_write_preserves_logical_source_keys_when_rehoming_references() -
         loaded.surface("homepage", Limits::default())?.identity(),
         surface.identity()
     );
+    assert_eq!(
+        loaded.source_document("homepage", ArchiveLimits::default().bytes)?,
+        document
+    );
+    assert_eq!(
+        loaded.source_document(&fresh_reference, ArchiveLimits::default().bytes)?,
+        document
+    );
+    assert_eq!(
+        loaded
+            .surface(&fresh_reference, Limits::default())?
+            .identity(),
+        surface.identity()
+    );
     let label_source = loaded
         .sources
         .iter()
@@ -436,7 +468,7 @@ async fn normal_write_preserves_logical_source_keys_when_rehoming_references() -
     clippy::panic_in_result_fn,
     reason = "The regression verifies typed-file Archive references are rehomed and remain lookup keys."
 )]
-async fn normal_write_rehomes_reference_shaped_file_source_keys() -> Result {
+async fn normal_write_keeps_typed_file_keys_and_rehomes_storage_references() -> Result {
     use yosoi::{
         archive::FileDocumentArchiveRef,
         documents::{FileDocument, VideoDocument},
@@ -471,10 +503,71 @@ async fn normal_write_rehomes_reference_shaped_file_source_keys() -> Result {
         .as_ref()
         .ok_or_else(|| io::Error::other("rehomed typed-file Archive reference missing"))?;
     assert_ne!(fresh_reference, &original_reference);
-    assert_eq!(retained.key, fresh_reference.to_string());
+    assert_eq!(retained.key, original_reference.to_string());
     assert_eq!(
         loaded.source_file_document(&retained.key, ArchiveLimits::default().bytes)?,
+        FileDocument::Video(video.clone())
+    );
+    assert_eq!(
+        loaded
+            .source_file_document(&fresh_reference.to_string(), ArchiveLimits::default().bytes)?,
         FileDocument::Video(video)
+    );
+    Ok(())
+}
+
+#[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "The regression verifies exact logical-key lookup outranks another source's Archive reference."
+)]
+async fn exact_logical_source_key_wins_over_archive_reference_collision() -> Result {
+    use yosoi::surface::{ArchivedSource, Outcome};
+
+    let root = tempfile::tempdir()?;
+    let archive = Archive::open(root.path()).await?;
+    let stored_document = Document::html("stored-document", b"<h1>Stored</h1>".to_vec())?;
+    let stored_reference = archive.write_document(&stored_document).await?;
+    let stored_surface = Surface::new(&stored_document)?;
+    let logical_document = Document::html("logical-document", b"<h1>Logical</h1>".to_vec())?;
+    let logical_surface = Surface::new(&logical_document)?;
+
+    let stored_source = ArchivedSource::new("stored", &stored_document, Some(&stored_surface));
+    let mut stored_source = stored_source;
+    stored_source.document_archive = Some(stored_reference.clone());
+    let logical_source = ArchivedSource::new(
+        stored_reference.to_string(),
+        &logical_document,
+        Some(&logical_surface),
+    );
+    let outcome = Outcome::new("archive-key-collision", ArchiveLimits::default())?
+        .with_source(stored_source)?
+        .with_source(logical_source)?;
+
+    assert_eq!(
+        outcome
+            .source_document(
+                &stored_reference.to_string(),
+                ArchiveLimits::default().bytes
+            )?
+            .bytes(),
+        logical_document.bytes()
+    );
+    assert_eq!(
+        outcome
+            .surface(&stored_reference.to_string(), Limits::default())?
+            .identity(),
+        logical_surface.identity()
+    );
+    assert_eq!(
+        outcome
+            .surface(logical_surface.identity(), Limits::default())?
+            .identity(),
+        logical_surface.identity()
+    );
+    assert_eq!(
+        outcome.surface("stored", Limits::default())?.identity(),
+        stored_surface.identity()
     );
     Ok(())
 }

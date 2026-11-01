@@ -1,6 +1,6 @@
 //! Snapshot helpers for the executable image conformance fixture.
 
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use std::{error::Error, io};
 use yosoi::surface::{ImageSurface, PixelArtifact, SurfaceError, model::SurfaceRead};
 
@@ -27,8 +27,12 @@ pub fn case(name: &str, method: &str, arguments: Value, value: Value) -> Value {
     } else {
         format!("yosoi::surface::{method}")
     };
-    json!({"name": name, "rustPath": path,
-        "input": arguments, "rust": value})
+    Value::Object(Map::from_iter([
+        ("name".to_owned(), Value::String(name.to_owned())),
+        ("rustPath".to_owned(), Value::String(path)),
+        ("input".to_owned(), arguments),
+        ("rust".to_owned(), value),
+    ]))
 }
 
 pub fn error(
