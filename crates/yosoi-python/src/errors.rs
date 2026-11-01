@@ -25,6 +25,7 @@ pub use operations::{
 
 create_exception!(_native, YosoiError, PyException);
 create_exception!(_native, DocumentError, YosoiError);
+create_exception!(_native, FileDocumentError, YosoiError);
 create_exception!(_native, ParseError, YosoiError);
 create_exception!(_native, LocatorError, YosoiError);
 create_exception!(_native, PolicyError, YosoiError);
@@ -152,6 +153,7 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     let py = module.py();
     module.add("YosoiError", py.get_type::<YosoiError>())?;
     module.add("DocumentError", py.get_type::<DocumentError>())?;
+    module.add("FileDocumentError", py.get_type::<FileDocumentError>())?;
     module.add("ParseError", py.get_type::<ParseError>())?;
     module.add("LocatorError", py.get_type::<LocatorError>())?;
     module.add("PolicyError", py.get_type::<PolicyError>())?;

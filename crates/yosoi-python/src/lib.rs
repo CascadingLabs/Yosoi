@@ -9,6 +9,7 @@ mod errors;
 mod identities;
 mod locators;
 mod map;
+mod media;
 mod parsed;
 mod policy;
 mod policy_helpers;
@@ -74,6 +75,8 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     module.add_function(wrap_pyfunction!(contracts::field_schema_validate, module)?)?;
     module.add_class::<documents::NativeDocument>()?;
+    module.add_class::<media::NativeFileDocument>()?;
+    module.add_function(wrap_pyfunction!(media::read_file, module)?)?;
     module.add_function(wrap_pyfunction!(documents::validate_profile, module)?)?;
     module.add_function(wrap_pyfunction!(documents::profile_class, module)?)?;
     module.add_class::<parsed::NativeParsedDocument>()?;

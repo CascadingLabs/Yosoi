@@ -6,6 +6,7 @@ mod flow;
 mod limits;
 mod locators;
 mod map;
+mod observe;
 mod page;
 mod redirect;
 mod request;
@@ -19,6 +20,10 @@ pub use locators::Locators;
 pub use map::{
     Budget, DiscoveryDocuments, Filters, HostScope, Limits, Map, PageDiscovery, PathScope, Robots,
     Scope, Subdomains,
+};
+pub use observe::{
+    EvidenceFailurePolicy, MAX_RECORDING_DURATION_MS, ObserveLimits, ObservePolicy, RecordingMode,
+    RecordingRule, ScreenshotPolicy, ScreenshotScope,
 };
 pub use page::{
     Acquisition, AcquisitionKind, DocumentRequest, DocumentSelectionKind, EffectiveAcquisition,

@@ -788,7 +788,7 @@ async fn execute_action<T>(
 
 async fn execute_step(step: &Step, work: &Work) -> Result<OperationReceipt, SessionError> {
     match step {
-        Step::AssertAll { assertion } => work.assert_all(assertion).await,
+        Step::AssertAll { assertion } => Box::pin(work.assert_all(assertion)).await,
         Step::Until {
             trigger,
             expectation,

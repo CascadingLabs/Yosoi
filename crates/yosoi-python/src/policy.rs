@@ -12,11 +12,24 @@ pub fn parse(value: Option<&str>) -> PyResult<Policy> {
     value.map_or_else(
         || Ok(Policy::default()),
         |value| {
-            serde_json::from_str(value).map_err(|error| {
+            let decode_error = |error: serde_json::Error| {
                 Python::attach(|py| {
                     errors::serde_decode_error(py, PolicyError::new_err(error.to_string()), &error)
                 })
-            })
+            };
+            let authored: serde_json::Value = serde_json::from_str(value).map_err(decode_error)?;
+            if let Some(observe) = authored.get("observe") {
+                // Validate component relationships through the SDK before full Policy Serde
+                // turns their typed error into a generic JSON Data error.
+                let probe = Policy {
+                    observe: serde_json::from_value(observe.clone()).map_err(decode_error)?,
+                    ..Policy::default()
+                };
+                probe
+                    .validate()
+                    .map_err(|error| Python::attach(|py| errors::policy_error(py, &error)))?;
+            }
+            serde_json::from_value(authored).map_err(decode_error)
         },
     )
 }

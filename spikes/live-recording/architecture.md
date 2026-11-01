@@ -1,5 +1,14 @@
 # Remote viewing architecture, from pixels to Yosoi
 
+This document preserves the transport investigation behind the original spike.
+The Session observation implementation uses native capture without a viewer.
+One Session can own browser-visible and per-tab capture sources at the same time;
+compatible recording handles share a source and finalize independent outputs.
+Capture/encoder admission is separate from Session action scheduling.
+See the [SDK capture documentation](../../docs/public/sdk/session-observation.md)
+for the maintained entry points. The VNC/WebRTC paths below remain future viewing
+and takeover work rather than prerequisites for screenshots or recordings.
+
 VNC, noVNC, WebRTC, Neko and Kernel occupy different layers. Products often
 package several layers together, which makes them look like interchangeable
 "VNC flavors." Separating them makes the future desktop work easier to reason

@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Session observation fixture</title>
+<style>body{font:24px sans-serif;margin:24px}canvas{display:block}button,a{font:inherit;margin:16px}</style>
+<h1></h1>
+<canvas width="640" height="360" aria-label="Animated evidence"></canvas>
+<button id="mark">Mark this tab</button><output>Ready</output>
+<button id="tone" data-playing="false">Toggle tone</button>
+<a>Next document</a>
+<script>
+const parameters = new URLSearchParams(location.search);
+const id = Number(parameters.get('id') || 0);
+const generation = Number(parameters.get('generation') || 0);
+document.title = `Observation tab ${id}, document ${generation}`;
+document.querySelector('h1').textContent = document.title;
+const next = new URL(location.href);
+next.searchParams.set('generation', String(generation + 1));
+document.querySelector('a').href = next.href;
+document.querySelector('#mark').onclick = () => {
+  document.querySelector('output').textContent = `Marked tab ${id}`;
+  fetch('/release');
+};
+let audio;
+document.querySelector('#tone').onclick = async () => {
+  if (!audio) {
+    audio = new AudioContext();
+    const oscillator = audio.createOscillator();
+    oscillator.frequency.value = id === 0 ? 440 : 880;
+    const gain = audio.createGain();
+    gain.gain.value = 0.15;
+    oscillator.connect(gain).connect(audio.destination);
+    oscillator.start();
+    await audio.resume();
+  } else if (audio.state === 'running') {
+    await audio.suspend();
+  } else {
+    await audio.resume();
+  }
+  document.querySelector('#tone').dataset.playing = String(audio.state === 'running');
+};
+if (id === 0 && generation === 0) fetch('/wait').then(() => {
+  const marker = document.createElement('div');
+  marker.dataset.released = 'true';
+  marker.textContent = 'Sibling action released this tab';
+  document.body.append(marker);
+});
+const context = document.querySelector('canvas').getContext('2d');
+const origin = performance.now();
+let frames = 0;
+function draw(now) {
+  context.fillStyle = `hsl(${id * 83 % 360} 80% 35%)`;
+  context.fillRect(0, 0, 640, 360);
+  context.fillStyle = 'white';
+  context.font = '36px sans-serif';
+  context.fillText(`Tab ${id} / document ${generation}`, 24, 60);
+  context.fillText(`${Math.floor(now - origin)} ms`, 24, 120);
+  context.fillRect((now / 8) % 560, 200, 80, 80);
+  frames += 1;
+  if (frames % 30 === 0) fetch(`/paint?id=${id}&generation=${generation}&frames=${frames}`);
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>

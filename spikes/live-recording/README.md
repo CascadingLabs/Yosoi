@@ -1,8 +1,21 @@
-# Live display and recording lab
+# Session observation and the historical recording lab
+
+The maintained implementation is the Session capture layer described in
+[Session screenshots and recordings](../../docs/public/sdk/session-observation.md).
+`Work.screenshot_with`, `Work.start_recording` and `Session.start_recording`
+provide explicit capture. `Policy.observe` configures its automatic consumer.
+Browser-visible and per-tab outputs can coexist, with independent handles and
+capture capacity separate from action-worker capacity. No viewer is required.
+
+The experiments below are historical feasibility evidence. Their reviewed media
+and hashes remain unchanged; their results are not acceptance evidence for a
+later SDK revision. VNC, noVNC, remote streaming and takeover remain separate work.
+
+## Historical lab context
 
 Exploratory work based on PR #166 for
 [Custom noVNC & video recording](https://linear.app/cascadinglabs/project/custom-novnc-and-video-recording-d253f26cbd2c/overview).
-Project fit is undecided. No public SDK API or production backend is changed.
+At this historical checkpoint no public SDK API or production backend was changed.
 The reviewed recordings were captured over original head `44928628`; the
 delivery branch is rebased onto refreshed #166 head `6f4e8fa7`.
 

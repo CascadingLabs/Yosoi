@@ -25,6 +25,10 @@ path = "src/internal/browser/vendor/chromiumoxide_cdp/examples/generate.rs"
 name = "live_recording_native"
 required-features = ["browser"]
 
+[[example]]
+name = "session_observation"
+required-features = ["browser"]
+
 [features]
 default = []
 surface-images = ["dep:image"]
@@ -51,7 +55,7 @@ browser = [
 ]
 surface-connections = ["browser", "surface-video"]
 cli = ["browser", "surface-video", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "dep:toml", "tokio/signal"]
-scanner = ["browser", "dep:infer"]
+scanner = ["browser"]
 encode-gif = ["browser", "image/gif"]
 encode-ffmpeg = ["browser"]
 
@@ -78,7 +82,7 @@ httparse = { workspace = true }
 percent-encoding = { workspace = true }
 html5ever = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png"], optional = true }
-infer = { workspace = true, optional = true }
+infer = { workspace = true }
 libc = { workspace = true }
 markup5ever_rcdom = { workspace = true }
 memchr = { workspace = true }

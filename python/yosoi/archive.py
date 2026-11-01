@@ -6,14 +6,29 @@ import json
 from collections.abc import Mapping
 from os import PathLike, fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Self, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, overload
 
 from pydantic import Field, StrictStr, field_validator, model_validator
 
 from . import _native
 from ._models import ImmutableModel
-from .browser import FlowOutcome, Observation, OperationReceipt, SessionPolicy
-from .documents import Document
+from .browser import (
+    FlowOutcome,
+    Observation,
+    OperationReceipt,
+    RecordingOutcome,
+    SessionEvidence,
+    SessionPolicy,
+)
+from .documents import (
+    AudioDocument,
+    BinaryDocument,
+    Document,
+    FileDocument,
+    ImageDocument,
+    VideoDocument,
+    _FileDocument,
+)
 from .locators import Plan
 
 if TYPE_CHECKING:
@@ -25,6 +40,10 @@ __all__ = [
     "AutomationRecord",
     "AutomationRecordRef",
     "DocumentArchiveRef",
+    "ImageDocumentArchiveRef",
+    "VideoDocumentArchiveRef",
+    "AudioDocumentArchiveRef",
+    "BinaryDocumentArchiveRef",
     "PlanArchiveRef",
 ]
 
@@ -55,6 +74,44 @@ class DocumentArchiveRef(ImmutableModel):
     @classmethod
     def _validate_reference(cls, value: str) -> str:
         return _native.validate_archive_ref("document", value)
+
+
+class _MediaDocumentArchiveRef(ImmutableModel):
+    """Shared validation for references whose kind names one media document."""
+
+    value: StrictStr = Field(
+        description="Rust-validated typed media Archive reference."
+    )
+    _kind: ClassVar[str]
+
+    @field_validator("value")
+    @classmethod
+    def _validate_reference(cls, value: str) -> str:
+        return _native.validate_archive_ref(cls._kind, value)
+
+
+class ImageDocumentArchiveRef(_MediaDocumentArchiveRef):
+    """Immutable typed reference to one archived image document."""
+
+    _kind = "image_document"
+
+
+class VideoDocumentArchiveRef(_MediaDocumentArchiveRef):
+    """Immutable typed reference to one archived video document."""
+
+    _kind = "video_document"
+
+
+class AudioDocumentArchiveRef(_MediaDocumentArchiveRef):
+    """Immutable typed reference to one archived audio document."""
+
+    _kind = "audio_document"
+
+
+class BinaryDocumentArchiveRef(_MediaDocumentArchiveRef):
+    """Immutable typed reference to one archived opaque binary document."""
+
+    _kind = "binary_document"
 
 
 class PlanArchiveRef(ImmutableModel):
@@ -178,8 +235,99 @@ class Archive:
         """Return the canonical absolute root without opening a file."""
         return Path(self._handle.root)
 
+    async def _write_session_evidence(
+        self, value: SessionEvidence
+    ) -> DocumentArchiveRef:
+        """Persist one typed screenshot snapshot and its exact image documents."""
+        entries = []
+        documents = []
+        for entry in value.entries:
+            capture = entry.capture
+            entries.append(
+                {
+                    "operation_id": entry.operation_id,
+                    "phase": entry.phase,
+                    "capture": (
+                        None
+                        if capture is None
+                        else capture.model_dump(mode="json", exclude={"document"})
+                    ),
+                    "gap": entry.gap,
+                }
+            )
+            if capture is not None:
+                documents.append(capture.document._handle)
+        metadata = {
+            "entries": entries,
+            "retained_bytes": value.retained_bytes,
+            "maximum_bytes": value.maximum_bytes,
+            "omitted_entries": value.omitted_entries,
+        }
+        reference = await self._handle.write_session_evidence(
+            json.dumps(metadata), documents
+        )
+        return DocumentArchiveRef(value=reference)
+
+    async def _read_session_evidence(
+        self, reference: str
+    ) -> tuple[str, list[_native.FileDocument]]:
+        """Restore a screenshot manifest and ordered native image payload owners."""
+        return await self._handle.read_session_evidence(reference)
+
+    async def _write_recording_outcome(
+        self, value: RecordingOutcome
+    ) -> DocumentArchiveRef:
+        """Persist one typed recording manifest and its exact video documents."""
+        metadata = {
+            "id": value.id,
+            "source": value.source.model_dump(mode="json"),
+            "segments": [
+                segment.model_dump(mode="json", exclude={"document"})
+                for segment in value.segments
+            ],
+            "gaps": [gap.model_dump(mode="json") for gap in value.gaps],
+            "actions": [action.model_dump(mode="json") for action in value.actions],
+            "lost_action_events": value.lost_action_events,
+            "stopped_at_unix_ms": value.stopped_at_unix_ms,
+            "stop_reason": value.stop_reason,
+            "complete": value.complete,
+        }
+        documents = [segment.document._handle for segment in value.segments]
+        reference = await self._handle.write_recording_outcome(
+            json.dumps(metadata), documents
+        )
+        return DocumentArchiveRef(value=reference)
+
+    async def _read_recording_outcome(
+        self, reference: str
+    ) -> tuple[str, list[_native.FileDocument]]:
+        """Restore a recording manifest and ordered native video payload owners."""
+        return await self._handle.read_recording_outcome(reference)
+
     @overload
     async def write(self, value: Document) -> DocumentArchiveRef: ...
+
+    @overload
+    async def write(self, value: ImageDocument) -> ImageDocumentArchiveRef: ...
+
+    @overload
+    async def write(self, value: VideoDocument) -> VideoDocumentArchiveRef: ...
+
+    @overload
+    async def write(self, value: AudioDocument) -> AudioDocumentArchiveRef: ...
+
+    @overload
+    async def write(self, value: BinaryDocument) -> BinaryDocumentArchiveRef: ...
+
+    @overload
+    async def write(
+        self, value: FileDocument
+    ) -> (
+        ImageDocumentArchiveRef
+        | VideoDocumentArchiveRef
+        | AudioDocumentArchiveRef
+        | BinaryDocumentArchiveRef
+    ): ...
 
     @overload
     async def write(self, value: Plan) -> PlanArchiveRef: ...
@@ -192,11 +340,21 @@ class Archive:
 
     async def write(
         self,
-        value: Document | Plan | AutomationRecord | Outcome,
-    ) -> DocumentArchiveRef | PlanArchiveRef | AutomationRecordRef | OutcomeRef:
+        value: Document | FileDocument | Plan | AutomationRecord | Outcome,
+    ) -> (
+        DocumentArchiveRef
+        | ImageDocumentArchiveRef
+        | VideoDocumentArchiveRef
+        | AudioDocumentArchiveRef
+        | BinaryDocumentArchiveRef
+        | PlanArchiveRef
+        | AutomationRecordRef
+        | OutcomeRef
+    ):
         """Save a supported value and return a distinct immutable reference.
 
-        Exact bytes, profiles, coordinates and result certainty are retained.
+        Exact bytes, profiles, coordinates, file metadata and result certainty are
+        retained.
         Unsupported application objects raise TypeError. Invalid evidence,
         excessive payloads and storage failures raise ArchiveError.
         """
@@ -210,6 +368,17 @@ class Archive:
             return DocumentArchiveRef(
                 value=await self._handle.write_document(value._handle)
             )
+        if isinstance(value, _FileDocument):
+            kind, raw_reference = await self._handle.write_file_document(value._handle)
+            reference_type = {
+                "image": ImageDocumentArchiveRef,
+                "video": VideoDocumentArchiveRef,
+                "audio": AudioDocumentArchiveRef,
+                "binary": BinaryDocumentArchiveRef,
+            }.get(kind)
+            if reference_type is None:
+                raise _native.ArchiveError(f"unknown native file document kind: {kind}")
+            return reference_type(value=raw_reference)
         if isinstance(value, Plan):
             return PlanArchiveRef(value=await self._handle.write_plan(value._handle))
         if isinstance(value, AutomationRecord):
@@ -217,11 +386,24 @@ class Archive:
                 await self._handle.write_record(_rust_json(value))
             )
         raise TypeError(
-            "Archive.write supports Document, Plan, AutomationRecord and Outcome"
+            "Archive.write supports Document, media file documents, Plan, "
+            "AutomationRecord and Outcome"
         )
 
     @overload
     async def read(self, reference: DocumentArchiveRef) -> Document: ...
+
+    @overload
+    async def read(self, reference: ImageDocumentArchiveRef) -> ImageDocument: ...
+
+    @overload
+    async def read(self, reference: VideoDocumentArchiveRef) -> VideoDocument: ...
+
+    @overload
+    async def read(self, reference: AudioDocumentArchiveRef) -> AudioDocument: ...
+
+    @overload
+    async def read(self, reference: BinaryDocumentArchiveRef) -> BinaryDocument: ...
 
     @overload
     async def read(self, reference: PlanArchiveRef) -> Plan: ...
@@ -235,15 +417,21 @@ class Archive:
     async def read(
         self,
         reference: DocumentArchiveRef
+        | ImageDocumentArchiveRef
+        | VideoDocumentArchiveRef
+        | AudioDocumentArchiveRef
+        | BinaryDocumentArchiveRef
         | PlanArchiveRef
         | AutomationRecordRef
         | OutcomeRef,
-    ) -> Document | Plan | AutomationRecord | Outcome:
+    ) -> FileDocument | Document | Plan | AutomationRecord | Outcome:
         """Read exact saved evidence without launching a browser or fetching URLs.
 
         References can be serialized with model_dump_json and reconstructed with
         their class's model_validate_json. Missing or corrupt data and unsupported
-        versions raise ArchiveError. An unsupported reference type raises TypeError.
+        versions raise ArchiveError. A typed media reference restores the same concrete
+        image, video, audio, or binary class. An unsupported reference type raises
+        TypeError.
         """
         from .surface import Outcome, OutcomeRef
 
@@ -255,6 +443,22 @@ class Archive:
             return Document._from_native(
                 await self._handle.read_document(reference.value)
             )
+        file_reference_kinds = (
+            (ImageDocumentArchiveRef, "image_document", ImageDocument),
+            (VideoDocumentArchiveRef, "video_document", VideoDocument),
+            (AudioDocumentArchiveRef, "audio_document", AudioDocument),
+            (BinaryDocumentArchiveRef, "binary_document", BinaryDocument),
+        )
+        for reference_type, kind, document_type in file_reference_kinds:
+            if isinstance(reference, reference_type):
+                document = _FileDocument._from_native(
+                    await self._handle.read_file_document(kind, reference.value)
+                )
+                if not isinstance(document, document_type):
+                    raise _native.ArchiveError(
+                        "archived file document kind does not match its typed reference"
+                    )
+                return document
         if isinstance(reference, PlanArchiveRef):
             return Plan.from_compiled(
                 json.loads(await self._handle.read_plan(reference.value))

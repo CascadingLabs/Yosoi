@@ -3,7 +3,7 @@ use crate::{
     automation_record::OperationStatus,
     documents::{Document, DocumentEpoch},
     internal::browser::page::SurfaceInput,
-    session::{ActionKind, Work},
+    session::{ActionKind, ScreenshotOptions, Work},
     surface::{
         DocumentPolicies, Surface,
         connection::{Operation, Result, Trace},
@@ -159,8 +159,8 @@ impl NativeBrowser {
         Ok((index, document, location))
     }
 
-    pub async fn input(&self, input: SurfaceInput) -> Result<String> {
-        let receipt = self.work()?.surface_input(&input).await?;
+    pub async fn input(&self, input: SurfaceInput, capture_epoch: u64) -> Result<String> {
+        let receipt = self.work()?.surface_input(&input, capture_epoch).await?;
         if receipt.status != OperationStatus::Observed {
             return Err(io::Error::other(format!(
                 "native Surface dispatch {:?}: {:?}",
@@ -183,17 +183,18 @@ impl NativeBrowser {
         Ok(receipt.id)
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
-        let receipt = self.work()?.screenshot().await?;
-        if receipt.status != OperationStatus::Observed {
-            return Err(io::Error::other("native screenshot did not complete").into());
-        }
-        let bytes = receipt
-            .observation
-            .and_then(|value| value.screenshot)
-            .ok_or_else(|| io::Error::other("native screenshot evidence missing"))?;
-        fs::write(output.join(format!("{name}.png")), bytes)?;
-        Ok(())
+    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<Value> {
+        let capture = self
+            .work()?
+            .screenshot_with(ScreenshotOptions::default())
+            .await?;
+        let path = output.join(format!("{name}.png"));
+        fs::write(&path, capture.document.bytes())?;
+        fs::write(
+            output.join(format!("{name}.json")),
+            serde_json::to_vec(&capture.metadata)?,
+        )?;
+        Ok(json!({"path":path,"capture":capture.metadata}))
     }
 
     pub async fn close(&mut self) -> Result<()> {

@@ -12,6 +12,16 @@ pub use crate::internal::documents::{
 };
 pub use crate::internal::engine::ParseError;
 
+mod media;
+pub use media::{
+    AudioDocument, BinaryDocument, DEFAULT_FILE_MAX_BYTES, FileDocument, FileDocumentError,
+    FileLimits, FileMetadata, ImageDocument, MAX_FILE_BYTES, VideoDocument, file_from_bytes,
+    read_file,
+};
+pub(crate) use media::{
+    from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
+};
+
 /// An immutable SDK document. Storage and engine handles remain private.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Document {

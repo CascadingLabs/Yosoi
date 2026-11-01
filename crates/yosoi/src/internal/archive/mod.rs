@@ -25,6 +25,7 @@ mod document;
 mod error;
 mod evaluation_run;
 mod locator_run;
+mod media;
 mod plan;
 mod policy;
 mod refs;
@@ -54,15 +55,18 @@ pub(crate) use dispatch::sealed;
 #[doc(hidden)]
 pub use dispatch::{ArchiveReference, ArchiveValue};
 pub use document::MAX_ARCHIVED_DOCUMENT_BYTES;
+pub use document::read_document_bounded;
 pub use error::ArchiveError;
 pub use evaluation_run::{
     ArchivedDocumentInput, EvaluationRunError, EvaluationRunRecord, MAX_EVALUATION_DOCUMENTS,
 };
 pub use locator_run::{LocatorRunRecord, LocatorRunRecordError};
+pub use media::MAX_ARCHIVED_FILE_BYTES;
 pub use refs::{
-    ArchiveRefError, CaptureArchiveRef, ContractRunArchiveRef, ContractSchemaArchiveRef,
-    DocumentArchiveRef, EvaluationRunArchiveRef, LocatorRunArchiveRef, PlanArchiveRef,
-    PolicyArchiveRef, RequestRunArchiveRef,
+    ArchiveRefError, AudioDocumentArchiveRef, BinaryDocumentArchiveRef, CaptureArchiveRef,
+    ContractRunArchiveRef, ContractSchemaArchiveRef, DocumentArchiveRef, EvaluationRunArchiveRef,
+    FileDocumentArchiveRef, ImageDocumentArchiveRef, LocatorRunArchiveRef, PlanArchiveRef,
+    PolicyArchiveRef, RequestRunArchiveRef, VideoDocumentArchiveRef,
 };
 pub use request_run::{
     AuthoredDocumentSelection, EffectivePolicyIdentityRecord, RequestAttemptDiagnostic,

@@ -17,7 +17,11 @@ from . import search as search
 from . import surface as surface
 from . import view as view
 from .archive import Archive as Archive
+from .archive import AudioDocumentArchiveRef as AudioDocumentArchiveRef
 from .archive import AutomationRecord as AutomationRecord
+from .archive import BinaryDocumentArchiveRef as BinaryDocumentArchiveRef
+from .archive import ImageDocumentArchiveRef as ImageDocumentArchiveRef
+from .archive import VideoDocumentArchiveRef as VideoDocumentArchiveRef
 from .browser import (
     BoundFlow as BoundFlow,
 )
@@ -123,7 +127,17 @@ from .contracts import ExtractionPolicy as ExtractionPolicy
 from .contracts import Field as Field
 from .contracts import extract as extract
 from .contracts import extract_report as extract_report
+from .documents import AudioDocument as AudioDocument
+from .documents import BinaryDocument as BinaryDocument
 from .documents import Document as Document
+from .documents import FileDocument as FileDocument
+from .documents import FileLimits as FileLimits
+from .documents import FileMetadata as FileMetadata
+from .documents import ImageDocument as ImageDocument
+from .documents import VideoDocument as VideoDocument
+from .documents import file_from_bytes as file_from_bytes
+from .documents import read_file as read_file
+from .errors import FileDocumentError as FileDocumentError
 from .locators import (
     Plan as Plan,
 )
@@ -235,6 +249,10 @@ __all__ = [
     "view",
     "Archive",
     "AutomationRecord",
+    "AudioDocumentArchiveRef",
+    "BinaryDocumentArchiveRef",
+    "ImageDocumentArchiveRef",
+    "VideoDocumentArchiveRef",
     "View",
     "__version__",
     "CancellationToken",
@@ -286,6 +304,16 @@ __all__ = [
     "search",
     "surface",
     "Document",
+    "FileDocumentError",
+    "AudioDocument",
+    "BinaryDocument",
+    "FileDocument",
+    "FileLimits",
+    "FileMetadata",
+    "ImageDocument",
+    "VideoDocument",
+    "file_from_bytes",
+    "read_file",
     "Plan",
     "Policy",
     "Continuation",

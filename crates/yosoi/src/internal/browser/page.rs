@@ -32,6 +32,7 @@ mod identity;
 mod input;
 mod instrumentation;
 mod lifecycle;
+mod media_capture;
 mod navigation;
 pub use condition_wait::ConditionWait;
 mod navigation_capture;
@@ -59,6 +60,11 @@ pub(in crate::internal::browser) use document_identity::{
     CdpDocumentIdentity, DocumentIdentityState,
 };
 pub use download_types::{DownloadCapture, DownloadOutcome};
+pub use media_capture::{
+    NativeMediaBufferAdmitter, NativeMediaBufferLease, NativeTabMediaEvent,
+    NativeTabMediaFailureReason, NativeTabMediaOutput, NativeTabMediaSource,
+    NativeTabMediaSourceOptions,
+};
 pub use navigation_response::{ENDPOINT_SANITIZER_VERSION, PageResponse, safe_endpoint};
 pub use observation_watch::{
     AccessibilityChangeKind, CompletedResponseCandidate, ObservationChange,

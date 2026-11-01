@@ -96,10 +96,14 @@ impl Browser {
         }
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<Value> {
+        let name = format!("{name}-{}", uuid::Uuid::new_v4());
         match &self.source {
-            Source::Driver(browser) => browser.screenshot(output, name).await,
-            Source::Native(browser) => browser.screenshot(output, name).await,
+            Source::Driver(browser) => {
+                browser.screenshot(output, &name).await?;
+                Ok(serde_json::json!({"path":output.join(format!("{name}.png"))}))
+            }
+            Source::Native(browser) => browser.screenshot(output, &name).await,
         }
     }
 

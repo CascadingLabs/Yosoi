@@ -3,6 +3,8 @@ use crate::browser as browser_config;
 use crate::internal::network::Relay;
 use crate::internal::policy::policy::Network;
 use crate::internal::web_capture as capture;
+use crate::policy::ObserveLimits;
+use crate::session::SessionError;
 use std::fmt;
 use std::mem as std_mem;
 use std::sync as std_sync;
@@ -21,6 +23,12 @@ use tokio::{
     time::{Duration, Instant},
 };
 use tokio_util::sync::CancellationToken;
+mod capture_admission;
+mod display_capture;
+mod private_display;
+mod tab_capture;
+use capture_admission::CaptureAdmission;
+use private_display::PrivateDisplay;
 
 #[derive(Clone)]
 pub struct BrowserSession {
@@ -42,6 +50,12 @@ struct Inner {
     cancellation: CancellationToken,
     budget: std_sync::Mutex<Option<BudgetGuard>>,
     relay: Option<Arc<Relay>>,
+    native_tab_capture: bool,
+    browser_visible_capture: bool,
+    private_display: Option<Arc<PrivateDisplay>>,
+    capture_admission: CaptureAdmission,
+    tab_capture: tab_capture::TabCaptureRegistry,
+    display_source: Mutex<Option<Arc<display_capture::DisplaySource>>>,
 }
 
 struct BudgetGuard {
@@ -86,6 +100,42 @@ impl BrowserSession {
         network: &Network,
         cancellation: &CancellationToken,
     ) -> Result<Self, capture::VoidCrawlAdapterError> {
+        Self::acquire_with_observation(
+            browser,
+            mode,
+            tabs,
+            minimal_cdp,
+            network,
+            cancellation,
+            false,
+            false,
+            &ObserveLimits::default(),
+        )
+        .await
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Internal acquisition extends the existing explicit launch and cancellation boundary"
+    )]
+    pub async fn acquire_with_observation(
+        browser: browser_config::BrowserConfig,
+        mode: capture::BrowserMode,
+        tabs: u32,
+        minimal_cdp: bool,
+        network: &Network,
+        cancellation: &CancellationToken,
+        native_tab_capture: bool,
+        browser_visible_capture: bool,
+        observe_limits: &ObserveLimits,
+    ) -> Result<Self, capture::VoidCrawlAdapterError> {
+        if (native_tab_capture || browser_visible_capture)
+            && (mode != capture::BrowserMode::Headful
+                || browser.engine != browser_config::BrowserEngine::Chrome
+                || browser.endpoint.is_some())
+        {
+            return Err(capture::VoidCrawlAdapterError::InvalidResolvedSpec);
+        }
         let executor = tokio_runtime::Handle::try_current()
             .map_err(|_| capture::VoidCrawlAdapterError::InvalidResolvedSpec)?;
         let waiting = wait_budget()
@@ -128,6 +178,15 @@ impl BrowserSession {
                 result = Relay::start(network) => result.map_err(|_| capture::VoidCrawlAdapterError::InvalidResolvedSpec)?,
             })
         };
+        let private_display = if native_tab_capture || browser_visible_capture {
+            Some(Arc::new(tokio::select! {
+                biased;
+                () = cancellation.cancelled() => return Err(capture::VoidCrawlAdapterError::CancelledBeforeOwnership),
+                display = PrivateDisplay::start() => display.map_err(|_| capture::VoidCrawlAdapterError::HeadfulDisplayUnavailable)?,
+            }))
+        } else {
+            None
+        };
         let manager = capture::BrowserExecutionManager::new(
             limits,
             capture::BrowserExecutionManagerConfig {
@@ -135,6 +194,10 @@ impl BrowserSession {
                 headful: matches!(mode, capture::BrowserMode::Headful),
                 minimal_cdp,
                 proxy: relay.as_ref().map(|relay| relay.address()),
+                private_display: private_display
+                    .as_ref()
+                    .map(|display| display.display().to_owned()),
+                native_tab_capture,
             },
         );
         let mut budget = BudgetGuard {
@@ -164,8 +227,20 @@ impl BrowserSession {
                 cancellation: CancellationToken::new(),
                 budget: std_sync::Mutex::new(Some(budget)),
                 relay,
+                native_tab_capture,
+                browser_visible_capture,
+                private_display,
+                capture_admission: CaptureAdmission::new(observe_limits),
+                tab_capture: tab_capture::TabCaptureRegistry::new(),
+                display_source: Mutex::new(None),
             }),
         })
+    }
+    pub(crate) fn capture_buffer(
+        &self,
+        bytes: u64,
+    ) -> Result<capture_admission::CaptureBufferPermit, SessionError> {
+        self.inner.capture_admission.buffer(bytes)
     }
     pub fn id(&self) -> String {
         self.inner.lease.admission().session().session().to_string()
@@ -205,6 +280,11 @@ impl BrowserSession {
     pub async fn close(&self) -> Result<(), capture::BrowserExecutionManagerError> {
         self.inner.closing.store(true, Ordering::Release);
         self.inner.cancellation.cancel();
+        self.inner.tab_capture.close().await;
+        let source = self.inner.display_source.lock().await.take();
+        if let Some(source) = source {
+            source.stop().await;
+        }
         let release = self.inner.lease.release().await;
         let shutdown = self.inner.manager.shutdown().await;
         if let Some(relay) = &self.inner.relay {
@@ -219,6 +299,12 @@ impl BrowserSession {
                 .take()
         {
             budget.released();
+        }
+        if let Some(display) = &self.inner.private_display {
+            display
+                .close()
+                .await
+                .map_err(|_| capture::BrowserExecutionManagerError::InternalInvariant)?;
         }
         release?;
         shutdown

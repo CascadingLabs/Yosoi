@@ -8,6 +8,7 @@ use crate::internal::web_capture::{CaptureBundleError, WebArtifactRef, WebCaptur
 use thiserror::Error;
 use tokio::task::JoinError;
 
+use crate::documents::FileDocumentError;
 use crate::internal::archive::{
     ArchiveRefError, ContractRunRecordError, EvaluationRunError, LocatorRunRecordError,
     RequestRunRecordError,
@@ -98,6 +99,9 @@ pub enum ArchiveError {
     #[error("invalid archived Document")]
     /// Invalid archived Document.
     InvalidDocument(#[source] DocumentError),
+    /// Invalid archived media or binary file document.
+    #[error("invalid archived file document")]
+    InvalidFileDocument(#[source] FileDocumentError),
     #[error("invalid EvaluationRunRecord")]
     /// Invalid EvaluationRunRecord.
     InvalidEvaluationRun(#[source] EvaluationRunError),

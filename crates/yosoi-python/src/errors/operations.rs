@@ -58,9 +58,25 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
             json!({"reason":browser_configuration_code(*error)}),
         ),
         E::LegacyIdentityCannotIncludeBrowser => ("LegacyIdentityCannotIncludeBrowser", json!({})),
+        E::LegacyIdentityCannotIncludeObserve => ("LegacyIdentityCannotIncludeObserve", json!({})),
         E::ZeroCountLimit => ("ZeroCountLimit", json!({})),
         E::ZeroStepLimit => ("ZeroStepLimit", json!({})),
         E::ZeroByteLimit => ("ZeroByteLimit", json!({})),
+        E::ZeroObservationSourceLimit => ("ZeroObservationSourceLimit", json!({})),
+        E::ZeroObservationRecordingLimit => ("ZeroObservationRecordingLimit", json!({})),
+        E::ObservationRulesExceedRecordingLimit {
+            configured,
+            maximum,
+        } => (
+            "ObservationRulesExceedRecordingLimit",
+            json!({"configured": configured, "maximum": maximum}),
+        ),
+        E::InvalidObservationRecordingDuration => {
+            ("InvalidObservationRecordingDuration", json!({}))
+        }
+        E::BrowserVisibleAudioUnsupported => ("BrowserVisibleAudioUnsupported", json!({})),
+        E::NativeTabCaptureNotPermitted => ("NativeTabCaptureNotPermitted", json!({})),
+        E::TooManyObservationRecordingRules => ("TooManyObservationRecordingRules", json!({})),
         E::ByteLimitNotAddressable => ("ByteLimitNotAddressable", json!({})),
         E::ZeroEventLimit => ("ZeroEventLimit", json!({})),
         E::EventLimitNotAddressable => ("EventLimitNotAddressable", json!({})),

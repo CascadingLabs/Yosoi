@@ -15,17 +15,39 @@ use crate::internal::policy::policy as internal_policy_policy;
 #[cfg(feature = "browser")]
 use crate::internal::web_capture as internal_web_capture;
 use crate::request;
-use std::fmt as std_fmt;
 use std::future as std_future;
+use std::{
+    fmt as std_fmt,
+    sync::atomic::{AtomicBool, Ordering},
+};
 use tokio::sync as tokio_sync;
 #[cfg(feature = "browser")]
 use tokio::time as tokio_time;
+mod capture;
 mod evaluation;
+mod evidence;
 mod javascript;
+mod observation_archive;
+mod recording;
 #[cfg(feature = "browser")]
 mod surface;
 mod until;
 
+pub use capture::{
+    ScreenshotBounds, ScreenshotCapture, ScreenshotCaptureMetadata, ScreenshotCoordinateSpace,
+    ScreenshotOptions, ScreenshotRegion, ScreenshotTarget,
+};
+pub(crate) use evidence::RetainedByteReservation;
+pub use evidence::{
+    AutomaticEvidence, AutomaticEvidenceMetadata, AutomaticEvidencePhase, EvidenceGapReason,
+    SessionEvidence, SessionEvidenceMetadata,
+};
+pub use observation_archive::EvidenceArchiveError;
+pub use recording::{
+    RecordingAction, RecordingGap, RecordingGapReason, RecordingHandle, RecordingOptions,
+    RecordingOutcome, RecordingOutcomeMetadata, RecordingScope, RecordingSegment,
+    RecordingSegmentMetadata, RecordingSource, RecordingSourceKind, RecordingStopReason,
+};
 pub use until::{
     MAX_UNTIL_REPORT_BYTES, UntilCheck, UntilCheckState, UntilReport, UntilReportError, UntilScope,
     UntilTermination,
@@ -47,7 +69,7 @@ use crate::{
     timing,
 };
 use serde::{Deserialize, Serialize};
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use thiserror::Error;
 use tokio::sync::broadcast;
 #[cfg(feature = "browser")]
@@ -77,6 +99,8 @@ pub enum ActionKind {
     EnterText,
     /// Capture a screenshot from the current tab.
     Screenshot,
+    /// Start a bounded native video recording.
+    Record,
     /// Wait for a duration or bounded condition confirmation.
     Wait,
     /// Evaluate immediate or event-driven browser assertions.
@@ -166,6 +190,7 @@ impl Default for SessionPolicy {
                 ActionKind::Scroll,
                 ActionKind::EnterText,
                 ActionKind::Screenshot,
+                ActionKind::Record,
                 ActionKind::Wait,
                 ActionKind::Assert,
             ],
@@ -199,7 +224,7 @@ impl SessionPolicy {
             || self.maximum_input_bytes > 1024 * 1024
             || self.maximum_result_bytes > 1024 * 1024
             || self.maximum_observation_bytes > automation_record::MAX_OBSERVATION_HTML_BYTES
-            || self.allowed_actions.len() > 8
+            || self.allowed_actions.len() > 9
         {
             return Err(SessionError::InvalidPolicy);
         }
@@ -292,6 +317,9 @@ pub enum SessionError {
     /// The named capability has no supported implementation for this Session.
     #[error("unsupported Session capability: {0}")]
     Unsupported(&'static str),
+    /// Native capture setup, stream delivery, or output finalization failed.
+    #[error("recording output could not be finalized")]
+    Recording,
 }
 impl SessionError {
     /// Returns whether the failure represents observed cancellation or revoked owning authority.
@@ -476,7 +504,7 @@ impl<'scope> SessionRequest<'scope> {
         work: &Work,
         cancellation: &CancellationToken,
     ) -> Result<request::Response, SessionRequestError> {
-        let _operation = work.operation()?;
+        let operation = work.operation()?;
         work.authorize(ActionKind::Navigate, self.request.target().as_str())?;
         self.policy
             .validate()
@@ -550,6 +578,7 @@ impl<'scope> SessionRequest<'scope> {
                     ))
                 })
                 .ok_or(SessionError::InvalidPolicy)?;
+            evidence::capture_before(work, operation.id(), None, None).await;
             let execution = work.execution_permit(deadline).await?;
             work.control
                 .check_authority()
@@ -585,6 +614,7 @@ impl<'scope> SessionRequest<'scope> {
                 Err(error) => {
                     // RequestSendError contains preparation/setup failures before execution.
                     dispatch.unresolved = false;
+                    evidence::capture_after(work, operation.id(), None, None, true).await;
                     return Err(error.into());
                 }
             };
@@ -649,7 +679,7 @@ impl<'scope> SessionRequest<'scope> {
                 .collect::<Vec<_>>();
             let receipt = OperationReceipt {
                 browser: work.browser_identity(),
-                id: new_operation_id(),
+                id: operation.id().to_owned(),
                 kind: "request".into(),
                 status: if succeeded {
                     OperationStatus::Observed
@@ -666,13 +696,19 @@ impl<'scope> SessionRequest<'scope> {
                     Some("browser acquisition failed or was interrupted".into())
                 },
             };
+            evidence::capture_after(work, operation.id(), None, None, !succeeded).await;
+            if succeeded {
+                work.session.start_automatic_tab_recordings(work).await;
+            }
             drop(dispatch);
             work.session.publish(&receipt);
+            drop(operation);
             Ok(response)
         }
         #[cfg(not(feature = "browser"))]
         {
             let _ = cancellation;
+            drop(operation);
             Err(SessionError::BrowserFeatureDisabled.into())
         }
     }
@@ -778,6 +814,27 @@ impl SessionBuilder {
             .browser
             .validate_headful(matches!(self.settings.mode, BrowserMode::Headful))
             .map_err(|_| SessionError::InvalidPolicy)?;
+        let native_tab_capture = self.policy.observe.native_tab_capture;
+        let browser_visible_capture = self
+            .policy
+            .observe
+            .recordings
+            .iter()
+            .any(|rule| rule.mode == internal_policy_policy::RecordingMode::BrowserVisible);
+        if (native_tab_capture || browser_visible_capture)
+            && self.settings.mode != BrowserMode::Headful
+        {
+            return Err(SessionError::Unsupported(
+                "native recording requires Headful browser mode",
+            ));
+        }
+        if (native_tab_capture || browser_visible_capture)
+            && self.policy.browser.engine != browser_config::BrowserEngine::Chrome
+        {
+            return Err(SessionError::Unsupported(
+                "native recording is currently supported only by Chrome",
+            ));
+        }
         if self.policy.browser.engine != browser_config::BrowserEngine::Chrome
             && !cfg!(feature = "browser-bidi")
         {
@@ -800,34 +857,47 @@ impl SessionBuilder {
                 Duration::from_micros(self.policy.request.maximum_elapsed.as_microseconds());
             let backend = tokio_time::timeout(
                 maximum,
-                internal_engine_session::BrowserSession::acquire(
+                internal_engine_session::BrowserSession::acquire_with_observation(
                     self.policy.browser.clone(),
                     self.settings.mode,
                     self.settings.maximum_tabs,
                     false,
                     &self.policy.network,
                     &acquiring,
+                    native_tab_capture,
+                    browser_visible_capture,
+                    &self.policy.observe.limits,
                 ),
             )
             .await
             .map_err(|_| SessionError::AcquisitionDeadline)?
-            .map_err(|_| {
-                if cancellation.is_cancelled() {
-                    SessionError::Cancelled
-                } else {
-                    SessionError::Admission
+            .map_err(|error| match error {
+                internal_web_capture::VoidCrawlAdapterError::HeadfulDisplayUnavailable => {
+                    SessionError::Unsupported("private X11 capture display is unavailable")
                 }
+                _ if cancellation.is_cancelled() => SessionError::Cancelled,
+                _ => SessionError::Admission,
             })?;
             let (events, _) = broadcast::channel(self.settings.watch_capacity);
-            Ok(Session {
+            let (recording_events, _) = broadcast::channel(self.settings.watch_capacity);
+            let evidence = evidence::SessionEvidenceStore::new(&self.policy);
+            let session = Session {
                 inner: Arc::new(SessionInner {
                     policy: self.policy,
                     settings: self.settings,
                     backend,
                     events,
+                    recording_events,
+                    evidence,
                     execution,
+                    automatic_recordings: tokio_sync::Mutex::new(Vec::new()),
+                    completed_recordings: tokio_sync::Mutex::new(Vec::new()),
+                    automatic_recording_keys: tokio_sync::Mutex::new(HashSet::new()),
+                    closing: AtomicBool::new(false),
                 }),
-            })
+            };
+            session.start_automatic_recordings().await;
+            Ok(session)
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -838,6 +908,12 @@ impl SessionBuilder {
     }
 }
 
+/// Receipt publication point used by capture consumers without changing the public Watch API.
+struct TimedReceipt {
+    receipt: Arc<OperationReceipt>,
+    settled_at_unix_ms: Option<u64>,
+}
+
 struct SessionInner {
     execution: ExecutionPool,
     policy: Policy,
@@ -845,6 +921,12 @@ struct SessionInner {
     #[cfg(feature = "browser")]
     backend: internal_engine_session::BrowserSession,
     events: broadcast::Sender<Arc<OperationReceipt>>,
+    recording_events: broadcast::Sender<Arc<TimedReceipt>>,
+    evidence: evidence::SessionEvidenceStore,
+    automatic_recordings: tokio_sync::Mutex<Vec<RecordingHandle>>,
+    completed_recordings: tokio_sync::Mutex<Vec<RecordingOutcome>>,
+    automatic_recording_keys: tokio_sync::Mutex<HashSet<(String, usize)>>,
+    closing: AtomicBool,
 }
 /// Shared owner of a retained browser lifetime, tab inventory, and execution pool.
 ///
@@ -951,6 +1033,7 @@ impl Session {
     /// Requests cancellation of shared browser authority without waiting for cleanup.
     /// Prior external effects are not rolled back; use [`Self::close`] to settle owned resources.
     pub fn cancel(&self) {
+        self.inner.closing.store(true, Ordering::Release);
         #[cfg(feature = "browser")]
         self.inner.backend.cancellation().cancel();
     }
@@ -960,11 +1043,19 @@ impl Session {
     pub async fn close(&self) -> Result<(), SessionError> {
         #[cfg(feature = "browser")]
         {
-            self.inner
+            self.inner.closing.store(true, Ordering::Release);
+            let recordings = self.stop_automatic_recordings().await;
+            let backend = self
+                .inner
                 .backend
                 .close()
                 .await
-                .map_err(|_| SessionError::Cleanup)
+                .map_err(|_| SessionError::Cleanup);
+            let final_recordings = self.stop_automatic_recordings().await;
+            backend?;
+            recordings?;
+            final_recordings?;
+            Ok(())
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -977,7 +1068,13 @@ impl Session {
         ))
     }
     fn publish(&self, receipt: &OperationReceipt) {
-        let _ = self.inner.events.send(Arc::new(receipt.clone()));
+        let settled_at_unix_ms = recording::unix_millis_now();
+        let receipt = Arc::new(receipt.clone());
+        let _ = self.inner.recording_events.send(Arc::new(TimedReceipt {
+            receipt: Arc::clone(&receipt),
+            settled_at_unix_ms,
+        }));
+        let _ = self.inner.events.send(receipt);
     }
 }
 
@@ -993,6 +1090,18 @@ impl std_fmt::Debug for Tab {
     }
 }
 impl Tab {
+    /// Returns this retained tab's opaque Session-scoped identity for recording scopes.
+    pub fn id(&self) -> String {
+        #[cfg(feature = "browser")]
+        {
+            self.lease.id().to_string()
+        }
+        #[cfg(not(feature = "browser"))]
+        {
+            String::new()
+        }
+    }
+
     /// Closes only this tab and revokes any held control; other tabs remain usable.
     pub async fn close(&self) -> Result<(), SessionError> {
         #[cfg(feature = "browser")]
@@ -1069,6 +1178,24 @@ pub struct Work {
     pub(crate) control: internal_web_capture::RuntimeBrowserControl,
 }
 
+struct WorkOperation<'a> {
+    _guard: tokio_sync::MutexGuard<'a, ()>,
+    id: String,
+    evidence: &'a evidence::SessionEvidenceStore,
+}
+
+impl WorkOperation<'_> {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl Drop for WorkOperation<'_> {
+    fn drop(&mut self) {
+        self.evidence.settle_operation(&self.id);
+    }
+}
+
 #[cfg(feature = "browser")]
 struct DispatchFence<'a> {
     control: &'a internal_web_capture::RuntimeBrowserControl,
@@ -1090,6 +1217,11 @@ impl std_fmt::Debug for Work {
     }
 }
 impl Work {
+    /// Returns this Work's opaque tab identity within its owning Session.
+    pub fn tab_id(&self) -> &str {
+        &self.tab_id
+    }
+
     fn validate_network(&self, policy: &Policy) -> Result<(), SessionError> {
         if policy.network != self.session.policy().network {
             return Err(SessionError::Unsupported(
@@ -1184,13 +1316,23 @@ impl Work {
             })
             .map_or(base, |scope| base.min(scope))
     }
-    fn operation(&self) -> Result<tokio_sync::MutexGuard<'_, ()>, SessionError> {
+    fn operation(&self) -> Result<WorkOperation<'_>, SessionError> {
         // A held Work is an ordered controller, not an additional unbounded queue.
-        self.operations
+        let guard = self
+            .operations
             .try_lock()
-            .map_err(|_| SessionError::Admission)
+            .map_err(|_| SessionError::Admission)?;
+        self.session.inner.evidence.begin_operation();
+        Ok(WorkOperation {
+            _guard: guard,
+            id: new_operation_id(),
+            evidence: &self.session.inner.evidence,
+        })
     }
     fn authorize(&self, kind: ActionKind, input: &str) -> Result<(), SessionError> {
+        if self.session.inner.closing.load(Ordering::Acquire) {
+            return Err(SessionError::Closed);
+        }
         if timing::remaining().is_some_and(|remaining| remaining.is_zero()) {
             return Err(SessionError::Deadline);
         }
@@ -1215,6 +1357,9 @@ impl Work {
             || (kind == ActionKind::Evaluate && !self.session.settings().allow_arbitrary_js)
         {
             return Err(SessionError::Denied);
+        }
+        if !evidence::effect_allowed(self, kind) {
+            return Err(SessionError::EvidenceUnavailable);
         }
         if matches!(
             kind,
@@ -1352,10 +1497,32 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
-    async fn receipt(
+    async fn receipt_with_id(
         &self,
+        operation_id: String,
         kind: &str,
         operation: Result<serde_json::Value, SessionError>,
+        target: Option<ScreenshotTarget>,
+    ) -> Result<OperationReceipt, SessionError> {
+        self.receipt_with_id_and_evidence(operation_id, kind, operation, target, true)
+            .await
+    }
+    async fn receipt_with_id_without_auto_evidence_after(
+        &self,
+        operation_id: String,
+        kind: &str,
+        operation: Result<serde_json::Value, SessionError>,
+    ) -> Result<OperationReceipt, SessionError> {
+        self.receipt_with_id_and_evidence(operation_id, kind, operation, None, false)
+            .await
+    }
+    async fn receipt_with_id_and_evidence(
+        &self,
+        operation_id: String,
+        kind: &str,
+        operation: Result<serde_json::Value, SessionError>,
+        target: Option<ScreenshotTarget>,
+        automatic_evidence: bool,
     ) -> Result<OperationReceipt, SessionError> {
         let (mut status, result, mut error) = match operation {
             Ok(value) => (OperationStatus::Observed, Some(value), None),
@@ -1383,13 +1550,27 @@ impl Work {
         };
         let receipt = OperationReceipt {
             browser: self.browser_identity(),
-            id: new_operation_id(),
+            id: operation_id.clone(),
             kind: kind.into(),
             status,
             result,
             observation,
             error,
         };
+        if automatic_evidence && kind != "screenshot" {
+            evidence::capture_after(
+                self,
+                &operation_id,
+                target,
+                None,
+                receipt.status != OperationStatus::Observed,
+            )
+            .await;
+        }
+        #[cfg(feature = "browser")]
+        if kind == "navigate" && receipt.status == OperationStatus::Observed {
+            self.session.start_automatic_tab_recordings(self).await;
+        }
         self.session.publish(&receipt);
         Ok(receipt)
     }
@@ -1398,18 +1579,20 @@ impl Work {
     /// Authority, input, or pre-dispatch admission failures return [`SessionError`];
     /// an observed command is not by itself a business-success assertion.
     pub async fn navigate(&self, url: &str) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Navigate, url)?;
         request::new(url)
             .validate()
             .map_err(|_| SessionError::InvalidInput)?;
+        evidence::capture_before(self, operation.id(), None, None).await;
         #[cfg(feature = "browser")]
         {
             let result = self
                 .call(self.control.navigate(url, self.timeout()))
                 .await
                 .map(|()| serde_json::Value::Null);
-            self.receipt("navigate", result).await
+            self.receipt_with_id(operation.id().to_owned(), "navigate", result, None)
+                .await
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -1421,15 +1604,18 @@ impl Work {
     /// permission, input, and pre-dispatch failures return [`SessionError`].
     /// Confirm the expected page state separately rather than blindly retrying unknown effects.
     pub async fn click(&self, selector: &str) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Click, selector)?;
+        let target = Some(ScreenshotTarget::Css(selector.to_owned()));
+        evidence::capture_before(self, operation.id(), target.clone(), None).await;
         #[cfg(feature = "browser")]
         {
             let result = self
                 .call(self.control.click(selector))
                 .await
                 .map(|()| serde_json::Value::Null);
-            self.receipt("click", result).await
+            self.receipt_with_id(operation.id().to_owned(), "click", result, target)
+                .await
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -1446,7 +1632,7 @@ impl Work {
         &self,
         assertion: &assertions::LocalAssertion,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Assert, "")?;
         assertion
             .validate(self.session.settings().maximum_input_bytes)
@@ -1454,12 +1640,14 @@ impl Work {
         if !assertion.is_bound() {
             return Err(SessionError::Unsupported("unbound local Rust checks"));
         }
+        evidence::capture_before(self, operation.id(), None, None).await;
         #[cfg(feature = "browser")]
         {
             let deadline = timing::deadline()
                 .or_else(|| tokio_time::Instant::now().checked_add(self.timeout()))
                 .ok_or(SessionError::InvalidInput)?;
             let observation = self.observe_inner().await?;
+            let document_epoch = observation.document_epoch;
             let html = observation
                 .html
                 .as_ref()
@@ -1501,7 +1689,7 @@ impl Work {
             }
             let receipt = OperationReceipt {
                 browser: self.browser_identity(),
-                id: new_operation_id(),
+                id: operation.id().to_owned(),
                 kind: "assert_all".into(),
                 status: if passed {
                     OperationStatus::Observed
@@ -1516,11 +1704,15 @@ impl Work {
                     Some("assertion group did not pass".into())
                 },
             };
+            evidence::capture_after(self, operation.id(), None, Some(document_epoch), !passed)
+                .await;
             self.session.publish(&receipt);
+            drop(operation);
             Ok(receipt)
         }
         #[cfg(not(feature = "browser"))]
         {
+            drop(operation);
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
@@ -1562,16 +1754,19 @@ impl Work {
         selector: &str,
         text: &str,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::EnterText, selector)?;
         self.authorize(ActionKind::EnterText, text)?;
+        let target = Some(ScreenshotTarget::Css(selector.to_owned()));
+        evidence::capture_before(self, operation.id(), target.clone(), None).await;
         #[cfg(feature = "browser")]
         {
             let result = self
                 .call(self.control.enter_text(selector, text))
                 .await
                 .map(|()| serde_json::Value::Null);
-            self.receipt("enter_text", result).await
+            self.receipt_with_id(operation.id().to_owned(), "enter_text", result, target)
+                .await
         }
         #[cfg(not(feature = "browser"))]
         {
@@ -1582,7 +1777,7 @@ impl Work {
     /// Permission and authority failures return [`SessionError`]. A retained
     /// screenshot is visual evidence, not an assertion of business completion.
     pub async fn screenshot(&self) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Screenshot, "")?;
         #[cfg(feature = "browser")]
         {
@@ -1590,7 +1785,7 @@ impl Work {
             if bytes.len() > automation_record::MAX_OBSERVATION_SCREENSHOT_BYTES {
                 let receipt = OperationReceipt {
                     browser: self.browser_identity(),
-                    id: new_operation_id(),
+                    id: operation.id().to_owned(),
                     kind: "screenshot".into(),
                     status: OperationStatus::Rejected,
                     result: Some(
@@ -1603,13 +1798,14 @@ impl Work {
                     ),
                 };
                 self.session.publish(&receipt);
+                drop(operation);
                 return Ok(receipt);
             }
             let mut observation = self.observe_inner().await?;
             observation.screenshot = Some(bytes);
             let receipt = OperationReceipt {
                 browser: self.browser_identity(),
-                id: new_operation_id(),
+                id: operation.id().to_owned(),
                 kind: "screenshot".into(),
                 status: OperationStatus::Observed,
                 result: None,
@@ -1617,10 +1813,12 @@ impl Work {
                 error: None,
             };
             self.session.publish(&receipt);
+            drop(operation);
             Ok(receipt)
         }
         #[cfg(not(feature = "browser"))]
         {
+            drop(operation);
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
@@ -1629,12 +1827,13 @@ impl Work {
     /// action, and authority failures return [`SessionError`]. Prefer bounded
     /// event-driven confirmation when readiness, rather than elapsed time, matters.
     pub async fn wait(&self, milliseconds: u64) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Wait, "")?;
         let remaining = self.timeout();
         if remaining.is_zero() {
             return Err(SessionError::Deadline);
         }
+        evidence::capture_before(self, operation.id(), None, None).await;
         let wait_duration = Duration::from_millis(milliseconds);
         // Intentional Flow delay, never a readiness heuristic.
         #[cfg(feature = "browser")]
@@ -1661,7 +1860,13 @@ impl Work {
         {
             return Err(SessionError::Deadline);
         }
-        self.receipt("wait", Ok(serde_json::Value::Null)).await
+        self.receipt_with_id(
+            operation.id().to_owned(),
+            "wait",
+            Ok(serde_json::Value::Null),
+            None,
+        )
+        .await
     }
     /// Checks a DOM condition once against current-tab evidence without waiting or retrying.
     /// Returns an observed or rejected assertion receipt. Invalid input,
@@ -1670,8 +1875,26 @@ impl Work {
         &self,
         condition: &Condition,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Assert, "")?;
+        let target = match condition {
+            Condition::Exists { selector }
+            | Condition::Visible { selector }
+            | Condition::CountAtLeast { selector, .. } => {
+                Some(ScreenshotTarget::Css(selector.clone()))
+            }
+        };
+        let expected_epoch = {
+            #[cfg(feature = "browser")]
+            {
+                self.call(self.control.document_epoch()).await.ok()
+            }
+            #[cfg(not(feature = "browser"))]
+            {
+                None
+            }
+        };
+        evidence::capture_before(self, operation.id(), target.clone(), expected_epoch).await;
         #[cfg(feature = "browser")]
         {
             let expression = match condition {
@@ -1695,9 +1918,12 @@ impl Work {
                 }
             };
             self.check_receipt(
+                operation.id(),
                 "assert",
                 serde_json::json!({"passed":passed,"expected":condition,"actual":actual}),
                 passed,
+                expected_epoch,
+                target,
             )
             .await
         }
@@ -1720,11 +1946,29 @@ impl Work {
         condition: &Condition,
         timeout_ms: u64,
     ) -> Result<OperationReceipt, SessionError> {
-        let _operation = self.operation()?;
+        let operation = self.operation()?;
         self.authorize(ActionKind::Wait, "")?;
+        let target = match condition {
+            Condition::Exists { selector }
+            | Condition::Visible { selector }
+            | Condition::CountAtLeast { selector, .. } => {
+                Some(ScreenshotTarget::Css(selector.clone()))
+            }
+        };
         if timeout_ms == 0 {
             return Err(SessionError::InvalidInput);
         }
+        let expected_epoch = {
+            #[cfg(feature = "browser")]
+            {
+                self.call(self.control.document_epoch()).await.ok()
+            }
+            #[cfg(not(feature = "browser"))]
+            {
+                None
+            }
+        };
+        evidence::capture_before(self, operation.id(), target.clone(), expected_epoch).await;
         #[cfg(feature = "browser")]
         {
             let expression = condition_expression(condition)?;
@@ -1751,10 +1995,12 @@ impl Work {
                     return Err(SessionError::Unknown);
                 }
                 let receipt = self.check_receipt_in_document(
+                    operation.id(),
                     "wait_until",
                     serde_json::json!({"passed":result,"expected":condition,"document_epoch":original_epoch,"yielded":self.session.settings().yield_on_wait}),
                     result,
                     Some(original_epoch),
+                    target.clone(),
                 ).await?;
                 settlement.unresolved = receipt.status == OperationStatus::Unknown || receipt.observation.is_none();
                 Ok(receipt)
@@ -1782,19 +2028,24 @@ impl Work {
 
     async fn check_receipt(
         &self,
-        kind: &str,
-        result: serde_json::Value,
-        passed: bool,
-    ) -> Result<OperationReceipt, SessionError> {
-        self.check_receipt_in_document(kind, result, passed, None)
-            .await
-    }
-    async fn check_receipt_in_document(
-        &self,
+        operation_id: &str,
         kind: &str,
         result: serde_json::Value,
         passed: bool,
         expected_epoch: Option<u64>,
+        target: Option<ScreenshotTarget>,
+    ) -> Result<OperationReceipt, SessionError> {
+        self.check_receipt_in_document(operation_id, kind, result, passed, expected_epoch, target)
+            .await
+    }
+    async fn check_receipt_in_document(
+        &self,
+        operation_id: &str,
+        kind: &str,
+        result: serde_json::Value,
+        passed: bool,
+        expected_epoch: Option<u64>,
+        target: Option<ScreenshotTarget>,
     ) -> Result<OperationReceipt, SessionError> {
         let capture = self.observe_inner().await;
         let invalidated = expected_epoch.is_some_and(|epoch| {
@@ -1805,7 +2056,7 @@ impl Work {
         let complete = capture.is_ok() && !invalidated;
         let receipt = OperationReceipt {
             browser: self.browser_identity(),
-            id: new_operation_id(),
+            id: operation_id.to_owned(),
             kind: kind.into(),
             status: if invalidated {
                 OperationStatus::Unknown
@@ -1830,6 +2081,14 @@ impl Work {
                 None
             },
         };
+        evidence::capture_after(
+            self,
+            operation_id,
+            target,
+            expected_epoch,
+            receipt.status != OperationStatus::Observed,
+        )
+        .await;
         self.session.publish(&receipt);
         Ok(receipt)
     }
