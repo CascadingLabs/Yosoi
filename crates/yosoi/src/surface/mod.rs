@@ -17,17 +17,19 @@ mod images;
 pub use document_policy::{DocumentPolicies, DocumentPolicy};
 pub mod network;
 pub use network::{
-    NETWORK_OBSERVATION_SCHEMA, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
+    NETWORK_OBSERVATION_SCHEMA, NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+    NETWORK_PROVIDER_TOTAL_BUFFER_BYTES, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
     NetworkEventKind, NetworkGap, NetworkHeader, NetworkInFlight, NetworkObservation,
-    NetworkObservationPolicy,
-    NetworkPayload, NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkProviderClock,
-    NetworkSubscription,
-    NetworkRetention, NetworkWindow,
+    NetworkObservationPolicy, NetworkPayload, NetworkPayloadKind, NetworkPayloadRef,
+    NetworkPayloadState, NetworkPayloadValue, NetworkProjectionBasis, NetworkProviderClock,
+    NetworkRetention, NetworkSubscription, NetworkWindow,
 };
 pub mod model;
 mod outcome;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub mod pixels;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use pixels::image_source_identity;
 mod policy;
 mod prepare;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
@@ -44,7 +46,7 @@ pub use image_session::ImageSession;
 pub use images::PixelRect;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use images::{ImageCrop, ImageSurface};
-pub use outcome::{ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
+pub use outcome::{ArchivedFileKind, ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use pixels::{
     PixelArtifact, PixelArtifactInfo, PixelCoordinateKind, PixelCoordinateSpace,

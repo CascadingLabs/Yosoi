@@ -5,7 +5,11 @@ use crate::{
 };
 
 use super::{
-    identity::{artifact_identity, image_media_type, pixel_source_identity, verify_dimensions},
+    identity::{
+        artifact_identity, image_media_type, pixel_source_identity, verify_decoded_pixels,
+        verify_dimensions,
+    },
+    limits::PixelLimits,
     model::{
         PixelArtifact, PixelArtifactArchiveRef, PixelArtifactInfo, PixelCoordinateKind,
         PixelCoordinateSpace, PixelEdgeTransform, PixelOperation, PixelOrientation, PixelSource,
@@ -23,7 +27,17 @@ impl PixelArtifact {
         height: u32,
         orientation: PixelOrientation,
     ) -> Result<Self, SurfaceError> {
-        verify_dimensions(&document, width, height)?;
+        verify_decoded_pixels(&document, width, height, PixelLimits::default())?;
+        Self::from_decoded_image_document(document, width, height, orientation)
+    }
+
+    /// Creates a root image artifact after a bounded Surface decode.
+    pub(crate) fn from_decoded_image_document(
+        document: ImageDocument,
+        width: u32,
+        height: u32,
+        orientation: PixelOrientation,
+    ) -> Result<Self, SurfaceError> {
         let space = PixelCoordinateSpace {
             kind: PixelCoordinateKind::OriginalRaster,
             width,
@@ -34,7 +48,7 @@ impl PixelArtifact {
             document_id: document.id().to_string(),
             sha256: document.sha256().to_owned(),
         };
-        Self::from_raster_document(document, source, space)
+        Self::from_decoded_source_document(document, source, space)
     }
 
     /// Creates a root raster artifact from an image-producing source such as a video frame.
@@ -43,7 +57,22 @@ impl PixelArtifact {
         source: PixelSource,
         coordinate_space: PixelCoordinateSpace,
     ) -> Result<Self, SurfaceError> {
+        verify_decoded_pixels(
+            &document,
+            coordinate_space.width,
+            coordinate_space.height,
+            PixelLimits::default(),
+        )?;
+        Self::from_decoded_source_document(document, source, coordinate_space)
+    }
+
+    fn from_decoded_source_document(
+        document: ImageDocument,
+        source: PixelSource,
+        coordinate_space: PixelCoordinateSpace,
+    ) -> Result<Self, SurfaceError> {
         verify_dimensions(&document, coordinate_space.width, coordinate_space.height)?;
+        PixelLimits::default().check_pixels(coordinate_space.width, coordinate_space.height)?;
         let media_type = image_media_type(&document)?;
         let mut artifact = Self {
             document,
@@ -69,7 +98,7 @@ impl PixelArtifact {
             },
         };
         artifact.refresh_identity()?;
-        artifact.validate()?;
+        artifact.validate_metadata()?;
         Ok(artifact)
     }
 
@@ -79,7 +108,7 @@ impl PixelArtifact {
         document: ImageDocument,
         rect: PixelRect,
     ) -> Result<Self, SurfaceError> {
-        parent.validate()?;
+        parent.validate_metadata()?;
         if !matches!(&parent.info.transform.operation, PixelOperation::Source) {
             return Err(SurfaceError::Invalid(
                 "nested pixel artifact transforms are unsupported".into(),
@@ -139,7 +168,7 @@ impl PixelArtifact {
         width: u32,
         height: u32,
     ) -> Result<Self, SurfaceError> {
-        parent.validate()?;
+        parent.validate_metadata()?;
         if !matches!(&parent.info.transform.operation, PixelOperation::Source) {
             return Err(SurfaceError::Invalid(
                 "nested pixel artifact transforms are unsupported".into(),
@@ -165,7 +194,15 @@ impl PixelArtifact {
         coordinate_space: PixelCoordinateSpace,
         transform: PixelTransform,
     ) -> Result<Self, SurfaceError> {
-        verify_dimensions(&document, coordinate_space.width, coordinate_space.height)?;
+        verify_decoded_pixels(
+            &document,
+            coordinate_space.width,
+            coordinate_space.height,
+            PixelLimits::default(),
+        )?;
+        if document.byte_len() > 32 * 1024 * 1024 {
+            return Err(SurfaceError::Limit("derived pixel artifact bytes"));
+        }
         let media_type = image_media_type(&document)?;
         let mut artifact = Self {
             info: PixelArtifactInfo {
@@ -183,7 +220,7 @@ impl PixelArtifact {
             document,
         };
         artifact.refresh_identity()?;
-        artifact.validate()?;
+        artifact.validate_metadata()?;
         Ok(artifact)
     }
 
@@ -236,17 +273,20 @@ impl PixelArtifact {
         if matches!(&self.info.transform.operation, PixelOperation::Source) {
             return Ok(rect);
         }
-        let parent = self.info.transform.parent_space.ok_or_else(|| {
-            SurfaceError::Invalid("artifact lacks parent coordinates".into())
-        })?;
+        let parent = self
+            .info
+            .transform
+            .parent_space
+            .ok_or_else(|| SurfaceError::Invalid("artifact lacks parent coordinates".into()))?;
         if parent.kind == PixelCoordinateKind::DerivedCanvas || parent != self.info.source_space {
             return Err(SurfaceError::Invalid(
                 "nested pixel coordinate transforms are unsupported".into(),
             ));
         }
-        let transform = self.info.transform.output_to_parent.ok_or_else(|| {
-            SurfaceError::Invalid("artifact lacks a coordinate transform".into())
-        })?;
+        let transform =
+            self.info.transform.output_to_parent.ok_or_else(|| {
+                SurfaceError::Invalid("artifact lacks a coordinate transform".into())
+            })?;
         let x0 = edge_floor(
             rect.x,
             transform.scale_x_numerator,
@@ -283,7 +323,9 @@ impl PixelArtifact {
         Ok(PixelRect {
             x: x0,
             y: y0,
-            width: x1.checked_sub(x0).ok_or(SurfaceError::Limit("pixel coordinate map"))?,
+            width: x1
+                .checked_sub(x0)
+                .ok_or(SurfaceError::Limit("pixel coordinate map"))?,
             height: y1
                 .checked_sub(y0)
                 .ok_or(SurfaceError::Limit("pixel coordinate map"))?,

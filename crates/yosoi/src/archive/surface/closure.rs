@@ -2,7 +2,7 @@ use super::{Archive, ArchiveError};
 use crate::internal::archive::{DocumentArchiveRef, FileDocumentArchiveRef};
 use crate::{
     documents::{Document, DocumentProfile, FileDocument},
-    surface::{ArchivedSource, Outcome},
+    surface::{ArchivedFileKind, ArchivedSource, Outcome},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::Value;
@@ -101,14 +101,30 @@ async fn close_dependencies(archive: &Archive, value: &mut Outcome) -> Result<()
             match kind {
                 DependencyKind::Document => {
                     let reference: DocumentArchiveRef = reference.parse().map_err(invalid)?;
-                    let document = archive.read_document(&reference).await?;
+                    let document = match archive.read_document(&reference).await {
+                        Ok(document) => document,
+                        Err(ArchiveError::RecordNotFound { .. })
+                        | Err(ArchiveError::DocumentPayloadMissing { .. }) => {
+                            value.complete = false;
+                            continue;
+                        }
+                        Err(error) => return Err(error),
+                    };
                     let mut source = ArchivedSource::new(reference.to_string(), &document, None);
                     source.document_archive = Some(reference);
                     value.sources.push(source);
                 }
                 DependencyKind::FileDocument => {
                     let reference: FileDocumentArchiveRef = reference.parse().map_err(invalid)?;
-                    let file: FileDocument = archive.read(&reference).await?;
+                    let file: FileDocument = match archive.read(&reference).await {
+                        Ok(file) => file,
+                        Err(ArchiveError::RecordNotFound { .. })
+                        | Err(ArchiveError::DocumentPayloadMissing { .. }) => {
+                            value.complete = false;
+                            continue;
+                        }
+                        Err(error) => return Err(error),
+                    };
                     let mut source =
                         ArchivedSource::new_file_document(reference.to_string(), &file, None);
                     source.file_archive = Some(reference);
@@ -240,9 +256,36 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
             completed.push(*index);
         }
         if completed.is_empty() {
-            return Err(invalid(
-                "registered Archive Document dependencies are missing or cyclic",
-            ));
+            if value.complete {
+                return Err(invalid(
+                    "registered Archive Document dependencies are missing or cyclic",
+                ));
+            }
+            for index in pending.iter().copied() {
+                let source = value
+                    .sources
+                    .get(index)
+                    .ok_or_else(|| invalid("outcome source index disappeared"))?;
+                let previous = source.document_archive.as_ref().map(ToString::to_string);
+                let document = source.restore(value.limits.bytes).map_err(invalid)?;
+                let reference = match source.document_archive.as_ref() {
+                    Some(existing) => match archive.read_document(existing).await {
+                        Ok(saved) if saved == document => existing.clone(),
+                        _ => archive.write_document(&document).await?,
+                    },
+                    None => archive.write_document(&document).await?,
+                };
+                let fresh = reference.to_string();
+                let source = value
+                    .sources
+                    .get_mut(index)
+                    .ok_or_else(|| invalid("outcome source index disappeared"))?;
+                add_aliases(&mut document_references, source, &fresh, previous);
+                source.document_archive = Some(reference);
+                source.sha256 = format!("{:x}", Sha256::digest(document.bytes()));
+                source.content_base64 = None;
+            }
+            break;
         }
         for index in completed {
             pending.remove(&index);
@@ -273,7 +316,9 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
                 if let Some(fresh) = document_references.get(key) {
                     *reference = Value::String(fresh.clone());
                 } else if value.complete {
-                    return Err(invalid("portable screenshot artifact dependency is missing"));
+                    return Err(invalid(
+                        "portable screenshot artifact dependency is missing",
+                    ));
                 }
             }
             continue;

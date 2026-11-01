@@ -2,19 +2,22 @@ use super::PixelRect;
 use crate::documents::{FileLimits, ImageDocument};
 use crate::surface::{
     Coordinate, Coverage, Data, Limits, Node, Original, Payload, PixelArtifact, PixelLimits,
-    PixelOrientation, Reference, Surface, SurfaceError, image_source_identity, prepare,
+    PixelOrientation, Surface, SurfaceError, image_source_identity, prepare,
 };
 use image::{DynamicImage, ImageFormat, ImageReader};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, io::Cursor, sync::Arc};
 
 #[derive(Debug)]
-pub struct ImageData {
-    pub(super) pixels: DynamicImage,
-    pub(super) artifact: PixelArtifact,
-    pub(super) limits: PixelLimits,
+pub(in crate::surface) struct ImageData {
+    pub(in crate::surface) pixels: DynamicImage,
+    pub(in crate::surface) artifact: PixelArtifact,
+    pub(in crate::surface) limits: PixelLimits,
 }
-pub fn region_digest(image: &ImageData, rect: PixelRect) -> Result<Vec<u8>, SurfaceError> {
+pub(in crate::surface) fn region_digest(
+    image: &ImageData,
+    rect: PixelRect,
+) -> Result<Vec<u8>, SurfaceError> {
     if rect
         .x
         .checked_add(rect.width)
@@ -128,7 +131,7 @@ impl Surface {
             .decode()
             .map_err(|e| SurfaceError::Parse(e.to_string()))?;
         pixel_limits.check_pixels(pixels.width(), pixels.height())?;
-        let artifact = PixelArtifact::from_image_document(
+        let artifact = PixelArtifact::from_decoded_image_document(
             document.clone(),
             pixels.width(),
             pixels.height(),
@@ -195,6 +198,7 @@ impl Surface {
         prepare::reduce(&mut data, limits.overview_depth)?;
         Ok(Self {
             data: Arc::new(data),
+            response_bytes: None,
         })
     }
 }

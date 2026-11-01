@@ -76,6 +76,7 @@ impl ArchiveReference for OutcomeRef {
 mod tests {
     use super::*;
     use crate::{
+        archive::FileDocumentArchiveRef,
         automation_record::{OperationReceipt, OperationStatus},
         documents::{FileDocument, VideoDocument},
         surface::{ArchiveLimits, ArchivedSource},
@@ -83,12 +84,112 @@ mod tests {
     use serde_json::json;
     use std::error::Error;
 
-    const MP4_SIGNATURE: [u8; 12] = [
-        0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2',
-    ];
+    const MP4_SIGNATURE: [u8; 12] = [0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2'];
 
     #[tokio::test]
-    async fn portable_outcome_rewrites_registered_typed_video_dependency() -> Result<(), Box<dyn Error>> {
+    async fn portable_outcome_rewrites_registered_typed_video_dependency()
+    -> Result<(), Box<dyn Error>> {
+        let original_root = tempfile::tempdir()?;
+        let portable_root = tempfile::tempdir()?;
+        let archive = Archive::open(original_root.path()).await?;
+        let video = VideoDocument::from_bytes("typed-video-source", MP4_SIGNATURE.to_vec())?;
+        let original_video_ref = archive.write(&video).await?;
+        let video_ref = FileDocumentArchiveRef::Video(original_video_ref.clone());
+        let profile = Document::json(
+            "video-profile",
+            serde_json::to_vec(&json!({
+                "schema": "yosoi.surface.video-source.v2",
+                "metadata": {"source_sha256": video.sha256()},
+                "policy": {"frame_max_side": 1920},
+                "source": original_video_ref.to_string(),
+            }))?,
+        )?;
+        let original_profile_ref = archive.write_document(&profile).await?;
+        let mut video_source = ArchivedSource::new_file_document(
+            original_video_ref.to_string(),
+            &FileDocument::Video(video.clone()),
+            None,
+        );
+        video_source.file_archive = Some(video_ref);
+        let mut profile_source =
+            ArchivedSource::new(original_profile_ref.to_string(), &profile, None);
+        profile_source.document_archive = Some(original_profile_ref.clone());
+        let mut outcome = Outcome::new("portable-video", ArchiveLimits::default())?
+            .with_source(video_source)?
+            .with_source(profile_source)?;
+        outcome.record.push_operation(OperationReceipt {
+            browser: None,
+            id: "portable-video:0".into(),
+            kind: "surface.video.source".into(),
+            status: OperationStatus::Observed,
+            result: Some(json!({"document":original_profile_ref.to_string()})),
+            observation: None,
+            error: None,
+        })?;
+
+        let outcome_ref = archive.write(&outcome).await?;
+        let portable = portable_root.path().join("video.yosoi");
+        archive.export_file(&outcome_ref, &portable).await?;
+        drop(archive);
+        drop(original_root);
+
+        let imported_root = tempfile::tempdir()?;
+        let imported_archive = Archive::open(imported_root.path()).await?;
+        let imported_ref = imported_archive.import_file(&portable).await?;
+        let imported = imported_archive.read(&imported_ref).await?;
+        let restored_profile = imported
+            .source_document(&original_profile_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
+        let profile_json: serde_json::Value = serde_json::from_slice(restored_profile.bytes())?;
+        let remapped_video_ref = profile_json
+            .get("source")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("restored video profile has no source ref")?;
+        assert_ne!(remapped_video_ref, original_video_ref.to_string());
+        let restored_video = imported
+            .source_file_document(&original_video_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
+        assert_eq!(restored_video, FileDocument::Video(video));
+
+        let source_receipt = imported
+            .record
+            .operations()
+            .iter()
+            .find(|receipt| receipt.kind == "surface.video.source")
+            .ok_or("restored video source receipt is missing")?;
+        let restored_profile_ref = imported
+            .sources
+            .iter()
+            .find(|source| source.key == original_profile_ref.to_string())
+            .and_then(|source| source.document_archive.as_ref())
+            .map(ToString::to_string)
+            .ok_or("restored video profile Archive reference is missing")?;
+        assert_eq!(
+            source_receipt
+                .result
+                .as_ref()
+                .and_then(|result| result.get("document"))
+                .and_then(serde_json::Value::as_str),
+            Some(restored_profile_ref.as_str())
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        automation_record::{OperationReceipt, OperationStatus},
+        documents::{FileDocument, VideoDocument},
+        surface::{ArchiveLimits, ArchivedSource},
+    };
+    use serde_json::json;
+    use std::error::Error;
+
+    const MP4_SIGNATURE: [u8; 12] = [0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2'];
+
+    #[tokio::test]
+    async fn portable_outcome_rewrites_registered_typed_video_dependency()
+    -> Result<(), Box<dyn Error>> {
         let original_root = tempfile::tempdir()?;
         let portable_root = tempfile::tempdir()?;
         let archive = Archive::open(original_root.path()).await?;
@@ -134,20 +235,16 @@ mod tests {
         let imported_archive = Archive::open(imported_root.path()).await?;
         let imported_ref = imported_archive.import_file(&portable).await?;
         let imported = imported_archive.read(&imported_ref).await?;
-        let restored_profile = imported.source_document(
-            &original_profile_ref.to_string(),
-            MAX_OUTCOME_BYTES as u64,
-        )?;
+        let restored_profile = imported
+            .source_document(&original_profile_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
         let profile_json: serde_json::Value = serde_json::from_slice(restored_profile.bytes())?;
         let remapped_video_ref = profile_json
             .get("source")
             .and_then(serde_json::Value::as_str)
             .ok_or("restored video profile has no source ref")?;
         assert_ne!(remapped_video_ref, original_video_ref.to_string());
-        let restored_video = imported.source_file_document(
-            &original_video_ref.to_string(),
-            MAX_OUTCOME_BYTES as u64,
-        )?;
+        let restored_video = imported
+            .source_file_document(&original_video_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
         assert_eq!(restored_video, FileDocument::Video(video));
         Ok(())
     }

@@ -202,6 +202,9 @@ from .surface import (
     ImageSurface as ImageSurface,
 )
 from .surface import (
+    LegacyVideoFramePixelSource as LegacyVideoFramePixelSource,
+)
+from .surface import (
     Limits as SurfaceLimits,
 )
 from .surface import (
@@ -233,9 +236,6 @@ from .surface import (
 )
 from .surface import (
     PixelSource as PixelSource,
-)
-from .surface import (
-    LegacyVideoFramePixelSource as LegacyVideoFramePixelSource,
 )
 from .surface import (
     PixelTransform as PixelTransform,

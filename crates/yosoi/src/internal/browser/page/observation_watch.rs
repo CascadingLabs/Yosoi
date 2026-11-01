@@ -16,8 +16,8 @@ use crate::internal::browser::vendor::chromiumoxide::{
                 EnableParams as AccessibilityEnableParams, EventLoadComplete, EventNodesUpdated,
             },
             network::{
-                EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent,
-                EventResponseReceived, GetResponseBodyParams, RequestId,
+                EventDataReceived, EventLoadingFailed, EventLoadingFinished,
+                EventRequestWillBeSent, EventResponseReceived, GetResponseBodyParams, RequestId,
             },
             page::EventFrameNavigated,
         },
@@ -30,11 +30,11 @@ use crate::internal::browser::vendor::chromiumoxide::{
 };
 use crate::internal::browser::{DocumentEpoch, DocumentScope, Result, VoidCrawlError};
 use base64::{engine::general_purpose::STANDARD, read::DecoderReader};
-use futures::{StreamExt, future::pending};
+use futures::{FutureExt, StreamExt, future::pending};
 use serde::{Deserialize, Serialize};
 use std::mem as std_mem;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     fmt,
     io::{Cursor, Read},
     sync::{
@@ -49,7 +49,7 @@ use tokio::time as tokio_time;
 const BINDING_NAME: &str = "__yosoi_observation_watch";
 const MAX_WATCH_EVENTS: usize = 4_096;
 const MAX_WATCH_BYTES: usize = 8 * 1024 * 1024;
-const MAX_RESPONSE_BODY_BYTES: usize = 8 * 1024 * 1024;
+const MAX_RESPONSE_BODY_BYTES: usize = crate::surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
 const MAX_FILTERS: usize = 64;
 const MAX_URL_BYTES: usize = 16 * 1024;
 const MAX_PROVIDER_EVENT_CAPACITY: usize = 256;
@@ -981,8 +981,6 @@ impl Page {
         &self,
         max_events: usize,
         max_buffered_events: usize,
-        max_resource_buffer_bytes: usize,
-        max_total_buffer_bytes: usize,
     ) -> Result<NetworkObservationSubscription> {
         if max_events == 0 || max_events > MAX_WATCH_EVENTS {
             return Err(invalid_watch_input("max_events must be between 1 and 4096"));
@@ -995,13 +993,9 @@ impl Page {
         self.ensure_active().await?;
         Handle::try_current()
             .map_err(|_| watch_lost("network subscription requires an async runtime"))?;
-        let reservation = PageWatchReservation::acquire(
-            self.inner.target_id().inner().clone(),
-        )?;
-        let listener_config = event_listener_config(
-            max_buffered_events,
-            EventOverflowPolicy::Close,
-        );
+        let reservation = PageWatchReservation::acquire(self.inner.target_id().inner().clone())?;
+        let listener_config =
+            event_listener_config(max_buffered_events, EventOverflowPolicy::Close);
         let network_was_previously_enabled = self.instrumentation_state().network_enabled;
         let requests = self
             .inner
@@ -1011,6 +1005,11 @@ impl Page {
         let responses = self
             .inner
             .event_listener::<EventResponseReceived>(listener_config)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        let data_received = self
+            .inner
+            .event_listener::<EventDataReceived>(listener_config)
             .await
             .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
         let finished = self
@@ -1023,13 +1022,14 @@ impl Page {
             .event_listener::<EventLoadingFailed>(listener_config)
             .await
             .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
-        self.ensure_network_enabled_with_limits(max_total_buffer_bytes, max_resource_buffer_bytes)
-            .await?;
+        self.ensure_network_enabled().await?;
         Ok(NetworkObservationSubscription {
             requests: Some(requests),
             responses: Some(responses),
+            data_received: Some(data_received),
             finished: Some(finished),
             failed: Some(failed),
+            pending_events: VecDeque::new(),
             _reservation: Some(reservation),
             active: true,
             network_was_previously_enabled,
@@ -1288,7 +1288,9 @@ impl Page {
     ) -> Result<ObservationResponseBody> {
         self.ensure_active().await?;
         if request_id.is_empty() || request_id.len() > 1_024 {
-            return Err(invalid_watch_input("request identity is empty or too large"));
+            return Err(invalid_watch_input(
+                "request identity is empty or too large",
+            ));
         }
         if max_bytes == 0 || max_bytes > MAX_RESPONSE_BODY_BYTES {
             return Err(invalid_watch_input(
@@ -1297,7 +1299,9 @@ impl Page {
         }
         let response = self
             .inner
-            .execute(GetResponseBodyParams::new(RequestId::new(request_id.to_owned())))
+            .execute(GetResponseBodyParams::new(RequestId::new(
+                request_id.to_owned(),
+            )))
             .await
             .map_err(|error| VoidCrawlError::ResponseBody(error.to_string()))?;
         let probe_limit = max_bytes
@@ -1336,18 +1340,27 @@ pub enum NetworkObservationEvent {
     Request(Arc<EventRequestWillBeSent>),
     /// Response metadata became available.
     Response(Arc<EventResponseReceived>),
+    /// A decoded response-data chunk size, used only for safe body-read preflight.
+    DataReceived(Arc<EventDataReceived>),
     /// A request finished.
     Finished(Arc<EventLoadingFinished>),
     /// A request failed or was canceled.
     Failed(Arc<EventLoadingFailed>),
+    /// A provider listener closed or overflowed; its queue loss is explicit.
+    ProviderGap {
+        reason: &'static str,
+        dropped_events: Option<u64>,
+    },
 }
 
 /// Bounded page-target listener set for native Chrome request lifecycle events.
 pub struct NetworkObservationSubscription {
     requests: Option<EventStream<EventRequestWillBeSent>>,
     responses: Option<EventStream<EventResponseReceived>>,
+    data_received: Option<EventStream<EventDataReceived>>,
     finished: Option<EventStream<EventLoadingFinished>>,
     failed: Option<EventStream<EventLoadingFailed>>,
+    pending_events: VecDeque<NetworkObservationEvent>,
     _reservation: Option<PageWatchReservation>,
     active: bool,
     network_was_previously_enabled: bool,
@@ -1373,28 +1386,103 @@ impl NetworkObservationSubscription {
         if !self.active {
             return Err(watch_lost("network subscription is settled"));
         }
-        tokio::select! {
+        if let Some(event) = self.pending_events.pop_front() {
+            return Ok(event);
+        }
+        let event = tokio::select! {
+            biased;
             delivery = next_delivery(&mut self.requests) => match delivery {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Request(event)),
-                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network request listener lost {} event(s)", dropped.get()))),
-                None => Err(watch_lost("network request event stream closed")),
+                Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "request_listener_overflow",
+                    dropped_events: u64::try_from(dropped.get()).ok(),
+                }),
+                None => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "request_listener_closed",
+                    dropped_events: None,
+                }),
             },
             delivery = next_delivery(&mut self.responses) => match delivery {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Response(event)),
-                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network response listener lost {} event(s)", dropped.get()))),
-                None => Err(watch_lost("network response event stream closed")),
+                Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "response_listener_overflow",
+                    dropped_events: u64::try_from(dropped.get()).ok(),
+                }),
+                None => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "response_listener_closed",
+                    dropped_events: None,
+                }),
+            },
+            delivery = next_delivery(&mut self.data_received) => match delivery {
+                Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::DataReceived(event)),
+                Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "data_listener_overflow",
+                    dropped_events: u64::try_from(dropped.get()).ok(),
+                }),
+                None => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "data_listener_closed",
+                    dropped_events: None,
+                }),
             },
             delivery = next_delivery(&mut self.finished) => match delivery {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Finished(event)),
-                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network completion listener lost {} event(s)", dropped.get()))),
-                None => Err(watch_lost("network completion event stream closed")),
+                Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "completion_listener_overflow",
+                    dropped_events: u64::try_from(dropped.get()).ok(),
+                }),
+                None => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "completion_listener_closed",
+                    dropped_events: None,
+                }),
             },
             delivery = next_delivery(&mut self.failed) => match delivery {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Failed(event)),
-                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network failure listener lost {} event(s)", dropped.get()))),
-                None => Err(watch_lost("network failure event stream closed")),
+                Some(EventDelivery::Lagged { dropped }) => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "failure_listener_overflow",
+                    dropped_events: u64::try_from(dropped.get()).ok(),
+                }),
+                None => Ok(NetworkObservationEvent::ProviderGap {
+                    reason: "failure_listener_closed",
+                    dropped_events: None,
+                }),
             },
+        }?;
+        if let NetworkObservationEvent::Finished(finished) = event {
+            loop {
+                let delivery = self
+                    .data_received
+                    .as_mut()
+                    .and_then(|stream| stream.next().now_or_never());
+                match delivery {
+                    Some(Some(EventDelivery::Event(event))) => self
+                        .pending_events
+                        .push_back(NetworkObservationEvent::DataReceived(event)),
+                    Some(Some(EventDelivery::Lagged { dropped })) => {
+                        return Ok(NetworkObservationEvent::ProviderGap {
+                            reason: "data_listener_overflow",
+                            dropped_events: u64::try_from(dropped.get()).ok(),
+                        });
+                    }
+                    Some(None) => {
+                        return Ok(NetworkObservationEvent::ProviderGap {
+                            reason: "data_listener_closed",
+                            dropped_events: None,
+                        });
+                    }
+                    None => break,
+                }
+            }
+            if self.pending_events.is_empty() {
+                return Ok(NetworkObservationEvent::Finished(finished));
+            }
+            self.pending_events
+                .push_back(NetworkObservationEvent::Finished(finished));
+            return self
+                .pending_events
+                .pop_front()
+                .ok_or_else(|| watch_lost("network data event queue is unavailable"));
         }
+        Ok(event)
     }
 
     /// Stops receiving events and releases this subscription's page reservation.
@@ -1409,8 +1497,10 @@ impl NetworkObservationSubscription {
     fn drop_streams(&mut self) {
         self.requests.take();
         self.responses.take();
+        self.data_received.take();
         self.finished.take();
         self.failed.take();
+        self.pending_events.clear();
         self._reservation.take();
     }
 }

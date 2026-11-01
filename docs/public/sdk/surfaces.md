@@ -7,7 +7,7 @@ description: Reference scopes, image pixels, budgets, cursor ownership, and prov
 
 Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. `ImageSurface` applies the shared bounded read contract to a typed image. Start with [Surfaces](../concepts/surfaces.md) for documents, images, video and an agent-driven CLI task.
 
-The Rust `surface::browser` and `surface::video` modules own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI enables it automatically. Browser display mode and video frame bounds remain source-specific rather than generic Surface policy fields.
+Browser, image and video adapters own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI also enables typed image sessions. Browser display mode, image pixel bounds, and video frame bounds remain source-specific rather than generic Surface policy fields.
 
 ## Choose the reader
 
@@ -18,7 +18,7 @@ The Rust `surface::browser` and `surface::video` modules own their source behavi
 | WebSurface   | HTML, DOM, AX or versioned network windows | Shared describe/read protocol, including search and parent                     |
 | VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                     |
 
-`BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
+`BrowserSurface`, `ImageSession`, and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class for web and video connections. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode, image pixel limits, and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
 ## Images and pixel artifacts
 
@@ -34,7 +34,7 @@ PNG/JPEG decoding keeps the original encoded bytes. Image coordinates refer to t
 
 `PixelLimits` separately bounds decoded side length, decoder allocation, output pixels, output bytes and a reader's retained artifact count. `Surface` response-byte and text-page budgets do not count binary pixels. `Archive.write(&pixel)` stores an `ImageDocument` in the existing raw media payload store and a small provenance record. `Archive.read` verifies both and returns the same artifact without a source path or video decoder.
 
-Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable document reads need neither browser nor decoder.
+Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable image and document reads need neither browser nor video decoder.
 
 ## Bind an existing native browser
 
@@ -71,11 +71,78 @@ Offline evidence replay remains available. Generic fresh-browser rerun rejects
 native bindings because it cannot recreate the caller's native Session policy;
 acquire a fresh native Session explicitly when executing the workflow again.
 
-This consumed backend currently supports regular native Chrome with DOM and AX
-observations, native input, navigation and screenshots. Its descriptor advertises
-DOM and AX; native network observation and optional BiDi engines are not supported
-by this binding yet. The existing isolated `open(url, ...)` provider keeps its
-separate DOM-only behavior.
+This consumed backend supports regular native Chrome with DOM, AX and opt-in
+network observation, plus native input, navigation and screenshots. Its
+descriptor advertises `network` only for the qualified Chrome CDP provider.
+BiDi and the isolated `open(url, ...)` provider do not expose network event
+subscriptions; the isolated provider remains DOM-only.
+
+## Capture a network window
+
+Call `BrowserSurface.subscribe_network` on a consumed native Session before the
+page action whose requests you want to inspect. `observe_network` freezes the
+events received since the prior window and returns both its shared observation
+address and typed `NetworkWindow`. Read the event metadata with the same
+overview, expand, search and inspect protocol used by other `WebSurface`
+documents. Window references remain bound to their own session, tab and
+observation; a body link can refer to a response in an earlier window.
+
+`SurfacePolicy.network_observation` bounds subscription lifetime, journal
+events and bytes, provider queues, frozen window history, response body count
+and body bytes independently. Defaults allow 2,048 retained events in a
+five-minute subscription, a 256-event listener queue, 2 MiB of event metadata,
+32 frozen windows, up to 16 response bodies at 1 MiB each and 8 MiB total, and
+no body retention. The Page-level CDP provider buffers are shared by all
+Requests and Surface users and remain capped at 8 MiB per resource and 8 MiB
+aggregate, even when this subscription does not retain bodies. The window
+records those provider caps separately from the caller's body-retention limits.
+Network document capture uses the separate `documents.network` policy; its
+default retained input is 8 MiB and a shared read response defaults to 65,536
+bytes.
+
+The default URL policy keeps the origin and removes path, query and fragment.
+Set `retain_url_path` or `retain_url_query` to include those parts. The header
+allowlist defaults empty; authorization, proxy-authorization, cookie, set-cookie
+and API token headers are always excluded. Exact origin and method filters are
+available in `allowed_origins` and `allowed_methods`. Content-Type and
+content-encoding are recorded separately as response media provenance; they do
+not admit other headers into the window.
+
+Response bodies require explicit opt-in through `subscribe_network` or
+`network_observation.retain_bodies`. Each retained `NetworkPayloadRef` links
+one response event to a separate existing `Document` for HTML/JSON or
+`FileDocument` for other bytes. It records the observed raw `Content-Type`
+header (including parameters), CDP's browser-effective MIME and charset, the
+detected media type, explicit `projection_basis`, content encoding, CDP
+base64 transport, retained byte count and SHA-256 as separate facts. Projection
+reuses Requests' source
+classification from the raw header and bounded body sniffing; CDP's effective
+MIME is not relabeled as a declaration. CDP supplies
+the browser-decoded response body, not a lossless wire copy. Missing,
+unsupported and truncated bodies remain explicit in the reference. After
+Archive retention, `Outcome.source_document` and
+`Outcome.source_file_document` restore a linked body without a browser;
+Python uses `Outcome.network_payload` to return the matching typed value.
+When CDP returns text rather than base64, the body is its Unicode text view
+encoded as UTF-8; `text_utf8_normalized` records that fact while `charset`
+records the CDP-reported effective charset separately from the raw header
+retained in `declared_media_type`. Yosoi does not decode that text a second
+time. Base64 responses retain decoded entity bytes, not wire bytes, and keep
+any declared content encoding as separate provenance.
+
+Network evidence is page-target scoped and never claims browser-wide complete
+traffic. A window records listener order and provider clock separately, plus
+in-flight requests, start-boundary uncertainty, gaps, late events, filtering,
+overflow, disconnect and subscription expiry. Enabling the subscription turns
+on bounded CDP Network instrumentation for that Page. Cancel and close release
+the owned listeners and task; the Page-level Network domain remains enabled for
+the Page lifetime. Coverage distinguishes instrumentation newly enabled by
+this subscription from Network instrumentation already active on that Page. A
+fresh tab starts with its own instrumentation state.
+
+An ordinary `Document::json` stays ordinary JSON even if its values contain a
+`schema` field resembling `yosoi.network.v1`. Only a `NetworkWindow`-created
+Document with the `yosoi_network_observation_v1` profile has network semantics.
 
 ## Keep reference types distinct
 
@@ -85,6 +152,7 @@ separate DOM-only behavior.
 | Shared observation/address pair | `surface::model::Reference`         | `surface.Reference`         |
 | Native index continuation       | `surface::Continuation`             | `surface.Continuation`      |
 | Shared opaque continuation      | `surface::model::ContinuationToken` | `surface.ContinuationToken` |
+| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo`  |
 
 Native references bind a capture and node. Shared references bind an ObservationId and producer-issued address. WebSurface converts between its own native and shared references; it rejects references belonging to another observation or source binding. Do not parse address spelling, manufacture a replacement ID, or treat an old reference as a durable entity identifier.
 
@@ -154,8 +222,8 @@ Python supports `with` for Cursor and ActionLease. Close the lease before closin
 
 ## Retain evidence
 
-Archive the original Document to reconstruct a document index after the source closes. VideoSurface and DecodedFrame expose `write_to` and `read_from` through the existing Archive backend. A saved video restores its timeline without probing; decoding a new frame still needs a compatible decoder. A saved frame restores actual verified PNG bytes without the source or decoder.
+Archive the original Document to reconstruct a document index after the source closes. PixelArtifact, VideoSurface and DecodedFrame use the existing Archive backend. A pixel artifact stores its exact PNG/JPEG bytes in the raw ImageDocument payload store and a separate provenance record. A saved video restores its timeline without probing; decoding a new frame still needs a compatible decoder. A saved frame restores actual verified PNG bytes without the source or decoder.
 
 Video timestamps use microseconds relative to primary stream start. FrameInfo retains the requested position and measured source PTS separately. PixelRect uses the full decoded canvas, which may have been downscaled. Video coverage remains partial because this provider does not observe audio, OCR, transcription, or every frame eagerly.
 
-Python document navigation and shared read calls release the GIL. Async video and Archive methods execute on the native runtime; cancelled Python awaits can leave Rust completing bounded cleanup. Keep live-source lifecycle in the owning adapter and preserve uncertainty when execution is interrupted.
+Python document navigation, image indexing and shared read calls release the GIL. Async video and Archive methods execute on the native runtime; cancelled Python awaits can leave Rust completing bounded cleanup. Keep live-source lifecycle in the owning adapter and preserve uncertainty when execution is interrupted.

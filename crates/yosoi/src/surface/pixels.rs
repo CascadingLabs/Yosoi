@@ -10,9 +10,9 @@ mod model;
 mod transform;
 mod validation;
 
-pub use artifact::PixelArtifact;
 pub use identity::{image_source_identity, pixel_source_identity};
 pub use limits::PixelLimits;
+pub use model::PixelArtifact;
 pub use model::{
     PixelArtifactArchiveRef, PixelArtifactInfo, PixelCoordinateKind, PixelCoordinateSpace,
     PixelEdgeTransform, PixelOperation, PixelOrientation, PixelSource, PixelTransform,

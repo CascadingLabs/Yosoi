@@ -5,7 +5,8 @@ use crate::{
     documents::Document,
     surface::{
         ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, DocumentPolicy, ExecutionError,
-        NetworkPayload, NetworkPayloadRef, NetworkPayloadState, Outcome, Surface, SurfacePolicy,
+        NetworkPayload, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue, Outcome,
+        Surface, SurfacePolicy,
         archive::{Capture, Loaded, Recording, capture_descriptors},
         connection::Result,
     },
@@ -55,11 +56,6 @@ impl Recording {
         network_payloads: &[(NetworkPayloadRef, NetworkPayload)],
     ) -> Result<()> {
         let reference = self.archive.write_document(document).await?;
-        self.outcome.retain(ArchivedSource::new(
-            reference.to_string(),
-            document,
-            Some(surface),
-        ))?;
         for (payload_reference, payload) in network_payloads {
             if !matches!(
                 payload_reference.state,
@@ -68,19 +64,24 @@ impl Recording {
                 continue;
             }
             let source = match payload {
-                NetworkPayload::Document(document) => {
-                    ArchivedSource::new(payload_reference.id.clone(), document, None)
-                }
-                NetworkPayload::File(document) => {
-                    ArchivedSource::new_file_document(
-                        payload_reference.id.clone(),
-                        document,
-                        None,
-                    )
+                NetworkPayload {
+                    value: NetworkPayloadValue::Document(document),
+                    ..
+                } => ArchivedSource::new(payload_reference.id.clone(), document, None),
+                NetworkPayload {
+                    value: NetworkPayloadValue::File(document),
+                    ..
+                } => {
+                    ArchivedSource::new_file_document(payload_reference.id.clone(), document, None)
                 }
             };
             self.outcome.retain(source)?;
         }
+        self.outcome.retain(ArchivedSource::new(
+            reference.to_string(),
+            document,
+            Some(surface),
+        ))?;
         let observation = Observation {
             browser: None,
             id: format!("{}:capture:{epoch}", self.outcome.record.id()),

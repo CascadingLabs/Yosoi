@@ -104,8 +104,8 @@ pub(super) fn document(document: &Document, limits: Limits) -> Result<Surface, S
                 .map_err(|e| SurfaceError::Parse(e.to_string()))?;
             let value: Value =
                 serde_json::from_str(&source).map_err(|e| SurfaceError::Parse(e.to_string()))?;
-            let network = document.profile().schema()
-                == DocumentSchemaProfile::YosoiNetworkObservationV1;
+            let network =
+                document.profile().schema() == DocumentSchemaProfile::YosoiNetworkObservationV1;
             if network {
                 let window = super::network::NetworkWindow::from_document(document)?;
                 coverage = Coverage {

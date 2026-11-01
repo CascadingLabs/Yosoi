@@ -11,6 +11,7 @@ use crate::surface::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+/// Read-only shared navigation over one typed image's bounded region index.
 #[derive(Clone, Debug)]
 pub struct ImageSurface {
     index: Surface,

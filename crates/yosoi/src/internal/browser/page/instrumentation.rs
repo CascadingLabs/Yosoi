@@ -14,12 +14,11 @@ use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
 use crate::internal::browser::vendor::chromiumoxide::CdpMode;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::GetVersionParams;
-use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::{
-    EnableParams as NetworkEnableParams,
-};
+use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::network::EnableParams as NetworkEnableParams;
 use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::EventExecutionContextCreated;
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventDelivery;
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventOverflowPolicy;
+use crate::surface::{NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES, NETWORK_PROVIDER_TOTAL_BUFFER_BYTES};
 use futures::StreamExt;
 use serde_json::Value;
 use std::sync::atomic::Ordering;
@@ -123,42 +122,27 @@ impl Page {
 
     pub(super) async fn ensure_network_enabled(&self) -> Result<()> {
         if !self.network_enabled.load(Ordering::Relaxed) {
+            let max_total_buffer_size = i64::try_from(NETWORK_PROVIDER_TOTAL_BUFFER_BYTES)
+                .map_err(|_| VoidCrawlError::InvalidInput {
+                    operation: "Network.enable",
+                    reason: "total response buffer limit is unsupported",
+                })?;
+            let max_resource_buffer_size = i64::try_from(NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES)
+                .map_err(|_| VoidCrawlError::InvalidInput {
+                    operation: "Network.enable",
+                    reason: "per-response buffer limit is unsupported",
+                })?;
+            let params = NetworkEnableParams::builder()
+                .max_total_buffer_size(max_total_buffer_size)
+                .max_resource_buffer_size(max_resource_buffer_size)
+                .max_post_data_size(0_i64)
+                .build();
             self.inner
-                .execute(NetworkEnableParams::default())
+                .execute(params)
                 .await
                 .map_err(|e| VoidCrawlError::PageError(e.to_string()))?;
             self.network_enabled.store(true, Ordering::Relaxed);
         }
-        Ok(())
-    }
-
-    pub(super) async fn ensure_network_enabled_with_limits(
-        &self,
-        max_total_buffer_bytes: usize,
-        max_resource_buffer_bytes: usize,
-    ) -> Result<()> {
-        let max_total_buffer_bytes = i64::try_from(max_total_buffer_bytes).map_err(|_| {
-            VoidCrawlError::InvalidInput {
-                operation: "Network.enable",
-                reason: "total response buffer limit is unsupported",
-            }
-        })?;
-        let max_resource_buffer_bytes = i64::try_from(max_resource_buffer_bytes).map_err(|_| {
-            VoidCrawlError::InvalidInput {
-                operation: "Network.enable",
-                reason: "per-response buffer limit is unsupported",
-            }
-        })?;
-        let params = NetworkEnableParams::builder()
-            .max_total_buffer_size(max_total_buffer_bytes)
-            .max_resource_buffer_size(max_resource_buffer_bytes)
-            .max_post_data_size(0_i64)
-            .build();
-        self.inner
-            .execute(params)
-            .await
-            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
-        self.network_enabled.store(true, Ordering::Relaxed);
         Ok(())
     }
 

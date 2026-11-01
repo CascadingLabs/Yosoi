@@ -385,17 +385,10 @@ impl Page {
         &self,
         max_events: usize,
         max_buffered_events: usize,
-        max_resource_buffer_bytes: usize,
-        max_total_buffer_bytes: usize,
     ) -> Result<NetworkObservationSubscription> {
         match self {
             Self::Chrome(page) => page
-                .start_network_observation_subscription(
-                    max_events,
-                    max_buffered_events,
-                    max_resource_buffer_bytes,
-                    max_total_buffer_bytes,
-                )
+                .start_network_observation_subscription(max_events, max_buffered_events)
                 .await
                 .map(Box::new)
                 .map(NetworkObservationSubscription::Chrome),
@@ -412,7 +405,8 @@ impl Page {
     ) -> Result<super::page::ObservationResponseBody> {
         match self {
             Self::Chrome(page) => {
-                page.capture_network_response_body(request_id, max_bytes).await
+                page.capture_network_response_body(request_id, max_bytes)
+                    .await
             }
             #[cfg(feature = "browser-bidi")]
             Self::Bidi(_) => Err(unsupported("Surface network response body over BiDi")),

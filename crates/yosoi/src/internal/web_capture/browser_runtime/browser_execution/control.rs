@@ -266,18 +266,11 @@ impl RuntimeBrowserControl {
         &self,
         max_events: usize,
         max_buffered_events: usize,
-        max_resource_buffer_bytes: usize,
-        max_total_buffer_bytes: usize,
     ) -> Result<provider::NetworkObservationSubscription, BrowserControlError> {
         self.check_authority()?;
         let mut subscription = self
             .page
-            .start_network_observation_subscription(
-                max_events,
-                max_buffered_events,
-                max_resource_buffer_bytes,
-                max_total_buffer_bytes,
-            )
+            .start_network_observation_subscription(max_events, max_buffered_events)
             .await?;
         if self.check_authority().is_err() {
             subscription.settle();
@@ -461,6 +454,11 @@ impl RuntimeBrowserControl {
     }
     pub fn closing(&self) -> CancellationToken {
         self.closing.clone()
+    }
+
+    /// Whether this particular tab-control lease remains authoritative.
+    pub fn authority_active(&self) -> bool {
+        !self.closing.is_cancelled() && self.authority.active()
     }
 
     /// Deny further control after an unresolved dispatch without releasing its gate.

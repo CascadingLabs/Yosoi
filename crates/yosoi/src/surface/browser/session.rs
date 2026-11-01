@@ -1,14 +1,12 @@
 use super::archive::repeating;
 use super::{backend::Browser, process::ELEMENT};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-use sha2::{Digest, Sha256};
-use crate::session::{Session as NativeSession, Tab, Work};
 use crate::documents::{Document, FileDocument, FileLimits, FileMetadata, file_from_bytes};
+use crate::session::{Session as NativeSession, Tab, Work};
 use crate::surface::{
-    ActionStatus, ArchivePolicy, ArchivedSource, Budget, Cursor, ExecutionError, Outcome,
-    NetworkPayload, NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState,
-    NetworkSubscription, NetworkWindow, Reference, Session, SessionPolicy, SurfaceConnection,
-    SurfacePolicy,
+    ActionStatus, ArchivePolicy, ArchivedSource, Budget, Cursor, ExecutionError, NetworkPayload,
+    NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue,
+    NetworkSubscription, NetworkWindow, Outcome, Reference, Session, SessionPolicy,
+    SurfaceConnection, SurfacePolicy,
     archive::Recording,
     browser::WebSurface,
     connection::{
@@ -16,7 +14,9 @@ use crate::surface::{
     },
     model::{self, SurfaceRead},
 };
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, VecDeque},
     error::Error,
@@ -51,21 +51,33 @@ fn request_observation(request: &model::ReadRequest) -> Option<String> {
                 .continuation
                 .as_ref()
                 .and_then(|token| serde_json::from_str::<Value>(token.as_str()).ok())
-                .and_then(|value| value.get("observation").and_then(Value::as_str).map(str::to_owned))
+                .and_then(|value| {
+                    value
+                        .get("observation")
+                        .and_then(Value::as_str)
+                        .map(str::to_owned)
+                })
         })
 }
 
 fn retained_network_payloads(
     browser: &Browser,
     snapshot: &Value,
-) -> Result<Vec<(crate::surface::NetworkPayloadRef, crate::surface::NetworkPayload)>> {
-    let Some(payloads) = snapshot.pointer("/network/payloads").and_then(Value::as_array) else {
+) -> Result<
+    Vec<(
+        crate::surface::NetworkPayloadRef,
+        crate::surface::NetworkPayload,
+    )>,
+> {
+    let Some(payloads) = snapshot
+        .pointer("/network/payloads")
+        .and_then(Value::as_array)
+    else {
         return Ok(Vec::new());
     };
     let mut retained = Vec::new();
     for value in payloads {
-        let reference: crate::surface::NetworkPayloadRef =
-            serde_json::from_value(value.clone())?;
+        let reference: crate::surface::NetworkPayloadRef = serde_json::from_value(value.clone())?;
         if !matches!(
             reference.state,
             crate::surface::NetworkPayloadState::Retained
@@ -73,12 +85,11 @@ fn retained_network_payloads(
         ) {
             continue;
         }
-        let Some((retained_reference, payload)) = browser.retained_network_payload(&reference.id)
+        let Some((retained_reference, value)) = browser.retained_network_payload(&reference.id)
         else {
-            return Err(io::Error::other(
-                "network payload reference has no retained body value",
-            )
-            .into());
+            return Err(
+                io::Error::other("network payload reference has no retained body value").into(),
+            );
         };
         if retained_reference != reference {
             return Err(io::Error::other(
@@ -86,7 +97,7 @@ fn retained_network_payloads(
             )
             .into());
         }
-        retained.push((reference, payload));
+        retained.push((reference.clone(), NetworkPayload { reference, value }));
     }
     Ok(retained)
 }
@@ -109,7 +120,9 @@ impl Driver {
             {
                 return Ok(view.clone());
             }
-            return Err(io::Error::other("network observation was evicted or never captured").into());
+            return Err(
+                io::Error::other("network observation was evicted or never captured").into(),
+            );
         }
         self.network_evidence
             .back()
@@ -308,7 +321,7 @@ impl Driver {
             }
             Operation::Article => self.browser.script("article", json!({})).await,
             Operation::Screenshot => {
-                let artifact = self.browser.screenshot().await?;
+                let artifact = self.browser.screenshot_artifact().await?;
                 let path = self.trace.output.join("surface.png");
                 fs::write(&path, artifact.bytes())?;
                 let archive_ref = if let Some(recording) = &mut self.recording {
@@ -900,15 +913,13 @@ impl BrowserSurface {
             }
         }
         let value = self.inner.execute(command).await?;
-        serde_json::from_value(value)
-            .map_err(|error| ExecutionError::Operation(Box::new(error)))
+        serde_json::from_value(value).map_err(|error| ExecutionError::Operation(Box::new(error)))
     }
 
     /// Cancels the active event subscription and releases its listener queues.
     /// The Page-level Network domain remains enabled if shared browser work uses it.
-    pub async fn cancel_network(&mut self) -> StdResult<(), ExecutionError> {
-        self.inner.execute(json!({"op":"network_cancel"})).await?;
-        Ok(())
+    pub async fn cancel_network(&mut self) -> StdResult<Value, ExecutionError> {
+        self.inner.execute(json!({"op":"network_cancel"})).await
     }
 
     /// Waits for an event sequence after an event-driven, bounded timeout.
@@ -952,7 +963,10 @@ impl BrowserSurface {
                 }
                 _ => {
                     return Err(ExecutionError::Operation(
-                        io::Error::other("network window inspection returned a non-inspection result").into(),
+                        io::Error::other(
+                            "network window inspection returned a non-inspection result",
+                        )
+                        .into(),
                     ));
                 }
             }
@@ -998,7 +1012,11 @@ impl BrowserSurface {
                 .get("total_bytes")
                 .and_then(Value::as_u64)
                 .and_then(|value| usize::try_from(value).ok())
-                .ok_or_else(|| ExecutionError::Operation(io::Error::other("network payload omitted its byte length").into()))?;
+                .ok_or_else(|| {
+                    ExecutionError::Operation(
+                        io::Error::other("network payload omitted its byte length").into(),
+                    )
+                })?;
             if total_bytes.is_some_and(|prior| prior != total) {
                 return Err(ExecutionError::Operation(
                     io::Error::other("network payload length changed during read").into(),
@@ -1009,7 +1027,11 @@ impl BrowserSurface {
                 .get("offset")
                 .and_then(Value::as_u64)
                 .and_then(|value| usize::try_from(value).ok())
-                .ok_or_else(|| ExecutionError::Operation(io::Error::other("network payload omitted its offset").into()))?;
+                .ok_or_else(|| {
+                    ExecutionError::Operation(
+                        io::Error::other("network payload omitted its offset").into(),
+                    )
+                })?;
             if current_offset != offset {
                 return Err(ExecutionError::Operation(
                     io::Error::other("network payload returned a different offset").into(),
@@ -1018,7 +1040,11 @@ impl BrowserSurface {
             let encoded = reply
                 .get("data_base64")
                 .and_then(Value::as_str)
-                .ok_or_else(|| ExecutionError::Operation(io::Error::other("network payload omitted its bytes").into()))?;
+                .ok_or_else(|| {
+                    ExecutionError::Operation(
+                        io::Error::other("network payload omitted its bytes").into(),
+                    )
+                })?;
             let chunk = STANDARD
                 .decode(encoded)
                 .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
@@ -1027,9 +1053,11 @@ impl BrowserSurface {
                     io::Error::other("network payload read made no progress").into(),
                 ));
             }
-            offset = offset
-                .checked_add(chunk.len())
-                .ok_or_else(|| ExecutionError::Operation(io::Error::other("network payload offset overflowed").into()))?;
+            offset = offset.checked_add(chunk.len()).ok_or_else(|| {
+                ExecutionError::Operation(
+                    io::Error::other("network payload offset overflowed").into(),
+                )
+            })?;
             if offset > total {
                 return Err(ExecutionError::Operation(
                     io::Error::other("network payload exceeded its declared length").into(),
@@ -1044,19 +1072,20 @@ impl BrowserSurface {
             && format!("{:x}", Sha256::digest(&content)) != expected
         {
             return Err(ExecutionError::Operation(
-                io::Error::other("network payload digest did not match its response reference").into(),
+                io::Error::other("network payload digest did not match its response reference")
+                    .into(),
             ));
         }
         let id = reference
             .document_id
             .as_deref()
             .map_or(reference.id.as_str(), |value| value);
-        let payload = match reference.document_kind {
-            Some(NetworkPayloadKind::Html) => NetworkPayload::Document(
+        let value = match reference.document_kind {
+            Some(NetworkPayloadKind::Html) => NetworkPayloadValue::Document(
                 Document::html(id, content)
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?,
             ),
-            Some(NetworkPayloadKind::Json) => NetworkPayload::Document(
+            Some(NetworkPayloadKind::Json) => NetworkPayloadValue::Document(
                 Document::json(id, content)
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?,
             ),
@@ -1065,18 +1094,15 @@ impl BrowserSurface {
                     .with_capture_id(reference.request_id.clone())
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
                 let limit = u64::try_from(content.len()).map_err(|_| {
-                    ExecutionError::Operation(io::Error::other("network payload size is unsupported").into())
+                    ExecutionError::Operation(
+                        io::Error::other("network payload size is unsupported").into(),
+                    )
                 })?;
                 let limits = FileLimits::new(limit)
                     .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
-                let file: FileDocument = file_from_bytes(
-                    id,
-                    content,
-                    metadata,
-                    limits,
-                )
-                .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
-                NetworkPayload::File(file)
+                let file: FileDocument = file_from_bytes(id, content, metadata, limits)
+                    .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
+                NetworkPayloadValue::File(file)
             }
             None => {
                 return Err(ExecutionError::Operation(
@@ -1084,7 +1110,10 @@ impl BrowserSurface {
                 ));
             }
         };
-        Ok(payload)
+        Ok(NetworkPayload {
+            reference: reference.clone(),
+            value,
+        })
     }
 
     /// Retains the native Session owner and acquires Work for its initial tab.
@@ -1132,12 +1161,8 @@ impl BrowserSurface {
         policy.archive_limits.validate()?;
         policy.documents.validate()?;
         policy.network_observation.validate()?;
-        let mut browser = Browser::consume_work(
-            work,
-            policy.documents,
-            policy.network_observation,
-        )
-        .await?;
+        let mut browser =
+            Browser::consume_work(work, policy.documents, policy.network_observation).await?;
         let location = browser.script("location", json!({})).await?;
         let url = location
             .get("url")
@@ -1169,7 +1194,9 @@ impl BrowserSurface {
             }
             let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
             if let Some(recording) = &mut recording {
-                recording.capture(&document, &surface, &snapshot, 1, &[]).await?;
+                recording
+                    .capture(&document, &surface, &snapshot, 1, &[])
+                    .await?;
             }
             let session = Session::new(surface, SessionPolicy::default())?;
             let cursor = session.cursor()?;
@@ -1309,7 +1336,9 @@ impl BrowserSurface {
             browser.post("/url", json!({"url":url})).await?;
             let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
             if let Some(recording) = &mut recording {
-                recording.capture(&document, &surface, &snapshot, 1, &[]).await?;
+                recording
+                    .capture(&document, &surface, &snapshot, 1, &[])
+                    .await?;
             }
             let session = Session::new(surface, SessionPolicy::default())?;
             let cursor = session.cursor()?;

@@ -95,6 +95,52 @@ pub(super) fn verify_dimensions(
     Ok(())
 }
 
+/// Decodes pixels under the hard allocation bounds and verifies their recorded dimensions.
+pub(super) fn verify_decoded_pixels(
+    document: &ImageDocument,
+    expected_width: u32,
+    expected_height: u32,
+    limits: PixelLimits,
+) -> Result<(), SurfaceError> {
+    let limits = limits.validate()?;
+    let media_type = image_media_type(document)?;
+    let mut reader = ImageReader::new(Cursor::new(document.bytes()))
+        .with_guessed_format()
+        .map_err(|error| SurfaceError::Parse(error.to_string()))?;
+    let expected_format = match media_type.as_str() {
+        "image/png" => ImageFormat::Png,
+        "image/jpeg" => ImageFormat::Jpeg,
+        _ => {
+            return Err(SurfaceError::Invalid(
+                "unsupported pixel artifact format".into(),
+            ));
+        }
+    };
+    if reader.format() != Some(expected_format) {
+        return Err(SurfaceError::Invalid(
+            "pixel artifact encoded format differs from typed metadata".into(),
+        ));
+    }
+    let mut decode_limits = image::Limits::default();
+    decode_limits.max_image_width = Some(limits.max_side);
+    decode_limits.max_image_height = Some(limits.max_side);
+    decode_limits.max_alloc = Some(
+        u64::try_from(limits.max_decoded_bytes)
+            .map_err(|_| SurfaceError::Limit("decoded pixel allocation"))?,
+    );
+    reader.limits(decode_limits);
+    let pixels = reader
+        .decode()
+        .map_err(|error| SurfaceError::Parse(error.to_string()))?;
+    limits.check_pixels(pixels.width(), pixels.height())?;
+    if pixels.width() != expected_width || pixels.height() != expected_height {
+        return Err(SurfaceError::Invalid(
+            "pixel artifact dimensions differ from decoded pixels".into(),
+        ));
+    }
+    Ok(())
+}
+
 pub(super) fn scale_ceil(
     value: u32,
     numerator: u32,

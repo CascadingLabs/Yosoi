@@ -6,17 +6,15 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::Arc};
 
-use super::{ArchiveLimits, Limits, Surface, SurfaceError};
+use super::{ArchiveLimits, Limits, NetworkPayloadKind, NetworkWindow, Surface, SurfaceError};
+use crate::internal::media_documents::{
+    from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
+};
 use crate::{
     archive::DocumentArchiveRef,
     automation_record::AutomationRecord,
-    documents::{
-        Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument,
-    },
+    documents::{Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument},
     locators::Plan,
-};
-use crate::internal::media_documents::{
-    from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
 
 /// Interpreter needed to reconstruct retained evidence, without live authority.
@@ -276,28 +274,27 @@ impl ArchivedSource {
             .clone()
             .ok_or_else(|| SurfaceError::Invalid("archived media metadata is missing".into()))?;
         let bytes = self.restore_bytes(maximum)?;
-        if u64::try_from(bytes.len()).map_err(|_| SurfaceError::Limit("source size"))? > maximum
-        {
+        if u64::try_from(bytes.len()).map_err(|_| SurfaceError::Limit("source size"))? > maximum {
             return Err(SurfaceError::Limit("archived source bytes"));
         }
         let bytes = Arc::new(bytes);
         let document = match kind {
             ArchivedFileKind::Image => {
-                from_archived_image(self.document.clone(), bytes, metadata)
+                { from_archived_image(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Image)
             }
-            .map(FileDocument::Image),
             ArchivedFileKind::Video => {
-                from_archived_video(self.document.clone(), bytes, metadata)
+                { from_archived_video(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Video)
             }
-            .map(FileDocument::Video),
             ArchivedFileKind::Audio => {
-                from_archived_audio(self.document.clone(), bytes, metadata)
+                { from_archived_audio(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Audio)
             }
-            .map(FileDocument::Audio),
             ArchivedFileKind::Binary => {
-                from_archived_binary(self.document.clone(), bytes, metadata)
+                { from_archived_binary(self.document.clone(), bytes, metadata) }
+                    .map(FileDocument::Binary)
             }
-            .map(FileDocument::Binary),
         };
         document.map_err(|error| SurfaceError::Invalid(error.to_string()))
     }
@@ -308,15 +305,12 @@ impl ArchivedSource {
             .and_then(|value| value.checked_div(3))
             .and_then(|value| value.checked_mul(4))
             .ok_or(SurfaceError::Limit("source encoding arithmetic"))?;
-        if u64::try_from(self.content_base64.len())
-            .map_err(|_| SurfaceError::Limit("source size"))?
-            > bound
-        {
-            return Err(SurfaceError::Limit("archived source bytes"));
-        }
         let encoded = self.content_base64.as_deref().ok_or_else(|| {
             SurfaceError::Invalid("archived source payload has not been hydrated".into())
         })?;
+        if u64::try_from(encoded.len()).map_err(|_| SurfaceError::Limit("source size"))? > bound {
+            return Err(SurfaceError::Limit("archived source bytes"));
+        }
         let bytes = STANDARD
             .decode(encoded)
             .map_err(|error| SurfaceError::Parse(error.to_string()))?;
@@ -577,7 +571,8 @@ impl Outcome {
                     source.restore(self.limits.bytes)?;
                 }
             }
-            if source.profile == Some(DocumentProfile::source_json()) && source.file_kind.is_none()
+            if source.profile == Some(DocumentProfile::network_observation_v1())
+                && source.file_kind.is_none()
             {
                 let document = source.restore(self.limits.bytes)?;
                 validate_network_payloads(self, &document)?;
@@ -687,48 +682,57 @@ fn source_matches_key(source: &ArchivedSource, key: &str) -> bool {
 }
 
 fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(), SurfaceError> {
-    let value: serde_json::Value = serde_json::from_slice(document.bytes())
-        .map_err(|error| SurfaceError::Parse(error.to_string()))?;
-    if value.get("schema").and_then(serde_json::Value::as_str) != Some("yosoi.network.v1") {
-        return Ok(());
-    }
-    let payloads = value
-        .get("payloads")
-        .and_then(serde_json::Value::as_array)
-        .ok_or_else(|| SurfaceError::Invalid("network window payloads are missing".into()))?;
-    for payload in payloads {
-        match payload.get("status").and_then(serde_json::Value::as_str) {
-            Some("retained" | "truncated") => {
-                let key = payload
-                    .get("document_id")
-                    .and_then(serde_json::Value::as_str)
-                    .filter(|key| !key.is_empty())
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid(
-                            "retained network body lacks a source document id".into(),
-                        )
-                    })?;
-                if !outcome
-                    .sources
-                    .iter()
-                    .any(|source| source_matches_key(source, key))
-                    && outcome.complete
-                {
-                    return Err(SurfaceError::Invalid(
-                        "retained network body source is missing from the Outcome".into(),
-                    ));
-                }
-            }
-            Some("omitted")
-                if !payload
-                    .get("document_id")
-                    .is_some_and(serde_json::Value::is_null) =>
-            {
+    let window = NetworkWindow::from_document(document)?;
+    for payload in &window.payloads {
+        if !matches!(
+            payload.state,
+            crate::surface::NetworkPayloadState::Retained
+                | crate::surface::NetworkPayloadState::Truncated
+        ) {
+            continue;
+        }
+        let key = payload.document_id.as_deref().ok_or_else(|| {
+            SurfaceError::Invalid("retained network body lacks a source key".into())
+        })?;
+        if key != payload.id {
+            return Err(SurfaceError::Invalid(
+                "network payload id and source key differ".into(),
+            ));
+        }
+        let source = outcome
+            .sources
+            .iter()
+            .find(|source| source_matches_key(source, key));
+        let Some(source) = source else {
+            if outcome.complete {
                 return Err(SurfaceError::Invalid(
-                    "omitted network body must not name a payload source".into(),
+                    "retained network body source is missing from the Outcome".into(),
                 ));
             }
-            _ => {}
+            continue;
+        };
+        let digest = payload.sha256.as_deref().ok_or_else(|| {
+            SurfaceError::Invalid("retained network payload lacks a digest".into())
+        })?;
+        if source.sha256 != digest {
+            return Err(SurfaceError::Invalid(
+                "network payload digest differs from its retained source".into(),
+            ));
+        }
+        match payload.document_kind {
+            Some(NetworkPayloadKind::Html)
+                if source.profile == Some(DocumentProfile::source_html())
+                    && source.file_kind.is_none() => {}
+            Some(NetworkPayloadKind::Json)
+                if source.profile == Some(DocumentProfile::source_json())
+                    && source.file_kind.is_none() => {}
+            Some(NetworkPayloadKind::File)
+                if source.profile.is_none() && source.file_kind.is_some() => {}
+            _ => {
+                return Err(SurfaceError::Invalid(
+                    "network payload projection differs from its archived source".into(),
+                ));
+            }
         }
     }
     Ok(())
@@ -769,7 +773,10 @@ mod tests {
             restored_binary.metadata().declared_media_type(),
             Some("application/octet-stream")
         );
-        assert_eq!(restored_binary.metadata().detected_media_type(), Some("image/png"));
+        assert_eq!(
+            restored_binary.metadata().detected_media_type(),
+            Some("image/png")
+        );
         Ok(())
     }
 }

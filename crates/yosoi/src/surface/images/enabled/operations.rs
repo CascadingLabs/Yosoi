@@ -1,6 +1,8 @@
 use super::PixelRect;
 use crate::documents::{FileLimits, FileMetadata, ImageDocument};
-use crate::surface::{PixelArtifact, PixelLimits, PixelOperation, Reference, Surface, SurfaceError};
+use crate::surface::{
+    Payload, PixelArtifact, PixelLimits, PixelOperation, Reference, Surface, SurfaceError,
+};
 use image::{DynamicImage, ImageFormat};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
@@ -23,6 +25,7 @@ impl ImageCrop {
     }
 }
 impl Surface {
+    /// Returns the original encoded image as a typed pixel artifact.
     pub fn direct_image(&self) -> Result<PixelArtifact, SurfaceError> {
         let image = self.data.image.as_ref().ok_or(SurfaceError::Unknown)?;
         image.limits.check_output(

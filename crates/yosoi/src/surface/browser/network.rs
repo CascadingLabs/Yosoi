@@ -2,15 +2,14 @@
 
 use crate::{
     internal::browser::{
-        controller::NetworkObservationSubscription,
-        page::NetworkObservationEvent as ProviderEvent,
-    },
-    surface::{
-        NetworkByteProvenance, NetworkCoverage, NetworkEvent, NetworkEventKind, NetworkGap, NetworkHeader,
-        NetworkInFlight, NetworkObservationPolicy, NetworkPayloadKind, NetworkPayloadRef,
-        NetworkPayloadState, NetworkProviderClock, NetworkWindow, SurfaceError,
+        controller::NetworkObservationSubscription, page::NetworkObservationEvent as ProviderEvent,
     },
     surface::connection::Result,
+    surface::{
+        NetworkByteProvenance, NetworkCoverage, NetworkEvent, NetworkEventKind, NetworkGap,
+        NetworkHeader, NetworkInFlight, NetworkObservationPolicy, NetworkPayloadKind,
+        NetworkPayloadRef, NetworkPayloadState, NetworkProviderClock, NetworkWindow, SurfaceError,
+    },
 };
 use serde_json::Value;
 use sha2::Digest;
@@ -20,8 +19,8 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::task::JoinHandle;
 use tokio::sync::Notify;
+use tokio::task::JoinHandle;
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 use url::Url;
@@ -38,6 +37,12 @@ struct RequestState {
     response_seen: bool,
 }
 
+#[derive(Clone, Copy)]
+struct BodySizeState {
+    decoded_bytes: Option<u64>,
+    saw_chunk: bool,
+}
+
 #[derive(Clone)]
 struct ResponseLink {
     request_id: String,
@@ -45,9 +50,10 @@ struct ResponseLink {
     payload_id: String,
     sequence: u64,
     window_id: Option<String>,
-    status: Option<u16>,
-    media_type: Option<String>,
-    charset: Option<String>,
+    request_start_observed: bool,
+    declared_media_type: Option<String>,
+    browser_effective_mime: Option<String>,
+    browser_effective_charset: Option<String>,
     content_encoding: Option<String>,
     completed: bool,
     body_attempted: bool,
@@ -60,10 +66,11 @@ pub(super) struct NetworkBodyCandidate {
     pub payload_id: String,
     pub response_sequence: u64,
     pub response_window_id: String,
-    pub status: Option<u16>,
-    pub media_type: Option<String>,
-    pub charset: Option<String>,
+    pub declared_media_type: Option<String>,
+    pub browser_effective_mime: Option<String>,
+    pub browser_effective_charset: Option<String>,
     pub content_encoding: Option<String>,
+    pub provider_reported_body_bytes: Option<u64>,
 }
 
 pub(super) struct NetworkSnapshot {
@@ -86,6 +93,8 @@ struct Journal {
     last_provider_time_us: Option<u64>,
     start_boundary_unknown: bool,
     request_states: HashMap<String, RequestState>,
+    body_sizes: HashMap<String, BodySizeState>,
+    data_lengths_reliable: bool,
     ignored_request_ids: HashSet<String>,
     response_links: HashMap<(String, u32), ResponseLink>,
     completed: HashSet<(String, u32)>,
@@ -112,6 +121,8 @@ impl Journal {
             last_provider_time_us: None,
             start_boundary_unknown: true,
             request_states: HashMap::new(),
+            body_sizes: HashMap::new(),
+            data_lengths_reliable: true,
             ignored_request_ids: HashSet::new(),
             response_links: HashMap::new(),
             completed: HashSet::new(),
@@ -129,7 +140,6 @@ pub(super) struct NetworkCapture {
     session_id: String,
     tab_id: String,
     subscription_id: String,
-    started_at_unix_us: u64,
     policy: NetworkObservationPolicy,
     journal: Arc<Mutex<Journal>>,
     stop: CancellationToken,
@@ -147,14 +157,13 @@ impl NetworkCapture {
         tab_id: String,
         policy: NetworkObservationPolicy,
         cancellation: CancellationToken,
+        authority_cancellation: CancellationToken,
     ) -> Result<Self> {
         policy.validate()?;
         let started_at_unix_us = unix_micros()?;
         let subscription_id = uuid::Uuid::new_v4().to_string();
         let network_was_previously_enabled = subscription.network_was_previously_enabled();
-        let journal = Arc::new(Mutex::new(Journal::new(
-            network_was_previously_enabled,
-        )));
+        let journal = Arc::new(Mutex::new(Journal::new(network_was_previously_enabled)));
         let task_journal = Arc::clone(&journal);
         let signal = Arc::new(Notify::new());
         let task_signal = Arc::clone(&signal);
@@ -176,7 +185,18 @@ impl NetworkCapture {
                     () = cancellation.cancelled() => {
                         if let Ok(mut state) = task_journal.lock() {
                             state.disconnected = true;
+                            state.data_lengths_reliable = false;
                             push_gap(&mut state, "owning_session_cancelled", None);
+                        }
+                        subscription.settle();
+                        task_signal.notify_one();
+                        return;
+                    }
+                    () = authority_cancellation.cancelled() => {
+                        if let Ok(mut state) = task_journal.lock() {
+                            state.disconnected = true;
+                            state.data_lengths_reliable = false;
+                            push_gap(&mut state, "native_work_authority_lost", None);
                         }
                         subscription.settle();
                         task_signal.notify_one();
@@ -185,6 +205,7 @@ impl NetworkCapture {
                     () = &mut lifetime => {
                         if let Ok(mut state) = task_journal.lock() {
                             state.expired = true;
+                            state.data_lengths_reliable = false;
                             push_gap(&mut state, "subscription_lifetime_limit", None);
                         }
                         subscription.settle();
@@ -195,13 +216,19 @@ impl NetworkCapture {
                 };
                 match event {
                     Ok(event) => {
+                        let provider_gap = matches!(&event, ProviderEvent::ProviderGap { .. });
                         store_provider_event(&task_journal, &task_policy, event);
                         task_signal.notify_one();
+                        if provider_gap {
+                            subscription.settle();
+                            return;
+                        }
                     }
                     Err(_error) => {
                         if let Ok(mut state) = task_journal.lock() {
                             state.disconnected = true;
                             state.overflow = true;
+                            state.data_lengths_reliable = false;
                             push_gap(&mut state, "provider_event_stream_lost", None);
                         }
                         subscription.settle();
@@ -215,7 +242,6 @@ impl NetworkCapture {
             session_id,
             tab_id,
             subscription_id,
-            started_at_unix_us,
             policy,
             journal,
             stop,
@@ -237,7 +263,9 @@ impl NetworkCapture {
         timeout_ms: u64,
     ) -> Result<Option<u64>> {
         if timeout_ms == 0 || timeout_ms > 30_000 {
-            return Err(io::Error::other("network event wait must be between 1 and 30000 ms").into());
+            return Err(
+                io::Error::other("network event wait must be between 1 and 30000 ms").into(),
+            );
         }
         let deadline = Instant::now()
             .checked_add(Duration::from_millis(timeout_ms))
@@ -245,18 +273,26 @@ impl NetworkCapture {
         loop {
             let notified = self.signal.notified();
             tokio::pin!(notified);
-            let state = self
-                .journal
-                .lock()
-                .map_err(|_| io::Error::other("network journal lock poisoned"))?;
-            if state.sequence > after_sequence {
-                return Ok(Some(state.sequence));
+            let (sequence, ended) = {
+                let state = self
+                    .journal
+                    .lock()
+                    .map_err(|_| io::Error::other("network journal lock poisoned"))?;
+                (state.sequence, state.disconnected || state.expired)
+            };
+            if sequence > after_sequence {
+                return Ok(Some(sequence));
             }
-            if state.disconnected || state.expired {
-                return Err(io::Error::other("network event subscription ended before a new event").into());
+            if ended {
+                return Err(io::Error::other(
+                    "network event subscription ended before a new event",
+                )
+                .into());
             }
-            drop(state);
-            if tokio::time::timeout_at(deadline, &mut notified).await.is_err() {
+            if tokio::time::timeout_at(deadline, &mut notified)
+                .await
+                .is_err()
+            {
                 return Ok(None);
             }
         }
@@ -334,25 +370,43 @@ impl NetworkCapture {
                 .max_response_bodies
                 .saturating_sub(state.attempted_response_bodies);
             let mut candidates = Vec::new();
-            for response in state.response_links.values_mut() {
-                if candidates.len() >= available {
-                    break;
-                }
-                if response.completed && !response.body_attempted {
-                    if let Some(response_window_id) = response.window_id.clone() {
-                        response.body_attempted = true;
-                        candidates.push(NetworkBodyCandidate {
-                            request_id: response.request_id.clone(),
-                            hop: response.hop,
-                            payload_id: response.payload_id.clone(),
-                            response_sequence: response.sequence,
-                            response_window_id,
-                            status: response.status,
-                            media_type: response.media_type.clone(),
-                            charset: response.charset.clone(),
-                            content_encoding: response.content_encoding.clone(),
-                        });
-                    }
+            let mut eligible: Vec<_> = state
+                .response_links
+                .iter()
+                .filter(|(_, response)| {
+                    response.completed && !response.body_attempted && response.window_id.is_some()
+                })
+                .map(|(key, response)| (response.sequence, key.clone()))
+                .collect();
+            eligible.sort_by_key(|(sequence, _)| *sequence);
+            for (_, key) in eligible.into_iter().take(available) {
+                let Some(response) = state.response_links.get_mut(&key) else {
+                    continue;
+                };
+                if let Some(response_window_id) = response.window_id.clone() {
+                    response.body_attempted = true;
+                    let provider_reported_body_bytes =
+                        if state.data_lengths_reliable && response.request_start_observed {
+                            state
+                                .body_sizes
+                                .get(&response.request_id)
+                                .filter(|size| size.saw_chunk)
+                                .and_then(|size| size.decoded_bytes)
+                        } else {
+                            None
+                        };
+                    candidates.push(NetworkBodyCandidate {
+                        request_id: response.request_id.clone(),
+                        hop: response.hop,
+                        payload_id: response.payload_id.clone(),
+                        response_sequence: response.sequence,
+                        response_window_id,
+                        declared_media_type: response.declared_media_type.clone(),
+                        browser_effective_mime: response.browser_effective_mime.clone(),
+                        browser_effective_charset: response.browser_effective_charset.clone(),
+                        content_encoding: response.content_encoding.clone(),
+                        provider_reported_body_bytes,
+                    });
                 }
             }
             state.attempted_response_bodies = state
@@ -364,7 +418,10 @@ impl NetworkCapture {
             Vec::new()
         };
         for candidate in &body_candidates {
-            if payloads.iter().any(|payload: &NetworkPayloadRef| payload.id == candidate.payload_id) {
+            if payloads
+                .iter()
+                .any(|payload: &NetworkPayloadRef| payload.id == candidate.payload_id)
+            {
                 continue;
             }
             if let Some(response) = state
@@ -409,7 +466,7 @@ impl NetworkCapture {
                 dropped_events: state.dropped_events,
                 disconnected: state.disconnected,
                 expired: state.expired,
-                instrumentation_escalated: true,
+                instrumentation_escalated: !state.network_was_previously_enabled,
                 network_was_previously_enabled: state.network_was_previously_enabled,
                 late_events: state.late_events,
                 filtered_events: state.filtered_events,
@@ -427,17 +484,23 @@ impl NetworkCapture {
         drop(state);
         trim_window(&mut window, max_window_bytes)?;
         body_candidates.retain(|candidate| {
-            window.payloads.iter().any(|payload| payload.id == candidate.payload_id)
+            window
+                .payloads
+                .iter()
+                .any(|payload| payload.id == candidate.payload_id)
                 && (candidate.response_window_id != window.window_id
                     || window.events.iter().any(|event| {
-                    event.sequence == candidate.response_sequence
-                        && event.request_id == candidate.request_id
-                        && event.hop == candidate.hop
-                        && matches!(&event.kind, NetworkEventKind::ResponseReceived { .. })
+                        event.sequence == candidate.response_sequence
+                            && event.request_id == candidate.request_id
+                            && event.hop == candidate.hop
+                            && matches!(&event.kind, NetworkEventKind::ResponseReceived { .. })
                     }))
         });
         window.validate()?;
-        Ok(NetworkSnapshot { window, body_candidates })
+        Ok(NetworkSnapshot {
+            window,
+            body_candidates,
+        })
     }
 
     pub(super) fn retain_body(
@@ -446,9 +509,12 @@ impl NetworkCapture {
         payload_id: String,
         bytes: &[u8],
         provider_base64_encoded: bool,
+        text_utf8_normalized: bool,
         state: NetworkPayloadState,
         document_kind: Option<NetworkPayloadKind>,
         document_id: Option<String>,
+        detected_media_type: Option<String>,
+        projection_basis: Option<crate::surface::NetworkProjectionBasis>,
         reason: Option<String>,
     ) -> Result<NetworkPayloadRef> {
         let mut journal = self
@@ -460,15 +526,28 @@ impl NetworkCapture {
         let allowed = bytes.len() <= self.policy.max_body_bytes
             && journal.retained_body_bytes.saturating_add(bytes.len())
                 <= self.policy.max_total_body_bytes;
-        if !allowed && matches!(state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated) {
+        if !allowed
+            && matches!(
+                state,
+                NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+            )
+        {
             outcome_state = NetworkPayloadState::Unavailable;
             outcome_reason = Some("response_body_retention_limit".into());
         }
-        if allowed && matches!(outcome_state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated) {
+        if allowed
+            && matches!(
+                outcome_state,
+                NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+            )
+        {
             journal.retained_response_bodies = journal.retained_response_bodies.saturating_add(1);
             journal.retained_body_bytes = journal.retained_body_bytes.saturating_add(bytes.len());
         }
-        let retained = if matches!(outcome_state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated) {
+        let retained = if matches!(
+            outcome_state,
+            NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+        ) {
             bytes.len()
         } else {
             0
@@ -487,12 +566,26 @@ impl NetworkCapture {
             body_capture_at_unix_us,
             state: outcome_state,
             document_kind: has_payload.then_some(document_kind).flatten(),
-            declared_media_type: candidate.media_type.clone(),
-            charset: candidate.charset.clone(),
+            projection_basis: if has_payload { projection_basis } else { None },
+            declared_media_type: candidate.declared_media_type.clone(),
+            browser_effective_mime: candidate.browser_effective_mime.clone(),
+            browser_effective_charset: candidate.browser_effective_charset.clone(),
+            detected_media_type: if has_payload {
+                detected_media_type
+            } else {
+                None
+            },
             content_encoding: candidate.content_encoding.clone(),
-            byte_provenance: if has_payload { NetworkByteProvenance::CdpDecodedResponseBody } else { NetworkByteProvenance::None },
+            byte_provenance: if has_payload {
+                NetworkByteProvenance::CdpDecodedResponseBody
+            } else {
+                NetworkByteProvenance::None
+            },
             provider_base64_encoded,
-            retained_bytes: u64::try_from(retained).map_err(|_| SurfaceError::Limit("network body size"))?,
+            provider_reported_body_bytes: candidate.provider_reported_body_bytes,
+            text_utf8_normalized: has_payload && text_utf8_normalized,
+            retained_bytes: u64::try_from(retained)
+                .map_err(|_| SurfaceError::Limit("network body size"))?,
             sha256: has_payload.then(|| format!("{:x}", sha2::Sha256::digest(bytes))),
             document_id: if has_payload { document_id } else { None },
             reason: outcome_reason,
@@ -532,6 +625,18 @@ fn store_provider_event(
         return;
     };
     match event {
+        ProviderEvent::ProviderGap {
+            reason,
+            dropped_events,
+        } => {
+            state.disconnected = true;
+            state.data_lengths_reliable = false;
+            if let Some(dropped) = dropped_events {
+                state.overflow = true;
+                state.dropped_events = state.dropped_events.saturating_add(dropped);
+            }
+            push_gap(&mut state, reason, dropped_events);
+        }
         ProviderEvent::Request(event) => {
             let id = event.request_id.inner().clone();
             let method = event.request.method.clone();
@@ -546,6 +651,20 @@ fn store_provider_event(
                 return;
             }
             state.ignored_request_ids.remove(&id);
+            if !state.body_sizes.contains_key(&id) {
+                if state.body_sizes.len() < policy.max_events {
+                    state.body_sizes.insert(
+                        id.clone(),
+                        BodySizeState {
+                            decoded_bytes: Some(0),
+                            saw_chunk: false,
+                        },
+                    );
+                } else {
+                    state.data_lengths_reliable = false;
+                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
+                }
+            }
             let prior = state.request_states.get(&id).cloned();
             if prior.is_none() && state.request_states.len() >= policy.max_events {
                 state.overflow = true;
@@ -605,10 +724,7 @@ fn store_provider_event(
                 NetworkEventKind::RequestStarted {
                     url: url.clone(),
                     method: method.clone(),
-                    resource_type: event
-                        .r#type
-                        .as_ref()
-                        .map(|value| value.as_ref().to_owned()),
+                    resource_type: event.r#type.as_ref().map(|value| value.as_ref().to_owned()),
                     headers: retained_headers(event.request.headers.inner(), policy),
                 },
                 event.frame_id.as_ref().map(|frame| frame.inner().clone()),
@@ -626,15 +742,50 @@ fn store_provider_event(
                 );
             }
         }
+        ProviderEvent::DataReceived(event) => {
+            let id = event.request_id.inner().clone();
+            if state.ignored_request_ids.contains(&id) {
+                state.filtered_events = state.filtered_events.saturating_add(1);
+                return;
+            }
+            let length = u64::try_from(event.data_length).ok();
+            if !state.body_sizes.contains_key(&id) {
+                if state.body_sizes.len() >= policy.max_events {
+                    state.data_lengths_reliable = false;
+                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
+                    return;
+                }
+                state.body_sizes.insert(
+                    id.clone(),
+                    BodySizeState {
+                        decoded_bytes: length,
+                        saw_chunk: true,
+                    },
+                );
+            } else if let Some(size) = state.body_sizes.get_mut(&id) {
+                size.saw_chunk = true;
+                size.decoded_bytes = match (size.decoded_bytes, length) {
+                    (Some(previous), Some(current)) => previous.checked_add(current),
+                    _ => None,
+                };
+            }
+            if length.is_none()
+                || state
+                    .body_sizes
+                    .get(&id)
+                    .is_some_and(|size| size.decoded_bytes.is_none())
+            {
+                state.data_lengths_reliable = false;
+                push_gap(&mut state, "decoded_body_size_unavailable", None);
+            }
+        }
         ProviderEvent::Response(event) => {
             let id = event.request_id.inner().clone();
             if state.ignored_request_ids.contains(&id) {
                 state.filtered_events = state.filtered_events.saturating_add(1);
                 return;
             }
-            if !policy.allowed_methods.is_empty()
-                && !state.request_states.contains_key(&id)
-            {
+            if !policy.allowed_methods.is_empty() && !state.request_states.contains_key(&id) {
                 state.filtered_events = state.filtered_events.saturating_add(1);
                 return;
             }
@@ -647,6 +798,20 @@ fn store_provider_event(
                 return;
             }
             let existing = state.request_states.get(&id).cloned();
+            if !state.body_sizes.contains_key(&id) {
+                if state.body_sizes.len() < policy.max_events {
+                    state.body_sizes.insert(
+                        id.clone(),
+                        BodySizeState {
+                            decoded_bytes: None,
+                            saw_chunk: false,
+                        },
+                    );
+                } else {
+                    state.data_lengths_reliable = false;
+                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
+                }
+            }
             if existing.is_none() && state.request_states.len() >= policy.max_events {
                 state.overflow = true;
                 state.dropped_events = state.dropped_events.saturating_add(1);
@@ -657,8 +822,9 @@ fn store_provider_event(
             let request_start_observed = existing.is_some();
             let status = u16::try_from(event.response.status).ok();
             let content_encoding = header_value(event.response.headers.inner(), "content-encoding");
-            let media_type = nonempty(&event.response.mime_type);
-            let charset = nonempty(&event.response.charset);
+            let declared_media_type = header_value(event.response.headers.inner(), "content-type");
+            let browser_effective_mime = bounded_header_value(&event.response.mime_type);
+            let browser_effective_charset = bounded_header_value(&event.response.charset);
             let response_url = url;
             let payload_id = uuid::Uuid::new_v4().to_string();
             let sequence = emit(
@@ -671,8 +837,9 @@ fn store_provider_event(
                 NetworkEventKind::ResponseReceived {
                     url: response_url.clone(),
                     status,
-                    media_type: media_type.clone(),
-                    charset: charset.clone(),
+                    declared_media_type: declared_media_type.clone(),
+                    browser_effective_mime: browser_effective_mime.clone(),
+                    browser_effective_charset: browser_effective_charset.clone(),
                     content_encoding: content_encoding.clone(),
                     headers: retained_headers(event.response.headers.inner(), policy),
                 },
@@ -699,9 +866,10 @@ fn store_provider_event(
                         payload_id,
                         sequence,
                         window_id: None,
-                        status,
-                        media_type,
-                        charset,
+                        request_start_observed,
+                        declared_media_type,
+                        browser_effective_mime,
+                        browser_effective_charset,
                         content_encoding,
                         completed,
                         body_attempted: false,
@@ -800,7 +968,11 @@ fn emit(
         state.late_events = state.late_events.saturating_add(1);
     }
     if let Some(time) = provider_time_us {
-        state.last_provider_time_us = Some(state.last_provider_time_us.map_or(time, |prior| prior.max(time)));
+        state.last_provider_time_us = Some(
+            state
+                .last_provider_time_us
+                .map_or(time, |prior| prior.max(time)),
+        );
     }
     let event = NetworkEvent {
         sequence,
@@ -888,19 +1060,28 @@ fn retained_url(raw_url: &str, policy: &NetworkObservationPolicy) -> Option<(Str
     let origin = url.origin().ascii_serialization();
     let retained = url.to_string();
     if retained.len() > MAX_RETAINED_URL_BYTES {
-        return Some((origin, format!("{}://{}/:redacted", url.scheme(), url.host_str()?)));
+        return Some((
+            origin,
+            format!("{}://{}/:redacted", url.scheme(), url.host_str()?),
+        ));
     }
     Some((origin, retained))
 }
 
 fn origin_allowed(origin: &str, policy: &NetworkObservationPolicy) -> bool {
     policy.allowed_origins.is_empty()
-        || policy.allowed_origins.iter().any(|allowed| allowed == origin)
+        || policy
+            .allowed_origins
+            .iter()
+            .any(|allowed| allowed == origin)
 }
 
 fn method_allowed(method: &str, policy: &NetworkObservationPolicy) -> bool {
     policy.allowed_methods.is_empty()
-        || policy.allowed_methods.iter().any(|allowed| allowed == method)
+        || policy
+            .allowed_methods
+            .iter()
+            .any(|allowed| allowed == method)
 }
 
 fn retained_headers(headers: &Value, policy: &NetworkObservationPolicy) -> Vec<NetworkHeader> {
@@ -975,11 +1156,16 @@ fn not_requested_payload(
         body_capture_at_unix_us: None,
         state: NetworkPayloadState::NotRequested,
         document_kind: None,
-        declared_media_type: response.media_type.clone(),
-        charset: response.charset.clone(),
+        projection_basis: None,
+        declared_media_type: response.declared_media_type.clone(),
+        browser_effective_mime: response.browser_effective_mime.clone(),
+        browser_effective_charset: response.browser_effective_charset.clone(),
+        detected_media_type: None,
         content_encoding: response.content_encoding.clone(),
         byte_provenance: NetworkByteProvenance::None,
         provider_base64_encoded: false,
+        provider_reported_body_bytes: None,
+        text_utf8_normalized: false,
         retained_bytes: 0,
         sha256: None,
         document_id: None,
@@ -1011,7 +1197,9 @@ fn trim_window(window: &mut NetworkWindow, maximum: usize) -> Result<()> {
                 .find(|gap| gap.reason == "network_document_byte_limit")
             {
                 gap.dropped_events = Some(
-                    gap.dropped_events.map_or(0, |count| count).saturating_add(1),
+                    gap.dropped_events
+                        .map_or(0, |count| count)
+                        .saturating_add(1),
                 );
             } else {
                 window.gaps.push(NetworkGap {
@@ -1067,6 +1255,10 @@ fn unix_micros() -> Result<u64> {
 
 fn nonempty(value: &str) -> Option<String> {
     (!value.is_empty()).then(|| value.to_owned())
+}
+
+fn bounded_header_value(value: &str) -> Option<String> {
+    (!value.is_empty() && value.len() <= MAX_HEADER_VALUE_BYTES).then(|| value.to_owned())
 }
 
 fn safe_error(value: &str) -> String {

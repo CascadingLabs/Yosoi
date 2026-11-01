@@ -11,23 +11,24 @@ impl Work {
         self.session.inner.backend.cancellation()
     }
 
+    pub(crate) fn surface_authority_cancellation(&self) -> tokio_util::sync::CancellationToken {
+        self.control.closing()
+    }
+
+    pub(crate) fn surface_authority_active(&self) -> bool {
+        self.control.authority_active()
+    }
+
     pub(crate) async fn surface_start_network_subscription(
         &self,
         max_events: usize,
         max_buffered_events: usize,
-        max_resource_buffer_bytes: usize,
-        max_total_buffer_bytes: usize,
     ) -> Result<crate::internal::browser::controller::NetworkObservationSubscription, SessionError>
     {
         let _operation = self.operation()?;
         self.call(
             self.control
-                .start_network_observation_subscription(
-                    max_events,
-                    max_buffered_events,
-                    max_resource_buffer_bytes,
-                    max_total_buffer_bytes,
-                ),
+                .start_network_observation_subscription(max_events, max_buffered_events),
         )
         .await
     }

@@ -6,6 +6,6 @@ mod index;
 mod operations;
 mod reader;
 
-pub(super) use index::{ImageData, region_digest};
+pub(in crate::surface) use index::{ImageData, region_digest};
 pub use operations::ImageCrop;
 pub use reader::ImageSurface;

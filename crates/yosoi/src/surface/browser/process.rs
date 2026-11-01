@@ -4,7 +4,7 @@ use crate::surface::connection::{Result, Trace};
 use crate::{
     documents::{Document, DocumentEpoch, FileLimits, FileMetadata, ImageDocument},
     surface::{
-        DocumentPolicies, Limits, PixelArtifact, PixelCoordinateKind, PixelCoordinateSpace, PixelLimits,
+        DocumentPolicies, PixelArtifact, PixelCoordinateKind, PixelCoordinateSpace, PixelLimits,
         PixelOrientation, PixelSource, Surface,
     },
 };
@@ -13,7 +13,7 @@ use image::{ImageFormat, ImageReader};
 use rustls::crypto::{CryptoProvider, ring};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{env, fs, io, path::Path, process::Stdio, time::Duration};
+use std::{env, fs, io, process::Stdio, time::Duration};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},

@@ -1,19 +1,29 @@
 //! Retained native Session/Work binding; it never launches a second browser.
+use super::network::NetworkCapture;
 use crate::{
     automation_record::OperationStatus,
-    documents::{Document, DocumentEpoch, FileDocument, FileLimits, FileMetadata, file_from_bytes},
+    documents::{
+        Document, DocumentEpoch, FileDocument, FileLimits, FileMetadata, ImageDocument,
+        file_from_bytes,
+    },
     internal::browser::page::SurfaceInput,
+    internal::web_capture::{
+        ClassificationBasis, ClassificationExtent, DeclarationDisagreement,
+        SourceClassificationOutcome, SourceFormat, SourceMediaType, XmlProfile,
+        classify_source_bytes,
+    },
     session::{ActionKind, Work},
     surface::{
-        DocumentPolicies, DocumentPolicy, NetworkObservationPolicy, NetworkPayload,
-        NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, Surface,
+        DocumentPolicies, DocumentPolicy, NetworkObservationPolicy, NetworkPayloadKind,
+        NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue, NetworkProjectionBasis,
+        PixelArtifact, PixelLimits, PixelOrientation, Surface,
         connection::{Operation, Result, Trace},
     },
 };
-use serde_json::{Value, json};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use std::{collections::HashMap, fs, io, path::Path};
-use super::network::NetworkCapture;
+use image::ImageReader;
+use serde_json::{Value, json};
+use std::{collections::HashMap, io, io::Cursor};
 
 pub(super) struct NativeBrowser {
     work: Option<Work>,
@@ -24,7 +34,7 @@ pub(super) struct NativeBrowser {
     pub documents: DocumentPolicies,
     network_policy: NetworkObservationPolicy,
     network: Option<NetworkCapture>,
-    network_payloads: HashMap<String, (NetworkPayload, NetworkPayloadRef)>,
+    network_payloads: HashMap<String, (NetworkPayloadValue, NetworkPayloadRef)>,
 }
 
 impl NativeBrowser {
@@ -86,23 +96,9 @@ impl NativeBrowser {
         policy.validate()?;
         let work = self.work()?;
         let cancellation = work.surface_session_cancellation();
-        let max_resource_buffer_bytes = if policy.retain_bodies {
-            policy.max_body_bytes
-        } else {
-            1
-        };
-        let max_total_buffer_bytes = if policy.retain_bodies {
-            policy.max_total_body_bytes
-        } else {
-            1
-        };
+        let authority_cancellation = work.surface_authority_cancellation();
         let subscription = work
-            .surface_start_network_subscription(
-                policy.max_events,
-                policy.max_buffered_events,
-                max_resource_buffer_bytes,
-                max_total_buffer_bytes,
-            )
+            .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
             .await?;
         let capture = NetworkCapture::start(
             subscription,
@@ -110,12 +106,15 @@ impl NativeBrowser {
             self.tab_id.clone(),
             policy.clone(),
             cancellation,
+            authority_cancellation,
         )?;
         self.network_policy = policy;
         self.network = Some(capture);
-        Ok(json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
+        Ok(
+            json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
             "provider":"chrome_cdp","body_retention":self.network_policy.retain_bodies,
-            "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}))
+            "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}),
+        )
     }
 
     pub async fn cancel_network(&mut self) -> Result<Value> {
@@ -125,11 +124,7 @@ impl NativeBrowser {
         Ok(json!({"active":false,"cancelled":true}))
     }
 
-    pub async fn wait_network_event(
-        &self,
-        after_sequence: u64,
-        timeout_ms: u64,
-    ) -> Result<Value> {
+    pub async fn wait_network_event(&self, after_sequence: u64, timeout_ms: u64) -> Result<Value> {
         let network = self
             .network
             .as_ref()
@@ -149,52 +144,120 @@ impl NativeBrowser {
         let mut snapshot = self
             .network
             .as_mut()
-            .ok_or_else(|| io::Error::other("subscribe to native network events before observing them"))?
+            .ok_or_else(|| {
+                io::Error::other("subscribe to native network events before observing them")
+            })?
             .snapshot(policy.max_bytes)?;
         if self.network_policy.retain_bodies {
+            let max_body_bytes = u64::try_from(self.network_policy.max_body_bytes)
+                .map_err(|_| io::Error::other("network body limit is unsupported"))?;
             for candidate in snapshot.body_candidates {
                 let payload_id = candidate.payload_id.clone();
-                let response = self
-                    .work()?
-                    .surface_capture_network_body(
-                        &candidate.request_id,
-                        self.network_policy.max_body_bytes,
-                    )
-                    .await;
-                let (payload, kind, bytes, base64_encoded, state, document_id, reason) = match response {
-                    Ok(body) => {
-                        let bytes = body.bytes().to_vec();
-                        let truncated = !body.complete;
-                        match self.project_network_body(&payload_id, &candidate, &bytes) {
-                            Ok((payload, kind, document_id, reason)) => (
-                                Some(payload),
-                                Some(kind),
-                                bytes,
-                                body.provider_base64_encoded,
-                                if truncated { NetworkPayloadState::Truncated } else { NetworkPayloadState::Retained },
-                                Some(document_id),
-                                reason,
-                            ),
-                            Err(_) => (
-                                None,
-                                None,
-                                bytes,
-                                body.provider_base64_encoded,
-                                NetworkPayloadState::Unsupported,
-                                None,
-                                Some("existing_document_projection_rejected_response".into()),
-                            ),
+                let skip_reason = if !self.work()?.surface_authority_active() {
+                    Some("native_work_authority_lost_before_body_read")
+                } else {
+                    match candidate.provider_reported_body_bytes {
+                        None => Some("response_body_size_unknown_before_read"),
+                        Some(bytes) if bytes > max_body_bytes => {
+                            Some("response_body_exceeds_retention_limit_before_read")
                         }
+                        Some(_) => None,
                     }
-                    Err(_) => (
+                };
+                let (
+                    payload,
+                    kind,
+                    bytes,
+                    base64_encoded,
+                    text_utf8_normalized,
+                    state,
+                    document_id,
+                    detected_media_type,
+                    projection_basis,
+                    reason,
+                ) = if let Some(reason) = skip_reason {
+                    (
                         None,
                         None,
                         Vec::new(),
                         false,
+                        false,
                         NetworkPayloadState::Unavailable,
                         None,
-                        Some("provider_response_body_unavailable".into()),
-                    ),
+                        None,
+                        None,
+                        Some(reason.into()),
+                    )
+                } else {
+                    let response = self
+                        .work()?
+                        .surface_capture_network_body(
+                            &candidate.request_id,
+                            self.network_policy.max_body_bytes,
+                        )
+                        .await;
+                    match response {
+                        Ok(body) => {
+                            let bytes = body.bytes().to_vec();
+                            let truncated = !body.complete;
+                            let text_utf8_normalized = !body.provider_base64_encoded;
+                            match self.project_network_body(
+                                &payload_id,
+                                &candidate,
+                                &bytes,
+                                body.complete,
+                                text_utf8_normalized,
+                            ) {
+                                Ok((
+                                    payload,
+                                    kind,
+                                    document_id,
+                                    detected_media_type,
+                                    projection_basis,
+                                    reason,
+                                )) => (
+                                    Some(payload),
+                                    Some(kind),
+                                    bytes,
+                                    body.provider_base64_encoded,
+                                    text_utf8_normalized,
+                                    if truncated {
+                                        NetworkPayloadState::Truncated
+                                    } else {
+                                        NetworkPayloadState::Retained
+                                    },
+                                    Some(document_id),
+                                    detected_media_type,
+                                    Some(projection_basis),
+                                    reason,
+                                ),
+                                Err(_) => (
+                                    None,
+                                    None,
+                                    bytes,
+                                    body.provider_base64_encoded,
+                                    text_utf8_normalized,
+                                    NetworkPayloadState::Unsupported,
+                                    None,
+                                    None,
+                                    None,
+                                    Some("existing_document_projection_rejected_response".into()),
+                                ),
+                            }
+                        }
+                        Err(_) => (
+                            None,
+                            None,
+                            Vec::new(),
+                            false,
+                            false,
+                            NetworkPayloadState::Unavailable,
+                            None,
+                            None,
+                            None,
+                            Some("provider_response_body_unavailable".into()),
+                        ),
+                    }
                 };
                 let reference = self
                     .network
@@ -205,13 +268,18 @@ impl NativeBrowser {
                         payload_id,
                         &bytes,
                         base64_encoded,
+                        text_utf8_normalized,
                         state,
                         kind,
                         document_id,
+                        detected_media_type,
+                        projection_basis,
                         reason,
                     )?;
-                if matches!(reference.state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated)
-                    && let Some(payload) = payload
+                if matches!(
+                    reference.state,
+                    NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+                ) && let Some(payload) = payload
                 {
                     self.network_payloads
                         .insert(reference.id.clone(), (payload, reference.clone()));
@@ -250,25 +318,37 @@ impl NativeBrowser {
         payload_id: &str,
         candidate: &super::network::NetworkBodyCandidate,
         bytes: &[u8],
-    ) -> Result<(NetworkPayload, NetworkPayloadKind, String, Option<String>)> {
-        let media_type = candidate
-            .media_type
-            .as_deref()
-            .map_or("", |value| value)
-            .split(';')
-            .next()
-            .map_or("", |value| value)
-            .trim()
-            .to_ascii_lowercase();
-        let html = matches!(media_type.as_str(), "text/html" | "application/xhtml+xml");
-        let json = media_type == "application/json"
-            || media_type == "text/json"
-            || media_type.ends_with("+json");
-        if (html || json)
-            && candidate.charset.as_deref().is_none_or(|charset| {
-                matches!(charset.trim().to_ascii_lowercase().as_str(), "utf-8" | "utf8")
-            })
-        {
+        complete: bool,
+        text_utf8_normalized: bool,
+    ) -> Result<(
+        NetworkPayloadValue,
+        NetworkPayloadKind,
+        String,
+        Option<String>,
+        NetworkProjectionBasis,
+        Option<String>,
+    )> {
+        let source_media_type = candidate
+            .declared_media_type
+            .clone()
+            .map_or(SourceMediaType::Absent, SourceMediaType::from_text);
+        let extent = if complete {
+            ClassificationExtent::Complete
+        } else {
+            ClassificationExtent::RetainedPrefix
+        };
+        let classification = classify_source_bytes(&source_media_type, bytes, extent);
+        let source_format = match &classification {
+            SourceClassificationOutcome::Classified(classified) => Some(classified.format()),
+            _ => None,
+        };
+        let detected_media_type = detected_source_media_type(&classification);
+        let (html, json) = match source_format {
+            Some(SourceFormat::Html) => (true, false),
+            Some(SourceFormat::Json) => (false, true),
+            _ => (false, false),
+        };
+        if (html || json) && text_utf8_normalized {
             let document = if html {
                 Document::html(payload_id, bytes.to_vec())
             } else {
@@ -277,11 +357,18 @@ impl NativeBrowser {
             if let Ok(document) = document
                 && document.parse().is_ok()
             {
-                let kind = if html { NetworkPayloadKind::Html } else { NetworkPayloadKind::Json };
+                let kind = if html {
+                    NetworkPayloadKind::Html
+                } else {
+                    NetworkPayloadKind::Json
+                };
                 return Ok((
-                    NetworkPayload::Document(document),
+                    NetworkPayloadValue::Document(document),
                     kind,
                     payload_id.to_owned(),
+                    detected_media_type,
+                    requests_projection_basis(&classification)
+                        .unwrap_or(NetworkProjectionBasis::OpaqueBytes),
                     None,
                 ));
             }
@@ -290,7 +377,7 @@ impl NativeBrowser {
             .with_capture_id(candidate.request_id.clone())?
             .with_session_id(self.session_id.clone())?
             .with_tab_id(self.tab_id.clone())?;
-        let metadata = if let Some(media_type) = candidate.media_type.as_ref() {
+        let metadata = if let Some(media_type) = candidate.declared_media_type.as_ref() {
             metadata.with_declared_media_type(media_type.clone())?
         } else {
             metadata
@@ -303,8 +390,33 @@ impl NativeBrowser {
             metadata,
             FileLimits::new(maximum)?,
         )?;
-        let reason = (html || json).then(|| "declared_text_document_not_projected_as_utf8".into());
-        Ok((NetworkPayload::File(file), NetworkPayloadKind::File, candidate.request_id.clone(), reason))
+        let detected_media_type = file
+            .metadata()
+            .detected_media_type()
+            .map(str::to_owned)
+            .or(detected_media_type);
+        let projection_basis = if file.metadata().detected_media_type().is_some() {
+            NetworkProjectionBasis::TypedFileMagic
+        } else {
+            NetworkProjectionBasis::OpaqueBytes
+        };
+        let reason = if (html || json) && !text_utf8_normalized {
+            Some("text_response_body_not_returned_as_unicode_text".into())
+        } else if matches!(source_format, Some(SourceFormat::Xml(_))) {
+            Some("existing_requests_xml_projection_not_available_for_network_body".into())
+        } else if (html || json) {
+            Some("existing_requests_source_projection_rejected_response".into())
+        } else {
+            None
+        };
+        Ok((
+            NetworkPayloadValue::File(file),
+            NetworkPayloadKind::File,
+            candidate.request_id.clone(),
+            detected_media_type,
+            projection_basis,
+            reason,
+        ))
     }
 
     pub fn read_network_payload(
@@ -324,7 +436,9 @@ impl NativeBrowser {
             .get(&requested_reference.id)
             .ok_or_else(|| io::Error::other("network payload is unavailable or was evicted"))?;
         if reference != requested_reference {
-            return Err(io::Error::other("network payload reference does not match this Session").into());
+            return Err(
+                io::Error::other("network payload reference does not match this Session").into(),
+            );
         }
         let bytes = payload.bytes();
         if offset > bytes.len() {
@@ -337,14 +451,16 @@ impl NativeBrowser {
         let chunk = bytes
             .get(offset..end)
             .ok_or_else(|| io::Error::other("network payload range is invalid"))?;
-        Ok(json!({"payload":reference,"total_bytes":bytes.len(),"offset":offset,
-            "data_base64":STANDARD.encode(chunk),"next_offset":(end < bytes.len()).then_some(end)}))
+        Ok(
+            json!({"payload":reference,"total_bytes":bytes.len(),"offset":offset,
+            "data_base64":STANDARD.encode(chunk),"next_offset":(end < bytes.len()).then_some(end)}),
+        )
     }
 
     pub fn retained_network_payload(
         &self,
         id: &str,
-    ) -> Option<(NetworkPayloadRef, NetworkPayload)> {
+    ) -> Option<(NetworkPayloadRef, NetworkPayloadValue)> {
         self.network_payloads
             .get(id)
             .map(|(payload, reference)| (reference.clone(), payload.clone()))
@@ -402,7 +518,7 @@ impl NativeBrowser {
     }
 
     pub async fn capture_evidence(
-        &self,
+        &mut self,
         epoch: u64,
         representation: super::BrowserRepresentation,
     ) -> Result<(Surface, Document, Value)> {
@@ -480,7 +596,7 @@ impl NativeBrowser {
         Ok(receipt.id)
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
         let receipt = self.work()?.screenshot().await?;
         if receipt.status != OperationStatus::Observed {
             return Err(io::Error::other("native screenshot did not complete").into());
@@ -489,8 +605,24 @@ impl NativeBrowser {
             .observation
             .and_then(|value| value.screenshot)
             .ok_or_else(|| io::Error::other("native screenshot evidence missing"))?;
-        fs::write(output.join(format!("{name}.png")), bytes)?;
-        Ok(())
+        let pixel_limits = PixelLimits::default().validate()?;
+        let max_bytes = u64::try_from(pixel_limits.max_output_bytes)
+            .map_err(|_| io::Error::other("native screenshot byte limit is unsupported"))?;
+        let document = ImageDocument::from_bytes_with_limits(
+            format!("surface-screenshot-{}", receipt.id),
+            bytes,
+            FileLimits::new(max_bytes)?,
+        )?;
+        let dimensions = ImageReader::new(Cursor::new(document.bytes()))
+            .with_guessed_format()?
+            .into_dimensions()?;
+        PixelArtifact::from_image_document(
+            document,
+            dimensions.0,
+            dimensions.1,
+            PixelOrientation::ExifUnapplied,
+        )
+        .map_err(|error| io::Error::other(error.to_string()).into())
     }
 
     pub async fn close(&mut self) -> Result<()> {
@@ -502,4 +634,49 @@ impl NativeBrowser {
         }
         Ok(())
     }
+}
+
+fn detected_source_media_type(classification: &SourceClassificationOutcome) -> Option<String> {
+    let format = match classification {
+        SourceClassificationOutcome::Classified(classified)
+            if classified.basis() == ClassificationBasis::Sniffed =>
+        {
+            Some(classified.format())
+        }
+        SourceClassificationOutcome::Classified(classified) => match classified.disagreement() {
+            DeclarationDisagreement::Supports => Some(classified.format()),
+            DeclarationDisagreement::Conflicts(format) => Some(format),
+            DeclarationDisagreement::Inconclusive => None,
+        },
+        SourceClassificationOutcome::Unsupported { candidates, .. }
+        | SourceClassificationOutcome::Unknown { candidates, .. }
+            if candidates.len() == 1 =>
+        {
+            candidates.first().copied()
+        }
+        SourceClassificationOutcome::Unknown { .. }
+        | SourceClassificationOutcome::Unsupported { .. }
+        | SourceClassificationOutcome::Ambiguous { .. } => None,
+    }?;
+    let media_type = match format {
+        SourceFormat::Html => "text/html",
+        SourceFormat::Xml(XmlProfile::Xhtml) => "application/xhtml+xml",
+        SourceFormat::Xml(XmlProfile::Generic) => "application/xml",
+        SourceFormat::Json => "application/json",
+        SourceFormat::PlainText => "text/plain",
+    };
+    Some(media_type.to_owned())
+}
+
+fn requests_projection_basis(
+    classification: &SourceClassificationOutcome,
+) -> Option<NetworkProjectionBasis> {
+    let SourceClassificationOutcome::Classified(classified) = classification else {
+        return None;
+    };
+    Some(match classified.basis() {
+        ClassificationBasis::Declared => NetworkProjectionBasis::RequestsDeclared,
+        ClassificationBasis::StructuredSuffix => NetworkProjectionBasis::RequestsStructuredSuffix,
+        ClassificationBasis::Sniffed => NetworkProjectionBasis::RequestsSniffed,
+    })
 }

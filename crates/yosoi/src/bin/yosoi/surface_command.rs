@@ -1,6 +1,7 @@
 //! JSON-lines transport over the public Surface runtime.
 use clap::{Args, Subcommand};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     error::Error,
     io::{self, BufRead, Read},
@@ -17,12 +18,13 @@ use tokio::{
     sync::mpsc::{Receiver, channel},
 };
 use yosoi::surface::{
-    ArchivePolicy, ImageSession, Limits as SurfaceLimits, PixelLimits, SurfaceConnection,
-    SurfacePolicy, archive as surface_archive,
+    ArchivePolicy, ImageSession, Limits as SurfaceLimits, NetworkPayloadRef, NetworkPayloadState,
+    NetworkWindow, PixelLimits, SurfaceConnection, SurfacePolicy, archive as surface_archive,
     browser::{BrowserSurface, archive as browser_archive},
     video::VideoSession,
 };
 use yosoi::{
+    Archive,
     automation_record::OperationStatus,
     policy::{Acquisition, BrowserMode, Page, Policy},
     session::{self, SessionPolicy},
@@ -117,6 +119,21 @@ enum SurfaceCommand {
         /// Optional output directory for archived video PNG evidence.
         #[arg(long)]
         output: Option<PathBuf>,
+    },
+    /// Restore one retained network payload from a portable Surface outcome, offline.
+    Payload {
+        /// Portable `.yosoi` file produced by a recorded network run.
+        #[arg(long)]
+        record: PathBuf,
+        /// Payload id copied from a NetworkPayloadRef in the archived NetworkWindow.
+        #[arg(long)]
+        id: String,
+        /// Destination file for the exact restored Document or FileDocument bytes.
+        #[arg(long)]
+        file: PathBuf,
+        /// Maximum restored source bytes.
+        #[arg(long, default_value_t = 67108864)]
+        max_bytes: u64,
     },
     /// Repeat recorded click intentions with fresh references and a fresh session per iteration.
     Repeat {
@@ -252,7 +269,9 @@ async fn drive_native(
     if receipt.status != OperationStatus::Observed {
         let _ = work.release().await;
         let _ = session.close().await;
-        return Err(io::Error::other("native browser did not observe its initial navigation").into());
+        return Err(
+            io::Error::other("native browser did not observe its initial navigation").into(),
+        );
     }
     let mut surface_policy = policy(output, archive);
     if let Some(path) = network_policy_file {
@@ -266,6 +285,70 @@ async fn drive_native(
     let closed = session.close().await;
     result?;
     closed?;
+    Ok(())
+}
+
+async fn export_network_payload(
+    record: PathBuf,
+    id: String,
+    file: PathBuf,
+    max_bytes: u64,
+) -> Result<()> {
+    if id.is_empty() || id.len() > 1024 || max_bytes == 0 {
+        return Err(io::Error::other("network payload id and byte limit must be nonempty").into());
+    }
+    let temporary = tempfile::tempdir()?;
+    let archive = Archive::open(temporary.path()).await?;
+    let reference = archive.import_file(record).await?;
+    let outcome = archive.read(&reference).await?;
+    let mut payload_reference: Option<NetworkPayloadRef> = None;
+    for source in &outcome.sources {
+        if source.profile.is_none_or(|profile| {
+            profile.schema() != yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1
+        }) {
+            continue;
+        }
+        let document = source.restore(max_bytes)?;
+        let window = NetworkWindow::from_document(&document)?;
+        if let Some(payload) = window.payloads.iter().find(|payload| {
+            payload.id == id
+                && matches!(
+                    payload.state,
+                    NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+                )
+        }) {
+            payload_reference = Some(payload.clone());
+            break;
+        }
+    }
+    let payload_reference = payload_reference.ok_or_else(|| {
+        io::Error::other("retained network payload id is absent from the outcome")
+    })?;
+    if payload_reference.document_id.as_deref() != Some(id.as_str()) {
+        return Err(io::Error::other("network payload source key does not match its id").into());
+    }
+    let source = outcome
+        .sources
+        .iter()
+        .find(|source| source.key == payload_reference.id)
+        .ok_or_else(|| io::Error::other("network payload source is absent from the outcome"))?;
+    let bytes = if source.file_kind.is_some() {
+        outcome
+            .source_file_document(&id, max_bytes)?
+            .bytes()
+            .to_vec()
+    } else if source.profile.is_some() {
+        outcome.source_document(&id, max_bytes)?.bytes().to_vec()
+    } else {
+        return Err(
+            io::Error::other("network payload source has no supported Document kind").into(),
+        );
+    };
+    std::fs::write(&file, &bytes)?;
+    println!(
+        "{}",
+        json!({"payload_id":id,"file":file,"bytes":bytes.len(),"sha256":format!("{:x}", Sha256::digest(&bytes)),"declared_media_type":payload_reference.declared_media_type,"mode":"offline"})
+    );
     Ok(())
 }
 fn policy(output: PathBuf, archive: Option<PathBuf>) -> SurfacePolicy {
@@ -301,7 +384,15 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             network_bodies,
             network_policy,
         } => {
-            drive_native(url, headless, output, archive, network_bodies, network_policy).await
+            drive_native(
+                url,
+                headless,
+                output,
+                archive,
+                network_bodies,
+                network_policy,
+            )
+            .await
         }
         SurfaceCommand::Video {
             file,
@@ -356,6 +447,12 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             println!("{}", serde_json::to_string(&value)?);
             Ok(())
         }
+        SurfaceCommand::Payload {
+            record,
+            id,
+            file,
+            max_bytes,
+        } => export_network_payload(record, id, file, max_bytes).await,
         SurfaceCommand::Export { record, file } => surface_archive::export(&record, &file)
             .await
             .map_err(Into::into),

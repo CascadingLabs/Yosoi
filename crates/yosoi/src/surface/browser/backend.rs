@@ -4,12 +4,13 @@ use crate::{
     documents::Document,
     session::Work,
     surface::{
-        DocumentPolicies, NetworkObservationPolicy, NetworkPayload, NetworkPayloadRef, Surface,
+        DocumentPolicies, NetworkObservationPolicy, NetworkPayloadRef, NetworkPayloadValue,
+        PixelArtifact, Surface,
         connection::{Result, Trace},
     },
 };
 use serde_json::Value;
-use std::{io, path::Path};
+use std::{fs, io, path::Path};
 
 pub(super) enum Source {
     Driver(Box<process::Browser>),
@@ -92,11 +93,11 @@ impl Browser {
     }
 
     pub async fn capture_evidence(
-        &self,
+        &mut self,
         epoch: u64,
         representation: super::BrowserRepresentation,
     ) -> Result<(Surface, Document, Value)> {
-        match &self.source {
+        match &mut self.source {
             Source::Driver(_) => {
                 Err(io::Error::other("isolated browser supports DOM evidence only").into())
             }
@@ -132,19 +133,13 @@ impl Browser {
         }
     }
 
-    pub async fn wait_network_event(
-        &self,
-        after_sequence: u64,
-        timeout_ms: u64,
-    ) -> Result<Value> {
+    pub async fn wait_network_event(&self, after_sequence: u64, timeout_ms: u64) -> Result<Value> {
         match &self.source {
             Source::Driver(_) => Err(io::Error::other(
                 "isolated ChromeDriver does not expose native network event streams",
             )
             .into()),
-            Source::Native(native) => {
-                native.wait_network_event(after_sequence, timeout_ms).await
-            }
+            Source::Native(native) => native.wait_network_event(after_sequence, timeout_ms).await,
         }
     }
 
@@ -166,15 +161,21 @@ impl Browser {
     pub fn retained_network_payload(
         &self,
         id: &str,
-    ) -> Option<(NetworkPayloadRef, NetworkPayload)> {
+    ) -> Option<(NetworkPayloadRef, NetworkPayloadValue)> {
         self.native()?.retained_network_payload(id)
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
         match &self.source {
-            Source::Driver(browser) => browser.screenshot(output, name).await,
-            Source::Native(browser) => browser.screenshot(output, name).await,
+            Source::Driver(browser) => browser.screenshot().await,
+            Source::Native(browser) => browser.screenshot_artifact().await,
         }
+    }
+
+    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+        let artifact = self.screenshot_artifact().await?;
+        fs::write(output.join(format!("{name}.png")), artifact.bytes())?;
+        Ok(())
     }
 
     pub async fn close(&mut self) -> Result<()> {

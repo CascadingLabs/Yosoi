@@ -1,14 +1,20 @@
 //! Versioned live network evidence, separate from ordinary source JSON.
 
 use crate::{
-    documents::{Document, DocumentId, DocumentProfile, FileDocument},
+    documents::{Document, DocumentClass, DocumentId, DocumentProfile, FileDocument},
     surface::SurfaceError,
 };
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use url::Url;
 
 /// Schema identifier for frozen native network observation Documents.
 pub const NETWORK_OBSERVATION_SCHEMA: &str = "yosoi.network.v1";
+
+/// Shared Page-lifetime CDP response buffer cap, matching the native 8 MiB body limit.
+pub const NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES: usize = 8 * 1024 * 1024;
+/// Shared Page-lifetime CDP aggregate buffer cap, matching the native watch byte limit.
+pub const NETWORK_PROVIDER_TOTAL_BUFFER_BYTES: usize = 8 * 1024 * 1024;
 
 /// Typed status returned after an explicitly requested native subscription starts.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -104,7 +110,9 @@ impl NetworkWindow {
                 ));
             }
         }
-        if self.events.len() > 65_536 || self.in_flight.len() > 65_536 || self.payloads.len() > 65_536
+        if self.events.len() > 65_536
+            || self.in_flight.len() > 65_536
+            || self.payloads.len() > 65_536
         {
             return Err(SurfaceError::Limit("network observation item count"));
         }
@@ -112,7 +120,8 @@ impl NetworkWindow {
         for event in &self.events {
             if event.sequence <= prior_sequence || event.request_id.is_empty() {
                 return Err(SurfaceError::Invalid(
-                    "network event sequences must increase and request identities must be nonempty".into(),
+                    "network event sequences must increase and request identities must be nonempty"
+                        .into(),
                 ));
             }
             prior_sequence = event.sequence;
@@ -141,8 +150,11 @@ impl NetworkWindow {
                     if payload.document_id.is_none()
                         || payload.document_id.as_deref() != Some(payload.id.as_str())
                         || payload.document_kind.is_none()
+                        || payload.projection_basis.is_none()
                         || payload.sha256.is_none()
-                        || payload.byte_provenance != NetworkByteProvenance::CdpDecodedResponseBody =>
+                        || payload.byte_provenance
+                            != NetworkByteProvenance::CdpDecodedResponseBody
+                        || (payload.provider_base64_encoded && payload.text_utf8_normalized) =>
                 {
                     return Err(SurfaceError::Invalid(
                         "retained network payload lacks its document and byte provenance".into(),
@@ -153,9 +165,12 @@ impl NetworkWindow {
                 | NetworkPayloadState::Unsupported
                     if payload.document_id.is_some()
                         || payload.document_kind.is_some()
+                        || payload.projection_basis.is_some()
+                        || payload.detected_media_type.is_some()
                         || payload.sha256.is_some()
                         || payload.retained_bytes != 0
-                        || payload.byte_provenance != NetworkByteProvenance::None =>
+                        || payload.byte_provenance != NetworkByteProvenance::None
+                        || payload.text_utf8_normalized =>
                 {
                     return Err(SurfaceError::Invalid(
                         "unretained network payload claims retained bytes".into(),
@@ -185,7 +200,8 @@ impl NetworkWindow {
     /// ordinary source JSON and does not acquire network-window semantics.
     pub fn to_document(&self, id: impl Into<String>) -> Result<Document, SurfaceError> {
         self.validate()?;
-        let bytes = serde_json::to_vec(self).map_err(|error| SurfaceError::Parse(error.to_string()))?;
+        let bytes =
+            serde_json::to_vec(self).map_err(|error| SurfaceError::Parse(error.to_string()))?;
         Document::from_profile(
             DocumentId::try_new(id).map_err(|error| SurfaceError::Invalid(error.to_string()))?,
             DocumentProfile::network_observation_v1(),
@@ -277,10 +293,12 @@ pub enum NetworkEventKind {
         url: String,
         /// HTTP response status, when supplied by the provider.
         status: Option<u16>,
-        /// Declared response media type, when supplied by the provider.
-        media_type: Option<String>,
-        /// Declared character encoding when the provider supplied it.
-        charset: Option<String>,
+        /// Content-Type header value observed from the response, including parameters.
+        declared_media_type: Option<String>,
+        /// Browser-effective MIME value reported by CDP.
+        browser_effective_mime: Option<String>,
+        /// Browser-effective charset reported by CDP, separate from the raw header value.
+        browser_effective_charset: Option<String>,
         /// Declared content encoding, when supplied by the provider.
         content_encoding: Option<String>,
         /// Headers selected by the explicit allowlist policy.
@@ -342,7 +360,7 @@ pub struct NetworkCoverage {
     pub disconnected: bool,
     /// Whether the subscription reached its configured lifetime bound.
     pub expired: bool,
-    /// Whether this subscription explicitly enabled CDP Network instrumentation.
+    /// Whether this subscription enabled CDP Network from a previously disabled state.
     pub instrumentation_escalated: bool,
     /// Whether the page had already enabled Network instrumentation before this subscription.
     pub network_was_previously_enabled: bool,
@@ -392,16 +410,28 @@ pub struct NetworkPayloadRef {
     pub state: NetworkPayloadState,
     /// Existing source Document or FileDocument representation used for the bytes.
     pub document_kind: Option<NetworkPayloadKind>,
-    /// Declared response media type, when available.
+    /// Basis for choosing that projection, absent when no bytes were retained.
+    pub projection_basis: Option<NetworkProjectionBasis>,
+    /// Observed Content-Type response header value, including parameters.
     pub declared_media_type: Option<String>,
-    /// Declared character encoding, when available.
-    pub charset: Option<String>,
+    /// Browser-effective MIME value reported by CDP.
+    pub browser_effective_mime: Option<String>,
+    /// Browser-effective charset reported by CDP.
+    pub browser_effective_charset: Option<String>,
+    /// Detected media type from shared source sniffing or typed file magic.
+    pub detected_media_type: Option<String>,
     /// Declared content encoding, when available.
     pub content_encoding: Option<String>,
     /// Whether retained bytes are provider-decoded transfer bytes or exact wire bytes.
     pub byte_provenance: NetworkByteProvenance,
     /// Whether CDP returned a base64 wrapper that Yosoi decoded into retained bytes.
     pub provider_base64_encoded: bool,
+    /// Sum of CDP `Network.dataReceived.dataLength` values, absent if unknown.
+    pub provider_reported_body_bytes: Option<u64>,
+    /// Whether CDP returned Unicode text, retained as its UTF-8 normalized view.
+    /// This is distinct from the response header value preserved in `declared_media_type`.
+    #[serde(default)]
+    pub text_utf8_normalized: bool,
     /// Retained byte count, including zero for a deliberately omitted body.
     pub retained_bytes: u64,
     /// Lowercase SHA-256 of retained bytes, absent when no body was retained.
@@ -424,12 +454,36 @@ pub enum NetworkPayloadKind {
     File,
 }
 
+/// Evidence used to select the retained body's shared Document/FileDocument projection.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NetworkProjectionBasis {
+    /// Requests source classification selected the declared media type.
+    RequestsDeclared,
+    /// Requests source classification selected a structured `+json` or `+xml` suffix.
+    RequestsStructuredSuffix,
+    /// Requests source classification selected a supported format by bounded sniffing.
+    RequestsSniffed,
+    /// Existing typed media detection selected a FileDocument from file magic.
+    TypedFileMagic,
+    /// No supported source format or typed file signature was detected.
+    OpaqueBytes,
+}
+
 /// Retention choices recorded beside every frozen window.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkRetention {
+    /// Maximum subscription lifetime in milliseconds.
+    pub max_duration_ms: u64,
+    /// Lifetime event journal limit.
+    pub max_events: usize,
     /// Maximum queued provider events per typed listener.
     pub max_buffered_events: usize,
+    /// Total serialized event metadata cap.
+    pub max_event_bytes: usize,
+    /// Maximum frozen windows retained by the live reader.
+    pub max_windows: usize,
     /// Whether URL paths were retained; credentials and fragments are always removed.
     pub retain_url_path: bool,
     /// Whether URL query strings were retained.
@@ -438,9 +492,15 @@ pub struct NetworkRetention {
     pub retained_header_names: Vec<String>,
     /// Whether the caller enabled response-body retention.
     pub retain_bodies: bool,
-    /// CDP per-resource response buffer bound applied when the subscription armed.
+    /// Maximum response bodies retained by the caller.
+    pub max_response_bodies: usize,
+    /// Maximum retained bytes for one caller-visible body.
+    pub max_body_bytes: usize,
+    /// Maximum caller-visible response bytes retained by this subscription.
+    pub max_total_body_bytes: usize,
+    /// Shared Page-lifetime CDP per-resource response buffer bound.
     pub provider_resource_buffer_bytes: usize,
-    /// CDP total response buffer bound applied when the subscription armed.
+    /// Shared Page-lifetime CDP total response buffer bound.
     pub provider_total_buffer_bytes: usize,
     /// Origin allowlist, empty when no origin filter was selected.
     pub allowed_origins: Vec<String>,
@@ -549,7 +609,9 @@ impl NetworkObservationPolicy {
             if name.is_empty()
                 || name.len() > 128
                 || !name.is_ascii()
-                || name.bytes().any(|byte| !byte.is_ascii_alphanumeric() && byte != b'-')
+                || name
+                    .bytes()
+                    .any(|byte| !byte.is_ascii_alphanumeric() && byte != b'-')
             {
                 return Err(SurfaceError::Invalid(
                     "network header allowlist contains an invalid name".into(),
@@ -562,7 +624,11 @@ impl NetworkObservationPolicy {
     /// Returns the serializable retention summary stored in each window.
     pub fn retention(&self) -> NetworkRetention {
         NetworkRetention {
+            max_duration_ms: self.max_duration_ms,
+            max_events: self.max_events,
             max_buffered_events: self.max_buffered_events,
+            max_event_bytes: self.max_event_bytes,
+            max_windows: self.max_windows,
             retain_url_path: self.retain_url_path,
             retain_url_query: self.retain_url_query,
             retained_header_names: self
@@ -572,16 +638,11 @@ impl NetworkObservationPolicy {
                 .filter(|name| !is_sensitive_header(name))
                 .collect(),
             retain_bodies: self.retain_bodies,
-            provider_resource_buffer_bytes: if self.retain_bodies {
-                self.max_body_bytes
-            } else {
-                1
-            },
-            provider_total_buffer_bytes: if self.retain_bodies {
-                self.max_total_body_bytes
-            } else {
-                1
-            },
+            max_response_bodies: self.max_response_bodies,
+            max_body_bytes: self.max_body_bytes,
+            max_total_body_bytes: self.max_total_body_bytes,
+            provider_resource_buffer_bytes: NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+            provider_total_buffer_bytes: NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
             allowed_origins: self.allowed_origins.clone(),
             allowed_methods: self.allowed_methods.clone(),
         }
@@ -597,6 +658,10 @@ fn is_sensitive_header(name: &str) -> bool {
             | "set-cookie"
             | "cookie2"
             | "x-api-key"
+            | "x-api-token"
+            | "x-access-token"
+            | "x-refresh-token"
+            | "x-session-token"
             | "x-auth-token"
     )
 }
@@ -627,22 +692,84 @@ pub enum NetworkByteProvenance {
     None,
 }
 
-/// A separately retained HTML, JSON, or opaque file response body.
+/// Concrete Document or FileDocument projection for one retained response.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum NetworkPayload {
+pub enum NetworkPayloadValue {
     /// HTML or JSON projected through the existing immutable Document API.
     Document(Document),
     /// Binary or media bytes classified by the existing FileDocument factory.
     File(FileDocument),
 }
 
+/// A separately retained body paired with its exact NetworkPayloadRef.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NetworkPayload {
+    /// The response link and body retention state from a frozen NetworkWindow.
+    pub reference: NetworkPayloadRef,
+    /// The existing source Document or FileDocument carrying these bytes.
+    pub value: NetworkPayloadValue,
+}
+
 impl NetworkPayload {
     /// Returns the exact retained payload bytes without copying.
     pub fn bytes(&self) -> &[u8] {
-        match self {
-            Self::Document(document) => document.bytes(),
-            Self::File(document) => document.bytes(),
+        match &self.value {
+            NetworkPayloadValue::Document(document) => document.bytes(),
+            NetworkPayloadValue::File(document) => document.bytes(),
         }
     }
-}
 
+    /// Restores a retained body from a portable Surface outcome without opening a browser.
+    pub fn from_outcome(
+        outcome: &super::Outcome,
+        reference: &NetworkPayloadRef,
+        maximum: u64,
+    ) -> Result<Self, SurfaceError> {
+        if !matches!(
+            reference.state,
+            NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+        ) || reference.document_id.as_deref() != Some(reference.id.as_str())
+        {
+            return Err(SurfaceError::Unknown);
+        }
+        let Some(kind) = reference.document_kind else {
+            return Err(SurfaceError::Invalid(
+                "retained network payload has no projection kind".into(),
+            ));
+        };
+        let value = match kind {
+            NetworkPayloadKind::Html | NetworkPayloadKind::Json => {
+                let document = outcome.source_document(&reference.id, maximum)?;
+                let expected = if kind == NetworkPayloadKind::Html {
+                    DocumentClass::SourceHtml
+                } else {
+                    DocumentClass::SourceJson
+                };
+                if document.class() != expected {
+                    return Err(SurfaceError::Invalid(
+                        "network payload source Document has the wrong profile".into(),
+                    ));
+                }
+                NetworkPayloadValue::Document(document)
+            }
+            NetworkPayloadKind::File => {
+                NetworkPayloadValue::File(outcome.source_file_document(&reference.id, maximum)?)
+            }
+        };
+        let digest = match &value {
+            NetworkPayloadValue::Document(document) => {
+                format!("{:x}", sha2::Sha256::digest(document.bytes()))
+            }
+            NetworkPayloadValue::File(document) => document.sha256().to_owned(),
+        };
+        if reference.sha256.as_deref() != Some(digest.as_str()) {
+            return Err(SurfaceError::Invalid(
+                "restored network payload digest differs from its response reference".into(),
+            ));
+        }
+        Ok(Self {
+            reference: reference.clone(),
+            value,
+        })
+    }
+}

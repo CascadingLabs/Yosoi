@@ -946,14 +946,16 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
         PixelLimits::default(),
     )?;
     assert!(!surface.descriptor().controllable);
-    assert!(surface
-        .descriptor()
-        .capabilities
-        .iter()
-        .any(|capability| capability.id == "image.direct@1"));
+    assert!(
+        surface
+            .descriptor()
+            .capabilities
+            .iter()
+            .any(|capability| capability.id == "image.direct@1")
+    );
     let page = surface.read(&ReadRequest {
         operation: ReadOperation::Overview,
-        budget: yosoi::surface::model::Budget::default(),
+        budget: Budget::default(),
         continuation: None,
     })?;
     assert!(matches!(page, ReadResult::Page(_)));
@@ -995,29 +997,36 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
     let decoded = image::load_from_memory(crop.png())?.to_rgba8();
     assert_eq!(decoded.dimensions(), (128, 64));
     assert_eq!(decoded.get_pixel(0, 0).0, [255, 0, 0, 255]);
-    assert_eq!(crop.artifact.info().transform.parent_identity.as_deref(), Some(direct.info().identity.as_str()));
-    assert!(PixelArtifact::crop_from(
-        &crop.artifact,
-        ImageDocument::from_bytes("nested-crop", crop.png().to_vec())?,
-        PixelRect {
-            x: 0,
-            y: 0,
-            width: 8,
-            height: 8,
-        },
-    )
-    .is_err());
-    assert!(surface
-        .crop_rect(
+    assert_eq!(
+        crop.artifact.info().transform.parent_identity.as_deref(),
+        Some(direct.info().identity.as_str())
+    );
+    assert!(
+        PixelArtifact::crop_from(
+            &crop.artifact,
+            ImageDocument::from_bytes("nested-crop", crop.png().to_vec())?,
             PixelRect {
-                x: 255,
+                x: 0,
                 y: 0,
-                width: 2,
-                height: 2,
+                width: 8,
+                height: 8,
             },
-            100_000,
         )
-        .is_err());
+        .is_err()
+    );
+    assert!(
+        surface
+            .crop_rect(
+                PixelRect {
+                    x: 255,
+                    y: 0,
+                    width: 2,
+                    height: 2,
+                },
+                100_000,
+            )
+            .is_err()
+    );
 
     let differently_tiled = ImageSurface::from_image_document(
         &document,
@@ -1026,7 +1035,10 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
         PixelLimits::default(),
     )?;
     let second_direct = differently_tiled.direct_image()?;
-    assert_ne!(surface.index().identity(), differently_tiled.index().identity());
+    assert_ne!(
+        surface.index().identity(),
+        differently_tiled.index().identity()
+    );
     assert_eq!(direct.source_identity()?, second_direct.source_identity()?);
     assert_eq!(direct.info().identity, second_direct.info().identity);
     Ok(())
@@ -1049,12 +1061,8 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
     image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
     let source_bytes = encoded.into_inner();
     let source = ImageDocument::from_bytes("dense-dashboard", source_bytes.clone())?;
-    let surface = ImageSurface::from_image_document(
-        &source,
-        256,
-        Limits::default(),
-        PixelLimits::default(),
-    )?;
+    let surface =
+        ImageSurface::from_image_document(&source, 256, Limits::default(), PixelLimits::default())?;
 
     let started = std::time::Instant::now();
     let direct = surface.direct_image()?;
@@ -1094,18 +1102,14 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
 #[tokio::test]
 async fn archived_pixel_artifact_restores_typed_pixels_and_provenance() -> TestResult {
     use std::io::Cursor;
-    use yosoi::{Archive, documents::ImageDocument};
     use yosoi::surface::PixelArtifact;
+    use yosoi::{Archive, documents::ImageDocument};
 
     let pixels = image::RgbaImage::from_pixel(32, 16, image::Rgba([30, 120, 210, 255]));
     let mut encoded = Cursor::new(Vec::new());
     image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
     let document = ImageDocument::from_bytes("archive-raster", encoded.into_inner())?;
-    let surface = Surface::from_image_document(
-        &document,
-        64,
-        Limits::default(),
-    )?;
+    let surface = Surface::from_image_document(&document, 64, Limits::default())?;
     let crop = surface.crop_image(
         PixelRect {
             x: 4,
@@ -1123,7 +1127,63 @@ async fn archived_pixel_artifact_restores_typed_pixels_and_provenance() -> TestR
     let reopened = Archive::open(temporary.path()).await?;
     let restored = PixelArtifact::read_from(&reopened, &reference).await?;
     assert_eq!(restored, crop.artifact);
-    assert_eq!(restored.info().transform.operation, crop.artifact.info().transform.operation);
+    assert_eq!(
+        restored.info().transform.operation,
+        crop.artifact.info().transform.operation
+    );
     assert_eq!(restored.bytes(), crop.png());
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+#[test]
+fn pixel_artifact_rejects_corrupt_encoded_pixels_with_valid_header() -> TestResult {
+    use std::io::Cursor;
+    use yosoi::{
+        documents::ImageDocument,
+        surface::{PixelArtifact, PixelOrientation},
+    };
+
+    let pixels = image::RgbaImage::from_pixel(8, 4, image::Rgba([12, 34, 56, 255]));
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
+    let mut bytes = encoded.into_inner();
+    let mut offset = 8_usize;
+    let mut corrupted = false;
+    while let Some(header) = bytes.get(offset..offset.saturating_add(8)) {
+        if header.len() != 8 {
+            break;
+        }
+        let chunk_bytes = header.get(..4).ok_or("PNG chunk length is truncated")?;
+        let chunk_len = u32::from_be_bytes(
+            chunk_bytes
+                .try_into()
+                .map_err(|_| "PNG chunk length is invalid")?,
+        );
+        let chunk_type = header.get(4..8).ok_or("PNG chunk type is truncated")?;
+        let data_offset = offset.checked_add(8).ok_or("PNG chunk offset overflow")?;
+        if chunk_type == b"IDAT" {
+            let value = bytes
+                .get_mut(data_offset)
+                .ok_or("PNG image data is empty")?;
+            *value = 0;
+            corrupted = true;
+            break;
+        }
+        let chunk_size = usize::try_from(chunk_len).map_err(|_| "PNG chunk is too large")?;
+        offset = data_offset
+            .checked_add(chunk_size)
+            .and_then(|end| end.checked_add(4))
+            .ok_or("PNG chunk boundary overflow")?;
+    }
+    if !corrupted {
+        return Err("PNG fixture has no IDAT chunk".into());
+    }
+
+    let document = ImageDocument::from_bytes("corrupt-pixels", bytes)?;
+    assert!(
+        PixelArtifact::from_image_document(document, 8, 4, PixelOrientation::ExifUnapplied,)
+            .is_err()
+    );
     Ok(())
 }
