@@ -11,17 +11,58 @@ The Rust `surface::browser` and `surface::video` modules own their source behavi
 
 ## Choose the reader
 
-| Reader       | Input                           | Supported operations                                         |
-| ------------ | ------------------------------- | ------------------------------------------------------------ |
-| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates |
-| WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent   |
-| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop    |
+| Reader       | Input                                              | Supported operations                                         |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------ |
+| Surface      | Any of the six Document classes                    | Overview, expand, literal find, inspect, parent, coordinates |
+| WebSurface   | Prepared HTML, DOM, AX or browser network evidence | Shared describe/read protocol, including search and parent   |
+| VideoSurface | Frozen regular local video file                    | Shared timeline reads, temporal addresses, frame and crop    |
 
 `BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
 `Surface::from_image` in Rust and `Surface.from_image` in Python prepare PNG/JPEG pixels as a region tree. They do not perform OCR or apply EXIF rotation. `combine` joins named independently captured views without claiming an atomic observation. Keep each constituent reference when projecting between views.
 
 Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable document reads need neither browser nor decoder.
+
+## Bind an existing native browser
+
+Use `surface::consume_session(browser.clone(), policy)` in Rust or
+`await surface.consume_session(browser, policy)` in Python to observe the initial
+tab of an acquired native browser Session. The browser-specific constructor is
+`BrowserSurface::consume_session` / `BrowserSurface.consume_session`. These calls
+acquire that tab's native Work lease and retain its existing Session owner;
+they do not launch ChromeDriver or another browser.
+
+The browser facade exposes the same function as
+`browser::surface::consume_session` in Rust and `browser.surface.consume_session`
+in Python. All spellings use the same native adapter.
+
+If Work is already held, transfer it with `BrowserSurface::consume_work` /
+`BrowserSurface.consume_work`. Rust can select an existing `Tab` with
+`BrowserSurface::consume_tab(&tab, policy)` or transfer `tab.work().await?`.
+Python currently exposes consumption of its initial-tab Work, not explicit tab
+creation. A transferred Work cannot be used by its previous owner.
+
+Native policy, per-tab control, shared execution capacity and cancellation remain
+authoritative. Event-driven Surface waits retain tab control and can yield the
+worker permit when `yield_on_wait` is enabled. Surface cursors still require
+attach and hot ownership before effects; cooling or detaching a cursor does not
+release the binding's physical Work lease.
+
+Close the Surface to release Work. The Session and tab remain caller-owned, so
+keep the browser owner open during use and close it explicitly afterward.
+Observation records retain the native Session/tab/document identity. Surface's
+positive capture sequence is a separate clock from the native document epoch,
+which can be zero before the first navigation. A native binding's
+release receipt reports Work release rather than claiming browser shutdown.
+Offline evidence replay remains available. Generic fresh-browser rerun rejects
+native bindings because it cannot recreate the caller's native Session policy;
+acquire a fresh native Session explicitly when executing the workflow again.
+
+This consumed backend currently supports regular native Chrome with DOM and AX
+observations, native input, navigation and screenshots. Its descriptor advertises
+DOM and AX; native network observation and optional BiDi engines are not supported
+by this binding yet. The existing isolated `open(url, ...)` provider keeps its
+separate DOM-only behavior.
 
 ## Keep reference types distinct
 
@@ -40,9 +81,37 @@ SourceId, SurfaceId, ObservationId, AddressToken, and ContinuationToken validate
 
 Limits controls input bytes, node count, tree depth, and automatic overview depth. Budget controls the complete serialized result's UTF-8 bytes and routing entry count. The defaults are 8 MiB of document input, 200,000 nodes, depth 96, overview depth 6, and 4,096 reply bytes with 20 entries.
 
-The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 16,384. A useful item that cannot fit produces an explicit error.
+The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 65,536. A useful item that cannot fit produces an explicit error.
 
 Copy continuations into the same operation with the same reference and query. Inspection chunks are UTF-8 aligned; assemble every chunk before parsing complete JSON. Coverage describes retained source evidence, while `next` describes pagination. Byte bounds do not establish a tokenizer-independent token count.
+
+## Select browser evidence and per-type limits
+
+`SurfacePolicy.documents` holds independent `DocumentPolicy` values for `dom`,
+`ax`, `html`, `xml`, `json`, `text` and `network`. Python calls the ordinary JSON
+field `json_document`; its serialized name remains `json`. Each policy selects
+`max_bytes`, `max_depth`, `max_nodes`, `overview_depth` and `response_bytes`.
+Root depth is zero. Overview depth is capped to the selected tree depth.
+
+Capture/preparation limits and read-response limits are independent. Oversized
+supplied documents and DOM captures fail explicitly; they are not silently
+truncated. AX uses Chrome's native depth-limited capture and retains partial
+coverage. `max_bytes` bounds retained serialized documents, not the browser's
+internal allocations or the raw provider response before normalization.
+
+Use `Surface::with_policy` or `Surface.with_policy` for immutable documents.
+The declared document profile chooses the matching preparation policy. Use
+`WebSurface::with_policy` or the Python `WebSurface` constructor's `policy`
+argument to limit shared read responses independently of caller budgets.
+
+Consumed native Sessions support `BrowserSurface.observe` for DOM and AX.
+`read` explores a captured view under its policy. The isolated `open` provider
+currently supports DOM only. Network is a reserved representation and is not
+advertised by either binding in this layer.
+
+Views are sequential captures. Replacing a view rejects its previous references.
+AX references remain read-only and never become DOM action targets. DOM
+observation refreshes the live capture and invalidates older action targets.
 
 ## Coordinate a cursor
 

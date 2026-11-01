@@ -172,6 +172,27 @@ class SdkContractTests(unittest.TestCase):
         item = rust_item("yosoi::unreviewed_runtime", "module", "module")
         self.assertEqual(sdk_contract._expected_classification(item), "sdk")
 
+    def test_browser_surface_facade_scope_does_not_widen_browser_namespace(self) -> None:
+        self.assertTrue(
+            sdk_contract._is_in_scope(
+                rust_item("yosoi::browser::surface", "module", "pub mod surface")
+            )
+        )
+        self.assertTrue(
+            sdk_contract._is_in_scope(
+                rust_item(
+                    "yosoi::browser::surface::consume_session",
+                    "function",
+                    "pub async fn consume_session(...) -> BrowserSurface",
+                )
+            )
+        )
+        self.assertFalse(
+            sdk_contract._is_in_scope(
+                rust_item("yosoi::browser::other", "module", "pub mod other")
+            )
+        )
+
     def test_deferred_beta_facades_remain_visible_with_explicit_boundaries(
         self,
     ) -> None:
@@ -511,6 +532,14 @@ class CompactSurfaceContractTests(unittest.TestCase):
         self.report, self.rust, self.python, self.ledger = json.loads(text)
         self.contract = sdk_contract.build_contract(self.report)
         self.compact = sdk_contract.build_surface_contract(self.contract, self.ledger)
+
+    def test_browser_surface_facade_path_is_in_surface_scope(self):
+        self.assertTrue(
+            sdk_contract._surface_path("yosoi::browser::surface::consume_session")
+        )
+        self.assertFalse(
+            sdk_contract._surface_path("yosoi::browser::surface_aux::consume_session")
+        )
 
     def expand(self, value=None):
         with tempfile.TemporaryDirectory() as directory:

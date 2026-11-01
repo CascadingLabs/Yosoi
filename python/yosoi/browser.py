@@ -39,6 +39,7 @@ from .policy import Continuation, Policy, _SnapshotFlowPolicy
 from .policy import MoliProfile as MoliProfile
 
 if TYPE_CHECKING:
+    from . import browser_surface as surface
     from .request import BoundPageRequest, PageRequest, Response
 
 BrowserError = _native.BrowserError
@@ -91,6 +92,7 @@ ActionKind = Literal[
     "navigate",
     "click",
     "enter_text",
+    "scroll",
     "screenshot",
     "wait",
     "assert",
@@ -1444,6 +1446,7 @@ def _native_session_allowed_actions() -> tuple[ActionKind, ...]:
         "Navigate": "navigate",
         "Click": "click",
         "EnterText": "enter_text",
+        "Scroll": "scroll",
         "Screenshot": "screenshot",
         "Wait": "wait",
         "Assert": "assert",
@@ -1561,6 +1564,7 @@ class SessionPolicy(Model):
                 "Navigate": "navigate",
                 "Click": "click",
                 "EnterText": "enter_text",
+                "Scroll": "scroll",
                 "Screenshot": "screenshot",
                 "Wait": "wait",
                 "Assert": "assert",
@@ -1584,6 +1588,7 @@ class SessionPolicy(Model):
             "navigate": "Navigate",
             "click": "Click",
             "enter_text": "EnterText",
+            "scroll": "Scroll",
             "screenshot": "Screenshot",
             "wait": "Wait",
             "assert": "Assert",
@@ -2723,6 +2728,15 @@ def _token(value: CancellationToken | None) -> Any | None:
     return value._handle
 
 
+def __getattr__(name: str) -> Any:
+    """Load the Surface facade after Archive and browser modules finish importing."""
+    if name == "surface":
+        from . import browser_surface
+
+        return browser_surface
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     "AccessibilityExpectation",
     "AllExpectation",
@@ -2805,6 +2819,7 @@ __all__ = [
     "run_module_with_export",
     "session",
     "screenshot",
+    "surface",
     "timed",
     "until",
     "visible",

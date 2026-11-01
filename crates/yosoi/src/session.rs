@@ -23,6 +23,8 @@ use tokio::time as tokio_time;
 mod download;
 mod evaluation;
 mod javascript;
+#[cfg(feature = "browser")]
+mod surface;
 mod until;
 
 pub use download::{
@@ -75,6 +77,8 @@ pub enum ActionKind {
     Navigate,
     /// Dispatch a click to a uniquely resolved element.
     Click,
+    /// Dispatch bounded native scrolling on the owned tab.
+    Scroll,
     /// Dispatch keyboard input to a uniquely resolved editable target.
     EnterText,
     /// Capture a screenshot from the current tab.
@@ -167,6 +171,7 @@ impl Default for SessionPolicy {
             allowed_actions: vec![
                 ActionKind::Navigate,
                 ActionKind::Click,
+                ActionKind::Scroll,
                 ActionKind::EnterText,
                 ActionKind::Screenshot,
                 ActionKind::Wait,
@@ -1220,8 +1225,10 @@ impl Work {
         {
             return Err(SessionError::Denied);
         }
-        if matches!(kind, ActionKind::Click | ActionKind::EnterText)
-            && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
+        if matches!(
+            kind,
+            ActionKind::Click | ActionKind::Scroll | ActionKind::EnterText
+        ) && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
             && self.session.policy().browser.moli_profile == browser_config::MoliProfile::Layout
             && !self
                 .session

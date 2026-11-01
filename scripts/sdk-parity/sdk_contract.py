@@ -338,6 +338,8 @@ def _is_in_scope(item: dict[str, Any], root_names: set[str] | None = None) -> bo
     parts = path.split("::")
     if len(parts) < 2 or parts[0] != CRATE:
         return False
+    if parts[1:3] == ["browser", "surface"]:
+        return True
     second = parts[1]
     if second in NAMESPACES:
         return True
@@ -856,7 +858,11 @@ SURFACE_ROOT_EXPORTS = (
 
 
 def _surface_path(path: str) -> bool:
-    roots = ("yosoi::surface", *(f"yosoi::{name}" for name in SURFACE_ROOT_EXPORTS))
+    roots = (
+        "yosoi::surface",
+        "yosoi::browser::surface",
+        *(f"yosoi::{name}" for name in SURFACE_ROOT_EXPORTS),
+    )
     return any(path == root or path.startswith(root + "::") for root in roots)
 
 

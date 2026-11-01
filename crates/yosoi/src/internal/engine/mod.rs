@@ -27,7 +27,7 @@
 //! }
 //! ```
 
-pub(in crate::internal::engine) mod browser_document;
+pub mod browser_document;
 mod capture;
 mod contract_locator;
 mod document;

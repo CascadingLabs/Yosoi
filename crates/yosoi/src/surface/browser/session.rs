@@ -1,5 +1,6 @@
 use super::archive::repeating;
-use super::process::{Browser, ELEMENT};
+use super::{backend::Browser, process::ELEMENT};
+use crate::session::{Session as NativeSession, Tab, Work};
 use crate::surface::{
     ActionStatus, ArchivePolicy, Budget, Cursor, ExecutionError, Outcome, Reference, Session,
     SessionPolicy, SurfaceConnection, SurfacePolicy,
@@ -12,6 +13,7 @@ use crate::surface::{
 };
 use serde_json::{Value, json};
 use std::{
+    collections::BTreeMap,
     error::Error,
     fmt::{self, Debug, Formatter},
     fs, io,
@@ -25,12 +27,14 @@ pub(super) struct Driver {
     pub(super) trace: Trace,
     pub(super) recording_fault: bool,
     pub(super) recording: Option<Recording>,
+    pub(super) evidence: BTreeMap<super::BrowserRepresentation, WebSurface>,
 }
 impl Driver {
     pub(super) fn web_view(&self) -> Result<WebSurface> {
-        Ok(WebSurface::new(
+        Ok(WebSurface::with_policy(
             self.session.current()?,
             model::SourceId::new(format!("browser:{}", self.browser.session_key()))?,
+            self.browser.documents.dom,
         )?)
     }
     pub(super) fn describe(&self) -> Result<Value> {
@@ -46,7 +50,7 @@ impl Driver {
             });
         }
         Ok(
-            json!({"descriptor":descriptor,"observation":view.observation(),"root":view.root_reference()}),
+            json!({"descriptor":descriptor,"observation":view.observation(),"root":view.root_reference(),"representations":if self.browser.native().is_some() { vec!["dom","ax"] } else { vec!["dom"] },"documents":self.browser.documents,"source":self.browser.capabilities}),
         )
     }
     pub(super) fn status(&self) -> Result<Value> {
@@ -95,13 +99,29 @@ impl Driver {
         Ok(coordinate.value.parse()?)
     }
     pub(super) async fn command(&mut self, request: &Request) -> Result<Value> {
-        let budget = Budget {
+        let budget = self.browser.documents.dom.budget(Budget {
             bytes: request.budget.saturating_sub(256),
             items: request.items.min(100),
-        };
+        });
         let token = request.continuation.as_ref();
         match &request.operation {
             Operation::Describe => self.describe(),
+            Operation::Observe { representation } => self.observe(*representation).await,
+            Operation::ReadView {
+                representation,
+                request: read,
+            } => {
+                let view = if *representation == super::BrowserRepresentation::Dom {
+                    self.web_view()?
+                } else {
+                    self.evidence.get(representation).cloned().ok_or_else(|| {
+                        io::Error::other("observe this representation before reading it")
+                    })?
+                };
+                let mut read = read.clone();
+                read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
+                Ok(serde_json::to_value(view.read(&read)?)?)
+            }
             Operation::Read { request: read } => {
                 let mut read = read.clone();
                 read.budget.bytes = read.budget.bytes.min(request.budget.saturating_sub(256));
@@ -187,6 +207,44 @@ impl Driver {
             Operation::Close => Ok(json!({"closing":true})),
         }
     }
+    async fn observe(&mut self, representation: super::BrowserRepresentation) -> Result<Value> {
+        if representation == super::BrowserRepresentation::Dom {
+            self.refresh().await?;
+            let view = self.web_view()?;
+            return Ok(
+                json!({"descriptor":view.descriptor(),"observation":view.observation(),"root":view.root_reference()}),
+            );
+        }
+        self.epoch = self
+            .epoch
+            .checked_add(1)
+            .ok_or_else(|| io::Error::other("capture epoch exhausted"))?;
+        let (index, document, snapshot) = self
+            .browser
+            .capture_evidence(self.epoch, representation)
+            .await?;
+        let view = WebSurface::with_policy(
+            index.clone(),
+            model::SourceId::new(format!(
+                "browser:{}:{representation:?}",
+                self.browser.session_key()
+            ))?,
+            representation.policy(&self.browser.documents),
+        )?;
+        if let Some(recording) = &mut self.recording
+            && let Err(error) = recording
+                .capture(&document, &index, &snapshot, self.epoch)
+                .await
+        {
+            self.recording_fault = true;
+            recording.fault();
+            self.session.detach()?;
+            return Err(error);
+        }
+        let reply = json!({"descriptor":view.descriptor(),"observation":view.observation(),"root":view.root_reference()});
+        self.evidence.insert(representation, view);
+        Ok(reply)
+    }
     pub(super) fn record_reply(
         &mut self,
         operation: &Operation,
@@ -195,6 +253,7 @@ impl Driver {
         if matches!(
             operation,
             Operation::Read { .. }
+                | Operation::ReadView { .. }
                 | Operation::Overview
                 | Operation::Find { .. }
                 | Operation::Expand { .. }
@@ -304,7 +363,15 @@ impl Driver {
             let receipt=lease.finish(ActionStatus::Rejected,"live node, URL, captured target, or click point is no longer eligible; refresh and locate again")?;
             return Ok(json!({"receipt":receipt,"eligibility":before}));
         }
-        let element = if let Some(id) = id {
+        if let Some(native) = self.browser.native()
+            && let Err(error) = native.authorize(operation)
+        {
+            let receipt = lease.finish(ActionStatus::Rejected, error.to_string())?;
+            return Ok(json!({"receipt":receipt}));
+        }
+        let element = if self.browser.native().is_some() {
+            None
+        } else if let Some(id) = id {
             let element = self.browser.script("element", json!({"id":id})).await?;
             Some(
                 element
@@ -383,6 +450,9 @@ impl Driver {
         element: Option<&str>,
         before: &Value,
     ) -> Result<Value> {
+        if self.browser.native().is_some() {
+            return self.execute_native(operation, before).await;
+        }
         match operation {
             Operation::Click { expect, .. } => {
                 let element =
@@ -440,6 +510,88 @@ impl Driver {
             }
             _ => Err(io::Error::other("operation is not an effect").into()),
         }
+    }
+
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "NativeBrowser is borrowed here; ending this reference cannot release its Work, which the connection owns until close."
+    )]
+    async fn execute_native(&self, operation: &Operation, before: &Value) -> Result<Value> {
+        use crate::internal::browser::page::SurfaceInput;
+        let receipt = {
+            let native = self
+                .browser
+                .native()
+                .ok_or_else(|| io::Error::other("native binding missing"))?;
+            match operation {
+                Operation::Click { reference, .. } => {
+                    native
+                        .input(SurfaceInput::Click {
+                            node: self.native_id(reference)?,
+                        })
+                        .await?
+                }
+                Operation::Fill {
+                    reference, text, ..
+                } => {
+                    native
+                        .input(SurfaceInput::Fill {
+                            node: self.native_id(reference)?,
+                            text: text.clone(),
+                        })
+                        .await?
+                }
+                Operation::Key { reference, key, .. } => {
+                    native
+                        .input(SurfaceInput::Key {
+                            node: self.native_id(reference)?,
+                            key: key.clone(),
+                        })
+                        .await?
+                }
+                Operation::Scroll {
+                    delta_x, delta_y, ..
+                } => {
+                    native
+                        .input(SurfaceInput::Scroll {
+                            delta_x: *delta_x,
+                            delta_y: *delta_y,
+                        })
+                        .await?
+                }
+                Operation::Navigate { url, .. } => native.navigate(url).await?,
+                _ => {
+                    return Err(io::Error::other("operation is not a native Surface effect").into());
+                }
+            }
+        };
+        let mut result = match operation {
+            Operation::Fill {
+                reference, text, ..
+            } => {
+                let node = self.native_id(reference)?;
+                let value = self
+                    .browser
+                    .script("value", json!({"id":node,"expected":text}))
+                    .await?;
+                json!({"confirmed":value.get("matches")==Some(&Value::Bool(true)),"value":value})
+            }
+            Operation::Navigate { url, .. } => {
+                let location = self.browser.script("location", json!({})).await?;
+                json!({"confirmed":location.get("url").and_then(Value::as_str)==Some(url.as_str()),"location":location})
+            }
+            Operation::Click { expect, .. }
+            | Operation::Key { expect, .. }
+            | Operation::Scroll { expect, .. } => {
+                self.postcondition(expect.as_ref(), before).await?
+            }
+            _ => return Err(io::Error::other("operation is not a native Surface effect").into()),
+        };
+        result
+            .as_object_mut()
+            .ok_or_else(|| io::Error::other("native action result is not an object"))?
+            .insert("native_receipt_id".into(), receipt.into());
+        Ok(result)
     }
     pub(super) async fn postcondition(
         &self,
@@ -530,9 +682,14 @@ impl AgentSurface for Driver {
     }
     async fn close(mut self) -> (Option<Outcome>, Result<()>) {
         let detached = self.session.detach();
+        let native = self.browser.native().is_some();
         let closed = self.browser.close().await;
         let archived = if let Some(recording) = &mut self.recording {
-            recording.close(&closed).await
+            if native {
+                recording.release_work(&closed).await
+            } else {
+                recording.close(&closed).await
+            }
         } else {
             Ok(())
         };
@@ -551,7 +708,7 @@ impl AgentSurface for Driver {
             &self.cursor.overview(None, Budget::default())?,
         )?;
         Ok(
-            json!({"event":"ready","sdk":"ys::surface","state":self.status()?,"browser":self.browser.capabilities.get("browserVersion"),"representation":"yosoi.web.document.v1","controllable":true,"protocol":"JSON lines; describe and read share the video protocol; close or EOF releases resources"}),
+            json!({"event":"ready","sdk":"ys::surface","state":self.status()?,"browser":self.browser.capabilities.get("browserVersion"),"source":self.browser.capabilities,"representation":"yosoi.web.document.v1","controllable":true,"protocol":"JSON lines; describe and read share the video protocol; close or EOF releases resources"}),
         )
     }
     async fn command(&mut self, request: &Request) -> Result<Value> {
@@ -572,12 +729,164 @@ impl AgentSurface for Driver {
     }
 }
 
-/// An isolated live browser source, initially detached from observation and control.
+/// A live browser source, initially detached from observation and control.
+///
+/// Open an isolated source or bind an existing native Session/Work owner.
 /// Call `close` even after failure; cancellation does not prove an effect was undone.
 pub struct BrowserSurface {
     inner: Connection<Driver>,
 }
 impl BrowserSurface {
+    /// Retains the native Session owner and acquires Work for its initial tab.
+    /// This never launches ChromeDriver or another browser. The existing Session
+    /// policy and execution pool remain authoritative. Closing this binding releases
+    /// its Work only; keep a Session handle for explicit shared-browser cleanup.
+    /// The consumed binding currently supports native Chrome DOM and AX evidence.
+    pub async fn consume_session(
+        session: NativeSession,
+        policy: SurfacePolicy,
+    ) -> StdResult<Self, ExecutionError> {
+        let work = session
+            .work()
+            .await
+            .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
+        Self::consume_work(work, policy).await
+    }
+
+    /// Acquires and retains Work for one existing native tab.
+    /// Sibling tabs keep their own control and scheduling. Closing releases this
+    /// tab's Work without closing the tab or its shared Session.
+    pub async fn consume_tab(tab: &Tab, policy: SurfacePolicy) -> StdResult<Self, ExecutionError> {
+        let work = tab
+            .work()
+            .await
+            .map_err(|error| ExecutionError::Operation(Box::new(error)))?;
+        Self::consume_work(work, policy).await
+    }
+
+    /// Transfers already-admitted native Work into a Surface connection.
+    /// No second controller is acquired. Captures and effects use this Work's
+    /// tab, policy, cancellation and execution pool. Close releases Work and does
+    /// not explicitly close the retained Session/tab. Arbitrary JavaScript is not
+    /// required; native Surface's trusted adapter owns its capture implementation.
+    pub async fn consume_work(
+        work: Work,
+        policy: SurfacePolicy,
+    ) -> StdResult<Self, ExecutionError> {
+        Self::consume_work_inner(work, policy)
+            .await
+            .map_err(super::archive::error)
+    }
+
+    async fn consume_work_inner(work: Work, policy: SurfacePolicy) -> Result<Self> {
+        policy.archive_limits.validate()?;
+        policy.documents.validate()?;
+        let mut browser = Browser::consume_work(work, policy.documents).await?;
+        let location = browser.script("location", json!({})).await?;
+        let url = location
+            .get("url")
+            .and_then(Value::as_str)
+            .ok_or_else(|| io::Error::other("native tab URL missing"))?;
+        let temporary = tempfile::tempdir()?;
+        let output = policy
+            .output
+            .clone()
+            .unwrap_or_else(|| temporary.path().join("artifacts"));
+        fs::create_dir_all(&output)?;
+        let root = policy
+            .archive_root
+            .clone()
+            .unwrap_or_else(|| temporary.path().join("archive"));
+        let mut recording = if policy.archive == ArchivePolicy::Enabled {
+            let mut recording = Recording::open(&root, &output, url).await?;
+            recording.set_limits(policy.archive_limits);
+            Some(recording)
+        } else {
+            None
+        };
+        let mut trace = Trace::new(&output);
+        let initialized = async {
+            if let Some(recording) = &mut recording {
+                recording
+                    .native_binding(browser.capabilities.clone())
+                    .await?;
+            }
+            let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
+            if let Some(recording) = &mut recording {
+                recording.capture(&document, &surface, &snapshot, 1).await?;
+            }
+            let session = Session::new(surface, SessionPolicy::default())?;
+            let cursor = session.cursor()?;
+            Ok::<_, Box<dyn Error + Send + Sync>>((session, cursor))
+        }
+        .await;
+        let (session, cursor) = match initialized {
+            Ok(value) => value,
+            Err(source) => {
+                let released = browser.close().await;
+                if let Some(recording) = &mut recording {
+                    recording.fault();
+                    let _ = recording
+                        .command(
+                            json!({"op":"consume_work"}),
+                            &Err(io::Error::other(source.to_string()).into()),
+                        )
+                        .await;
+                    let _ = recording.release_work(&released).await;
+                    return Err(Box::new(repeating::RunFailure {
+                        outcomes: vec![recording.outcome()],
+                        source,
+                    }));
+                }
+                released?;
+                return Err(source);
+            }
+        };
+        Ok(Self {
+            inner: Connection::new(
+                Driver {
+                    browser,
+                    session,
+                    cursor,
+                    epoch: 1,
+                    trace,
+                    recording_fault: false,
+                    recording,
+                    evidence: BTreeMap::new(),
+                },
+                output,
+                temporary,
+            ),
+        })
+    }
+
+    /// Captures fresh evidence without acquiring live action authority.
+    /// Native Session bindings support depth-limited AX. The isolated provider
+    /// supports DOM only; unsupported representations return an error.
+    /// Replacing a view invalidates its previous addresses, while other views
+    /// remain immutable historical observations. DOM capture invalidates live targets.
+    pub async fn observe(
+        &mut self,
+        representation: super::BrowserRepresentation,
+    ) -> StdResult<super::BrowserObservation, ExecutionError> {
+        let value = self
+            .inner
+            .execute(json!({"op":"observe","representation":representation}))
+            .await?;
+        serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
+    }
+    /// Reads a previously observed representation under both caller and SDK policy bounds.
+    /// Network and AX addresses cannot be used as DOM action references. Requests
+    /// larger than the transport ceiling are reduced to 65280 result bytes.
+    pub async fn read(
+        &mut self,
+        representation: super::BrowserRepresentation,
+        mut request: model::ReadRequest,
+    ) -> StdResult<model::ReadResult, ExecutionError> {
+        request.budget.bytes = request.budget.bytes.min(65_280);
+        let value = self.inner.execute(json!({"op":"read_view","representation":representation,"budget":request.budget.bytes.saturating_add(256).max(1024),"request":request})).await?;
+        serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
+    }
     /// Opens a supported regular Chrome/Chromium source under explicit archive policy.
     /// `headless` selects this browser's display mode and is not a generic Surface policy.
     pub async fn open(
@@ -592,6 +901,7 @@ impl BrowserSurface {
     async fn open_inner(url: &str, policy: SurfacePolicy, headless: bool) -> Result<Self> {
         validate_url(url)?;
         policy.archive_limits.validate()?;
+        policy.documents.validate()?;
         let temporary = tempfile::tempdir()?;
         let output = policy
             .output
@@ -610,7 +920,7 @@ impl BrowserSurface {
         } else {
             None
         };
-        let mut browser = match Browser::open(headless).await {
+        let mut browser = match Browser::open_with_policy(headless, policy.documents).await {
             Ok(browser) => browser,
             Err(source) => {
                 if let Some(recording) = &mut recording {
@@ -677,6 +987,7 @@ impl BrowserSurface {
                     trace,
                     recording_fault: false,
                     recording,
+                    evidence: BTreeMap::new(),
                 },
                 output,
                 temporary,
