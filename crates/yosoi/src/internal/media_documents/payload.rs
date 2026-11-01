@@ -116,18 +116,17 @@ impl MediaDocument {
             });
         }
         let sha256 = Sha256Digest::digest(bytes.as_slice()).to_string();
-        let detected_mime = infer::get(bytes.as_slice()).map(|kind| kind.mime_type());
-        let signature_match = metadata.probe_validated_video_container().is_none()
-            && detected_kind(bytes.as_slice()) == expected
+        if !metadata.has_digest(&sha256) {
+            return Err(FileDocumentError::ArchivedMetadataMismatch);
+        }
+        // Archive restores the recorded media family after the raw payload digest has
+        // been verified. Re-running the current signature detector here could change
+        // an older explicit BinaryDocument or a decoder-validated VideoDocument.
+        let stored_family_match = metadata.probe_validated_video_container().is_none()
             && stored_type_matches(&metadata, expected);
-        let probe_validated_video = expected == MediaKind::Video
-            && metadata
-                .probe_validated_video_container()
-                .is_some_and(|container| {
-                    accepts_probe_validated_video(container, detected_kind(bytes.as_slice()))
-                        && metadata.detected_media_type() == detected_mime
-                });
-        if !metadata.has_digest(&sha256) || !(signature_match || probe_validated_video) {
+        let probe_validated_video =
+            expected == MediaKind::Video && stored_probe_validated_video_matches(&metadata);
+        if !(stored_family_match || probe_validated_video) {
             return Err(FileDocumentError::ArchivedMetadataMismatch);
         }
         Ok(Self {
@@ -185,5 +184,16 @@ fn stored_type_matches(metadata: &FileMetadata, expected: MediaKind) -> bool {
             .detected_media_type()
             .is_some_and(|media_type| media_type.starts_with("audio/")),
         MediaKind::Binary => true,
+    }
+}
+
+fn stored_probe_validated_video_matches(metadata: &FileMetadata) -> bool {
+    match (
+        metadata.probe_validated_video_container(),
+        metadata.detected_media_type(),
+    ) {
+        (Some("ogg"), None | Some("audio/ogg" | "audio/opus")) => true,
+        (Some("mpegts"), None) => true,
+        _ => false,
     }
 }
