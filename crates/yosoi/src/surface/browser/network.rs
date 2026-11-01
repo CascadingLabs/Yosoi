@@ -9,6 +9,7 @@ use crate::{
         NetworkByteProvenance, NetworkCoverage, NetworkEvent, NetworkEventKind, NetworkGap,
         NetworkHeader, NetworkInFlight, NetworkObservationPolicy, NetworkPayloadKind,
         NetworkPayloadRef, NetworkPayloadState, NetworkProviderClock, NetworkWindow, SurfaceError,
+        network::is_sensitive_header,
     },
 };
 use serde_json::Value;
@@ -1273,15 +1274,68 @@ fn safe_error(value: &str) -> String {
     }
 }
 
-fn is_sensitive_header(name: &str) -> bool {
-    matches!(
-        name,
-        "authorization"
-            | "proxy-authorization"
-            | "cookie"
-            | "set-cookie"
-            | "cookie2"
-            | "x-api-key"
-            | "x-auth-token"
-    )
+#[cfg(test)]
+mod tests {
+    use super::retained_headers;
+    use crate::surface::{NetworkHeader, NetworkObservationPolicy};
+    use serde_json::{Map, Value};
+
+    #[test]
+    fn sensitive_header_aliases_never_survive_explicit_allowlists() {
+        let sensitive_names = [
+            "authorization",
+            "proxy-authorization",
+            "cookie",
+            "set-cookie",
+            "cookie2",
+            "x-api-key",
+            "x-api-token",
+            "x-access-token",
+            "x-refresh-token",
+            "x-session-token",
+            "x-auth-token",
+        ];
+        let mut headers = Map::new();
+        for name in sensitive_names {
+            headers.insert(
+                name.to_ascii_uppercase(),
+                Value::String(format!("secret-value-for-{name}")),
+            );
+        }
+        headers.insert(
+            "X-Custom-Token".into(),
+            Value::String("custom-value".into()),
+        );
+        headers.insert("X-Public".into(), Value::String("public-value".into()));
+        let policy = NetworkObservationPolicy {
+            header_allowlist: sensitive_names
+                .into_iter()
+                .map(str::to_ascii_uppercase)
+                .chain(["X-Custom-Token".into(), "X-Public".into()])
+                .collect(),
+            ..NetworkObservationPolicy::default()
+        };
+
+        let retained = retained_headers(&Value::Object(headers), &policy);
+        assert_eq!(
+            retained,
+            [
+                NetworkHeader {
+                    name: "x-custom-token".into(),
+                    value: "custom-value".into()
+                },
+                NetworkHeader {
+                    name: "x-public".into(),
+                    value: "public-value".into()
+                },
+            ]
+        );
+        assert_eq!(
+            policy.retention().retained_header_names,
+            retained
+                .iter()
+                .map(|header| header.name.clone())
+                .collect::<Vec<_>>()
+        );
+    }
 }

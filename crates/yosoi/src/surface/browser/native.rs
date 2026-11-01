@@ -1,5 +1,6 @@
 //! Retained native Session/Work binding; it never launches a second browser.
 use super::network::NetworkCapture;
+use super::network_payloads::NetworkPayloadStore;
 use crate::{
     automation_record::OperationStatus,
     documents::{
@@ -23,7 +24,7 @@ use crate::{
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use image::ImageReader;
 use serde_json::{Value, json};
-use std::{collections::HashMap, io, io::Cursor};
+use std::{io, io::Cursor};
 
 pub(super) struct NativeBrowser {
     work: Option<Work>,
@@ -34,7 +35,7 @@ pub(super) struct NativeBrowser {
     pub documents: DocumentPolicies,
     network_policy: NetworkObservationPolicy,
     network: Option<NetworkCapture>,
-    network_payloads: HashMap<String, (NetworkPayloadValue, NetworkPayloadRef)>,
+    network_payloads: NetworkPayloadStore,
 }
 
 impl NativeBrowser {
@@ -59,9 +60,9 @@ impl NativeBrowser {
             binding_id,
             work: Some(work),
             documents,
+            network_payloads: NetworkPayloadStore::new(&network_policy),
             network_policy,
             network: None,
-            network_payloads: HashMap::new(),
         })
     }
 
@@ -82,13 +83,14 @@ impl NativeBrowser {
     pub fn capabilities(&self) -> Value {
         json!({"backend":"native_session","sessionId":self.session_id,"tabId":self.tab_id,"bindingId":self.binding_id,
             "ownership":"Surface close releases Work; the retained Session and tab are not explicitly closed",
-            "networkObservation":{"provider":"chrome_cdp","supported":true,"subscription":"explicit_opt_in","bodyRetention":self.network_policy.retain_bodies,"active":self.network.is_some()}})
+            "networkObservation":{"provider":"chrome_cdp","supported":true,"subscription":"explicit_opt_in","bodyRetention":self.network_policy.retain_bodies,"active":self.network.is_some(),"sessionPayloadRetention":self.network_payloads.summary()}})
     }
 
     pub async fn subscribe_network(&mut self, retain_bodies: Option<bool>) -> Result<Value> {
         if self.network.is_some() {
             return Err(io::Error::other("native network subscription is already active").into());
         }
+        self.network_payloads.discard_pending()?;
         let mut policy = self.network_policy.clone();
         if let Some(retain_bodies) = retain_bodies {
             policy.retain_bodies = retain_bodies;
@@ -110,17 +112,21 @@ impl NativeBrowser {
         )?;
         self.network_policy = policy;
         self.network = Some(capture);
-        Ok(
-            json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
+        let mut reply = self.network_payloads.summary();
+        let fields = reply
+            .as_object_mut()
+            .ok_or_else(|| io::Error::other("network body summary is not an object"))?;
+        fields.extend(json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
             "provider":"chrome_cdp","body_retention":self.network_policy.retain_bodies,
-            "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}),
-        )
+            "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}).as_object().ok_or_else(|| io::Error::other("network subscription summary is not an object"))?.clone());
+        Ok(reply)
     }
 
     pub async fn cancel_network(&mut self) -> Result<Value> {
         if let Some(mut network) = self.network.take() {
             network.close().await?;
         }
+        self.network_payloads.discard_pending()?;
         Ok(json!({"active":false,"cancelled":true}))
     }
 
@@ -141,6 +147,35 @@ impl NativeBrowser {
         epoch: u64,
         policy: DocumentPolicy,
     ) -> Result<(Surface, Document, Value)> {
+        self.network_payloads.discard_pending()?;
+        let result = self.capture_network_evidence_pending(epoch, policy).await;
+        if result.is_err() {
+            self.network_payloads.discard_pending()?;
+        }
+        result
+    }
+
+    pub fn commit_network_window(&mut self, snapshot: &Value) -> Result<()> {
+        let window: crate::surface::NetworkWindow = serde_json::from_value(
+            snapshot
+                .get("network")
+                .cloned()
+                .ok_or_else(|| io::Error::other("network snapshot missing"))?,
+        )?;
+        self.network_payloads.commit_window(&window.payloads)?;
+        Ok(())
+    }
+
+    pub fn discard_pending_network_payloads(&mut self) -> Result<()> {
+        self.network_payloads.discard_pending()?;
+        Ok(())
+    }
+
+    async fn capture_network_evidence_pending(
+        &mut self,
+        epoch: u64,
+        policy: DocumentPolicy,
+    ) -> Result<(Surface, Document, Value)> {
         let mut snapshot = self
             .network
             .as_mut()
@@ -155,11 +190,20 @@ impl NativeBrowser {
                 let payload_id = candidate.payload_id.clone();
                 let skip_reason = if !self.work()?.surface_authority_active() {
                     Some("native_work_authority_lost_before_body_read")
+                } else if !self.network_payloads.can_retain(0) {
+                    Some("response_body_session_retention_limit")
                 } else {
                     match candidate.provider_reported_body_bytes {
                         None => Some("response_body_size_unknown_before_read"),
                         Some(bytes) if bytes > max_body_bytes => {
                             Some("response_body_exceeds_retention_limit_before_read")
+                        }
+                        Some(bytes)
+                            if usize::try_from(bytes)
+                                .ok()
+                                .is_none_or(|bytes| !self.network_payloads.can_retain(bytes)) =>
+                        {
+                            Some("response_body_session_retention_limit")
                         }
                         Some(_) => None,
                     }
@@ -215,7 +259,7 @@ impl NativeBrowser {
                                     detected_media_type,
                                     projection_basis,
                                     reason,
-                                )) => (
+                                )) if self.network_payloads.can_retain(bytes.len()) => (
                                     Some(payload),
                                     Some(kind),
                                     bytes,
@@ -230,6 +274,18 @@ impl NativeBrowser {
                                     detected_media_type,
                                     Some(projection_basis),
                                     reason,
+                                ),
+                                Ok(_) => (
+                                    None,
+                                    None,
+                                    Vec::new(),
+                                    body.provider_base64_encoded,
+                                    false,
+                                    NetworkPayloadState::Unavailable,
+                                    None,
+                                    None,
+                                    None,
+                                    Some("response_body_session_retention_limit".into()),
                                 ),
                                 Err(_) => (
                                     None,
@@ -281,8 +337,7 @@ impl NativeBrowser {
                     NetworkPayloadState::Retained | NetworkPayloadState::Truncated
                 ) && let Some(payload) = payload
                 {
-                    self.network_payloads
-                        .insert(reference.id.clone(), (payload, reference.clone()));
+                    self.network_payloads.insert(payload, reference.clone())?;
                 }
                 if let Some(existing) = snapshot
                     .window
@@ -296,7 +351,8 @@ impl NativeBrowser {
                 }
             }
         }
-        let window = snapshot.window;
+        let mut window = snapshot.window;
+        self.network_payloads.apply_retention(&mut window.retention);
         let window_id = window.window_id.clone();
         let bytes = serde_json::to_vec(&window)?;
         let document = window.to_document(format!("surface-{}-network-{epoch}", self.key))?;
@@ -650,6 +706,7 @@ impl NativeBrowser {
         if let Some(mut network) = self.network.take() {
             network.close().await?;
         }
+        self.network_payloads.clear();
         if let Some(work) = self.work.take() {
             work.release().await?;
         }

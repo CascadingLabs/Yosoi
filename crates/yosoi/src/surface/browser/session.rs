@@ -396,21 +396,18 @@ impl Driver {
             self.recording_fault = true;
             recording.fault();
             self.session.detach()?;
+            self.browser.discard_pending_network_payloads()?;
             return Err(error);
         }
         let reply = json!({"descriptor":view.descriptor(),"observation":view.observation(),"root":view.root_reference()});
-        self.evidence.insert(representation, view);
         if representation == super::BrowserRepresentation::Network {
-            let view = self
-                .evidence
-                .get(&super::BrowserRepresentation::Network)
-                .cloned()
-                .ok_or_else(|| io::Error::other("network view was not retained"))?;
-            self.network_evidence.push_back(view);
+            self.browser.commit_network_window(&snapshot)?;
+            self.network_evidence.push_back(view.clone());
             while self.network_evidence.len() > self.network_evidence_limit {
                 self.network_evidence.pop_front();
             }
         }
+        self.evidence.insert(representation, view);
         Ok(reply)
     }
     pub(super) fn record_reply(

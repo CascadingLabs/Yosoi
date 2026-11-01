@@ -3,6 +3,8 @@ mod document;
 mod evidence;
 #[cfg(feature = "browser")]
 mod network;
+#[cfg(feature = "browser")]
+mod network_payloads;
 pub use document::WebSurface;
 pub use evidence::{BrowserObservation, BrowserRepresentation};
 #[cfg(feature = "browser")]

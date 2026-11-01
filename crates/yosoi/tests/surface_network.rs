@@ -56,6 +56,8 @@ fn window() -> NetworkWindow {
             max_response_bodies: 16,
             max_body_bytes: 1024 * 1024,
             max_total_body_bytes: 8 * 1024 * 1024,
+            session_max_response_bodies: Some(16),
+            session_max_total_body_bytes: Some(8 * 1024 * 1024),
             provider_resource_buffer_bytes: surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
             provider_total_buffer_bytes: surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
             allowed_origins: Vec::new(),
@@ -236,6 +238,59 @@ async fn cli_restores_network_payloads_from_portable_outcomes_without_a_browser(
         &window_document,
         Some(&window_surface),
     ))?;
+    let reference = window
+        .payloads
+        .first()
+        .ok_or_else(|| io::Error::other("payload fixture missing"))?;
+    assert_eq!(
+        surface::NetworkPayload::from_outcome(&outcome, reference, 8192)?.bytes(),
+        payload.bytes()
+    );
+    let mut altered = reference.clone();
+    altered.request_id = "foreign-request".into();
+    assert!(surface::NetworkPayload::from_outcome(&outcome, &altered, 8192).is_err());
+    let mut altered = reference.clone();
+    altered.hop = 1;
+    assert!(surface::NetworkPayload::from_outcome(&outcome, &altered, 8192).is_err());
+    let mut altered = reference.clone();
+    altered.response_sequence = 2;
+    assert!(surface::NetworkPayload::from_outcome(&outcome, &altered, 8192).is_err());
+    let mut altered = reference.clone();
+    altered.response_window_id = "foreign-window".into();
+    assert!(surface::NetworkPayload::from_outcome(&outcome, &altered, 8192).is_err());
+    let ordinary_window = Document::json("ordinary-window", window_document.bytes().to_vec())?;
+    let foreign_outcome =
+        surface::Outcome::new("foreign-outcome", surface::ArchiveLimits::default())?
+            .with_source(surface::ArchivedSource::new(payload_id, &payload, None))?
+            .with_source(surface::ArchivedSource::new(
+                "ordinary-window",
+                &ordinary_window,
+                None,
+            ))?;
+    assert!(surface::NetworkPayload::from_outcome(&foreign_outcome, reference, 8192).is_err());
+    let mut foreign_window = window.clone();
+    let foreign_reference = foreign_window
+        .payloads
+        .first_mut()
+        .ok_or_else(|| io::Error::other("payload fixture missing"))?;
+    foreign_reference.request_id = "foreign-request".into();
+    let foreign_reference = foreign_reference.clone();
+    foreign_window
+        .events
+        .first_mut()
+        .ok_or_else(|| io::Error::other("response fixture missing"))?
+        .request_id = foreign_reference.request_id.clone();
+    let foreign_document = foreign_window.to_document("foreign-explicit-window")?;
+    let foreign_outcome = foreign_outcome.with_source(surface::ArchivedSource::new(
+        "foreign-explicit-window",
+        &foreign_document,
+        None,
+    ))?;
+    assert!(surface::NetworkPayload::from_outcome(&foreign_outcome, reference, 8192).is_err());
+    assert_eq!(
+        surface::NetworkPayload::from_outcome(&foreign_outcome, &foreign_reference, 8192)?.bytes(),
+        payload.bytes()
+    );
     let outcome_ref = archive.write(&outcome).await?;
     let portable = temporary.path().join("network.yosoi");
     archive.export_file(&outcome_ref, &portable).await?;

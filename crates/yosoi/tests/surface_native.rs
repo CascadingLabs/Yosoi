@@ -130,6 +130,10 @@ document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?
                                     let body = r#"<!doctype html><main><h1>CLI network</h1><script>fetch('/api?cli=1').then(()=>{document.title='request-complete'})</script></main>"#;
                                     let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
                                 }
+                                "/retention-page" => {
+                                    let body = r#"<!doctype html><main><button>Fetch retained JSON</button><p id="state">ready</p><script>let n=0;document.querySelector('button').addEventListener('click',()=>fetch('/api',{method:'POST'}).then(r=>r.json()).then(()=>{document.getElementById('state').textContent='retained request '+(++n)+' complete'}))</script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
                                 "/bomb-page" => {
                                     let body = r#"<!doctype html><main><button aria-label="Start compressed body">Start compressed body</button><p id="state">ready</p><script>document.querySelector('button').addEventListener('click',()=>fetch('/gzip-bomb').then(r=>r.arrayBuffer()).then(()=>{document.getElementById('state').textContent='compressed response complete'}))</script></main>"#;
                                     let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
@@ -1071,6 +1075,104 @@ async fn native_network_skips_compressed_body_over_retention_limit_before_read()
         Ok::<(), Box<dyn Error>>(())
     })
     .await;
+    let closed = native.close().await;
+    fixture.close().await;
+    proof?;
+    closed?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The proof asserts session caps, frozen-window reachability, and rearm lifecycle before releasing the native owner."
+)]
+async fn native_network_session_payload_caps_survive_rearms_and_evict_old_references()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let acquisition = Policy {
+        page: Page::new(vec![
+            Acquisition::Browser(BrowserMode::Headless).documents([DocumentRequest::RenderedDom]),
+        ])?,
+        ..Policy::default()
+    };
+    let native = session::new().bind(&acquisition).acquire().await?;
+    let proof = Box::pin(async {
+        let work = Box::pin(native.work()).await?;
+        let navigated = work.navigate(&format!("{}/retention-page", fixture.base)).await?;
+        assert_eq!(navigated.status, OperationStatus::Observed);
+        let mut surface = BrowserSurface::consume_work(work, SurfacePolicy {
+            network_observation: NetworkObservationPolicy {
+                retain_bodies: true, max_windows: 1, max_response_bodies: 1,
+                max_total_body_bytes: 12, allowed_methods: vec!["POST".into()],
+                ..NetworkObservationPolicy::default()
+            }, ..SurfacePolicy::default()
+        }).await?;
+        let mut first_body = None;
+        let mut first_observation = None;
+        for (round, expected_count) in [(1, 0_usize), (2, 1), (3, 0)] {
+            let armed = surface.subscribe_network(None).await?;
+            assert_eq!(armed.session_max_response_bodies, Some(1));
+            assert_eq!(armed.session_max_total_body_bytes, Some(12));
+            assert_eq!(armed.session_retained_response_bodies, Some(expected_count));
+            assert_eq!(armed.session_retained_body_bytes, Some(if expected_count == 0 { 0 } else { 12 }));
+            if round == 1 { hot(&mut surface).await?; }
+            if round == 2 {
+                let reference = first_body.as_ref().ok_or_else(|| io::Error::other("first payload missing"))?;
+                assert_eq!(surface.network_payload(reference, 8192).await?.bytes(), br#"{"api":true}"#);
+            }
+            let button = reference(&mut surface, "Fetch retained JSON").await?;
+            let clicked = surface.execute(json!({"op":"click","reference":button,"expect":{"kind":"text","text":format!("retained request {round} complete"),"present":true}})).await?;
+            assert_eq!(clicked.pointer("/receipt/status").and_then(Value::as_str), Some("Confirmed"));
+            let mut sequence = 0;
+            let mut captured = None;
+            let mut post_request = None;
+            for _ in 0..12 {
+                let waited = surface.wait_network_event(sequence, 5_000).await?;
+                assert_eq!(waited.get("state").and_then(Value::as_str), Some("event"));
+                sequence = waited.get("sequence").and_then(Value::as_u64).ok_or_else(|| io::Error::other("network sequence missing"))?;
+                let (observation, window) = surface.observe_network().await?;
+                for event in &window.events {
+                    if matches!(&event.kind, NetworkEventKind::RequestStarted { method, .. } if method == "POST") {
+                        post_request = Some(event.request_id.clone());
+                    }
+                }
+                assert_eq!(window.retention.session_max_response_bodies, Some(1));
+                assert_eq!(window.retention.session_max_total_body_bytes, Some(12));
+                if let Some(payload) = window.payloads.iter().find(|payload| post_request.as_ref() == Some(&payload.request_id) && payload.state != NetworkPayloadState::NotRequested) {
+                    captured = Some((observation, payload.clone()));
+                    break;
+                }
+            }
+            let (observation, payload) = captured.ok_or_else(|| io::Error::other("POST response body state missing"))?;
+            if round == 2 {
+                assert_eq!(payload.state, NetworkPayloadState::Unavailable);
+                assert_eq!(payload.reason.as_deref(), Some("response_body_session_retention_limit"));
+                assert_eq!(payload.retained_bytes, 0);
+                let old_body = first_body.as_ref().ok_or_else(|| io::Error::other("first payload missing"))?;
+                assert!(surface.network_payload(old_body, 8192).await.is_err());
+                let old_observation: &surface::browser::BrowserObservation = first_observation.as_ref().ok_or_else(|| io::Error::other("first observation missing"))?;
+                assert!(surface.read(surface::browser::BrowserRepresentation::Network, surface::model::ReadRequest {
+                    operation: surface::model::ReadOperation::Inspect { reference: old_observation.root.clone() },
+                    budget: surface::Budget::default(), continuation: None,
+                }).await.is_err());
+            } else {
+                assert_eq!(payload.state, NetworkPayloadState::Retained);
+                assert_eq!(surface.network_payload(&payload, 8192).await?.bytes(), br#"{"api":true}"#);
+                if round == 1 {
+                    first_body = Some(payload);
+                    first_observation = Some(observation);
+                }
+            }
+            surface.cancel_network().await?;
+        }
+        surface.close().await?;
+        Ok::<(), Box<dyn Error>>(())
+    }).await;
     let closed = native.close().await;
     fixture.close().await;
     proof?;

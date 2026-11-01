@@ -165,6 +165,21 @@ impl Browser {
         self.native()?.retained_network_payload(id)
     }
 
+    pub fn commit_network_window(&mut self, snapshot: &Value) -> Result<()> {
+        if let Source::Native(native) = &mut self.source {
+            native.commit_network_window(snapshot)?;
+            self.capabilities = native.capabilities();
+        }
+        Ok(())
+    }
+
+    pub fn discard_pending_network_payloads(&mut self) -> Result<()> {
+        if let Source::Native(native) = &mut self.source {
+            native.discard_pending_network_payloads()?;
+        }
+        Ok(())
+    }
+
     pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
         match &self.source {
             Source::Driver(browser) => browser.screenshot().await,

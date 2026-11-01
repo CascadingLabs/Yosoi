@@ -32,6 +32,18 @@ pub struct NetworkSubscription {
     pub max_events: usize,
     /// Maximum subscription lifetime in milliseconds.
     pub max_duration_ms: u64,
+    /// Fixed live Surface-session body count cap; absent in older receipts.
+    #[serde(default)]
+    pub session_max_response_bodies: Option<usize>,
+    /// Fixed live Surface-session byte cap; absent in older receipts.
+    #[serde(default)]
+    pub session_max_total_body_bytes: Option<usize>,
+    /// Bodies still retained by frozen windows when the subscription was armed.
+    #[serde(default)]
+    pub session_retained_response_bodies: Option<usize>,
+    /// Body bytes still retained when the subscription was armed.
+    #[serde(default)]
+    pub session_retained_body_bytes: Option<usize>,
 }
 
 /// Immutable network evidence produced by one bounded live subscription.
@@ -513,6 +525,14 @@ pub struct NetworkRetention {
     pub max_body_bytes: usize,
     /// Maximum caller-visible response bytes retained by this subscription.
     pub max_total_body_bytes: usize,
+    /// Fixed body count cap across this live Surface session's retained windows.
+    /// Absent in windows created before session-bound body accounting.
+    #[serde(default)]
+    pub session_max_response_bodies: Option<usize>,
+    /// Fixed body byte cap across this live Surface session's retained windows.
+    /// Cancelling or rearming a subscription does not reset this cap.
+    #[serde(default)]
+    pub session_max_total_body_bytes: Option<usize>,
     /// Shared Page-lifetime CDP per-resource response buffer bound.
     pub provider_resource_buffer_bytes: usize,
     /// Shared Page-lifetime CDP total response buffer bound.
@@ -537,11 +557,13 @@ pub struct NetworkObservationPolicy {
     pub max_windows: usize,
     /// Maximum total serialized event metadata retained by the journal.
     pub max_event_bytes: usize,
-    /// Maximum response bodies captured by one subscription.
+    /// Maximum response bodies captured by one subscription. Its initial value
+    /// also fixes the live Surface session's retained-body count cap.
     pub max_response_bodies: usize,
     /// Maximum bytes returned for one opted-in response body.
     pub max_body_bytes: usize,
-    /// Maximum total response bytes retained by one subscription.
+    /// Maximum total response bytes retained by one subscription. Its initial
+    /// value also fixes the live Surface session's retained-body byte cap.
     pub max_total_body_bytes: usize,
     /// Whether completed response bodies may be captured. Defaults to false.
     pub retain_bodies: bool,
@@ -656,6 +678,8 @@ impl NetworkObservationPolicy {
             max_response_bodies: self.max_response_bodies,
             max_body_bytes: self.max_body_bytes,
             max_total_body_bytes: self.max_total_body_bytes,
+            session_max_response_bodies: Some(self.max_response_bodies),
+            session_max_total_body_bytes: Some(self.max_total_body_bytes),
             provider_resource_buffer_bytes: NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
             provider_total_buffer_bytes: NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
             allowed_origins: self.allowed_origins.clone(),
@@ -664,7 +688,7 @@ impl NetworkObservationPolicy {
     }
 }
 
-fn is_sensitive_header(name: &str) -> bool {
+pub(super) fn is_sensitive_header(name: &str) -> bool {
     matches!(
         name,
         "authorization"
@@ -747,6 +771,23 @@ impl NetworkPayload {
         reference: &NetworkPayloadRef,
         maximum: u64,
     ) -> Result<Self, SurfaceError> {
+        let mut belongs_to_outcome = false;
+        for source in &outcome.sources {
+            if source.profile != Some(DocumentProfile::network_observation_v1()) {
+                continue;
+            }
+            let document = source.restore(outcome.limits.bytes)?;
+            let window = NetworkWindow::from_document(&document)?;
+            if window.payloads.iter().any(|retained| retained == reference) {
+                belongs_to_outcome = true;
+                break;
+            }
+        }
+        if !belongs_to_outcome {
+            return Err(SurfaceError::Invalid(
+                "network payload reference is not retained by this Outcome".into(),
+            ));
+        }
         if !matches!(
             reference.state,
             NetworkPayloadState::Retained | NetworkPayloadState::Truncated

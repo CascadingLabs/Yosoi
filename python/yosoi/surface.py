@@ -231,12 +231,14 @@ class NetworkObservationPolicy(ImmutableModel):
     Attributes:
         max_duration_ms: Maximum subscription lifetime.
         max_events: Lifetime event journal count cap.
-        max_buffered_events: Provider channel queue cap, independent of retained history.
+        max_buffered_events: Provider queue cap, independent of retained history.
         max_windows: Frozen windows retained for reads.
         max_event_bytes: Event metadata retention cap.
-        max_response_bodies: Maximum completed bodies requested.
+        max_response_bodies: Maximum completed bodies requested per subscription;
+            its initial value also caps bodies retained across the live Surface session.
         max_body_bytes: Per-body cap.
-        max_total_body_bytes: Subscription-wide body byte cap.
+        max_total_body_bytes: Subscription-wide body byte cap; its initial value
+            also caps bytes retained across the live Surface session.
         retain_bodies: Explicit body opt-in; defaults to false.
         retain_url_path: Explicitly retain URL paths; defaults to false.
         retain_url_query: Explicitly retain URL queries; defaults to false.
@@ -290,12 +292,27 @@ class NetworkPayloadRef(ImmutableModel):
 
     id: StrictStr = Field(description="Opaque payload id scoped to one subscription.")
     request_id: StrictStr = Field(description="Provider request id scoped to the tab.")
-    hop: int = Field(strict=True, ge=0, description="Redirect hop producing the response.")
-    response_sequence: int = Field(strict=True, ge=1, description="Linked response event sequence.")
-    response_window_id: StrictStr = Field(description="Frozen window containing the response event.")
-    body_capture_at_unix_us: int | None = Field(default=None, strict=True, ge=0, description="Body request time, separate from event window time.")
-    state: NetworkPayloadState = Field(description="Body retention or projection result.")
-    document_kind: NetworkPayloadKind | None = Field(default=None, description="Document or FileDocument projection.")
+    hop: int = Field(
+        strict=True, ge=0, description="Redirect hop producing the response."
+    )
+    response_sequence: int = Field(
+        strict=True, ge=1, description="Linked response event sequence."
+    )
+    response_window_id: StrictStr = Field(
+        description="Frozen window containing the response event."
+    )
+    body_capture_at_unix_us: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        description="Body request time, separate from event window time.",
+    )
+    state: NetworkPayloadState = Field(
+        description="Body retention or projection result."
+    )
+    document_kind: NetworkPayloadKind | None = Field(
+        default=None, description="Document or FileDocument projection."
+    )
     projection_basis: NetworkProjectionBasis | None = Field(
         default=None,
         description="Requests classification or typed file basis for the projection.",
@@ -309,61 +326,108 @@ class NetworkPayloadRef(ImmutableModel):
     )
     browser_effective_charset: StrictStr | None = Field(
         default=None,
-        description="Browser-effective charset reported by CDP, separate from the response header.",
+        description="CDP-effective charset, separate from the response header.",
     )
     detected_media_type: StrictStr | None = Field(
         default=None,
         description="Type detected by shared source sniffing or typed file magic.",
     )
-    content_encoding: StrictStr | None = Field(default=None, description="Browser-declared content encoding.")
-    byte_provenance: Literal["cdp_decoded_response_body", "none"] = Field(description="Retained bytes are not wire capture.")
-    provider_base64_encoded: StrictBool = Field(description="Whether CDP used base64 transport encoding.")
+    content_encoding: StrictStr | None = Field(
+        default=None, description="Browser-declared content encoding."
+    )
+    byte_provenance: Literal["cdp_decoded_response_body", "none"] = Field(
+        description="Retained bytes are not wire capture."
+    )
+    provider_base64_encoded: StrictBool = Field(
+        description="Whether CDP used base64 transport encoding."
+    )
     provider_reported_body_bytes: int | None = Field(
         default=None,
         strict=True,
         ge=0,
-        description="Sum of CDP Network.dataReceived.dataLength values, absent if unknown.",
+        description="Sum of CDP dataReceived.dataLength values; absent if unknown.",
     )
     text_utf8_normalized: StrictBool = Field(
         default=False,
         description=(
             "Whether CDP returned Unicode text retained as a UTF-8 normalized view, "
-            "separate from the observed Content-Type header and browser-effective charset."
+            "separate from the Content-Type header and browser-effective charset."
         ),
     )
-    retained_bytes: int = Field(strict=True, ge=0, description="Exact retained body bytes.")
-    sha256: StrictStr | None = Field(default=None, description="SHA-256 of retained response bytes.")
-    document_id: StrictStr | None = Field(default=None, description="Document or FileDocument id for offline reconstruction.")
-    reason: StrictStr | None = Field(default=None, description="Bounded omission or projection reason.")
+    retained_bytes: int = Field(
+        strict=True, ge=0, description="Exact retained body bytes."
+    )
+    sha256: StrictStr | None = Field(
+        default=None, description="SHA-256 of retained response bytes."
+    )
+    document_id: StrictStr | None = Field(
+        default=None,
+        description="Document or FileDocument id for offline reconstruction.",
+    )
+    reason: StrictStr | None = Field(
+        default=None, description="Bounded omission or projection reason."
+    )
 
 
 class NetworkCoverage(ImmutableModel):
     """Known gaps and provider limits for one frozen event window."""
 
     complete: StrictBool = Field(description="Whether provider coverage is complete.")
-    reason: StrictStr = Field(description="Why the provider cannot claim browser-wide completeness.")
-    overflow: StrictBool = Field(description="Whether an event or byte cap dropped evidence.")
-    dropped_events: int = Field(strict=True, ge=0, description="Known events dropped by bounds.")
-    disconnected: StrictBool = Field(description="Whether the provider stream disconnected.")
-    expired: StrictBool = Field(description="Whether the subscription lifetime elapsed.")
-    instrumentation_escalated: StrictBool = Field(
-        description="Whether this subscription enabled CDP Network tracking from an off state."
+    reason: StrictStr = Field(
+        description="Why the provider cannot claim browser-wide completeness."
     )
-    network_was_previously_enabled: StrictBool = Field(description="Whether this tab already had Network tracking enabled.")
-    late_events: int = Field(strict=True, ge=0, description="Events delivered with older provider time.")
-    filtered_events: int = Field(strict=True, ge=0, description="Events omitted by selected filters.")
-    starts_not_observed: int = Field(strict=True, ge=0, description="Events delivered before a request start was known.")
-    omitted_payload_links: int = Field(strict=True, ge=0, description="Body links omitted by the network Document bound.")
-    start_boundary_unknown: StrictBool = Field(description="Whether earlier in-flight requests are unknown.")
-    end_boundary_in_flight: StrictBool = Field(description="Whether requests remain unfinished at window end.")
+    overflow: StrictBool = Field(
+        description="Whether an event or byte cap dropped evidence."
+    )
+    dropped_events: int = Field(
+        strict=True, ge=0, description="Known events dropped by bounds."
+    )
+    disconnected: StrictBool = Field(
+        description="Whether the provider stream disconnected."
+    )
+    expired: StrictBool = Field(
+        description="Whether the subscription lifetime elapsed."
+    )
+    instrumentation_escalated: StrictBool = Field(
+        description="Whether this subscription enabled disabled CDP tracking."
+    )
+    network_was_previously_enabled: StrictBool = Field(
+        description="Whether this tab already had Network tracking enabled."
+    )
+    late_events: int = Field(
+        strict=True, ge=0, description="Events delivered with older provider time."
+    )
+    filtered_events: int = Field(
+        strict=True, ge=0, description="Events omitted by selected filters."
+    )
+    starts_not_observed: int = Field(
+        strict=True,
+        ge=0,
+        description="Events delivered before a request start was known.",
+    )
+    omitted_payload_links: int = Field(
+        strict=True,
+        ge=0,
+        description="Body links omitted by the network Document bound.",
+    )
+    start_boundary_unknown: StrictBool = Field(
+        description="Whether earlier in-flight requests are unknown."
+    )
+    end_boundary_in_flight: StrictBool = Field(
+        description="Whether requests remain unfinished at window end."
+    )
 
 
 class NetworkGap(ImmutableModel):
     """One explicit gap in the provider sequence or subscription lifetime."""
 
-    after_sequence: int = Field(strict=True, ge=0, description="Last retained sequence before the gap.")
+    after_sequence: int = Field(
+        strict=True, ge=0, description="Last retained sequence before the gap."
+    )
     reason: StrictStr = Field(description="Bounded gap reason.")
-    dropped_events: int | None = Field(default=None, strict=True, ge=0, description="Known gap event count.")
+    dropped_events: int | None = Field(
+        default=None, strict=True, ge=0, description="Known gap event count."
+    )
 
 
 class NetworkInFlight(ImmutableModel):
@@ -373,17 +437,25 @@ class NetworkInFlight(ImmutableModel):
     hop: int = Field(strict=True, ge=0, description="Current redirect hop.")
     url: StrictStr = Field(description="URL after the selected redaction policy.")
     method: StrictStr = Field(description="HTTP method.")
-    response_seen: StrictBool = Field(description="Whether a response event was received.")
+    response_seen: StrictBool = Field(
+        description="Whether a response event was received."
+    )
 
 
 class NetworkRequestStarted(ImmutableModel):
     """Request start details after URL and header retention policy."""
 
     kind: Literal["request_started"] = Field(description="Request start discriminator.")
-    url: StrictStr = Field(description="Retained URL under the selected redaction policy.")
+    url: StrictStr = Field(
+        description="Retained URL under the selected redaction policy."
+    )
     method: StrictStr = Field(description="HTTP method.")
-    resource_type: StrictStr | None = Field(default=None, description="Browser resource category.")
-    headers: tuple[NetworkHeader, ...] = Field(description="Explicitly allowed non-sensitive headers.")
+    resource_type: StrictStr | None = Field(
+        default=None, description="Browser resource category."
+    )
+    headers: tuple[NetworkHeader, ...] = Field(
+        description="Explicitly allowed non-sensitive headers."
+    )
 
 
 class NetworkRedirect(ImmutableModel):
@@ -392,8 +464,12 @@ class NetworkRedirect(ImmutableModel):
     kind: Literal["redirect"] = Field(description="Redirect discriminator.")
     from_url: StrictStr = Field(description="Retained URL for the prior hop.")
     to_url: StrictStr = Field(description="Retained URL for the next hop.")
-    status: int = Field(strict=True, ge=100, le=599, description="Redirect response status.")
-    headers: tuple[NetworkHeader, ...] = Field(description="Explicitly allowed non-sensitive headers.")
+    status: int = Field(
+        strict=True, ge=100, le=599, description="Redirect response status."
+    )
+    headers: tuple[NetworkHeader, ...] = Field(
+        description="Explicitly allowed non-sensitive headers."
+    )
 
 
 class NetworkResponseReceived(ImmutableModel):
@@ -401,7 +477,9 @@ class NetworkResponseReceived(ImmutableModel):
 
     kind: Literal["response_received"] = Field(description="Response discriminator.")
     url: StrictStr = Field(description="Retained response URL.")
-    status: int | None = Field(default=None, strict=True, ge=100, le=599, description="HTTP response status.")
+    status: int | None = Field(
+        default=None, strict=True, ge=100, le=599, description="HTTP response status."
+    )
     declared_media_type: StrictStr | None = Field(
         default=None,
         description="Observed raw Content-Type response header, including parameters.",
@@ -412,15 +490,24 @@ class NetworkResponseReceived(ImmutableModel):
     browser_effective_charset: StrictStr | None = Field(
         default=None, description="Browser-effective charset reported by CDP."
     )
-    content_encoding: StrictStr | None = Field(default=None, description="Declared content encoding.")
-    headers: tuple[NetworkHeader, ...] = Field(description="Explicitly allowed non-sensitive headers.")
+    content_encoding: StrictStr | None = Field(
+        default=None, description="Declared content encoding."
+    )
+    headers: tuple[NetworkHeader, ...] = Field(
+        description="Explicitly allowed non-sensitive headers."
+    )
 
 
 class NetworkFinished(ImmutableModel):
     """Provider completion metadata for one request hop."""
 
     kind: Literal["finished"] = Field(description="Completion discriminator.")
-    encoded_data_length: int | None = Field(default=None, strict=True, ge=0, description="Encoded transfer length when reported.")
+    encoded_data_length: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        description="Encoded transfer length when reported.",
+    )
 
 
 class NetworkFailed(ImmutableModel):
@@ -432,7 +519,11 @@ class NetworkFailed(ImmutableModel):
 
 
 NetworkEventDetails = Annotated[
-    NetworkRequestStarted | NetworkRedirect | NetworkResponseReceived | NetworkFinished | NetworkFailed,
+    NetworkRequestStarted
+    | NetworkRedirect
+    | NetworkResponseReceived
+    | NetworkFinished
+    | NetworkFailed,
     Field(discriminator="kind"),
 ]
 """Typed, redacted details carried by one NetworkEvent."""
@@ -441,69 +532,167 @@ NetworkEventDetails = Annotated[
 class NetworkEvent(ImmutableModel):
     """One provider event in delivery order, with event-time provenance."""
 
-    sequence: int = Field(strict=True, ge=1, description="Monotonic subscription sequence.")
+    sequence: int = Field(
+        strict=True, ge=1, description="Monotonic subscription sequence."
+    )
     request_id: StrictStr = Field(description="Provider request identity.")
-    request_start_observed: StrictBool = Field(description="Whether request start was seen before this event.")
+    request_start_observed: StrictBool = Field(
+        description="Whether request start was seen before this event."
+    )
     hop: int = Field(strict=True, ge=0, description="Redirect hop.")
-    observed_at_unix_us: int = Field(strict=True, ge=0, description="Local UTC receipt time.")
-    provider_time_us: int | None = Field(default=None, strict=True, ge=0, description="Provider monotonic time.")
-    provider_clock: Literal["cdp_monotonic"] | None = Field(default=None, description="Clock basis for provider time.")
-    frame_id: StrictStr | None = Field(default=None, description="Browser frame id, if supplied.")
-    loader_id: StrictStr | None = Field(default=None, description="Browser loader id, if supplied.")
-    kind: NetworkEventDetails = Field(description="Typed request, redirect, response, finish, or failure details.")
+    observed_at_unix_us: int = Field(
+        strict=True, ge=0, description="Local UTC receipt time."
+    )
+    provider_time_us: int | None = Field(
+        default=None, strict=True, ge=0, description="Provider monotonic time."
+    )
+    provider_clock: Literal["cdp_monotonic"] | None = Field(
+        default=None, description="Clock basis for provider time."
+    )
+    frame_id: StrictStr | None = Field(
+        default=None, description="Browser frame id, if supplied."
+    )
+    loader_id: StrictStr | None = Field(
+        default=None, description="Browser loader id, if supplied."
+    )
+    kind: NetworkEventDetails = Field(
+        description="Typed request, redirect, response, finish, or failure details."
+    )
 
 
 class NetworkRetention(ImmutableModel):
     """Caller retention choices and shared Page-lifetime provider caps."""
 
-    max_duration_ms: int = Field(strict=True, ge=1, le=3600000, description="Subscription lifetime cap.")
-    max_events: int = Field(strict=True, ge=1, le=4096, description="Lifetime event journal cap.")
-    max_buffered_events: int = Field(strict=True, ge=1, le=256, description="Provider channel queue cap.")
-    max_event_bytes: int = Field(strict=True, ge=1, le=16777216, description="Serialized event metadata cap.")
-    max_windows: int = Field(strict=True, ge=1, le=4096, description="Live frozen-window history cap.")
+    max_duration_ms: int = Field(
+        strict=True, ge=1, le=3600000, description="Subscription lifetime cap."
+    )
+    max_events: int = Field(
+        strict=True, ge=1, le=4096, description="Lifetime event journal cap."
+    )
+    max_buffered_events: int = Field(
+        strict=True, ge=1, le=256, description="Provider channel queue cap."
+    )
+    max_event_bytes: int = Field(
+        strict=True, ge=1, le=16777216, description="Serialized event metadata cap."
+    )
+    max_windows: int = Field(
+        strict=True, ge=1, le=4096, description="Live frozen-window history cap."
+    )
     retain_url_path: StrictBool = Field(description="Whether URL paths were retained.")
-    retain_url_query: StrictBool = Field(description="Whether URL queries were retained.")
-    retained_header_names: tuple[StrictStr, ...] = Field(description="Retained non-sensitive header allowlist.")
-    retain_bodies: StrictBool = Field(description="Whether response body capture was enabled.")
-    max_response_bodies: int = Field(strict=True, ge=0, le=1024, description="Caller response-body count cap.")
-    max_body_bytes: int = Field(strict=True, ge=1, le=8388608, description="Caller retained-byte cap per response.")
-    max_total_body_bytes: int = Field(strict=True, ge=1, le=67108864, description="Caller retained-byte cap per subscription.")
-    provider_resource_buffer_bytes: int = Field(strict=True, ge=1, description="Shared Page-lifetime CDP per-resource body buffer cap.")
-    provider_total_buffer_bytes: int = Field(strict=True, ge=1, description="Shared Page-lifetime CDP aggregate body buffer cap.")
-    allowed_origins: tuple[StrictStr, ...] = Field(description="Exact origin filter, if selected.")
-    allowed_methods: tuple[StrictStr, ...] = Field(description="Method filter, if selected.")
+    retain_url_query: StrictBool = Field(
+        description="Whether URL queries were retained."
+    )
+    retained_header_names: tuple[StrictStr, ...] = Field(
+        description="Retained non-sensitive header allowlist."
+    )
+    retain_bodies: StrictBool = Field(
+        description="Whether response body capture was enabled."
+    )
+    max_response_bodies: int = Field(
+        strict=True, ge=0, le=1024, description="Caller response-body count cap."
+    )
+    max_body_bytes: int = Field(
+        strict=True,
+        ge=1,
+        le=8388608,
+        description="Caller retained-byte cap per response.",
+    )
+    max_total_body_bytes: int = Field(
+        strict=True,
+        ge=1,
+        le=67108864,
+        description="Caller retained-byte cap per subscription.",
+    )
+    session_max_response_bodies: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        le=1024,
+        description="Fixed Surface-session body count cap; absent in older windows.",
+    )
+    session_max_total_body_bytes: int | None = Field(
+        default=None,
+        strict=True,
+        ge=1,
+        le=67108864,
+        description="Fixed Surface-session byte cap; rearming does not reset it.",
+    )
+    provider_resource_buffer_bytes: int = Field(
+        strict=True,
+        ge=1,
+        description="Shared Page-lifetime CDP per-resource body buffer cap.",
+    )
+    provider_total_buffer_bytes: int = Field(
+        strict=True,
+        ge=1,
+        description="Shared Page-lifetime CDP aggregate body buffer cap.",
+    )
+    allowed_origins: tuple[StrictStr, ...] = Field(
+        description="Exact origin filter, if selected."
+    )
+    allowed_methods: tuple[StrictStr, ...] = Field(
+        description="Method filter, if selected."
+    )
 
 
 class NetworkWindow(ImmutableModel):
     """Versioned frozen CDP window; event JSON and payload bytes remain separate."""
 
-    schema_id: Literal["yosoi.network.v1"] = Field(alias="schema", description="Explicit network observation discriminator.")
-    schema_version: int = Field(strict=True, ge=1, le=1, description="Network schema version.")
+    schema_id: Literal["yosoi.network.v1"] = Field(
+        alias="schema", description="Explicit network observation discriminator."
+    )
+    schema_version: int = Field(
+        strict=True, ge=1, le=1, description="Network schema version."
+    )
     session_id: StrictStr = Field(description="Native producer Session.")
     tab_id: StrictStr = Field(description="Native producer tab.")
-    subscription_id: StrictStr = Field(description="Session-local subscription identity.")
+    subscription_id: StrictStr = Field(
+        description="Session-local subscription identity."
+    )
     window_id: StrictStr = Field(description="Immutable frozen window identity.")
-    first_sequence: int | None = Field(default=None, strict=True, ge=1, description="First retained event sequence.")
-    last_sequence: int | None = Field(default=None, strict=True, ge=1, description="Last retained event sequence.")
+    first_sequence: int | None = Field(
+        default=None, strict=True, ge=1, description="First retained event sequence."
+    )
+    last_sequence: int | None = Field(
+        default=None, strict=True, ge=1, description="Last retained event sequence."
+    )
     started_at_unix_us: int = Field(strict=True, ge=0, description="Window start time.")
     ended_at_unix_us: int = Field(strict=True, ge=0, description="Window end time.")
-    events: tuple[NetworkEvent, ...] = Field(description="Provider events in listener delivery order.")
-    in_flight_at_start: tuple[NetworkInFlight, ...] = Field(description="Known requests at prior freeze boundary.")
-    in_flight: tuple[NetworkInFlight, ...] = Field(description="Requests without a terminal event at window end.")
-    gaps: tuple[NetworkGap, ...] = Field(description="Explicit provider or retention gaps.")
-    coverage: NetworkCoverage = Field(description="Window uncertainty and completeness.")
-    retention: NetworkRetention = Field(description="Effective URL, header, body and filter policy.")
-    payloads: tuple[NetworkPayloadRef, ...] = Field(description="Separate body links, including explicit omissions.")
+    events: tuple[NetworkEvent, ...] = Field(
+        description="Provider events in listener delivery order."
+    )
+    in_flight_at_start: tuple[NetworkInFlight, ...] = Field(
+        description="Known requests at prior freeze boundary."
+    )
+    in_flight: tuple[NetworkInFlight, ...] = Field(
+        description="Requests without a terminal event at window end."
+    )
+    gaps: tuple[NetworkGap, ...] = Field(
+        description="Explicit provider or retention gaps."
+    )
+    coverage: NetworkCoverage = Field(
+        description="Window uncertainty and completeness."
+    )
+    retention: NetworkRetention = Field(
+        description="Effective URL, header, body and filter policy."
+    )
+    payloads: tuple[NetworkPayloadRef, ...] = Field(
+        description="Separate body links, including explicit omissions."
+    )
 
     @model_validator(mode="after")
     def _window_contract(self) -> Self:
         """Check frozen interval, event order and payload identity relationships."""
-        if not all((self.session_id, self.tab_id, self.subscription_id, self.window_id)):
+        if not all(
+            (self.session_id, self.tab_id, self.subscription_id, self.window_id)
+        ):
             raise ValueError("network window identities must be nonempty")
         if self.ended_at_unix_us < self.started_at_unix_us:
             raise ValueError("network window ends before it starts")
         sequences = tuple(event.sequence for event in self.events)
-        if any(right <= left for left, right in zip(sequences, sequences[1:])):
+        if any(
+            right <= left for left, right in zip(sequences, sequences[1:], strict=False)
+        ):
             raise ValueError("network event sequences must increase")
         expected_first = sequences[0] if sequences else None
         expected_last = sequences[-1] if sequences else None
@@ -520,9 +709,13 @@ class NetworkWindow(ImmutableModel):
                     or payload.projection_basis is None
                     or payload.sha256 is None
                 ):
-                    raise ValueError("retained payload must name its source key, projection basis and digest")
+                    raise ValueError(
+                        "retained payload requires a source key, projection and digest"
+                    )
                 if payload.provider_base64_encoded and payload.text_utf8_normalized:
-                    raise ValueError("base64 transport bytes cannot be a normalized text view")
+                    raise ValueError(
+                        "base64 transport bytes cannot be a normalized text view"
+                    )
             elif (
                 payload.document_id is not None
                 or payload.document_kind is not None
@@ -539,12 +732,16 @@ class NetworkWindow(ImmutableModel):
                 and event.kind.kind == "response_received"
                 for event in self.events
             ):
-                raise ValueError("payload reference does not point to its response event")
+                raise ValueError(
+                    "payload reference does not point to its response event"
+                )
         return self
 
     def to_document(self, id: str) -> Document:
         """Create an immutable Document carrying the dedicated network profile."""
-        return Document.from_profile(id, DocumentProfile.network_observation(), self.model_dump_json())
+        return Document.from_profile(
+            id, DocumentProfile.network_observation(), self.model_dump_json()
+        )
 
     @classmethod
     def from_document(cls, document: Document) -> Self:
@@ -561,19 +758,52 @@ NetworkObservation = NetworkWindow
 class NetworkPayload(ImmutableModel):
     """A payload reference paired with an existing Document or FileDocument."""
 
-    reference: NetworkPayloadRef = Field(description="Response relationship and retention metadata.")
-    value: Document | FileDocument = Field(repr=False, exclude=True, description="Retained typed response payload.")
+    reference: NetworkPayloadRef = Field(
+        description="Response relationship and retention metadata."
+    )
+    value: Document | FileDocument = Field(
+        repr=False, exclude=True, description="Retained typed response payload."
+    )
 
 
 class NetworkSubscription(ImmutableModel):
     """Receipt for one explicitly armed native Chrome event subscription."""
 
     active: StrictBool = Field(description="Whether the subscription is active.")
-    subscription_id: StrictStr = Field(description="Session-local subscription identity.")
+    subscription_id: StrictStr = Field(
+        description="Session-local subscription identity."
+    )
     provider: StrictStr = Field(description="Qualified native event provider.")
-    body_retention: StrictBool = Field(description="Whether response body capture is enabled.")
-    max_events: int = Field(strict=True, ge=1, description="Lifetime event journal cap.")
-    max_duration_ms: int = Field(strict=True, ge=1, description="Subscription lifetime bound.")
+    body_retention: StrictBool = Field(
+        description="Whether response body capture is enabled."
+    )
+    max_events: int = Field(
+        strict=True, ge=1, description="Lifetime event journal cap."
+    )
+    max_duration_ms: int = Field(
+        strict=True, ge=1, description="Subscription lifetime bound."
+    )
+    session_max_response_bodies: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        description="Fixed Surface-session body count cap; absent in older receipts.",
+    )
+    session_max_total_body_bytes: int | None = Field(
+        default=None,
+        strict=True,
+        ge=1,
+        description="Fixed Surface-session body byte cap; absent in older receipts.",
+    )
+    session_retained_response_bodies: int | None = Field(
+        default=None,
+        strict=True,
+        ge=0,
+        description="Bodies retained by frozen windows when armed.",
+    )
+    session_retained_body_bytes: int | None = Field(
+        default=None, strict=True, ge=0, description="Body bytes retained when armed."
+    )
 
 
 BrowserRepresentation = Literal["dom", "ax", "network"]
@@ -2124,13 +2354,31 @@ class Outcome(ImmutableModel):
         """Resolve one frozen response-body link from an offline Outcome."""
         if not isinstance(reference, NetworkPayloadRef):
             raise TypeError("reference must be a NetworkPayloadRef")
+        belongs_to_outcome = False
+        for source in self.sources:
+            if (
+                source.profile is None
+                or source.profile.schema_profile != "yosoi_network_observation_v1"
+            ):
+                continue
+            document = self.source_document(source.key, self.limits.bytes)
+            window = NetworkWindow.model_validate_json(document.data)
+            if reference in window.payloads:
+                belongs_to_outcome = True
+                break
+        if not belongs_to_outcome:
+            raise SurfaceError(
+                "network payload reference is not retained by this Outcome"
+            )
         if reference.state not in {"retained", "truncated"}:
             raise SurfaceError("network response body was not retained")
         if reference.document_id != reference.id:
             raise SurfaceError("network payload source key does not match its id")
         if reference.document_kind in {"html", "json"}:
             value: Document | FileDocument = self.source_document(reference.id, maximum)
-            expected = "source_html" if reference.document_kind == "html" else "source_json"
+            expected = (
+                "source_html" if reference.document_kind == "html" else "source_json"
+            )
             if value.document_class != expected:
                 raise SurfaceError("network payload Document has the wrong profile")
             digest = hashlib.sha256(value.data).hexdigest()
@@ -2140,8 +2388,11 @@ class Outcome(ImmutableModel):
         else:
             raise SurfaceError("retained network payload has no projection kind")
         if reference.sha256 != digest:
-            raise SurfaceError("network payload digest did not match the Outcome source")
+            raise SurfaceError(
+                "network payload digest did not match the Outcome source"
+            )
         return NetworkPayload(reference=reference, value=value)
+
     async def rerun(self, policy: SurfacePolicy, count: int = 1) -> tuple[Outcome, ...]:
         """Execute a supported recipe against fresh isolated live sessions.
 
@@ -2316,7 +2567,9 @@ class BrowserSurface(SurfaceConnection):
             current_total = reply.get("total_bytes")
             current_offset = reply.get("offset")
             encoded = reply.get("data_base64")
-            if not isinstance(current_total, int) or not isinstance(current_offset, int):
+            if not isinstance(current_total, int) or not isinstance(
+                current_offset, int
+            ):
                 raise SurfaceError("network payload reply omitted byte bounds")
             if current_offset != offset or not isinstance(encoded, str):
                 raise SurfaceError("network payload reply has an invalid chunk")
@@ -2326,7 +2579,9 @@ class BrowserSurface(SurfaceConnection):
             try:
                 chunk = base64.b64decode(encoded, validate=True)
             except ValueError as error:
-                raise SurfaceError("network payload chunk was not valid base64") from error
+                raise SurfaceError(
+                    "network payload chunk was not valid base64"
+                ) from error
             if not chunk and offset < total_bytes:
                 raise SurfaceError("network payload read made no progress")
             chunks.append(chunk)
@@ -2334,8 +2589,13 @@ class BrowserSurface(SurfaceConnection):
             if offset > total_bytes:
                 raise SurfaceError("network payload exceeded its declared length")
         content = b"".join(chunks)
-        if reference.sha256 is not None and hashlib.sha256(content).hexdigest() != reference.sha256:
-            raise SurfaceError("network payload digest did not match its response reference")
+        if (
+            reference.sha256 is not None
+            and hashlib.sha256(content).hexdigest() != reference.sha256
+        ):
+            raise SurfaceError(
+                "network payload digest did not match its response reference"
+            )
         document_id = reference.document_id or reference.id
         if reference.document_kind == "html":
             value: Document | FileDocument = Document.html(document_id, content)
@@ -2379,7 +2639,7 @@ class BrowserSurface(SurfaceConnection):
         )
 
     async def observe_network(self) -> tuple[BrowserObservation, NetworkWindow]:
-        """Freeze the current native network event interval and read its typed contract."""
+        """Freeze the native network interval and read its typed contract."""
         observation = await self.observe("network")
         request = ReadRequest(
             operation=Inspect(reference=observation.root),
