@@ -4,7 +4,7 @@ use crate::internal::{documents::DocumentId, types::Sha256Digest};
 
 use super::{
     FileDocumentError, FileLimits,
-    classify::{MediaKind, detected_kind, expected_type_name},
+    classify::{MediaKind, accepts_probe_validated_video, detected_kind, expected_type_name},
     metadata::FileMetadata,
 };
 
@@ -21,9 +21,37 @@ impl MediaDocument {
     pub(super) fn new(
         id: impl Into<String>,
         bytes: Arc<Vec<u8>>,
+        metadata: FileMetadata,
+        limits: FileLimits,
+        expected: Option<MediaKind>,
+    ) -> Result<Self, FileDocumentError> {
+        Self::build(id, bytes, metadata, limits, expected, None)
+    }
+
+    pub(super) fn new_probe_validated_video(
+        id: impl Into<String>,
+        bytes: Arc<Vec<u8>>,
+        metadata: FileMetadata,
+        limits: FileLimits,
+        container: &str,
+    ) -> Result<Self, FileDocumentError> {
+        Self::build(
+            id,
+            bytes,
+            metadata,
+            limits,
+            Some(MediaKind::Video),
+            Some(container),
+        )
+    }
+
+    fn build(
+        id: impl Into<String>,
+        bytes: Arc<Vec<u8>>,
         mut metadata: FileMetadata,
         limits: FileLimits,
         expected: Option<MediaKind>,
+        probe_validated_video_container: Option<&str>,
     ) -> Result<Self, FileDocumentError> {
         limits.validate()?;
         metadata.validate()?;
@@ -38,8 +66,18 @@ impl MediaDocument {
             });
         }
         let actual_kind = detected_kind(bytes.as_slice());
+        let probe_validated_video = expected == Some(MediaKind::Video)
+            && probe_validated_video_container
+                .is_some_and(|container| accepts_probe_validated_video(container, actual_kind));
+        if probe_validated_video_container.is_some() && !probe_validated_video {
+            return Err(FileDocumentError::TypeMismatch {
+                expected: "decoder-validated video container",
+                detected: infer::get(bytes.as_slice()).map(|kind| kind.mime_type().to_owned()),
+            });
+        }
         if let Some(expected) = expected
             && actual_kind != expected
+            && !probe_validated_video
         {
             return Err(FileDocumentError::TypeMismatch {
                 expected: expected_type_name(expected),
@@ -48,6 +86,9 @@ impl MediaDocument {
         }
         let id = DocumentId::try_new(id)?;
         let sha256 = metadata.complete_for_payload(bytes.as_slice());
+        if let Some(container) = probe_validated_video_container {
+            metadata.record_probe_validated_video_container(container);
+        }
         Ok(Self {
             id,
             bytes,
@@ -75,7 +116,17 @@ impl MediaDocument {
             });
         }
         let sha256 = Sha256Digest::digest(bytes.as_slice()).to_string();
-        if !metadata.has_digest(&sha256) || !stored_type_matches(&metadata, expected) {
+        if !metadata.has_digest(&sha256) {
+            return Err(FileDocumentError::ArchivedMetadataMismatch);
+        }
+        // Archive restores the recorded media family after the raw payload digest has
+        // been verified. Re-running the current signature detector here could change
+        // an older explicit BinaryDocument or a decoder-validated VideoDocument.
+        let stored_family_match = metadata.probe_validated_video_container().is_none()
+            && stored_type_matches(&metadata, expected);
+        let probe_validated_video =
+            expected == MediaKind::Video && stored_probe_validated_video_matches(&metadata);
+        if !(stored_family_match || probe_validated_video) {
             return Err(FileDocumentError::ArchivedMetadataMismatch);
         }
         Ok(Self {
@@ -133,5 +184,23 @@ fn stored_type_matches(metadata: &FileMetadata, expected: MediaKind) -> bool {
             .detected_media_type()
             .is_some_and(|media_type| media_type.starts_with("audio/")),
         MediaKind::Binary => true,
+    }
+}
+
+fn stored_probe_validated_video_matches(metadata: &FileMetadata) -> bool {
+    match (
+        metadata.probe_validated_video_container(),
+        metadata.detected_media_type(),
+    ) {
+        // MPEG-TS prefixes may be classified as audio or binary by the pinned
+        // signature matcher. FFprobe's recorded container basis establishes
+        // the VideoDocument family; preserve the detector MIME as metadata.
+        (Some("ogg"), None | Some("audio/ogg" | "audio/opus")) | (Some("mpegts"), None) => true,
+        (Some("mpegts"), Some(media_type)) => {
+            !media_type.is_empty()
+                && !media_type.starts_with("image/")
+                && !media_type.starts_with("video/")
+        }
+        _ => false,
     }
 }
