@@ -9,7 +9,10 @@ use std::{collections::BTreeSet, sync::Arc};
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 use super::PixelArtifact;
 use super::pixels::{PixelOperation, PixelSource};
-use super::{ArchiveLimits, Limits, PixelArtifactInfo, Surface, SurfaceError};
+use super::{
+    ArchiveLimits, Limits, NetworkPayloadKind, NetworkPayloadState, NetworkWindow,
+    PixelArtifactInfo, Surface, SurfaceError,
+};
 use crate::internal::media_documents::{
     from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
@@ -903,232 +906,56 @@ fn find_source_by_key<'a>(sources: &'a [ArchivedSource], key: &str) -> Option<&'
 }
 
 fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(), SurfaceError> {
-    if document.profile() != DocumentProfile::network_observation_v1() {
-        return Ok(());
-    }
-    let value: serde_json::Value = serde_json::from_slice(document.bytes())
-        .map_err(|error| SurfaceError::Parse(error.to_string()))?;
-    if value.get("schema").and_then(serde_json::Value::as_str) != Some("yosoi.network.v1")
-        || value
-            .get("schema_version")
-            .and_then(serde_json::Value::as_u64)
-            != Some(1)
-    {
-        return Err(SurfaceError::Invalid(
-            "network observation profile does not match its payload schema".into(),
-        ));
-    }
-    let payloads = value
-        .get("payloads")
-        .and_then(serde_json::Value::as_array)
-        .ok_or_else(|| SurfaceError::Invalid("network window payloads are missing".into()))?;
-    for payload in payloads {
-        let state = payload
-            .get("state")
-            .and_then(serde_json::Value::as_str)
-            .ok_or_else(|| SurfaceError::Invalid("network payload state is missing".into()))?;
-        let provider_base64_encoded = required_payload_bool(payload, "provider_base64_encoded")?;
-        let text_utf8_normalized = required_payload_bool(payload, "text_utf8_normalized")?;
-        let retained = matches!(state, "retained" | "truncated");
-        if (provider_base64_encoded || !retained) && text_utf8_normalized
-            || (retained && provider_base64_encoded == text_utf8_normalized)
-        {
+    let window = NetworkWindow::from_document(document)?;
+    for payload in &window.payloads {
+        if !matches!(
+            payload.state,
+            NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+        ) {
+            continue;
+        }
+        let key = payload.document_id.as_deref().ok_or_else(|| {
+            SurfaceError::Invalid("retained network body lacks a source key".into())
+        })?;
+        if key != payload.id {
             return Err(SurfaceError::Invalid(
-                "network payload encoding provenance is inconsistent with its retained state"
-                    .into(),
+                "network payload id and source key differ".into(),
             ));
         }
-        validate_payload_media_types(payload)?;
-        if let Some(reported) = payload.get("provider_reported_body_bytes")
-            && !reported.is_null()
-            && reported.as_u64().is_none()
-        {
-            return Err(SurfaceError::Invalid(
-                "network reported body byte count must be an unsigned integer or null".into(),
-            ));
-        }
-        match state {
-            "retained" | "truncated" => {
-                let id = payload
-                    .get("id")
-                    .and_then(serde_json::Value::as_str)
-                    .filter(|id| !id.is_empty())
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid("retained network body lacks a payload id".into())
-                    })?;
-                let key = payload
-                    .get("document_id")
-                    .and_then(serde_json::Value::as_str)
-                    .filter(|key| !key.is_empty())
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid(
-                            "retained network body lacks a source document id".into(),
-                        )
-                    })?;
-                if id != key {
-                    return Err(SurfaceError::Invalid(
-                        "retained network payload id differs from its source document id".into(),
-                    ));
-                }
-                let document_kind = payload
-                    .get("document_kind")
-                    .and_then(serde_json::Value::as_str)
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid("retained network body lacks a document kind".into())
-                    })?;
-                if !matches!(document_kind, "html" | "json" | "file") {
-                    return Err(SurfaceError::Invalid(
-                        "retained network body document kind is unsupported".into(),
-                    ));
-                }
-                let projection_basis = payload
-                    .get("projection_basis")
-                    .and_then(serde_json::Value::as_str)
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid(
-                            "retained network body lacks a projection basis".into(),
-                        )
-                    })?;
-                if !matches!(
-                    projection_basis,
-                    "requests_declared"
-                        | "requests_structured_suffix"
-                        | "requests_sniffed"
-                        | "typed_file_magic"
-                        | "opaque_bytes"
-                ) {
-                    return Err(SurfaceError::Invalid(
-                        "retained network body projection basis is unsupported".into(),
-                    ));
-                }
-                let sha256 = payload
-                    .get("sha256")
-                    .and_then(serde_json::Value::as_str)
-                    .filter(|value| {
-                        value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
-                    })
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid(
-                            "retained network body digest is missing or invalid".into(),
-                        )
-                    })?;
-                let retained_bytes = payload
-                    .get("retained_bytes")
-                    .and_then(serde_json::Value::as_u64)
-                    .ok_or_else(|| {
-                        SurfaceError::Invalid(
-                            "retained network body byte count is missing or invalid".into(),
-                        )
-                    })?;
-                if retained_bytes > outcome.limits.bytes
-                    || payload
-                        .get("byte_provenance")
-                        .and_then(serde_json::Value::as_str)
-                        != Some("cdp_decoded_response_body")
-                {
-                    return Err(SurfaceError::Invalid(
-                        "retained network body provenance or byte count is invalid".into(),
-                    ));
-                }
-                let source = find_source_by_key(&outcome.sources, key);
-                if source.is_none() && outcome.complete {
-                    return Err(SurfaceError::Invalid(
-                        "retained network body source is missing from the Outcome".into(),
-                    ));
-                }
-                if let Some(source) = source {
-                    let bytes = source.restore_bytes(outcome.limits.bytes)?;
-                    let actual_kind_matches = match document_kind {
-                        "file" => source.file_kind.is_some(),
-                        "html" => {
-                            source.file_kind.is_none()
-                                && source.profile == Some(DocumentProfile::source_html())
-                        }
-                        "json" => {
-                            source.file_kind.is_none()
-                                && source.profile == Some(DocumentProfile::source_json())
-                        }
-                        _ => false,
-                    };
-                    if !actual_kind_matches
-                        || source.sha256 != sha256
-                        || u64::try_from(bytes.len())
-                            .map_err(|_| SurfaceError::Limit("network payload byte count"))?
-                            != retained_bytes
-                    {
-                        return Err(SurfaceError::Invalid(
-                            "retained network body metadata differs from its source".into(),
-                        ));
-                    }
-                }
-            }
-            "not_requested" | "unavailable" | "unsupported" => {
-                for field in [
-                    "document_id",
-                    "document_kind",
-                    "projection_basis",
-                    "detected_media_type",
-                    "sha256",
-                ] {
-                    if !payload.get(field).is_some_and(serde_json::Value::is_null) {
-                        return Err(SurfaceError::Invalid(format!(
-                            "unretained network payload field {field} must be null"
-                        )));
-                    }
-                }
-                if payload
-                    .get("retained_bytes")
-                    .and_then(serde_json::Value::as_u64)
-                    != Some(0)
-                    || payload
-                        .get("byte_provenance")
-                        .and_then(serde_json::Value::as_str)
-                        != Some("none")
-                {
-                    return Err(SurfaceError::Invalid(
-                        "unretained network payload must not claim retained bytes".into(),
-                    ));
-                }
-            }
-            _ => {
+        let Some(source) = find_source_by_key(&outcome.sources, key) else {
+            if outcome.complete {
                 return Err(SurfaceError::Invalid(
-                    "network payload state is unsupported".into(),
+                    "retained network body source is missing from the Outcome".into(),
                 ));
             }
-        }
-    }
-    Ok(())
-}
-
-fn required_payload_bool(payload: &serde_json::Value, field: &str) -> Result<bool, SurfaceError> {
-    payload
-        .get(field)
-        .and_then(serde_json::Value::as_bool)
-        .ok_or_else(|| SurfaceError::Invalid(format!("network payload {field} must be a boolean")))
-}
-
-fn validate_payload_media_types(payload: &serde_json::Value) -> Result<(), SurfaceError> {
-    for field in [
-        "declared_media_type",
-        "browser_effective_mime",
-        "browser_effective_charset",
-    ] {
-        if payload
-            .get(field)
-            .is_some_and(|value| !value.is_null() && value.as_str().is_none())
+            continue;
+        };
+        let digest = payload.sha256.as_deref().ok_or_else(|| {
+            SurfaceError::Invalid("retained network payload lacks a digest".into())
+        })?;
+        let bytes = source.restore_bytes(outcome.limits.bytes)?;
+        let projection_matches = match payload.document_kind {
+            Some(NetworkPayloadKind::Html) => {
+                source.profile == Some(DocumentProfile::source_html()) && source.file_kind.is_none()
+            }
+            Some(NetworkPayloadKind::Json) => {
+                source.profile == Some(DocumentProfile::source_json()) && source.file_kind.is_none()
+            }
+            Some(NetworkPayloadKind::File) => {
+                source.profile.is_none() && source.file_kind.is_some()
+            }
+            None => false,
+        };
+        if !projection_matches
+            || source.sha256 != digest
+            || u64::try_from(bytes.len())
+                .map_err(|_| SurfaceError::Limit("network payload byte count"))?
+                != payload.retained_bytes
         {
-            return Err(SurfaceError::Invalid(format!(
-                "network payload {field} must be text or null"
-            )));
+            return Err(SurfaceError::Invalid(
+                "retained network body metadata differs from its archived source".into(),
+            ));
         }
-    }
-    if payload
-        .get("detected_media_type")
-        .is_some_and(|value| !value.is_null() && value.as_str().is_none())
-    {
-        return Err(SurfaceError::Invalid(
-            "network payload detected_media_type must be text or null".into(),
-        ));
     }
     Ok(())
 }
@@ -1141,7 +968,7 @@ mod tests {
             BinaryDocument, Document, DocumentId, DocumentProfile, FileDocument, FileLimits,
             FileMetadata,
         },
-        surface::{ArchiveLimits, Outcome},
+        surface::{ArchiveLimits, NetworkObservationPolicy, Outcome},
     };
     use std::error::Error;
 
@@ -1199,7 +1026,35 @@ mod tests {
                 serde_json::to_vec(&serde_json::json!({
                     "schema": "yosoi.network.v1",
                     "schema_version": 1,
-                    "response_window_id": "recording:2",
+                    "session_id": "session-unit",
+                    "tab_id": "tab-unit",
+                    "subscription_id": "subscription-unit",
+                    "window_id": "recording:2",
+                    "first_sequence": null,
+                    "last_sequence": null,
+                    "started_at_unix_us": 1,
+                    "ended_at_unix_us": 2,
+                    "events": [],
+                    "in_flight_at_start": [],
+                    "in_flight": [],
+                    "gaps": [],
+                    "coverage": {
+                        "complete": false,
+                        "reason": "unit fixture has prior-window payloads",
+                        "overflow": false,
+                        "dropped_events": 0,
+                        "disconnected": false,
+                        "expired": false,
+                        "instrumentation_escalated": false,
+                        "network_was_previously_enabled": true,
+                        "late_events": 0,
+                        "filtered_events": 0,
+                        "starts_not_observed": 0,
+                        "omitted_payload_links": 0,
+                        "start_boundary_unknown": true,
+                        "end_boundary_in_flight": false,
+                    },
+                    "retention": NetworkObservationPolicy::default().retention(),
                     "payloads": payloads,
                 }))?,
             )?)
@@ -1214,6 +1069,10 @@ mod tests {
                                 text_utf8_normalized: bool| {
             serde_json::json!({
                 "id": id,
+                "request_id": "request-unit",
+                "hop": 0,
+                "response_sequence": 1,
+                "response_window_id": "recording:1",
                 "state": state,
                 "document_id": document_id,
                 "document_kind": "html",
@@ -1237,6 +1096,10 @@ mod tests {
              provider_reported_body_bytes: Option<u64>| {
                 serde_json::json!({
                     "id": "opaque",
+                    "request_id": "request-unit",
+                    "hop": 0,
+                    "response_sequence": 1,
+                    "response_window_id": "recording:1",
                     "state": state,
                     "document_id": null,
                     "document_kind": null,

@@ -26,7 +26,7 @@ impl WebSurface {
         Self::with_policy(index, source, DocumentPolicy::default())
     }
     /// Wraps one of the six prepared document classes with independently configured
-    /// response limits. Network-shaped JSON keeps partial coverage. Evidence grants
+    /// response limits. Explicit network windows preserve their coverage. Evidence grants
     /// no action authority.
     pub fn with_policy(
         index: Surface,
@@ -52,17 +52,20 @@ impl WebSurface {
                 ));
             }
         };
+        let network = index.is_network_observation();
         let ax = class == DocumentClass::AccessibilityTree;
         let xml = class == DocumentClass::SourceXml;
-        let json = class == DocumentClass::SourceJson;
+        let json = class == DocumentClass::SourceJson && !network;
         let text = class == DocumentClass::SourceText;
-        let network = index
-            .data
-            .json
-            .as_ref()
-            .and_then(|v| v.get("schema"))
-            .and_then(serde_json::Value::as_str)
-            == Some("yosoi.network.v1");
+        let document = matches!(
+            class,
+            DocumentClass::SourceHtml | DocumentClass::RenderedDom
+        );
+        if !(document || ax || xml || json || text || network) {
+            return Err(SurfaceError::Invalid(
+                "web surface requires a supported Document class".into(),
+            ));
+        }
         let id = SurfaceId::new(format!("{}:document", source.as_str()))?;
         let mut capabilities = Vec::new();
         for name in ["overview", "inspect", "expand", "search", "parent"] {
@@ -101,16 +104,7 @@ impl WebSurface {
         let observation = Observation {
             id: ObservationId::new(format!("web-v1:{:x}", digest.finalize()))?,
             surface: id,
-            coverage: if network {
-                super::super::Coverage {
-                    complete: false,
-                    reason: Some(
-                        "browser_network_log_window; completeness is unestablished".into(),
-                    ),
-                }
-            } else {
-                index.coverage().clone()
-            },
+            coverage: index.coverage().clone(),
         };
         let root = model::Reference {
             observation: observation.id.clone(),
