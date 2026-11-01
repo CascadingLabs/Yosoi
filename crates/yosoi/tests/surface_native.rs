@@ -1,11 +1,10 @@
 #![cfg(feature = "browser")]
 //! Native Surface ownership, input and shared-pool scheduling against loopback only.
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use flate2::{Compression, write::GzEncoder};
 use futures::FutureExt;
 use serde_json::{Value, json};
-use sha2::Digest;
+use sha2::{Digest, Sha256};
 use std::{
     env,
     error::Error,
@@ -27,6 +26,8 @@ use tokio::{
     time::timeout,
 };
 use yosoi::{
+    Archive,
+    automation_record::OperationStatus,
     browser::surface::consume_session as consume_browser_session,
     policy::{Acquisition, BrowserMode, DocumentRequest, Page, Policy},
     session::{self, ActionKind, ExecutionPool, SessionPolicy},
@@ -135,7 +136,7 @@ document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?
                                     let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
                                 }
                                 "/api" | "/redirected" => {
-                                    let body = if path.starts_with("/redirected") { br#"{"redirected":true}"# } else { br#"{"api":true}"# };
+                                    let body: &[u8] = if path.starts_with("/redirected") { br#"{"redirected":true}"# } else { br#"{"api":true}"# };
                                     let headers = [("X-Public", "kept"), ("Set-Cookie", "secret=hidden")];
                                     let _ = write_response(&mut stream, "200 OK", "application/json; charset=utf-8", &headers, body).await;
                                 }
@@ -619,7 +620,7 @@ async fn native_network_windows_link_bounded_bodies_and_replay_offline()
         if clicked.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
             return Err(io::Error::other("network fixture action was not confirmed").into());
         }
-        timeout(Duration::from_secs(5), fixture.slow_started.notified()).await??;
+        timeout(Duration::from_secs(5), fixture.slow_started.notified()).await?;
 
         let mut after_sequence = 0_u64;
         let mut first = None;
@@ -848,7 +849,7 @@ async fn native_network_windows_link_bounded_bodies_and_replay_offline()
     closed?;
     std::fs::remove_dir_all(output.path().join("archive"))?;
     let fresh = tempfile::tempdir()?;
-    let archive = ys::Archive::open(fresh.path()).await?;
+    let archive = Archive::open(fresh.path()).await?;
     let imported = archive.import_file(&portable).await?;
     let restored = archive.read(&imported).await?;
     let offline_json = NetworkPayload::from_outcome(&restored, &json_body, 8 * 1024 * 1024)?;
@@ -1148,14 +1149,19 @@ async fn native_network_body_disabled_keeps_response_link_as_explicit_omission()
             }
             _ => None,
         });
-        if let Some((request_id, hop, sequence)) = response
-            && let Some(reference) = window.payloads.iter().find(|payload| {
-                payload.request_id == request_id
-                    && payload.hop == hop
-                    && payload.response_sequence == sequence
-            })
-        {
-            omission = Some((window, reference.clone()));
+        let reference = response.and_then(|(request_id, hop, sequence)| {
+            window
+                .payloads
+                .iter()
+                .find(|payload| {
+                    payload.request_id == request_id
+                        && payload.hop == hop
+                        && payload.response_sequence == sequence
+                })
+                .cloned()
+        });
+        if let Some(reference) = reference {
+            omission = Some((window, reference));
             break;
         }
     }

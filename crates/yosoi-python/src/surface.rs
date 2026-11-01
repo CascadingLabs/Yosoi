@@ -348,7 +348,12 @@ impl NativeSurface {
 }
 
 #[cfg(any(feature = "browser", feature = "surface-video"))]
-#[pyclass(frozen, module = "yosoi._native", name = "PixelArtifact")]
+#[pyclass(
+    frozen,
+    module = "yosoi._native",
+    name = "PixelArtifact",
+    skip_from_py_object
+)]
 #[derive(Clone, Debug)]
 pub struct NativePixelArtifact {
     inner: surface::PixelArtifact,
@@ -402,7 +407,7 @@ impl NativePixelArtifact {
         encode(
             &self
                 .inner
-                .map_rect_to_source(&decode(rect)?)
+                .map_rect_to_source(decode(rect)?)
                 .map_err(failure)?,
         )
     }
@@ -442,7 +447,12 @@ impl NativePixelArtifact {
 }
 
 #[cfg(any(feature = "browser", feature = "surface-video"))]
-#[pyclass(frozen, module = "yosoi._native", name = "ImageSurface")]
+#[pyclass(
+    frozen,
+    module = "yosoi._native",
+    name = "ImageSurface",
+    skip_from_py_object
+)]
 #[derive(Clone, Debug)]
 pub struct NativeImageSurface {
     inner: surface::ImageSurface,

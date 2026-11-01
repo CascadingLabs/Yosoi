@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+from builtins import bytes as _Bytes
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated, Any, Literal, Protocol, Self
@@ -1351,7 +1352,7 @@ class PixelArtifact(ImmutableModel):
     info: PixelArtifactInfo = Field(
         description="Source identity and pixel coordinates."
     )
-    content: bytes = Field(
+    content: _Bytes = Field(
         repr=False,
         exclude=True,
         description="Exact encoded image bytes; excluded from metadata dumps.",
@@ -1412,7 +1413,7 @@ class PixelArtifact(ImmutableModel):
         )
 
     @property
-    def bytes(self) -> bytes:
+    def bytes(self) -> _Bytes:
         """Return a copy of exact encoded image bytes."""
         return self.content
 

@@ -107,15 +107,6 @@ impl ImageDriver {
         let path = self
             .output
             .join(format!("image-{}.{}", artifact.info().sha256, extension));
-        fs::write(&path, artifact.bytes())?;
-        let archive_ref =
-            if artifact.info().identity == self.surface.source_artifact().info().identity {
-                self.source_archive_ref.clone()
-            } else if let Some(archive) = &self.archive {
-                Some(archive.write(&artifact).await?)
-            } else {
-                None
-            };
         if let Some(outcome) = &mut self.outcome {
             let source = ArchivedSource::new_pixel_artifact(
                 artifact.info().identity.clone(),
@@ -135,6 +126,30 @@ impl ImageDriver {
             .retained_artifacts
             .checked_add(1)
             .ok_or_else(|| io::Error::other("retained image artifact counter exhausted"))?;
+        // Reserve the attempt before persistence: partial I/O failures must not
+        // permit unbounded retries that each create an immutable Archive record.
+        let persisted: Result<Option<PixelArtifactArchiveRef>> = async {
+            fs::write(&path, artifact.bytes())?;
+            let archive_ref =
+                if artifact.info().identity == self.surface.source_artifact().info().identity {
+                    self.source_archive_ref.clone()
+                } else if let Some(archive) = &self.archive {
+                    Some(archive.write(&artifact).await?)
+                } else {
+                    None
+                };
+            Ok(archive_ref)
+        }
+        .await;
+        let archive_ref = match persisted {
+            Ok(reference) => reference,
+            Err(error) => {
+                if let Some(outcome) = &mut self.outcome {
+                    outcome.complete = false;
+                }
+                return Err(error);
+            }
+        };
         Ok(json!({
             "artifact": {
                 "path": path,
@@ -363,14 +378,6 @@ impl ImageSession {
             };
             let surface =
                 ImageSurface::from_image_document(&document, tile_side, limits, pixel_limits)?;
-            let archive = match root {
-                Some(root) => Some(Archive::open(root).await?),
-                None => None,
-            };
-            let source_archive_ref = match &archive {
-                Some(archive) => Some(archive.write(surface.source_artifact()).await?),
-                None => None,
-            };
             let outcome = if policy.archive == ArchivePolicy::Enabled {
                 Some(
                     Outcome::new(
@@ -386,6 +393,14 @@ impl ImageSession {
                 )
             } else {
                 None
+            };
+            let archive = match root {
+                Some(root) => Some(Archive::open(root).await?),
+                None => None,
+            };
+            let source_archive_ref = match &archive {
+                Some(archive) => Some(archive.write(surface.source_artifact()).await?),
+                None => None,
             };
             let focus = surface.root_reference();
             let driver = ImageDriver {
@@ -472,3 +487,147 @@ impl ImageSession {
 }
 
 connection!(ImageSession);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::surface::{ArchiveLimits, Limits};
+    use image::{DynamicImage, ImageFormat, Rgba, RgbaImage};
+    use std::io::Cursor;
+
+    fn surface() -> Result<ImageSurface> {
+        let mut encoded = Cursor::new(Vec::new());
+        DynamicImage::ImageRgba8(RgbaImage::from_pixel(64, 64, Rgba([1, 2, 3, 255])))
+            .write_to(&mut encoded, ImageFormat::Png)?;
+        let document = ImageDocument::from_bytes("retention-fixture", encoded.into_inner())?;
+        Ok(ImageSurface::from_image_document(
+            &document,
+            32,
+            Limits::default(),
+            PixelLimits::default(),
+        )?)
+    }
+
+    fn files(root: &Path) -> io::Result<usize> {
+        let mut total = 0_usize;
+        for entry in fs::read_dir(root)? {
+            let entry = entry?;
+            let count = if entry.file_type()?.is_dir() {
+                files(&entry.path())?
+            } else {
+                1
+            };
+            total = total
+                .checked_add(count)
+                .ok_or_else(|| io::Error::other("file count overflow"))?;
+        }
+        Ok(total)
+    }
+
+    #[tokio::test]
+    async fn rejected_outcome_retention_never_persists_artifacts() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let output = root.path().join("output");
+        fs::create_dir(&output)?;
+        let archive = Archive::open(root.path().join("archive")).await?;
+        let surface = surface()?;
+        let original = ArchivedSource::new_pixel_artifact(
+            "original",
+            surface.source_artifact(),
+            32,
+            Some(surface.index()),
+        );
+        let outcome = Outcome::new(
+            "retention",
+            ArchiveLimits {
+                observations: 1,
+                ..ArchiveLimits::default()
+            },
+        )?
+        .with_source(original)?;
+        let source_archive_ref = Some(archive.write(surface.source_artifact()).await?);
+        let before = files(archive.root())?;
+        let mut driver = ImageDriver {
+            focus: surface.root_reference(),
+            surface,
+            trace: Trace::new(&output),
+            output: output.clone(),
+            pixel_limits: PixelLimits {
+                max_retained_artifacts: 2,
+                ..PixelLimits::default()
+            },
+            tile_side: 32,
+            retained_artifacts: 0,
+            source_archive_ref,
+            archive: Some(archive),
+            outcome: Some(outcome),
+            attached: false,
+        };
+        for width in 8..18 {
+            let artifact = driver
+                .surface
+                .crop_rect(
+                    super::super::PixelRect {
+                        x: 0,
+                        y: 0,
+                        width,
+                        height: 8,
+                    },
+                    1_048_576,
+                )?
+                .artifact;
+            if driver.pixels(artifact).await.is_ok() {
+                return Err("over-limit crop was retained".into());
+            }
+        }
+        let archive = driver.archive.as_ref().ok_or("archive missing")?;
+        if files(&output)? != 0
+            || files(archive.root())? != before
+            || driver.retained_artifacts != 0
+        {
+            return Err("rejected retention wrote persistent image evidence".into());
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn failed_persistence_consumes_reserved_retention_capacity() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let output = root.path().join("not-a-directory");
+        fs::write(&output, b"block image output")?;
+        let surface = surface()?;
+        let artifact = surface.direct_image()?;
+        let mut driver = ImageDriver {
+            focus: surface.root_reference(),
+            surface,
+            trace: Trace::new(&output),
+            output,
+            pixel_limits: PixelLimits {
+                max_retained_artifacts: 2,
+                ..PixelLimits::default()
+            },
+            tile_side: 32,
+            retained_artifacts: 0,
+            source_archive_ref: None,
+            archive: None,
+            outcome: None,
+            attached: false,
+        };
+        for _ in 0..2 {
+            if driver.pixels(artifact.clone()).await.is_ok() {
+                return Err("invalid output unexpectedly succeeded".into());
+            }
+        }
+        let error = driver
+            .pixels(artifact)
+            .await
+            .err()
+            .ok_or("capacity failure missing")?;
+        if driver.retained_artifacts != 2
+            || !error.to_string().contains("retained image artifact limit")
+        {
+            return Err("failed writes bypassed retention capacity".into());
+        }
+        Ok(())
+    }
+}
