@@ -7,18 +7,16 @@ description: Reference scopes, image pixels, budgets, cursor ownership, and prov
 
 Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. `ImageSurface` applies the shared bounded read contract to a typed image. Start with [Surfaces](../concepts/surfaces.md) for documents, images, video and an agent-driven CLI task.
 
-`ImageSurface` and `PixelArtifact` are available in this source revision. The published 0.4.0 package does not include the typed image reader yet.
-
 Browser, image and video adapters own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI also enables typed image sessions. Browser display mode, image pixel bounds, and video frame bounds remain source-specific rather than generic Surface policy fields.
 
 ## Choose the reader
 
-| Reader       | Input                           | Supported operations                                                           |
-| ------------ | ------------------------------- | ------------------------------------------------------------------------------ |
-| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates                   |
+| Reader       | Input                           | Supported operations                                                             |
+| ------------ | ------------------------------- | -------------------------------------------------------------------------------- |
+| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates                     |
 | ImageSurface | Typed PNG/JPEG ImageDocument    | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
-| WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent                    |
-| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                     |
+| WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent                       |
+| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                        |
 
 `BrowserSurface`, `ImageSession`, and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class for web and video connections. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode, image pixel limits, and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
@@ -52,7 +50,7 @@ Rust video requires `surface-video`; images require `surface-images` or `browser
 | Shared observation/address pair | `surface::model::Reference`         | `surface.Reference`         |
 | Native index continuation       | `surface::Continuation`             | `surface.Continuation`      |
 | Shared opaque continuation      | `surface::model::ContinuationToken` | `surface.ContinuationToken` |
-| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo`  |
+| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo` |
 
 Native references bind a capture and node. Shared references bind an ObservationId and producer-issued address. WebSurface converts between its own native and shared references; it rejects references belonging to another observation or source binding. Do not parse address spelling, manufacture a replacement ID, or treat an old reference as a durable entity identifier.
 

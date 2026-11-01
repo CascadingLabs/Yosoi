@@ -265,6 +265,7 @@ REQUIRED_SUITES = (
     "run_webtarget_conformance.py",
     "run_media_documents_conformance.py",
     "run_surface_conformance.py",
+    "run_image_surface_conformance.py",
 )
 
 
