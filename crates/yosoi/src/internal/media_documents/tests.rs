@@ -129,6 +129,28 @@ fn archived_probe_validated_video_keeps_recorded_container_and_detector_mime() {
 }
 
 #[test]
+fn archived_probe_validated_mpegts_preserves_audio_detector_mime() {
+    let original = VideoDocument::from_probe_validated_bytes(
+        "probe-mpegts-audio-classified",
+        b"OggS\x00".to_vec(),
+        FileMetadata::new(),
+        FileLimits::default(),
+        "mpegts",
+    )
+    .expect("FFprobe-validated video may retain an audio-classified prefix");
+    assert_eq!(original.metadata().detected_media_type(), Some("audio/ogg"));
+
+    let restored = from_archived_video(
+        original.id().clone(),
+        Arc::new(original.bytes().to_vec()),
+        original.metadata().clone(),
+    )
+    .expect("Archive must preserve the recorded container and detector MIME");
+    assert_eq!(restored.metadata(), original.metadata());
+    assert_eq!(restored.bytes(), original.bytes());
+}
+
+#[test]
 fn file_metadata_keeps_declared_and_detected_types_separate() {
     let metadata = FileMetadata::new()
         .with_filename("picture.bin")

@@ -335,10 +335,19 @@ impl DecodedFrame {
                         ));
                     }
                 };
+                let expected_frame_address = format!("f:{}", self.info.requested_us);
+                let expected_address = match self.info.region {
+                    None => expected_frame_address,
+                    Some(rect) => format!(
+                        "r:{}:{}:{}:{}:{}",
+                        self.info.requested_us, rect.x, rect.y, rect.width, rect.height
+                    ),
+                };
                 if observation != self.info.reference.observation.as_str()
                     || reference != &format!("f:{}", self.info.requested_us)
                     || *requested_us != self.info.requested_us
                     || *source_pts_us != self.info.source_pts_us
+                    || self.info.reference.address.as_str() != expected_address
                 {
                     return Err(VideoError::Invalid(
                         "frame time and pixel provenance differ".into(),
@@ -356,5 +365,116 @@ impl DecodedFrame {
                 Ok(artifact)
             })
             .transpose()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DecodedFrame, FrameInfo, VideoError};
+    use crate::{
+        documents::ImageDocument,
+        surface::{
+            PixelCoordinateKind, PixelCoordinateSpace, PixelOrientation, PixelRect, PixelSource,
+            model::{AddressToken, ObservationId, Reference},
+            pixels::PixelArtifact,
+        },
+    };
+    use image::{ImageFormat, Rgba, RgbaImage};
+    use std::io::Cursor;
+
+    fn image_document(id: &str, width: u32, height: u32) -> Result<ImageDocument, VideoError> {
+        let image = RgbaImage::from_pixel(width, height, Rgba([10, 20, 30, 255]));
+        let mut encoded = Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgba8(image)
+            .write_to(&mut encoded, ImageFormat::Png)
+            .map_err(|error| VideoError::Invalid(error.to_string()))?;
+        ImageDocument::from_bytes(id, encoded.into_inner())
+            .map_err(|error| VideoError::Invalid(error.to_string()))
+    }
+
+    fn frame_info(
+        address: String,
+        region: Option<PixelRect>,
+        artifact: &PixelArtifact,
+    ) -> Result<FrameInfo, VideoError> {
+        Ok(FrameInfo {
+            reference: Reference {
+                observation: ObservationId::new("video-observation")?,
+                address: AddressToken::new(address)?,
+            },
+            requested_us: 10,
+            source_pts_us: 15,
+            position_us: Some(15),
+            canvas_width: 2,
+            canvas_height: 2,
+            width: artifact.info().width,
+            height: artifact.info().height,
+            region,
+            png_sha256: artifact.info().sha256.clone(),
+            png_bytes: artifact.bytes().len(),
+            pixel_artifact: Some(artifact.info().clone()),
+        })
+    }
+
+    fn source_artifact() -> Result<PixelArtifact, VideoError> {
+        let document = image_document("video-frame-source", 2, 2)?;
+        PixelArtifact::from_raster_document(
+            document,
+            PixelSource::VideoFrame {
+                source_document_id: "video-document".into(),
+                source_sha256: "0".repeat(64),
+                observation: "video-observation".into(),
+                reference: "f:10".into(),
+                requested_us: 10,
+                source_pts_us: 15,
+            },
+            PixelCoordinateSpace {
+                kind: PixelCoordinateKind::DecodedCanvas,
+                width: 2,
+                height: 2,
+                orientation: PixelOrientation::DecoderApplied,
+            },
+        )
+        .map_err(VideoError::from)
+    }
+
+    #[test]
+    fn typed_frame_pixels_require_the_exact_frame_address() -> Result<(), VideoError> {
+        let artifact = source_artifact()?;
+        let png = artifact.bytes().to_vec();
+        let mut frame = DecodedFrame {
+            info: frame_info("f:10".into(), None, &artifact)?,
+            png,
+            pixels: Some(artifact),
+        };
+        assert!(frame.pixel_artifact()?.is_some());
+
+        frame.info.reference.address = AddressToken::new("f:11")?;
+        assert!(frame.pixel_artifact().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn typed_crop_pixels_require_the_exact_crop_address() -> Result<(), VideoError> {
+        let parent = source_artifact()?;
+        let rect = PixelRect {
+            x: 1,
+            y: 0,
+            width: 1,
+            height: 2,
+        };
+        let crop =
+            PixelArtifact::crop_from(&parent, image_document("video-frame-crop", 1, 2)?, rect)?;
+        let png = crop.bytes().to_vec();
+        let mut frame = DecodedFrame {
+            info: frame_info("r:10:1:0:1:2".into(), Some(rect), &crop)?,
+            png,
+            pixels: Some(crop),
+        };
+        assert!(frame.pixel_artifact()?.is_some());
+
+        frame.info.reference.address = AddressToken::new("r:10:0:0:1:2")?;
+        assert!(frame.pixel_artifact().is_err());
+        Ok(())
     }
 }

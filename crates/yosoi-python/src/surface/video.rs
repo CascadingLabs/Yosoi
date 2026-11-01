@@ -1,10 +1,11 @@
 //! Owned video snapshots and PNG artifacts; decoding stays in the Rust provider.
 
 use std::error::Error;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use pyo3::{create_exception, prelude::*, types::PyBytes};
-use yosoi::surface::{model::SurfaceRead, video};
+use tokio::sync::Mutex;
+use yosoi::surface::{SurfaceConnection, model::SurfaceRead, video};
 
 use super::{decode, encode};
 use crate::{archive::NativeArchive, async_runtime, errors};
@@ -248,5 +249,86 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<NativeDecodedFrame>()
 }
 
-use super::connection::connection;
-connection!(video_connection, NativeVideoSession, "VideoSession", yosoi::surface::video::VideoSession, path: PathBuf, max_side: u32);
+#[pyclass(frozen, module = "yosoi._native", name = "VideoSession")]
+#[derive(Debug)]
+pub struct NativeVideoSession {
+    inner: Arc<Mutex<video::VideoSession>>,
+}
+
+#[pymethods]
+impl NativeVideoSession {
+    #[staticmethod]
+    #[pyo3(signature = (path, policy, max_side, cancellation=None))]
+    fn open<'py>(
+        py: Python<'py>,
+        path: PathBuf,
+        policy: &str,
+        max_side: u32,
+        cancellation: Option<&async_runtime::NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let policy = decode(policy)?;
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            video::VideoSession::open_cancellable(path, policy, max_side, &token)
+                .await
+                .map(|inner| Self {
+                    inner: Arc::new(Mutex::new(inner)),
+                })
+                .map_err(super::connection::failure)
+        })
+    }
+
+    fn ready<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(
+                &inner
+                    .lock()
+                    .await
+                    .ready()
+                    .map_err(super::connection::failure)?,
+            )
+        })
+    }
+
+    #[pyo3(signature = (command, cancellation=None))]
+    fn execute<'py>(
+        &self,
+        py: Python<'py>,
+        command: &str,
+        cancellation: Option<&async_runtime::NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let command = decode(command)?;
+        let inner = Arc::clone(&self.inner);
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            encode(
+                &inner
+                    .lock()
+                    .await
+                    .execute_cancellable(command, &token)
+                    .await
+                    .map_err(super::connection::failure)?,
+            )
+        })
+    }
+
+    fn outcome<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(&inner.lock().await.outcome())
+        })
+    }
+
+    fn close<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        async_runtime::bridge(py, None, move |_| async move {
+            encode(
+                &inner
+                    .lock()
+                    .await
+                    .close()
+                    .await
+                    .map_err(super::connection::failure)?,
+            )
+        })
+    }
+}

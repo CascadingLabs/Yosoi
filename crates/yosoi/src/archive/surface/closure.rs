@@ -103,8 +103,10 @@ async fn close_dependencies(archive: &Archive, value: &mut Outcome) -> Result<()
                     let reference: DocumentArchiveRef = reference.parse().map_err(invalid)?;
                     let document = match archive.read_document(&reference).await {
                         Ok(document) => document,
-                        Err(ArchiveError::RecordNotFound { .. })
-                        | Err(ArchiveError::DocumentPayloadMissing { .. }) => {
+                        Err(
+                            ArchiveError::RecordNotFound { .. }
+                            | ArchiveError::DocumentPayloadMissing { .. },
+                        ) => {
                             value.complete = false;
                             continue;
                         }
@@ -118,8 +120,10 @@ async fn close_dependencies(archive: &Archive, value: &mut Outcome) -> Result<()
                     let reference: FileDocumentArchiveRef = reference.parse().map_err(invalid)?;
                     let file: FileDocument = match archive.read(&reference).await {
                         Ok(file) => file,
-                        Err(ArchiveError::RecordNotFound { .. })
-                        | Err(ArchiveError::DocumentPayloadMissing { .. }) => {
+                        Err(
+                            ArchiveError::RecordNotFound { .. }
+                            | ArchiveError::DocumentPayloadMissing { .. },
+                        ) => {
                             value.complete = false;
                             continue;
                         }
@@ -199,8 +203,10 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
             Some(existing) => match archive.read(existing).await {
                 Ok(saved) if saved == file => existing.clone(),
                 Ok(_) => archive.write(&file).await?,
-                Err(ArchiveError::RecordNotFound { .. })
-                | Err(ArchiveError::DocumentPayloadMissing { .. }) => archive.write(&file).await?,
+                Err(
+                    ArchiveError::RecordNotFound { .. }
+                    | ArchiveError::DocumentPayloadMissing { .. },
+                ) => archive.write(&file).await?,
                 Err(error) => return Err(error),
             },
             None => archive.write(&file).await?,
@@ -236,10 +242,10 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
                 Some(existing) => match archive.read_document(existing).await {
                     Ok(saved) if saved == document => existing.clone(),
                     Ok(_) => archive.write_document(&document).await?,
-                    Err(ArchiveError::RecordNotFound { .. })
-                    | Err(ArchiveError::DocumentPayloadMissing { .. }) => {
-                        archive.write_document(&document).await?
-                    }
+                    Err(
+                        ArchiveError::RecordNotFound { .. }
+                        | ArchiveError::DocumentPayloadMissing { .. },
+                    ) => archive.write_document(&document).await?,
                     Err(error) => return Err(error),
                 },
                 None => archive.write_document(&document).await?,

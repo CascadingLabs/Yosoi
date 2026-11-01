@@ -44,6 +44,14 @@ async def settle_video[T](
             task.result()
         except Exception as cleanup_error:
             details = rust_error_details(cleanup_error)
-            if details is None or details.variant != "Cancelled":
+            cancelled = details is not None and (
+                details.variant == "Cancelled"
+                or (
+                    details.rust_type == "yosoi::surface::ExecutionError"
+                    and details.variant == "Operation"
+                    and details.details.get("cancelled") is True
+                )
+            )
+            if not cancelled:
                 raise cleanup_error from cancellation
         raise

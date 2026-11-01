@@ -24,8 +24,10 @@ def test_video_tokens_preserve_siblings_and_follow_parent_cancellation() -> None
 
 
 @pytest.mark.parametrize("cleanup_fails", [False, True])
+@pytest.mark.parametrize("session_error", [False, True])
 def test_repeated_cancellation_waits_for_cleanup_and_preserves_failure(
     cleanup_fails: bool,
+    session_error: bool,
 ) -> None:
     async def run() -> None:
         started, cancelled = asyncio.Event(), asyncio.Event()
@@ -42,10 +44,18 @@ def test_repeated_cancellation_waits_for_cleanup_and_preserves_failure(
             await release.wait()
             if cleanup_fails:
                 raise RuntimeError("decoder cleanup failed")
-            error = _native.VideoError("video processing cancelled")
-            error.rust_type = "yosoi::surface::video::VideoError"
-            error.variant = "Cancelled"
-            error.details = {}
+            error = (
+                _native.SurfaceExecutionError("surface operation failed")
+                if session_error
+                else _native.VideoError("video processing cancelled")
+            )
+            error.rust_type = (
+                "yosoi::surface::ExecutionError"
+                if session_error
+                else "yosoi::surface::video::VideoError"
+            )
+            error.variant = "Operation" if session_error else "Cancelled"
+            error.details = {"cancelled": True} if session_error else {}
             error.source_chain = []
             raise error
 

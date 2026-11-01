@@ -16,7 +16,7 @@ import json
 from builtins import bytes as _Bytes
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Annotated, Any, Literal, Protocol, Self
+from typing import Annotated, Any, Literal, Protocol, Self, cast
 
 from pydantic import (
     BeforeValidator,
@@ -1784,8 +1784,9 @@ class SurfacePolicy(ImmutableModel):
 class SurfaceConnection:
     """Shared lifecycle for a source-specific browser or video connection.
 
-    Use a source's open factory, then await close or use async with. Cancellation
-    stops waiting; it does not prove that a dispatched effect was undone.
+    Use a source's open factory, then await close or use async with. Browser
+    cancellation stops waiting without undoing dispatched effects. VideoSession
+    cancellation awaits its owned decoder cleanup and retains earlier evidence.
     """
 
     def __init__(self, handle: _native.BrowserSurface | _native.VideoSession) -> None:
@@ -1848,13 +1849,52 @@ class VideoSession(SurfaceConnection):
 
     @classmethod
     async def open(
-        cls, path: str | Path, policy: SurfacePolicy | None = None, max_side: int = 1920
+        cls,
+        path: str | Path,
+        policy: SurfacePolicy | None = None,
+        max_side: int = 1920,
+        *,
+        cancellation: CancellationToken | None = None,
     ) -> Self:
-        """Freeze local video and open a detached reader with bounded frame pixels."""
+        """Freeze local video and open a detached reader with bounded frame pixels.
+
+        Cancellation signals this operation and awaits owned decoder cleanup.
+        Cancelling this await does not cancel sibling operations sharing a token.
+        """
         _require_video()
+        token = _video_token(cancellation)
         return cls(
-            await _native.VideoSession.open(
-                str(path), (policy or SurfacePolicy()).model_dump_json(), max_side
+            await _settle_video(
+                _native.VideoSession.open(
+                    str(path),
+                    (policy or SurfacePolicy()).model_dump_json(),
+                    max_side,
+                    token,
+                ),
+                token,
+            )
+        )
+
+    async def execute(
+        self,
+        command: Mapping[str, object],
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> dict[str, object]:
+        """Execute a bounded video command and await any decoder cleanup.
+
+        Cancellation interrupts frame or crop decoding and retains the failed
+        attempt alongside earlier evidence. Other dispatched bookkeeping finishes
+        before cancellation returns. Cancelling this await preserves siblings;
+        cancelling a supplied token also cancels its other child operations.
+        """
+        token = _video_token(cancellation)
+        return json.loads(
+            await _settle_video(
+                cast("_native.VideoSession", self._handle).execute(
+                    json.dumps(dict(command)), token
+                ),
+                token,
             )
         )
 
