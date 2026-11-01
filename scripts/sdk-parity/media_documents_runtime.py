@@ -32,10 +32,14 @@ def _sha(value: Any) -> str:
 
 
 def _python_snapshot(document: Any) -> dict[str, Any]:
+    metadata = _plain(document.metadata.model_dump())
+    metadata["probe_validated_video_container"] = (
+        document.metadata.probe_validated_video_container
+    )
     return {
         "kind": type(document).__name__.removesuffix("Document").lower(),
         "id": str(document.id),
-        "metadata": _plain(document.metadata.model_dump()),
+        "metadata": metadata,
         "bytes": list(document.bytes),
         "byte_len": document.byte_len,
         "sha256": document.sha256,

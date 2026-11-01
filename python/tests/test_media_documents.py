@@ -6,6 +6,8 @@ import asyncio
 import hashlib
 import json
 import os
+import shutil
+import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -196,6 +198,18 @@ def test_concrete_media_constructor_checks_family_without_decoding() -> None:
     assert details.details["expected"] == "image"
 
 
+def test_authored_metadata_cannot_claim_decoder_video_validation() -> None:
+    assert ys.FileMetadata().probe_validated_video_container is None
+    authored = ys.FileMetadata(probe_validated_video_container="ogg")
+    assert authored.probe_validated_video_container == "ogg"
+    assert "probe_validated_video_container" not in json.loads(authored._native_input())
+    document = ys.VideoDocument.from_bytes("signature-video", MP4, metadata=authored)
+    assert document.metadata.probe_validated_video_container is None
+    assert "probe_validated_video_container" not in json.loads(
+        document.metadata._native_input()
+    )
+
+
 def test_file_limits_enforce_default_hard_cap_and_payload_size() -> None:
     assert ys.FileLimits().max_bytes == 64 * 1024 * 1024
     with pytest.raises(ValidationError):
@@ -335,6 +349,112 @@ def test_archive_round_trip_preserves_concrete_file_types_and_rejects_wrong_ref(
             ImageDocumentArchiveRef(value=binary_ref.value)
         with pytest.raises(TypeError):
             await reopened.read(binary_ref.value)  # ty: ignore[no-matching-overload] -- verify runtime rejection of untyped references
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("container", "extension", "codec", "muxer"),
+    [("ogg", "ogv", "libtheora", "ogg"), ("mpegts", "ts", "mpeg2video", "mpegts")],
+)
+@pytest.mark.skipif(os.name != "posix", reason="Local Archive is Unix-only")
+@pytest.mark.skipif(
+    not shutil.which("ffmpeg")
+    or not shutil.which("ffprobe")
+    or not ys._native.surface_video_enabled,
+    reason="video compatibility fixture requires local FFmpeg and FFprobe",
+)
+def test_signature_ambiguous_video_open_keeps_typed_probe_basis(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    container: str,
+    extension: str,
+    codec: str,
+    muxer: str,
+) -> None:
+    source_path = tmp_path / f"source.{extension}"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-filter_threads",
+            "1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=green:s=64x48:r=2:d=2",
+            "-an",
+            "-frames:v",
+            "4",
+            "-c:v",
+            codec,
+            "-threads:v",
+            "1",
+            "-f",
+            muxer,
+            str(source_path),
+        ],
+        check=True,
+        timeout=30,
+    )
+    encoded = source_path.read_bytes()
+    with pytest.raises(FileDocumentError):
+        ys.VideoDocument.from_bytes("signature-gated", encoded)
+    inferred = ys.file_from_bytes("inferred", encoded)
+
+    async def run() -> None:
+        video = await ys.VideoSurface.open(source_path)
+        typed = video.source_document
+        assert isinstance(typed, ys.VideoDocument)
+        assert typed.metadata.probe_validated_video_container == container
+        assert (
+            typed.metadata.detected_media_type == inferred.metadata.detected_media_type
+        )
+
+        copied = typed.model_copy(update={"id": f"{typed.id}-copy"})
+        assert isinstance(copied, ys.VideoDocument)
+        assert copied.bytes == typed.bytes
+        assert copied.metadata.probe_validated_video_container == container
+        explicit_copy = typed.copy_with_metadata(
+            f"{typed.id}-explicit-copy",
+            metadata=ys.FileMetadata(filename="copied-video"),
+        )
+        assert explicit_copy.bytes == typed.bytes
+        assert explicit_copy.metadata.probe_validated_video_container == container
+        forged = typed.model_copy(
+            update={
+                "metadata": ys.FileMetadata(
+                    filename="copied-video",
+                    detected_media_type="video/mp4",
+                    sha256="f" * 64,
+                )
+            }
+        )
+        assert forged.metadata.probe_validated_video_container == container
+        assert (
+            forged.metadata.detected_media_type == inferred.metadata.detected_media_type
+        )
+
+        archive = await ys.Archive.open(tmp_path / "archive")
+        document_ref = await archive.write(typed)
+        assert await archive.read(document_ref) == typed
+        surface_ref = await video.write_to(archive)
+        frame = await video.frame(video.at(0))
+        frame_ref = await frame.write_to(archive)
+        source_path.unlink()
+
+        monkeypatch.setenv("YOSOI_FFMPEG", "/decoder-unavailable")
+        monkeypatch.setenv("YOSOI_FFPROBE", "/probe-unavailable")
+        restored_video = await ys.VideoSurface.read_from(archive, surface_ref)
+        restored_frame = await ys.DecodedFrame.read_from(archive, frame_ref)
+        assert restored_video.source_document == typed
+        assert restored_frame.png == frame.png
+        assert restored_frame.pixel_artifact is not None
 
     asyncio.run(run())
 
