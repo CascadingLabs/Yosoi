@@ -79,6 +79,56 @@ asyncio.run(main())
     assert json.loads(result.stdout) == {"identity": identity, "content": expected}
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Local Archive is Unix-only")
+def test_all_document_profiles_restore_into_shared_web_reads(tmp_path):
+    cases = json.loads(
+        (Path(__file__).parents[1] / "parity" / "surface-vectors.json").read_text()
+    )["cases"]
+
+    def document(case):
+        match case["format"]:
+            case "html":
+                return Document.html(case["name"], case["content"])
+            case "xml":
+                return Document.xml(case["name"], case["content"])
+            case "json":
+                return Document.from_json(case["name"], case["content"])
+            case "text":
+                return Document.text(case["name"], case["content"])
+            case "rendered_dom":
+                return Document.rendered_dom(case["name"], 7, case["content"])
+            case "accessibility_tree":
+                return Document.accessibility_tree(case["name"], 7, case["content"])
+            case _:
+                raise AssertionError(f"unknown parity profile: {case['format']}")
+
+    async def run():
+        archive = await Archive.open(tmp_path / "archive")
+        for case in cases:
+            original = document(case)
+            original_index = sf.Surface(original)
+            reference = await archive.write(original)
+            restored = await archive.read(reference)
+            assert restored == original
+            restored_index = sf.Surface(restored)
+            assert restored_index.identity == original_index.identity
+            reader = sf.WebSurface(restored_index, f"archive:{case['name']}")
+            assert not reader.descriptor.controllable
+            found = reader.read(
+                sf.ReadRequest(operation=sf.Search(query=case["query"]))
+            )
+            assert isinstance(found, sf.PageResult) and found.data.entries
+            inspected = reader.read(
+                sf.ReadRequest(
+                    operation=sf.Inspect(reference=found.data.entries[0].reference)
+                )
+            )
+            assert isinstance(inspected, sf.InspectionResult)
+            assert case["query"] in inspected.data.content.lower()
+
+    asyncio.run(run())
+
+
 def test_policy_off_and_incomplete_outcomes_are_explicit():
     surface = sf.Surface(Document.text("fixture", "Evidence"))
     assert sf.Session(surface).close() is None

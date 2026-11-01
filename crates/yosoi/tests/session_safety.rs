@@ -1436,11 +1436,8 @@ async fn dropping_a_dispatched_work_request_fences_its_tab_until_session_close()
     } else {
         server.abort();
     }
-    let server_finished = if matches!(
-        timeout(Duration::from_secs(3), &mut server).await,
-        Ok(Ok(Ok(())))
-    ) {
-        true
+    let server_finished = if let Ok(result) = timeout(Duration::from_secs(3), &mut server).await {
+        matches!(result, Ok(Ok(())))
     } else {
         server.abort();
         let _ = server.await;

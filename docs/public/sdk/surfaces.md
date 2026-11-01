@@ -11,11 +11,29 @@ The Rust `surface::browser` and `surface::video` modules own their source behavi
 
 ## Choose the reader
 
-| Reader       | Input                                              | Supported operations                                         |
-| ------------ | -------------------------------------------------- | ------------------------------------------------------------ |
-| Surface      | Any of the six Document classes                    | Overview, expand, literal find, inspect, parent, coordinates |
-| WebSurface   | Prepared HTML, DOM, AX or browser network evidence | Shared describe/read protocol, including search and parent   |
-| VideoSurface | Frozen regular local video file                    | Shared timeline reads, temporal addresses, frame and crop    |
+| Reader       | Input                                    | Supported operations                                                     |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
+| Surface      | Any of the six Document classes          | Overview, expand, literal find, inspect, parent, coordinates             |
+| WebSurface   | Any of the six prepared Document classes | Shared describe/read protocol: overview, expand, search, inspect, parent |
+| VideoSurface | Frozen regular local video file          | Shared timeline reads, temporal addresses, frame and crop                |
+
+WebSurface keeps each document's native meaning while exposing the same five
+read operations:
+
+| Document profile    | Shared representation   | Preserved meaning                                      |
+| ------------------- | ----------------------- | ------------------------------------------------------ |
+| Source HTML         | `yosoi.web.document.v1` | HTML5 normalization                                    |
+| Source XML          | `yosoi.web.xml.v1`      | Namespace-aware names and exact source ranges          |
+| Source JSON         | `yosoi.web.json.v1`     | JSON scalar types; duplicate keys are rejected         |
+| Source text         | `yosoi.web.text.v1`     | Exact UTF-8 source ranges                              |
+| Rendered DOM        | `yosoi.web.document.v1` | Snapshot-local node identities and document epoch      |
+| Accessibility tree  | `yosoi.web.ax.v1`       | Snapshot-local identities, epoch and declared coverage |
+| Network-shaped JSON | `yosoi.web.network.v1`  | Bounded event window with incomplete coverage          |
+
+All of these immutable readers advertise only read capabilities and set
+`controllable` to false. A browser binding may add live actions to its own
+descriptor after it owns the browser Work. An archived or source-file
+WebSurface never becomes a browser action target.
 
 `BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
@@ -81,7 +99,7 @@ SourceId, SurfaceId, ObservationId, AddressToken, and ContinuationToken validate
 
 Limits controls input bytes, node count, tree depth, and automatic overview depth. Budget controls the complete serialized result's UTF-8 bytes and routing entry count. The defaults are 8 MiB of document input, 200,000 nodes, depth 96, overview depth 6, and 4,096 reply bytes with 20 entries.
 
-The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 65,536. A useful item that cannot fit produces an explicit error.
+The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 16,384. A useful item that cannot fit produces an explicit error.
 
 Copy continuations into the same operation with the same reference and query. Inspection chunks are UTF-8 aligned; assemble every chunk before parsing complete JSON. Coverage describes retained source evidence, while `next` describes pagination. Byte bounds do not establish a tokenizer-independent token count.
 
@@ -104,10 +122,17 @@ The declared document profile chooses the matching preparation policy. Use
 `WebSurface::with_policy` or the Python `WebSurface` constructor's `policy`
 argument to limit shared read responses independently of caller budgets.
 
+Rust and Python WebSurface accept all six Document classes. The CLI's offline
+`ys surface document` command accepts the same profiles and uses the same
+`describe` and `read` requests. Its local input remains immutable and
+non-controllable. The live CLI browser adapter continues to own its separate
+Work and action capabilities.
+
 Consumed native Sessions support `BrowserSurface.observe` for DOM and AX.
 `read` explores a captured view under its policy. The isolated `open` provider
-currently supports DOM only. Network is a reserved representation and is not
-advertised by either binding in this layer.
+currently supports DOM only. Live network capture remains reserved and is not
+advertised by either browser binding in this layer. A local network-shaped JSON
+Document can still be read and retains incomplete coverage.
 
 Views are sequential captures. Replacing a view rejects its previous references.
 AX references remain read-only and never become DOM action targets. DOM
