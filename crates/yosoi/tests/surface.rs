@@ -1633,3 +1633,70 @@ async fn image_session_opens_archived_video_pixels_without_video_or_source_path(
     assert_eq!(restored_surface.identity(), expected_surface_identity);
     Ok(())
 }
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions verify file-backed session identity through closed portable replay."
+)]
+async fn file_backed_image_session_restores_its_exact_index_after_move()
+-> Result<(), Box<dyn Error>> {
+    use std::{fs, io::Cursor};
+    use yosoi::SurfaceConnection;
+    use yosoi::{
+        Archive,
+        documents::ImageDocument,
+        surface::{ArchivePolicy, ImageSession, ImageSurface, PixelLimits, SurfacePolicy},
+    };
+    let root = tempfile::tempdir()?;
+    let file = root.path().join("source.png");
+    let archive_root = root.path().join("archive");
+    let output = root.path().join("output");
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+        32,
+        16,
+        image::Rgba([20, 30, 40, 255]),
+    ))
+    .write_to(&mut encoded, image::ImageFormat::Png)?;
+    let bytes = encoded.into_inner();
+    fs::write(&file, &bytes)?;
+    let document = ImageDocument::from_bytes("image-surface", bytes)?;
+    let expected = ImageSurface::from_image_document(
+        &document,
+        32,
+        Limits::default(),
+        PixelLimits::default(),
+    )?;
+    let key = expected.source_artifact().info().identity.clone();
+    let identity = expected.index().identity().to_owned();
+    let mut session = ImageSession::open(
+        &file,
+        SurfacePolicy {
+            output: Some(output.clone()),
+            archive_root: Some(archive_root.clone()),
+            archive: ArchivePolicy::Enabled,
+            ..SurfacePolicy::default()
+        },
+        32,
+        Limits::default(),
+        PixelLimits::default(),
+    )
+    .await?;
+    let outcome = session
+        .close()
+        .await?
+        .ok_or("closed image Outcome missing")?;
+    assert_eq!(
+        outcome.surface(&key, Limits::default())?.identity(),
+        identity
+    );
+    fs::remove_file(file)?;
+    fs::remove_dir_all(archive_root)?;
+    let archive = Archive::open(root.path().join("moved")).await?;
+    let reference = archive.import_file(output.join("surface.yosoi")).await?;
+    let moved = archive.read(&reference).await?;
+    assert_eq!(moved.surface(&key, Limits::default())?.identity(), identity);
+    Ok(())
+}

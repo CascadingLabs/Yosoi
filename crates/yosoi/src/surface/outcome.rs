@@ -6,9 +6,10 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::Arc};
 
-use super::{ArchiveLimits, Limits, PixelArtifactInfo, Surface, SurfaceError};
 #[cfg(any(feature = "browser", feature = "surface-images"))]
-use super::{PixelArtifact, PixelOperation};
+use super::PixelArtifact;
+use super::pixels::{PixelOperation, PixelSource};
+use super::{ArchiveLimits, Limits, PixelArtifactInfo, Surface, SurfaceError};
 use crate::internal::media_documents::{
     from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
@@ -197,7 +198,15 @@ impl ArchivedSource {
         let document = artifact.document();
         let is_root = matches!(&artifact.info().transform.operation, PixelOperation::Source);
         Self {
-            interpretation: if is_root {
+            interpretation: if is_root
+                && surface.is_some_and(|surface| {
+                    matches!(
+                        surface.data.original.as_ref(),
+                        Some(super::Original::TypedImage { .. })
+                    )
+                }) {
+                SourceInterpretation::ImageDocument { tile_side }
+            } else if is_root {
                 SourceInterpretation::PixelArtifact { tile_side }
             } else {
                 SourceInterpretation::FileDocument
@@ -321,7 +330,9 @@ impl ArchivedSource {
     pub fn restore_pixel_artifact(&self, maximum: u64) -> Result<PixelArtifact, SurfaceError> {
         if !matches!(
             self.interpretation,
-            SourceInterpretation::PixelArtifact { .. } | SourceInterpretation::FileDocument
+            SourceInterpretation::PixelArtifact { .. }
+                | SourceInterpretation::ImageDocument { .. }
+                | SourceInterpretation::FileDocument
         ) || self.pixel_info.is_none()
         {
             return Err(SurfaceError::Invalid(
@@ -632,13 +643,29 @@ impl Outcome {
                     if source.profile.is_some()
                         || source.file_kind != Some(ArchivedFileKind::Image)
                         || source.file_metadata.is_none()
-                        || source.pixel_info.is_some()
                     {
                         return Err(SurfaceError::Invalid(
                             "typed image source profile or metadata is inconsistent".into(),
                         ));
                     }
                     source.restore_image(self.limits.bytes)?;
+                    if let Some(info) = source.pixel_info.as_ref() {
+                        if info.version != 1
+                            || info.transform.version != 1
+                            || info.sha256 != source.sha256
+                            || info.width == 0
+                            || info.height == 0
+                            || !matches!(&info.source, PixelSource::ImageDocument { document_id, sha256 }
+                            if document_id == source.document.as_str() && sha256 == &source.sha256)
+                            || !matches!(info.transform.operation, PixelOperation::Source)
+                        {
+                            return Err(SurfaceError::Invalid(
+                                "typed image has foreign pixel provenance".into(),
+                            ));
+                        }
+                        #[cfg(any(feature = "browser", feature = "surface-images"))]
+                        source.restore_pixel_artifact(self.limits.bytes)?;
+                    }
                 }
                 SourceInterpretation::PixelArtifact { .. } => {
                     if source.profile.is_some()
