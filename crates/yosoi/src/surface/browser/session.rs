@@ -1,5 +1,6 @@
 use super::archive::repeating;
 use super::process::{Browser, ELEMENT};
+use crate::archive::FileDocumentArchiveRef;
 use crate::surface::{
     ActionStatus, ArchivePolicy, ArchivedSource, Budget, Cursor, ExecutionError, Outcome,
     Reference, Session, SessionPolicy, SurfaceConnection, SurfacePolicy,
@@ -192,9 +193,8 @@ impl Driver {
                         1,
                         None,
                     );
-                    pixel_source.file_archive = Some(
-                        crate::archive::FileDocumentArchiveRef::Image(image_reference),
-                    );
+                    pixel_source.file_archive =
+                        Some(FileDocumentArchiveRef::Image(image_reference));
                     recording.outcome.retain(pixel_source)?;
                     let mut metadata_source =
                         ArchivedSource::new(reference.document.to_string(), &document, None);

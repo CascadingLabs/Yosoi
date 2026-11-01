@@ -3,7 +3,8 @@ use super::super::{
     process::Browser,
     session::{Driver, validate_effect, validate_url},
 };
-use crate::surface::{Budget, Reference, Session, SessionPolicy};
+use crate::archive::FileDocumentArchiveRef;
+use crate::surface::{ArchivedSource, Budget, Reference, Session, SessionPolicy};
 use crate::surface::{
     SurfacePolicy,
     archive::Recording,
@@ -385,21 +386,16 @@ pub(super) async fn run(
                 let image_reference = recording.archive.write(screenshot.document()).await?;
                 let reference = screenshot.write_to(&recording.archive).await?;
                 let document = recording.archive.read_document(&reference.document).await?;
-                let mut pixel_source = crate::surface::ArchivedSource::new_pixel_artifact(
+                let mut pixel_source = ArchivedSource::new_pixel_artifact(
                     screenshot.info().identity.clone(),
                     &screenshot,
                     1,
                     None,
                 );
-                pixel_source.file_archive = Some(crate::archive::FileDocumentArchiveRef::Image(
-                    image_reference,
-                ));
+                pixel_source.file_archive = Some(FileDocumentArchiveRef::Image(image_reference));
                 recording.outcome.retain(pixel_source)?;
-                let mut metadata_source = crate::surface::ArchivedSource::new(
-                    reference.document.to_string(),
-                    &document,
-                    None,
-                );
+                let mut metadata_source =
+                    ArchivedSource::new(reference.document.to_string(), &document, None);
                 metadata_source.document_archive = Some(reference.document.clone());
                 recording.outcome.retain(metadata_source)?;
             }

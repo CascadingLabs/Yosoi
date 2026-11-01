@@ -900,8 +900,7 @@ fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(
         let provider_base64_encoded = required_payload_bool(payload, "provider_base64_encoded")?;
         let text_utf8_normalized = required_payload_bool(payload, "text_utf8_normalized")?;
         let retained = matches!(state, "retained" | "truncated");
-        if provider_base64_encoded && text_utf8_normalized
-            || text_utf8_normalized && !retained
+        if (provider_base64_encoded || !retained) && text_utf8_normalized
             || (retained && provider_base64_encoded == text_utf8_normalized)
         {
             return Err(SurfaceError::Invalid(
