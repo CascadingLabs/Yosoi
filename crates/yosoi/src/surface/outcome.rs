@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, sync::Arc};
 
-use super::{ArchiveLimits, Limits, Surface, SurfaceError};
+use super::{ArchiveLimits, Limits, PixelArtifactInfo, Surface, SurfaceError};
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+use super::{PixelArtifact, PixelOperation};
 use crate::internal::media_documents::{
     from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
@@ -31,6 +33,11 @@ pub enum SourceInterpretation {
     },
     /// New typed image payloads with their original source metadata.
     ImageDocument {
+        /// Smallest automatically indexed region size in pixels.
+        tile_side: u32,
+    },
+    /// A root pixel artifact with source provenance preserved during image indexing.
+    PixelArtifact {
         /// Smallest automatically indexed region size in pixels.
         tile_side: u32,
     },
@@ -91,6 +98,9 @@ pub struct ArchivedSource {
     /// Original typed media metadata, absent for Documents and legacy envelopes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_metadata: Option<FileMetadata>,
+    /// Original pixel provenance when this source is a PixelArtifact.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pixel_info: Option<PixelArtifactInfo>,
     /// SHA-256 of the decoded original bytes.
     pub sha256: String,
     /// Base64 transport of the original bytes, not an address of an external file.
@@ -116,6 +126,7 @@ impl ArchivedSource {
             profile: Some(document.profile()),
             file_kind: None,
             file_metadata: None,
+            pixel_info: None,
             sha256: format!("{:x}", Sha256::digest(document.bytes())),
             content_base64: Some(STANDARD.encode(document.bytes())),
             document_archive: None,
@@ -143,6 +154,7 @@ impl ArchivedSource {
             profile: None,
             file_kind: Some(file_kind),
             file_metadata: Some(document.metadata().clone()),
+            pixel_info: None,
             sha256: document.sha256().to_owned(),
             content_base64: Some(STANDARD.encode(document.bytes())),
             document_archive: None,
@@ -165,11 +177,46 @@ impl ArchivedSource {
             profile: None,
             file_kind: Some(ArchivedFileKind::Image),
             file_metadata: Some(document.metadata().clone()),
+            pixel_info: None,
             sha256: document.sha256().to_owned(),
             content_base64: Some(STANDARD.encode(document.bytes())),
             document_archive: None,
             file_archive: None,
             surface: surface.map(|value| value.identity().to_owned()),
+        }
+    }
+
+    /// Freezes a root PixelArtifact without replacing its source or coordinate provenance.
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    pub fn new_pixel_artifact(
+        key: impl Into<String>,
+        artifact: &PixelArtifact,
+        tile_side: u32,
+        surface: Option<&Surface>,
+    ) -> Self {
+        let document = artifact.document();
+        let is_root = matches!(&artifact.info().transform.operation, PixelOperation::Source);
+        Self {
+            interpretation: if is_root {
+                SourceInterpretation::PixelArtifact { tile_side }
+            } else {
+                SourceInterpretation::FileDocument
+            },
+            key: key.into(),
+            document: document.id().clone(),
+            profile: None,
+            file_kind: Some(ArchivedFileKind::Image),
+            file_metadata: Some(document.metadata().clone()),
+            pixel_info: Some(artifact.info().clone()),
+            sha256: document.sha256().to_owned(),
+            content_base64: Some(STANDARD.encode(document.bytes())),
+            document_archive: None,
+            file_archive: None,
+            surface: if is_root {
+                surface.map(|value| value.identity().to_owned())
+            } else {
+                None
+            },
         }
     }
 
@@ -200,6 +247,11 @@ impl ArchivedSource {
                 document,
                 tile_side,
             }) => Self::new_image(key, document, *tile_side, Some(surface)),
+            #[cfg(any(feature = "browser", feature = "surface-images"))]
+            Some(super::Original::PixelArtifact {
+                artifact,
+                tile_side,
+            }) => Self::new_pixel_artifact(key, artifact, *tile_side, Some(surface)),
             None => {
                 let scope = surface
                     .data
@@ -264,6 +316,30 @@ impl ArchivedSource {
         }
     }
 
+    /// Restores a root PixelArtifact without discarding its original source coordinates.
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    pub fn restore_pixel_artifact(&self, maximum: u64) -> Result<PixelArtifact, SurfaceError> {
+        if !matches!(
+            self.interpretation,
+            SourceInterpretation::PixelArtifact { .. } | SourceInterpretation::FileDocument
+        ) || self.pixel_info.is_none()
+        {
+            return Err(SurfaceError::Invalid(
+                "archived source is not a PixelArtifact".into(),
+            ));
+        }
+        let info = self
+            .pixel_info
+            .clone()
+            .ok_or_else(|| SurfaceError::Invalid("archived pixel provenance is missing".into()))?;
+        match self.restore_file_document(maximum)? {
+            FileDocument::Image(document) => PixelArtifact::from_archived_parts(document, info),
+            _ => Err(SurfaceError::Invalid(
+                "archived PixelArtifact payload is not an ImageDocument".into(),
+            )),
+        }
+    }
+
     /// Restores the exact concrete typed media file without a source path or decoder.
     pub fn restore_file_document(&self, maximum: u64) -> Result<FileDocument, SurfaceError> {
         let kind = self
@@ -300,20 +376,17 @@ impl ArchivedSource {
     }
 
     fn restore_bytes(&self, maximum: u64) -> Result<Vec<u8>, SurfaceError> {
+        let encoded = self.content_base64.as_deref().ok_or_else(|| {
+            SurfaceError::Invalid("archived source payload has not been hydrated".into())
+        })?;
         let bound = maximum
             .checked_add(2)
             .and_then(|value| value.checked_div(3))
             .and_then(|value| value.checked_mul(4))
             .ok_or(SurfaceError::Limit("source encoding arithmetic"))?;
-        if u64::try_from(self.content_base64.len())
-            .map_err(|_| SurfaceError::Limit("source size"))?
-            > bound
-        {
+        if u64::try_from(encoded.len()).map_err(|_| SurfaceError::Limit("source size"))? > bound {
             return Err(SurfaceError::Limit("archived source bytes"));
         }
-        let encoded = self.content_base64.as_deref().ok_or_else(|| {
-            SurfaceError::Invalid("archived source payload has not been hydrated".into())
-        })?;
         let bytes = STANDARD
             .decode(encoded)
             .map_err(|error| SurfaceError::Parse(error.to_string()))?;
@@ -345,6 +418,7 @@ impl ArchivedSource {
                 }
                 #[cfg(not(any(feature = "browser", feature = "surface-images")))]
                 {
+                    let _ = document;
                     let _ = tile_side;
                     return Err(SurfaceError::Invalid(
                         "image restoration requires surface-images".into(),
@@ -362,6 +436,20 @@ impl ArchivedSource {
                     let _ = tile_side;
                     return Err(SurfaceError::Invalid(
                         "image restoration requires surface-images".into(),
+                    ));
+                }
+            }
+            SourceInterpretation::PixelArtifact { tile_side } => {
+                #[cfg(any(feature = "browser", feature = "surface-images"))]
+                {
+                    let artifact = self.restore_pixel_artifact(maximum)?;
+                    Surface::from_pixel_artifact(&artifact, tile_side, limits)?
+                }
+                #[cfg(not(any(feature = "browser", feature = "surface-images")))]
+                {
+                    let _ = tile_side;
+                    return Err(SurfaceError::Invalid(
+                        "pixel artifact restoration requires surface-images".into(),
                     ));
                 }
             }
@@ -544,12 +632,45 @@ impl Outcome {
                     if source.profile.is_some()
                         || source.file_kind != Some(ArchivedFileKind::Image)
                         || source.file_metadata.is_none()
+                        || source.pixel_info.is_some()
                     {
                         return Err(SurfaceError::Invalid(
                             "typed image source profile or metadata is inconsistent".into(),
                         ));
                     }
                     source.restore_image(self.limits.bytes)?;
+                }
+                SourceInterpretation::PixelArtifact { .. } => {
+                    if source.profile.is_some()
+                        || source.file_kind != Some(ArchivedFileKind::Image)
+                        || source.file_metadata.is_none()
+                        || source.pixel_info.is_none()
+                    {
+                        return Err(SurfaceError::Invalid(
+                            "PixelArtifact source metadata is inconsistent".into(),
+                        ));
+                    }
+                    #[cfg(any(feature = "browser", feature = "surface-images"))]
+                    source.restore_pixel_artifact(self.limits.bytes)?;
+                    #[cfg(not(any(feature = "browser", feature = "surface-images")))]
+                    {
+                        let info = source.pixel_info.as_ref().ok_or_else(|| {
+                            SurfaceError::Invalid("PixelArtifact provenance is missing".into())
+                        })?;
+                        if info.sha256 != source.sha256 || info.width == 0 || info.height == 0 {
+                            return Err(SurfaceError::Invalid(
+                                "PixelArtifact provenance differs from its image payload".into(),
+                            ));
+                        }
+                        if !matches!(
+                            source.restore_file_document(self.limits.bytes)?,
+                            FileDocument::Image(_)
+                        ) {
+                            return Err(SurfaceError::Invalid(
+                                "PixelArtifact payload is not a typed image".into(),
+                            ));
+                        }
+                    }
                 }
                 SourceInterpretation::FileDocument => {
                     if source.profile.is_some()
@@ -560,12 +681,38 @@ impl Outcome {
                             "typed media source profile or metadata is inconsistent".into(),
                         ));
                     }
-                    source.restore_file_document(self.limits.bytes)?;
+                    if source.pixel_info.is_some() {
+                        #[cfg(any(feature = "browser", feature = "surface-images"))]
+                        source.restore_pixel_artifact(self.limits.bytes)?;
+                        #[cfg(not(any(feature = "browser", feature = "surface-images")))]
+                        {
+                            let info = source.pixel_info.as_ref().ok_or_else(|| {
+                                SurfaceError::Invalid("PixelArtifact provenance is missing".into())
+                            })?;
+                            if info.sha256 != source.sha256 || info.width == 0 || info.height == 0 {
+                                return Err(SurfaceError::Invalid(
+                                    "PixelArtifact provenance differs from its image payload"
+                                        .into(),
+                                ));
+                            }
+                            if !matches!(
+                                source.restore_file_document(self.limits.bytes)?,
+                                FileDocument::Image(_)
+                            ) {
+                                return Err(SurfaceError::Invalid(
+                                    "PixelArtifact payload is not a typed image".into(),
+                                ));
+                            }
+                        }
+                    } else {
+                        source.restore_file_document(self.limits.bytes)?;
+                    }
                 }
                 _ => {
                     if source.profile.is_none()
                         || source.file_kind.is_some()
                         || source.file_metadata.is_some()
+                        || source.pixel_info.is_some()
                     {
                         return Err(SurfaceError::Invalid(
                             "archived Document profile or media metadata is inconsistent".into(),
@@ -574,7 +721,8 @@ impl Outcome {
                     source.restore(self.limits.bytes)?;
                 }
             }
-            if source.profile == Some(DocumentProfile::source_json()) && source.file_kind.is_none()
+            if source.profile == Some(DocumentProfile::network_observation_v1())
+                && source.file_kind.is_none()
             {
                 let document = source.restore(self.limits.bytes)?;
                 validate_network_payloads(self, &document)?;
@@ -669,6 +817,20 @@ impl Outcome {
             .ok_or(SurfaceError::Unknown)?
             .restore_file_document(maximum)
     }
+
+    /// Restores a retained pixel artifact, including derived pixel provenance.
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    pub fn source_pixel_artifact(
+        &self,
+        key: &str,
+        maximum: u64,
+    ) -> Result<PixelArtifact, SurfaceError> {
+        self.sources
+            .iter()
+            .find(|source| source_matches_key(source, key))
+            .ok_or(SurfaceError::Unknown)?
+            .restore_pixel_artifact(maximum)
+    }
 }
 
 fn source_matches_key(source: &ArchivedSource, key: &str) -> bool {
@@ -684,18 +846,60 @@ fn source_matches_key(source: &ArchivedSource, key: &str) -> bool {
 }
 
 fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(), SurfaceError> {
+    if document.profile() != DocumentProfile::network_observation_v1() {
+        return Ok(());
+    }
     let value: serde_json::Value = serde_json::from_slice(document.bytes())
         .map_err(|error| SurfaceError::Parse(error.to_string()))?;
-    if value.get("schema").and_then(serde_json::Value::as_str) != Some("yosoi.network.v1") {
-        return Ok(());
+    if value.get("schema").and_then(serde_json::Value::as_str) != Some("yosoi.network.v1")
+        || value
+            .get("schema_version")
+            .and_then(serde_json::Value::as_u64)
+            != Some(1)
+    {
+        return Err(SurfaceError::Invalid(
+            "network observation profile does not match its payload schema".into(),
+        ));
     }
     let payloads = value
         .get("payloads")
         .and_then(serde_json::Value::as_array)
         .ok_or_else(|| SurfaceError::Invalid("network window payloads are missing".into()))?;
     for payload in payloads {
-        match payload.get("status").and_then(serde_json::Value::as_str) {
-            Some("retained" | "truncated") => {
+        let state = payload
+            .get("state")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| SurfaceError::Invalid("network payload state is missing".into()))?;
+        let provider_base64_encoded = required_payload_bool(payload, "provider_base64_encoded")?;
+        let text_utf8_normalized = required_payload_bool(payload, "text_utf8_normalized")?;
+        let retained = matches!(state, "retained" | "truncated");
+        if provider_base64_encoded && text_utf8_normalized
+            || text_utf8_normalized && !retained
+            || (retained && provider_base64_encoded == text_utf8_normalized)
+        {
+            return Err(SurfaceError::Invalid(
+                "network payload encoding provenance is inconsistent with its retained state"
+                    .into(),
+            ));
+        }
+        validate_payload_media_types(payload)?;
+        if let Some(reported) = payload.get("provider_reported_body_bytes")
+            && !reported.is_null()
+            && reported.as_u64().is_none()
+        {
+            return Err(SurfaceError::Invalid(
+                "network reported body byte count must be an unsigned integer or null".into(),
+            ));
+        }
+        match state {
+            "retained" | "truncated" => {
+                let id = payload
+                    .get("id")
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|id| !id.is_empty())
+                    .ok_or_else(|| {
+                        SurfaceError::Invalid("retained network body lacks a payload id".into())
+                    })?;
                 let key = payload
                     .get("document_id")
                     .and_then(serde_json::Value::as_str)
@@ -705,28 +909,173 @@ fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(
                             "retained network body lacks a source document id".into(),
                         )
                     })?;
-                if !outcome
+                if id != key {
+                    return Err(SurfaceError::Invalid(
+                        "retained network payload id differs from its source document id".into(),
+                    ));
+                }
+                let document_kind = payload
+                    .get("document_kind")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| {
+                        SurfaceError::Invalid("retained network body lacks a document kind".into())
+                    })?;
+                if !matches!(document_kind, "html" | "json" | "file") {
+                    return Err(SurfaceError::Invalid(
+                        "retained network body document kind is unsupported".into(),
+                    ));
+                }
+                let projection_basis = payload
+                    .get("projection_basis")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| {
+                        SurfaceError::Invalid(
+                            "retained network body lacks a projection basis".into(),
+                        )
+                    })?;
+                if !matches!(
+                    projection_basis,
+                    "requests_declared"
+                        | "requests_structured_suffix"
+                        | "requests_sniffed"
+                        | "typed_file_magic"
+                        | "opaque_bytes"
+                ) {
+                    return Err(SurfaceError::Invalid(
+                        "retained network body projection basis is unsupported".into(),
+                    ));
+                }
+                let sha256 = payload
+                    .get("sha256")
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|value| {
+                        value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+                    })
+                    .ok_or_else(|| {
+                        SurfaceError::Invalid(
+                            "retained network body digest is missing or invalid".into(),
+                        )
+                    })?;
+                let retained_bytes = payload
+                    .get("retained_bytes")
+                    .and_then(serde_json::Value::as_u64)
+                    .ok_or_else(|| {
+                        SurfaceError::Invalid(
+                            "retained network body byte count is missing or invalid".into(),
+                        )
+                    })?;
+                if retained_bytes > outcome.limits.bytes
+                    || payload
+                        .get("byte_provenance")
+                        .and_then(serde_json::Value::as_str)
+                        != Some("cdp_decoded_response_body")
+                {
+                    return Err(SurfaceError::Invalid(
+                        "retained network body provenance or byte count is invalid".into(),
+                    ));
+                }
+                let source = outcome
                     .sources
                     .iter()
-                    .any(|source| source_matches_key(source, key))
-                    && outcome.complete
-                {
+                    .find(|source| source_matches_key(source, key));
+                if source.is_none() && outcome.complete {
                     return Err(SurfaceError::Invalid(
                         "retained network body source is missing from the Outcome".into(),
                     ));
                 }
+                if let Some(source) = source {
+                    let bytes = source.restore_bytes(outcome.limits.bytes)?;
+                    let actual_kind_matches = match document_kind {
+                        "file" => source.file_kind.is_some(),
+                        "html" => {
+                            source.file_kind.is_none()
+                                && source.profile == Some(DocumentProfile::source_html())
+                        }
+                        "json" => {
+                            source.file_kind.is_none()
+                                && source.profile == Some(DocumentProfile::source_json())
+                        }
+                        _ => false,
+                    };
+                    if !actual_kind_matches
+                        || source.sha256 != sha256
+                        || u64::try_from(bytes.len())
+                            .map_err(|_| SurfaceError::Limit("network payload byte count"))?
+                            != retained_bytes
+                    {
+                        return Err(SurfaceError::Invalid(
+                            "retained network body metadata differs from its source".into(),
+                        ));
+                    }
+                }
             }
-            Some("omitted")
-                if !payload
-                    .get("document_id")
-                    .is_some_and(serde_json::Value::is_null) =>
-            {
+            "not_requested" | "unavailable" | "unsupported" => {
+                for field in [
+                    "document_id",
+                    "document_kind",
+                    "projection_basis",
+                    "detected_media_type",
+                    "sha256",
+                ] {
+                    if !payload.get(field).is_some_and(serde_json::Value::is_null) {
+                        return Err(SurfaceError::Invalid(format!(
+                            "unretained network payload field {field} must be null"
+                        )));
+                    }
+                }
+                if payload
+                    .get("retained_bytes")
+                    .and_then(serde_json::Value::as_u64)
+                    != Some(0)
+                    || payload
+                        .get("byte_provenance")
+                        .and_then(serde_json::Value::as_str)
+                        != Some("none")
+                {
+                    return Err(SurfaceError::Invalid(
+                        "unretained network payload must not claim retained bytes".into(),
+                    ));
+                }
+            }
+            _ => {
                 return Err(SurfaceError::Invalid(
-                    "omitted network body must not name a payload source".into(),
+                    "network payload state is unsupported".into(),
                 ));
             }
-            _ => {}
         }
+    }
+    Ok(())
+}
+
+fn required_payload_bool(payload: &serde_json::Value, field: &str) -> Result<bool, SurfaceError> {
+    payload
+        .get(field)
+        .and_then(serde_json::Value::as_bool)
+        .ok_or_else(|| SurfaceError::Invalid(format!("network payload {field} must be a boolean")))
+}
+
+fn validate_payload_media_types(payload: &serde_json::Value) -> Result<(), SurfaceError> {
+    for field in [
+        "declared_media_type",
+        "browser_effective_mime",
+        "browser_effective_charset",
+    ] {
+        if payload
+            .get(field)
+            .is_some_and(|value| !value.is_null() && value.as_str().is_none())
+        {
+            return Err(SurfaceError::Invalid(format!(
+                "network payload {field} must be text or null"
+            )));
+        }
+    }
+    if payload
+        .get("detected_media_type")
+        .is_some_and(|value| !value.is_null() && value.as_str().is_none())
+    {
+        return Err(SurfaceError::Invalid(
+            "network payload detected_media_type must be text or null".into(),
+        ));
     }
     Ok(())
 }
@@ -734,7 +1083,13 @@ fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::ArchivedSource;
-    use crate::documents::{BinaryDocument, FileDocument, FileLimits, FileMetadata};
+    use crate::{
+        documents::{
+            BinaryDocument, Document, DocumentId, DocumentProfile, FileDocument, FileLimits,
+            FileMetadata,
+        },
+        surface::{ArchiveLimits, Outcome},
+    };
     use std::error::Error;
 
     const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
@@ -770,6 +1125,193 @@ mod tests {
             restored_binary.metadata().detected_media_type(),
             Some("image/png")
         );
+        Ok(())
+    }
+
+    #[test]
+    fn network_payload_dependencies_use_typed_profile_and_exact_state_contract()
+    -> Result<(), Box<dyn Error>> {
+        let network_document = |payloads: serde_json::Value| -> Result<Document, Box<dyn Error>> {
+            Ok(Document::from_profile(
+                DocumentId::try_new("network-observation")?,
+                DocumentProfile::network_observation_v1(),
+                serde_json::to_vec(&serde_json::json!({
+                    "schema": "yosoi.network.v1",
+                    "schema_version": 1,
+                    "response_window_id": "recording:2",
+                    "payloads": payloads,
+                }))?,
+            )?)
+        };
+
+        let body = Document::html("body-document", b"<p>body</p>".to_vec())?;
+        let payload_source = ArchivedSource::new("body-key", &body, None);
+        let retained_payload = |state: &str,
+                                id: &str,
+                                document_id: &str,
+                                provider_base64_encoded: bool,
+                                text_utf8_normalized: bool| {
+            serde_json::json!({
+                "id": id,
+                "state": state,
+                "document_id": document_id,
+                "document_kind": "html",
+                "projection_basis": "requests_declared",
+                "sha256": payload_source.sha256,
+                "retained_bytes": body.byte_len(),
+                "byte_provenance": "cdp_decoded_response_body",
+                "provider_base64_encoded": provider_base64_encoded,
+                "provider_reported_body_bytes": body.byte_len(),
+                "declared_media_type": "text/html",
+                "browser_effective_mime": null,
+                "browser_effective_charset": null,
+                "detected_media_type": null,
+                "text_utf8_normalized": text_utf8_normalized,
+            })
+        };
+        let unretained_payload =
+            |state: &str,
+             provider_base64_encoded: bool,
+             text_utf8_normalized: bool,
+             provider_reported_body_bytes: Option<u64>| {
+                serde_json::json!({
+                    "id": "opaque",
+                    "state": state,
+                    "document_id": null,
+                    "document_kind": null,
+                    "projection_basis": null,
+                    "sha256": null,
+                    "retained_bytes": 0,
+                    "byte_provenance": "none",
+                    "provider_base64_encoded": provider_base64_encoded,
+                    "provider_reported_body_bytes": provider_reported_body_bytes,
+                    "declared_media_type": null,
+                    "browser_effective_mime": null,
+                    "browser_effective_charset": null,
+                    "detected_media_type": null,
+                    "text_utf8_normalized": text_utf8_normalized,
+                })
+            };
+        let retained_window = network_document(serde_json::json!([retained_payload(
+            "retained", "body-key", "body-key", true, false
+        )]))?;
+        let complete = Outcome::new("network-check", ArchiveLimits::default())?
+            .with_source(payload_source.clone())?
+            .with_source(ArchivedSource::new("window", &retained_window, None))?;
+        assert!(complete.complete);
+
+        for state in ["not_requested", "unavailable", "unsupported"] {
+            let window = network_document(serde_json::json!([unretained_payload(
+                state,
+                state == "unavailable",
+                false,
+                (state == "unavailable").then_some(body.byte_len()),
+            )]))?;
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(ArchivedSource::new("window", &window, None))?;
+        }
+
+        let utf8_window = network_document(serde_json::json!([retained_payload(
+            "truncated",
+            "body-key",
+            "body-key",
+            false,
+            true
+        )]))?;
+        Outcome::new("network-check", ArchiveLimits::default())?
+            .with_source(payload_source.clone())?
+            .with_source(ArchivedSource::new("window", &utf8_window, None))?;
+
+        let mixed_encoding = network_document(serde_json::json!([retained_payload(
+            "retained", "body-key", "body-key", true, true
+        )]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(payload_source.clone())?
+                .with_source(ArchivedSource::new("window", &mixed_encoding, None))
+                .is_err()
+        );
+
+        let unretained_text = network_document(serde_json::json!([unretained_payload(
+            "unavailable",
+            false,
+            true,
+            Some(body.byte_len())
+        )]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(ArchivedSource::new("window", &unretained_text, None))
+                .is_err()
+        );
+
+        let mismatched = network_document(serde_json::json!([retained_payload(
+            "truncated",
+            "payload-id",
+            "other-key",
+            false,
+            true
+        )]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(ArchivedSource::new("window", &mismatched, None))
+                .is_err()
+        );
+
+        let mut unsupported_basis =
+            retained_payload("retained", "body-key", "body-key", true, false);
+        unsupported_basis
+            .as_object_mut()
+            .ok_or("retained payload is not an object")?
+            .insert("projection_basis".into(), serde_json::json!("unreviewed"));
+        let unsupported_basis = network_document(serde_json::json!([unsupported_basis]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(payload_source.clone())?
+                .with_source(ArchivedSource::new("window", &unsupported_basis, None))
+                .is_err()
+        );
+
+        let mut wrong_length = retained_payload("retained", "body-key", "body-key", true, false);
+        wrong_length
+            .as_object_mut()
+            .ok_or("retained payload is not an object")?
+            .insert(
+                "retained_bytes".into(),
+                serde_json::json!(
+                    body.byte_len()
+                        .checked_add(1)
+                        .ok_or("body length overflow")?
+                ),
+            );
+        let wrong_length = network_document(serde_json::json!([wrong_length]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(payload_source.clone())?
+                .with_source(ArchivedSource::new("window", &wrong_length, None))
+                .is_err()
+        );
+
+        let mut unretained_source = unretained_payload("unavailable", false, false, None);
+        unretained_source
+            .as_object_mut()
+            .ok_or("unretained payload is not an object")?
+            .insert("document_kind".into(), serde_json::json!("file"));
+        let unretained_source = network_document(serde_json::json!([unretained_source]))?;
+        assert!(
+            Outcome::new("network-check", ArchiveLimits::default())?
+                .with_source(ArchivedSource::new("window", &unretained_source, None))
+                .is_err()
+        );
+
+        let source_json = Document::json(
+            "ordinary-json",
+            serde_json::to_vec(&serde_json::json!({
+                "schema": "yosoi.network.v1",
+                "payloads": [{"state":"invented","document_id":"foreign"}],
+            }))?,
+        )?;
+        Outcome::new("ordinary-json-check", ArchiveLimits::default())?
+            .with_source(ArchivedSource::new("json", &source_json, None))?;
         Ok(())
     }
 }

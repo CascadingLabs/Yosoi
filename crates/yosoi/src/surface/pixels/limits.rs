@@ -1,4 +1,5 @@
 use crate::surface::SurfaceError;
+use serde::{Deserialize, Serialize};
 
 /// Limits independent from text response budgets.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -83,6 +84,7 @@ impl PixelLimits {
     }
 }
 
+#[cfg(any(feature = "browser", feature = "surface-images"))]
 pub(super) fn resized_dimensions(
     width: u32,
     height: u32,

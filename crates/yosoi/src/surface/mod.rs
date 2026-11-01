@@ -15,7 +15,6 @@ mod image_session;
 mod images;
 pub mod model;
 mod outcome;
-#[cfg(any(feature = "browser", feature = "surface-images"))]
 pub mod pixels;
 mod policy;
 mod prepare;
@@ -31,12 +30,14 @@ pub use image_session::ImageSession;
 pub use images::PixelRect;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use images::{ImageCrop, ImageSurface};
-pub use outcome::{ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
-#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use outcome::{ArchivedFileKind, ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
 pub use pixels::{
-    PixelArtifact, PixelArtifactInfo, PixelCoordinateKind, PixelCoordinateSpace,
-    PixelEdgeTransform, PixelLimits, PixelOperation, PixelOrientation, PixelSource, PixelTransform,
+    PixelArtifact, PixelArtifactArchiveRef, PixelArtifactInfo, PixelCoordinateKind,
+    PixelCoordinateSpace, PixelEdgeTransform, PixelLimits, PixelOperation, PixelOrientation,
+    PixelSource, PixelTransform,
 };
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use pixels::{image_source_identity, pixel_source_identity};
 pub use policy::{ArchiveLimits, ArchivePolicy, ExecutionError, SurfacePolicy};
 pub use session::*;
 
@@ -305,6 +306,11 @@ enum Original {
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     TypedImage {
         document: crate::documents::ImageDocument,
+        tile_side: u32,
+    },
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    PixelArtifact {
+        artifact: pixels::PixelArtifact,
         tile_side: u32,
     },
 }

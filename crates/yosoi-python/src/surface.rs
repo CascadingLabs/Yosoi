@@ -220,6 +220,24 @@ impl NativeSurface {
 
     #[cfg(any(feature = "browser", feature = "surface-video"))]
     #[staticmethod]
+    fn from_image_with_pixel_limits(
+        py: Python<'_>,
+        bytes: &[u8],
+        tile_side: u32,
+        limits: &str,
+        pixel_limits: &str,
+    ) -> PyResult<Self> {
+        let limits = decode(limits)?;
+        let pixel_limits = decode(pixel_limits)?;
+        py.detach(|| {
+            surface::Surface::from_image_with_pixel_limits(bytes, tile_side, limits, pixel_limits)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    #[staticmethod]
     #[pyo3(signature = (document, tile_side, limits, pixel_limits))]
     fn from_image_document(
         py: Python<'_>,
@@ -327,12 +345,39 @@ pub struct NativePixelArtifact {
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 #[pymethods]
 impl NativePixelArtifact {
+    #[staticmethod]
+    fn from_image_document(
+        py: Python<'_>,
+        document: &NativeFileDocument,
+        limits: &str,
+    ) -> PyResult<Self> {
+        let document = match document.inner.as_ref() {
+            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            _ => {
+                return Err(failure(surface::SurfaceError::Invalid(
+                    "PixelArtifact requires an ImageDocument".into(),
+                )));
+            }
+        };
+        let limits = decode(limits)?;
+        py.detach(|| {
+            surface::PixelArtifact::decode_image_document(document, limits)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
     fn info(&self) -> PyResult<String> {
         encode(self.inner.info())
     }
 
     fn bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         PyBytes::new(py, self.inner.bytes())
+    }
+
+    fn matches(&self, info: &str, bytes: &[u8]) -> PyResult<bool> {
+        let info: surface::PixelArtifactInfo = decode(info)?;
+        Ok(self.inner.info() == &info && self.inner.bytes() == bytes)
     }
 
     fn document(&self) -> NativeFileDocument {
@@ -419,6 +464,24 @@ impl NativeImageSurface {
         })
     }
 
+    #[staticmethod]
+    fn from_pixel_artifact(
+        py: Python<'_>,
+        artifact: &NativePixelArtifact,
+        tile_side: u32,
+        limits: &str,
+        pixel_limits: &str,
+    ) -> PyResult<Self> {
+        let artifact = artifact.inner.clone();
+        let limits = decode(limits)?;
+        let pixel_limits = decode(pixel_limits)?;
+        py.detach(move || {
+            surface::ImageSurface::from_pixel_artifact(&artifact, tile_side, limits, pixel_limits)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+
     fn descriptor(&self) -> PyResult<String> {
         encode(self.inner.descriptor())
     }
@@ -447,6 +510,12 @@ impl NativeImageSurface {
                 .native_reference(&decode(reference)?)
                 .map_err(failure)?,
         )
+    }
+
+    fn source_artifact(&self) -> NativePixelArtifact {
+        NativePixelArtifact {
+            inner: self.inner.source_artifact().clone(),
+        }
     }
 
     fn direct_image(&self) -> PyResult<NativePixelArtifact> {
@@ -555,6 +624,13 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
         surface_source_restore_file_document,
         module
     )?)?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    module.add_function(wrap_pyfunction!(
+        surface_source_restore_pixel_artifact,
+        module
+    )?)?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    module.add_function(wrap_pyfunction!(surface_source_pixel_artifact, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_restore_surface, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_new, module)?)?;
     module.add_function(wrap_pyfunction!(surface_outcome_with_source, module)?)?;
@@ -563,6 +639,11 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(surface_outcome_source_document, module)?)?;
     module.add_function(wrap_pyfunction!(
         surface_outcome_source_file_document,
+        module
+    )?)?;
+    #[cfg(any(feature = "browser", feature = "surface-video"))]
+    module.add_function(wrap_pyfunction!(
+        surface_outcome_source_pixel_artifact,
         module
     )?)?;
     module.add("SurfaceError", module.py().get_type::<SurfaceError>())?;
@@ -646,6 +727,23 @@ fn surface_outcome_source_file_document(
     })
 }
 
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pyfunction]
+fn surface_outcome_source_pixel_artifact(
+    py: Python<'_>,
+    value: &str,
+    key: &str,
+    maximum: u64,
+) -> PyResult<NativePixelArtifact> {
+    py.detach(|| {
+        let outcome: surface::Outcome = decode(value)?;
+        outcome
+            .source_pixel_artifact(key, maximum)
+            .map(|inner| NativePixelArtifact { inner })
+            .map_err(failure)
+    })
+}
+
 #[pyfunction]
 #[pyo3(signature=(key, document, index=None))]
 fn surface_source_new(
@@ -681,6 +779,28 @@ fn surface_source_file_document(
         ))
     })
 }
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pyfunction]
+#[pyo3(signature=(key, artifact, tile_side, surface=None))]
+fn surface_source_pixel_artifact(
+    py: Python<'_>,
+    key: &str,
+    artifact: &NativePixelArtifact,
+    tile_side: u32,
+    surface: Option<&NativeImageSurface>,
+) -> PyResult<String> {
+    let artifact = artifact.inner.clone();
+    py.detach(|| {
+        encode(&surface::ArchivedSource::new_pixel_artifact(
+            key,
+            &artifact,
+            tile_side,
+            surface.map(|value| value.inner.index()),
+        ))
+    })
+}
+
 #[pyfunction]
 fn surface_source_capture(py: Python<'_>, key: &str, index: &NativeSurface) -> PyResult<String> {
     py.detach(|| encode(&surface::ArchivedSource::capture(key, &index.inner).map_err(failure)?))
@@ -722,6 +842,22 @@ fn surface_source_restore_file_document(
         source
             .restore_file_document(maximum)
             .map(NativeFileDocument::new)
+            .map_err(failure)
+    })
+}
+
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+#[pyfunction]
+fn surface_source_restore_pixel_artifact(
+    py: Python<'_>,
+    value: &str,
+    maximum: u64,
+) -> PyResult<NativePixelArtifact> {
+    py.detach(|| {
+        let source: surface::ArchivedSource = decode(value)?;
+        source
+            .restore_pixel_artifact(maximum)
+            .map(|inner| NativePixelArtifact { inner })
             .map_err(failure)
     })
 }

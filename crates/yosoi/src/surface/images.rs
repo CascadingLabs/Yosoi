@@ -21,4 +21,4 @@ mod enabled;
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 pub use enabled::{ImageCrop, ImageSurface};
 #[cfg(any(feature = "browser", feature = "surface-images"))]
-pub(super) use enabled::{ImageData, region_digest};
+pub(in crate::surface) use enabled::{ImageData, region_digest};

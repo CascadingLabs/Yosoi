@@ -2,7 +2,6 @@ use super::{ImageCrop, PixelRect};
 use crate::documents::ImageDocument;
 use crate::surface::{
     Budget, Continuation, Limits, PixelArtifact, PixelLimits, Reference, Surface, SurfaceError,
-    image_source_identity,
     model::{
         self, Access, AddressToken, Capability, ContinuationToken, Descriptor, Observation,
         ObservationId, ReadOperation, ReadRequest, ReadResult, SourceId, SurfaceId, SurfaceRead,
@@ -11,10 +10,12 @@ use crate::surface::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+/// Read-only shared navigation over one typed image's bounded region index.
 #[derive(Clone, Debug)]
 pub struct ImageSurface {
     index: Surface,
     document: ImageDocument,
+    source_artifact: PixelArtifact,
     descriptor: Descriptor,
     observation: Observation,
     root: model::Reference,
@@ -34,7 +35,41 @@ impl ImageSurface {
             limits,
             pixel_limits,
         )?;
-        let source = SourceId::new(image_source_identity(document)?)?;
+        let artifact = index.prepared_image_artifact()?.clone();
+        let source_identity = artifact.source_identity()?;
+        Self::from_index(index, document.clone(), artifact, source_identity)
+    }
+
+    /// Opens a root PixelArtifact while preserving its existing source identity and coordinates.
+    /// A derived artifact cannot become a new coordinate root.
+    pub fn from_pixel_artifact(
+        artifact: &PixelArtifact,
+        tile_side: u32,
+        limits: Limits,
+        pixel_limits: PixelLimits,
+    ) -> Result<Self, SurfaceError> {
+        let index = Surface::from_pixel_artifact_with_pixel_limits(
+            artifact,
+            tile_side,
+            limits,
+            pixel_limits,
+        )?;
+        let source_identity = artifact.source_identity()?;
+        Self::from_index(
+            index,
+            artifact.document().clone(),
+            artifact.clone(),
+            source_identity,
+        )
+    }
+
+    fn from_index(
+        index: Surface,
+        document: ImageDocument,
+        source_artifact: PixelArtifact,
+        source_identity: String,
+    ) -> Result<Self, SurfaceError> {
+        let source = SourceId::new(source_identity)?;
         let id = SurfaceId::new(format!("image:{}", source.as_str()))?;
         let capabilities = [
             "overview",
@@ -87,6 +122,7 @@ impl ImageSurface {
         Ok(Self {
             index,
             document: document.clone(),
+            source_artifact,
             descriptor,
             observation,
             root,
@@ -98,9 +134,14 @@ impl ImageSurface {
         &self.index
     }
 
-    /// Returns the exact typed source payload retained by this reader.
+    /// Returns the encoded image payload indexed by this reader.
     pub const fn source_document(&self) -> &ImageDocument {
         &self.document
+    }
+
+    /// Returns the root PixelArtifact with its original source and coordinate provenance.
+    pub const fn source_artifact(&self) -> &PixelArtifact {
+        &self.source_artifact
     }
 
     /// Converts an index reference into a source-bound common reader address.

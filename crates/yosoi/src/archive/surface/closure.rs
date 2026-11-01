@@ -2,7 +2,7 @@ use super::{Archive, ArchiveError};
 use crate::internal::archive::{DocumentArchiveRef, FileDocumentArchiveRef};
 use crate::{
     documents::{Document, DocumentProfile, FileDocument},
-    surface::{ArchivedSource, Outcome},
+    surface::{ArchivedFileKind, ArchivedSource, Outcome},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::Value;

@@ -3,6 +3,8 @@ use crate::{
     documents::ImageDocument,
     surface::{PixelRect, SurfaceError},
 };
+use image::{ImageFormat, ImageReader};
+use std::io::Cursor;
 
 use super::{
     identity::{
@@ -19,6 +21,49 @@ use super::{
 };
 
 impl PixelArtifact {
+    /// Decodes a typed image into a direct pixel artifact without building a Surface index.
+    pub fn decode_image_document(
+        document: ImageDocument,
+        limits: PixelLimits,
+    ) -> Result<Self, SurfaceError> {
+        let limits = limits.validate()?;
+        let media_type = image_media_type(&document)?;
+        let mut reader = ImageReader::new(Cursor::new(document.bytes()))
+            .with_guessed_format()
+            .map_err(|error| SurfaceError::Parse(error.to_string()))?;
+        let expected_format = match media_type.as_str() {
+            "image/png" => ImageFormat::Png,
+            "image/jpeg" => ImageFormat::Jpeg,
+            _ => {
+                return Err(SurfaceError::Invalid(
+                    "unsupported direct pixel format".into(),
+                ));
+            }
+        };
+        if reader.format() != Some(expected_format) {
+            return Err(SurfaceError::Invalid(
+                "pixel artifact encoded format differs from typed metadata".into(),
+            ));
+        }
+        let mut decode_limits = image::Limits::default();
+        decode_limits.max_image_width = Some(limits.max_side);
+        decode_limits.max_image_height = Some(limits.max_side);
+        decode_limits.max_alloc = Some(
+            u64::try_from(limits.max_decoded_bytes)
+                .map_err(|_| SurfaceError::Limit("decoded pixel allocation"))?,
+        );
+        reader.limits(decode_limits);
+        let pixels = reader
+            .decode()
+            .map_err(|error| SurfaceError::Parse(error.to_string()))?;
+        let width = pixels.width();
+        let height = pixels.height();
+        limits.check_pixels(width, height)?;
+        limits.check_output(width, height, document.bytes().len())?;
+        drop(pixels);
+        Self::from_decoded_image_document(document, width, height, PixelOrientation::ExifUnapplied)
+    }
+
     /// Creates a source artifact from a typed image document and validated dimensions.
     /// ImageDocument coordinates are its encoded raster; pass `ExifUnapplied`.
     pub fn from_image_document(
@@ -252,7 +297,7 @@ impl PixelArtifact {
     /// Maps an output-space rectangle to the root source pixel edges.
     /// Derived artifacts have only one validated parent transform; nested maps are rejected.
     pub fn map_rect_to_source(&self, rect: PixelRect) -> Result<PixelRect, SurfaceError> {
-        self.validate()?;
+        self.validate_metadata()?;
         let right = rect
             .x
             .checked_add(rect.width)

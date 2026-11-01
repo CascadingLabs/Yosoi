@@ -16,6 +16,7 @@ use tokio::{
     signal,
     sync::mpsc::{Receiver, channel},
 };
+use yosoi::archive::PixelArtifactArchiveRef;
 use yosoi::surface::{
     ArchivePolicy, ImageSession, Limits as SurfaceLimits, PixelLimits, SurfaceConnection,
     SurfacePolicy, archive as surface_archive,
@@ -59,8 +60,15 @@ enum SurfaceCommand {
     },
     /// Read a typed PNG/JPEG image through the shared bounded Surface protocol.
     Image {
-        #[arg(long)]
-        file: PathBuf,
+        #[arg(
+            long,
+            conflicts_with = "pixel_artifact_ref",
+            required_unless_present = "pixel_artifact_ref"
+        )]
+        file: Option<PathBuf>,
+        /// JSON PixelArtifactArchiveRef from an existing local Archive.
+        #[arg(long, conflicts_with = "file", requires = "archive")]
+        pixel_artifact_ref: Option<String>,
         #[arg(long, default_value = ".local/surface-image")]
         output: PathBuf,
         #[arg(long)]
@@ -218,6 +226,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
         } => drive(VideoSession::open(&file, policy(output, archive), max_side).await?).await,
         SurfaceCommand::Image {
             file,
+            pixel_artifact_ref,
             output,
             archive,
             tile_side,
@@ -239,17 +248,38 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                 input_bytes: max_source_bytes,
                 ..SurfaceLimits::default()
             };
-            drive(
-                ImageSession::open(
-                    &file,
-                    policy(output, archive),
-                    tile_side,
-                    surface_limits,
-                    limits,
+            if let Some(reference) = pixel_artifact_ref {
+                let archive_root = archive.clone().ok_or_else(|| {
+                    io::Error::other("--archive is required with --pixel-artifact-ref")
+                })?;
+                let reference: PixelArtifactArchiveRef = serde_json::from_str(&reference)?;
+                drive(
+                    ImageSession::open_pixel_artifact(
+                        &reference,
+                        archive_root,
+                        policy(output, archive),
+                        tile_side,
+                        surface_limits,
+                        limits,
+                    )
+                    .await?,
                 )
-                .await?,
-            )
-            .await
+                .await
+            } else if let Some(file) = file {
+                drive(
+                    ImageSession::open(
+                        &file,
+                        policy(output, archive),
+                        tile_side,
+                        surface_limits,
+                        limits,
+                    )
+                    .await?,
+                )
+                .await
+            } else {
+                Err(io::Error::other("--file or --pixel-artifact-ref is required").into())
+            }
         }
         SurfaceCommand::Replay {
             record,

@@ -183,13 +183,23 @@ impl Driver {
                 let path = self.trace.output.join("surface.png");
                 fs::write(&path, artifact.bytes())?;
                 let archive_ref = if let Some(recording) = &mut self.recording {
+                    let image_reference = recording.archive.write(artifact.document()).await?;
                     let reference = artifact.write_to(&recording.archive).await?;
                     let document = recording.archive.read_document(&reference.document).await?;
-                    recording.outcome.retain(ArchivedSource::new(
-                        reference.document.to_string(),
-                        &document,
+                    let mut pixel_source = ArchivedSource::new_pixel_artifact(
+                        artifact.info().identity.clone(),
+                        &artifact,
+                        1,
                         None,
-                    ))?;
+                    );
+                    pixel_source.file_archive = Some(
+                        crate::archive::FileDocumentArchiveRef::Image(image_reference),
+                    );
+                    recording.outcome.retain(pixel_source)?;
+                    let mut metadata_source =
+                        ArchivedSource::new(reference.document.to_string(), &document, None);
+                    metadata_source.document_archive = Some(reference.document.clone());
+                    recording.outcome.retain(metadata_source)?;
                     Some(reference)
                 } else {
                     None
