@@ -4,12 +4,13 @@ use crate::{
     documents::Document,
     session::Work,
     surface::{
-        DocumentPolicies, Surface,
+        DocumentPolicies, NetworkObservationPolicy, NetworkPayloadRef, NetworkPayloadValue,
+        PixelArtifact, Surface,
         connection::{Result, Trace},
     },
 };
 use serde_json::Value;
-use std::{io, path::Path};
+use std::io;
 
 pub(super) enum Source {
     Driver(Box<process::Browser>),
@@ -34,8 +35,12 @@ impl Browser {
         })
     }
 
-    pub async fn consume_work(work: Work, documents: DocumentPolicies) -> Result<Self> {
-        let native = NativeBrowser::new(work, documents).await?;
+    pub async fn consume_work(
+        work: Work,
+        documents: DocumentPolicies,
+        network_policy: NetworkObservationPolicy,
+    ) -> Result<Self> {
+        let native = NativeBrowser::new(work, documents, network_policy).await?;
         Ok(Self {
             key: native.key().into(),
             capabilities: native.capabilities(),
@@ -49,6 +54,10 @@ impl Browser {
             Source::Native(native) => Some(&**native),
             Source::Driver(_) => None,
         }
+    }
+
+    pub fn network_window_limit(&self) -> Option<usize> {
+        self.native().map(NativeBrowser::network_window_limit)
     }
 
     pub fn session_key(&self) -> &str {
@@ -84,11 +93,11 @@ impl Browser {
     }
 
     pub async fn capture_evidence(
-        &self,
+        &mut self,
         epoch: u64,
         representation: super::BrowserRepresentation,
     ) -> Result<(Surface, Document, Value)> {
-        match &self.source {
+        match &mut self.source {
             Source::Driver(_) => {
                 Err(io::Error::other("isolated browser supports DOM evidence only").into())
             }
@@ -96,10 +105,85 @@ impl Browser {
         }
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn subscribe_network(&mut self, retain_bodies: Option<bool>) -> Result<Value> {
+        match &mut self.source {
+            Source::Driver(_) => Err(io::Error::other(
+                "isolated ChromeDriver does not expose Surface network event subscriptions",
+            )
+            .into()),
+            Source::Native(native) => {
+                let result = native.subscribe_network(retain_bodies).await?;
+                self.capabilities = native.capabilities();
+                Ok(result)
+            }
+        }
+    }
+
+    pub async fn cancel_network(&mut self) -> Result<Value> {
+        match &mut self.source {
+            Source::Driver(_) => Err(io::Error::other(
+                "isolated ChromeDriver does not expose Surface network event subscriptions",
+            )
+            .into()),
+            Source::Native(native) => {
+                let result = native.cancel_network().await?;
+                self.capabilities = native.capabilities();
+                Ok(result)
+            }
+        }
+    }
+
+    pub async fn wait_network_event(&self, after_sequence: u64, timeout_ms: u64) -> Result<Value> {
         match &self.source {
-            Source::Driver(browser) => browser.screenshot(output, name).await,
-            Source::Native(browser) => browser.screenshot(output, name).await,
+            Source::Driver(_) => Err(io::Error::other(
+                "isolated ChromeDriver does not expose native network event streams",
+            )
+            .into()),
+            Source::Native(native) => native.wait_network_event(after_sequence, timeout_ms).await,
+        }
+    }
+
+    pub fn read_network_payload(
+        &self,
+        reference: &NetworkPayloadRef,
+        offset: usize,
+        max_bytes: usize,
+    ) -> Result<Value> {
+        match &self.source {
+            Source::Driver(_) => Err(io::Error::other(
+                "isolated ChromeDriver does not retain native network payloads",
+            )
+            .into()),
+            Source::Native(native) => native.read_network_payload(reference, offset, max_bytes),
+        }
+    }
+
+    pub fn retained_network_payload(
+        &self,
+        id: &str,
+    ) -> Option<(NetworkPayloadRef, NetworkPayloadValue)> {
+        self.native()?.retained_network_payload(id)
+    }
+
+    pub fn commit_network_window(&mut self, snapshot: &Value) -> Result<()> {
+        if let Source::Native(native) = &mut self.source {
+            native.commit_network_window(snapshot)?;
+            self.capabilities = native.capabilities();
+        }
+        Ok(())
+    }
+
+    pub fn discard_pending_network_payloads(&mut self) -> Result<()> {
+        if let Source::Native(native) = &mut self.source {
+            native.discard_pending_network_payloads()?;
+        }
+        Ok(())
+    }
+
+    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
+        match &self.source {
+            Source::Driver(browser) => browser.screenshot().await,
+            Source::Native(browser) => browser.screenshot_artifact().await,
         }
     }
 

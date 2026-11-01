@@ -1,5 +1,5 @@
 use super::{Coordinate, Coverage, Data, Limits, Node, Payload, Surface, SurfaceError};
-use crate::documents::{Document, DocumentClass};
+use crate::documents::{Document, DocumentClass, DocumentSchemaProfile};
 use html5ever::{ParseOpts, parse_document, tendril::TendrilSink};
 use markup5ever_rcdom::{NodeData, RcDom};
 use serde_json::Value;
@@ -104,17 +104,22 @@ pub(super) fn document(document: &Document, limits: Limits) -> Result<Surface, S
                 .map_err(|e| SurfaceError::Parse(e.to_string()))?;
             let value: Value =
                 serde_json::from_str(&source).map_err(|e| SurfaceError::Parse(e.to_string()))?;
-            if value.get("schema").and_then(Value::as_str) == Some("yosoi.network.v1") {
+            let network =
+                document.profile().schema() == DocumentSchemaProfile::YosoiNetworkObservationV1;
+            if network {
+                let window = super::network::NetworkWindow::from_document(document)?;
                 coverage = Coverage {
-                    complete: false,
-                    reason: Some(
-                        "browser_network_log_window; completeness is unestablished".into(),
-                    ),
+                    complete: window.coverage.complete,
+                    reason: (!window.coverage.complete).then(|| window.coverage.reason.clone()),
                 };
             }
             json_node(&value, "$".into(), "", None, 0, &mut builder)?;
             json = Some(value);
-            "application/json; normalization=serde-json"
+            if network {
+                "application/vnd.yosoi.network-observation.v1+json"
+            } else {
+                "application/json; normalization=serde-json"
+            }
         }
         DocumentClass::SourceText => {
             text(&source, &mut builder)?;

@@ -23,7 +23,12 @@ pub(in crate::surface::browser) struct RunFailure {
     pub source: Box<dyn Error + Send + Sync>,
 }
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, error::Error, fs, io, path::Path};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    error::Error,
+    fs, io,
+    path::Path,
+};
 
 pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
     if target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty() {
@@ -301,7 +306,9 @@ pub(super) async fn run(
         let initial = async {
             browser.post("/url", json!({"url":url})).await?;
             let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
-            recording.capture(&document, &surface, &snapshot, 1).await?;
+            recording
+                .capture(&document, &surface, &snapshot, 1, &[])
+                .await?;
             Ok::<_, Box<dyn Error + Send + Sync>>(surface)
         }
         .await;
@@ -329,6 +336,7 @@ pub(super) async fn run(
         session.attach()?;
         let cursor = session.cursor()?;
         cursor.promote()?;
+        let network_evidence_limit = browser.network_window_limit().unwrap_or(1);
         let mut driver = Driver {
             browser,
             session,
@@ -338,6 +346,8 @@ pub(super) async fn run(
             recording_fault: false,
             recording: Some(recording),
             evidence: BTreeMap::new(),
+            network_evidence: VecDeque::new(),
+            network_evidence_limit,
         };
         let execution = async {
             for click in &clicks {
@@ -394,7 +404,7 @@ pub(super) async fn run(
                     return Err(io::Error::other("repeated effect was not confirmed").into());
                 }
             }
-            let screenshot = driver.browser.screenshot().await?;
+            let screenshot = driver.browser.screenshot_artifact().await?;
             let screenshot_path = directory.join("final.png");
             fs::write(&screenshot_path, screenshot.bytes())?;
             if let Some(recording) = &mut driver.recording {

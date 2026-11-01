@@ -5,7 +5,8 @@ use crate::{
     documents::Document,
     surface::{
         ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, DocumentPolicy, ExecutionError,
-        Outcome, Surface, SurfacePolicy,
+        NetworkPayload, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue, Outcome,
+        Surface, SurfacePolicy,
         archive::{Capture, Loaded, Recording, capture_descriptors},
         connection::Result,
     },
@@ -52,8 +53,30 @@ impl Recording {
         surface: &Surface,
         snapshot: &Value,
         epoch: u64,
+        network_payloads: &[(NetworkPayloadRef, NetworkPayload)],
     ) -> Result<()> {
         let reference = self.archive.write_document(document).await?;
+        for (payload_reference, payload) in network_payloads {
+            if !matches!(
+                payload_reference.state,
+                NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+            ) {
+                continue;
+            }
+            let source = match payload {
+                NetworkPayload {
+                    value: NetworkPayloadValue::Document(document),
+                    ..
+                } => ArchivedSource::new(payload_reference.id.clone(), document, None),
+                NetworkPayload {
+                    value: NetworkPayloadValue::File(document),
+                    ..
+                } => {
+                    ArchivedSource::new_file_document(payload_reference.id.clone(), document, None)
+                }
+            };
+            self.outcome.retain(source)?;
+        }
         self.outcome.retain(ArchivedSource::new(
             reference.to_string(),
             document,

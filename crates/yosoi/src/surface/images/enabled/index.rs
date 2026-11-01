@@ -217,6 +217,7 @@ impl Surface {
         prepare::reduce(&mut data, limits.overview_depth)?;
         Ok(Self {
             data: Arc::new(data),
+            response_bytes: None,
         })
     }
 
@@ -339,6 +340,7 @@ impl Surface {
         prepare::reduce(&mut data, limits.overview_depth)?;
         Ok(Self {
             data: Arc::new(data),
+            response_bytes: None,
         })
     }
 }
