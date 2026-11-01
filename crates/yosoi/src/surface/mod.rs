@@ -41,6 +41,8 @@ pub use pixels::{image_source_identity, pixel_source_identity};
 pub use policy::{ArchiveLimits, ArchivePolicy, ExecutionError, SurfacePolicy};
 pub use session::*;
 
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+use crate::documents::ImageDocument;
 use crate::documents::{Document, DocumentId, DocumentProfile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -305,12 +307,12 @@ enum Original {
     Image { bytes: Vec<u8>, tile_side: u32 },
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     TypedImage {
-        document: crate::documents::ImageDocument,
+        document: Box<ImageDocument>,
         tile_side: u32,
     },
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     PixelArtifact {
-        artifact: pixels::PixelArtifact,
+        artifact: Box<pixels::PixelArtifact>,
         tile_side: u32,
     },
 }

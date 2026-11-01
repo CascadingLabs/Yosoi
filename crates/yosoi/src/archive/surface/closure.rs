@@ -190,6 +190,15 @@ fn add_aliases(
 pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<(), ArchiveError> {
     close_dependencies(archive, value).await?;
     value.validate().map_err(invalid)?;
+    let file_references = rehydrate_files(archive, value).await?;
+    let document_references = rehydrate_documents(archive, value, &file_references).await?;
+    rehydrate_receipts(value, &file_references, &document_references)
+}
+
+async fn rehydrate_files(
+    archive: &Archive,
+    value: &mut Outcome,
+) -> Result<BTreeMap<String, String>, ArchiveError> {
     let mut file_references = BTreeMap::new();
     for source in &mut value.sources {
         if source.file_kind.is_none() {
@@ -202,8 +211,8 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
         let reference = match source.file_archive.as_ref() {
             Some(existing) => match archive.read(existing).await {
                 Ok(saved) if saved == file => existing.clone(),
-                Ok(_) => archive.write(&file).await?,
-                Err(
+                Ok(_)
+                | Err(
                     ArchiveError::RecordNotFound { .. }
                     | ArchiveError::DocumentPayloadMissing { .. },
                 ) => archive.write(&file).await?,
@@ -217,6 +226,14 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
         source.content_base64 = None;
     }
 
+    Ok(file_references)
+}
+
+async fn rehydrate_documents(
+    archive: &Archive,
+    value: &mut Outcome,
+    file_references: &BTreeMap<String, String>,
+) -> Result<BTreeMap<String, String>, ArchiveError> {
     let mut document_references = BTreeMap::new();
     let mut pending: BTreeSet<usize> = value
         .sources
@@ -234,15 +251,15 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
             let previous = source.document_archive.as_ref().map(ToString::to_string);
             let document = source.restore(value.limits.bytes).map_err(invalid)?;
             let Some(document) =
-                rewrite_document(&document, &file_references, &document_references)?
+                rewrite_document(&document, file_references, &document_references)?
             else {
                 continue;
             };
             let reference = match source.document_archive.as_ref() {
                 Some(existing) => match archive.read_document(existing).await {
                     Ok(saved) if saved == document => existing.clone(),
-                    Ok(_) => archive.write_document(&document).await?,
-                    Err(
+                    Ok(_)
+                    | Err(
                         ArchiveError::RecordNotFound { .. }
                         | ArchiveError::DocumentPayloadMissing { .. },
                     ) => archive.write_document(&document).await?,
@@ -298,6 +315,14 @@ pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<
         }
     }
 
+    Ok(document_references)
+}
+
+fn rehydrate_receipts(
+    value: &mut Outcome,
+    file_references: &BTreeMap<String, String>,
+    document_references: &BTreeMap<String, String>,
+) -> Result<(), ArchiveError> {
     let mut wire = serde_json::to_value(&value.record).map_err(invalid)?;
     let operations = wire
         .get_mut("operations")

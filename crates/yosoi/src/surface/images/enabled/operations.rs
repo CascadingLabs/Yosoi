@@ -3,7 +3,7 @@ use crate::documents::{FileLimits, FileMetadata, ImageDocument};
 use crate::surface::{
     Payload, PixelArtifact, PixelLimits, PixelOperation, Reference, Surface, SurfaceError,
 };
-use image::{DynamicImage, ImageFormat};
+use image::{DynamicImage, ImageFormat, imageops::FilterType};
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 
@@ -97,12 +97,11 @@ impl Surface {
         if output_pixels > image.limits.max_output_pixels {
             return Err(SurfaceError::Limit("output pixels"));
         }
-        let resized =
-            image
-                .pixels
-                .resize_exact(width, height, image::imageops::FilterType::Triangle);
+        let resized = image
+            .pixels
+            .resize_exact(width, height, FilterType::Triangle);
         let document = png_document(
-            resized,
+            &resized,
             image.artifact.info().identity.as_str(),
             image.limits,
         )?;
@@ -176,7 +175,7 @@ impl Surface {
             ..image.limits
         };
         limits.check_output(rect.width, rect.height, 0)?;
-        let document = png_document(crop, image.artifact.info().identity.as_str(), limits)?;
+        let document = png_document(&crop, image.artifact.info().identity.as_str(), limits)?;
         let artifact = PixelArtifact::crop_from(&image.artifact, document, rect)?;
         Ok(ImageCrop {
             reference: reference.clone(),
@@ -219,7 +218,7 @@ fn resized_dimensions(width: u32, height: u32, max_side: u32) -> Result<(u32, u3
 }
 
 fn png_document(
-    image: DynamicImage,
+    image: &DynamicImage,
     parent_identity: &str,
     limits: PixelLimits,
 ) -> Result<ImageDocument, SurfaceError> {
@@ -236,7 +235,7 @@ fn png_document(
     let png = output.into_inner();
     limits.check_output(width, height, png.len())?;
     let digest = Sha256::digest(&png);
-    let id = format!("pixel-{:x}", digest);
+    let id = format!("pixel-{digest:x}");
     let metadata = FileMetadata::new()
         .with_declared_media_type("image/png")
         .and_then(|metadata| metadata.with_source(parent_identity))

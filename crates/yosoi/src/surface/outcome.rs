@@ -14,7 +14,7 @@ use crate::internal::media_documents::{
     from_archived_audio, from_archived_binary, from_archived_image, from_archived_video,
 };
 use crate::{
-    archive::DocumentArchiveRef,
+    archive::{DocumentArchiveRef, FileDocumentArchiveRef},
     automation_record::AutomationRecord,
     documents::{Document, DocumentId, DocumentProfile, FileDocument, FileMetadata, ImageDocument},
     locators::Plan,
@@ -112,7 +112,7 @@ pub struct ArchivedSource {
     pub document_archive: Option<DocumentArchiveRef>,
     /// Existing typed media reference used only inside a stored Outcome record.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub file_archive: Option<crate::archive::FileDocumentArchiveRef>,
+    pub file_archive: Option<FileDocumentArchiveRef>,
     /// Optional exact index identity when this source was prepared as a Surface.
     pub surface: Option<String>,
 }

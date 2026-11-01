@@ -16,7 +16,9 @@ use serde_json::{Value, json};
 use std::{
     error::Error,
     fmt::{self, Debug, Formatter},
-    fs, io,
+    fs,
+    future::{Future, ready},
+    io,
     path::{Path, PathBuf},
     result::Result as StdResult,
 };
@@ -80,7 +82,7 @@ impl ImageDriver {
             "pixel_limits": self.pixel_limits,
             "retained_artifacts": self.retained_artifacts,
             "source_archive_ref": self.source_archive_ref,
-            "archive": self.archive.as_ref().map(|archive| archive.root()),
+            "archive": self.archive.as_ref().map(Archive::root),
         })
     }
 
@@ -291,11 +293,11 @@ impl AgentSurface for ImageDriver {
         Ok(())
     }
 
-    async fn persist_command(
+    fn persist_command(
         &mut self,
         operation: &Operation,
         result: Result<Value>,
-    ) -> Result<Value> {
+    ) -> impl Future<Output = Result<Value>> + Send {
         if let Some(outcome) = &mut self.outcome {
             let (status, result_value) = match &result {
                 Ok(value) => {
@@ -319,7 +321,7 @@ impl AgentSurface for ImageDriver {
                 json!({"command":operation,"outcome":result_value}),
             );
         }
-        result
+        ready(result)
     }
 
     fn trace(&mut self) -> &mut Trace {
@@ -331,7 +333,7 @@ impl AgentSurface for ImageDriver {
     }
 
     async fn close(self) -> (Option<Outcome>, Result<()>) {
-        ImageDriver::close(self).await
+        Self::close(self).await
     }
 }
 
