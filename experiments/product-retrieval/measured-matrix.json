@@ -1,0 +1,461 @@
+{
+  "format": "product-retrieval-measured-evidence-v2",
+  "as_of": "2026-11-01",
+  "goal": "paused",
+  "scope": "Broad empirical fingerprint-retrieval research; no production discovery engine or SDK promotion.",
+  "interpretation_rules": [
+    "Source artifacts overlap. Do not add their row counts as independent samples.",
+    "Preserve each cohort's denominator, condition, metric basis, and partial-coverage status.",
+    "Candidate-value correctness, node localization, projected values, DOM coordinates, proposal recall, and Contract acceptance are distinct outcomes.",
+    "Null metrics remain null, not zero. Per-row scorer latency is not end-to-end discovery cost.",
+    "Fresh-page annotations are agent-reviewed from captured source HTML; they are non-blind and are not independent human gold or live DOM evidence."
+  ],
+  "entries": [
+    {
+      "area": "controlled_retrieval_baseline",
+      "status": "executed_complete",
+      "cohort": "Six source captures, ten source-derived cases each; 166320 raw rows per encoder and 162624 after original-seed exclusion.",
+      "result": "Nineteen distinct methods plus three hybrids; zero scorer exceptions. The reported table's controlled slice is obj-003 through obj-006 (40 cases).",
+      "evidence": [
+        ".generated/product-retrieval-minilm-v3/summary.json",
+        ".generated/product-retrieval-bge-v3/summary.json",
+        "experiments/product-retrieval/results-initial.md"
+      ],
+      "limitations": [
+        "Repeated field/configuration trials are not independent pages.",
+        "Same-shop controlled evidence does not establish cross-site generalization."
+      ]
+    },
+    {
+      "area": "baseline_archive_replay",
+      "status": "executed_exact_replay",
+      "cohort": "MiniLM and BGE-small baseline bundles.",
+      "result": "Restored matching reproduced scores, ranks, ownership, and absence metrics exactly; no network or embedding inference. Timings are excluded from equality.",
+      "evidence": [
+        ".generated/product-retrieval-replay-minilm-v3/run/replay-certificate.json",
+        ".generated/product-retrieval-replay-bge-v3/run/replay-certificate.json"
+      ],
+      "limitations": [
+        "Replay equality does not reproduce historical cold-start cost."
+      ]
+    },
+    {
+      "area": "cross_encoder_reranking",
+      "status": "executed_complete_controlled",
+      "cohort": "Controlled captured pages; MiniLM L6 and L12; three pool budgets and two pool builders.",
+      "result": "7141 unique candidate-reference pairs per model. Complete-record accuracy is 0 across the 36 recorded configurations for each model.",
+      "evidence": [
+        ".generated/product-retrieval-rerank-v1/preflight.json",
+        ".generated/product-retrieval-rerank-v1/minilm-l6-summary.json",
+        ".generated/product-retrieval-rerank-v1/minilm-l12-summary.json"
+      ],
+      "limitations": [
+        "Per-field ranking and pool recall are separate; controlled cases only."
+      ]
+    },
+    {
+      "area": "projection_policies",
+      "status": "executed_complete",
+      "cohort": "84240 rows; fixed seed-supported source projections; model inference calls: 0.",
+      "result": "Exact comparison: Xenova MiniLM L6, char_ngram_semantic_reference pool budget 5, global/controlled/all fields. Original value ranking returns 57/828 values and 363/828 nodes at top 1; projection-restricted ranking returns 293/828 values/nodes; node-rank-then-project returns 375/828 values and 363/828 nodes. Each policy has 12/12 absent-field false positives.",
+      "evidence": [
+        ".generated/product-retrieval-projection-v1/summary.json",
+        ".generated/product-retrieval-projection-v1/interpretation.md"
+      ],
+      "cost": {
+        "elapsed_seconds": 14.871892565,
+        "model_inference_calls": 0,
+        "projection_reads": 3199,
+        "extra_projection_reads": 319
+      },
+      "limitations": [
+        "Source-projected value wins are not DOM coordinate wins.",
+        "Projection reads use seed-supported hints and are counted separately.",
+        "Tie handling differs from the earlier reranker; compare only within this campaign."
+      ]
+    },
+    {
+      "area": "native_contract_schemas",
+      "status": "executed_complete_installed_sdk_only",
+      "cohort": "Core required {id,name,price} and six required {id,name,price,color,material,stock} flat schemas over the 60 controlled cases.",
+      "result": "11400 unique adapter calls; 23760 pre-schema record keys expand to 47520 record/schema links (the manifest field prepared_record_keys stores this schema-expanded total). Record-link statuses: 35948 native_validated, 1952 native_issues, 9620 source_binding_rejected. Selection statuses: 6492 native_validated, 642 native_issues, 4266 source_binding_rejected. Of the validated links, 33698/35948 are native_valid_but_wrong under the experiment's locator/owner/alias comparison, which includes root and optional fields; this is not a semantic value error rate. The installed SDK was Yosoi 0.4.0rc1 from yosoi-surface-evidence.",
+      "evidence": [
+        ".generated/product-retrieval-contract-validation-v1.manifest.json",
+        ".generated/product-retrieval-minilm-v3/native-validation.json",
+        ".generated/product-retrieval-minilm-v3/native-validation-binding.json"
+      ],
+      "limitations": [
+        "This was not a build of the current experiment branch.",
+        "The schemas were flat; arbitrary RuntimeContract recursion was not tested.",
+        "Gold labels were not supplied as invalidator inputs; they are used after validation for evaluation.",
+        "The native valid-but-wrong category includes coordinate/owner/alias mismatches, including roots and optional fields; do not interpret 33698/35948 as a semantic value error rate.",
+        "Contract acceptance is not candidate retrieval or visible-page accuracy."
+      ]
+    },
+    {
+      "area": "fresh_nonsemantic_minhash_and_trees",
+      "status": "executed_partial_coverage",
+      "cohort": "Twelve fresh, non-blind source-HTML pages; only the QScrape two-reference group.",
+      "result": "23520 rows; tree methods emitted 1008 partial events.",
+      "evidence": [
+        ".generated/product-retrieval-expanded-v1/summary.json"
+      ],
+      "limitations": [
+        "Other reference groups and full tree coverage remain unmeasured."
+      ]
+    },
+    {
+      "area": "expanded_foreign_semantic_wave",
+      "status": "executed_complete",
+      "cohort": "Twelve fresh pages across three templates, two encoders, 24 page/model shards, 5824 rows per shard.",
+      "result": "139776 raw rows, zero scorer failures. For global context semantic_reference, MiniLM has R@1 1/52 and R@5 7/52; BGE-small has R@1 0/52 and R@5 2/52. Each method row has 52 present, 28 absent, and 4 unavailable trials; both reference methods produce 28/28 absent-field false positives.",
+      "evidence": [
+        ".generated/product-retrieval-expanded-semantic-wave-v1/wave-complete.json",
+        ".generated/product-retrieval-expanded-semantic-aggregate-v1/summary.json"
+      ],
+      "limitations": [
+        "Rows repeat method/configuration trials on the same 12 pages.",
+        "References are foreign QScrape references; this does not establish blind generalization."
+      ]
+    },
+    {
+      "area": "witness_v2_qualified_evaluation",
+      "status": "executed_complete_source_review",
+      "cohort": "Alternate evaluation of the persisted expanded-wave predictions; 52 present-field rows per encoder/method row.",
+      "result": "MiniLM semantic_reference moves from strict to qualified R@1 1/52 to 3/52 and R@5 7/52 to 9/52. BGE-small moves from 0/52 to 2/52 at R@1 and 2/52 to 5/52 at R@5.",
+      "evidence": [
+        ".generated/product-retrieval-expanded-semantic-aggregate-v1/witness-v2-evaluation.json"
+      ],
+      "limitations": [
+        "The reviewer used retained source HTML and candidate context; review was not blind or independent human gold.",
+        "No model predictions/rankings were used; canonical labels and retrieval code were unchanged.",
+        "Qualified alternatives are a separate scoring contract, not a model improvement."
+      ]
+    },
+    {
+      "area": "fixed_channel_proposal_complementarity",
+      "status": "executed_complete_cached_analysis",
+      "cohort": "25 fixed channel orders \u00d7 5 budgets \u00d7 2 encoders; 24 foreign page/model shards and 12 matched same-site page/model shards.",
+      "result": "On foreign MiniLM, structure-only budget 5 proposes 16/52 present values; lexical+structure budget 10 proposes 18/52; structure+lexical+semantic_reference budget 15 yields 21/52 strict and 23/52 qualified proposal hits. On matched same-site, structure-only budget 5 and structure+lexical+semantic_reference budget 15 both propose all 26/26 present rows with no absent nonempty pools; adding semantic_query at budget 15 still gives 26/26 present but creates nonempty pools on all 14/14 absent rows (408 proposals versus 130 for structure-only). The 28 absent foreign trials receive nonempty pools in this proposal-union analysis.",
+      "evidence": [
+        ".generated/product-retrieval-complementarity-foreign-v1/summary.json",
+        ".generated/product-retrieval-complementarity-same-site-v1/summary.json"
+      ],
+      "cost": {
+        "foreign_analysis_cpu_seconds": 2.019489488,
+        "same_site_analysis_cpu_seconds": 1.055384864,
+        "new_model_inference_calls": 0
+      },
+      "limitations": [
+        "This is proposal recall at a candidate budget, not accepted-value accuracy or discovery/Surface benefit.",
+        "All channel orders are retained; no order was selected using gold.",
+        "Nonempty pools on absent fields expose a false-positive/abstention issue."
+      ]
+    },
+    {
+      "area": "same_site_reference_contrast",
+      "status": "executed_complete_matched_targets",
+      "cohort": "Same six target pages per arm, 69,888 rows per arm, 12 shards per arm, two encoders. The 26 present rows include six root trials; there are 14 absent rows.",
+      "result": "For shared structural_jaccard, same-site R@1/R@5 is 26/26 and 26/26 versus foreign 2/26 and 8/26; absent false positives are 0/14 versus 14/14. MiniLM semantic_reference: same-site 13/26 and 22/26 versus foreign 0/26 and 4/26. BGE-small semantic_reference: same-site 8/26 and 18/26 versus foreign 0/26 and 1/26. Semantic-reference absent false positives are 0/14 versus 14/14.",
+      "evidence": [
+        ".generated/product-retrieval-same-site-v1/target-plan.json",
+        ".generated/product-retrieval-same-site-v1/same-site-aggregate/summary.json",
+        ".generated/product-retrieval-same-site-v1/foreign-aggregate/summary.json",
+        ".generated/product-retrieval-same-site-v1/structural-tie-audit.json"
+      ],
+      "incomplete_tree_scores": {
+        "same_site_budget_exhausted": 16,
+        "foreign": 0
+      },
+      "limitations": [
+        "References are manually supplied; one template per host confounds host and template.",
+        "The same-site aggregate's 16 incomplete tree scores are budget_exhausted outcomes, not scorer exceptions; selected structural and semantic-reference rows are complete.",
+        "Eighteen of 26 audited top decisions have zero score margin, so deterministic ties matter."
+      ]
+    },
+    {
+      "area": "scaling_nested_optional_and_multilingual",
+      "status": "executed_completed_with_method_limits",
+      "cohort": "Seventeen one-axis synthetic depth, width, and attribute-count cases.",
+      "result": "10 fully measured, 1 with unavailable method, 5 budget/truncation-limited, 1 budget-rejected; 2.919659226 CPU seconds and 2.935498885 wall seconds. No model/browser calls.",
+      "evidence": [
+        ".generated/product-retrieval-scaling-v1/summary.json",
+        ".generated/product-retrieval-scaling-v1/report.json"
+      ],
+      "limitations": [
+        "One-axis sweeps only; no Cartesian stress matrix.",
+        "RuntimeContract recursion was not tested; synthetic bounds do not prove arbitrary nested optional/multilingual behavior.",
+        "Seven cases record method/budget limits; there were no execution stops."
+      ]
+    },
+    {
+      "area": "structured_product_metadata",
+      "status": "executed_complete_source_attempts_nonblind_operator",
+      "cohort": "Twelve retained source HTML pages: eight pages with Product/Offer candidates and four Books pages with no structured Product/Offer metadata.",
+      "result": "Eight Product and eight Offer candidates. Four microdata raw prices exactly match the manual display string; four JSON-LD offers match typed numeric amount plus explicit GBP. These are eight page-level witnesses across two distinct profiles, not eight DOM-location wins.",
+      "evidence": [
+        ".generated/product-retrieval-structured-v1/extraction.json",
+        ".generated/product-retrieval-structured-v1/evaluation.json",
+        ".generated/product-retrieval-structured-v1/report.md"
+      ],
+      "limitations": [
+        "All 12 source extraction attempts completed within the simple profile; this does not mean 12 complete product records.",
+        "The operator inspected sample labels before extraction; the extractor inputs themselves remain manifest plus raw HTML only.",
+        "The $-prefixed raw prices are not stripped to manufacture typed amounts; availability URIs are not stock quantity/prose.",
+        "Source HTML does not prove rendered visibility, freshness, or truth."
+      ]
+    },
+    {
+      "area": "global_embedding_preparation_cost",
+      "status": "executed_global_vector_artifact_preparation",
+      "cohort": "One 16264-string vector artifact per model; all page shards, same-site/foreign comparisons, and proposal analyses reused these artifacts. No per-wave or per-arm embedding inference ran.",
+      "result": "MiniLM L6 global ledger: 16264 inputs, 7576 cache hits, 8688 newly embedded, 414713 tokens, 272 calls, 212.052754 inference CPU seconds and 214.499504 inference wall seconds; total adapter wall 248.199929 seconds and 251.442075 seconds including artifact write. BGE-small v1.5: 16264 inputs, 3384 cache hits, 12880 newly embedded, 734433 tokens, 403 calls, 952.815044 inference CPU seconds and 958.519098 inference wall seconds; total adapter wall 1008.018482 seconds and 1011.595942 seconds including artifact write.",
+      "evidence": [
+        ".generated/product-retrieval-expanded-input/minilm-v1.json",
+        ".generated/product-retrieval-expanded-input/minilm-v1.batches.jsonl",
+        ".generated/product-retrieval-expanded-input/bge-small-v1.json",
+        ".generated/product-retrieval-expanded-input/bge-small-v1.batches.jsonl",
+        ".generated/product-retrieval-expanded-input/preflight-v3-resume.json",
+        ".generated/product-retrieval-expanded-semantic-wave-v1/minilm/books-obsession/summary.json",
+        ".generated/product-retrieval-expanded-semantic-wave-v1/bge-small/books-obsession/summary.json"
+      ],
+      "cost_unknowns": [
+        "All per-page shard summaries copy the same global preparation ledger; do not add them across shards.",
+        "MiniLM includes 4192 verified resumed vectors whose earlier computation cost is unmeasured; 3384 cached strings overlap the original set.",
+        "BGE's 3384 cache hits overlap the original set; cached vectors do not incur new inference in these runs.",
+        "Inference was local/offline with one CPU thread and $0 direct API charge.",
+        "Hardware, electricity, and operator costs are unknown."
+      ]
+    },
+    {
+      "area": "representative_expanded_shard_archive_replay",
+      "status": "executed_exact_recompute_one_shard",
+      "cohort": "One foreign MiniLM/books-obsession shard; 49 artifacts and 194202422 bytes restored from native Archive.",
+      "result": "Recomputed 5824 rows with expected quality digest ee30cd6a36d8b88a46c96c5341c53854a0ecd4e6711071dbe5dc406fdf5112df. No embedding inference or runner network operations; scoring_ns is the only excluded field.",
+      "evidence": [
+        ".generated/product-retrieval-expanded-archive-v1/artifact-index.json",
+        ".generated/product-retrieval-expanded-replay-v1/replay-certificate.json"
+      ],
+      "limitations": [
+        "Only one representative shard was archived and replayed; do not claim all expanded waves are archived."
+      ]
+    },
+    {
+      "area": "consolidated_v2_registry",
+      "status": "executed_complete_manifest",
+      "cohort": "51988 result rows referencing eleven source artifacts.",
+      "result": "69,144 overlapping table rows from 17 source artifacts, including reference-count and viewport-condition slices.",
+      "evidence": [
+        ".generated/product-retrieval-consolidated-v3/matrix-manifest.json",
+        ".generated/product-retrieval-consolidated-v3/results-matrix.csv"
+      ],
+      "limitations": [
+        "Source tables overlap; 51988 is not an independent sample size and rows must not be averaged across unlike cohorts."
+      ]
+    },
+    {
+      "area": "value_form_features",
+      "status": "executed_small_development_micro",
+      "cohort": "Four original QScrape targets, three cached scorers, projection hints.",
+      "result": "A small value-shape probe only.",
+      "evidence": [
+        ".generated/product-retrieval-joint-shape-micro-v1/micro-v1.json"
+      ],
+      "limitations": [
+        "No cross-site or universal claim."
+      ]
+    },
+    {
+      "area": "source_scope_policies",
+      "status": "executed_eligibility_only",
+      "cohort": "377 URL pairs across ten policies.",
+      "result": "PSL-pinned and IDNA behavior checked; eligibility only.",
+      "evidence": [
+        ".generated/product-retrieval-scopes/idna-v1/scope-eligibility-summary.json",
+        ".generated/product-retrieval-scopes/missing-idna-v1/scope-eligibility-summary.json"
+      ],
+      "limitations": [
+        "Eligibility is not retrieval quality."
+      ]
+    },
+    {
+      "area": "partial_proposal_and_locality_diagnostics",
+      "status": "partial_proposal_audit_executed_locality_implemented",
+      "cohort": null,
+      "result": "23,520 persisted fresh nonsemantic rows inspected into 1,692 groups with partial-proposal hit rates; locality extension remains unmeasured.",
+      "evidence": [
+        "experiments/product-retrieval/extensions/proposal_audit.py",
+        "experiments/product-retrieval/extensions/locality.py",
+        ".generated/product-retrieval-expanded-v1/partial-proposal-audit.json"
+      ],
+      "limitations": [
+        "Do not confuse useful proposals with complete validated outputs or actual Surface cost."
+      ]
+    },
+    {
+      "area": "full_expanded_reference_and_hybrid_matrix",
+      "status": "frozen_not_executed",
+      "cohort": "72 cases, 13 groups, 4 profiles planned.",
+      "result": null,
+      "evidence": [
+        ".generated/product-retrieval-expanded-v1/frozen.json"
+      ],
+      "limitations": [
+        "Remaining reference groups and semantic channels remain unmeasured."
+      ]
+    },
+    {
+      "area": "visual_layout_capture",
+      "status": "executed_capture_only",
+      "cohort": "Four source pages captured at 1920x1080 and 390x844, with desktop UA and mobile=false.",
+      "result": "Eight HTTP 200 captures have stable DOM, geometry/font sidecars and PNGs. Wide/narrow capture wall times 9.038/8.384 s; owned browsers reaped and temporary profiles removed.",
+      "evidence": [
+        ".generated/product-retrieval-layout-v1/summary.json",
+        ".generated/product-retrieval-layout-v1/producer.py",
+        ".generated/product-retrieval-layout-narrow-v1/summary.json"
+      ],
+      "limitations": [
+        "Capture completion is not universal subresource success; Books script and Web Scraper image/Fetch failures are recorded.",
+        "Viewport variation is not mobile-device certification.",
+        "One narrow stock element is present in DOM but visually occluded by a fixed footer.",
+        "New coordinates are source-bound; archived DOM coordinates were not reused."
+      ]
+    },
+    {
+      "area": "actual_discovery_surface_steps",
+      "status": "future_consumer",
+      "cohort": null,
+      "result": null,
+      "evidence": [],
+      "limitations": [
+        "Context/operation-budget proxies are not actual model-turn savings."
+      ]
+    },
+    {
+      "area": "integrated_code_checks",
+      "status": "passed_local",
+      "cohort": "Owner-reported integrated check on 2026-10-31.",
+      "result": "231 tests and 62 subtests passed; Ruff check passed and77files are formatted. Actual installed native SDK0.4.0rc1; no new native branch build.",
+      "evidence": [],
+      "limitations": [
+        "Software checks validate implementation, not retrieval quality or production acceptance."
+      ]
+    },
+    {
+      "area": "learned_html_encoders",
+      "status": "not_started",
+      "cohort": null,
+      "result": null,
+      "evidence": [],
+      "limitations": [
+        "Markup-aware learned encoders and screenshot embeddings remain unmeasured."
+      ]
+    },
+    {
+      "area": "exact_structural_tie_sensitivity",
+      "status": "executed_analytical_audit",
+      "cohort": "Six held-out same-site pages; 26 present trial rows including six roots. 42 full score vectors compared against 84 saved rows under two encoder tags; these are shared controls, not independent repeats.",
+      "result": {
+        "recorded_alias_rank1_hits": 26,
+        "present_trials": 26,
+        "expected_alias_rank1_hit_rate_uniform_ties": 0.6212454212454213,
+        "per_query_worst_alias_rank1_hits": 8,
+        "expected_alias_rank5_hit_rate_uniform_ties": 0.978021978021978,
+        "per_query_worst_alias_rank5_hits": 24
+      },
+      "evidence": [
+        ".generated/product-retrieval-same-site-ties-v1/summary.json",
+        ".generated/product-retrieval-same-site-ties-v1/score-groups.json",
+        ".generated/product-retrieval-same-site-ties-v1/producer.py"
+      ],
+      "limitations": [
+        "Only permutations within exact-score ties are varied; this is neither held-out accuracy nor confidence calibration.",
+        "Per-query worst/best bounds need not be realizable with one global candidate-ID ordering.",
+        "Producer and tests retained with measurement hashes before later format/bootstrap cleanup.",
+        "Retained scorer pass took 6.077 CPU / 6.119 wall seconds; earlier failed-attempt overhead was not aggregated."
+      ]
+    },
+    {
+      "area": "layout_feature_retrieval_and_viewport_shift",
+      "status": "executed_four_conditions",
+      "cohort": "Four source pages, two viewports, three field roles. 33 present/3 absent directed cross-template trials per condition; 11 present/1 absent same-page trials.",
+      "result": {
+        "rows_per_condition": 7680,
+        "total_current_rows": 30720,
+        "eligible_elements": {
+          "wide": 422,
+          "narrow": 348
+        },
+        "page_geometry_canonical_hits_at_5": {
+          "wide-to-wide": 23,
+          "wide-to-narrow": 1,
+          "narrow-to-wide": 2,
+          "narrow-to-narrow": 22
+        },
+        "parent_typography_canonical_hits_at_5": {
+          "wide-to-wide": 12,
+          "wide-to-narrow": 13,
+          "narrow-to-wide": 12,
+          "narrow-to-narrow": 13
+        },
+        "structural_canonical_hits_at_5": 10,
+        "cross_template_present_denominator": 33,
+        "page_geometry_same_page_width_shift_hits_at_5": 1,
+        "same_page_present_denominator": 11
+      },
+      "evidence": [
+        ".generated/product-retrieval-layout-wide-to-wide-v1/summary.json",
+        ".generated/product-retrieval-layout-wide-to-narrow-v1/summary.json",
+        ".generated/product-retrieval-layout-narrow-to-wide-v1/summary.json",
+        ".generated/product-retrieval-layout-narrow-to-narrow-v1/summary.json",
+        ".generated/product-retrieval-layout-wide-to-wide-v1/replay-certificate.json"
+      ],
+      "limitations": [
+        "Four non-blind, previously inspected shop/demo pages; not independent human gold or 33 independent products.",
+        "DOM node localization is distinct from visibility, value projection, acceptance and Surface steps.",
+        "No weights were fitted. All fixed layout profiles and controls retained; exploratory maxima are not a deployed choice.",
+        "Source-role alternatives and canonical nodes remain separate metrics.",
+        "Each analysis took roughly 0.98\u20131.21 CPU seconds; capture, feature preparation and development overhead separate.",
+        "Different IDs imply different templates only in this fixed four-page cohort; this is not template classification.",
+        "An independent read-only audit rebuilt all 960 summary groups per condition with no mismatches."
+      ]
+    },
+    {
+      "area": "matched_reference_count",
+      "status": "executed_one_vs_two_references",
+      "cohort": "Same three held-out source-HTML targets, nested one/two same-site seed sets, MiniLM vectors reused.",
+      "result": {
+        "raw_rows_per_condition": 17472,
+        "matched_metric_groups": 6656,
+        "context_global_present": 13,
+        "context_global_absent": 7,
+        "structural_hit1_one_two": [
+          13,
+          13
+        ],
+        "char_reference_hit5_one_two": [
+          13,
+          12
+        ],
+        "semantic_reference_hit5_one_two": [
+          11,
+          10
+        ],
+        "new_shard_wall_seconds_sum": 49.668,
+        "reused_two_reference_wall_seconds_sum": 51.561
+      },
+      "evidence": [
+        ".generated/product-retrieval-reference-count-v1/run-plan.json",
+        ".generated/product-retrieval-reference-count-v1/matched-comparison.json"
+      ],
+      "limitations": [
+        "Previously inspected, manually supplied templates; no optimal reference count established.",
+        "Four budget-exhausted tree outcomes for two references versus none for one; partial tree results remain separately classified.",
+        "Timing compares different run occasions, not paired latency repetitions.",
+        "No new inference. Absence behavior partly follows empty seed fields."
+      ]
+    }
+  ],
+  "handoff": "HANDOFF.md",
+  "disposition": "Deferred research on separate draft PR178; no immediate SDK implementation or further experiments."
+}
