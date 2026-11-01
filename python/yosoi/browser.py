@@ -27,6 +27,11 @@ from pydantic import (
 from . import _native
 from ._models import ImmutableModel, Model
 from .cancellation import CancellationToken
+from .downloads import (
+    DEFAULT_DOWNLOAD_TIMEOUT_MS,
+    DownloadCapture,
+    DownloadOptions,
+)
 from .locators import LocateOutcome, Plan
 from .policy import BrowserConfig as BrowserConfig
 from .policy import BrowserEngine as BrowserEngine
@@ -38,6 +43,8 @@ if TYPE_CHECKING:
 
 BrowserError = _native.BrowserError
 """Native browser acquisition, execution, policy, or cleanup exception."""
+DownloadError = _native.DownloadError
+"""Native download bounds, transfer, cancellation, or provider cleanup failure."""
 
 U64 = Annotated[int, Field(strict=True, ge=0, le=(1 << 64) - 1)]
 """Strict integer from 0 through 2**64 - 1 for unsigned browser values.
@@ -81,7 +88,14 @@ MAX_UNTIL_REPORT_BYTES = 1_048_576
 BrowserMode = Literal["headless", "headful"]
 """Native browser display mode: headless or headful."""
 ActionKind = Literal[
-    "navigate", "click", "enter_text", "screenshot", "wait", "assert", "evaluate"
+    "navigate",
+    "click",
+    "enter_text",
+    "screenshot",
+    "wait",
+    "assert",
+    "evaluate",
+    "download",
 ]
 """Session policy action names used to allow or reject browser operations."""
 OperationStatus = Literal["observed", "rejected", "unknown"]
@@ -1434,6 +1448,7 @@ def _native_session_allowed_actions() -> tuple[ActionKind, ...]:
         "Wait": "wait",
         "Assert": "assert",
         "Evaluate": "evaluate",
+        "Download": "download",
     }
     return TypeAdapter(tuple[ActionKind, ...]).validate_python(
         tuple(python_names.get(name, name) for name in native_names)
@@ -1550,6 +1565,7 @@ class SessionPolicy(Model):
                 "Wait": "wait",
                 "Assert": "assert",
                 "Evaluate": "evaluate",
+                "Download": "download",
             }
             actions = merged.get("allowed_actions")
             if isinstance(actions, (list, tuple)):
@@ -1572,6 +1588,7 @@ class SessionPolicy(Model):
             "wait": "Wait",
             "assert": "Assert",
             "evaluate": "Evaluate",
+            "download": "Download",
         }
         return [rust_names[action] for action in value]
 
@@ -2237,7 +2254,7 @@ async def action(
     return await _invoke_flow(recipe, policy, lease=None, cancellation=cancellation)
 
 
-async def _settle_cleanup_task(task: asyncio.Task[None]) -> BaseException | None:
+async def _settle_cleanup_task[T](task: asyncio.Task[T]) -> BaseException | None:
     """Shield owner cleanup until settlement and return any caller cancellation."""
     try:
         await asyncio.shield(task)
@@ -2588,6 +2605,41 @@ class Work:
 
         return RequestResponse._from_native(response)
 
+    def expect_download(
+        self,
+        *,
+        max_bytes: int = 64 * 1024 * 1024,
+        timeout_ms: int = DEFAULT_DOWNLOAD_TIMEOUT_MS,
+    ) -> DownloadCapture:
+        """Prepare a one-use download expectation around the caller's existing action.
+
+        Args:
+            max_bytes: Maximum file size in bytes, defaulting to 64 MiB and limited to
+                the 256 MiB SDK hard maximum.
+            timeout_ms: Maximum wait for completion, in milliseconds.
+
+        Returns:
+            An async context manager that arms capture before entry returns. Run the
+            existing click, navigation, or Flow action explicitly inside the block,
+            then await its ``wait`` method. Leaving without consuming the result
+            cancels capture and awaits provider cleanup.
+
+        Raises:
+            pydantic.ValidationError: Bounds are outside supported ranges.
+            DownloadError: The native engine rejects the expectation or cannot arm it.
+        """
+        options = DownloadOptions(max_bytes=max_bytes, timeout_ms=timeout_ms)
+        return DownloadCapture(self, options)
+
+    async def _expect_download(self, options: DownloadOptions) -> Any:
+        """Arm native capture while serializing setup against Work operations."""
+        async with self._operation_lock:
+            await self._acquire()
+            handle = self._handle
+            if handle is None:
+                raise BrowserError("browser Work lease is unavailable")
+            return await handle.expect_download(options.max_bytes, options.timeout_ms)
+
     async def _invoke_native(
         self,
         flow_json: str,
@@ -2731,6 +2783,9 @@ __all__ = [
     "WaitExpectation",
     "WaitUntil",
     "Work",
+    "DownloadCapture",
+    "DownloadOptions",
+    "DownloadError",
     "all_of",
     "action",
     "assert_all",

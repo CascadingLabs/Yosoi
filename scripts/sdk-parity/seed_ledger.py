@@ -120,6 +120,7 @@ ERROR_TARGETS = {
     "ContractLocatorError": "yosoi.errors.ContractError",
     "ContractSchemaError": "yosoi.errors.ContractError",
     "DocumentError": "yosoi.errors.DocumentError",
+    "FileDocumentError": "yosoi.errors.FileDocumentError",
     "DocumentProfileError": "yosoi.errors.DocumentError",
     "LocatorError": "yosoi.errors.LocatorError",
     "MapError": "yosoi.errors.MapError",
@@ -150,6 +151,19 @@ VALUE_TARGETS = {
     "yosoi::DocumentId": "yosoi.scalars.DocumentId",
     "yosoi::DocumentProfile": "yosoi.documents.DocumentProfile",
     "yosoi::DocumentProfileError": "yosoi.errors.DocumentError",
+    "yosoi::documents::FileDocument": "yosoi.documents.FileDocument",
+    "yosoi::documents::ImageDocument": "yosoi.documents.ImageDocument",
+    "yosoi::documents::VideoDocument": "yosoi.documents.VideoDocument",
+    "yosoi::documents::AudioDocument": "yosoi.documents.AudioDocument",
+    "yosoi::documents::BinaryDocument": "yosoi.documents.BinaryDocument",
+    "yosoi::documents::FileLimits": "yosoi.documents.FileLimits",
+    "yosoi::documents::FileMetadata": "yosoi.documents.FileMetadata",
+    "yosoi::documents::FileDocumentError": "yosoi.errors.FileDocumentError",
+    "yosoi::documents::DEFAULT_FILE_MAX_BYTES": "yosoi.documents.FileLimits.max_bytes",
+    "yosoi::documents::MAX_FILE_BYTES": "yosoi.documents.FileLimits.max_bytes",
+    "yosoi::documents::MAX_SOURCE_BYTES": "yosoi.documents.FileMetadata.source",
+    "yosoi::documents::file_from_bytes": "yosoi.documents.file_from_bytes",
+    "yosoi::documents::read_file": "yosoi.documents.read_file",
     "yosoi::EffectivePolicyIdentity": "yosoi.policy.PolicyIdentity",
     "yosoi::LocateOutcome": "yosoi.outcomes.LocateOutcome",
     "yosoi::PolicyError": "yosoi.errors.PolicyError",
@@ -271,6 +285,59 @@ ITEM_MAPPING_RATIONALES = {
     "yosoi::locators::NamedOutput": "Rust NamedOutput is the named projected output value; Python Output carries the validated id and Locator.",
     "yosoi::locators::OutputPlan": "Rust OutputPlan maps to the Python Locator model; Rust compiles the same query, projection, captures, and optional region into Plan.",
     "yosoi::locators::RegionPlan": "Rust RegionPlan maps to the Python Region model, which carries a native-validated id and query and supports find().",
+    "yosoi::documents::FileDocument": (
+        "Python exposes the Rust media enum as the union of concrete immutable "
+        "ImageDocument, VideoDocument, AudioDocument, and BinaryDocument classes; "
+        "native Rust performs classification."
+    ),
+    "yosoi::documents::ImageDocument": (
+        "Python ImageDocument retains the same exact image bytes and native "
+        "signature-checked metadata."
+    ),
+    "yosoi::documents::VideoDocument": (
+        "Python VideoDocument retains the same exact video bytes and native "
+        "signature-checked metadata."
+    ),
+    "yosoi::documents::AudioDocument": (
+        "Python AudioDocument retains the same exact audio bytes and native "
+        "signature-checked metadata."
+    ),
+    "yosoi::documents::BinaryDocument": (
+        "Python BinaryDocument retains opaque bytes even when a media signature "
+        "is recognized."
+    ),
+    "yosoi::documents::FileLimits": (
+        "Python FileLimits uses byte units with the same 64 MiB default and "
+        "256 MiB hard cap."
+    ),
+    "yosoi::documents::FileMetadata": (
+        "Python FileMetadata keeps declared MIME, detected MIME, exact source "
+        "provenance, and computed digest separate."
+    ),
+    "yosoi::documents::FileDocumentError": (
+        "Python raises the dedicated native FileDocumentError and "
+        "rust_error_details retains Rust variants and payload fields."
+    ),
+    "yosoi::documents::DEFAULT_FILE_MAX_BYTES": (
+        "Python FileLimits.max_bytes exposes the same 64 MiB default through its "
+        "model-field default."
+    ),
+    "yosoi::documents::MAX_FILE_BYTES": (
+        "Python FileLimits.max_bytes enforces the same 256 MiB hard maximum while "
+        "Rust revalidates it at operation time."
+    ),
+    "yosoi::documents::MAX_SOURCE_BYTES": (
+        "Python FileMetadata.source uses the same 1 MiB source bound; Rust checks "
+        "UTF-8 byte length and the public constant is re-exported for callers."
+    ),
+    "yosoi::documents::file_from_bytes": (
+        "The Python factory passes exact payload bytes, metadata, and byte limits "
+        "to the same Rust signature classifier; it performs no media decoding."
+    ),
+    "yosoi::documents::read_file": (
+        "The Python async factory delegates bounded regular-file reads to Rust and "
+        "retains only the basename as filename metadata."
+    ),
 }
 
 # These Default counterparts are exercised by independent Rust Default versus
@@ -295,6 +362,8 @@ DEFAULT_EQUIVALENTS = {
     "yosoi::policy::EventLimit": "yosoi.policy.EventLimit.default",
     "yosoi::policy::MaximumElapsed": "yosoi.policy.MaximumElapsed.default",
     "yosoi::policy::RedirectHopLimit": "yosoi.policy.RedirectHopLimit.default",
+    "yosoi::documents::FileLimits": "yosoi.documents.FileLimits",
+    "yosoi::documents::FileMetadata": "yosoi.documents.FileMetadata",
 }
 
 ITEM_SEMANTIC_EQUIVALENTS = {
@@ -306,6 +375,58 @@ ITEM_SEMANTIC_EQUIVALENTS = {
     "yosoi::locators::NamedOutput": "Python Output(id, locator) represents the Rust named output.",
     "yosoi::locators::OutputPlan": "Python Locator is the Rust output selection before Plan compilation.",
     "yosoi::locators::RegionPlan": "Python Region represents the Rust region id/query and find operation.",
+    "yosoi::documents::FileDocument": (
+        "Signature classification selects one concrete Python union member, with "
+        "all variants retaining the same opaque bytes and provenance semantics "
+        "as the Rust enum."
+    ),
+    "yosoi::documents::ImageDocument": (
+        "The Python concrete class is backed by the same Rust image document; "
+        "signatures are checked without decoding pixels."
+    ),
+    "yosoi::documents::VideoDocument": (
+        "The Python concrete class is backed by the same Rust video document; "
+        "signatures are checked without codec or frame decoding."
+    ),
+    "yosoi::documents::AudioDocument": (
+        "The Python concrete class is backed by the same Rust audio document; "
+        "signatures are checked without decoding tracks."
+    ),
+    "yosoi::documents::BinaryDocument": (
+        "The Python concrete class retains arbitrary exact bytes; detected media "
+        "metadata remains separate from the caller-selected binary family."
+    ),
+    "yosoi::documents::FileLimits": (
+        "Python and Rust limits count payload bytes and enforce the same default "
+        "and hard maximum."
+    ),
+    "yosoi::documents::FileMetadata": (
+        "Declared and detected media types remain distinct. Rust computes the "
+        "payload digest, and source provenance preserves the exact value within "
+        "its UTF-8 bound."
+    ),
+    "yosoi::documents::FileDocumentError": (
+        "Both interfaces retain typed invalid-size, type-mismatch, metadata, "
+        "source, and unavailable-body failures."
+    ),
+    "yosoi::documents::DEFAULT_FILE_MAX_BYTES": (
+        "Rust's 64 MiB default equals the default value of Python FileLimits.max_bytes."
+    ),
+    "yosoi::documents::MAX_FILE_BYTES": (
+        "Rust and Python FileLimits enforce the same 256 MiB hard cap."
+    ),
+    "yosoi::documents::MAX_SOURCE_BYTES": (
+        "Rust checks the UTF-8 byte size of source metadata; Python exposes the "
+        "same 1 MiB MAX_SOURCE_BYTES value and applies it to FileMetadata.source."
+    ),
+    "yosoi::documents::file_from_bytes": (
+        "Both factories retain exact bytes and classify by signature without "
+        "invoking a decoder; unknown and non-media bytes remain BinaryDocument."
+    ),
+    "yosoi::documents::read_file": (
+        "Both operations perform bounded regular-file reads through Rust, classify "
+        "the retained bytes, and keep only the basename as filename metadata."
+    ),
 }
 
 MEMBER_TARGETS = {
@@ -324,6 +445,7 @@ MEMBER_TARGETS = {
     "yosoi::request::Attempt::status": "yosoi.request.Attempt.http_status",
     "yosoi::request::Attempt::body_bytes": "yosoi.request.Attempt.body",
     "yosoi::request::Attempt::content_type": "yosoi.request.Attempt.content_type",
+    "yosoi::request::Attempt::file_document": "yosoi.request.Attempt.file_document",
     "yosoi::contracts::Contract::schema": "yosoi.contracts.Contract.contract_schema",
     "yosoi::contracts::CandidateField::id": "yosoi.contracts.CandidateField.field_id",
     "yosoi::contracts::CandidateField::len": "yosoi.contracts.CandidateField.__len__",
@@ -365,6 +487,31 @@ MEMBER_TARGETS = {
     "yosoi::contracts::RuntimeContract::extract_with_limits": "yosoi.contracts.RuntimeContract.extract",
     "yosoi::contracts::RuntimeContractOutcome::to_archived": "yosoi.contracts.RuntimeContractOutcome.to_archived",
     "yosoi::request::WebTarget::as_str": "yosoi.request.WebTarget.as_str",
+    "yosoi::documents::FileDocument::id": "yosoi.documents.FileDocument.id",
+    "yosoi::documents::FileDocument::metadata": "yosoi.documents.FileDocument.metadata",
+    "yosoi::documents::FileDocument::bytes": "yosoi.documents.FileDocument.bytes",
+    "yosoi::documents::FileDocument::byte_len": "yosoi.documents.FileDocument.byte_len",
+    "yosoi::documents::FileDocument::sha256": "yosoi.documents.FileDocument.sha256",
+    "yosoi::documents::FileLimits::max_bytes": "yosoi.documents.FileLimits.max_bytes",
+    "yosoi::documents::FileMetadata::filename": "yosoi.documents.FileMetadata.filename",
+    "yosoi::documents::FileMetadata::declared_media_type": (
+        "yosoi.documents.FileMetadata.declared_media_type"
+    ),
+    "yosoi::documents::FileMetadata::detected_media_type": (
+        "yosoi.documents.FileMetadata.detected_media_type"
+    ),
+    "yosoi::documents::FileMetadata::source": "yosoi.documents.FileMetadata.source",
+    "yosoi::documents::FileMetadata::capture_id": (
+        "yosoi.documents.FileMetadata.capture_id"
+    ),
+    "yosoi::documents::FileMetadata::session_id": (
+        "yosoi.documents.FileMetadata.session_id"
+    ),
+    "yosoi::documents::FileMetadata::tab_id": "yosoi.documents.FileMetadata.tab_id",
+    "yosoi::documents::FileMetadata::download_id": (
+        "yosoi.documents.FileMetadata.download_id"
+    ),
+    "yosoi::documents::FileMetadata::sha256": "yosoi.documents.FileMetadata.sha256",
     "yosoi::locators::accessibility_text": "yosoi.locators.accessibility_text",
     "yosoi::locators::accessible_name": "yosoi.locators.accessible_name",
     "yosoi::locators::css": "yosoi.locators.css",
@@ -377,6 +524,169 @@ MEMBER_TARGETS = {
     "yosoi::locators::tree_text_contains": "yosoi.locators.tree_text_contains",
     "yosoi::locators::xpath": "yosoi.locators.xpath",
 }
+
+for _media_document_type in (
+    "ImageDocument",
+    "VideoDocument",
+    "AudioDocument",
+    "BinaryDocument",
+):
+    for _media_document_member in ("id", "metadata", "bytes", "byte_len", "sha256"):
+        MEMBER_TARGETS[
+            f"yosoi::documents::{_media_document_type}::{_media_document_member}"
+        ] = f"yosoi.documents.{_media_document_type}.{_media_document_member}"
+    for _constructor in (
+        "from_bytes",
+        "from_bytes_with_limits",
+        "from_bytes_with_metadata",
+    ):
+        MEMBER_TARGETS[f"yosoi::documents::{_media_document_type}::{_constructor}"] = (
+            f"yosoi.documents.{_media_document_type}.from_bytes"
+        )
+
+FILE_DOCUMENT_VARIANT_TARGETS = {
+    "yosoi::documents::FileDocument": {
+        "Image": "yosoi.ImageDocument",
+        "Video": "yosoi.VideoDocument",
+        "Audio": "yosoi.AudioDocument",
+        "Binary": "yosoi.BinaryDocument",
+    }
+}
+
+FILE_DOCUMENT_ERROR_VARIANT_FIELDS = {
+    "TooLarge": {
+        "maximum": "details.maximum",
+        "observed": "details.observed",
+    },
+    "LimitExceedsHardMaximum": {
+        "configured": "details.configured",
+        "maximum": "details.maximum",
+    },
+    "MetadataTooLong": {
+        "field": "details.field",
+        "maximum": "details.maximum",
+        "observed": "details.observed",
+    },
+    "TypeMismatch": {
+        "expected": "details.expected",
+        "detected": "details.detected",
+    },
+    "BodyUnavailable": {},
+    "ArchivedMetadataMismatch": {},
+    "NotRegularFile": {"0": "details.path"},
+    "Document": {
+        "0": "details.message",
+    },
+    "Io": {
+        "path": "details.path",
+        "source": "source_chain.[*]",
+    },
+}
+
+FILE_DOCUMENT_ERROR_SOURCE_FIELDS = {
+    "Document": {
+        "0": "source_chain.[*]",
+    }
+}
+
+FILE_METADATA_BUILDER_FIELDS = {
+    "with_filename": "filename",
+    "with_declared_media_type": "declared_media_type",
+    "with_source": "source",
+    "with_capture_id": "capture_id",
+    "with_session_id": "session_id",
+    "with_tab_id": "tab_id",
+    "with_download_id": "download_id",
+}
+
+MEMBER_MAPPING_RATIONALES = {
+    "yosoi::Archive::write": (
+        "Rust Archive writes each sealed value through its typed ArchiveValue; "
+        "Python dispatches media subclasses at runtime and returns the exact "
+        "typed reference."
+    ),
+    "yosoi::Archive::read": (
+        "Rust Archive reads through the supplied typed ArchiveReference; Python "
+        "dispatches typed media references and restores the matching concrete class."
+    ),
+    "yosoi::request::Attempt::file_document": (
+        "Python converts only this Attempt's complete retained Direct HTTP body "
+        "through the same Rust media factory; no second request is issued."
+    ),
+    **{
+        f"yosoi::documents::FileMetadata::{builder}": (
+            f"Rust FileMetadata::{builder} returns immutable metadata with the "
+            f"{field} value set; Python's immutable FileMetadata constructor exposes "
+            "that same field in its authoring model."
+        )
+        for builder, field in FILE_METADATA_BUILDER_FIELDS.items()
+    },
+}
+
+MEMBER_SEMANTIC_EQUIVALENTS = {
+    "yosoi::Archive::write": (
+        "Both write paths retain the concrete document type, exact bytes, and "
+        "metadata; "
+        "the Python overloads return ImageDocumentArchiveRef, VideoDocumentArchiveRef, "
+        "AudioDocumentArchiveRef, or BinaryDocumentArchiveRef for media values."
+    ),
+    "yosoi::Archive::read": (
+        "Both read paths use typed references and restore the corresponding concrete "
+        "file-document class with the same identity, metadata, and payload."
+    ),
+    "yosoi::request::Attempt::file_document": (
+        "Both conversions require a complete retained HTTP body, reuse the original "
+        "native payload, retain status and declared MIME separately, and raise a "
+        "typed BodyUnavailable failure for incomplete or omitted bytes."
+    ),
+    "yosoi::documents::FileDocument::bytes": (
+        "Rust lends the exact byte slice; Python returns a bytes copy from the same "
+        "Rust-owned immutable payload."
+    ),
+    **{
+        f"yosoi::documents::{media_type}::bytes": (
+            "Rust lends the exact media payload bytes; Python returns a bytes copy "
+            "from the same Rust-owned immutable payload."
+        )
+        for media_type in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        )
+    },
+    "yosoi::documents::FileLimits::max_bytes": (
+        "Both accessors expose the configured payload limit in bytes."
+    ),
+    "yosoi::documents::FileMetadata::sha256": (
+        "Both metadata values expose no digest before payload construction and the "
+        "canonical SHA-256 hex string after construction."
+    ),
+    **{
+        f"yosoi::documents::FileMetadata::{builder}": (
+            f"The Rust builder value and Python FileMetadata.{field} field produce "
+            "the same retained metadata value; Rust enforces UTF-8 byte limits "
+            "before a file document retains it."
+        )
+        for builder, field in FILE_METADATA_BUILDER_FIELDS.items()
+    },
+}
+
+REFRESH_EXISTING_MEMBER_MAPPINGS = {
+    "yosoi::Archive::read",
+    "yosoi::Archive::write",
+}
+
+for _media_type in (
+    "ImageDocument",
+    "VideoDocument",
+    "AudioDocument",
+    "BinaryDocument",
+):
+    for _member in ("id", "metadata", "bytes", "byte_len", "sha256"):
+        MEMBER_TARGETS[f"yosoi::documents::{_media_type}::{_member}"] = (
+            f"yosoi.documents.{_media_type}.{_member}"
+        )
 
 VARIANT_PARENT_TARGETS = {
     "yosoi::Continuation": {
@@ -554,6 +864,198 @@ LANGUAGE_SPECIFIC_ITEMS = {
     },
 }
 
+REVIEWED_MEDIA_TRAIT_DISPOSITIONS: dict[
+    tuple[str, str], dict[str, str]
+] = {}
+for _media_type in (
+    "AudioDocument",
+    "BinaryDocument",
+    "ImageDocument",
+    "VideoDocument",
+):
+    _media_target = f"yosoi.documents.{_media_type}"
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::{_media_type}::eq", "PartialEq")
+    ] = {
+        "pythonTarget": _media_target,
+        "pythonEquivalent": (
+            "Python == delegates to the native concrete-value comparison, which "
+            "compares family, id, metadata, and exact bytes while ignoring shared "
+            "handles and acquisition limits."
+        ),
+        "rationale": (
+            "Rust PartialEq and Python equality use the same Rust-backed value "
+            "comparison for this concrete document; acquisition limits and handle "
+            "identity do not affect equality."
+        ),
+    }
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::{_media_type}::fmt", "Debug")
+    ] = {
+        "pythonTarget": _media_target,
+        "pythonEquivalent": (
+            "Python repr(value) is the diagnostic view; callers use explicit "
+            "properties for id, metadata, byte length, digest, and payload."
+        ),
+        "rationale": (
+            "Rust Debug formatter flags and wrapper syntax have no Python protocol "
+            "equivalent. The immutable Python model repr is diagnostic, and exact "
+            "formatter text is not part of parity."
+        ),
+    }
+
+REVIEWED_MEDIA_TRAIT_DISPOSITIONS.update(
+    {
+        ("yosoi::documents::FileDocument::clone", "Clone"): {
+            "pythonTarget": "yosoi.documents.FileDocument",
+            "pythonEquivalent": (
+                "Clone the concrete Python document with value.clone(); it keeps "
+                "the same concrete family, id, metadata, and bytes while sharing "
+                "the immutable native payload handle."
+            ),
+            "rationale": (
+                "Rust FileDocument::clone preserves its concrete variant and the "
+                "same immutable inner value. Python exposes clone on each concrete "
+                "file model, not on the union alias."
+            ),
+        },
+        ("yosoi::documents::FileDocument::eq", "PartialEq"): {
+            "pythonTarget": "yosoi.documents.FileDocument",
+            "pythonEquivalent": (
+                "Python == on the concrete union member delegates to native value "
+                "equality and returns false for different document families."
+            ),
+            "rationale": (
+                "Rust FileDocument equality compares the concrete variant and "
+                "retained value. Python returns the concrete immutable class, whose "
+                "equality uses the same native value comparison."
+            ),
+        },
+        ("yosoi::documents::FileDocument::fmt", "Debug"): {
+            "pythonTarget": "yosoi.documents.FileDocument",
+            "pythonEquivalent": (
+                "Python repr(value) identifies the concrete model; explicit model "
+                "properties expose its family and retained values."
+            ),
+            "rationale": (
+                "Rust Debug formats the enum variant while Python exposes the "
+                "corresponding concrete class. The Python repr is diagnostic; exact "
+                "enum formatter text is not part of parity."
+            ),
+        },
+        ("yosoi::documents::FileDocumentError::fmt", "Display"): {
+            "pythonTarget": "yosoi.errors.FileDocumentError",
+            "pythonEquivalent": (
+                "str(error) returns the native user-facing error message; "
+                "rust_error_details(error) exposes its Rust variant and payload."
+            ),
+            "rationale": (
+                "Rust Display and Python exception strings expose the same native "
+                "error message. Python exception formatting punctuation is not a "
+                "Rust formatter protocol."
+            ),
+        },
+        ("yosoi::documents::FileDocumentError::fmt", "Debug"): {
+            "pythonTarget": "yosoi.errors.FileDocumentError",
+            "pythonEquivalent": (
+                "Python repr(error) is diagnostic; rust_error_details(error) "
+                "provides the Rust variant, structured payload, and source chain."
+            ),
+            "rationale": (
+                "Rust Debug enum syntax differs from Python exception repr. The "
+                "Python exception and rust_error_details preserve diagnostic "
+                "identity without claiming textual formatter equality."
+            ),
+        },
+        ("yosoi::documents::FileDocumentError::from", "From"): {
+            "pythonTarget": "yosoi.errors.FileDocumentError",
+            "pythonEquivalent": (
+                "When a DocumentError reaches file conversion, Python raises "
+                "FileDocumentError with variant Document and the original source "
+                "message in rust_error_details(error).source_chain."
+            ),
+            "rationale": (
+                "Rust From<DocumentError> wraps the error in FileDocumentError::Document. "
+                "The native Python adapter preserves that variant and source chain; "
+                "Python exposes no enum constructor or From trait API."
+            ),
+        },
+        ("yosoi::documents::FileDocumentError::source", "Error"): {
+            "pythonTarget": "yosoi.errors.FileDocumentError",
+            "pythonEquivalent": (
+                "rust_error_details(error).source_chain exposes nested Rust source "
+                "display messages from the Python exception."
+            ),
+            "rationale": (
+                "Rust Error::source participates in Rust error chaining. The Python "
+                "exception keeps the native source chain available through "
+                "rust_error_details rather than a source() trait method."
+            ),
+        },
+    }
+)
+
+for _trait in ("Serialize", "Deserialize"):
+    _verb = "serializes" if _trait == "Serialize" else "deserializes"
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::FileLimits::{_trait.lower()}", _trait)
+    ] = {
+        "pythonTarget": "yosoi.documents.FileLimits",
+        "pythonEquivalent": (
+            "Python model_dump_json/model_validate_json expose the supported JSON "
+            "model boundary; native operations enforce the authoritative byte limits."
+        ),
+        "rationale": (
+            f"Rust serde {_verb} the FileLimits value at the JSON boundary. Python "
+            "uses ordinary Pydantic JSON serialization/validation and may reject "
+            "invalid bounds earlier; native operations remain authoritative."
+        ),
+    }
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::FileMetadata::{_trait.lower()}", _trait)
+    ] = {
+        "pythonTarget": "yosoi.documents.FileMetadata",
+        "pythonEquivalent": (
+            "Python model_dump_json/model_validate_json expose the supported JSON "
+            "metadata model; native operations enforce the authoritative UTF-8 bounds."
+        ),
+        "rationale": (
+            f"Rust serde { _verb } FileMetadata at the JSON boundary. Python uses "
+            "ordinary Pydantic JSON serialization/validation and may reject invalid "
+            "metadata earlier; native operations remain authoritative."
+        ),
+    }
+
+for _model_type, _target in (
+    ("FileLimits", "yosoi.documents.FileLimits"),
+    ("FileMetadata", "yosoi.documents.FileMetadata"),
+):
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::{_model_type}::eq", "PartialEq")
+    ] = {
+        "pythonTarget": _target,
+        "pythonEquivalent": (
+            "Python equality compares the same immutable model field values."
+        ),
+        "rationale": (
+            f"Rust PartialEq compares the {_model_type} values; Python frozen "
+            "Pydantic model equality compares the corresponding authoring fields."
+        ),
+    }
+    REVIEWED_MEDIA_TRAIT_DISPOSITIONS[
+        (f"yosoi::documents::{_model_type}::fmt", "Debug")
+    ] = {
+        "pythonTarget": _target,
+        "pythonEquivalent": (
+            "Python repr(value) is diagnostic; public fields remain directly readable."
+        ),
+        "rationale": (
+            f"Rust Debug formatter syntax differs from Python repr for {_model_type}. "
+            "The immutable model repr is diagnostic, with exact formatter text "
+            "outside the parity contract."
+        ),
+    }
+
 BORROWED_VIEW_METHODS = {
     "yosoi::documents::DocumentRef::id": "Python Document.id reads the identity from its retained native handle.",
     "yosoi::documents::DocumentRef::class": "Python Document.document_class reads the validated native profile.",
@@ -627,6 +1129,39 @@ ARGUMENT_ALIASES = {
     ): "located",
     ("yosoi::contracts::RuntimeContract::extract_with_limits", "limits"): "limits",
     **VARIANT_ARGUMENT_ALIASES,
+}
+
+for _media_document_type in (
+    "ImageDocument",
+    "VideoDocument",
+    "AudioDocument",
+    "BinaryDocument",
+):
+    for _constructor in (
+        "from_bytes",
+        "from_bytes_with_limits",
+        "from_bytes_with_metadata",
+    ):
+        ARGUMENT_ALIASES[
+            (f"yosoi::documents::{_media_document_type}::{_constructor}", "bytes")
+        ] = "content"
+ARGUMENT_ALIASES[("yosoi::documents::file_from_bytes", "bytes")] = "content"
+
+for _builder, _field in FILE_METADATA_BUILDER_FIELDS.items():
+    MEMBER_TARGETS[f"yosoi::documents::FileMetadata::{_builder}"] = (
+        "yosoi.documents.FileMetadata"
+    )
+    ARGUMENT_ALIASES[(f"yosoi::documents::FileMetadata::{_builder}", "value")] = _field
+
+ARGUMENT_CONVERSIONS = {
+    (
+        f"yosoi::documents::FileMetadata::{builder}",
+        "value",
+    ): (
+        f"The Rust builder value initializes Python FileMetadata.{field}; Rust "
+        "rechecks the documented UTF-8 byte bound when the metadata is retained."
+    )
+    for builder, field in FILE_METADATA_BUILDER_FIELDS.items()
 }
 
 
@@ -830,7 +1365,10 @@ def _argument_mappings(
             {
                 "rustArgument": rust_name,
                 "pythonArgument": str(python_name),
-                "conversion": _conversion(argument["type"], python_parameter),
+                "conversion": ARGUMENT_CONVERSIONS.get(
+                    (item["rustPath"], rust_name),
+                    _conversion(argument["type"], python_parameter),
+                ),
             }
         )
     return mappings
@@ -1041,6 +1579,32 @@ def _language_proposal(
     return result
 
 
+def _reviewed_media_trait_entry(
+    item: dict[str, Any], python: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Record an owner-approved, language-specific media trait disposition."""
+    disposition = REVIEWED_MEDIA_TRAIT_DISPOSITIONS.get(
+        (item["rustPath"], item.get("trait") or "")
+    )
+    if disposition is None:
+        return None
+    target = disposition["pythonTarget"]
+    entry = _language_proposal(
+        item,
+        disposition["pythonEquivalent"],
+        disposition["rationale"],
+        python_target=target if target in python["targets"] else None,
+    )
+    entry["review"].update(
+        {
+            "status": "reviewed",
+            "reviewer": "Codex owner",
+            "reviewedAt": "2026-11-01T03:15:08Z",
+        }
+    )
+    return entry
+
+
 def _proposal_argument_mappings(
     item: dict[str, Any], trait: str
 ) -> list[dict[str, str]]:
@@ -1084,6 +1648,250 @@ def _mapped_error_target(item: dict[str, Any], python: dict[str, Any]) -> str | 
     return target if target in python["targets"] else None
 
 
+REVIEWED_CONVERSION_ASSOCIATED_TYPES = {
+    (f"yosoi::archive::{reference}::Err", "FromStr")
+    for reference in (
+        "AudioDocumentArchiveRef",
+        "BinaryDocumentArchiveRef",
+        "DocumentArchiveRef",
+        "FileDocumentArchiveRef",
+        "ImageDocumentArchiveRef",
+        "PlanArchiveRef",
+        "VideoDocumentArchiveRef",
+    )
+} | {
+    (f"yosoi::surface::model::{value}::Error", "TryFrom")
+    for value in (
+        "AddressToken",
+        "ContinuationToken",
+        "ObservationId",
+        "SourceId",
+        "SurfaceId",
+    )
+}
+
+
+def _conversion_error_type_entry(
+    item: dict[str, Any], python: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Map standard conversion error types only when Python exposes an exception."""
+    trait = item.get("trait")
+    if item.get("kind") != "assoc_type" or trait not in {
+        "FromStr",
+        "TryFrom",
+        "TryInto",
+    }:
+        return None
+    expected_name = "Err" if trait == "FromStr" else "Error"
+    if item["rustPath"].rsplit("::", 1)[-1] != expected_name:
+        return None
+
+    target = _mapped_error_target(item, python)
+    target_info = python["targets"].get(target) if target else None
+    if target and target_info:
+        return _entry(
+            item,
+            target,
+            target_info,
+            python,
+            "Rust FromStr::Err maps to the corresponding public Python SDK exception.",
+        )
+
+    associated_type = item["signature"].split("=", 1)[-1].strip()
+    if trait == "FromStr":
+        python_equivalent = (
+            "Python checked construction reports invalid text through its public "
+            "validation exception."
+        )
+        rationale = (
+            "Rust FromStr::Err is a trait-associated type, not a callable SDK member. "
+            "Python has no matching associated type; its checked constructor or model "
+            "validation exposes failures through Python's exception boundary."
+        )
+    elif "Infallible" in associated_type:
+        python_equivalent = (
+            "The Rust conversion has no error value; Python model construction "
+            "uses its own public validation boundary."
+        )
+        rationale = (
+            f"Rust {trait}::Error = Infallible is compile-time trait metadata, not a "
+            "callable SDK member. Python has no associated error type; its typed "
+            "constructor validates authoring inputs at the Python boundary."
+        )
+    else:
+        python_equivalent = (
+            "Python checked construction reports invalid values through its public "
+            "validation exception."
+        )
+        rationale = (
+            f"Rust {trait}::Error is a trait-associated type, not a callable SDK "
+            "member. Python has no matching associated type; its checked constructor "
+            "or model validation exposes failures through Python's exception boundary."
+        )
+    entry = _language_proposal(
+        item,
+        python_equivalent,
+        rationale,
+    )
+    if (item["rustPath"], trait) in REVIEWED_CONVERSION_ASSOCIATED_TYPES:
+        entry["review"].update(
+            {
+                "status": "reviewed",
+                "reviewer": "Codex owner",
+                "reviewedAt": "2026-11-01T03:15:08Z",
+            }
+        )
+    return entry
+
+
+def _file_document_variant_entry(
+    item: dict[str, Any], python: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Bind one whole Rust enum payload to its concrete Python model class."""
+    parent_path = item.get("parentRustPath")
+    variant = item["rustPath"].rsplit("::", 1)[-1]
+    target = FILE_DOCUMENT_VARIANT_TARGETS.get(parent_path, {}).get(variant)
+    target_info = python["targets"].get(target) if target else None
+    if (
+        target_info is None
+        or target_info.get("kind") != "class"
+        or target_info.get("canonicalTarget", target) != target
+    ):
+        return None
+    rust_arguments = [
+        argument
+        for argument in item.get("rustArguments", [])
+        if not argument.get("receiver")
+    ]
+    if len(rust_arguments) != 1:
+        return None
+    type_name = target.rsplit(".", 1)[-1]
+    rust_type = rust_arguments[0].get("type", "")
+    rust_type_name = re.sub(r"[&*\s]", "", rust_type).rsplit("::", 1)[-1]
+    if rust_type_name != type_name:
+        return None
+    return {
+        "rustPath": item["rustPath"],
+        "symbolKey": item["symbolKey"],
+        "decision": "mapped",
+        "pythonTarget": target,
+        "argumentMappings": [],
+        "defaults": [],
+        "units": [],
+        "cardinality": [],
+        "mappingDirection": "output",
+        "outputBinding": {
+            "kind": "concrete-model",
+            "schemaTarget": target,
+            "discriminator": "python_class",
+            "tag": type_name,
+            "rustType": f"yosoi::documents::{type_name}",
+            "pythonFields": [
+                {
+                    "rustArgument": rust_arguments[0]["name"],
+                    "pythonFieldPath": "$",
+                    "conversion": (
+                        "The Rust enum payload is the same complete native value; "
+                        "Python returns its corresponding concrete class instance."
+                    ),
+                }
+            ],
+            "behaviorEvidence": [
+                {
+                    "path": "python/tests/test_media_documents.py",
+                    "test": "test_media_factory_classifies_and_redacts_payload",
+                },
+                {
+                    "path": "crates/yosoi/src/internal/media_documents/tests.rs",
+                    "test": "file_factory_classifies_signatures_without_decoding",
+                },
+            ],
+        },
+        "rationale": (
+            f"Rust FileDocument::{variant} owns an already-built {type_name}; Python "
+            "exposes that payload directly as the same concrete immutable model."
+        ),
+        "semanticEquivalent": (
+            f"The Rust {variant} variant is returned as a Python {type_name} "
+            "instance with the same native bytes and metadata. No separate tagged "
+            "Python constructor is exposed."
+        ),
+    }
+
+
+def _file_document_error_variant_entry(
+    item: dict[str, Any], python: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Map typed file errors to Python details and source-chain fields."""
+    target = ERROR_TARGETS["FileDocumentError"]
+    if target not in python["targets"]:
+        return None
+    variant = item["rustPath"].rsplit("::", 1)[-1]
+    detail_paths = FILE_DOCUMENT_ERROR_VARIANT_FIELDS.get(variant)
+    if detail_paths is None:
+        return None
+    source_paths = FILE_DOCUMENT_ERROR_SOURCE_FIELDS.get(variant, {})
+    arguments = [
+        argument
+        for argument in item.get("rustArguments", [])
+        if not argument.get("receiver")
+    ]
+    if {argument["name"] for argument in arguments} != set(detail_paths):
+        return None
+    python_fields = []
+    for argument in arguments:
+        name = argument["name"]
+        python_fields.append(
+            {
+                "rustArgument": name,
+                "pythonFieldPath": detail_paths[name],
+                "conversion": (
+                    "The native FileDocumentError adapter preserves this exact "
+                    "structured detail through rust_error_details."
+                ),
+            }
+        )
+        source_path = source_paths.get(name)
+        if source_path is not None:
+            python_fields.append(
+                {
+                    "rustArgument": name,
+                    "pythonFieldPath": source_path,
+                    "conversion": (
+                        "The nested Rust error Display chain is retained in the "
+                        "Python source_chain sequence."
+                    ),
+                }
+            )
+    return {
+        "rustPath": item["rustPath"],
+        "symbolKey": item["symbolKey"],
+        "decision": "mapped",
+        "pythonTarget": target,
+        "argumentMappings": [],
+        "defaults": [],
+        "units": [],
+        "cardinality": [],
+        "mappingDirection": "output",
+        "outputBinding": {
+            "kind": "error-details",
+            "schemaTarget": "yosoi.errors.RustErrorDetails",
+            "discriminator": "variant",
+            "tag": variant,
+            "rustType": "yosoi::documents::FileDocumentError",
+            "pythonFields": python_fields,
+        },
+        "semanticEquivalent": (
+            "Python raises FileDocumentError; rust_error_details retains the "
+            "Rust variant, structured detail fields, and nested source messages."
+        ),
+        "rationale": (
+            "The PyO3 FileDocumentError adapter sets this variant tag and payload "
+            "without rebuilding an arbitrary Rust error in Python."
+        ),
+    }
+
+
 def seed_entries(
     rust: dict[str, Any], python: dict[str, Any], existing: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -1106,6 +1914,26 @@ def seed_entries(
             None,
         )
         if item is not None:
+            conversion_error = _conversion_error_type_entry(item, python)
+            if conversion_error is not None:
+                preserved = None
+                if (
+                    conversion_error["decision"] == "mapped"
+                    and entry.get("decision") == "mapped"
+                    and entry.get("pythonTarget")
+                    == conversion_error["pythonTarget"]
+                ) or (
+                    conversion_error["decision"] == "language-specific"
+                    and entry.get("decision") == "language-specific"
+                    and (entry.get("review") or {}).get("status") == "reviewed"
+                ):
+                    preserved = dict(entry)
+                    preserved["rustPath"] = item["rustPath"]
+                    preserved["symbolKey"] = item["symbolKey"]
+                entries_by_identity[item["symbolKey"]] = (
+                    preserved if preserved is not None else conversion_error
+                )
+                continue
             if entry.get("symbolKey"):
                 migrated_selectors.add(entry["symbolKey"])
             copied = dict(entry)
@@ -1136,6 +1964,24 @@ def seed_entries(
                         f"target {preferred_target}."
                     )
                 copied["pythonTarget"] = preferred_target
+            if item["rustPath"] in REFRESH_EXISTING_MEMBER_MAPPINGS:
+                target = MEMBER_TARGETS.get(
+                    item["rustPath"], copied.get("pythonTarget")
+                )
+                target_info = python["targets"].get(target) if target else None
+                if target and target_info:
+                    refreshed = _entry(
+                        item,
+                        target,
+                        target_info,
+                        python,
+                        MEMBER_MAPPING_RATIONALES[item["rustPath"]],
+                        semantic_equivalent=MEMBER_SEMANTIC_EQUIVALENTS.get(
+                            item["rustPath"]
+                        ),
+                    )
+                    if refreshed is not None:
+                        copied = refreshed
             entries_by_identity[item["symbolKey"]] = copied
             if (
                 item["surface"] == "item"
@@ -1229,6 +2075,10 @@ def seed_entries(
     for item in rust["items"]:
         if item["surface"] != "member" or item["symbolKey"] in entries_by_identity:
             continue
+        conversion_error = _conversion_error_type_entry(item, python)
+        if conversion_error is not None:
+            entries_by_identity[item["symbolKey"]] = conversion_error
+            continue
         if item["rustPath"] == "yosoi::contracts::ContractValue::TYPE_ID":
             target = "yosoi.contracts.value_type_id"
             target_info = python["targets"].get(target)
@@ -1294,6 +2144,7 @@ def seed_entries(
         target = None
         rust_type = None
         rationale = ""
+        semantic_equivalent = None
         if item["kind"] == "struct_field":
             target, target_info = _field_target(parent_target, member_name, python)
             if not target or not target_info:
@@ -1336,9 +2187,11 @@ def seed_entries(
                 target_info = python["targets"].get(target)
             if target_info is None:
                 continue
-            rationale = (
-                f"Rust method maps to the matching Python method/property {target}."
+            rationale = MEMBER_MAPPING_RATIONALES.get(
+                item["rustPath"],
+                f"Rust method maps to the matching Python method/property {target}.",
             )
+            semantic_equivalent = MEMBER_SEMANTIC_EQUIVALENTS.get(item["rustPath"])
         elif item["kind"] == "variant":
             parent = next(
                 (
@@ -1350,6 +2203,16 @@ def seed_entries(
                 None,
             )
             if parent is None:
+                continue
+            if parent["rustPath"] in FILE_DOCUMENT_VARIANT_TARGETS:
+                row = _file_document_variant_entry(item, python)
+                if row is not None:
+                    entries_by_identity[item["symbolKey"]] = row
+                continue
+            if parent["rustPath"] == "yosoi::documents::FileDocumentError":
+                row = _file_document_error_variant_entry(item, python)
+                if row is not None:
+                    entries_by_identity[item["symbolKey"]] = row
                 continue
             wrapped_target = WRAPPED_OUTCOME_ENUMS.get(parent["rustPath"])
             if wrapped_target and wrapped_target in python["targets"]:
@@ -1482,6 +2345,7 @@ def seed_entries(
             python,
             rationale,
             rust_type=rust_type,
+            semantic_equivalent=semantic_equivalent,
             argument_aliases=(
                 variant_argument_aliases if item["kind"] == "variant" else None
             ),
@@ -1724,6 +2588,13 @@ def seed_entries(
                 cardinality=cardinality,
                 python_target=proposal_target,
             )
+
+    # The owner approved only these newly scoped media standard-trait semantics.
+    # Keep other generic trait proposals unreviewed until their own disposition.
+    for item in rust["items"]:
+        reviewed = _reviewed_media_trait_entry(item, python)
+        if reviewed is not None:
+            entries_by_identity[item["symbolKey"]] = reviewed
 
     # Preserve any remaining explicit source mappings, including rows for APIs
     # outside the current compiler feature inventory so strict mode marks them stale.

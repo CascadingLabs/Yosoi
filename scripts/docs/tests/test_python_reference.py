@@ -108,6 +108,150 @@ def _private():
                     root, root / "output", "main", "CascadingLabs/Yosoi"
                 )
 
+    def test_public_classes_expand_only_authored_same_module_members(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "package"
+            package.mkdir()
+            (package / "__init__.py").write_text(
+                "from .media import ImageDocument as ImageDocument\n"
+                "from .media import VideoDocument as VideoDocument\n"
+                "from .media import AudioDocument as AudioDocument\n"
+                "from .media import BinaryDocument as BinaryDocument\n"
+                '__all__ = ["ImageDocument", "VideoDocument", "AudioDocument", "BinaryDocument"]\n'
+            )
+            (package / "media.py").write_text(
+                '''from pydantic import BaseModel, Field
+from typing import Self
+
+class _FileDocument(BaseModel):
+    """Shared authored file document API."""
+    id: str = Field(description="Stable file identity.")
+    metadata: dict = Field(description="File provenance and digest.")
+
+    @classmethod
+    def from_bytes(cls, content: bytes) -> Self:
+        """Retain exact file bytes without decoding."""
+        raise NotImplementedError
+
+    @property
+    def bytes(self) -> bytes:
+        """Return exact retained bytes."""
+        raise NotImplementedError
+
+class ImageDocument(_FileDocument):
+    """Image file with no decoder assumptions."""
+
+class VideoDocument(_FileDocument):
+    """Video file with no decoder assumptions."""
+
+    @classmethod
+    def from_bytes(cls, content: bytes, *, profile: str = "opaque") -> Self:
+        """Retain video bytes with a video-specific profile."""
+        raise NotImplementedError
+
+class AudioDocument(_FileDocument):
+    """Audio file with no decoder assumptions."""
+
+class BinaryDocument(_FileDocument):
+    """Opaque file with no decoder assumptions."""
+'''
+            )
+            output = root / "docs"
+            reference.render_reference(package, output, "b" * 40, "CascadingLabs/Yosoi")
+
+            for name in ("ImageDocument", "AudioDocument", "BinaryDocument"):
+                page = (output / f"media/types/{reference.slug(name)}.md").read_text()
+                self.assertIn("id: str = Field(description='Stable file identity.')", page)
+                self.assertIn(
+                    "metadata: dict = Field(description='File provenance and digest.')",
+                    page,
+                )
+                self.assertIn("Return exact retained bytes.", page)
+                self.assertIn("Retain exact file bytes without decoding.", page)
+                self.assertIn(
+                    f"def from_bytes(cls: type[{name}], content: bytes) -> {name}:",
+                    page,
+                )
+                self.assertIn("/python/yosoi/media.py#L7-", page)
+                self.assertNotIn("model_dump", page)
+                self.assertNotIn("def __init__", page)
+
+            video = (output / "media/types/video-document.md").read_text()
+            self.assertIn("Retain video bytes with a video-specific profile.", video)
+            self.assertIn(
+                "def from_bytes(cls: type[VideoDocument], content: bytes, *, profile: str='opaque') -> VideoDocument:",
+                video,
+            )
+            self.assertNotIn("Retain exact file bytes without decoding.", video)
+
+    def test_same_module_inheritance_uses_c3_override_order_and_rejects_inconsistent_mro(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "diamond"
+            package.mkdir()
+            (package / "__init__.py").write_text(
+                "from .types import D as D\n__all__ = [\"D\"]\n"
+            )
+            (package / "types.py").write_text(
+                '''class A:
+    def value(self) -> str:
+        """Value from the oldest base."""
+        raise NotImplementedError
+
+class B(A):
+    pass
+
+class C(A):
+    def value(self) -> str:
+        """Value from the later C3 base."""
+        raise NotImplementedError
+
+class D(B, C):
+    pass
+'''
+            )
+            output = root / "docs"
+            reference.render_reference(package, output, "c" * 40, "CascadingLabs/Yosoi")
+            diamond = (output / "types/types/d.md").read_text()
+            self.assertIn("Value from the later C3 base.", diamond)
+            self.assertNotIn("Value from the oldest base.", diamond)
+            self.assertIn("/python/yosoi/types.py#L10-", diamond)
+
+            inconsistent = root / "inconsistent"
+            inconsistent.mkdir()
+            (inconsistent / "__init__.py").write_text(
+                "from .types import C as C\n__all__ = [\"C\"]\n"
+            )
+            (inconsistent / "types.py").write_text(
+                '''class X:
+    pass
+
+class Y:
+    pass
+
+class A(X, Y):
+    pass
+
+class B(Y, X):
+    pass
+
+class C(A, B):
+    pass
+'''
+            )
+            with self.assertRaisesRegex(
+                ValueError, "Inconsistent same-module inheritance order for types.C"
+            ):
+                reference.render_reference(
+                    inconsistent,
+                    root / "invalid-docs",
+                    "d" * 40,
+                    "CascadingLabs/Yosoi",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

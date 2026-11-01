@@ -1,7 +1,9 @@
 //! Private provider boundary. Chrome keeps its existing implementation.
 
+use super::page::{DownloadCaptureError, NativeDownloadCapture};
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
+use std::result::Result as StdResult;
 use std::sync::atomic;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 use tokio::runtime::Handle as RuntimeHandle;
@@ -342,6 +344,14 @@ macro_rules! chrome_method {
 }
 
 impl Page {
+    pub fn ensure_download_context_available(&self) -> StdResult<(), DownloadCaptureError> {
+        match self {
+            Self::Chrome(page) => page.ensure_download_context_available(),
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Ok(()),
+        }
+    }
+
     pub fn execution_identity(&self) -> Option<browser_config::BrowserExecutionIdentity> {
         match self {
             Self::Chrome(_) => None,
@@ -363,6 +373,21 @@ impl Page {
         }
     }
     native_method!(fn close() -> (), |page, token, deadline| page.close(&token, deadline).await);
+
+    /// Arms native download capture on an owned Chrome page. Optional engines
+    /// report a typed unsupported capability instead of entering the CDP path.
+    pub async fn start_download_capture(
+        &self,
+        max_bytes: u64,
+        timeout: Duration,
+    ) -> StdResult<NativeDownloadCapture, DownloadCaptureError> {
+        match self {
+            Self::Chrome(page) => page.start_native_download_capture(max_bytes, timeout).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(DownloadCaptureError::Unsupported),
+        }
+    }
+
     native_method!(fn navigate(url: &str) -> (), |page, token, deadline| page.navigate(url, "complete", &token, deadline).await);
     native_method!(fn evaluate_js(source: &str) -> serde_json::Value, |page, token, deadline| page.evaluate(source, &token, deadline).await.map(|result| result.0));
     native_method!(fn evaluate_js_in_frame(pattern: &str, source: &str) -> serde_json::Value, |page, token, deadline| page.evaluate_in_frame(pattern, source, &token, deadline).await);

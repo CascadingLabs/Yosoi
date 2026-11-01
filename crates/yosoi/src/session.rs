@@ -20,9 +20,15 @@ use std::future as std_future;
 use tokio::sync as tokio_sync;
 #[cfg(feature = "browser")]
 use tokio::time as tokio_time;
+mod download;
 mod evaluation;
 mod javascript;
 mod until;
+
+pub use download::{
+    DEFAULT_DOWNLOAD_MAX_BYTES, DEFAULT_DOWNLOAD_TIMEOUT_MS, DownloadCapture, DownloadError,
+    DownloadOptions,
+};
 
 pub use until::{
     MAX_UNTIL_REPORT_BYTES, UntilCheck, UntilCheckState, UntilReport, UntilReportError, UntilScope,
@@ -79,6 +85,8 @@ pub enum ActionKind {
     Assert,
     /// Dispatch arbitrary JavaScript when separately permitted by Session settings.
     Evaluate,
+    /// Arm and retain a bounded native browser download from a caller action.
+    Download,
 }
 
 /// Frame selection is resolved uniquely immediately before script dispatch.
@@ -163,6 +171,7 @@ impl Default for SessionPolicy {
                 ActionKind::Screenshot,
                 ActionKind::Wait,
                 ActionKind::Assert,
+                ActionKind::Download,
             ],
             operation_timeout_ms: 10_000,
             maximum_input_bytes: 65_536,
@@ -194,7 +203,7 @@ impl SessionPolicy {
             || self.maximum_input_bytes > 1024 * 1024
             || self.maximum_result_bytes > 1024 * 1024
             || self.maximum_observation_bytes > automation_record::MAX_OBSERVATION_HTML_BYTES
-            || self.allowed_actions.len() > 7
+            || self.allowed_actions.len() > 8
         {
             return Err(SessionError::InvalidPolicy);
         }

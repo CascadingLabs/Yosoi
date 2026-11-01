@@ -20,6 +20,16 @@ from ._native import (
     DocumentError as DocumentError,
 )
 from ._native import (
+    DownloadError as DownloadError,
+)
+
+# Native browser download, timeout, cancellation, or cleanup failure.
+from ._native import (
+    FileDocumentError as FileDocumentError,
+)
+
+# Native media or opaque file identity, metadata, signature, or size failure.
+from ._native import (
     LocatorError as LocatorError,
 )
 from ._native import (

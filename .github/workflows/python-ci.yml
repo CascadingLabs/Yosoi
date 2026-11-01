@@ -169,7 +169,8 @@ jobs:
           CHROME_NO_SANDBOX: '0'
         run: |
           uv run --no-sync pytest python/tests/test_browser_beta.py \
-            python/tests/test_browser_runtime.py python/tests/test_until_browser.py -q \
+            python/tests/test_browser_runtime.py python/tests/test_until_browser.py \
+            python/tests/test_media_download_live.py -q \
             --junitxml=.generated/python-browser/junit.xml
           uv run --no-sync python scripts/sdk-parity/browser_evidence.py \
             --junit .generated/python-browser/junit.xml --source "$GITHUB_SHA" \

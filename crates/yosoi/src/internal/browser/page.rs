@@ -1,5 +1,5 @@
 use crate::internal::browser::vendor::chromiumoxide::{
-    CdpMode, Page as CdpPage, cdp::browser_protocol::browser::BrowserContextId,
+    CdpMode, Page as CdpPage, browser::Browser, cdp::browser_protocol::browser::BrowserContextId,
 };
 use crate::internal::browser::{
     active_navigation::NavigationState,
@@ -22,6 +22,7 @@ mod accessibility;
 mod accessibility_frame;
 mod condition_wait;
 mod document;
+mod download_capture;
 mod download_types;
 mod downloads;
 mod emulation;
@@ -53,6 +54,8 @@ mod validation;
 pub(in crate::internal::browser) use document_identity::{
     CdpDocumentIdentity, DocumentIdentityState,
 };
+pub(in crate::internal::browser) use download_capture::DownloadCaptureCoordinator;
+pub use download_capture::{DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult};
 pub use download_types::{DownloadCapture, DownloadOutcome};
 pub use navigation_response::{ENDPOINT_SANITIZER_VERSION, PageResponse, safe_endpoint};
 pub use observation_watch::{
@@ -103,11 +106,13 @@ impl fmt::Debug for ProviderBrowserContextIdentity {
 #[derive(Debug)]
 pub struct Page {
     inner: CdpPage,
+    browser: Arc<AsyncMutex<Browser>>,
     browser_mode: EnvironmentObservation<internal_types::BrowserMode>,
     cdp_mode: CdpMode,
     attached_browser: bool,
     state_binding: BrowserStateBinding,
     provider_context: Option<ProviderBrowserContextIdentity>,
+    download_coordinator: Arc<DownloadCaptureCoordinator>,
     interrupts: Arc<InterruptRegistry>,
     /// `true` between [`Page::arm_download`] / a `download_to_dir` in flight
     /// and the matching reset, exposing whether download behavior is armed.

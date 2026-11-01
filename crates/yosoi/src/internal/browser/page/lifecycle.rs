@@ -10,16 +10,16 @@ use crate::internal::browser::environment::RenderingPreferences;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
 use crate::internal::browser::interrupt::InterruptRegistry;
-use crate::internal::browser::vendor::chromiumoxide::CdpMode;
 use crate::internal::browser::vendor::chromiumoxide::Page as CdpPage;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::BrowserContextId;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::browser::GetWindowForTargetParams;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::target::GetTargetsParams;
+use crate::internal::browser::vendor::chromiumoxide::{CdpMode, browser::Browser};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
-use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::{Mutex as AsyncMutex, Mutex as TokioMutex};
 
 impl Page {
     /// Wrap an existing CDP page. `capture_lock` and `interrupts` are shared
@@ -27,7 +27,9 @@ impl Page {
     #[allow(clippy::too_many_arguments, reason = "retains page construction facts")]
     pub(in crate::internal::browser) fn new(
         inner: CdpPage,
+        browser: Arc<TokioMutex<Browser>>,
         capture_lock: Arc<AsyncMutex<()>>,
+        download_coordinator: Arc<super::DownloadCaptureCoordinator>,
         interrupts: Arc<InterruptRegistry>,
         browser_mode: EnvironmentObservation<yosoi_types::BrowserMode>,
         cdp_mode: CdpMode,
@@ -38,11 +40,13 @@ impl Page {
     ) -> Self {
         Self {
             inner,
+            browser,
             browser_mode,
             cdp_mode,
             attached_browser,
             state_binding,
             provider_context: provider_context_id.map(ProviderBrowserContextIdentity),
+            download_coordinator,
             interrupts,
             download_armed: AtomicBool::new(false),
             cursor: Mutex::new((0.0, 0.0)),
@@ -78,7 +82,9 @@ impl Page {
     pub(in crate::internal::browser) fn clone_handle(&self) -> Self {
         let mut clone = Self::new(
             self.inner.clone(),
+            Arc::clone(&self.browser),
             Arc::clone(&self.capture_lock),
+            Arc::clone(&self.download_coordinator),
             Arc::clone(&self.interrupts),
             self.browser_mode.clone(),
             self.cdp_mode,

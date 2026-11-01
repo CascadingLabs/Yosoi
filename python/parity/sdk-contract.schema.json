@@ -152,6 +152,12 @@
             "null"
           ]
         },
+        "outputBindingKind": {
+          "oneOf": [
+            {"type": "null"},
+            {"enum": ["error-details", "outcome-view", "concrete-model"]}
+          ]
+        },
         "pythonTargetSha256": {
           "oneOf": [
             {

@@ -17,11 +17,14 @@ use yosoi::{
     flow::{Flow, FlowInvokeError, FlowOutcome, Step},
     locators::Plan,
     policy::Policy,
-    session::{self, Session, SessionError, SessionPolicy, SessionRequestError, Work},
+    session::{
+        self, DownloadOptions, Session, SessionError, SessionPolicy, SessionRequestError, Work,
+    },
 };
 
 use crate::{
     async_runtime::{self, NativeCancellation},
+    downloads::{self, NativeDownloadCapture},
     errors::{self, YosoiError},
     policy,
     requests::NativeRequest,
@@ -183,6 +186,52 @@ impl NativeWork {
             Ok(NativeResponse {
                 source: ResponseSource::Request(Arc::new(response)),
             })
+        })
+    }
+
+    fn expect_download<'py>(
+        &self,
+        py: Python<'py>,
+        max_bytes: u64,
+        timeout_ms: u64,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, None, move |token| async move {
+            if token.is_cancelled() {
+                return Err(BrowserError::new_err(
+                    "download expectation was cancelled before it was armed",
+                ));
+            }
+            let guard = state.lock().await;
+            let lease = guard
+                .as_ref()
+                .ok_or_else(|| BrowserError::new_err("browser Work lease is released"))?;
+            let options = DownloadOptions {
+                max_bytes,
+                timeout_ms,
+            };
+            let capture = tokio::select! {
+                biased;
+                () = token.cancelled() => {
+                    return Err(BrowserError::new_err(
+                        "download expectation was cancelled before it was armed",
+                    ));
+                }
+                result = lease.work.expect_download(options) => {
+                    result.map_err(|error| downloads::download_error_for_browser(&error))?
+                }
+            };
+            drop(guard);
+            if token.is_cancelled() {
+                capture
+                    .cancel()
+                    .await
+                    .map_err(|error| downloads::download_error_for_browser(&error))?;
+                return Err(BrowserError::new_err(
+                    "download expectation was cancelled while it was armed",
+                ));
+            }
+            Ok(NativeDownloadCapture::new(capture))
         })
     }
 
@@ -814,6 +863,7 @@ impl Write for BoundedJsonWriter {
 /// Registers this module's browser-only Python bridge surface.
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("BrowserError", module.py().get_type::<BrowserError>())?;
+    module.add_class::<NativeDownloadCapture>()?;
     module.add_class::<NativeSession>()?;
     module.add_class::<NativeWork>()?;
     module.add_function(wrap_pyfunction!(invoke_flow, module)?)?;

@@ -58,6 +58,24 @@ class FakeContract:
 
 
 class SdkParityRunnerTests(unittest.TestCase):
+    def test_media_documents_suite_is_additive_and_runs_with_installed_python_root(
+        self,
+    ):
+        self.assertIn(
+            (
+                "media_documents_conformance",
+                "run_media_documents_conformance.py",
+                True,
+            ),
+            runner.EXAMPLES,
+        )
+        for existing in (
+            "python_conformance",
+            "python_document_errors_conformance",
+            "surface_conformance",
+        ):
+            self.assertIn(existing, {example for example, _, _ in runner.EXAMPLES})
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -113,7 +131,7 @@ class SdkParityRunnerTests(unittest.TestCase):
                 package_probe=lambda: None,
             )
 
-    def test_runs_nine_python_fixtures_in_order_and_uses_sdk_gate(self) -> None:
+    def test_runs_python_fixtures_in_order_and_uses_sdk_gate(self) -> None:
         self.assertEqual(self.run_gate(), 0)
 
         runner_calls = [

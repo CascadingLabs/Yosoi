@@ -49,6 +49,7 @@ use crate::internal::browser::{
     environment::EnvironmentObservation,
     error::{Result, VoidCrawlError},
     interrupt::{InterruptInfo, InterruptRegistry, InterruptRequest},
+    page::DownloadCaptureCoordinator,
     page::Page,
     profile_context::ManagedProfileContext,
     stealth::StealthConfig,
@@ -550,6 +551,8 @@ pub struct BrowserSession {
     /// Shared with every `Page` this session creates, so screenshot capture
     /// is serialized per-browser rather than per-tab. See [`Page::screenshot`].
     capture_lock: Arc<Mutex<()>>,
+    /// Serializes native download captures within the default browser context.
+    download_coordinator: Arc<DownloadCaptureCoordinator>,
 }
 
 impl fmt::Debug for BrowserSession {
@@ -749,6 +752,7 @@ impl BrowserSession {
             state_binding,
             _user_data_dir: owned_user_data_dir,
             capture_lock: Arc::new(Mutex::new(())),
+            download_coordinator: Arc::new(DownloadCaptureCoordinator::new()),
         })
     }
 
@@ -807,6 +811,7 @@ impl BrowserSession {
         self.check_alive()?;
         let browser = Arc::clone(&self.browser);
         let capture_lock = Arc::clone(&self.capture_lock);
+        let download_coordinator = Arc::new(DownloadCaptureCoordinator::new());
         let interrupts = Arc::clone(&self.interrupts);
         let browser_mode = self.browser_mode.clone();
         let handler_alive = Arc::clone(&self.handler_alive);
@@ -857,7 +862,9 @@ impl BrowserSession {
                 };
                 let page = Page::new(
                     cdp_page,
+                    Arc::clone(&browser),
                     Arc::clone(&capture_lock),
+                    Arc::clone(&download_coordinator),
                     Arc::clone(&interrupts),
                     browser_mode.clone(),
                     cdp_mode,
@@ -878,6 +885,7 @@ impl BrowserSession {
                     browser,
                     context_id,
                     capture_lock,
+                    download_coordinator,
                     interrupts,
                     browser_mode,
                     cdp_mode,
@@ -907,7 +915,9 @@ impl BrowserSession {
     fn wrap_page_with_binding(&self, page: CdpPage, state_binding: BrowserStateBinding) -> Page {
         Page::new(
             page,
+            Arc::clone(&self.browser),
             Arc::clone(&self.capture_lock),
+            Arc::clone(&self.download_coordinator),
             Arc::clone(&self.interrupts),
             self.browser_mode.clone(),
             self.cdp_mode,

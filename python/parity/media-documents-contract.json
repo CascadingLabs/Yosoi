@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "yosoi-python-media-documents-semantic-contract",
+  "source": "Rust public SDK and Python bindings",
+  "declarations": [
+    {
+      "rustPath": "yosoi::documents::FileDocument",
+      "pythonTarget": "yosoi.FileDocument",
+      "semanticEquivalent": "The Python union alias selects ImageDocument, VideoDocument, AudioDocument or BinaryDocument from the Rust enum variant. Runtime classification stays in Rust; Python does not inspect signatures or decode media.",
+      "tests": ["test_media_factory_classifies_and_redacts_payload"]
+    },
+    {
+      "rustPath": "yosoi::documents::file_from_bytes",
+      "pythonTarget": "yosoi.file_from_bytes",
+      "semanticEquivalent": "Both factories retain the exact input bytes and use signature classification. Recognized image, video and audio types select their concrete variant; other inputs remain binary. Python omits payload bytes from repr and model dumps, while the native handle owns them.",
+      "tests": ["test_media_factory_classifies_and_redacts_payload"]
+    },
+    {
+      "rustPath": "yosoi::documents::read_file",
+      "pythonTarget": "yosoi.read_file",
+      "semanticEquivalent": "Both operations read one bounded regular file, retain only its basename as filename metadata, and return the Rust-classified concrete file type. Python awaits the native Rust filesystem operation.",
+      "tests": ["test_read_file_uses_basename_and_returns_detected_concrete_type"]
+    },
+    {
+      "rustPath": "yosoi::documents::FileLimits",
+      "pythonTarget": "yosoi.FileLimits",
+      "semanticEquivalent": "The byte limit uses the same units, a 64 MiB default, and a 256 MiB hard maximum. Python validates authoring fields and Rust revalidates limits at operation time.",
+      "tests": ["test_file_limits_enforce_default_hard_cap_and_payload_size"]
+    },
+    {
+      "rustPath": "yosoi::documents::FileMetadata",
+      "pythonTarget": "yosoi.FileMetadata",
+      "semanticEquivalent": "Filename, declared MIME, detected MIME and provenance remain separate fields. Source values preserve exact URLs up to a 1 MiB UTF-8 bound; other caller metadata retains its smaller field bounds. Rust computes detection and SHA-256 from the exact payload.",
+      "tests": ["test_media_factory_classifies_and_redacts_payload", "test_file_metadata_keeps_long_source_urls_with_a_one_mebibyte_bound"]
+    },
+    {
+      "rustPath": "yosoi::request::Attempt::file_document",
+      "pythonTarget": "yosoi.request.Attempt.file_document",
+      "semanticEquivalent": "Both operations classify only a complete retained Direct HTTP body, reuse Rust-owned bytes, perform no second request, and preserve HTTP status and the original response body. Missing or incomplete bodies keep the typed BodyUnavailable error.",
+      "tests": ["test_attempt_conversion_reuses_complete_http_error_body_and_keeps_status"]
+    },
+    {
+      "rustPath": "yosoi::Archive::write",
+      "pythonTarget": "yosoi.Archive.write",
+      "semanticEquivalent": "Concrete Rust media types produce their exact typed Archive reference. Python runtime dispatch returns ImageDocumentArchiveRef, VideoDocumentArchiveRef, AudioDocumentArchiveRef or BinaryDocumentArchiveRef without erasing the stored variant.",
+      "tests": ["test_archive_round_trip_preserves_concrete_file_types_and_rejects_wrong_ref"]
+    },
+    {
+      "rustPath": "yosoi::Archive::read",
+      "pythonTarget": "yosoi.Archive.read",
+      "semanticEquivalent": "A typed Rust media Archive reference restores its matching concrete file type with the same identity, metadata and exact bytes. Cross-kind references fail typed validation.",
+      "tests": ["test_archive_round_trip_preserves_concrete_file_types_and_rejects_wrong_ref"]
+    },
+    {
+      "rustPath": "yosoi::documents::FileDocumentError",
+      "pythonTarget": "yosoi.FileDocumentError",
+      "semanticEquivalent": "Python raises a dedicated exception and rust_error_details preserves the Rust error variant and structured payload, including size, type mismatch and unavailable-body outcomes.",
+      "tests": ["test_concrete_media_constructor_checks_family_without_decoding", "test_file_limits_enforce_default_hard_cap_and_payload_size", "test_attempt_conversion_reuses_complete_http_error_body_and_keeps_status"]
+    },
+    {
+      "rustPath": "yosoi::session::Work::expect_download",
+      "pythonTarget": "yosoi.Work.expect_download",
+      "semanticEquivalent": "Python returns a context manager bound to the existing Work owner. Entry arms capture before returning; the caller runs its own Flow or action, and no click is synthesized or retried.",
+      "tests": ["test_download_context_cancellation_awaits_cleanup_and_retains_work_owner"]
+    },
+    {
+      "rustPath": "yosoi::session::DownloadCapture::wait",
+      "pythonTarget": "yosoi.DownloadCapture.wait",
+      "semanticEquivalent": "Both operations await one completed bounded file and preserve the Rust concrete type. Python task cancellation signals native cancellation and waits for provider cleanup before leaving the context.",
+      "tests": ["test_download_context_cancellation_awaits_cleanup_and_retains_work_owner"]
+    },
+    {
+      "rustPath": "yosoi::session::DownloadCapture::cancel",
+      "pythonTarget": "yosoi.DownloadCapture.__aexit__",
+      "semanticEquivalent": "Leaving an unconsumed Python download context explicitly awaits native cancellation and browser-context restoration. Cleanup errors remain visible beside an active body exception.",
+      "tests": ["test_download_context_cancellation_awaits_cleanup_and_retains_work_owner"]
+    },
+    {
+      "rustPath": "yosoi::session::DownloadError",
+      "pythonTarget": "yosoi.DownloadError",
+      "semanticEquivalent": "Python preserves typed engine, timeout, size, cancellation, provider, cleanup, unrelated-download and nested FileDocument failures through rust_error_details, including any retained recovery-directory path.",
+      "tests": ["test_download_context_cancellation_awaits_cleanup_and_retains_work_owner"]
+    }
+  ]
+}
