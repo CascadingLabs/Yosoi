@@ -2,6 +2,7 @@
 use super::{
     Data, VideoError, VideoMetadata, VideoPolicy, VideoSurface, process, time::seconds_us,
 };
+use crate::surface::model;
 use crate::{
     documents::{FileLimits, FileMetadata, VideoDocument},
     request::CancellationToken,
@@ -15,12 +16,14 @@ use crate::{
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+use std::collections::VecDeque;
 use std::{
     env,
     path::{Path, PathBuf},
     sync::Arc,
 };
 use tempfile::TempDir;
+use tokio::sync::Mutex;
 use tokio::{fs, process::Command};
 
 impl VideoSurface {

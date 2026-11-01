@@ -4,6 +4,7 @@
 //! Timeline navigation never grants browser/device control and does not imply OCR,
 //! transcription, audio inspection, or that unsampled frames have been observed.
 pub mod archive;
+pub use archive::{FrameArchiveRef, VideoArchiveRef};
 mod frame;
 mod process;
 mod source;

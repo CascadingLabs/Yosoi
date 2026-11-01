@@ -6,6 +6,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{error::Error, io, path::Path, process::Stdio};
 use tokio::{fs, process::Command};
+use yosoi::surface::model::SurfaceRead;
 use yosoi::{
     Archive,
     archive::DocumentArchiveRef,

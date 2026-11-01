@@ -9,7 +9,7 @@ use crate::surface::{
     ArchiveLimits, ArchivedSource, Budget, Outcome,
     archive::Recording,
     connection::Result as SourceResult,
-    model::{ReadOperation, ReadRequest},
+    model::{ReadOperation, ReadRequest, SurfaceRead},
 };
 use serde_json::{Value, json};
 use std::{io, path::Path};
