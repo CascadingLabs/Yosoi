@@ -2,6 +2,9 @@ import builtins
 from collections.abc import Awaitable, Callable
 
 __version__: str
+NETWORK_OBSERVATION_SCHEMA: str
+NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES: int
+NETWORK_PROVIDER_TOTAL_BUFFER_BYTES: int
 
 class YosoiError(Exception):
     rust_type: str
@@ -27,6 +30,7 @@ class VideoError(SurfaceError): ...
 surface_video_enabled: bool
 
 class Surface:
+    def is_network_observation(self) -> bool: ...
     def __init__(self, document: Document, limits: str) -> None: ...
     def metadata(self) -> str: ...
     def read(

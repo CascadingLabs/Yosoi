@@ -18,7 +18,7 @@ import json
 from builtins import bytes as _Bytes
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Annotated, Any, Literal, Protocol, Self
+from typing import Annotated, Any, Final, Literal, Protocol, Self
 
 from pydantic import (
     BeforeValidator,
@@ -287,6 +287,21 @@ class NetworkHeader(ImmutableModel):
     value: StrictStr = Field(description="Bounded retained header value.")
 
 
+NETWORK_OBSERVATION_SCHEMA: Final[str] = _native.NETWORK_OBSERVATION_SCHEMA
+"""Schema identifier used only by explicitly typed network observation documents."""
+NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES: Final[int] = (
+    _native.NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES
+)
+"""Shared Page-lifetime CDP per-response buffer and retained-body read cap."""
+NETWORK_PROVIDER_TOTAL_BUFFER_BYTES: Final[int] = (
+    _native.NETWORK_PROVIDER_TOTAL_BUFFER_BYTES
+)
+"""Shared Page-lifetime aggregate CDP response-buffer cap."""
+NetworkProviderClock = Literal["cdp_monotonic"]
+"""Clock basis for provider timestamps; separate from listener wall time."""
+NetworkByteProvenance = Literal["cdp_decoded_response_body", "none"]
+"""Retained browser-decoded entity bytes or no retained payload; never wire bytes."""
+
 NetworkPayloadState = Literal[
     "not_requested", "retained", "truncated", "unavailable", "unsupported"
 ]
@@ -351,7 +366,7 @@ class NetworkPayloadRef(ImmutableModel):
     content_encoding: StrictStr | None = Field(
         default=None, description="Browser-declared content encoding."
     )
-    byte_provenance: Literal["cdp_decoded_response_body", "none"] = Field(
+    byte_provenance: NetworkByteProvenance = Field(
         description="Retained bytes are not wire capture."
     )
     provider_base64_encoded: StrictBool = Field(
@@ -562,7 +577,7 @@ class NetworkEvent(ImmutableModel):
     provider_time_us: int | None = Field(
         default=None, strict=True, ge=0, description="Provider monotonic time."
     )
-    provider_clock: Literal["cdp_monotonic"] | None = Field(
+    provider_clock: NetworkProviderClock | None = Field(
         default=None, description="Clock basis for provider time."
     )
     frame_id: StrictStr | None = Field(
@@ -783,15 +798,43 @@ NetworkObservation = NetworkWindow
 """Typed spelling for one frozen NetworkWindow."""
 
 
+NetworkPayloadValue = Document | FileDocument
+"""An existing document or typed file retained as a network response body."""
+
+
+def network_payload_bytes(value: NetworkPayloadValue) -> bytes:
+    """Return exact retained bytes without converting or classifying the payload.
+
+    Args:
+        value: Existing Document or FileDocument response body.
+
+    Returns:
+        The immutable retained body bytes.
+
+    Raises:
+        TypeError: The supplied value is not a retained document or file.
+    """
+    if isinstance(value, Document):
+        return value.data
+    if isinstance(value, FileDocument):
+        return value.bytes
+    raise TypeError("value must be a Document or FileDocument")
+
+
 class NetworkPayload(ImmutableModel):
     """A payload reference paired with an existing Document or FileDocument."""
 
     reference: NetworkPayloadRef = Field(
         description="Response relationship and retention metadata."
     )
-    value: Document | FileDocument = Field(
+    value: NetworkPayloadValue = Field(
         repr=False, exclude=True, description="Retained typed response payload."
     )
+
+    @property
+    def bytes(self) -> _Bytes:
+        """Return the exact body bytes retained by this response relationship."""
+        return network_payload_bytes(self.value)
 
     @staticmethod
     def from_outcome(
@@ -1179,6 +1222,10 @@ class Surface:
     def metadata(self) -> IndexMetadata:
         """Return source size, index size, root and preparation coverage."""
         return IndexMetadata.model_validate_json(self._handle.metadata())
+
+    def is_network_observation(self) -> bool:
+        """Check the explicit network profile without inferring it from JSON keys."""
+        return self._handle.is_network_observation()
 
     @property
     def identity(self) -> str:

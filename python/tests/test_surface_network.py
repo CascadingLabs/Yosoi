@@ -93,6 +93,25 @@ def test_offline_network_payload_accepts_exact_owned_reference(network_outcome):
     ):
         assert isinstance(payload.value, ys.Document)
         assert payload.value.data == body.data
+        assert payload.bytes == body.data
+        assert sf.network_payload_bytes(payload.value) == body.data
+
+
+def test_network_constants_and_explicit_surface_profile(network_outcome):
+    _, _, _, window = network_outcome
+    assert sf.NETWORK_OBSERVATION_SCHEMA == window.schema_id
+    receipt = sf.NetworkObservationPolicy().retention()
+    assert (
+        receipt.provider_resource_buffer_bytes
+        == sf.NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES
+    )
+    assert receipt.provider_total_buffer_bytes == sf.NETWORK_PROVIDER_TOTAL_BUFFER_BYTES
+    typed = window.to_document("typed-network")
+    assert sf.Surface(typed).is_network_observation()
+    ordinary = ys.Document.from_json("ordinary", typed.data)
+    assert not sf.Surface(ordinary).is_network_observation()
+    file = ys.BinaryDocument.from_bytes("opaque", b"\x00\x01")
+    assert sf.network_payload_bytes(file) == file.bytes
 
 
 @pytest.mark.parametrize(

@@ -977,6 +977,8 @@ def load_surface_contract(
             "struct_field",
             "variant",
             "assoc_type",
+            "constant",
+            "type_alias",
         }:
             raise ValueError("unsupported Surface declaration kind")
         if not isinstance(signature, str) or not SHA256_RE.fullmatch(signature):
@@ -985,7 +987,11 @@ def load_surface_contract(
         occurrence = row.pop("occurrence", 1)
         if type(occurrence) is not int or occurrence < 1:
             raise ValueError("invalid Surface declaration occurrence")
-        surface = "item" if kind in {"struct", "enum", "trait", "module"} else "member"
+        surface = (
+            "item"
+            if kind in {"struct", "enum", "trait", "module", "constant", "type_alias"}
+            else "member"
+        )
         prefix = "page" if surface == "item" else "member"
         symbol = f"{prefix}:{kind}:{rust_path}@signature:{signature}"
         if trait is not None:
