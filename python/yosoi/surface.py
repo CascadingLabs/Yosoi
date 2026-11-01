@@ -1601,7 +1601,10 @@ class SourceInterpretation(ImmutableModel):
 class ArchivedSource(ImmutableModel):
     """Exact source bytes and interpretation, independent of a source file path."""
 
-    key: StrictStr = Field(description="Unique outcome-local source key.")
+    key: StrictStr = Field(
+        description="Outcome-local key. Logical keys stay stable; keys used as "
+        "Archive references follow the destination Archive's stored references."
+    )
     document: DocumentId = Field(description="Original SDK document identity.")
     profile: DocumentProfile | None = Field(
         default=None, description="Document profile, absent for typed images."

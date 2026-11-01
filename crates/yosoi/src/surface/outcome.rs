@@ -87,6 +87,8 @@ pub struct ArchivedSource {
     #[serde(default)]
     pub interpretation: SourceInterpretation,
     /// Identifier within this outcome, independent of a local Archive path.
+    /// Logical keys remain stable; keys used as Archive references follow
+    /// the references written into the destination Archive.
     pub key: String,
     /// Original SDK document identity.
     pub document: DocumentId,
