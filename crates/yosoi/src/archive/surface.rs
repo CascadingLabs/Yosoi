@@ -1,85 +1,16 @@
 //! Surface values join the existing sealed Archive dispatch.
 
+mod closure;
+
 use super::{Archive, ArchiveError};
 use crate::internal::archive::{ArchiveReference, ArchiveValue, sealed};
 use crate::{
     documents::{Document, DocumentProfile},
     surface::{Outcome, OutcomeRef},
 };
-use std::{collections::BTreeMap, fmt::Display};
+use closure::{hydrate, rehydrate};
 
 const MAX_OUTCOME_BYTES: usize = 256 * 1024 * 1024;
-
-pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<(), ArchiveError> {
-    // Only these versioned receipts contain Archive Document dependencies.
-    // Never scan arbitrary result strings or copy an entire source directory.
-    let mut wire = serde_json::to_value(&value.record).map_err(invalid)?;
-    let mut remapped = BTreeMap::new();
-    let operations = wire
-        .get_mut("operations")
-        .and_then(serde_json::Value::as_array_mut)
-        .ok_or_else(|| invalid("missing record operations"))?;
-    for operation in operations {
-        let kind = operation
-            .get("kind")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_default();
-        if !matches!(
-            kind,
-            "surface.capture" | "surface.video.source" | "surface.video.frame"
-        ) {
-            continue;
-        }
-        let reference = operation
-            .pointer_mut("/result/document")
-            .ok_or_else(|| invalid("missing retained document reference"))?;
-        let key = reference
-            .as_str()
-            .ok_or_else(|| invalid("document reference is not text"))?
-            .to_owned();
-        if !remapped.contains_key(&key) {
-            let source = value.sources.iter().find(|source| source.key == key);
-            let Some(source) = source else {
-                if value.complete {
-                    return Err(invalid("portable outcome is missing a required document"));
-                }
-                // Incomplete outcomes remain inspectable. A replay must reject
-                // missing evidence rather than fetching from another store.
-                continue;
-            };
-            let document = source.restore(value.limits.bytes).map_err(invalid)?;
-            let old = key.parse().map_err(invalid)?;
-            let fresh = match archive.read_document(&old).await {
-                Ok(existing) if existing == document => key.clone(),
-                Ok(_) => {
-                    return Err(invalid(
-                        "retained reference conflicts with current Archive bytes",
-                    ));
-                }
-                Err(
-                    ArchiveError::RecordNotFound { .. }
-                    | ArchiveError::DocumentPayloadMissing { .. },
-                ) => archive.write_document(&document).await?.to_string(),
-                Err(error) => return Err(error),
-            };
-            remapped.insert(key.clone(), fresh);
-        }
-        if let Some(fresh) = remapped.get(&key) {
-            *reference = serde_json::Value::String(fresh.clone());
-        }
-    }
-    for source in &mut value.sources {
-        if let Some(fresh) = remapped.get(&source.key) {
-            source.key.clone_from(fresh);
-        }
-    }
-    value.record = serde_json::from_value(wire).map_err(invalid)?;
-    Ok(())
-}
-
-fn invalid(error: impl Display) -> ArchiveError {
-    ArchiveError::InvalidSurfaceOutcome(error.to_string())
-}
 
 impl sealed::Value for Outcome {}
 impl ArchiveValue for Outcome {
@@ -131,11 +62,93 @@ impl ArchiveReference for OutcomeRef {
                 "invalid outcome document profile or size".into(),
             ));
         }
-        let value: Outcome = serde_json::from_slice(document.bytes())
+        let mut value: Outcome = serde_json::from_slice(document.bytes())
             .map_err(|error| ArchiveError::InvalidSurfaceOutcome(error.to_string()))?;
+        hydrate(archive, &mut value).await?;
         value
             .validate()
             .map_err(|error| ArchiveError::InvalidSurfaceOutcome(error.to_string()))?;
         Ok(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        automation_record::{OperationReceipt, OperationStatus},
+        documents::{FileDocument, VideoDocument},
+        surface::{ArchiveLimits, ArchivedSource},
+    };
+    use serde_json::json;
+    use std::error::Error;
+
+    const MP4_SIGNATURE: [u8; 12] = [
+        0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2',
+    ];
+
+    #[tokio::test]
+    async fn portable_outcome_rewrites_registered_typed_video_dependency() -> Result<(), Box<dyn Error>> {
+        let original_root = tempfile::tempdir()?;
+        let portable_root = tempfile::tempdir()?;
+        let archive = Archive::open(original_root.path()).await?;
+        let video = VideoDocument::from_bytes("typed-video-source", MP4_SIGNATURE.to_vec())?;
+        let original_video_ref = archive.write(&video).await?;
+        let profile = Document::json(
+            "video-profile",
+            serde_json::to_vec(&json!({
+                "schema": "yosoi.surface.video-source.v2",
+                "metadata": {"source_sha256": video.sha256()},
+                "policy": {"frame_max_side": 1920},
+                "source": original_video_ref.to_string(),
+            }))?,
+        )?;
+        let original_profile_ref = archive.write_document(&profile).await?;
+        let mut outcome = Outcome::new("portable-video", ArchiveLimits::default())?
+            .with_source(ArchivedSource::new_file_document(
+                original_video_ref.to_string(),
+                &FileDocument::Video(video.clone()),
+                None,
+            ))?
+            .with_source(ArchivedSource::new(
+                original_profile_ref.to_string(),
+                &profile,
+                None,
+            ))?;
+        outcome.record.push_operation(OperationReceipt {
+            browser: None,
+            id: "portable-video:0".into(),
+            kind: "surface.video.source".into(),
+            status: OperationStatus::Observed,
+            result: Some(json!({"document":original_profile_ref.to_string()})),
+            observation: None,
+            error: None,
+        })?;
+        let outcome_ref = archive.write(&outcome).await?;
+        let portable = portable_root.path().join("video.yosoi");
+        archive.export_file(&outcome_ref, &portable).await?;
+        drop(archive);
+        drop(original_root);
+
+        let imported_root = tempfile::tempdir()?;
+        let imported_archive = Archive::open(imported_root.path()).await?;
+        let imported_ref = imported_archive.import_file(&portable).await?;
+        let imported = imported_archive.read(&imported_ref).await?;
+        let restored_profile = imported.source_document(
+            &original_profile_ref.to_string(),
+            MAX_OUTCOME_BYTES as u64,
+        )?;
+        let profile_json: serde_json::Value = serde_json::from_slice(restored_profile.bytes())?;
+        let remapped_video_ref = profile_json
+            .get("source")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("restored video profile has no source ref")?;
+        assert_ne!(remapped_video_ref, original_video_ref.to_string());
+        let restored_video = imported.source_file_document(
+            &original_video_ref.to_string(),
+            MAX_OUTCOME_BYTES as u64,
+        )?;
+        assert_eq!(restored_video, FileDocument::Video(video));
+        Ok(())
     }
 }

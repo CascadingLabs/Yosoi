@@ -22,6 +22,7 @@ from .archive import AudioDocumentArchiveRef as AudioDocumentArchiveRef
 from .archive import AutomationRecord as AutomationRecord
 from .archive import BinaryDocumentArchiveRef as BinaryDocumentArchiveRef
 from .archive import ImageDocumentArchiveRef as ImageDocumentArchiveRef
+from .archive import PixelArtifactArchiveRef as PixelArtifactArchiveRef
 from .archive import VideoDocumentArchiveRef as VideoDocumentArchiveRef
 from .browser import (
     BoundFlow as BoundFlow,
@@ -195,10 +196,49 @@ from .surface import (
     DecodedFrame as DecodedFrame,
 )
 from .surface import (
+    ImageCrop as ImageCrop,
+)
+from .surface import (
+    ImageSurface as ImageSurface,
+)
+from .surface import (
     Limits as SurfaceLimits,
 )
 from .surface import (
+    PixelArtifact as PixelArtifact,
+)
+from .surface import (
+    PixelArtifactInfo as PixelArtifactInfo,
+)
+from .surface import (
+    PixelCoordinateKind as PixelCoordinateKind,
+)
+from .surface import (
+    PixelCoordinateSpace as PixelCoordinateSpace,
+)
+from .surface import (
+    PixelEdgeTransform as PixelEdgeTransform,
+)
+from .surface import (
+    PixelLimits as PixelLimits,
+)
+from .surface import (
+    PixelOperation as PixelOperation,
+)
+from .surface import (
+    PixelOrientation as PixelOrientation,
+)
+from .surface import (
     PixelRect as PixelRect,
+)
+from .surface import (
+    PixelSource as PixelSource,
+)
+from .surface import (
+    LegacyVideoFramePixelSource as LegacyVideoFramePixelSource,
+)
+from .surface import (
+    PixelTransform as PixelTransform,
 )
 from .surface import (
     Session as SurfaceSession,
@@ -246,6 +286,20 @@ __all__ = [
     "VideoError",
     "DecodedFrame",
     "PixelRect",
+    "PixelArtifact",
+    "PixelArtifactInfo",
+    "PixelArtifactArchiveRef",
+    "PixelCoordinateKind",
+    "PixelCoordinateSpace",
+    "PixelEdgeTransform",
+    "PixelLimits",
+    "PixelOperation",
+    "PixelOrientation",
+    "PixelSource",
+    "LegacyVideoFramePixelSource",
+    "PixelTransform",
+    "ImageCrop",
+    "ImageSurface",
     "archive",
     "view",
     "Archive",

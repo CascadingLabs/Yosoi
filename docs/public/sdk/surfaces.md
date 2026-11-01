@@ -1,25 +1,38 @@
 ---
 title: Surfaces
-description: Reference scopes, budgets, cursor ownership, and provider capabilities in Rust and Python.
+description: Reference scopes, image pixels, budgets, cursor ownership, and provider capabilities in Rust and Python.
 ---
 
 # Surfaces
 
-Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. Start with [Surfaces](../concepts/surfaces.md) for documents, video and an agent-driven CLI task.
+Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. `ImageSurface` applies the shared bounded read contract to a typed image. Start with [Surfaces](../concepts/surfaces.md) for documents, images, video and an agent-driven CLI task.
 
 The Rust `surface::browser` and `surface::video` modules own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI enables it automatically. Browser display mode and video frame bounds remain source-specific rather than generic Surface policy fields.
 
 ## Choose the reader
 
-| Reader       | Input                           | Supported operations                                         |
-| ------------ | ------------------------------- | ------------------------------------------------------------ |
-| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates |
-| WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent   |
-| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop    |
+| Reader       | Input                           | Supported operations                                                           |
+| ------------ | ------------------------------- | ------------------------------------------------------------------------------ |
+| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates                   |
+| ImageSurface | Typed PNG/JPEG ImageDocument    | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
+| WebSurface   | Prepared HTML or rendered DOM   | Shared describe/read protocol, including search and parent                    |
+| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                     |
 
 `BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
-`Surface::from_image` in Rust and `Surface.from_image` in Python prepare PNG/JPEG pixels as a region tree. They do not perform OCR or apply EXIF rotation. `combine` joins named independently captured views without claiming an atomic observation. Keep each constituent reference when projecting between views.
+## Images and pixel artifacts
+
+`ImageDocument` owns the exact encoded PNG/JPEG bytes and source metadata. `Surface::from_image_document` in Rust and `Surface.from_image(ImageDocument)` in Python prepare bounded region metadata. `ImageSurface::from_image_document` in Rust and `ys.ImageSurface(image)` in Python also bind that index to the shared `model::SurfaceRead` contract. Its source identity uses the document ID and exact payload SHA-256, independent of tile size or other preparation options.
+
+`Surface::from_image` and `Surface.from_image(bytes)` remain legacy byte-entry points. New code should pass a typed `ImageDocument`; archived legacy image envelopes continue to restore through their stored image interpretation.
+
+PNG/JPEG decoding keeps the original encoded bytes. Image coordinates refer to the encoded raster before EXIF rotation; orientation is recorded as `exif_unapplied`. No OCR, inferred labels or text search runs. The reader advertises no search capability.
+
+`ImageSurface.read` returns bounded routing metadata through the same overview, expand, inspect, parent and continuation types as web and video readers. Pixel bytes use explicit `direct_image`, `overview_image`, `resize_image` and `crop_rect` calls. `direct_image` returns exact source bytes. Overview and resize encode PNG using the versioned triangle filter. A crop takes original-raster coordinates, even when its rectangle was selected from a resized overview.
+
+`PixelArtifactInfo` records the exact encoded digest and MIME type, output dimensions, root source identity and coordinate space, orientation handling, parent artifact identity/digest/dimensions, operation version and parameters, and a rational output-edge-to-parent-edge transform. `PixelArtifact.map_rect_to_source` maps a rectangle from an overview back to the root source pixel plane. Crop and resize APIs reject nested derived artifacts so an ambiguous transform cannot be silently composed.
+
+`PixelLimits` separately bounds decoded side length, decoder allocation, output pixels, output bytes and a reader's retained artifact count. `Surface` response-byte and text-page budgets do not count binary pixels. `Archive.write(&pixel)` stores an `ImageDocument` in the existing raw media payload store and a small provenance record. `Archive.read` verifies both and returns the same artifact without a source path or video decoder.
 
 Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable document reads need neither browser nor decoder.
 

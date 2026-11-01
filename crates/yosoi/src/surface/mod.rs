@@ -10,9 +10,13 @@
 pub mod archive;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+mod image_session;
 mod images;
 pub mod model;
 mod outcome;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub mod pixels;
 mod policy;
 mod prepare;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
@@ -22,10 +26,17 @@ mod session;
 #[cfg(feature = "surface-video")]
 pub mod video;
 
-#[cfg(any(feature = "browser", feature = "surface-images"))]
-pub use images::ImageCrop;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+pub use image_session::ImageSession;
 pub use images::PixelRect;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use images::{ImageCrop, ImageSurface};
 pub use outcome::{ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use pixels::{
+    PixelArtifact, PixelArtifactInfo, PixelCoordinateKind, PixelCoordinateSpace,
+    PixelEdgeTransform, PixelLimits, PixelOperation, PixelOrientation, PixelSource, PixelTransform,
+};
 pub use policy::{ArchiveLimits, ArchivePolicy, ExecutionError, SurfacePolicy};
 pub use session::*;
 
@@ -291,6 +302,11 @@ enum Original {
     },
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     Image { bytes: Vec<u8>, tile_side: u32 },
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    TypedImage {
+        document: crate::documents::ImageDocument,
+        tile_side: u32,
+    },
 }
 
 /// Reusable immutable index, safe to share between concurrent Rust readers.

@@ -88,6 +88,21 @@ pub(super) enum Operation {
     Frame {
         reference: model::Reference,
     },
+    /// Return the exact source pixels without image-region navigation.
+    ImageDirect,
+    /// Return an explicit aspect-preserving image overview.
+    OverviewImage {
+        max_side: u32,
+    },
+    /// Return an explicitly sized image resize.
+    ResizeImage {
+        width: u32,
+        height: u32,
+    },
+    /// Crop explicit bounds in an image source raster coordinate space.
+    CropImage {
+        rect: PixelRect,
+    },
     Crop {
         reference: model::Reference,
         rect: PixelRect,

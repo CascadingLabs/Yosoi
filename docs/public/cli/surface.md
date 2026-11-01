@@ -1,6 +1,6 @@
 ---
 title: Surface
-description: Drive bounded web and video observations through a persistent JSON-lines session.
+description: Read bounded web, image and video evidence through a JSON-lines session.
 ---
 
 # Surface
@@ -48,6 +48,31 @@ yosoi surface video --file recording.mp4 --archive ./video-evidence --output ./v
 
 Use describe and the shared read protocol to explore its lazy timeline. `seek` selects a time in microseconds; frame and crop commands materialize PNG artifacts and return their paths with measured timestamps and integrity metadata. Video advertises `controllable: false` and rejects action commands.
 
+## Open an image surface
+
+The image reader accepts a local PNG or JPEG as a typed `ImageDocument`. It uses the same bounded `read` operations for region metadata, and separate pixel commands return encoded artifacts. Image search is unsupported because no OCR runs.
+
+```sh
+yosoi surface image \
+  --file dashboard.png \
+  --output ./image-run \
+  --archive ./image-evidence
+```
+
+`describe` reports overview, expand, inspect, parent, direct, overview-image, resize, and crop capabilities. The source read is capped at 8 MiB by default. Decoding is capped at 8,192 pixels per side and 64 MiB of allocation. Returned artifacts default to 16,777,216 pixels and 8 MiB, with up to 32 retained artifacts. Override `--max-source-bytes`, `--max-side`, `--max-decoded-bytes`, `--max-output-pixels`, `--max-output-bytes`, and `--max-retained-artifacts` within their supported limits.
+
+Send the shared structural read, then choose how many pixels to receive:
+
+```json
+{"id":1,"op":"read","request":{"operation":{"kind":"overview"},"budget":{"bytes":2048,"items":5}}}
+{"id":2,"op":"image_direct"}
+{"id":3,"op":"overview_image","max_side":640}
+{"id":4,"op":"crop_image","rect":{"x":960,"y":540,"width":320,"height":180}}
+{"id":5,"op":"resize_image","width":640,"height":360}
+```
+
+`image_direct` returns the exact original encoded raster. `overview_image` and `resize_image` apply the named triangle resampling operation. `crop_image` uses explicit coordinates in the original raster. Each pixel reply includes artifact identity, digest, dimensions, parent, operation parameters, and the exact coordinate transform. The output directory receives the image bytes. With `--archive`, the source and each returned artifact use the existing typed media payload store, and replies include references that Rust or Python can reopen. This static reader does not produce a `surface.yosoi` operation outcome.
+
 ## Replay or run again
 
 Archive policy is enabled by `--archive`. Each command checkpoints immutable evidence and updates `record.json`. Normal close also exports `surface.yosoi`, a self-contained portable file. Move that file to another directory or machine without keeping the original Archive. Close the session to seal it before using a confirmed action recipe for a live repeat.
@@ -65,4 +90,4 @@ Incomplete portable outcomes remain inspectable through the SDK, but CLI replay 
 
 Archive storage is opt-in. A recording failure prevents further effects rather than silently discarding their evidence. EOF, close, Ctrl-C, and SIGTERM release the browser session. Replies default to 4,096 bytes, support 1,024 through 16,384 bytes, and reject oversized input lines above 64 KiB.
 
-Use `yosoi surface --help` for command options. Continue with [Surfaces](../concepts/surfaces.md) for document and video walkthroughs, or [Archiving a surface](../concepts/archiving-a-surface.md) for portable outcomes.
+Use `yosoi surface --help` for command options. Continue with [Surfaces](../concepts/surfaces.md) for document, image and video walkthroughs, or [Archiving a surface](../concepts/archiving-a-surface.md) for portable outcomes.
