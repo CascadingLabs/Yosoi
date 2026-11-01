@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import struct
+import uuid
 import zlib
 from typing import Any
 
@@ -390,7 +391,31 @@ def comparison(
 ) -> dict[str, Any]:
     """Bind complete observed values and actual invocation arguments to digests."""
     expected, observed = case["rust"], _plain(observed)
-    return {
+    mapping_values = {"rust": dict(case["input"]), "python": dict(arguments)}
+    raw_references = None
+    if case["name"] == "archive-portable":
+        raw_references = {}
+        for side, value in (("rust", expected), ("python", observed)):
+            reference = mapping_values[side]["reference"]
+            document = (
+                reference.get("document") if isinstance(reference, dict) else None
+            )
+            if not isinstance(document, str) or not document.startswith("document:v1:"):
+                raise ValueError(
+                    "image Archive reference is not a typed document reference"
+                )
+            if str(
+                uuid.UUID(document.removeprefix("document:v1:"))
+            ) != document.removeprefix("document:v1:"):
+                raise ValueError("image Archive reference UUID is noncanonical")
+            raw_references[side] = reference
+            # Independent Archives issue different opaque IDs. Their argument
+            # meaning is the complete checked artifact actually selected by read.
+            mapping_values[side]["reference"] = {
+                "reference_type": "PixelArtifactArchiveRef",
+                "selected_value": value["restored"],
+            }
+    result = {
         "name": case["name"],
         "rustPath": case["rustPath"],
         "rust": expected,
@@ -406,8 +431,11 @@ def comparison(
                 "equal": expected == observed,
             }
         ],
-        "mappingValues": {"rust": case["input"], "python": arguments},
+        "mappingValues": mapping_values,
     }
+    if raw_references is not None:
+        result["observedStorageReferences"] = raw_references
+    return result
 
 
 def evidence_cases(
@@ -444,6 +472,20 @@ def evidence_cases(
         if item is None or entry is None or entry.get("rustPath") != path:
             raise ValueError(f"image conformance lacks a pinned mapping for {path}")
         checks = _mapping_checks(entry, observed["mappingValues"])
+        receiver = observed["mappingValues"]
+        if entry.get("receiverMapping") is None and all(
+            "self" in receiver[side] for side in ("rust", "python")
+        ):
+            left, right = receiver["rust"]["self"], receiver["python"]["self"]
+            checks.append(
+                {
+                    "kind": "receiver",
+                    "key": "self",
+                    "rustSha256": parity.digest_json(left),
+                    "pythonSha256": parity.digest_json(right),
+                    "equal": left == right,
+                }
+            )
         passed = observed["equal"] and all(check["equal"] for check in checks)
         cases.append(
             {

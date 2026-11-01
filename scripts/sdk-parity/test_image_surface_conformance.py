@@ -10,6 +10,7 @@ import zlib
 
 import image_surface_conformance as contract
 import image_surface_runtime as runtime
+import refresh_image_contract
 import run_sdk_parity
 import sdk_contract
 
@@ -44,6 +45,93 @@ def png() -> bytes:
 
 
 class ImageContractTests(unittest.TestCase):
+    def test_compiler_declared_type_alias_resolves_method_attribution(self) -> None:
+        alias = "yosoi::surface::ImageSurface::direct_image"
+        canonical = "yosoi::ImageSurface::direct_image"
+        row = contract.comparison(
+            {"name": "direct", "rustPath": alias, "input": {}, "rust": 1}, 1, {}
+        )
+        rust = {
+            "items": [
+                {
+                    "rustPath": "yosoi::ImageSurface",
+                    "aliases": ["yosoi::surface::ImageSurface"],
+                },
+                {"rustPath": canonical, "symbolKey": "direct"},
+            ]
+        }
+        ledger = {
+            "entries": [
+                {
+                    "rustPath": canonical,
+                    "symbolKey": "direct",
+                    "decision": "mapped",
+                    "pythonTarget": "yosoi.ImageSurface.direct_image",
+                }
+            ]
+        }
+        self.assertEqual(
+            contract.evidence_cases([row], rust, ledger)[0]["rustPath"], canonical
+        )
+        rust["items"][0]["aliases"] = []
+        with self.assertRaisesRegex(ValueError, "pinned mapping"):
+            contract.evidence_cases([row], rust, ledger)
+
+    def test_archive_argument_compares_actual_selected_value_and_retains_ids(
+        self,
+    ) -> None:
+        left = {"document": "document:v1:00000000-0000-4000-8000-000000000001"}
+        right = {"document": "document:v1:00000000-0000-4000-8000-000000000002"}
+        case = {
+            "name": "archive-portable",
+            "rustPath": "yosoi::PixelArtifact::read_from",
+            "input": {"reference": left},
+            "rust": {"restored": {"identity": "actual", "bytes": [1, 2]}},
+        }
+        row = contract.comparison(case, case["rust"], {"reference": right})
+        self.assertEqual(row["mappingValues"]["rust"], row["mappingValues"]["python"])
+        self.assertEqual(
+            row["observedStorageReferences"], {"rust": left, "python": right}
+        )
+        changed = contract.comparison(
+            case,
+            {"restored": {"identity": "different", "bytes": [1, 2]}},
+            {"reference": right},
+        )
+        self.assertNotEqual(
+            changed["mappingValues"]["rust"], changed["mappingValues"]["python"]
+        )
+        with self.assertRaises(ValueError):
+            contract.comparison(
+                case, case["rust"], {"reference": {"document": "invalid"}}
+            )
+
+    def test_refresh_rejects_unreviewed_signature_changes(self) -> None:
+        path = "yosoi::DocumentProfile::source_html"
+        ledger = {
+            "entries": [
+                {
+                    "rustPath": path,
+                    "symbolKey": f"member:function:{path}@signature:{'a' * 64}",
+                    "decision": "mapped",
+                    "pythonTarget": "yosoi.documents.DocumentProfile.source_html",
+                }
+            ]
+        }
+        rust = {
+            "items": [
+                {
+                    "rustPath": path,
+                    "symbolKey": "changed",
+                    "kind": "function",
+                    "signature": "changed",
+                    "trait": None,
+                }
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "unreviewed Rust signature change"):
+            refresh_image_contract.refresh(rust, {"targets": {}}, ledger)
+
     def test_known_png_and_checksum_rejection(self) -> None:
         payload = png()
         width, height, pixels = contract.rgba_png(payload)

@@ -12,6 +12,7 @@ import sdk_contract
 import seed_ledger
 
 ROOT_TYPES = {
+    "Surface",
     "ImageSession",
     "ImageSurface",
     "PixelArtifact",
@@ -123,15 +124,6 @@ def image_mapping(
                 "python": f"Literal {tag}",
             }
         ]
-    if path.startswith("yosoi::ImageSurface::") and any(
-        arg.get("receiver") for arg in item.get("rustArguments", [])
-    ):
-        entry["receiverMapping"] = {
-            "rustArgument": "self",
-            "pythonArgument": "self",
-            "conversion": "Operate on the same immutable image observation; "
-            "references preserve its exact capture scope.",
-        }
     for arg in item.get("rustArguments", []):
         arg_name = arg["name"]
         if arg_name in {

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "595de50623252cfc0414a3c52ac3fa410869c50e",
-    "inventorySignature": "adcdd141fe41cffec71d4c724abb3f6cb735ac3eaa6f4e4bba8191dd39ea69b5"
+    "revision": "b15927a1abd2403203155a476696a983975e9038",
+    "inventorySignature": "72cb0c45bc17e45645d385cd0702b1c5f5120a87d2b4c35506f7bb161d82a35b"
   },
   "scope": {
     "crate": "yosoi",
@@ -383,7 +383,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Archive.read",
-        "pythonTargetSha256": "c5e3ce2126fbe74e3c27f37af68c07409e1a084e5bbd6b69190d2f480a35cafe",
+        "pythonTargetSha256": "3bacc18de9b968125d656a479374e2294f85ad2d8225293261d0ac47fbb16538",
         "semanticEquivalent": "Both read paths use typed references and restore the corresponding concrete file-document class with the same identity, metadata, and payload.",
         "rationale": "Rust Archive reads through the supplied typed ArchiveReference; Python dispatches typed media references and restores the matching concrete class.",
         "review": null,
@@ -461,7 +461,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Archive.write",
-        "pythonTargetSha256": "ad8f8951b24a0fa19adb7f48c8a6e857db480e42e31b174305b65a82ac4c30f5",
+        "pythonTargetSha256": "9d9a11a764486dfa4220a2aca3b96961823eb92b8ed6d01b8bde58f5cc227300",
         "semanticEquivalent": "Both write paths retain the concrete document type, exact bytes, and metadata; the Python overloads return ImageDocumentArchiveRef, VideoDocumentArchiveRef, AudioDocumentArchiveRef, or BinaryDocumentArchiveRef for media values.",
         "rationale": "Rust Archive writes each sealed value through its typed ArchiveValue; Python dispatches media subclasses at runtime and returns the exact typed reference.",
         "review": null,
@@ -1070,7 +1070,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": "Python owns the same native value that Rust exposes through a borrowed view.",
         "rationale": "Python Document is the owning wrapper around the native document. Python retains the same native value through its owning wrapper.",
         "review": null,
@@ -1200,7 +1200,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -1229,7 +1229,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": null,
         "rationale": "Python intentionally omits selected fields from repr; Rust Debug also redacts or summarizes these values. Direct accessors preserve the omitted logical data. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -1386,7 +1386,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Document.profile",
-        "pythonTargetSha256": "3e08e292eaa8e0f849952da12106ed31a7c703b066345c23818a65b08233c82d",
+        "pythonTargetSha256": "cd6f9e498d415a008960f27c4379a7d7254977b00fd10fb687914c918116468a",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.Document.profile.",
         "review": null,
@@ -1935,7 +1935,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.DocumentProfile",
-        "pythonTargetSha256": "b71719781067e965f799121c1d1a056c5b48e35ff6ac9472c39aa2fc2af55e9e",
+        "pythonTargetSha256": "cdeccef0c7c2b19d087814c8a64254e4791927040ed6a7f78a9763abaf3fce4c",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
         "review": {
@@ -1964,7 +1964,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.DocumentProfile",
-        "pythonTargetSha256": "b71719781067e965f799121c1d1a056c5b48e35ff6ac9472c39aa2fc2af55e9e",
+        "pythonTargetSha256": "cdeccef0c7c2b19d087814c8a64254e4791927040ed6a7f78a9763abaf3fce4c",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -1979,6 +1979,27 @@
       "mechanic": {
         "rationale": "Rust Debug provides a diagnostic representation.",
         "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::DocumentProfile::network_observation_v1|function|trait:|occurrence:1",
+      "rustPath": "yosoi::DocumentProfile::network_observation_v1",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::DocumentProfile",
+      "signatureSha256": "4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:131a0590ef06ad73cec79255deb8d102d8aa6f20a5afa14fbcc4e65df0535f80",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.documents.DocumentProfile.network_observation",
+        "pythonTargetSha256": "c47be27db6b9ac95e9b835129e575cef4df74b1f1cca9cb505df5b600927c53c",
+        "semanticEquivalent": null,
+        "rationale": "Rust's network source profile is the same checked Python profile with source representation, JSON format and network schema.",
+        "review": null,
+        "ledgerMappingSha256": "4d1728f3ec54fe6ff636da424220af5abc73c5b231fa358c8afb5b7a5fb7c35e"
       }
     },
     {
@@ -2037,7 +2058,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.DocumentProfile.schema_profile.",
         "review": null,
@@ -2188,7 +2209,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile",
-        "pythonTargetSha256": "b71719781067e965f799121c1d1a056c5b48e35ff6ac9472c39aa2fc2af55e9e",
+        "pythonTargetSha256": "cdeccef0c7c2b19d087814c8a64254e4791927040ed6a7f78a9763abaf3fce4c",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.DocumentProfile.",
         "review": null,
@@ -2209,7 +2230,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile",
-        "pythonTargetSha256": "b71719781067e965f799121c1d1a056c5b48e35ff6ac9472c39aa2fc2af55e9e",
+        "pythonTargetSha256": "cdeccef0c7c2b19d087814c8a64254e4791927040ed6a7f78a9763abaf3fce4c",
         "semanticEquivalent": null,
         "rationale": "The Pydantic profile model authors the document profile passed to native Rust operations.",
         "review": null,
@@ -2230,7 +2251,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": null,
         "rationale": "The package root exports the immutable Pydantic Document authoring model backed by the native SDK.",
         "review": null,
@@ -13663,7 +13684,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -13757,7 +13778,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.Document.profile",
-        "pythonTargetSha256": "09ee899daed5ff91f548d68df7fd2ef495e9948a1b7c7b1c02749e8cced96426",
+        "pythonTargetSha256": "db30d6857e54a3f82e509d4501539ecc0d947e7c9b8d08df81a648c8f1ab4c5e",
         "semanticEquivalent": "Python owns the same native value that Rust exposes through a borrowed view.",
         "rationale": "Python Document.profile owns the same immutable profile value. Python retains the same native value through its owning wrapper.",
         "review": null,
@@ -13778,7 +13799,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": "Python owns the same native value that Rust exposes through a borrowed view.",
         "rationale": "Python document wrappers already own the native document value. Python retains the same native value through its owning wrapper.",
         "review": null,
@@ -13799,7 +13820,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.Document",
-        "pythonTargetSha256": "db91f0489ddab8880df0dedd233c4bdc12ae552f52e8df9cffcc250624befa62",
+        "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39",
         "semanticEquivalent": "Python Document/Response owns the same native value that Rust exposes through a borrowed view.",
         "rationale": "Python returns an owning yosoi.Document wrapper that keeps the native document alive; the Rust borrow is not exposed. Owner accepted the Python owning-view mapping; the wrapper retains the same native value and extends its lifetime.",
         "review": null,
@@ -14060,7 +14081,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant Html5 maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'html5'.",
         "review": null,
@@ -14081,7 +14102,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant JsonRfc8259 maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'json_rfc8259'.",
         "review": null,
@@ -14102,7 +14123,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant Utf8Text maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'utf8_text'.",
         "review": null,
@@ -14123,7 +14144,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant Xml10 maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'xml10'.",
         "review": null,
@@ -14144,11 +14165,32 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant YosoiAccessibilityTreeV1 maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'yosoi_accessibility_tree_v1'.",
         "review": null,
         "ledgerMappingSha256": "658d220cd88a831cd6c68764b5a12b667df61faafeecf731f96379b22d1895ac"
+      }
+    },
+    {
+      "id": "yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::documents::DocumentSchemaProfile",
+      "signatureSha256": "7dc2d23f4bdc6b07035f52391525a6d5e14f996e27710c6faf5de8272da020dc",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1@signature:7dc2d23f4bdc6b07035f52391525a6d5e14f996e27710c6faf5de8272da020dc@source:01a879ed8e1f1c2021e453596433d01b79d39f5d6e8140bc0a47f1657c62793f",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
+        "semanticEquivalent": null,
+        "rationale": "The network schema enum variant is retained as the exact public Python profile literal yosoi_network_observation_v1.",
+        "review": null,
+        "ledgerMappingSha256": "f7b05857c35340b42900017479c6fd035bd7a8f433c1fb56abf2d4b11c4099f1"
       }
     },
     {
@@ -14165,7 +14207,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust variant YosoiRenderedDomV1 maps to the corresponding Python tagged value yosoi.documents.DocumentProfile.schema_profile. The Python discriminator value is 'yosoi_rendered_dom_v1'.",
         "review": null,
@@ -14261,7 +14303,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -14342,7 +14384,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile",
-        "pythonTargetSha256": "17b11ece1e9b1e3b637880c9da4cc4d9fa93b9946d35ca965690632a17dcc84e",
+        "pythonTargetSha256": "fa5c0a21cd89f22c2f348aa029ee8ce24393de54fa68e1daff7774014c04dc0c",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.documents.DocumentProfile.schema_profile.",
         "review": null,
@@ -50708,7 +50750,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.request.DocumentOutcome",
-        "pythonTargetSha256": "6432411a9b492a858d4f55a6384ebfdac460dab31293f85875e429e83d6f872d",
+        "pythonTargetSha256": "d16c810067bb77e265ea6480c5b100c9fdfa6dfb67aad935d3a3b40048aa387b",
         "semanticEquivalent": null,
         "rationale": "Rust fmt::Debug and Python repr use different formatter protocols; the corresponding Python tag, payload and logical fields remain accessible through the listed typed surface. No exact text match is claimed. Rust fmt::Formatter flags/layout are language-specific. Python repr and the listed explicit data accessors preserve SDK inspection capabilities; exact textual layout is intentionally different.",
         "review": {
@@ -50739,7 +50781,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.request.DocumentOutcome",
-        "pythonTargetSha256": "6432411a9b492a858d4f55a6384ebfdac460dab31293f85875e429e83d6f872d",
+        "pythonTargetSha256": "d16c810067bb77e265ea6480c5b100c9fdfa6dfb67aad935d3a3b40048aa387b",
         "semanticEquivalent": null,
         "rationale": "The live Python surface exposes the corresponding public target yosoi.request.DocumentOutcome.",
         "review": null,
