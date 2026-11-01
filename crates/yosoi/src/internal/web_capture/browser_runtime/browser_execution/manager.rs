@@ -19,6 +19,10 @@ pub struct BrowserExecutionManagerConfig {
     pub minimal_cdp: bool,
     /// Owned local networking relay, applied to every browser web request.
     pub proxy: Option<SocketAddr>,
+    /// Private Session-owned X11 display, never the operator's desktop.
+    pub private_display: Option<String>,
+    /// Explicit typed grant for self-tab media capture on a fresh owned profile.
+    pub native_tab_capture: bool,
 }
 
 /// Secret-safe failure from concrete browser execution management.

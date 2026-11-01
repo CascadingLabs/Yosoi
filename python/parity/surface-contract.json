@@ -77,7 +77,7 @@
         "status": "reviewed",
         "reviewer": "Codex owner",
         "reviewedAt": "2026-10-31T19:53:46+00:00",
-        "rationale": "The Python façade consumes browser.Work and intentionally does not expose a Tab wrapper or tab-selection API.",
+        "rationale": "The Python fa\u00e7ade consumes browser.Work and intentionally does not expose a Tab wrapper or tab-selection API.",
         "pythonEquivalent": "Pass an already selected browser.Work to BrowserSurface.consume_work; this is not a direct Tab mapping."
       },
       "pythonTargetSha256": "c8b5c07236b0327197593dc0574d7789878726675afd228169d7d374760ca466"
@@ -5127,7 +5127,7 @@
           "python": "Python default None"
         }
       ],
-      "rationale": "The reviewed browser-specific module façade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
+      "rationale": "The reviewed browser-specific module fa\u00e7ade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
       "pythonTargetSha256": "96401b653310a254fcf43af7861c4110b3d02bc7957173c897f0f7a644404124"
     },
     {
@@ -5135,7 +5135,7 @@
       "kind": "module",
       "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
       "pythonTarget": "yosoi.browser_surface",
-      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
+      "rationale": "The browser-specific Rust Surface fa\u00e7ade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
       "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
     },
     {
@@ -13022,6 +13022,14 @@
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::ImageCrop::png",
+      "kind": "struct_field",
+      "signatureSha256": "59cc765b13def68ae123de0680377395b78ff257654efc807690c68a339345d7",
+      "pythonTarget": "yosoi.surface.ImageCrop.png",
+      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
+      "pythonTargetSha256": "0c14d396e9b9cdf8299a27c315ba358a25ad86e1bca6fe1942e8206102e1c347"
     }
   ]
 }

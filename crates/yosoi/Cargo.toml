@@ -36,6 +36,14 @@ required-features = ["surface-video"]
 [[example]]
 name = "network_conformance"
 
+[[example]]
+name = "live_recording_native"
+required-features = ["browser"]
+
+[[example]]
+name = "session_observation"
+required-features = ["browser"]
+
 [features]
 default = []
 surface-images = ["dep:image"]

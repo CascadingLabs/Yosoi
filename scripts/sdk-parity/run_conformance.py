@@ -25,13 +25,68 @@ def tooling() -> Any:
 
 
 def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    from pydantic import BaseModel, create_model
+    from pydantic import BaseModel, ValidationError, create_model
 
     import yosoi as ys
+    from yosoi.errors import rust_error_details
 
     cases: list[dict[str, Any]] = []
     expected: list[dict[str, Any]] = []
+
+    media_fixtures = (
+        ("image", b"\x89PNG\r\n\x1a\nfixture image", ys.ImageDocument),
+        ("video", b"\x00\x00\x00\x10ftypmp42", ys.VideoDocument),
+        ("audio", b"ID3\x04\x00\x00\x00\x00\x00\x00", ys.AudioDocument),
+        ("binary", b"opaque binary payload", ys.BinaryDocument),
+    )
+
+    def file_metadata(kind: str) -> ys.FileMetadata:
+        return (
+            ys.FileMetadata()
+            .with_filename(f"fixture.{kind}")
+            .with_declared_media_type("application/octet-stream")
+            .with_source("sdk-parity")
+            .with_capture_id(f"capture-{kind}")
+            .with_session_id("session-sdk-parity")
+            .with_tab_id("tab-sdk-parity")
+            .with_download_id(f"download-{kind}")
+        )
+
+    def file_value(document: Any, maximum_bytes: int) -> dict[str, Any]:
+        kind_by_type = {
+            ys.ImageDocument: "image",
+            ys.VideoDocument: "video",
+            ys.AudioDocument: "audio",
+            ys.BinaryDocument: "binary",
+        }
+        kind = kind_by_type.get(type(document))
+        if kind is None:
+            raise TypeError(f"unexpected file document type: {type(document).__name__}")
+        return {
+            "id": str(document.id),
+            "kind": kind,
+            "bytes": list(document.bytes),
+            "byte_len": document.byte_len,
+            "sha256": document.sha256,
+            "metadata": document.metadata.model_dump(mode="json"),
+            "maximum_bytes": maximum_bytes,
+            "default_file_max_bytes": ys.documents.DEFAULT_FILE_MAX_BYTES,
+            "max_file_bytes": ys.documents.MAX_FILE_BYTES,
+            "max_recording_duration_ms": ys.policy.MAX_RECORDING_DURATION_MS,
+        }
+
     from yosoi.contracts import value_type_id
+
+    file_limit_value = ys.FileLimits(max_bytes=731)
+    cases.append(
+        {"kind": "file_limits", "name": "file-limits-max-bytes", "max_bytes": 731}
+    )
+    expected.append(
+        {
+            "name": "file-limits-max-bytes",
+            "result": {"max_bytes": file_limit_value.max_bytes},
+        }
+    )
 
     class CustomValue:
         TYPE_ID: ClassVar[str] = "custom.review"
@@ -138,6 +193,12 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         ("yosoi::policy::EventLimit", ys.policy.EventLimit.default),
         ("yosoi::policy::MaximumElapsed", ys.policy.MaximumElapsed.default),
         ("yosoi::policy::RedirectHopLimit", ys.policy.RedirectHopLimit.default),
+        ("yosoi::policy::ObserveLimits", ys.policy.ObserveLimits),
+        ("yosoi::policy::ObservePolicy", ys.policy.ObservePolicy),
+        ("yosoi::policy::RecordingRule", ys.policy.RecordingRule),
+        ("yosoi::policy::ScreenshotPolicy", ys.policy.ScreenshotPolicy),
+        ("yosoi::documents::FileLimits", ys.FileLimits),
+        ("yosoi::documents::FileMetadata", ys.FileMetadata),
         ("yosoi::map::Summary", ys.map.Summary),
         ("yosoi::search::SearchHitMetadata", ys.search.SearchHitMetadata),
     ]
@@ -148,7 +209,14 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         serialized = (
             json.loads(value.to_json())
             if isinstance(value, ys.Policy)
-            else value.model_dump(mode="json")
+            else value.model_dump(
+                mode="json",
+                exclude_none=rust_type
+                in {
+                    "yosoi::policy::ObservePolicy",
+                    "yosoi::policy::ScreenshotPolicy",
+                },
+            )
             if isinstance(value, BaseModel)
             else value
         )
@@ -219,6 +287,18 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     policies = [("default-policy", ys.Policy()), ("bounded-policy", ys.Policy())]
     policies[1][1].request.maximum_elapsed = 5_000_000
     policies[1][1].documents.max_nodes = 1000
+    policies[1][1].observe = ys.policy.ObservePolicy(
+        enabled=True,
+        native_tab_capture=True,
+        screenshots=ys.policy.ScreenshotPolicy(
+            before="target", after="viewport", failure="target"
+        ),
+        recordings=[
+            ys.policy.RecordingRule(mode="browser_visible"),
+            ys.policy.RecordingRule(mode="each_tab", include_audio=True),
+        ],
+        limits=ys.policy.ObserveLimits(max_sources=4, max_recordings=2),
+    )
     for name, policy in policies:
         cases.append(
             {
@@ -240,9 +320,203 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                     "snapshot": policy.snapshot().model_dump(
                         mode="json", exclude_none=True
                     ),
+                    "max_recording_duration_ms": ys.policy.MAX_RECORDING_DURATION_MS,
                 },
             }
         )
+
+    invalid_observe = ys.policy.ObservePolicy(
+        enabled=True,
+        native_tab_capture=True,
+        recordings=[
+            ys.policy.RecordingRule(mode="each_tab"),
+            ys.policy.RecordingRule(mode="each_tab"),
+        ],
+        limits=ys.policy.ObserveLimits(max_recordings=1),
+    )
+    invalid_policy_value = {"observe": invalid_observe.model_dump(mode="json")}
+    try:
+        ys.Policy.model_validate(invalid_policy_value)
+    except ValidationError as error:
+        details = rust_error_details(error)
+        if details is None:
+            raise AssertionError(
+                "observation limit error lacks native Rust details"
+            ) from error
+        policy_error = {
+            "rust_type": details.rust_type,
+            "variant": details.variant,
+            "details": dict(details.details),
+            "source_chain": list(details.source_chain),
+        }
+    else:
+        raise AssertionError("too many recording rules unexpectedly passed validation")
+    cases.append({"kind": "policy_error", "name": "observe-recording-rule-limit"})
+    expected.append(
+        {
+            "name": "observe-recording-rule-limit",
+            "result": {"error": policy_error},
+        }
+    )
+
+    for family, payload, _document_type in media_fixtures:
+        identifier = f"file-factory-{family}"
+        maximum_bytes = 1024
+        metadata = file_metadata(family)
+        document = ys.file_from_bytes(
+            identifier,
+            payload,
+            metadata=metadata,
+            limits=ys.FileLimits(max_bytes=maximum_bytes),
+        )
+        cases.append(
+            {
+                "kind": "file_document",
+                "name": identifier,
+                "id": identifier,
+                "bytes": list(payload),
+                "metadata": metadata.model_dump(mode="json", exclude_none=True),
+                "max_bytes": maximum_bytes,
+            }
+        )
+        expected.append(
+            {
+                "name": identifier,
+                "result": file_value(document, maximum_bytes),
+            }
+        )
+
+        for constructor in ("default", "limits", "metadata"):
+            identifier = f"file-typed-{family}-{constructor}"
+            maximum_bytes = (
+                ys.documents.DEFAULT_FILE_MAX_BYTES
+                if constructor == "default"
+                else 1024
+            )
+            metadata = (
+                file_metadata(family)
+                if constructor == "metadata"
+                else ys.FileMetadata()
+            )
+            document = _document_type.from_bytes(
+                identifier,
+                payload,
+                **(
+                    {}
+                    if constructor == "default"
+                    else {"limits": ys.FileLimits(max_bytes=maximum_bytes)}
+                    if constructor == "limits"
+                    else {
+                        "metadata": metadata,
+                        "limits": ys.FileLimits(max_bytes=maximum_bytes),
+                    }
+                ),
+            )
+            cases.append(
+                {
+                    "kind": "typed_file_document",
+                    "name": identifier,
+                    "id": identifier,
+                    "family": family,
+                    "constructor": constructor,
+                    "bytes": list(payload),
+                    "metadata": metadata.model_dump(mode="json", exclude_none=True),
+                    "max_bytes": maximum_bytes,
+                }
+            )
+            expected.append(
+                {
+                    "name": identifier,
+                    "result": file_value(document, maximum_bytes),
+                }
+            )
+
+    boundary_id = "file-limit-at-bound"
+    boundary_payload = b"x"
+    boundary_limit = ys.FileLimits(max_bytes=len(boundary_payload))
+    boundary_document = ys.file_from_bytes(
+        boundary_id, boundary_payload, limits=boundary_limit
+    )
+    cases.append(
+        {
+            "kind": "file_document",
+            "name": boundary_id,
+            "id": boundary_id,
+            "bytes": list(boundary_payload),
+            "metadata": {},
+            "max_bytes": boundary_limit.max_bytes,
+        }
+    )
+    expected.append(
+        {
+            "name": boundary_id,
+            "result": file_value(boundary_document, boundary_limit.max_bytes),
+        }
+    )
+
+    too_large_id = "file-limit-one-byte-over"
+    too_large_payload = b"xy"
+    too_large_limit = ys.FileLimits(max_bytes=len(too_large_payload) - 1)
+    cases.append(
+        {
+            "kind": "file_too_large_error",
+            "name": too_large_id,
+            "id": too_large_id,
+            "bytes": list(too_large_payload),
+            "max_bytes": too_large_limit.max_bytes,
+        }
+    )
+    try:
+        ys.file_from_bytes(too_large_id, too_large_payload, limits=too_large_limit)
+    except ys.FileDocumentError as error:
+        details = rust_error_details(error)
+        if details is None:
+            raise AssertionError("oversized file lacks native Rust details") from error
+        too_large_error = {
+            "rust_type": details.rust_type,
+            "variant": details.variant,
+            "details": dict(details.details),
+            "source_chain": list(details.source_chain),
+        }
+    else:
+        raise AssertionError("file above the configured limit unexpectedly passed")
+    expected.append(
+        {
+            "name": too_large_id,
+            "result": {"error": too_large_error},
+        }
+    )
+
+    too_long_filename = "é" * 513
+    cases.append(
+        {
+            "kind": "file_metadata_error",
+            "name": "file-metadata-utf8-byte-limit",
+            "filename": too_long_filename,
+        }
+    )
+    try:
+        ys.FileMetadata().with_filename(too_long_filename)
+    except ys.FileDocumentError as error:
+        details = rust_error_details(error)
+        if details is None:
+            raise AssertionError(
+                "FileDocumentError lacks native Rust details"
+            ) from error
+        metadata_error = {
+            "rust_type": details.rust_type,
+            "variant": details.variant,
+            "details": dict(details.details),
+            "source_chain": list(details.source_chain),
+        }
+    else:
+        raise AssertionError("oversized UTF-8 metadata unexpectedly passed validation")
+    expected.append(
+        {
+            "name": "file-metadata-utf8-byte-limit",
+            "result": {"error": metadata_error},
+        }
+    )
 
     document_specs = [
         ("html-css", ys.Document.html, "<h1>Hello</h1>", ys.css("h1").text()),
@@ -562,7 +836,64 @@ def main() -> int:
         "yosoi::policy::PolicySnapshot::policy": "policy",
         "yosoi::policy::PolicySnapshot::effective_policy": "policy",
         "yosoi::policy::PolicySnapshot::identity": "policy",
+        "yosoi::Policy::observe": "policy",
+        "yosoi::policy::ObserveLimits": "policy",
+        "yosoi::policy::ObservePolicy": "policy",
+        "yosoi::policy::RecordingMode": "policy",
+        "yosoi::policy::RecordingRule": "policy",
+        "yosoi::policy::ScreenshotPolicy": "policy",
+        "yosoi::policy::ScreenshotScope": "policy",
+        "yosoi::policy::observe::MAX_RECORDING_DURATION_MS": "policy",
+        "yosoi::PolicyError::ObservationRulesExceedRecordingLimit": "policy_error",
+        "yosoi::documents::DEFAULT_FILE_MAX_BYTES": "file_document",
+        "yosoi::documents::MAX_FILE_BYTES": "file_document",
+        "yosoi::documents::FileDocument": "file_document",
+        "yosoi::documents::FileDocument::id": "file_document",
+        "yosoi::documents::FileDocument::metadata": "file_document",
+        "yosoi::documents::FileDocument::bytes": "file_document",
+        "yosoi::documents::FileDocument::byte_len": "file_document",
+        "yosoi::documents::FileDocument::sha256": "file_document",
+        "yosoi::documents::file_from_bytes": "file_document",
+        "yosoi::documents::FileMetadata": "file_document",
+        "yosoi::documents::FileMetadata::new": "file_document",
+        "yosoi::documents::FileLimits": "file_document",
+        "yosoi::documents::FileLimits::new": "file_limits",
+        "yosoi::documents::FileLimits::max_bytes": "file_limits",
+        "yosoi::documents::FileDocumentError": "file_too_large_error",
+        "yosoi::documents::FileDocumentError::TooLarge": "file_too_large_error",
+        "yosoi::documents::FileDocumentError::MetadataTooLong": "file_metadata_error",
     }
+    for variant in ("Image", "Video", "Audio", "Binary"):
+        operations[f"yosoi::documents::FileDocument::{variant}"] = "file_document"
+    for method in (
+        "with_filename",
+        "with_declared_media_type",
+        "with_source",
+        "with_capture_id",
+        "with_session_id",
+        "with_tab_id",
+        "with_download_id",
+    ):
+        operations[f"yosoi::documents::FileMetadata::{method}"] = "file_document"
+    for document in (
+        "ImageDocument",
+        "VideoDocument",
+        "AudioDocument",
+        "BinaryDocument",
+    ):
+        operations[f"yosoi::documents::{document}"] = "typed_file_document"
+        for method in (
+            "from_bytes",
+            "from_bytes_with_limits",
+            "from_bytes_with_metadata",
+        ):
+            operations[f"yosoi::documents::{document}::{method}"] = (
+                "typed_file_document"
+            )
+        for method in ("id", "metadata", "bytes", "byte_len", "sha256"):
+            operations[f"yosoi::documents::{document}::{method}"] = (
+                "typed_file_document"
+            )
     cases = []
     workflow_by_kind = {
         kind: [
@@ -571,7 +902,17 @@ def main() -> int:
             if given["kind"] == kind
         ]
         for kind in (
-            "query", "policy", "document", "contract", "contract_value_identity"
+            "query",
+            "policy",
+            "policy_error",
+            "document",
+            "contract",
+            "contract_value_identity",
+            "file_document",
+            "file_limits",
+            "file_too_large_error",
+            "typed_file_document",
+            "file_metadata_error",
         )
     }
     inputs_by_name = {item["name"]: item for item in inputs}

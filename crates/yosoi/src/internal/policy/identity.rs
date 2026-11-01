@@ -6,6 +6,7 @@ pub const EFFECTIVE_POLICY_IDENTITY_VERSION: u16 = 7;
 
 const IDENTITY_DOMAIN: &[u8] = b"yosoi-effective-policy\0v7\0";
 const BROWSER_IDENTITY_DOMAIN: &[u8] = b"yosoi-effective-policy\0v8\0";
+const OBSERVATION_IDENTITY_DOMAIN: &[u8] = b"yosoi-effective-policy\0v9\0";
 const LEGACY_IDENTITY_DOMAIN_V6: &[u8] = b"yosoi-effective-policy\0v6\0";
 const LEGACY_IDENTITY_DOMAIN_V5: &[u8] = b"yosoi-effective-policy\0v5\0";
 const LEGACY_IDENTITY_DOMAIN_V4: &[u8] = b"yosoi-effective-policy\0v4\0";
@@ -26,6 +27,10 @@ impl EffectivePolicyIdentity {
 
     pub(in crate::internal::policy) fn from_browser_json(json: &str) -> Self {
         Self::from_json_version(8, BROWSER_IDENTITY_DOMAIN, json)
+    }
+
+    pub(in crate::internal::policy) fn from_observation_json(json: &str) -> Self {
+        Self::from_json_version(9, OBSERVATION_IDENTITY_DOMAIN, json)
     }
 
     pub(in crate::internal::policy) fn from_legacy_v4_json(json: &str) -> Self {

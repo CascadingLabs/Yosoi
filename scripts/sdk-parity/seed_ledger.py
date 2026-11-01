@@ -97,6 +97,16 @@ def _matches_prior_mapping(entry: dict[str, Any], item: dict[str, Any]) -> bool:
         new_signature = re.search(r"@signature:([^@]+)", item["symbolKey"])
         if old_signature and new_signature:
             return old_signature.group(1) == new_signature.group(1)
+        if old_signature and item.get("surface") == "item" and not new_signature:
+            old_kind = re.match(r"(?:page|member):([^:]+):", selector)
+            signature = item.get("signature")
+            return (
+                old_kind is not None
+                and old_kind.group(1) == item.get("kind")
+                and isinstance(signature, str)
+                and old_signature.group(1)
+                == parity.digest_bytes(signature.encode("utf-8"))
+            )
     return selector is None
 
 
@@ -116,6 +126,7 @@ def _ledger_with_source_root(
 
 
 ERROR_TARGETS = {
+    "ArchiveRefError": "yosoi.errors.ArchiveError",
     "CoordinateError": "yosoi.errors.LocatorError",
     "ContractLocatorError": "yosoi.errors.ContractError",
     "ContractSchemaError": "yosoi.errors.ContractError",
@@ -141,6 +152,7 @@ ERROR_TARGETS = {
     "SearchSendError": "yosoi.errors.SearchError",
     "SearchFailure": "yosoi.search.Failed.value",
     "SearchUnavailableReason": "yosoi.search.NotStarted.value",
+    "SurfaceError": "yosoi.SurfaceError",
 }
 
 VALUE_TARGETS = {
@@ -150,6 +162,9 @@ VALUE_TARGETS = {
     "yosoi::CountLimit": "yosoi.scalars.CountLimit",
     "yosoi::DocumentId": "yosoi.scalars.DocumentId",
     "yosoi::DocumentProfile": "yosoi.documents.DocumentProfile",
+    "yosoi::documents::DEFAULT_FILE_MAX_BYTES": "yosoi.documents.DEFAULT_FILE_MAX_BYTES",
+    "yosoi::documents::MAX_FILE_BYTES": "yosoi.documents.MAX_FILE_BYTES",
+    "yosoi::policy::observe::MAX_RECORDING_DURATION_MS": "yosoi.policy.MAX_RECORDING_DURATION_MS",
     "yosoi::DocumentProfileError": "yosoi.errors.DocumentError",
     "yosoi::documents::FileDocument": "yosoi.documents.FileDocument",
     "yosoi::documents::ImageDocument": "yosoi.documents.ImageDocument",
@@ -346,6 +361,8 @@ DEFAULT_EQUIVALENTS = {
     "yosoi::map::Summary": "yosoi.map.Summary",
     "yosoi::search::SearchHitMetadata": "yosoi.search.SearchHitMetadata",
     "yosoi::Policy": "yosoi.Policy",
+    "yosoi::documents::FileLimits": "yosoi.documents.FileLimits",
+    "yosoi::documents::FileMetadata": "yosoi.documents.FileMetadata",
     "yosoi::policy::Page": "yosoi.policy.Page",
     "yosoi::policy::Request": "yosoi.policy.Request",
     "yosoi::policy::SourceLimits": "yosoi.policy.SourceLimits",
@@ -358,6 +375,10 @@ DEFAULT_EQUIVALENTS = {
     "yosoi::policy::Filters": "yosoi.policy.Filters",
     "yosoi::policy::Scope": "yosoi.policy.Scope",
     "yosoi::policy::Tuning": "yosoi.policy.Tuning",
+    "yosoi::policy::ObserveLimits": "yosoi.policy.ObserveLimits",
+    "yosoi::policy::ObservePolicy": "yosoi.policy.ObservePolicy",
+    "yosoi::policy::RecordingRule": "yosoi.policy.RecordingRule",
+    "yosoi::policy::ScreenshotPolicy": "yosoi.policy.ScreenshotPolicy",
     "yosoi::policy::search::Search": "yosoi.policy.Search",
     "yosoi::policy::EventLimit": "yosoi.policy.EventLimit.default",
     "yosoi::policy::MaximumElapsed": "yosoi.policy.MaximumElapsed.default",
@@ -529,6 +550,18 @@ MEMBER_TARGETS = {
     "yosoi::locators::text_literal": "yosoi.locators.text_literal",
     "yosoi::locators::tree_text_contains": "yosoi.locators.tree_text_contains",
     "yosoi::locators::xpath": "yosoi.locators.xpath",
+    **{
+        f"yosoi::documents::{document}::{method}": (
+            f"yosoi.documents.{document}.from_bytes"
+        )
+        for document in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        )
+        for method in ("from_bytes_with_limits", "from_bytes_with_metadata")
+    },
 }
 
 for _media_document_type in (
@@ -727,6 +760,62 @@ VARIANT_PARENT_TARGETS = {
     },
 }
 
+
+FILE_DOCUMENT_ERROR_OUTPUT_FIELDS = {
+    "TooLarge": [
+        ("maximum", "details.maximum", "Exact native file-size limit in bytes."),
+        ("observed", "details.observed", "Exact observed payload size in bytes."),
+    ],
+    "LimitExceedsHardMaximum": [
+        ("configured", "details.configured", "Exact configured file limit in bytes."),
+        ("maximum", "details.maximum", "Exact native file-size hard cap in bytes."),
+    ],
+    "MetadataTooLong": [
+        ("field", "details.field", "Exact metadata field name."),
+        ("maximum", "details.maximum", "Exact UTF-8 byte bound."),
+        ("observed", "details.observed", "Exact observed UTF-8 byte length."),
+    ],
+    "TypeMismatch": [
+        ("expected", "details.expected", "Requested media family."),
+        ("detected", "details.detected", "Detected MIME family or null."),
+    ],
+    "BodyUnavailable": [],
+    "ArchivedMetadataMismatch": [],
+    "NotRegularFile": [
+        (
+            "0",
+            "details.path",
+            "PathBuf rendered as the native error's lossy path string.",
+        ),
+    ],
+    "Document": [
+        (
+            "0",
+            "details.message",
+            "Nested DocumentError Display text; source_chain is preserved separately.",
+        ),
+    ],
+    "Io": [
+        (
+            "path",
+            "details.path",
+            "PathBuf rendered as the native error's lossy path string.",
+        ),
+        ("source", "source_chain[*]", "Underlying filesystem error Display text."),
+    ],
+}
+
+POLICY_ERROR_OUTPUT_FIELDS = {
+    "ObservationRulesExceedRecordingLimit": [
+        (
+            "configured",
+            "details.configured",
+            "Exact number of configured recording rules.",
+        ),
+        ("maximum", "details.maximum", "Exact configured maximum recording count."),
+    ],
+}
+
 VARIANT_MODEL_PARENTS = {
     "yosoi::contracts::FieldIssueKind",
     "yosoi::contracts::ExtractionDiagnostic",
@@ -880,9 +969,7 @@ LANGUAGE_SPECIFIC_ITEMS = {
     },
 }
 
-REVIEWED_MEDIA_TRAIT_DISPOSITIONS: dict[
-    tuple[str, str], dict[str, str]
-] = {}
+REVIEWED_MEDIA_TRAIT_DISPOSITIONS: dict[tuple[str, str], dict[str, str]] = {}
 for _media_type in (
     "AudioDocument",
     "BinaryDocument",
@@ -1036,7 +1123,7 @@ for _trait in ("Serialize", "Deserialize"):
             "metadata model; native operations enforce the authoritative UTF-8 bounds."
         ),
         "rationale": (
-            f"Rust serde { _verb } FileMetadata at the JSON boundary. Python uses "
+            f"Rust serde {_verb} FileMetadata at the JSON boundary. Python uses "
             "ordinary Pydantic JSON serialization/validation and may reject invalid "
             "metadata earlier; native operations remain authoritative."
         ),
@@ -1115,6 +1202,21 @@ BORROWED_VIEW_TARGETS = {
 }
 
 ARGUMENT_ALIASES = {
+    **{
+        (f"yosoi::documents::{document}::{method}", "bytes"): "content"
+        for document in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        )
+        for method in (
+            "from_bytes",
+            "from_bytes_with_limits",
+            "from_bytes_with_metadata",
+        )
+    },
+    ("yosoi::documents::file_from_bytes", "bytes"): "content",
     ("yosoi::Document::html", "bytes"): "content",
     ("yosoi::Document::xml", "bytes"): "content",
     ("yosoi::request::ActivityId::from_str", "s"): "value",
@@ -1348,7 +1450,19 @@ def _conversion(rust_type: str, python_parameter: dict[str, Any]) -> str:
     if "String" in rust_type or "str" in rust_type:
         return "Rust string-like input maps to Python str"
     if "Vec<u8>" in rust_type or "[u8]" in rust_type:
-        return "Python str is UTF-8 encoded; bytes are preserved"
+        normalized_python_type = python_type.replace("builtins.", "")
+        accepts_bytes = re.search(r"(?<![\w])bytes(?![\w])", normalized_python_type)
+        accepts_str = re.search(r"(?<![\w])str(?![\w])", normalized_python_type)
+        if accepts_bytes and accepts_str:
+            return "Python str is UTF-8 encoded; bytes are preserved"
+        if accepts_bytes:
+            return "Python bytes are preserved exactly; str is rejected"
+        if accepts_str:
+            return "Python str is UTF-8 encoded to Rust bytes; bytes are rejected"
+        return (
+            f"Python {python_type or 'value'} converts to Rust bytes according to "
+            "its declared parameter type"
+        )
     if "CancellationToken" in rust_type:
         return "Python CancellationToken forwards its native handle"
     if "Policy" in rust_type:
@@ -1637,6 +1751,49 @@ def _reviewed_media_trait_entry(
         }
     )
     return entry
+
+
+def _error_details_output_entry(
+    item: dict[str, Any],
+    *,
+    python_target: str,
+    rust_type: str,
+    fields: list[tuple[str, str, str]],
+    rationale: str,
+) -> dict[str, Any]:
+    """Map one Rust error variant to the native Python exception metadata."""
+    variant = item["rustPath"].rsplit("::", 1)[-1]
+    return {
+        "rustPath": item["rustPath"],
+        "symbolKey": item["symbolKey"],
+        "decision": "mapped",
+        "pythonTarget": python_target,
+        "argumentMappings": [],
+        "defaults": [],
+        "units": [],
+        "cardinality": [],
+        "mappingDirection": "output",
+        "outputBinding": {
+            "kind": "error-details",
+            "schemaTarget": "yosoi.errors.RustErrorDetails",
+            "discriminator": "variant",
+            "tag": variant,
+            "rustType": rust_type,
+            "pythonFields": [
+                {
+                    "rustArgument": rust_argument,
+                    "pythonFieldPath": python_path,
+                    "conversion": conversion,
+                }
+                for rust_argument, python_path, conversion in fields
+            ],
+        },
+        "semanticEquivalent": (
+            "The native Python exception preserves the Rust variant, structured "
+            "details and source chain through rust_error_details()."
+        ),
+        "rationale": rationale,
+    }
 
 
 def _proposal_argument_mappings(
@@ -1954,8 +2111,7 @@ def seed_entries(
                 if (
                     conversion_error["decision"] == "mapped"
                     and entry.get("decision") == "mapped"
-                    and entry.get("pythonTarget")
-                    == conversion_error["pythonTarget"]
+                    and entry.get("pythonTarget") == conversion_error["pythonTarget"]
                 ) or (
                     conversion_error["decision"] == "language-specific"
                     and entry.get("decision") == "language-specific"
@@ -1990,6 +2146,10 @@ def seed_entries(
                     )
                     if updated:
                         copied = updated
+            if item.get("parentRustPath") == "yosoi::documents::FileDocument":
+                updated = _file_document_variant_entry(item, python)
+                if updated is not None:
+                    copied = updated
             preferred_target = VALUE_TARGETS.get(item["rustPath"])
             if preferred_target in python["targets"]:
                 if copied.get("pythonTarget") != preferred_target:
@@ -2645,6 +2805,55 @@ def seed_entries(
             for candidate in entries_by_identity.values()
         ):
             entries_by_identity[f"legacy:{entry['rustPath']}"] = dict(entry)
+
+    # FileDocument error values surface as the native exception category plus the
+    # exact Rust variant, structured details, and source chain.
+    for item in rust["items"]:
+        if (
+            item.get("surface") != "member"
+            or item.get("kind") != "variant"
+            or item.get("parentRustPath") != "yosoi::documents::FileDocumentError"
+        ):
+            continue
+        variant = item["rustPath"].rsplit("::", 1)[-1]
+        fields = FILE_DOCUMENT_ERROR_OUTPUT_FIELDS.get(variant)
+        target = "yosoi.errors.FileDocumentError"
+        if fields is None or target not in python["targets"]:
+            continue
+        entries_by_identity[item["symbolKey"]] = _error_details_output_entry(
+            item,
+            python_target=target,
+            rust_type="yosoi::documents::FileDocumentError",
+            fields=fields,
+            rationale=(
+                "The PyO3 media error adapter maps this Rust variant to the native "
+                "FileDocumentError exception and retains its listed detail fields "
+                "plus the source chain."
+            ),
+        )
+
+    # This native policy failure carries a meaningful payload through
+    # rust_error_details() and has a Python regression for both counts.
+    for item in rust["items"]:
+        if (
+            item["rustPath"]
+            != "yosoi::PolicyError::ObservationRulesExceedRecordingLimit"
+        ):
+            continue
+        target = "yosoi.errors.PolicyError"
+        if target not in python["targets"]:
+            continue
+        entries_by_identity[item["symbolKey"]] = _error_details_output_entry(
+            item,
+            python_target=target,
+            rust_type="yosoi_policy::PolicyError",
+            fields=POLICY_ERROR_OUTPUT_FIELDS["ObservationRulesExceedRecordingLimit"],
+            rationale=(
+                "The native PolicyError preserves configured and maximum recording "
+                "counts in RustErrorDetails; test_observation_recording_limit_error_"
+                "preserves_configured_counts checks both values."
+            ),
+        )
 
     # These are returned native failures, not Python exception constructors.
     # The adapter preserves the enum tag and its version/source-message payload.

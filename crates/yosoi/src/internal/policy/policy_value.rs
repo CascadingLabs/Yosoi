@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use crate::internal::policy::{
     EffectivePolicy, EffectivePolicyIdentity, PolicyError,
     policy::{
-        Acquisition, Documents, FlowPolicy, Locators, Map, Page, ProfileSelection,
+        Acquisition, Documents, FlowPolicy, Locators, Map, ObservePolicy, Page, ProfileSelection,
         ProviderDefaultsStatus, Request, Search, Tuning,
     },
 };
@@ -39,6 +39,8 @@ pub struct Policy {
     pub search: Search,
     /// Default continuation behavior for Flow failures and local cancellations.
     pub flow: FlowPolicy,
+    /// Optional automatic browser evidence, recording rules, and native capture permission.
+    pub observe: ObservePolicy,
 }
 
 impl Default for Policy {
@@ -55,6 +57,7 @@ impl Default for Policy {
             map: Map::default(),
             search: Search::default(),
             flow: FlowPolicy::default(),
+            observe: ObservePolicy::default(),
         }
     }
 }
@@ -80,7 +83,8 @@ impl Policy {
             return Err(PolicyError::InvalidDefaultActionTimeout);
         }
         self.map.validate()?;
-        self.search.validate()
+        self.search.validate()?;
+        self.observe.validate()
     }
 
     /// Encodes the validated policy values as compact JSON.
@@ -103,6 +107,7 @@ impl Policy {
             map: self.map.clone(),
             search: self.search.effective(),
             flow: self.flow,
+            observe: self.observe.clone(),
         })
     }
 
@@ -131,6 +136,7 @@ impl Policy {
             || effective.tuning != self.tuning
             || effective.map != self.map
             || effective.flow != self.flow
+            || effective.observe != self.observe
         {
             return Err(PolicyError::ArchivedSnapshotMismatch);
         }
