@@ -62,6 +62,142 @@ def test_document_reads_use_exact_evidence(document) -> None:
     assert details is not None and details.variant == "WrongCapture"
 
 
+@pytest.mark.parametrize(
+    ("document", "representation"),
+    [
+        (
+            lambda: ys.Document.html("html", "<main><h1>Arc lamp λ🙂</h1></main>"),
+            "yosoi.web.document.v1",
+        ),
+        (
+            lambda: ys.Document.xml(
+                "xml", '<r xmlns:x="urn:fixture"><x:name>Arc lamp λ🙂</x:name></r>'
+            ),
+            "yosoi.web.xml.v1",
+        ),
+        (
+            lambda: ys.Document.from_json("json", '{"a/b":{"~name":"Arc lamp λ🙂"}}'),
+            "yosoi.web.json.v1",
+        ),
+        (
+            lambda: ys.Document.text("text", "Arc lamp λ🙂\n"),
+            "yosoi.web.text.v1",
+        ),
+        (
+            lambda: ys.Document.rendered_dom(
+                "dom",
+                7,
+                json.dumps(
+                    {
+                        "schema": "yosoi.rendered-dom.v1",
+                        "document_epoch": 7,
+                        "tree_model": "document_light_dom",
+                        "root": 1,
+                        "nodes": [
+                            {
+                                "kind": "document",
+                                "id": 1,
+                                "parent": None,
+                                "children": [2],
+                            },
+                            {
+                                "kind": "element",
+                                "id": 2,
+                                "parent": 1,
+                                "children": [3],
+                                "namespace_uri": "http://www.w3.org/1999/xhtml",
+                                "tag_name": "button",
+                                "attributes": [],
+                            },
+                            {
+                                "kind": "text",
+                                "id": 3,
+                                "parent": 2,
+                                "children": [],
+                                "value": "Arc lamp λ🙂",
+                            },
+                        ],
+                    }
+                ),
+            ),
+            "yosoi.web.document.v1",
+        ),
+        (
+            lambda: ys.Document.accessibility_tree(
+                "ax",
+                7,
+                json.dumps(
+                    {
+                        "schema": "yosoi.accessibility-tree.v1",
+                        "document_epoch": 7,
+                        "root": "root",
+                        "completeness": {
+                            "status": "unknown",
+                            "reason_code": "provider_gap",
+                        },
+                        "nodes": [
+                            {
+                                "id": "root",
+                                "parent": None,
+                                "children": ["button"],
+                                "ignored": False,
+                                "role": "RootWebArea",
+                                "accessible_name": None,
+                                "text": None,
+                                "states": {},
+                            },
+                            {
+                                "id": "button",
+                                "parent": "root",
+                                "children": [],
+                                "ignored": False,
+                                "role": "button",
+                                "accessible_name": "Arc lamp λ🙂",
+                                "text": None,
+                                "states": {},
+                            },
+                        ],
+                    }
+                ),
+            ),
+            "yosoi.web.ax.v1",
+        ),
+    ],
+)
+def test_websurface_uses_shared_reads_for_all_document_classes(
+    document, representation: str
+) -> None:
+    index = sf.Surface(document())
+    reader = sf.WebSurface(index, f"fixture:{representation}")
+    assert reader.descriptor.representation == representation
+    assert not reader.descriptor.controllable
+    assert {capability.id for capability in reader.descriptor.capabilities} == {
+        "web.overview@1",
+        "web.expand@1",
+        "web.inspect@1",
+        "web.search@1",
+        "web.parent@1",
+    }
+    assert all(
+        capability.access == "read" for capability in reader.descriptor.capabilities
+    )
+
+    overview = reader.read(sf.ReadRequest(operation=sf.Overview()))
+    assert isinstance(overview, sf.PageResult)
+    expanded = reader.read(
+        sf.ReadRequest(operation=sf.Expand(reference=reader.root_reference))
+    )
+    assert isinstance(expanded, sf.PageResult)
+    found = reader.read(sf.ReadRequest(operation=sf.Search(query="lamp")))
+    assert isinstance(found, sf.PageResult) and found.data.entries
+    reference = found.data.entries[0].reference
+    inspected = reader.read(sf.ReadRequest(operation=sf.Inspect(reference=reference)))
+    assert isinstance(inspected, sf.InspectionResult)
+    assert "lamp" in inspected.data.content.lower()
+    parent = reader.read(sf.ReadRequest(operation=sf.Parent(reference=reference)))
+    assert isinstance(parent, sf.ParentResult)
+
+
 def test_shared_read_continuations_are_scoped_and_bounded() -> None:
     index = sf.Surface(
         ys.Document.html(
@@ -100,6 +236,68 @@ def test_shared_read_continuations_are_scoped_and_bounded() -> None:
         reader.read(sf.ReadRequest(operation=sf.Overview(), continuation=first_token))
     assert not reader.descriptor.controllable
     assert reader.native_reference(reader.reference(index.root)) == index.root
+
+
+def test_websurface_inspection_continuations_preserve_unicode_and_policy_caps() -> None:
+    content = "λ🙂 paragraph\n" * 400
+    index = sf.Surface(ys.Document.text("unicode", content))
+    reader = sf.WebSurface(
+        index,
+        "fixture:unicode",
+        sf.DocumentPolicy(response_bytes=1024),
+    )
+    request = sf.ReadRequest(
+        operation=sf.Inspect(reference=reader.root_reference),
+        budget=sf.Budget(bytes=4096, items=5),
+    )
+    chunks: list[str] = []
+    first_token = None
+    last_offset = -1
+    while True:
+        result = reader.read(request)
+        assert isinstance(result, sf.InspectionResult)
+        assert len(result.model_dump_json().encode("utf-8")) <= 1024
+        assert result.data.offset > last_offset
+        last_offset = result.data.offset
+        chunks.append(result.data.content)
+        if first_token is None:
+            first_token = result.data.next
+        token = result.data.next
+        if token is None:
+            break
+        request = request.model_copy(update={"continuation": token})
+    assert "".join(chunks) == content
+    assert first_token is not None
+    with pytest.raises(sf.SurfaceError):
+        reader.read(
+            sf.ReadRequest(
+                operation=sf.Search(query="paragraph"),
+                continuation=first_token,
+            )
+        )
+
+
+def test_websurface_continuations_reject_a_different_expand_scope() -> None:
+    content = "λ🙂 source range\n" * 600
+    reader = sf.WebSurface(
+        sf.Surface(ys.Document.text("scopes", content)), "fixture:scopes"
+    )
+    first = reader.read(
+        sf.ReadRequest(
+            operation=sf.Expand(reference=reader.root_reference),
+            budget=sf.Budget(bytes=1200, items=1),
+        )
+    )
+    assert isinstance(first, sf.PageResult) and first.data.next is not None
+    assert first.data.entries
+    with pytest.raises(sf.SurfaceError):
+        reader.read(
+            sf.ReadRequest(
+                operation=sf.Expand(reference=first.data.entries[0].reference),
+                budget=sf.Budget(bytes=1200, items=1),
+                continuation=first.data.next,
+            )
+        )
 
 
 @pytest.mark.parametrize("epoch", [7, 8])
