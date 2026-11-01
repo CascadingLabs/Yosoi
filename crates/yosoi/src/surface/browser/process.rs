@@ -2,13 +2,23 @@
 use crate::internal::browser::session::browser_distribution::supported_chrome_executable;
 use crate::surface::connection::{Result, Trace};
 use crate::{
-    documents::{Document, DocumentEpoch},
-    surface::{DocumentPolicies, Surface},
+    documents::{Document, DocumentEpoch, FileLimits, FileMetadata, ImageDocument},
+    surface::{
+        DocumentPolicies, PixelArtifact, PixelCoordinateKind, PixelCoordinateSpace, PixelLimits,
+        PixelOrientation, PixelSource, Surface,
+    },
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
+use image::{ImageFormat, ImageReader};
 use rustls::crypto::{CryptoProvider, ring};
 use serde_json::{Value, json};
-use std::{env, fs, io, path::Path, process::Stdio, time::Duration};
+use sha2::{Digest, Sha256};
+use std::{
+    env, fs,
+    io::{self, Cursor},
+    process::Stdio,
+    time::Duration,
+};
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     process::{Child, Command},
@@ -174,7 +184,7 @@ impl Browser {
         trace.event("capture", json!({"url":captured.get("url"),"epoch":epoch,"capture":index.identity(),"nodes":index.node_count(),"source_bytes":index.source_bytes(),"normalized_strings":captured.get("normalized_strings")}));
         Ok((index, document, captured))
     }
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot(&self) -> Result<PixelArtifact> {
         let value = self
             .command(
                 reqwest::Method::GET,
@@ -185,11 +195,61 @@ impl Browser {
         let encoded = value
             .as_str()
             .ok_or_else(|| io::Error::other("invalid screenshot"))?;
-        fs::write(
-            output.join(format!("{name}.png")),
-            STANDARD.decode(encoded)?,
+        let limits = PixelLimits::default().validate()?;
+        let encoded_limit = limits
+            .max_output_bytes
+            .checked_add(2)
+            .and_then(|value| value.checked_div(3))
+            .and_then(|value| value.checked_mul(4))
+            .ok_or_else(|| io::Error::other("screenshot size limit overflow"))?;
+        if encoded.len() > encoded_limit {
+            return Err(io::Error::other("screenshot exceeds pixel output byte limit").into());
+        }
+        let bytes = STANDARD.decode(encoded)?;
+        if bytes.len() > limits.max_output_bytes {
+            return Err(io::Error::other("screenshot exceeds pixel output byte limit").into());
+        }
+        let mut reader = ImageReader::new(Cursor::new(&bytes)).with_guessed_format()?;
+        if reader.format() != Some(ImageFormat::Png) {
+            return Err(io::Error::other("browser screenshot is not PNG").into());
+        }
+        let mut decode_limits = image::Limits::default();
+        decode_limits.max_image_width = Some(limits.max_side);
+        decode_limits.max_image_height = Some(limits.max_side);
+        decode_limits.max_alloc = Some(
+            u64::try_from(limits.max_decoded_bytes)
+                .map_err(|_| io::Error::other("pixel allocation limit does not fit u64"))?,
+        );
+        reader.limits(decode_limits);
+        let (width, height) = reader.into_dimensions()?;
+        limits.check_output(width, height, bytes.len())?;
+        let digest = Sha256::digest(&bytes);
+        let source_id = format!("browser-screenshot-v1:{}:{digest:x}", self.session);
+        let metadata = FileMetadata::new()
+            .with_declared_media_type("image/png")?
+            .with_source(format!("browser:{}", self.session))?;
+        let document = ImageDocument::from_bytes_with_metadata(
+            format!("browser-screenshot-{digest:x}"),
+            bytes,
+            metadata,
+            FileLimits::new(
+                u64::try_from(limits.max_output_bytes)
+                    .map_err(|_| io::Error::other("pixel byte limit does not fit u64"))?,
+            )?,
         )?;
-        Ok(())
+        PixelArtifact::from_raster_document(
+            document,
+            PixelSource::BrowserScreenshot {
+                identity: source_id,
+            },
+            PixelCoordinateSpace {
+                kind: PixelCoordinateKind::DecodedCanvas,
+                width,
+                height,
+                orientation: PixelOrientation::NotApplicable,
+            },
+        )
+        .map_err(Into::into)
     }
     pub async fn close(&mut self) -> Result<()> {
         let result = self

@@ -162,11 +162,13 @@ impl Recording {
         Ok(())
     }
     pub(super) async fn checkpoint(&mut self) -> Result<Handle> {
+        let outcome = self.archive.write(&self.outcome).await?;
+        self.outcome = self.archive.read(&outcome).await?;
         let handle = Handle {
             schema: "yosoi.surface.record-handle.v1".into(),
             archive: self.archive.root().to_owned(),
             record: self.outcome.record.write_to(&self.archive).await?,
-            outcome: Some(self.archive.write(&self.outcome).await?),
+            outcome: Some(outcome),
         };
         let mut temporary = tempfile::NamedTempFile::new_in(&self.output)?;
         temporary.write_all(&serde_json::to_vec_pretty(&handle)?)?;

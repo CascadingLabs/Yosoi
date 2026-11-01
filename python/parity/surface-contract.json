@@ -220,7 +220,7 @@
       "signatureSha256": "fc96b358ccec68f271411f737f31812dcdeae351369f131c082e41c046808cc2",
       "pythonTarget": "yosoi.BrowserSurface",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.BrowserSurface.",
-      "pythonTargetSha256": "55ad1d1a39b30415333243bf6ad98a6afe2656803de2759f8a3c45c364983060"
+      "pythonTargetSha256": "e946766ce33ee892b6fcdcf6a0df20b49dc9098a541a524d1cc09f593e3469e6"
     },
     {
       "rustPath": "yosoi::DecodedFrame::clone",
@@ -378,6 +378,1677 @@
       "pythonTargetSha256": "4db3a34f30abae8c3b5de66b65277ede70a60d064e578a949865b3a1dc85ad1d"
     },
     {
+      "rustPath": "yosoi::ImageSession::close",
+      "kind": "function",
+      "signatureSha256": "45c403899abdbcda2c573674a1ec9765b423cea31c20736b14a665929ad374f5",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.ImageSession.close",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "94be3c293a69f16074d71432cc2ba694d54d5d165d69087df0ca5e5275d0e273"
+    },
+    {
+      "rustPath": "yosoi::ImageSession::execute",
+      "kind": "function",
+      "signatureSha256": "43cde4575cf58a3cb4150a56a68eedd1615c3292730f16d4d61354b4fbd2125d",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.ImageSession.execute",
+      "argumentMappings": [
+        {
+          "rustArgument": "command",
+          "pythonArgument": "command",
+          "conversion": "Python Mapping[str, object] converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "679aa69e32792646e167598aef089b3904b92c0202aafe5bf36d77b4b95c294b"
+    },
+    {
+      "rustPath": "yosoi::ImageSession::fmt",
+      "kind": "function",
+      "signatureSha256": "f3ac10c72c779b025da70462a9c61f9129ccc4e4a1f0d02f0b419dfcb81efb6b",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ImageSession::open_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "de1139f1d48fc253f5dc5df52589cc916b8a97e437171bdd82fc4bb9cdaeca5e",
+      "pythonTarget": "yosoi.ImageSession.open_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python PixelArtifactArchiveRef converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "archive_root",
+          "pythonArgument": "archive_root",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "1ef9f49d52ef756114315290a46c7d0b1f6401567c8a1b33cfe8e2d85f73aa74"
+    },
+    {
+      "rustPath": "yosoi::ImageSession::open",
+      "kind": "function",
+      "signatureSha256": "231e809ade96e5321ac80d9f3d4aff721d7c5336c3d42252f378dae949177aa6",
+      "pythonTarget": "yosoi.ImageSession.open",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "002383aed28f73d11578788c6c2aad2a726e5d4e8ee5775a724f6b617791de9a"
+    },
+    {
+      "rustPath": "yosoi::ImageSession::outcome",
+      "kind": "function",
+      "signatureSha256": "7b1d8faf003980ceb71f3fc334ffd002dcad6c1b5cc25e80160a66aad7660b15",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.ImageSession.outcome",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "f684859a1e8fade00482f5c8b0a96160ebc0e36f3c6e3b23d996f62d264a6d77"
+    },
+    {
+      "rustPath": "yosoi::ImageSession::ready",
+      "kind": "function",
+      "signatureSha256": "d87d12bd8eb00a73b6b09dc8b697182c30a632c35d4c0032b92b03074566a2d0",
+      "trait": "SurfaceConnection",
+      "pythonTarget": "yosoi.ImageSession.ready",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "28d006dca593f5f8f43841eae9a1f3d18417c57ee6e714d906f26be084e211d6"
+    },
+    {
+      "rustPath": "yosoi::ImageSession",
+      "kind": "struct",
+      "signatureSha256": "cb2921dfe372312537b597b0ec358a43b684429385c0a3542d72a14429f0c13c",
+      "pythonTarget": "yosoi.ImageSession",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "f4540f46732ff1b7178029e8cc3dee803518e69b30e998bb00a8c11c1ca98d46"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::clone",
+      "kind": "function",
+      "signatureSha256": "95b9c77ef3658d95726a95181c39b9ea6acfeb903b862d1b19106fb0d1dd7f39",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::crop_rect",
+      "kind": "function",
+      "signatureSha256": "cf23abe619d61b3de3c00f21efd832c41a4c1f3a4a22e816e85746012fc83ae6",
+      "pythonTarget": "yosoi.ImageSurface.crop_rect",
+      "argumentMappings": [
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Python PixelRect converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "max_png_bytes",
+          "pythonArgument": "max_png_bytes",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:max_png_bytes",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 8388608"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:rect",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:max_png_bytes",
+          "rust": "encoded bytes",
+          "python": "encoded bytes"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "376ef76ebe8a8186bb98616b27e70c56061023c7579e0d43809f6188ea623abb"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::crop",
+      "kind": "function",
+      "signatureSha256": "215e9fd1d210cbb4349dc56dba1f632357edeed459200e61816f4947f2afc585",
+      "pythonTarget": "yosoi.ImageSurface.crop",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python Reference converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "max_png_bytes",
+          "pythonArgument": "max_png_bytes",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:max_png_bytes",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 8388608"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:max_png_bytes",
+          "rust": "encoded bytes",
+          "python": "encoded bytes"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c9b00c088f4485f9a49c2d443e13fef730dff6f5bb2c7d2b62e4d39b3dafaa80"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::descriptor",
+      "kind": "function",
+      "signatureSha256": "5dad61995d32e42cd85f1b2b06ad89b738162d3da075c03c64da073aa6a315a5",
+      "trait": "SurfaceRead",
+      "pythonTarget": "yosoi.ImageSurface.descriptor",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ff999070b3f20f74c8085113decca50e7159aed54a02c060260c00dd839fee20"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::direct_image",
+      "kind": "function",
+      "signatureSha256": "8c87518478fb3a6df816d1ab57b85b7b937d1078387e5aa4c887fc00cba5d399",
+      "pythonTarget": "yosoi.ImageSurface.direct_image",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "76b310cfce5d2e0eb7f06f3c2d65cb78f1591a7cdf23e9db66e4555f41a44959"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::from_image_document",
+      "kind": "function",
+      "signatureSha256": "1fd2465755dc2ecb2cb9a5144e2692115d0ace8689953fd7684db8520c7e058d",
+      "pythonTarget": "yosoi.ImageSurface",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e3aff191b919eb81c64ff87525ff083376a5fa05733927512aeb47fd8f405238"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::from_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "476a7b185bacf93e8e90efd719dcdef274df192936c4023c8388fb3b6f1ece9b",
+      "pythonTarget": "yosoi.ImageSurface.from_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "artifact",
+          "pythonArgument": "artifact",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "4e9c326963ba1de6e28566496012d0b74afec6ca0e4c4a6e413dd82a4b124161"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::index",
+      "kind": "function",
+      "signatureSha256": "534789486455bc91ebfa85b0bc4e1d6c20c8e2822933d0af7fb409fdd9810d85",
+      "pythonTarget": "yosoi.ImageSurface.index",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ef73f338b7134f3777644e82ab101802360bcb79f64e89d217f50f6c1c910e43"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::native_reference",
+      "kind": "function",
+      "signatureSha256": "4fc071d54176600d694865ef7086f38a1f93404623084fa8092dca54efbdc269",
+      "pythonTarget": "yosoi.ImageSurface.native_reference",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python Reference converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "487dc594e9d373d2fada004c0fcc728b3a700419d9dad089061401a4f61d0dd6"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::observation",
+      "kind": "function",
+      "signatureSha256": "9e1496d3a2977d531bbbf3e49ef985499d53e92676012f7d1d7567519ec08930",
+      "trait": "SurfaceRead",
+      "pythonTarget": "yosoi.ImageSurface.observation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "473a2e2b81e85f82594f66464bbf4408716a7bcd23fc78bf3c3a2755779d2251"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::overview_image",
+      "kind": "function",
+      "signatureSha256": "e27d84f6ab14ee4fa77d7b26063a0fb24c0661bd95bd0bfd8aa0cf132f67325f",
+      "pythonTarget": "yosoi.ImageSurface.overview_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "max_side",
+          "pythonArgument": "max_side",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:max_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "d98774c0d544f0adbc3e1f338f4fb1402b9482f175fb0a19b69695e59e33dd8d"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::read",
+      "kind": "function",
+      "signatureSha256": "19d3fd4ee77265cf94de6c647eae253e01337d11cd313d70d0a9650a74b1492f",
+      "trait": "SurfaceRead",
+      "pythonTarget": "yosoi.ImageSurface.read",
+      "argumentMappings": [
+        {
+          "rustArgument": "request",
+          "pythonArgument": "request",
+          "conversion": "Python ReadRequest converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "886979dfc96f7eb9a2365ea371f9f230ae0b2bf7bbb403b54fe0a7a048cd17d8"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::reference",
+      "kind": "function",
+      "signatureSha256": "08123426fc2d5c1e7c22f5a321934b86f4dfa656fbe626049bc74e3ebbb7e071",
+      "pythonTarget": "yosoi.ImageSurface.reference",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python NativeReference converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "5ac1bea2b339ec6f8258bcebbbdd93a204066e9a95955c99867cd39c6b088041"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::resize_image",
+      "kind": "function",
+      "signatureSha256": "d75a85ea53db9645518fd35e7a971d37f58dc5bdc803e51cdeedc29081dd4d99",
+      "pythonTarget": "yosoi.ImageSurface.resize_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "355201ed06df304b8e95747512b33081999179a94c4c9840eedab319e77eac18"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::root_reference",
+      "kind": "function",
+      "signatureSha256": "f7e3493bffa7991ccb4df81dd2cffe99150117854cb35c5eb65dea8533467813",
+      "trait": "SurfaceRead",
+      "pythonTarget": "yosoi.ImageSurface.root_reference",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b59a8c35de91fa82ee6078c86dd6233082f88ebe61921384127c61f43e64d086"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::source_artifact",
+      "kind": "function",
+      "signatureSha256": "0968dcfa25a8e2c6b3199fb9caead9f4599154700836afc7dc28da75bb673ba8",
+      "pythonTarget": "yosoi.ImageSurface.source_artifact",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "424ae574ffcc0d5285d39f5f554c89784fc2b9846b06f4b60ec7fc3dcae1d102"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface::source_document",
+      "kind": "function",
+      "signatureSha256": "e659da2f5164eb3c00fd1d4b9c514d8d17ebc78b693269c0955fd3889b1e78c3",
+      "pythonTarget": "yosoi.ImageSurface.source_document",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "7a67fc56f6d04b333c9c22de5b8ffe81ad3b7d8c1d2c0590e47df10d9a314429"
+    },
+    {
+      "rustPath": "yosoi::ImageSurface",
+      "kind": "struct",
+      "signatureSha256": "77125a5e1fef6966c2fca127aaab6180a07962660108d9955c5356553eb7d7ac",
+      "pythonTarget": "yosoi.ImageSurface",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e3aff191b919eb81c64ff87525ff083376a5fa05733927512aeb47fd8f405238"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::bytes",
+      "kind": "function",
+      "signatureSha256": "c11ee9b4cdb14075beb37d12d530b7ca2437964e54d662e775a9baf8a6869fa9",
+      "pythonTarget": "yosoi.PixelArtifact.bytes",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "eff1705f1ac80d8514d71af696bdea716b49ac77f0d4e34263ed713b6d48c584"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::clone",
+      "kind": "function",
+      "signatureSha256": "807918917fe17583093f07f768bb9dadc730fbccd6ce161ffbe6767af3b7ecf7",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::crop_from",
+      "kind": "function",
+      "signatureSha256": "7250117588cad65df6139d22b7654bca5adf6d217f381f81c0839b175ead0a0e",
+      "pythonTarget": "yosoi.PixelArtifact.crop_from",
+      "argumentMappings": [
+        {
+          "rustArgument": "parent",
+          "pythonArgument": "parent",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Python PixelRect converts to the Rust parameter type"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:rect",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ff5614ceb41f721161958263b05dea9d62acf854057570c0e19e44ab4f084ea3"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::decode_image_document",
+      "kind": "function",
+      "signatureSha256": "d203ab76ee628a70222f1c9a1ee41ee3bae8976a31662c9081f2908e901866dc",
+      "pythonTarget": "yosoi.PixelArtifact.decode_image_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "12e80b41b7b30a8bd11dbef12b6a5b8e1c480d6413ee852f108cef43709b6c18"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::document",
+      "kind": "function",
+      "signatureSha256": "adca8aaea67f82216c4db3352e118ef808116a318b1016293db341529232dd87",
+      "pythonTarget": "yosoi.PixelArtifact.document",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "df3b44bba6a7c6b17669a88c45be698f0aa27ee4d2a39daf0291a38130b747e8"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::eq",
+      "kind": "function",
+      "signatureSha256": "080d34d7195ea64dbcdf0aa3b6c2c0704d9e02f6c3066dcae4a0a830deabc9f4",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::from_image_document",
+      "kind": "function",
+      "signatureSha256": "94d6bc3b074832085343eba4ddddef3b28e1bfbf23d63f82d371da1cbcafad6e",
+      "pythonTarget": "yosoi.PixelArtifact.from_image_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int | None"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int | None"
+        },
+        {
+          "rustArgument": "orientation",
+          "pythonArgument": "orientation",
+          "conversion": "Python PixelOrientation converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:width",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:height",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:orientation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 'exif_unapplied'"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "44e0ed4f5e5b0ba38c187ee6cf89ed40c7709889232ef84508ee55bdbe9b84e7"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::from_raster_document",
+      "kind": "function",
+      "signatureSha256": "151053062ce4fe516b730e12cbba44df3b9f15321562ad8a7354f966065140e9",
+      "pythonTarget": "yosoi.PixelArtifact.from_raster_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "source",
+          "pythonArgument": "source",
+          "conversion": "Python PixelSource converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "coordinate_space",
+          "pythonArgument": "coordinate_space",
+          "conversion": "Python PixelCoordinateSpace converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "fabde2917a40807a0379dc1c5d300ad6b25724a21bb6f10a16cc51858d3584ed"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::info",
+      "kind": "function",
+      "signatureSha256": "8345aa22ce23c35cd58ecf7cb4d749e7988e10d08fc7750fb99447bb723a6fa0",
+      "pythonTarget": "yosoi.PixelArtifact.info",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c0d2d65f39969abeed861930cca0050ddbaa543dbd4dea98bc5a5c0726911333"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::map_rect_to_source",
+      "kind": "function",
+      "signatureSha256": "8b279a5e65fcf419982e49bf75537283dea87615bab48e0984292c916f9cfcb6",
+      "pythonTarget": "yosoi.PixelArtifact.map_rect_to_source",
+      "argumentMappings": [
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Python PixelRect converts to the Rust parameter type"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:rect",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "338c7d40071de6bb4a74e2fdc47b739dc911da352672cf4dbe7bb71176846b32"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::read_from",
+      "kind": "function",
+      "signatureSha256": "fead7a02a2ad681842b34722db03acb4c886340d9864cf86b5a4e1676022cac0",
+      "pythonTarget": "yosoi.PixelArtifact.read_from",
+      "argumentMappings": [
+        {
+          "rustArgument": "archive",
+          "pythonArgument": "archive",
+          "conversion": "Python Archive converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python PixelArtifactArchiveRef converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "85f753342263d756a6f93bc6393d7978b719b15ccf12f78f8e22bc42c0e242fd"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::resize_from",
+      "kind": "function",
+      "signatureSha256": "45073862863ce2065f25d5bdddd7a33f0f36a64432c095de3377cf0b0e866fbd",
+      "pythonTarget": "yosoi.PixelArtifact.resize_from",
+      "argumentMappings": [
+        {
+          "rustArgument": "parent",
+          "pythonArgument": "parent",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "operation",
+          "pythonArgument": "operation",
+          "conversion": "Python PixelOperation converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "bac9454dbe6b3f806d589b67d20333a7f20559c9914ae119462c07bb61f1e3bb"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::source_identity",
+      "kind": "function",
+      "signatureSha256": "703d2249afb4026c364d3ad9bf82ac225b3cdd6e95f2f6c876cd2d59fed542a8",
+      "pythonTarget": "yosoi.PixelArtifact.source_identity",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b37ba85013054f8ccc5c3fa78143922fff6e7d1c7b1316099289e9555f17288c"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::validate",
+      "kind": "function",
+      "signatureSha256": "d60eeb9c5921cb667dad6f236ff5fd0d8ab3612f83bacea3c747a2e627fd7f35",
+      "pythonTarget": "yosoi.PixelArtifact.validate_artifact",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "df25309a4900413e8bca7858f79ae305b6318ae2816e6b2252534f2d048560d8"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact::write_to",
+      "kind": "function",
+      "signatureSha256": "525197162c4b2369f7568532188c0f1c8350383db4e74efa7ceb87c3c45f58d4",
+      "pythonTarget": "yosoi.PixelArtifact.write_to",
+      "argumentMappings": [
+        {
+          "rustArgument": "archive",
+          "pythonArgument": "archive",
+          "conversion": "Python Archive converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "61afb95ee2b035612267c088999b064e0ed66089f51a0b054fd0f7b90880f4e9"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::clone",
+      "kind": "function",
+      "signatureSha256": "e9363ae7ff96a1fea2d66b20cb612c220ff6e7547551dd53a288f5351c88402d",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::coordinate_space",
+      "kind": "struct_field",
+      "signatureSha256": "8aa81998253f1bb726ab09207cf13c3066e373921e7737cd3a58af0365997e78",
+      "pythonTarget": "yosoi.PixelArtifactInfo.coordinate_space",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "f9d039ff5fd9421b081e481445c302844e7bc42ef4362bfbcc217e59a38ca05c"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::eq",
+      "kind": "function",
+      "signatureSha256": "7a73e177b54bb76490cbc4611c350a7c06fefe6e038630d776b52ebb5d05f50e",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::height",
+      "kind": "struct_field",
+      "signatureSha256": "775272dbfbe503348873d5f5c3a00a6d3111eda4bbaf316d35ce4bfcd736cead",
+      "pythonTarget": "yosoi.PixelArtifactInfo.height",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "a7cafcfc7bb410b3d1d6a79122c866b55017dfce65db24a85aa1a7bf269c8a57"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::identity",
+      "kind": "struct_field",
+      "signatureSha256": "c99df645a5bc6e74fab624e3bc2f2ce657e8e7304da5e5bb07dbe117ac614ff2",
+      "pythonTarget": "yosoi.PixelArtifactInfo.identity",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "dc86b08b166436cea3c3f3381803c16f04a2359328507c3f5f64752e2783fffa"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::media_type",
+      "kind": "struct_field",
+      "signatureSha256": "fa1525fe1ee2ac19c75b4320567a8103544b849a5437c7144d71432c88a04c70",
+      "pythonTarget": "yosoi.PixelArtifactInfo.media_type",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "50fa029a72f2e783585196782e8f6a32affd4f326e3b6a78d2ac021e3fb5e0f8"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::sha256",
+      "kind": "struct_field",
+      "signatureSha256": "666fa289babd53843ac428cf6ee1bcd4dd39ee9b907838e0fa8fa1f551a4bae9",
+      "pythonTarget": "yosoi.PixelArtifactInfo.sha256",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e7d98f47e3374b1b8dab5af012d7253d77a40f28300d4b021f8eec36d2591938"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::source_space",
+      "kind": "struct_field",
+      "signatureSha256": "5fcff4765101694e29333f0e6d8cbafdebabc4930770b6ab58a517a2b44edbac",
+      "pythonTarget": "yosoi.PixelArtifactInfo.source_space",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "bf5d92f8ed7b56bf77c7a5dbca4b7d44235b629ba054b064fe0f6bb03be8c489"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::source",
+      "kind": "struct_field",
+      "signatureSha256": "0ad3b20b3af25396233550e05c4e440332fbfe82899585735d8490a447e59378",
+      "pythonTarget": "yosoi.PixelArtifactInfo.source",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "a06cb232d4dc96a46d6afea0837a229d440bf6b9de78ae23c2957b68aeba46f1"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::transform",
+      "kind": "struct_field",
+      "signatureSha256": "174fa37a2368def58dd85448c1b3049aab844250a79363d247083465ad24dd1c",
+      "pythonTarget": "yosoi.PixelArtifactInfo.transform",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "06ea79e3facbe99105efef69a15223cce600a1e30a426527e4c2d008e29fbd45"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::version",
+      "kind": "struct_field",
+      "signatureSha256": "f9dec046bcd7f7ca6223af8b7ce92bf45df4c6df9a90527cb0fb37d97eb987b2",
+      "pythonTarget": "yosoi.PixelArtifactInfo.version",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "638d3509c9d0bb3d935ea57bbb2f4ba0f319347804d40338bda2164234b8a2cd"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo::width",
+      "kind": "struct_field",
+      "signatureSha256": "5c2897acc40ced249c415847deed6c47961e9045901cc19b509d918e73585eb7",
+      "pythonTarget": "yosoi.PixelArtifactInfo.width",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "78726f18b63c72875b0071b79d7c1c8d535c72e79a9996aa1d9de01743baa3b9"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifactInfo",
+      "kind": "struct",
+      "signatureSha256": "727f2de68fb016975e919186a10898e37d3a915e3221678c654d15c6891bc7c9",
+      "pythonTarget": "yosoi.PixelArtifactInfo",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "566f7c4f7f4b905887387ab90edeeba6a9ed85689a59b678af26562a8d2da86c"
+    },
+    {
+      "rustPath": "yosoi::PixelArtifact",
+      "kind": "struct",
+      "signatureSha256": "c6bce5647a6a758f3ac3bc886c9eb7f66b78f3f3b2645ccdebb8fe34b52696ae",
+      "pythonTarget": "yosoi.PixelArtifact",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ae4fa6e1c3dce21e345aa985acbc4519f5cbee008d96929b0ea5caa14638ff6a"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::DecodedCanvas",
+      "kind": "variant",
+      "signatureSha256": "3f573dfe9014bddc4cb136a8c6e4135b3c525e7b95169e5434722578ec4698cb",
+      "pythonTarget": "yosoi.PixelCoordinateKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "DecodedCanvas serialized as decoded_canvas",
+          "python": "Literal decoded_canvas"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b7ca2557ffb768d6d4954d2b95fba48be99ef7a03d5c060df079a80583ffbc68"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::DerivedCanvas",
+      "kind": "variant",
+      "signatureSha256": "7653239d65069a97681542619bb3c3be18ea2480b31a9f048ee502c0a9e4d583",
+      "pythonTarget": "yosoi.PixelCoordinateKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "DerivedCanvas serialized as derived_canvas",
+          "python": "Literal derived_canvas"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b7ca2557ffb768d6d4954d2b95fba48be99ef7a03d5c060df079a80583ffbc68"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::OriginalRaster",
+      "kind": "variant",
+      "signatureSha256": "602b19151be4ac76afa1627209458e91d6c68f4e44b123306f4a131379a7e8dc",
+      "pythonTarget": "yosoi.PixelCoordinateKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "OriginalRaster serialized as original_raster",
+          "python": "Literal original_raster"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b7ca2557ffb768d6d4954d2b95fba48be99ef7a03d5c060df079a80583ffbc68"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::clone",
+      "kind": "function",
+      "signatureSha256": "a2e27f0c2903d528fd9b6e623b37baa3e61dfbeb9aa1f05365e7a4481806f675",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::eq",
+      "kind": "function",
+      "signatureSha256": "7a694d73603f741d3eba3a6904aea6bf1f9eda5dbe8999aa228cd621483fd229",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateKind",
+      "kind": "enum",
+      "signatureSha256": "d59636ef797931365fdb33ed6c9ce57e1b518b568438341d31ae0a477c9f5edb",
+      "pythonTarget": "yosoi.PixelCoordinateKind",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b7ca2557ffb768d6d4954d2b95fba48be99ef7a03d5c060df079a80583ffbc68"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::clone",
+      "kind": "function",
+      "signatureSha256": "546fa1543cc95db8e337ce69888de06a81ccb8f670562bd88e2ef7dc33273e89",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::eq",
+      "kind": "function",
+      "signatureSha256": "a5937b49460b1e5507481f2706ab65b2080ca330a8b0e3b1b28322f7bc78484a",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::height",
+      "kind": "struct_field",
+      "signatureSha256": "775272dbfbe503348873d5f5c3a00a6d3111eda4bbaf316d35ce4bfcd736cead",
+      "pythonTarget": "yosoi.PixelCoordinateSpace.height",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ddeabbc031254be1b4e8fe5283abe7ec4876b1e036bb2352c509966c755e9507"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::kind",
+      "kind": "struct_field",
+      "signatureSha256": "d8d1dc2ba10581b606fd05bba5ca54afef259a7dc7715e139cdf5b9d2a549e36",
+      "pythonTarget": "yosoi.PixelCoordinateSpace.kind",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "66d86bbff2506a8c6a150fc08b947ebb7fa1974ac44991f6d3a82d3763146671"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::orientation",
+      "kind": "struct_field",
+      "signatureSha256": "e990aa71a14d4ca59889fdd2151ea06d4261bd6f211ed1420477ee15dcf81a14",
+      "pythonTarget": "yosoi.PixelCoordinateSpace.orientation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c09d7afc6a9d6f16f393275338cb261a6ba2ead8beacfcce8d76cae2b7a377df"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace::width",
+      "kind": "struct_field",
+      "signatureSha256": "5c2897acc40ced249c415847deed6c47961e9045901cc19b509d918e73585eb7",
+      "pythonTarget": "yosoi.PixelCoordinateSpace.width",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "fd549ac0bf35643f85000daaeeea6b6ce4968d88f382075813cdbb8770259198"
+    },
+    {
+      "rustPath": "yosoi::PixelCoordinateSpace",
+      "kind": "struct",
+      "signatureSha256": "9e670d97487c0d9f4e594054230ca3631ab6a438ad15ce36f1dabb214d129242",
+      "pythonTarget": "yosoi.PixelCoordinateSpace",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ab2947e584bddddb8d0100845ccf2c3b4dd03f5152f078e8cf7e5c9bdbe2b1d5"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::clone",
+      "kind": "function",
+      "signatureSha256": "46cada6dd76224b1972d71daaf686404a419806ef43b87e600b4ccb2e85da2ca",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::eq",
+      "kind": "function",
+      "signatureSha256": "e60f40a83b379f6cdf90b60817d79e06ff39d815a7e1268a995b92838765c03c",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::scale_x_denominator",
+      "kind": "struct_field",
+      "signatureSha256": "dc0aa5e2b03efab809b65c1cba525230de3b044899b2e509868de178a0f51577",
+      "pythonTarget": "yosoi.PixelEdgeTransform.scale_x_denominator",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "56123259ba04a1573108cc52d55c6a5353ba66a9d6d956d93d1c3d45a2848d61"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::scale_x_numerator",
+      "kind": "struct_field",
+      "signatureSha256": "6c0d44a66df3b58ccad15b5e78401dbe2543b2f6a6a2759f0214a0773417126f",
+      "pythonTarget": "yosoi.PixelEdgeTransform.scale_x_numerator",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "a180cff870af3c3f48abda30ff2cf1c70abcb8fb51a700dda9fd16dedfd060a6"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::scale_y_denominator",
+      "kind": "struct_field",
+      "signatureSha256": "30797f1c5c346e4a5b9b41f00353d9a77cca7e16ae384099e847bcb903ce14c1",
+      "pythonTarget": "yosoi.PixelEdgeTransform.scale_y_denominator",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "6853a021d2fec799731eb1405347198c2b58528cd6709d4f22adc759b8e3694d"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::scale_y_numerator",
+      "kind": "struct_field",
+      "signatureSha256": "f917f21c54bf9f807f6785cc8356e38b7607fa2d1e38f442638a032bd6cd35c4",
+      "pythonTarget": "yosoi.PixelEdgeTransform.scale_y_numerator",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15f935a33ceca3f2782593849ebda2b885eafe93d762c63285f0bac209f529b1"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::translate_x",
+      "kind": "struct_field",
+      "signatureSha256": "457944854c3dd088ac245448a16d482f5b5f76fe1bd8b0868fc72cbbe964a681",
+      "pythonTarget": "yosoi.PixelEdgeTransform.translate_x",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e5becbc50aa7364ea950d5dc2745e6b8a60cdd741755a0aa825902aba9345725"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform::translate_y",
+      "kind": "struct_field",
+      "signatureSha256": "727a357ac1673a687687e445d15317e21d0a791d2dabb195eb506c9d35913eb4",
+      "pythonTarget": "yosoi.PixelEdgeTransform.translate_y",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "991c4abec623e3dd2e485bec5c8c222ffd58060357b16730f764281cc9a10a84"
+    },
+    {
+      "rustPath": "yosoi::PixelEdgeTransform",
+      "kind": "struct",
+      "signatureSha256": "da1fc52568ea8d5bf9d221beb0ce7f50d5c1d540e4dac0b12e04276fe3367d55",
+      "pythonTarget": "yosoi.PixelEdgeTransform",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "0d88a18a6005dafe30919205e2f83da4f23451ee66d38ea4f363cbcc56799111"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::check_output",
+      "kind": "function",
+      "signatureSha256": "3f0887fd3cb5224e892ed610535d93b9964705c420f1d707baced5d8a02b427a",
+      "pythonTarget": "yosoi.PixelLimits.check_output",
+      "argumentMappings": [
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "bytes",
+          "pythonArgument": "bytes",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "a4b3997373683a41c79b958c7e45427dcb31a70a1acb2bf35c5df2a6ac698933"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::check_pixels",
+      "kind": "function",
+      "signatureSha256": "6671f2f023c3838c30736471e1a7fccc2c1c8dc91b11358a61b609680d1884d0",
+      "pythonTarget": "yosoi.PixelLimits.check_pixels",
+      "argumentMappings": [
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ee61634445d42b1b63715628d434873f3e12bed0b60638962730ae373f92419b"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::clone",
+      "kind": "function",
+      "signatureSha256": "00f04f71078f8dd8ff9a0d6b574dfee6c25d91de56135ab861b1586cdf7f92b2",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::eq",
+      "kind": "function",
+      "signatureSha256": "5d8c618f6791871ded8a3a50103b5782a188a9e67f53f54f63ebbbc87613769c",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::max_decoded_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "992339b8c97d28ed743145e968cf69a00627aa139cea7eb681412ad01a68b455",
+      "pythonTarget": "yosoi.PixelLimits.max_decoded_bytes",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "57caeb1e05893d6255349024ce3c284b0c75e9cefa87775b0c89c8d7d7c429a8"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::max_output_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "4615320cdd3f2c7562dbaa931504b9903ced1eda7eb5d1b49f66309a9889bd0b",
+      "pythonTarget": "yosoi.PixelLimits.max_output_bytes",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c56b45da477a171b2ab4effbb1c94322faf2b0ec8e063e7c0ab16c6cac1c0b37"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::max_output_pixels",
+      "kind": "struct_field",
+      "signatureSha256": "794efcca6d3c682c2f3371b7adbb9cb9bd4f393f1d1e54ba911004323d23b7a9",
+      "pythonTarget": "yosoi.PixelLimits.max_output_pixels",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "912fcc949d29d1e3a615e20738e34015bf62883c50ea855d11b92a3a55a7d362"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::max_retained_artifacts",
+      "kind": "struct_field",
+      "signatureSha256": "095161e1e552e5154e29b390ad217929bf17d2958dd9334c50c424fb1325ba84",
+      "pythonTarget": "yosoi.PixelLimits.max_retained_artifacts",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b0d2cf32ef85bccee13492451db3632254b5c7fd2a8fad5f05c51dcb603f778e"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::max_side",
+      "kind": "struct_field",
+      "signatureSha256": "271a3f3cea9ae2be934c3de57861721d5983c11207039d4e321fa0ad0ea94ce9",
+      "pythonTarget": "yosoi.PixelLimits.max_side",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "cad0091202c8d2e1f8fa25aea5bb0f49ad2634a6a055b7c7ac59a0a40eceebbb"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelLimits::validate",
+      "kind": "function",
+      "signatureSha256": "334cd6e0be0cacade874062c51ea150c13c9e5758d026df215e6a91e04df9596",
+      "pythonTarget": "yosoi.PixelLimits.validate_limits",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "04bfcf19578d7dc23ab4cad4921c9df6ccad2878d3636fbb57066fba1bef8b65"
+    },
+    {
+      "rustPath": "yosoi::PixelLimits",
+      "kind": "struct",
+      "signatureSha256": "c5cff92715c59d8c05b5f464cd82e3bfec894f9caf60ef5bd5d7e20920f4a5e3",
+      "pythonTarget": "yosoi.PixelLimits",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "9377c4f3aa95c3404fd998eeadd6042b7ddb2603f5b0cc669c9b495b1b55f310"
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::Crop",
+      "kind": "variant",
+      "signatureSha256": "ea365899c983d07a574c661b6ba2e1f7d5da9a2c9cc262cfd7a34d13abd8ee4f",
+      "pythonTarget": "yosoi.PixelOperation",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "crop",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:rect",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2650873ae3221932b17262bc05edd0000a28b00da8510c99fb0540dbe03798f7"
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::Overview",
+      "kind": "variant",
+      "signatureSha256": "9f51cd25a044e1cc72025affa312e736ed1ecca76f4145ed729ef6e8af63e294",
+      "pythonTarget": "yosoi.PixelOperation",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "overview",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "max_side",
+          "pythonArgument": "max_side",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "filter",
+          "pythonArgument": "filter",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:max_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2650873ae3221932b17262bc05edd0000a28b00da8510c99fb0540dbe03798f7"
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::Resize",
+      "kind": "variant",
+      "signatureSha256": "8987dcabf2270f85d3506f4254e48cb7b98346cd5fa05a5a3f3a359fd5ffcbfc",
+      "pythonTarget": "yosoi.PixelOperation",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "resize",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "filter",
+          "pythonArgument": "filter",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2650873ae3221932b17262bc05edd0000a28b00da8510c99fb0540dbe03798f7"
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::Source",
+      "kind": "variant",
+      "signatureSha256": "0e570ca6fabe24f94e52c1833f3ffd25567022beb826fa16891f3322051bc221",
+      "pythonTarget": "yosoi.PixelOperation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2650873ae3221932b17262bc05edd0000a28b00da8510c99fb0540dbe03798f7"
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::clone",
+      "kind": "function",
+      "signatureSha256": "5e6710932f8437cfbc3c7dbc9500f74203e4763fbcdf2748015c400abb5266be",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::eq",
+      "kind": "function",
+      "signatureSha256": "9ad026575c47fb3fcaaf7499c3ad0b375656dd40f7a5b71f18b4c77b26d513ab",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOperation::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOperation",
+      "kind": "enum",
+      "signatureSha256": "fc80bc833cd9df01280f60e8473a1153aec42e66c579b729ba06d200999bc339",
+      "pythonTarget": "yosoi.PixelOperation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2650873ae3221932b17262bc05edd0000a28b00da8510c99fb0540dbe03798f7"
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::DecoderApplied",
+      "kind": "variant",
+      "signatureSha256": "a7936d5c0b11e1c56fc980e3720b213dbe8316edc8e5f944c84182e50b4fd772",
+      "pythonTarget": "yosoi.PixelOrientation",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "DecoderApplied serialized as decoder_applied",
+          "python": "Literal decoder_applied"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "51acc11f902512fa82930eac8e0baf98ce41847583a5282aae1cf852c43e39c2"
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::ExifUnapplied",
+      "kind": "variant",
+      "signatureSha256": "867831ac828b8d01c7ac530a2b8efa86904646d4ee42c9a47859f3af8da78b58",
+      "pythonTarget": "yosoi.PixelOrientation",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "ExifUnapplied serialized as exif_unapplied",
+          "python": "Literal exif_unapplied"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "51acc11f902512fa82930eac8e0baf98ce41847583a5282aae1cf852c43e39c2"
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::NotApplicable",
+      "kind": "variant",
+      "signatureSha256": "b0c3a89d19d2fb737c5c09d74dd2a43479ed525adc70cbf08867852a06d68af0",
+      "pythonTarget": "yosoi.PixelOrientation",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "NotApplicable serialized as not_applicable",
+          "python": "Literal not_applicable"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "51acc11f902512fa82930eac8e0baf98ce41847583a5282aae1cf852c43e39c2"
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::Unknown",
+      "kind": "variant",
+      "signatureSha256": "b764cdc0eab7137467211272fa539f1260d1bf2e71bcf6ff3bdc960f5c16aa14",
+      "pythonTarget": "yosoi.PixelOrientation",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Unknown serialized as unknown",
+          "python": "Literal unknown"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "51acc11f902512fa82930eac8e0baf98ce41847583a5282aae1cf852c43e39c2"
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::clone",
+      "kind": "function",
+      "signatureSha256": "649546589369290590a19108a0febbbd709d4b21d5241db91922a07783f5bfc7",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::eq",
+      "kind": "function",
+      "signatureSha256": "d619dfef63a2eaf2da135a81a383d22d5a0ce3d65a159d1b88f7769daae25114",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelOrientation",
+      "kind": "enum",
+      "signatureSha256": "ca5ef3bba76d3514032aec84144e863309b2b253f997fe68f4907601b4842971",
+      "pythonTarget": "yosoi.PixelOrientation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "51acc11f902512fa82930eac8e0baf98ce41847583a5282aae1cf852c43e39c2"
+    },
+    {
       "rustPath": "yosoi::PixelRect::clone",
       "kind": "function",
       "signatureSha256": "9f07d542b606da83aeba3ffc78941d7a72be09d8ed51b3c02e2245f7f9f47717",
@@ -453,6 +2124,317 @@
       "pythonTargetSha256": "9e9f238bad20441c5a5890d24a27545f692d4c8d7f959139836b6999b1e85b9a"
     },
     {
+      "rustPath": "yosoi::PixelSource::BrowserScreenshot",
+      "kind": "variant",
+      "signatureSha256": "c69db86bcbf64d21fbaa75b7e5a5aa634c7985f91da7603e4be8d5c495cbeffe",
+      "pythonTarget": "yosoi.PixelSource",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "browser_screenshot",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "identity",
+          "pythonArgument": "identity",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c66240264f9cb72fc3359af485823602dcc04a2ad73b60fa0e9dff2415122ba8"
+    },
+    {
+      "rustPath": "yosoi::PixelSource::ImageDocument",
+      "kind": "variant",
+      "signatureSha256": "2b8f71cd0c922c6f1b485a7b130d46a0aa070f1aeb23547e64d7a5ddd935b0bd",
+      "pythonTarget": "yosoi.PixelSource",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "image_document",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "document_id",
+          "pythonArgument": "document_id",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "sha256",
+          "pythonArgument": "sha256",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c66240264f9cb72fc3359af485823602dcc04a2ad73b60fa0e9dff2415122ba8"
+    },
+    {
+      "rustPath": "yosoi::PixelSource::LegacyVideoFrame",
+      "kind": "variant",
+      "signatureSha256": "0a323342bc18028c29e79358bd369752eec1a1ebb6b023babc0dab58c7668665",
+      "pythonTarget": "yosoi.PixelSource",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "legacy_video_frame",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "source_sha256",
+          "pythonArgument": "source_sha256",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "observation",
+          "pythonArgument": "observation",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "requested_us",
+          "pythonArgument": "requested_us",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "source_pts_us",
+          "pythonArgument": "source_pts_us",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c66240264f9cb72fc3359af485823602dcc04a2ad73b60fa0e9dff2415122ba8"
+    },
+    {
+      "rustPath": "yosoi::PixelSource::VideoFrame",
+      "kind": "variant",
+      "signatureSha256": "7a568c8393d61a46ac3a1d82b4254aba03f9739ff4578aff57021d5f15ef2c47",
+      "pythonTarget": "yosoi.PixelSource",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "video_frame",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "source_document_id",
+          "pythonArgument": "source_document_id",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "source_sha256",
+          "pythonArgument": "source_sha256",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "observation",
+          "pythonArgument": "observation",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "requested_us",
+          "pythonArgument": "requested_us",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "source_pts_us",
+          "pythonArgument": "source_pts_us",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c66240264f9cb72fc3359af485823602dcc04a2ad73b60fa0e9dff2415122ba8"
+    },
+    {
+      "rustPath": "yosoi::PixelSource::clone",
+      "kind": "function",
+      "signatureSha256": "ca6024ce7fb0d0f2ebb42b4db02662ba67129de8461f2430d58468ba17135f52",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelSource::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelSource::eq",
+      "kind": "function",
+      "signatureSha256": "d289a953c397b51913568ff8a64995cd145426f9b1e7175e1e247d1f972d4867",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelSource::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelSource::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelSource",
+      "kind": "enum",
+      "signatureSha256": "5ef13f0a2f8b76c719aa6e9f691b19b9047b7ec98ea22c2c281fd789d72ce8a9",
+      "pythonTarget": "yosoi.PixelSource",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "c66240264f9cb72fc3359af485823602dcc04a2ad73b60fa0e9dff2415122ba8"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::clone",
+      "kind": "function",
+      "signatureSha256": "0c1deb3b0d797bf85b51dd93a25c8536ab928b8ba74035d13a2d031a6063f8de",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::eq",
+      "kind": "function",
+      "signatureSha256": "b505a694ab9dab1e2b6eab3e950bd49ff29e846a7b850de2dd90319d2d360be2",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::operation",
+      "kind": "struct_field",
+      "signatureSha256": "536d8d14579d26becae4743d1a3a1b9743f74f03e413278e6b73ce8c8619dea1",
+      "pythonTarget": "yosoi.PixelTransform.operation",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "f92194b1d9dde20dbd0eb36fd6240ce48b2dedbee029a3e46924807508dc34fe"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::output_to_parent",
+      "kind": "struct_field",
+      "signatureSha256": "e3f1840dcc9d5ea53e2ca52cb26e70cd128f3f7275e5f7bf713f2dce290a8099",
+      "pythonTarget": "yosoi.PixelTransform.output_to_parent",
+      "defaults": [
+        {
+          "id": "optional-default:output_to_parent",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "ab7403647861c68e9f8d4f8d6edb012fcd9d4ee3ec4bfbff6f6353e95a4af0ac"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::parent_identity",
+      "kind": "struct_field",
+      "signatureSha256": "f4b701f0c0dcb6f0b8fee05aa8d284d417b6c8fddf6e39625af2e29c0a8873f0",
+      "pythonTarget": "yosoi.PixelTransform.parent_identity",
+      "defaults": [
+        {
+          "id": "optional-default:parent_identity",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "2905f6a6fbdd7a3c8eef3c598493f8f0e493d162bb5d5a294a52f8f97f18b35c"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::parent_media_type",
+      "kind": "struct_field",
+      "signatureSha256": "0b8bc6f31bdad88903f7d30a5e90c0f1d3ad0bfbe96ad4663f5e418cbc4130c3",
+      "pythonTarget": "yosoi.PixelTransform.parent_media_type",
+      "defaults": [
+        {
+          "id": "optional-default:parent_media_type",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b2c41d431cc93356fb860756fdcf188f3b192f993c729a865699722000b410c3"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::parent_sha256",
+      "kind": "struct_field",
+      "signatureSha256": "8b48cd82dd30c78dbbe93086533a0d6962db8517e980c00e99db248bfb37af30",
+      "pythonTarget": "yosoi.PixelTransform.parent_sha256",
+      "defaults": [
+        {
+          "id": "optional-default:parent_sha256",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "4ec394724df4ad20fc139a19f9a2dc365ef10b7b41f5b257375b41b40a8aa006"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::parent_space",
+      "kind": "struct_field",
+      "signatureSha256": "6685ee7b658ebc9db14367637e56b528f4c74a15376cf2bef4a5672aa6635d66",
+      "pythonTarget": "yosoi.PixelTransform.parent_space",
+      "defaults": [
+        {
+          "id": "optional-default:parent_space",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "3a3a05d3aeee73f20d08f80b5e98da4c71e91f9effb508500cc4a56a6d19b539"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::PixelTransform::version",
+      "kind": "struct_field",
+      "signatureSha256": "f9dec046bcd7f7ca6223af8b7ce92bf45df4c6df9a90527cb0fb37d97eb987b2",
+      "pythonTarget": "yosoi.PixelTransform.version",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "74807446227e320868b76429f952b810c9a329b8a8c16cb42977033def0c862d"
+    },
+    {
+      "rustPath": "yosoi::PixelTransform",
+      "kind": "struct",
+      "signatureSha256": "3a103fc0d22ac27b2d632f7bff4fe1b35c8b215f4291576b83b6d9f6ddbaf251",
+      "pythonTarget": "yosoi.PixelTransform",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "69a8c77fb8ea45589951d23788668966328d0d67b9fa7f09a51e92aff1221377"
+    },
+    {
       "rustPath": "yosoi::Surface::clone",
       "kind": "function",
       "signatureSha256": "7697602fd51614ab128ab0f5b6fb438609da1268d40bb2b4e6d7cc890f1c1165",
@@ -508,6 +2490,45 @@
       "pythonTargetSha256": "b0aaeae51c6438512e0f1189d82b12756b824d1d642079afcc26362c11a5b11b"
     },
     {
+      "rustPath": "yosoi::Surface::crop_image",
+      "kind": "function",
+      "signatureSha256": "f91009e96356d1ee1c3f695a73065a677c6deff61fac9decbf5dc9fd121826f7",
+      "pythonTarget": "yosoi.Surface.crop_rect",
+      "argumentMappings": [
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Python PixelRect converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "max_png_bytes",
+          "pythonArgument": "max_png_bytes",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:max_png_bytes",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 8388608"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:rect",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:max_png_bytes",
+          "rust": "encoded bytes",
+          "python": "encoded bytes"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "1a346c79f4f892c25a6a25ac25f2aad1e67b6851a63ae66fe45120d640c956cb"
+    },
+    {
       "rustPath": "yosoi::Surface::crop",
       "kind": "function",
       "signatureSha256": "6a17325afbb92ab0a9d3fb58a53b901fbb2478b355e7e4537244a0136d5b0c66",
@@ -533,6 +2554,14 @@
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "6c1be959e36c1649acca539552d10ca4597eb00a105235a1c6c61eb739691f77"
+    },
+    {
+      "rustPath": "yosoi::Surface::direct_image",
+      "kind": "function",
+      "signatureSha256": "8c87518478fb3a6df816d1ab57b85b7b937d1078387e5aa4c887fc00cba5d399",
+      "pythonTarget": "yosoi.Surface.direct_image",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "a01741a9aa086c2f89ced6cd2dc4bef79f9caf9d505ff0e34e10d885158093da"
     },
     {
       "rustPath": "yosoi::Surface::expand",
@@ -592,6 +2621,158 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::Surface::from_image_document_with_pixel_limits",
+      "kind": "function",
+      "signatureSha256": "6bb185bb53e4abbb202581fab11d1d37ac6242970f300e01686ef808518255f2",
+      "pythonTarget": "yosoi.Surface.from_image_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "39aeb5175a4c19830561be61718d44763f908d3b0bcf9b2714039c95efed94bd"
+    },
+    {
+      "rustPath": "yosoi::Surface::from_image_document",
+      "kind": "function",
+      "signatureSha256": "bc97057cb0e2b5703950d831efc4c0b6bd64d29e9fa6dab2fddd2298948548b4",
+      "pythonTarget": "yosoi.Surface.from_image_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "39aeb5175a4c19830561be61718d44763f908d3b0bcf9b2714039c95efed94bd"
+    },
+    {
+      "rustPath": "yosoi::Surface::from_image_with_pixel_limits",
+      "kind": "function",
+      "signatureSha256": "37ea6ebfb69d5b1c66e5234a78bc9f1d3e6fa453639898f0707d20f74b39ed20",
+      "pythonTarget": "yosoi.Surface.from_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "bytes",
+          "pythonArgument": "content",
+          "conversion": "Python str is UTF-8 encoded; bytes are preserved"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "92c166594ab7137ccf2b994b6ea4f548c9f3aa20a153bf6ac864cca52d72fec9"
+    },
+    {
       "rustPath": "yosoi::Surface::from_image",
       "kind": "function",
       "signatureSha256": "fcc22ec951923fa0906d0831d211795c62d0a58e8d751c3caea014d0aa357cd8",
@@ -621,7 +2802,105 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "3dd0e97d75386dfb4f76871e433831b763129dc5c103c3f4260713596a654007"
+      "pythonTargetSha256": "92c166594ab7137ccf2b994b6ea4f548c9f3aa20a153bf6ac864cca52d72fec9"
+    },
+    {
+      "rustPath": "yosoi::Surface::from_pixel_artifact_with_pixel_limits",
+      "kind": "function",
+      "signatureSha256": "ea165d56f7c544a8b922b82cd767f6669a2e417e823192a23f801432cf9cb8a5",
+      "pythonTarget": "yosoi.Surface.from_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "artifact",
+          "pythonArgument": "artifact",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "pixel_limits",
+          "pythonArgument": "pixel_limits",
+          "conversion": "Python PixelLimits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:pixel_limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "13f569e8cb5401118050a59cf95a6da21db1d10fbfcd17bb31a1c367e07996c3"
+    },
+    {
+      "rustPath": "yosoi::Surface::from_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "f492368237d05d1de7d55d9494e74a4787b340654ae34eaa1931fba7cb6d86c5",
+      "pythonTarget": "yosoi.Surface.from_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "artifact",
+          "pythonArgument": "artifact",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "limits",
+          "pythonArgument": "limits",
+          "conversion": "Python Limits | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:limits",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "13f569e8cb5401118050a59cf95a6da21db1d10fbfcd17bb31a1c367e07996c3"
     },
     {
       "rustPath": "yosoi::Surface::identity",
@@ -678,6 +2957,28 @@
       "pythonTarget": "yosoi.Surface.node_count",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "2d5b6fea0d7267b003d6a1df3d3d1d8a3fdac8cb0c2c2970ddb59f5419a3e3d8"
+    },
+    {
+      "rustPath": "yosoi::Surface::overview_image",
+      "kind": "function",
+      "signatureSha256": "e27d84f6ab14ee4fa77d7b26063a0fb24c0661bd95bd0bfd8aa0cf132f67325f",
+      "pythonTarget": "yosoi.Surface.overview_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "max_side",
+          "pythonArgument": "max_side",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:max_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "0674b529184ce15fdfe59188679e6c960f021f533259da819f9b1a14c5a8a079"
     },
     {
       "rustPath": "yosoi::Surface::overview",
@@ -741,6 +3042,38 @@
       "pythonTarget": "yosoi.Surface.representation",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "5f81c91c59eace6a8123442eed7d4c4345c4685c1340b8ba6c4f0018ab3e31f7"
+    },
+    {
+      "rustPath": "yosoi::Surface::resize_image",
+      "kind": "function",
+      "signatureSha256": "d75a85ea53db9645518fd35e7a971d37f58dc5bdc803e51cdeedc29081dd4d99",
+      "pythonTarget": "yosoi.Surface.resize_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "89211f12d98940295af7a35e671b393873ed23e7fa594aa4f8287ea193d8061f"
     },
     {
       "rustPath": "yosoi::Surface::root",
@@ -946,9 +3279,9 @@
       "kind": "trait",
       "signatureSha256": "87b171ee46f481c0c8bfb35c7b27c337421f7ff6f19370b78edcd370bd2c94ed",
       "pythonTarget": "yosoi.SurfaceConnection",
+      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait.",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.SurfaceConnection.",
-      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702",
-      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait."
+      "pythonTargetSha256": "85393ef3828c74b1f0d1d42bd5a1cae127ee90142b5f179e6e112bcbae83589d"
     },
     {
       "rustPath": "yosoi::SurfaceError::ActionInFlight",
@@ -1999,7 +4332,7 @@
       "signatureSha256": "4e00f885d0c2bf00701ced0d52f4a2f7996d197547feb541259c7cb6ed4b99ab",
       "pythonTarget": "yosoi.VideoSession",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.VideoSession.",
-      "pythonTargetSha256": "72600183ccf18954c5425b2ca39d3364fcc03a250ceaa7cb26e5f036adda3549"
+      "pythonTargetSha256": "10e6a523d9aa1f600a86603b32484c7215396e6036d9dbb9f0ddce512a8c85cc"
     },
     {
       "rustPath": "yosoi::VideoSurface::at",
@@ -2731,6 +5064,109 @@
       "pythonTargetSha256": "b3770ca803b2ed7b4d89e3f50f05642427f38d22a8c1c15f1267e26ec996e2ba"
     },
     {
+      "rustPath": "yosoi::surface::ArchivedFileKind::Audio",
+      "kind": "variant",
+      "signatureSha256": "bc1b88907d3b748af99cb9d4ffc07a0118dad5dab21a9dbdcc5a17a09641364a",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Audio serialized as audio",
+          "python": "Literal audio"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::Binary",
+      "kind": "variant",
+      "signatureSha256": "ee1c8277caf5fb9b9ac4168c73fc03d982e0859d58ab730b6e15a20c14059ff2",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Binary serialized as binary",
+          "python": "Literal binary"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::Image",
+      "kind": "variant",
+      "signatureSha256": "1aa4cb0bcca76e92e30677e809bb3d4b5c066715ef4d558184e319496bcc5125",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Image serialized as image",
+          "python": "Literal image"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::Video",
+      "kind": "variant",
+      "signatureSha256": "d534be829e32196b4d1e53b67103cf1e376b1d60071857572598c196abfefbc6",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Video serialized as video",
+          "python": "Literal video"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::clone",
+      "kind": "function",
+      "signatureSha256": "d19b533a01ead6feb035062172b30f819ef67960e3f7e6875c5bc58f46f0860c",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::eq",
+      "kind": "function",
+      "signatureSha256": "78bc2f8843849989d1be6bf6afbf81290183f0f90b91edf2aac4330b4c504081",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedFileKind",
+      "kind": "enum",
+      "signatureSha256": "5bacc45082e9873d44c3cefc6af9349f7dcf053d825e85edeb92ff71236bba1f",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
       "rustPath": "yosoi::surface::ArchivedSource::capture",
       "kind": "function",
       "signatureSha256": "246f0aaa0c8f76b4afbf332d53933a6a82d8c1ab8039a63ba15cb5134605aa04",
@@ -2760,10 +5196,10 @@
     {
       "rustPath": "yosoi::surface::ArchivedSource::content_base64",
       "kind": "struct_field",
-      "signatureSha256": "a448aa40e9bfb62ad932af07599130e133d2b1710bef92e5839ed6627e76581d",
+      "signatureSha256": "5eaccd86169bf9f27eb9dbee37f7da851bc2c94ec5575c671366f5b620be5409",
       "pythonTarget": "yosoi.surface.ArchivedSource.content_base64",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "a4ce4dcedad6afb9bce6324f7990e52f81b50429842ebdaf083717313803b589"
+      "pythonTargetSha256": "76c66bb7dd5f5097a27387ea6884da1081e29ac78d8139872c1e6915c2e1415b"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::deserialize",
@@ -2771,6 +5207,21 @@
       "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
       "trait": "Deserialize",
       "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::document_archive",
+      "kind": "struct_field",
+      "signatureSha256": "f26448f7576fe0eb0186e35fb96215b4554fff8cb136b199acab90d1770b3d56",
+      "pythonTarget": "yosoi.surface.ArchivedSource.document_archive",
+      "defaults": [
+        {
+          "id": "optional-default:document_archive",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "fdde388e676e3d42b90dd5cb17553d88bd2cf261933004d6b32894d832d675b2"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::document",
@@ -2788,6 +5239,51 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::surface::ArchivedSource::file_archive",
+      "kind": "struct_field",
+      "signatureSha256": "95f0b1ffb16f010a12d493e9b74bfba48fbed4ca6ee717025259f6f1ce743bea",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_archive",
+      "defaults": [
+        {
+          "id": "optional-default:file_archive",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "06404d69278142ca0fae157af9cfc01c9fec353c103341729a2981345f3537b1"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::file_kind",
+      "kind": "struct_field",
+      "signatureSha256": "54929754cb0f579a79a02aa8e541977b59cca114b0519039bac9248d27fbe4e5",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_kind",
+      "defaults": [
+        {
+          "id": "optional-default:file_kind",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "15fbc1485667ff1e908ae0be8d2aa29ea2a079c0446c69e39f602624c0619751"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::file_metadata",
+      "kind": "struct_field",
+      "signatureSha256": "a7ca62ef7506f500c4b39a619e5e70d6de5bd48085af5a3b4598aaeaa8d314b2",
+      "pythonTarget": "yosoi.surface.ArchivedSource.file_metadata",
+      "defaults": [
+        {
+          "id": "optional-default:file_metadata",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "de64f53b2b333556bc5675e2520ed539a7db36d45c54e1364eed185546f6ec85"
+    },
+    {
       "rustPath": "yosoi::surface::ArchivedSource::fmt",
       "kind": "function",
       "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
@@ -2800,7 +5296,7 @@
       "signatureSha256": "54d3940c7d2ecd3b9c3e552c87acffcff58ce84aba8f57aee00fe496d9a1754d",
       "pythonTarget": "yosoi.surface.ArchivedSource.interpretation",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "695a73582348035866f89604d052b78058532f92252e62a81c39661be50856ac"
+      "pythonTargetSha256": "b87f2e95aca8cc12970e815033da7471d56931911d738334c37f76f22d5d1c00"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::key",
@@ -2809,6 +5305,136 @@
       "pythonTarget": "yosoi.surface.ArchivedSource.key",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
       "pythonTargetSha256": "c6c57ad156ecac8989a3d8ff3f4d6ad8b67bc17dbcfbabba5db3c694a4c7e282"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::new_file_document",
+      "kind": "function",
+      "signatureSha256": "01f030d31fdbb54953ad3f3b6100309cfc55be26174a2191901535caa0a28e66",
+      "pythonTarget": "yosoi.surface.ArchivedSource.from_file_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python FileDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "surface",
+          "pythonArgument": "surface",
+          "conversion": "Python Surface | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:surface",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "7146c5a9f8b3b8e6ad790867e50aeb5c74164f510d7309b05e4d0dae750838c2"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::new_image",
+      "kind": "function",
+      "signatureSha256": "d50ee93691ff29ecabef3658019c3d953c286ca61560b7cc82427c6a203fe2ff",
+      "pythonTarget": "yosoi.surface.ArchivedSource.from_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "surface",
+          "pythonArgument": "surface",
+          "conversion": "Python Surface | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:surface",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "553510a0497d5fb67adefdb73f09a97cd79c63e9c57369354855313d10544feb"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::new_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "e453a8227d98b64e44c4c10b0837dd32f212b1aca1f88cb3c5ef43c97b8ebdbf",
+      "pythonTarget": "yosoi.surface.ArchivedSource.from_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "artifact",
+          "pythonArgument": "artifact",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "surface",
+          "pythonArgument": "surface",
+          "conversion": "Python ImageSurface | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 256"
+        },
+        {
+          "id": "python-default:surface",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "d32b8f0e471b12560698731cdab0a6e4edfb89f79752d54e4f2848bffccdd753"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::new",
@@ -2843,12 +5469,93 @@
       "pythonTargetSha256": "41ccbc7b5c14aa6f6043b082f309431e691b5af2480dd5b4da71d468e3f9a094"
     },
     {
+      "rustPath": "yosoi::surface::ArchivedSource::pixel_info",
+      "kind": "struct_field",
+      "signatureSha256": "007022e3dc2a3e3d9d387a44b4f1e5b04c8446a03f09551b7204cbb3d32754fc",
+      "pythonTarget": "yosoi.surface.ArchivedSource.pixel_info",
+      "defaults": [
+        {
+          "id": "optional-default:pixel_info",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "8bec63f65b79ab3fae329388fd0bdd31c97e4e311ae16800dc624cf9a219db89"
+    },
+    {
       "rustPath": "yosoi::surface::ArchivedSource::profile",
       "kind": "struct_field",
-      "signatureSha256": "6f9a2577abf80755b00ac875d630b6950fc7fdc9c78a132b64d2d203cb2abf31",
+      "signatureSha256": "e2817f958b984c43ce63ee3dfb9f9c6855560fbfd1e17267f4a810d03db3e800",
       "pythonTarget": "yosoi.surface.ArchivedSource.profile",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "6b6554f2c5f5dac423ac36d6eb042ecddff4fb3b23f0800348e994c5d938afa2"
+      "pythonTargetSha256": "6528fdb9b296f6b9e50c6ff3867d37bb5d3c0d1aac5f12608ef2c3e056886e30"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::restore_file_document",
+      "kind": "function",
+      "signatureSha256": "71e4d37011dac03470941f8d068d9f16f95fe831b5cc22f0ecc1eb028f35d26e",
+      "pythonTarget": "yosoi.surface.ArchivedSource.restore_file_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "6b0298ae7dba3ffff34ffb7cc664e77e5f39e13329c9e145e79699252928f73d"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::restore_image",
+      "kind": "function",
+      "signatureSha256": "aaaaa95d4d054af8259a204cc35196bfe194d696941f9f0cf4a783ad65ab4b61",
+      "pythonTarget": "yosoi.surface.ArchivedSource.restore_image",
+      "argumentMappings": [
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "61a58d035352c939d88c31eaa6b425c16becb74bd0469938d0d52e535746807b"
+    },
+    {
+      "rustPath": "yosoi::surface::ArchivedSource::restore_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "0dcb28824dd895bd2b8f4ebfdf6f49ede2f9635c2409c2c007ec7e4bc4fb8bd5",
+      "pythonTarget": "yosoi.surface.ArchivedSource.restore_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e7b370812d7bff3c3bb620746a444db352983b90678f73dda3c3f05daa06b4f5"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::restore_surface",
@@ -2923,7 +5630,7 @@
       "signatureSha256": "b119ee34f890137788c5ad0802064c5150ebeefa7216819235980847085f4c56",
       "pythonTarget": "yosoi.surface.ArchivedSource",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "d0af810dcf424793e57c58d3b469d372c09746521a288effa267652d1ce206a1"
+      "pythonTargetSha256": "62501d1ecd480eb55eb798b540c41a99bac1de1bfff5ef29e4242d24a53989a4"
     },
     {
       "rustPath": "yosoi::surface::Continuation::clone",
@@ -4103,6 +6810,14 @@
       "pythonTargetSha256": "b80a528c548230d28d7c03f998a712fdd9f95a7b6f19518f848b425a11ca2049"
     },
     {
+      "rustPath": "yosoi::surface::ImageCrop::artifact",
+      "kind": "struct_field",
+      "signatureSha256": "0826acc3a2ec8aaa8fab88629c81aa1f3d4e729dcf6aafa4cae87997d93d4c73",
+      "pythonTarget": "yosoi.surface.ImageCrop.artifact",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "e1fae3d56f3cd82533cdd32fb5b7d95786dc281177ad0e765f1afa1d305e4c31"
+    },
+    {
       "rustPath": "yosoi::surface::ImageCrop::clone",
       "kind": "function",
       "signatureSha256": "9ddcf181be41d06fef43df5be08bc8d6345fd5ca57cd4d75e396e35da8673a41",
@@ -4118,11 +6833,11 @@
     },
     {
       "rustPath": "yosoi::surface::ImageCrop::png",
-      "kind": "struct_field",
-      "signatureSha256": "59cc765b13def68ae123de0680377395b78ff257654efc807690c68a339345d7",
+      "kind": "function",
+      "signatureSha256": "735482a8c27be0e659f8d6df5b7de6a0f0f24a0ba1da34101c15983f9a77fa9a",
       "pythonTarget": "yosoi.surface.ImageCrop.png",
-      "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
-      "pythonTargetSha256": "0c14d396e9b9cdf8299a27c315ba358a25ad86e1bca6fe1942e8206102e1c347"
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "16e34af63a98a2bdaabaa4635623fd6b85027b7b7529ae7bdd8c0ce072bc45de"
     },
     {
       "rustPath": "yosoi::surface::ImageCrop::rect",
@@ -4146,7 +6861,7 @@
       "signatureSha256": "e9e200fa25537a716ce2256a4dd4d5ed2208b63006c239d4bdc532edd28fbd43",
       "pythonTarget": "yosoi.surface.ImageCrop",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "f07061a526ca67ac5e9e24e5c53da73755e6d44c2906aa7058b06623375d2023"
+      "pythonTargetSha256": "52aaf100eab868d69e476e7b4da544c47d83c471280fc998c8c99eba388a3e01"
     },
     {
       "rustPath": "yosoi::surface::Inspection::clone",
@@ -4361,6 +7076,87 @@
       "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
       "trait": "Serialize",
       "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::source_document",
+      "kind": "function",
+      "signatureSha256": "75dfffb4c2129c906d6d827baaa53feef21bc52a966eba7016f947cff9a49c56",
+      "pythonTarget": "yosoi.surface.Outcome.source_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "1af6b9e1fa6b996546371b54a1d25ac854d1f9f0a2ceb73a1777fd9eca92b29a"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::source_file_document",
+      "kind": "function",
+      "signatureSha256": "7f34a5169f2a12f2758d25d9ec5245fc7821860df032cd7a60b8d2711ffd33f3",
+      "pythonTarget": "yosoi.surface.Outcome.source_file_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "0c0116716c2103360e01429b827bea10613d3e0d876faf7a3a7655e3d4dbdfd2"
+    },
+    {
+      "rustPath": "yosoi::surface::Outcome::source_pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "f1b5e6d66b8bf50b4ebb8e0dd1b024cdef1779488008656c7db5afd9ad9cccbb",
+      "pythonTarget": "yosoi.surface.Outcome.source_pixel_artifact",
+      "argumentMappings": [
+        {
+          "rustArgument": "key",
+          "pythonArgument": "key",
+          "conversion": "Rust string-like input maps to Python str"
+        },
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "236dfaacbe316a282f9cb1a26efaa4a425a53dfccebf2e0a5598cee4cd41642d"
     },
     {
       "rustPath": "yosoi::surface::Outcome::sources",
@@ -4732,7 +7528,7 @@
         "kind": "bundle"
       },
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
     },
     {
       "rustPath": "yosoi::surface::SourceInterpretation::Document",
@@ -4744,7 +7540,50 @@
         "kind": "document"
       },
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::FileDocument",
+      "kind": "variant",
+      "signatureSha256": "b4f3095846bcfe4cb1a6cfcdd58f93c723fe2e341d242cc4224ea867a02c8338",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "fixedArguments": {
+        "kind": "file_document"
+      },
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::ImageDocument",
+      "kind": "variant",
+      "signatureSha256": "250d10cab5d4ff184f11f3d2261893521a3e8ac7836ccbac525e30593ff28246",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "fixedArguments": {
+        "kind": "image_document"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python Annotated[Union[int, NoneType], pydantic.types.Strict(strict=True), annotated_types.Ge(ge=0), annotated_types.Le(le=4294967295)]"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
     },
     {
       "rustPath": "yosoi::surface::SourceInterpretation::Image",
@@ -4763,7 +7602,39 @@
         }
       ],
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
+    },
+    {
+      "rustPath": "yosoi::surface::SourceInterpretation::PixelArtifact",
+      "kind": "variant",
+      "signatureSha256": "a74ab399cfbe2bd4128a8a7faf7c4ace147b1947b1f76af75456c7c547d883a8",
+      "pythonTarget": "yosoi.surface.SourceInterpretation",
+      "fixedArguments": {
+        "kind": "pixel_artifact"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "tile_side",
+          "pythonArgument": "tile_side",
+          "conversion": "checked Rust integer maps to Python Annotated[Union[int, NoneType], pydantic.types.Strict(strict=True), annotated_types.Ge(ge=0), annotated_types.Le(le=4294967295)]"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:tile_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:tile_side",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
     },
     {
       "rustPath": "yosoi::surface::SourceInterpretation::clone",
@@ -4813,7 +7684,7 @@
       "signatureSha256": "68b603bb70f680f742b8c51336b7b40e7f7a999856883bd05e219e7bbf0bb059",
       "pythonTarget": "yosoi.surface.SourceInterpretation",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "80954031240b9430ff8542b4894d2e104883dae91644183efc8735cdc99cbe49"
+      "pythonTargetSha256": "4973f7648f0a39e02c5f595b44313bd7485437abff76d8676b54d727b6543a3f"
     },
     {
       "rustPath": "yosoi::surface::SourceReference::clone",
@@ -5274,6 +8145,21 @@
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::image_source_identity",
+      "kind": "function",
+      "signatureSha256": "67f86d47652641621f49214633e54382cfa79277235e03a74f36145c4b27d162",
+      "pythonTarget": "yosoi.surface.image_source_identity",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python ImageDocument converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "b60afecc31afbfde4895cb93d0a6900a8f1f4f0326390b73049a1cb781eba13c"
     },
     {
       "rustPath": "yosoi::surface::model::Access::Control",
@@ -6678,6 +9564,71 @@
       "pythonTarget": "yosoi.surface",
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::pixel_source_identity",
+      "kind": "function",
+      "signatureSha256": "cfb900f36dd475301bc9c87117e601d0bb5e8ce8b3234ac866251b2d111a06d1",
+      "pythonTarget": "yosoi.surface.pixel_source_identity",
+      "argumentMappings": [
+        {
+          "rustArgument": "source",
+          "pythonArgument": "source",
+          "conversion": "Python PixelSource converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "475dd0dfde4a5aa0743437b42449bffc7c0e64c8a2ea44cbe501ec4ba068526f"
+    },
+    {
+      "rustPath": "yosoi::surface::pixels::resize_transform",
+      "kind": "function",
+      "signatureSha256": "ab16c137344b303a66c0cd85eaf1ff17e10d65f0d8ae064a201e875731f4575e",
+      "pythonTarget": "yosoi.surface.resize_transform",
+      "argumentMappings": [
+        {
+          "rustArgument": "parent",
+          "pythonArgument": "parent",
+          "conversion": "Python PixelArtifact converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "operation",
+          "pythonArgument": "operation",
+          "conversion": "Python PixelOperation converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "width",
+          "pythonArgument": "width",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "height",
+          "pythonArgument": "height",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "units": [
+        {
+          "id": "image-unit:width",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        },
+        {
+          "id": "image-unit:height",
+          "rust": "pixel edges or dimensions in the declared coordinate plane",
+          "python": "pixel edges or dimensions in the declared coordinate plane"
+        }
+      ],
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "pythonTargetSha256": "7e485f6219b2f34cd4676e5c66785e742f766b1ffb2056e97d8cb5f618df9847"
+    },
+    {
+      "rustPath": "yosoi::surface::pixels",
+      "kind": "module",
+      "signatureSha256": "c5793d6b72cfd9c047bde765807f9595fcd5165c22916ec0e493631c23651987",
+      "pythonTarget": "yosoi.surface",
+      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
     },
     {

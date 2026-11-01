@@ -11,6 +11,33 @@ import run_surface_conformance as surface
 
 
 class SurfaceVectorsTest(unittest.TestCase):
+    def test_source_wire_omits_only_absent_optional_archive_fields(self) -> None:
+        class Source:
+            def model_dump(self, *, mode):
+                self_mode = mode
+                if self_mode != "json":
+                    raise ValueError("wire comparison requires JSON values")
+                return {
+                    "profile": {"source_format": "json"},
+                    "file_kind": None,
+                    "pixel_info": None,
+                    "file_metadata": None,
+                    "document_archive": None,
+                    "file_archive": "retained-file-reference",
+                    "content_base64": "e30=",
+                    "surface": None,
+                }
+
+        self.assertEqual(
+            surface.source_wire(Source()),
+            {
+                "profile": {"source_format": "json"},
+                "file_archive": "retained-file-reference",
+                "content_base64": "e30=",
+                "surface": None,
+            },
+        )
+
     def test_repository_vectors_cover_every_supported_document_class(self) -> None:
         path = (
             Path(__file__).resolve().parents[2] / "python/parity/surface-vectors.json"
