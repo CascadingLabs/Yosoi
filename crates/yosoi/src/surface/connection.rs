@@ -83,6 +83,30 @@ pub(super) enum Operation {
         representation: super::browser::BrowserRepresentation,
         request: model::ReadRequest,
     },
+    /// Arm an explicitly bounded live network event subscription on a native tab.
+    NetworkSubscribe {
+        /// Enable bounded response-body retention for this subscription.
+        #[serde(default)]
+        retain_bodies: Option<bool>,
+    },
+    /// Cancel the active network event subscription and release its listeners.
+    NetworkCancel,
+    /// Wait for a new event sequence from the active network subscription.
+    NetworkWait {
+        /// Last event sequence the caller has already observed.
+        after_sequence: u64,
+        /// Maximum event-driven wait time.
+        timeout_ms: u64,
+    },
+    /// Read a bounded chunk from one separately retained network body payload.
+    NetworkPayload {
+        /// Exact response link copied from a frozen NetworkWindow.
+        reference: super::NetworkPayloadRef,
+        /// Byte offset into the retained body.
+        offset: usize,
+        /// Requested body bytes before base64 transport encoding.
+        max_bytes: usize,
+    },
     Read {
         request: model::ReadRequest,
     },

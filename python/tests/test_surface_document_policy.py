@@ -33,13 +33,54 @@ def test_native_policy_selects_source_type_and_applies_bytes():
 
 
 def test_native_web_reader_honors_policy_and_preserves_network_uncertainty():
-    source = {
-        "schema": "yosoi.network.v1",
-        "events": [
-            {"method": "Network.responseReceived", "url": "https://owned.example/api"},
-        ],
-    }
-    index = sf.Surface(ys.Document.from_json("network", json.dumps(source)))
+    window = sf.NetworkWindow(
+        schema="yosoi.network.v1",
+        schema_version=1,
+        session_id="session-1",
+        tab_id="tab-1",
+        subscription_id="subscription-1",
+        window_id="subscription-1:1",
+        first_sequence=None,
+        last_sequence=None,
+        started_at_unix_us=1,
+        ended_at_unix_us=2,
+        events=(),
+        in_flight_at_start=(),
+        in_flight=(),
+        gaps=(),
+        coverage=sf.NetworkCoverage(
+            complete=False,
+            reason="page_target_cdp_window",
+            overflow=False,
+            dropped_events=0,
+            disconnected=False,
+            expired=False,
+            instrumentation_escalated=True,
+            network_was_previously_enabled=False,
+            late_events=0,
+            filtered_events=0,
+            starts_not_observed=0,
+            omitted_payload_links=0,
+            start_boundary_unknown=True,
+            end_boundary_in_flight=False,
+        ),
+        retention=sf.NetworkRetention(
+            max_buffered_events=256,
+            retain_url_path=False,
+            retain_url_query=False,
+            retained_header_names=(),
+            retain_bodies=False,
+            provider_resource_buffer_bytes=1,
+            provider_total_buffer_bytes=1,
+            allowed_origins=(),
+            allowed_methods=(),
+        ),
+        payloads=(),
+    )
+    index = sf.Surface.with_policy(
+        window.to_document("network"),
+        sf.DocumentPolicies(network=sf.DocumentPolicy(response_bytes=1024)),
+    )
     web = sf.WebSurface(index, "network", sf.DocumentPolicy(response_bytes=1024))
     result = web.read(
         sf.ReadRequest(
@@ -51,6 +92,27 @@ def test_native_web_reader_honors_policy_and_preserves_network_uncertainty():
     assert result.data.entries
     assert len(result.model_dump_json().encode()) <= 1024
     assert not web.descriptor.controllable
+
+
+def test_network_schema_string_in_ordinary_json_does_not_select_network_semantics():
+    document = ys.Document.from_json(
+        "ordinary-json",
+        json.dumps(
+            {
+                "schema": "yosoi.network.v1",
+                "events": [{"method": "Network.responseReceived"}],
+            }
+        ),
+    )
+    with pytest.raises(ValueError):
+        sf.NetworkWindow.from_document(document)
+    policies = sf.DocumentPolicies(
+        json_document=sf.DocumentPolicy(max_bytes=4096),
+        network=sf.DocumentPolicy(max_bytes=1),
+    )
+    index = sf.Surface.with_policy(document, policies)
+    with pytest.raises(sf.SurfaceError):
+        sf.WebSurface(index, "ordinary-json")
 
 
 def test_prepared_document_read_cap_survives_shared_reader():

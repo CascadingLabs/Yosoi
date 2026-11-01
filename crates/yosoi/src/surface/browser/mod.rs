@@ -1,6 +1,8 @@
 //! Live browser observation and authority; platform process details stay local.
 mod document;
 mod evidence;
+#[cfg(feature = "browser")]
+mod network;
 pub use document::WebSurface;
 pub use evidence::{BrowserObservation, BrowserRepresentation};
 #[cfg(feature = "browser")]

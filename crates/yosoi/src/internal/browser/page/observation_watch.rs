@@ -38,7 +38,7 @@ use std::{
     fmt,
     io::{Cursor, Read},
     sync::{
-        Mutex, OnceLock,
+        Arc, Mutex, OnceLock,
         atomic::{AtomicU64, Ordering},
     },
     time::Duration,
@@ -282,6 +282,8 @@ impl CompletedResponseCandidate {
 pub struct ObservationResponseBody {
     pub(in crate::internal::browser) bytes: Vec<u8>,
     pub complete: bool,
+    /// Whether CDP encoded the returned string as base64 before Yosoi decoded it.
+    pub provider_base64_encoded: bool,
 }
 
 impl fmt::Debug for ObservationResponseBody {
@@ -290,6 +292,7 @@ impl fmt::Debug for ObservationResponseBody {
             .debug_struct("ObservationResponseBody")
             .field("retained_bytes", &self.bytes.len())
             .field("complete", &self.complete)
+            .field("provider_base64_encoded", &self.provider_base64_encoded)
             .finish()
     }
 }
@@ -969,6 +972,70 @@ impl Drop for ObservationWatch {
 }
 
 impl Page {
+    /// Arm request lifecycle listeners on this page target before returning.
+    ///
+    /// Network instrumentation is an explicit opt-in and remains scoped to the
+    /// caller's native page. Dropping the subscription releases its listeners;
+    /// bounded Network instrumentation stays enabled for the Page lifetime.
+    pub async fn start_network_observation_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+        max_resource_buffer_bytes: usize,
+        max_total_buffer_bytes: usize,
+    ) -> Result<NetworkObservationSubscription> {
+        if max_events == 0 || max_events > MAX_WATCH_EVENTS {
+            return Err(invalid_watch_input("max_events must be between 1 and 4096"));
+        }
+        if max_buffered_events == 0 || max_buffered_events > MAX_PROVIDER_EVENT_CAPACITY {
+            return Err(invalid_watch_input(
+                "max_buffered_events must be between 1 and 256",
+            ));
+        }
+        self.ensure_active().await?;
+        Handle::try_current()
+            .map_err(|_| watch_lost("network subscription requires an async runtime"))?;
+        let reservation = PageWatchReservation::acquire(
+            self.inner.target_id().inner().clone(),
+        )?;
+        let listener_config = event_listener_config(
+            max_buffered_events,
+            EventOverflowPolicy::Close,
+        );
+        let network_was_previously_enabled = self.instrumentation_state().network_enabled;
+        let requests = self
+            .inner
+            .event_listener::<EventRequestWillBeSent>(listener_config)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        let responses = self
+            .inner
+            .event_listener::<EventResponseReceived>(listener_config)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        let finished = self
+            .inner
+            .event_listener::<EventLoadingFinished>(listener_config)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        let failed = self
+            .inner
+            .event_listener::<EventLoadingFailed>(listener_config)
+            .await
+            .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
+        self.ensure_network_enabled_with_limits(max_total_buffer_bytes, max_resource_buffer_bytes)
+            .await?;
+        Ok(NetworkObservationSubscription {
+            requests: Some(requests),
+            responses: Some(responses),
+            finished: Some(finished),
+            failed: Some(failed),
+            _reservation: Some(reservation),
+            active: true,
+            network_was_previously_enabled,
+        })
+    }
+
     /// Register every event stream, enable selected domains, and acknowledge
     /// observer installation before returning. Call this before the triggering
     /// action so no initial response or DOM mutation can race registration.
@@ -1202,7 +1269,155 @@ impl Page {
         if !complete {
             bytes.truncate(max_bytes);
         }
-        Ok(ObservationResponseBody { bytes, complete })
+        Ok(ObservationResponseBody {
+            bytes,
+            complete,
+            provider_base64_encoded: response.result.base64_encoded,
+        })
+    }
+
+    /// Captures one completed native response body by its provider request ID.
+    ///
+    /// The provider returns decoded response bytes, not a lossless wire body.
+    /// Callers must opt into retention, bound each response, and preserve the
+    /// returned `complete` and `provider_base64_encoded` facts.
+    pub async fn capture_network_response_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<ObservationResponseBody> {
+        self.ensure_active().await?;
+        if request_id.is_empty() || request_id.len() > 1_024 {
+            return Err(invalid_watch_input("request identity is empty or too large"));
+        }
+        if max_bytes == 0 || max_bytes > MAX_RESPONSE_BODY_BYTES {
+            return Err(invalid_watch_input(
+                "response body limit must be between 1 and 8 MiB",
+            ));
+        }
+        let response = self
+            .inner
+            .execute(GetResponseBodyParams::new(RequestId::new(request_id.to_owned())))
+            .await
+            .map_err(|error| VoidCrawlError::ResponseBody(error.to_string()))?;
+        let probe_limit = max_bytes
+            .checked_add(1)
+            .ok_or_else(|| invalid_watch_input("response body limit overflowed"))?;
+        let read_limit = u64::try_from(probe_limit)
+            .map_err(|_| invalid_watch_input("response body limit is unsupported"))?;
+        let mut bytes = Vec::with_capacity(probe_limit.min(64 * 1024));
+        if response.result.base64_encoded {
+            DecoderReader::new(response.result.body.as_bytes(), &STANDARD)
+                .take(read_limit)
+                .read_to_end(&mut bytes)
+                .map_err(|error| VoidCrawlError::ResponseBody(error.to_string()))?;
+        } else {
+            Cursor::new(response.result.body.as_bytes())
+                .take(read_limit)
+                .read_to_end(&mut bytes)
+                .map_err(|error| VoidCrawlError::ResponseBody(error.to_string()))?;
+        }
+        let complete = bytes.len() <= max_bytes;
+        if !complete {
+            bytes.truncate(max_bytes);
+        }
+        Ok(ObservationResponseBody {
+            bytes,
+            complete,
+            provider_base64_encoded: response.result.base64_encoded,
+        })
+    }
+}
+
+/// One raw typed event delivered by the page-scoped CDP subscription.
+#[derive(Debug)]
+pub enum NetworkObservationEvent {
+    /// A new request or redirect hop was sent.
+    Request(Arc<EventRequestWillBeSent>),
+    /// Response metadata became available.
+    Response(Arc<EventResponseReceived>),
+    /// A request finished.
+    Finished(Arc<EventLoadingFinished>),
+    /// A request failed or was canceled.
+    Failed(Arc<EventLoadingFailed>),
+}
+
+/// Bounded page-target listener set for native Chrome request lifecycle events.
+pub struct NetworkObservationSubscription {
+    requests: Option<EventStream<EventRequestWillBeSent>>,
+    responses: Option<EventStream<EventResponseReceived>>,
+    finished: Option<EventStream<EventLoadingFinished>>,
+    failed: Option<EventStream<EventLoadingFailed>>,
+    _reservation: Option<PageWatchReservation>,
+    active: bool,
+    network_was_previously_enabled: bool,
+}
+
+impl fmt::Debug for NetworkObservationSubscription {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("NetworkObservationSubscription")
+            .field("active", &self.active)
+            .finish_non_exhaustive()
+    }
+}
+
+impl NetworkObservationSubscription {
+    /// Reports whether network instrumentation was already enabled before this subscription.
+    pub const fn network_was_previously_enabled(&self) -> bool {
+        self.network_was_previously_enabled
+    }
+
+    /// Waits for one provider event without polling or issuing a browser command.
+    pub async fn next(&mut self) -> Result<NetworkObservationEvent> {
+        if !self.active {
+            return Err(watch_lost("network subscription is settled"));
+        }
+        tokio::select! {
+            delivery = next_delivery(&mut self.requests) => match delivery {
+                Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Request(event)),
+                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network request listener lost {} event(s)", dropped.get()))),
+                None => Err(watch_lost("network request event stream closed")),
+            },
+            delivery = next_delivery(&mut self.responses) => match delivery {
+                Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Response(event)),
+                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network response listener lost {} event(s)", dropped.get()))),
+                None => Err(watch_lost("network response event stream closed")),
+            },
+            delivery = next_delivery(&mut self.finished) => match delivery {
+                Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Finished(event)),
+                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network completion listener lost {} event(s)", dropped.get()))),
+                None => Err(watch_lost("network completion event stream closed")),
+            },
+            delivery = next_delivery(&mut self.failed) => match delivery {
+                Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Failed(event)),
+                Some(EventDelivery::Lagged { dropped }) => Err(watch_lost(&format!("network failure listener lost {} event(s)", dropped.get()))),
+                None => Err(watch_lost("network failure event stream closed")),
+            },
+        }
+    }
+
+    /// Stops receiving events and releases this subscription's page reservation.
+    pub fn settle(&mut self) {
+        if !self.active {
+            return;
+        }
+        self.drop_streams();
+        self.active = false;
+    }
+
+    fn drop_streams(&mut self) {
+        self.requests.take();
+        self.responses.take();
+        self.finished.take();
+        self.failed.take();
+        self._reservation.take();
+    }
+}
+
+impl Drop for NetworkObservationSubscription {
+    fn drop(&mut self) {
+        self.settle();
     }
 }
 

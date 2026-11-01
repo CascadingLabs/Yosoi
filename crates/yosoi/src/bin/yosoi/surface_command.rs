@@ -21,6 +21,11 @@ use yosoi::surface::{
     browser::{BrowserSurface, archive as browser_archive},
     video::VideoSession,
 };
+use yosoi::{
+    automation_record::OperationStatus,
+    policy::{Acquisition, BrowserMode, Page, Policy},
+    session::{self, SessionPolicy},
+};
 type Result<T> = StdResult<T, Box<dyn Error + Send + Sync>>;
 #[derive(Debug, Args)]
 pub struct SurfaceArgs {
@@ -44,6 +49,27 @@ enum SurfaceCommand {
         /// Enable archive policy, checkpoint each command, and export output/surface.yosoi on close.
         #[arg(long)]
         archive: Option<PathBuf>,
+    },
+    /// Open a managed native Session with qualified Chrome CDP event support.
+    NativeWeb {
+        /// Initial HTTP(S) document to open in the managed native Session.
+        #[arg(long)]
+        url: String,
+        /// Launch regular Chrome or Chromium headlessly.
+        #[arg(long)]
+        headless: bool,
+        /// Local evidence directory; stores trace.json and rejected captures.
+        #[arg(long, default_value = ".local/surface-native-session")]
+        output: PathBuf,
+        /// Enable archive policy, checkpoint each command, and export output/surface.yosoi on close.
+        #[arg(long)]
+        archive: Option<PathBuf>,
+        /// Allow opt-in network subscriptions to retain bounded response bodies.
+        #[arg(long)]
+        network_bodies: bool,
+        /// JSON file with NetworkObservationPolicy filters, redaction and independent bounds.
+        #[arg(long)]
+        network_policy: Option<PathBuf>,
     },
     /// Explore an immutable local video through the shared bounded read protocol.
     Video {
@@ -166,6 +192,58 @@ async fn drive(mut surface: impl SurfaceConnection) -> Result<()> {
     closed?;
     Ok(())
 }
+
+async fn drive_native(
+    url: String,
+    headless: bool,
+    output: PathBuf,
+    archive: Option<PathBuf>,
+    retain_network_bodies: bool,
+    network_policy_file: Option<PathBuf>,
+) -> Result<()> {
+    let browser_mode = if headless {
+        BrowserMode::Headless
+    } else {
+        BrowserMode::Headful
+    };
+    let page = Page::new(vec![Acquisition::Browser(browser_mode)])?;
+    let acquisition_policy = Policy {
+        page,
+        ..Policy::default()
+    };
+    let session = session::new()
+        .bind(&acquisition_policy)
+        .configure(SessionPolicy::default())
+        .acquire()
+        .await?;
+    let work = session.work().await?;
+    let receipt = match work.navigate(&url).await {
+        Ok(receipt) => receipt,
+        Err(error) => {
+            let _ = work.release().await;
+            let _ = session.close().await;
+            return Err(error.into());
+        }
+    };
+    if receipt.status != OperationStatus::Observed {
+        let _ = work.release().await;
+        let _ = session.close().await;
+        return Err(io::Error::other("native browser did not observe its initial navigation").into());
+    }
+    let mut surface_policy = policy(output, archive);
+    if let Some(path) = network_policy_file {
+        surface_policy.network_observation = serde_json::from_slice(&std::fs::read(path)?)?;
+    }
+    if retain_network_bodies {
+        surface_policy.network_observation.retain_bodies = true;
+    }
+    let surface = BrowserSurface::consume_work(work, surface_policy).await?;
+    let result = drive(surface).await;
+    let closed = session.close().await;
+    result?;
+    closed?;
+    Ok(())
+}
 fn policy(output: PathBuf, archive: Option<PathBuf>) -> SurfacePolicy {
     SurfacePolicy {
         output: Some(output),
@@ -190,6 +268,16 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                 BrowserSurface::open(&url, policy(output, archive), headless).await?,
             ))
             .await
+        }
+        SurfaceCommand::NativeWeb {
+            url,
+            headless,
+            output,
+            archive,
+            network_bodies,
+            network_policy,
+        } => {
+            drive_native(url, headless, output, archive, network_bodies, network_policy).await
         }
         SurfaceCommand::Video {
             file,

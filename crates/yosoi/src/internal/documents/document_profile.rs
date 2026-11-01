@@ -45,6 +45,8 @@ pub enum DocumentSchemaProfile {
     YosoiRenderedDomV1,
     /// Yosoi version-1 accessibility-tree JSON schema with snapshot-local node identities.
     YosoiAccessibilityTreeV1,
+    /// Yosoi version-1 frozen browser network-observation window.
+    YosoiNetworkObservationV1,
 }
 
 /// One of the six document classes in the first locator slice.
@@ -177,6 +179,18 @@ impl DocumentProfile {
         }
     }
 
+    /// Declares a version-1 immutable browser network-observation window.
+    ///
+    /// This profile is distinct from ordinary RFC 8259 source JSON. It does not
+    /// capture a browser or prove that the window is complete; the versioned
+    /// network contract carries its own coverage and loss metadata.
+    pub const fn network_observation_v1() -> Self {
+        Self::source(
+            SourceFormat::Json,
+            DocumentSchemaProfile::YosoiNetworkObservationV1,
+        )
+    }
+
     const fn source(source_format: SourceFormat, schema: DocumentSchemaProfile) -> Self {
         Self {
             representation: DocumentRepresentation::Source,
@@ -231,7 +245,7 @@ impl DocumentProfile {
             (
                 DocumentRepresentation::Source,
                 SourceFormat::Json,
-                DocumentSchemaProfile::JsonRfc8259,
+                DocumentSchemaProfile::JsonRfc8259 | DocumentSchemaProfile::YosoiNetworkObservationV1,
                 None,
             ) => Ok(DocumentClass::SourceJson),
             (

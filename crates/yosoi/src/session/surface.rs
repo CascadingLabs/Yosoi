@@ -7,6 +7,44 @@ use std::time::Duration;
 const SCRIPT: &str = include_str!("../surface/browser/extract.js");
 
 impl Work {
+    pub(crate) fn surface_session_cancellation(&self) -> tokio_util::sync::CancellationToken {
+        self.session.inner.backend.cancellation()
+    }
+
+    pub(crate) async fn surface_start_network_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+        max_resource_buffer_bytes: usize,
+        max_total_buffer_bytes: usize,
+    ) -> Result<crate::internal::browser::controller::NetworkObservationSubscription, SessionError>
+    {
+        let _operation = self.operation()?;
+        self.call(
+            self.control
+                .start_network_observation_subscription(
+                    max_events,
+                    max_buffered_events,
+                    max_resource_buffer_bytes,
+                    max_total_buffer_bytes,
+                ),
+        )
+        .await
+    }
+
+    pub(crate) async fn surface_capture_network_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<crate::internal::browser::page::ObservationResponseBody, SessionError> {
+        let _operation = self.operation()?;
+        self.call(
+            self.control
+                .capture_network_response_body(request_id, max_bytes),
+        )
+        .await
+    }
+
     pub(crate) fn surface_authorize(
         &self,
         kind: ActionKind,
@@ -65,7 +103,7 @@ impl Work {
         let requested = input
             .get("timeout_ms")
             .and_then(Value::as_u64)
-            .unwrap_or(15000);
+            .map_or(15000, |value| value);
         let timeout = Duration::from_millis(requested).min(self.timeout());
         if timeout.is_zero() {
             return Err(SessionError::Deadline);

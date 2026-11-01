@@ -1,16 +1,19 @@
 //! Retained native Session/Work binding; it never launches a second browser.
 use crate::{
     automation_record::OperationStatus,
-    documents::{Document, DocumentEpoch},
+    documents::{Document, DocumentEpoch, FileDocument, FileLimits, FileMetadata, file_from_bytes},
     internal::browser::page::SurfaceInput,
     session::{ActionKind, Work},
     surface::{
-        DocumentPolicies, Surface,
+        DocumentPolicies, DocumentPolicy, NetworkObservationPolicy, NetworkPayload,
+        NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, Surface,
         connection::{Operation, Result, Trace},
     },
 };
 use serde_json::{Value, json};
-use std::{fs, io, path::Path};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use std::{collections::HashMap, fs, io, path::Path};
+use super::network::NetworkCapture;
 
 pub(super) struct NativeBrowser {
     work: Option<Work>,
@@ -19,11 +22,19 @@ pub(super) struct NativeBrowser {
     tab_id: String,
     binding_id: String,
     pub documents: DocumentPolicies,
+    network_policy: NetworkObservationPolicy,
+    network: Option<NetworkCapture>,
+    network_payloads: HashMap<String, (NetworkPayload, NetworkPayloadRef)>,
 }
 
 impl NativeBrowser {
-    pub async fn new(work: Work, mut documents: DocumentPolicies) -> Result<Self> {
+    pub async fn new(
+        work: Work,
+        mut documents: DocumentPolicies,
+        network_policy: NetworkObservationPolicy,
+    ) -> Result<Self> {
         documents.validate()?;
+        network_policy.validate()?;
         let limit = work.surface_observation_limit();
         documents.dom.max_bytes = documents.dom.max_bytes.min(limit);
         documents.html.max_bytes = documents.html.max_bytes.min(limit);
@@ -38,6 +49,9 @@ impl NativeBrowser {
             binding_id,
             work: Some(work),
             documents,
+            network_policy,
+            network: None,
+            network_payloads: HashMap::new(),
         })
     }
 
@@ -51,9 +65,289 @@ impl NativeBrowser {
         &self.key
     }
 
+    pub const fn network_window_limit(&self) -> usize {
+        self.network_policy.max_windows
+    }
+
     pub fn capabilities(&self) -> Value {
         json!({"backend":"native_session","sessionId":self.session_id,"tabId":self.tab_id,"bindingId":self.binding_id,
-            "ownership":"Surface close releases Work; the retained Session and tab are not explicitly closed"})
+            "ownership":"Surface close releases Work; the retained Session and tab are not explicitly closed",
+            "networkObservation":{"provider":"chrome_cdp","supported":true,"subscription":"explicit_opt_in","bodyRetention":self.network_policy.retain_bodies,"active":self.network.is_some()}})
+    }
+
+    pub async fn subscribe_network(&mut self, retain_bodies: Option<bool>) -> Result<Value> {
+        if self.network.is_some() {
+            return Err(io::Error::other("native network subscription is already active").into());
+        }
+        let mut policy = self.network_policy.clone();
+        if let Some(retain_bodies) = retain_bodies {
+            policy.retain_bodies = retain_bodies;
+        }
+        policy.validate()?;
+        let work = self.work()?;
+        let cancellation = work.surface_session_cancellation();
+        let max_resource_buffer_bytes = if policy.retain_bodies {
+            policy.max_body_bytes
+        } else {
+            1
+        };
+        let max_total_buffer_bytes = if policy.retain_bodies {
+            policy.max_total_body_bytes
+        } else {
+            1
+        };
+        let subscription = work
+            .surface_start_network_subscription(
+                policy.max_events,
+                policy.max_buffered_events,
+                max_resource_buffer_bytes,
+                max_total_buffer_bytes,
+            )
+            .await?;
+        let capture = NetworkCapture::start(
+            subscription,
+            self.session_id.clone(),
+            self.tab_id.clone(),
+            policy.clone(),
+            cancellation,
+        )?;
+        self.network_policy = policy;
+        self.network = Some(capture);
+        Ok(json!({"active":true,"subscription_id":self.network.as_ref().map(|value|value.subscription_id()),
+            "provider":"chrome_cdp","body_retention":self.network_policy.retain_bodies,
+            "max_events":self.network_policy.max_events,"max_duration_ms":self.network_policy.max_duration_ms}))
+    }
+
+    pub async fn cancel_network(&mut self) -> Result<Value> {
+        if let Some(mut network) = self.network.take() {
+            network.close().await?;
+        }
+        Ok(json!({"active":false,"cancelled":true}))
+    }
+
+    pub async fn wait_network_event(
+        &self,
+        after_sequence: u64,
+        timeout_ms: u64,
+    ) -> Result<Value> {
+        let network = self
+            .network
+            .as_ref()
+            .ok_or_else(|| io::Error::other("native network subscription is not active"))?;
+        let sequence = network.wait_for_event(after_sequence, timeout_ms).await?;
+        Ok(match sequence {
+            Some(sequence) => json!({"state":"event","sequence":sequence}),
+            None => json!({"state":"timeout","sequence":after_sequence}),
+        })
+    }
+
+    async fn capture_network_evidence(
+        &mut self,
+        epoch: u64,
+        policy: DocumentPolicy,
+    ) -> Result<(Surface, Document, Value)> {
+        let mut snapshot = self
+            .network
+            .as_mut()
+            .ok_or_else(|| io::Error::other("subscribe to native network events before observing them"))?
+            .snapshot(policy.max_bytes)?;
+        if self.network_policy.retain_bodies {
+            for candidate in snapshot.body_candidates {
+                let payload_id = candidate.payload_id.clone();
+                let response = self
+                    .work()?
+                    .surface_capture_network_body(
+                        &candidate.request_id,
+                        self.network_policy.max_body_bytes,
+                    )
+                    .await;
+                let (payload, kind, bytes, base64_encoded, state, document_id, reason) = match response {
+                    Ok(body) => {
+                        let bytes = body.bytes().to_vec();
+                        let truncated = !body.complete;
+                        match self.project_network_body(&payload_id, &candidate, &bytes) {
+                            Ok((payload, kind, document_id, reason)) => (
+                                Some(payload),
+                                Some(kind),
+                                bytes,
+                                body.provider_base64_encoded,
+                                if truncated { NetworkPayloadState::Truncated } else { NetworkPayloadState::Retained },
+                                Some(document_id),
+                                reason,
+                            ),
+                            Err(_) => (
+                                None,
+                                None,
+                                bytes,
+                                body.provider_base64_encoded,
+                                NetworkPayloadState::Unsupported,
+                                None,
+                                Some("existing_document_projection_rejected_response".into()),
+                            ),
+                        }
+                    }
+                    Err(_) => (
+                        None,
+                        None,
+                        Vec::new(),
+                        false,
+                        NetworkPayloadState::Unavailable,
+                        None,
+                        Some("provider_response_body_unavailable".into()),
+                    ),
+                };
+                let reference = self
+                    .network
+                    .as_mut()
+                    .ok_or_else(|| io::Error::other("network subscription was canceled"))?
+                    .retain_body(
+                        &candidate,
+                        payload_id,
+                        &bytes,
+                        base64_encoded,
+                        state,
+                        kind,
+                        document_id,
+                        reason,
+                    )?;
+                if matches!(reference.state, NetworkPayloadState::Retained | NetworkPayloadState::Truncated)
+                    && let Some(payload) = payload
+                {
+                    self.network_payloads
+                        .insert(reference.id.clone(), (payload, reference.clone()));
+                }
+                if let Some(existing) = snapshot
+                    .window
+                    .payloads
+                    .iter_mut()
+                    .find(|existing| existing.id == reference.id)
+                {
+                    *existing = reference;
+                } else {
+                    snapshot.window.payloads.push(reference);
+                }
+            }
+        }
+        let window = snapshot.window;
+        let window_id = window.window_id.clone();
+        let bytes = serde_json::to_vec(&window)?;
+        let document = window.to_document(format!("surface-{}-network-{epoch}", self.key))?;
+        let index = Surface::with_policy(&document, &self.documents)?;
+        let mut snapshot = json!({"session_id":self.session_id,"tab_id":self.tab_id,
+            "capture_sequence":epoch,"network_window_id":window_id,"network":window,
+            "network_schema":crate::surface::NETWORK_OBSERVATION_SCHEMA,"network_schema_version":1,
+            "network_window_bytes":bytes.len()});
+        let fields = snapshot
+            .as_object_mut()
+            .ok_or_else(|| io::Error::other("network snapshot was not an object"))?;
+        fields.insert("native_session_id".into(), self.session_id.clone().into());
+        fields.insert("native_tab_id".into(), self.tab_id.clone().into());
+        Ok((index, document, snapshot))
+    }
+
+    fn project_network_body(
+        &self,
+        payload_id: &str,
+        candidate: &super::network::NetworkBodyCandidate,
+        bytes: &[u8],
+    ) -> Result<(NetworkPayload, NetworkPayloadKind, String, Option<String>)> {
+        let media_type = candidate
+            .media_type
+            .as_deref()
+            .map_or("", |value| value)
+            .split(';')
+            .next()
+            .map_or("", |value| value)
+            .trim()
+            .to_ascii_lowercase();
+        let html = matches!(media_type.as_str(), "text/html" | "application/xhtml+xml");
+        let json = media_type == "application/json"
+            || media_type == "text/json"
+            || media_type.ends_with("+json");
+        if (html || json)
+            && candidate.charset.as_deref().is_none_or(|charset| {
+                matches!(charset.trim().to_ascii_lowercase().as_str(), "utf-8" | "utf8")
+            })
+        {
+            let document = if html {
+                Document::html(payload_id, bytes.to_vec())
+            } else {
+                Document::json(payload_id, bytes.to_vec())
+            };
+            if let Ok(document) = document
+                && document.parse().is_ok()
+            {
+                let kind = if html { NetworkPayloadKind::Html } else { NetworkPayloadKind::Json };
+                return Ok((
+                    NetworkPayload::Document(document),
+                    kind,
+                    payload_id.to_owned(),
+                    None,
+                ));
+            }
+        }
+        let metadata = FileMetadata::new()
+            .with_capture_id(candidate.request_id.clone())?
+            .with_session_id(self.session_id.clone())?
+            .with_tab_id(self.tab_id.clone())?;
+        let metadata = if let Some(media_type) = candidate.media_type.as_ref() {
+            metadata.with_declared_media_type(media_type.clone())?
+        } else {
+            metadata
+        };
+        let maximum = u64::try_from(self.network_policy.max_body_bytes)
+            .map_err(|_| io::Error::other("network body limit is unsupported"))?;
+        let file: FileDocument = file_from_bytes(
+            payload_id,
+            bytes.to_vec(),
+            metadata,
+            FileLimits::new(maximum)?,
+        )?;
+        let reason = (html || json).then(|| "declared_text_document_not_projected_as_utf8".into());
+        Ok((NetworkPayload::File(file), NetworkPayloadKind::File, candidate.request_id.clone(), reason))
+    }
+
+    pub fn read_network_payload(
+        &self,
+        requested_reference: &NetworkPayloadRef,
+        offset: usize,
+        max_bytes: usize,
+    ) -> Result<Value> {
+        if requested_reference.id.is_empty()
+            || requested_reference.id.len() > 1_024
+            || !(1..=32_768).contains(&max_bytes)
+        {
+            return Err(io::Error::other("invalid network payload read bounds").into());
+        }
+        let (payload, reference) = self
+            .network_payloads
+            .get(&requested_reference.id)
+            .ok_or_else(|| io::Error::other("network payload is unavailable or was evicted"))?;
+        if reference != requested_reference {
+            return Err(io::Error::other("network payload reference does not match this Session").into());
+        }
+        let bytes = payload.bytes();
+        if offset > bytes.len() {
+            return Err(io::Error::other("network payload offset is past its end").into());
+        }
+        let end = offset
+            .checked_add(max_bytes)
+            .ok_or_else(|| io::Error::other("network payload offset overflowed"))?
+            .min(bytes.len());
+        let chunk = bytes
+            .get(offset..end)
+            .ok_or_else(|| io::Error::other("network payload range is invalid"))?;
+        Ok(json!({"payload":reference,"total_bytes":bytes.len(),"offset":offset,
+            "data_base64":STANDARD.encode(chunk),"next_offset":(end < bytes.len()).then_some(end)}))
+    }
+
+    pub fn retained_network_payload(
+        &self,
+        id: &str,
+    ) -> Option<(NetworkPayloadRef, NetworkPayload)> {
+        self.network_payloads
+            .get(id)
+            .map(|(payload, reference)| (reference.clone(), payload.clone()))
     }
 
     pub fn authorize(&self, operation: &Operation) -> Result<()> {
@@ -113,6 +407,9 @@ impl NativeBrowser {
         representation: super::BrowserRepresentation,
     ) -> Result<(Surface, Document, Value)> {
         let policy = representation.policy(&self.documents);
+        if representation == super::BrowserRepresentation::Network {
+            return self.capture_network_evidence(epoch, policy).await;
+        }
         let mut location = self.script("location", json!({})).await?;
         let document = match representation {
             super::BrowserRepresentation::Ax => {
@@ -147,7 +444,7 @@ impl NativeBrowser {
             }
             super::BrowserRepresentation::Network => {
                 return Err(io::Error::other(
-                    "native Surface network observation is not available on this binding",
+                    "network evidence dispatch did not enter its capture path",
                 )
                 .into());
             }
@@ -197,6 +494,9 @@ impl NativeBrowser {
     }
 
     pub async fn close(&mut self) -> Result<()> {
+        if let Some(mut network) = self.network.take() {
+            network.close().await?;
+        }
         if let Some(work) = self.work.take() {
             work.release().await?;
         }

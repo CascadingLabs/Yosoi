@@ -13,6 +13,15 @@ mod connection;
 mod document_policy;
 mod images;
 pub use document_policy::{DocumentPolicies, DocumentPolicy};
+pub mod network;
+pub use network::{
+    NETWORK_OBSERVATION_SCHEMA, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
+    NetworkEventKind, NetworkGap, NetworkHeader, NetworkInFlight, NetworkObservation,
+    NetworkObservationPolicy,
+    NetworkPayload, NetworkPayloadKind, NetworkPayloadRef, NetworkPayloadState, NetworkProviderClock,
+    NetworkSubscription,
+    NetworkRetention, NetworkWindow,
+};
 pub mod model;
 mod outcome;
 mod policy;
@@ -488,6 +497,18 @@ impl Surface {
     /// Returns declared source coverage.
     pub fn coverage(&self) -> &Coverage {
         &self.data.coverage
+    }
+    /// Returns whether this index was prepared from the explicit network-window profile.
+    ///
+    /// Ordinary source JSON remains JSON even if its values happen to resemble
+    /// a network observation envelope.
+    pub fn is_network_observation(&self) -> bool {
+        matches!(
+            &self.data.original,
+            Some(Original::Document { profile, .. })
+                if profile.schema()
+                    == crate::documents::DocumentSchemaProfile::YosoiNetworkObservationV1
+        )
     }
     /// Returns the document/root evidence reference.
     pub fn root(&self) -> Reference {

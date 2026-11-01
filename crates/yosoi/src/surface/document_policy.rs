@@ -145,15 +145,8 @@ impl DocumentPolicies {
             DocumentClass::SourceHtml => self.html,
             DocumentClass::SourceXml => self.xml,
             DocumentClass::SourceJson => {
-                if serde_json::from_slice::<serde_json::Value>(document.bytes())
-                    .ok()
-                    .and_then(|v| {
-                        v.get("schema")
-                            .and_then(serde_json::Value::as_str)
-                            .map(str::to_owned)
-                    })
-                    .as_deref()
-                    == Some("yosoi.network.v1")
+                if document.profile().schema()
+                    == crate::documents::DocumentSchemaProfile::YosoiNetworkObservationV1
                 {
                     self.network
                 } else {

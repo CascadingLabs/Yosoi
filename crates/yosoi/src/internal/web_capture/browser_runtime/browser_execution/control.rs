@@ -6,7 +6,7 @@ use crate::internal::browser::controller as provider;
 #[cfg(not(yosoi_dev_support))]
 use crate::internal::browser::page::SurfaceInput;
 use crate::internal::browser::page::{
-    DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult,
+    DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult, ObservationResponseBody,
 };
 use serde_json::Value;
 use std::fmt;
@@ -258,6 +258,47 @@ impl RuntimeBrowserControl {
         let watch = self.page.start_observation_watch(options).await?;
         self.check_authority()?;
         Ok(watch)
+    }
+
+    /// Arms the qualified native Chrome network listener on this controlled tab.
+    /// BiDi remains an explicit unsupported capability for Surface network windows.
+    pub async fn start_network_observation_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+        max_resource_buffer_bytes: usize,
+        max_total_buffer_bytes: usize,
+    ) -> Result<provider::NetworkObservationSubscription, BrowserControlError> {
+        self.check_authority()?;
+        let mut subscription = self
+            .page
+            .start_network_observation_subscription(
+                max_events,
+                max_buffered_events,
+                max_resource_buffer_bytes,
+                max_total_buffer_bytes,
+            )
+            .await?;
+        if self.check_authority().is_err() {
+            subscription.settle();
+            return Err(BrowserControlError::Cancelled);
+        }
+        Ok(subscription)
+    }
+
+    /// Captures a bounded completed response body under the native Work permit.
+    pub async fn capture_network_response_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<ObservationResponseBody, BrowserControlError> {
+        self.check_authority()?;
+        let body = self
+            .page
+            .capture_network_response_body(request_id, max_bytes)
+            .await?;
+        self.check_authority()?;
+        Ok(body)
     }
 
     /// Arms native download events and returns only after the browser-context

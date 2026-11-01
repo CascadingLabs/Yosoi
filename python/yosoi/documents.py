@@ -64,6 +64,7 @@ class DocumentProfile(ImmutableModel):
         "utf8_text",
         "yosoi_rendered_dom_v1",
         "yosoi_accessibility_tree_v1",
+        "yosoi_network_observation_v1",
     ] = Field(alias="schema")
     epoch: DocumentEpoch | None = None
 
@@ -145,6 +146,19 @@ class DocumentProfile(ImmutableModel):
             source_format="json",
             schema_profile="yosoi_accessibility_tree_v1",
             epoch=epoch,
+        )
+
+    @classmethod
+    def network_observation(cls) -> Self:
+        """Declare the version-1 frozen network-window JSON contract.
+
+        The profile remains distinct from ordinary source JSON. It does not
+        acquire browser events or claim that a window is complete.
+        """
+        return cls(
+            representation="source",
+            source_format="json",
+            schema_profile="yosoi_network_observation_v1",
         )
 
     @property

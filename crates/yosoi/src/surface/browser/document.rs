@@ -38,13 +38,7 @@ impl WebSurface {
             })
             .bytes;
         let ax = index.representation().contains("accessibility-tree");
-        let network = index
-            .data
-            .json
-            .as_ref()
-            .and_then(|v| v.get("schema"))
-            .and_then(serde_json::Value::as_str)
-            == Some("yosoi.network.v1");
+        let network = index.is_network_observation();
         if !index.representation().contains("html")
             && !index.representation().contains("rendered-dom")
             && !ax
