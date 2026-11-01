@@ -20,6 +20,7 @@ fn failure(error: video::VideoError) -> PyErr {
         video::VideoError::Invalid(message) => ("Invalid", serde_json::json!({"message":message})),
         video::VideoError::Limit(limit) => ("Limit", serde_json::json!({"limit":limit})),
         video::VideoError::Tool(message) => ("Tool", serde_json::json!({"message":message})),
+        video::VideoError::Cancelled => ("Cancelled", serde_json::json!({})),
         video::VideoError::Timeout => ("Timeout", serde_json::json!({})),
         video::VideoError::NoFrameAtOrAfter { requested_us } => (
             "NoFrameAtOrAfter",
@@ -62,10 +63,38 @@ pub struct NativeVideoSurface {
 #[pymethods]
 impl NativeVideoSurface {
     #[staticmethod]
-    fn open<'py>(py: Python<'py>, path: PathBuf, policy: &str) -> PyResult<Bound<'py, PyAny>> {
+    #[pyo3(signature = (document, policy, cancellation=None))]
+    fn from_document<'py>(
+        py: Python<'py>,
+        document: &crate::media::NativeFileDocument,
+        policy: &str,
+        cancellation: Option<&async_runtime::NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let yosoi::documents::FileDocument::Video(document) = document.inner.as_ref() else {
+            return Err(pyo3::exceptions::PyTypeError::new_err(
+                "expected VideoDocument",
+            ));
+        };
+        let document = document.clone();
         let policy = decode(policy)?;
-        async_runtime::bridge(py, None, move |_| async move {
-            video::VideoSurface::open(path, policy)
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            video::VideoSurface::from_document_cancellable(&document, policy, &token)
+                .await
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
+    }
+    #[staticmethod]
+    #[pyo3(signature = (path, policy, cancellation=None))]
+    fn open<'py>(
+        py: Python<'py>,
+        path: PathBuf,
+        policy: &str,
+        cancellation: Option<&async_runtime::NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let policy = decode(policy)?;
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            video::VideoSurface::open_cancellable(path, policy, &token)
                 .await
                 .map(|inner| Self { inner })
                 .map_err(failure)
@@ -73,6 +102,13 @@ impl NativeVideoSurface {
     }
     fn descriptor(&self) -> PyResult<String> {
         encode(self.inner.descriptor())
+    }
+    fn source_document(&self) -> Option<crate::media::NativeFileDocument> {
+        self.inner.source_document().map(|document| {
+            crate::media::NativeFileDocument::new(yosoi::documents::FileDocument::Video(
+                document.clone(),
+            ))
+        })
     }
     fn observation(&self) -> PyResult<String> {
         encode(self.inner.observation())
@@ -93,29 +129,37 @@ impl NativeVideoSurface {
         let request = decode(request)?;
         py.detach(|| encode(&self.inner.read(&request).map_err(super::failure)?))
     }
-    fn frame<'py>(&self, py: Python<'py>, reference: &str) -> PyResult<Bound<'py, PyAny>> {
+    #[pyo3(signature = (reference, cancellation=None))]
+    fn frame<'py>(
+        &self,
+        py: Python<'py>,
+        reference: &str,
+        cancellation: Option<&async_runtime::NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
         let reference = decode(reference)?;
         let inner = self.inner.clone();
-        async_runtime::bridge(py, None, move |_| async move {
+        async_runtime::bridge(py, cancellation, move |token| async move {
             inner
-                .frame(&reference)
+                .frame_cancellable(&reference, &token)
                 .await
                 .map(|inner| NativeDecodedFrame { inner })
                 .map_err(failure)
         })
     }
+    #[pyo3(signature = (reference, rect, cancellation=None))]
     fn crop<'py>(
         &self,
         py: Python<'py>,
         reference: &str,
         rect: &str,
+        cancellation: Option<&async_runtime::NativeCancellation>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let reference = decode(reference)?;
         let rect = decode(rect)?;
         let inner = self.inner.clone();
-        async_runtime::bridge(py, None, move |_| async move {
+        async_runtime::bridge(py, cancellation, move |token| async move {
             inner
-                .crop(&reference, rect)
+                .crop_cancellable(&reference, rect, &token)
                 .await
                 .map(|inner| NativeDecodedFrame { inner })
                 .map_err(failure)
@@ -157,6 +201,12 @@ pub struct NativeDecodedFrame {
 
 #[pymethods]
 impl NativeDecodedFrame {
+    fn pixel_artifact(&self) -> PyResult<Option<super::NativePixelArtifact>> {
+        self.inner
+            .pixel_artifact()
+            .map(|value| value.map(|inner| super::NativePixelArtifact { inner }))
+            .map_err(failure)
+    }
     fn info(&self) -> PyResult<String> {
         encode(&self.inner.info)
     }

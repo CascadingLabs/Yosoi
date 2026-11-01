@@ -34,6 +34,8 @@ from pydantic import (
 
 from . import _native
 from ._models import ImmutableModel
+from ._video_async import settle_video as _settle_video
+from ._video_async import video_token as _video_token
 from .archive import (
     Archive,
     AutomationRecord,
@@ -42,12 +44,15 @@ from .archive import (
     PixelArtifactArchiveRef,
     _rust_json,
 )
+from .cancellation import CancellationToken
 from .documents import (
     Document,
     DocumentProfile,
     FileDocument,
     FileMetadata,
     ImageDocument,
+    VideoDocument,
+    _FileDocument,
 )
 from .locators import Plan
 from .scalars import DocumentId, ValidatedString
@@ -1176,6 +1181,10 @@ class FrameInfo(ImmutableModel):
     )
     png_sha256: StrictStr = Field(description="Digest of returned PNG bytes.")
     png_bytes: int = Field(description="Encoded PNG byte count.")
+    pixel_artifact: PixelArtifactInfo | None = Field(
+        default=None,
+        description="Checked shared pixel provenance; absent in legacy envelopes.",
+    )
 
 
 _ArchiveDocument = Annotated[
@@ -1230,6 +1239,12 @@ class DecodedFrame:
         return FrameInfo.model_validate_json(self._handle.info())
 
     @property
+    def pixel_artifact(self) -> PixelArtifact | None:
+        """Return checked shared pixel evidence, absent for legacy frame records."""
+        handle = self._handle.pixel_artifact()
+        return None if handle is None else PixelArtifact._from_native(handle)
+
+    @property
     def png(self) -> bytes:
         """Copy encoded PNG bytes; binary size is separate from text read budgets."""
         return self._handle.png()
@@ -1256,8 +1271,8 @@ class VideoSurface:
 
     Open with await VideoSurface.open(path). No OCR, audio transcription, playback,
     live-stream subscription or control is provided. Cancelling the Python await
-    leaves Rust finishing bounded cleanup in the background. Snapshot resources
-    are released when the owning handle is dropped.
+    signals Rust and waits for termination and reaping of owned decoder processes.
+    Snapshot resources are released when the owning handle is dropped.
     """
 
     def __init__(self, handle: _native.VideoSurface) -> None:
@@ -1265,18 +1280,65 @@ class VideoSurface:
         self._handle = handle
 
     @classmethod
-    async def open(cls, path: str | Path, policy: VideoPolicy | None = None) -> Self:
+    async def from_document(
+        cls,
+        document: VideoDocument,
+        policy: VideoPolicy | None = None,
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> Self:
+        """Probe retained video bytes without reacquiring their original source.
+
+        Requires the video feature and compatible FFmpeg/FFprobe executables.
+        Native document identity stays separate from decoder policy and observation.
+        """
+        _require_video()
+        if not isinstance(document, VideoDocument):
+            raise TypeError("document must be VideoDocument")
+        token = _video_token(cancellation)
+        return cls(
+            await _settle_video(
+                _native.VideoSurface.from_document(
+                    document._handle, (policy or VideoPolicy()).model_dump_json(), token
+                ),
+                token,
+            )
+        )
+
+    @classmethod
+    async def open(
+        cls,
+        path: str | Path,
+        policy: VideoPolicy | None = None,
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> Self:
         """Snapshot and probe a regular local file; failures raise VideoError.
 
         Requires FFmpeg and FFprobe on PATH or YOSOI_FFMPEG/YOSOI_FFPROBE.
         The original file can be removed once this returns successfully.
         """
         _require_video()
+        token = _video_token(cancellation)
         return cls(
-            await _native.VideoSurface.open(
-                Path(path), (policy or VideoPolicy()).model_dump_json()
+            await _settle_video(
+                _native.VideoSurface.open(
+                    Path(path), (policy or VideoPolicy()).model_dump_json(), token
+                ),
+                token,
             )
         )
+
+    @property
+    def source_document(self) -> VideoDocument | None:
+        """Return the retained typed original, absent for legacy archived envelopes."""
+        handle = self._handle.source_document()
+        if handle is None:
+            return None
+        document = _FileDocument._from_native(handle)
+        if not isinstance(document, VideoDocument):
+            raise TypeError("native video source is not VideoDocument")
+        return document
 
     @property
     def descriptor(self) -> Descriptor:
@@ -1311,14 +1373,33 @@ class VideoSurface:
         """Address stream-relative time for decoding the first frame at or after it."""
         return Reference.model_validate_json(self._handle.at(position_us))
 
-    async def frame(self, reference: Reference) -> DecodedFrame:
+    async def frame(
+        self, reference: Reference, *, cancellation: CancellationToken | None = None
+    ) -> DecodedFrame:
         """Decode one frame; the final-frame tail may have no frame at or after it."""
-        return DecodedFrame(await self._handle.frame(reference.model_dump_json()))
-
-    async def crop(self, reference: Reference, rect: PixelRect) -> DecodedFrame:
-        """Decode/crop a full-frame reference in decoded-canvas coordinates."""
+        token = _video_token(cancellation)
         return DecodedFrame(
-            await self._handle.crop(reference.model_dump_json(), rect.model_dump_json())
+            await _settle_video(
+                self._handle.frame(reference.model_dump_json(), token), token
+            )
+        )
+
+    async def crop(
+        self,
+        reference: Reference,
+        rect: PixelRect,
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> DecodedFrame:
+        """Decode/crop a full-frame reference in decoded-canvas coordinates."""
+        token = _video_token(cancellation)
+        return DecodedFrame(
+            await _settle_video(
+                self._handle.crop(
+                    reference.model_dump_json(), rect.model_dump_json(), token
+                ),
+                token,
+            )
         )
 
     async def write_to(self, archive: Archive) -> VideoArchiveRef:

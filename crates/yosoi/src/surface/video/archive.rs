@@ -2,31 +2,33 @@
 use super::{DecodedFrame, FrameInfo, VideoError, VideoMetadata, VideoPolicy, VideoSurface};
 use crate::{
     Archive,
-    archive::DocumentArchiveRef,
+    archive::{DocumentArchiveRef, VideoDocumentArchiveRef},
     documents::Document,
-    surface::model::{ObservationId, SurfaceRead},
+    surface::{
+        model::{ObservationId, SurfaceRead},
+        pixels::{PixelArtifact, PixelArtifactArchiveRef},
+    },
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
-use image::ImageReader;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::{env, io::Cursor, path::PathBuf};
+use std::{env, path::PathBuf, sync::Arc};
 use tokio::fs;
 
-/// Normal Archive document reference retaining the complete video snapshot and its profile.
+/// Archive metadata selecting typed source bytes and a frozen interpretation profile.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct VideoArchiveRef {
-    /// Existing immutable Archive Document reference, not a custom storage backend.
+    /// Metadata record selecting the native payload, or a legacy complete source envelope.
     pub document: DocumentArchiveRef,
     /// Interpretation identity required when reconstructing this timeline.
     pub observation: ObservationId,
 }
-/// Normal Archive document reference retaining actual decoded PNG evidence.
+/// Archive metadata selecting checked pixel evidence or a legacy PNG envelope.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FrameArchiveRef {
-    /// Existing immutable Archive Document reference containing PNG bytes and metadata.
+    /// Metadata record selecting raw typed PNG pixels and their measured provenance.
     pub document: DocumentArchiveRef,
 }
 #[derive(Serialize, Deserialize)]
@@ -39,15 +41,55 @@ struct SourceEnvelope {
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct TypedSourceEnvelope {
+    schema: String,
+    metadata: VideoMetadata,
+    policy: VideoPolicy,
+    source: VideoDocumentArchiveRef,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct FrameEnvelope {
     schema: String,
     info: FrameInfo,
     png_base64: String,
 }
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TypedFrameEnvelope {
+    schema: String,
+    info: FrameInfo,
+    pixels: PixelArtifactArchiveRef,
+}
 impl VideoSurface {
-    /// Saves a complete bounded source using an existing JSON Document in the normal Archive.
-    /// Binary bytes are explicitly base64 encoded; no archive format or record schema is changed.
+    /// Saves typed source bytes through native Archive storage and a small interpretation record.
+    /// Historical sources keep their versioned envelope compatibility path.
     pub async fn write_to(&self, archive: &Archive) -> Result<VideoArchiveRef, VideoError> {
+        if let Some(source) = self.source_document() {
+            let source = archive
+                .write(source)
+                .await
+                .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            let envelope = TypedSourceEnvelope {
+                schema: "yosoi.surface.video-source.v2".into(),
+                metadata: self.data.metadata.clone(),
+                policy: self.data.policy.clone(),
+                source,
+            };
+            let document = Document::json(
+                format!("video-profile-{}", self.data.metadata.source_sha256),
+                serde_json::to_vec(&envelope)
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?,
+            )
+            .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            return Ok(VideoArchiveRef {
+                document: archive
+                    .write_document(&document)
+                    .await
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?,
+                observation: self.observation().id.clone(),
+            });
+        }
         let bytes = fs::read(&self.data.path).await?;
         let envelope = SourceEnvelope {
             schema: "yosoi.surface.video-source.v1".into(),
@@ -82,6 +124,45 @@ impl VideoSurface {
         if document.bytes().len() > 180 * 1024 * 1024 {
             return Err(VideoError::Limit("archived video envelope"));
         }
+        if let Ok(envelope) = serde_json::from_slice::<TypedSourceEnvelope>(document.bytes()) {
+            if envelope.schema != "yosoi.surface.video-source.v2" {
+                return Err(VideoError::Invalid(
+                    "unsupported typed source schema".into(),
+                ));
+            }
+            envelope.policy.validate()?;
+            let source = archive
+                .read(&envelope.source)
+                .await
+                .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            if source.bytes().len() != envelope.metadata.source_bytes
+                || source.sha256() != envelope.metadata.source_sha256
+                || source.bytes().len() > envelope.policy.max_source_bytes
+            {
+                return Err(VideoError::Invalid(
+                    "typed source identity or limit mismatch".into(),
+                ));
+            }
+            let snapshot = Arc::new(tempfile::tempdir()?);
+            let path = snapshot.path().join("source.bin");
+            fs::write(&path, source.bytes()).await?;
+            let ffmpeg =
+                env::var_os("YOSOI_FFMPEG").map_or_else(|| PathBuf::from("ffmpeg"), PathBuf::from);
+            let surface = Self::prepared(
+                snapshot,
+                path,
+                envelope.metadata,
+                envelope.policy,
+                ffmpeg,
+                Some(source),
+            )?;
+            if surface.observation().id != reference.observation {
+                return Err(VideoError::Invalid(
+                    "restored typed video interpretation identity mismatch".into(),
+                ));
+            }
+            return Ok(surface);
+        }
         let envelope: SourceEnvelope = serde_json::from_slice(document.bytes())
             .map_err(|e| VideoError::Invalid(e.to_string()))?;
         if envelope.schema != "yosoi.surface.video-source.v1" {
@@ -110,12 +191,19 @@ impl VideoSurface {
                 "archived source identity mismatch".into(),
             ));
         }
-        let snapshot = tempfile::tempdir()?;
+        let snapshot = Arc::new(tempfile::tempdir()?);
         let path = snapshot.path().join("source.bin");
         fs::write(&path, bytes).await?;
         let ffmpeg =
             env::var_os("YOSOI_FFMPEG").map_or_else(|| PathBuf::from("ffmpeg"), PathBuf::from);
-        let surface = Self::prepared(snapshot, path, envelope.metadata, envelope.policy, ffmpeg)?;
+        let surface = Self::prepared(
+            snapshot,
+            path,
+            envelope.metadata,
+            envelope.policy,
+            ffmpeg,
+            None,
+        )?;
         if surface.observation().id != reference.observation {
             return Err(VideoError::Invalid(
                 "restored video interpretation identity mismatch".into(),
@@ -125,9 +213,33 @@ impl VideoSurface {
     }
 }
 impl DecodedFrame {
-    /// Archives actual PNG pixels and their measured timestamp through a normal JSON Document.
+    /// Archives measured frame metadata and raw typed pixel evidence through normal Archive.
+    /// Historical untyped frames preserve the legacy envelope compatibility path.
     pub async fn write_to(&self, archive: &Archive) -> Result<FrameArchiveRef, VideoError> {
         validate_pixels(self)?;
+        if let Some(pixels) = self.pixel_artifact()? {
+            let pixels = pixels
+                .write_to(archive)
+                .await
+                .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            let envelope = TypedFrameEnvelope {
+                schema: "yosoi.surface.video-frame.v2".into(),
+                info: self.info.clone(),
+                pixels,
+            };
+            let document = Document::json(
+                format!("video-frame-profile-{}", self.info.png_sha256),
+                serde_json::to_vec(&envelope)
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?,
+            )
+            .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            return Ok(FrameArchiveRef {
+                document: archive
+                    .write_document(&document)
+                    .await
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?,
+            });
+        }
         let envelope = FrameEnvelope {
             schema: "yosoi.surface.video-frame.v1".into(),
             info: self.info.clone(),
@@ -157,6 +269,29 @@ impl DecodedFrame {
         if document.bytes().len() > 48 * 1024 * 1024 {
             return Err(VideoError::Limit("archived frame envelope"));
         }
+        if let Ok(envelope) = serde_json::from_slice::<TypedFrameEnvelope>(document.bytes()) {
+            if envelope.schema != "yosoi.surface.video-frame.v2" {
+                return Err(VideoError::Invalid("unsupported typed frame schema".into()));
+            }
+            let pixels = PixelArtifact::read_from(archive, &envelope.pixels)
+                .await
+                .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            if envelope.info.pixel_artifact.as_ref() != Some(pixels.info()) {
+                return Err(VideoError::Invalid(
+                    "frame and retained pixel provenance differ".into(),
+                ));
+            }
+            let frame = Self {
+                info: envelope.info,
+                png: pixels.bytes().to_vec(),
+                pixels: Some(pixels),
+            };
+            validate_pixels(&frame)?;
+            frame
+                .pixel_artifact()?
+                .ok_or_else(|| VideoError::Invalid("typed frame lacks pixels".into()))?;
+            return Ok(frame);
+        }
         let envelope: FrameEnvelope = serde_json::from_slice(document.bytes())
             .map_err(|e| VideoError::Invalid(e.to_string()))?;
         if envelope.schema != "yosoi.surface.video-frame.v1"
@@ -184,201 +319,17 @@ impl DecodedFrame {
                 "archived pixel identity mismatch".into(),
             ));
         }
-        let (width, height) = ImageReader::new(Cursor::new(&png))
-            .with_guessed_format()?
-            .into_dimensions()
-            .map_err(|e| VideoError::Invalid(e.to_string()))?;
-        if width != envelope.info.width || height != envelope.info.height {
-            return Err(VideoError::Invalid(
-                "archived frame dimensions mismatch".into(),
-            ));
-        }
         let frame = Self {
             info: envelope.info,
             png,
+            pixels: None,
         };
         validate_pixels(&frame)?;
         Ok(frame)
     }
 }
 
-fn validate_pixels(frame: &DecodedFrame) -> Result<(), VideoError> {
-    let info = &frame.info;
-    if info.width == 0
-        || info.height == 0
-        || info.canvas_width == 0
-        || info.canvas_height == 0
-        || info.width > 4096
-        || info.height > 4096
-        || info.canvas_width > 4096
-        || info.canvas_height > 4096
-        || frame.png.len() > 32 * 1024 * 1024
-        || frame.png.len() != info.png_bytes
-        || format!("{:x}", Sha256::digest(&frame.png)) != info.png_sha256
-    {
-        return Err(VideoError::Invalid(
-            "invalid frame pixel metadata or digest".into(),
-        ));
-    }
-    if let Some(rect) = info.region {
-        if rect.width != info.width
-            || rect.height != info.height
-            || rect
-                .x
-                .checked_add(rect.width)
-                .is_none_or(|right| right > info.canvas_width)
-            || rect
-                .y
-                .checked_add(rect.height)
-                .is_none_or(|bottom| bottom > info.canvas_height)
-        {
-            return Err(VideoError::Invalid(
-                "crop metadata is outside its decoded canvas".into(),
-            ));
-        }
-    } else if info.width != info.canvas_width || info.height != info.canvas_height {
-        return Err(VideoError::Invalid(
-            "full frame dimensions differ from canvas".into(),
-        ));
-    }
-    let dimensions = ImageReader::new(Cursor::new(&frame.png))
-        .with_guessed_format()?
-        .into_dimensions()
-        .map_err(|error| VideoError::Invalid(error.to_string()))?;
-    if dimensions != (info.width, info.height) {
-        return Err(VideoError::Invalid(
-            "frame pixel dimensions differ from metadata".into(),
-        ));
-    }
-    Ok(())
-}
-
-use crate::automation_record::{AutomationRecord, OperationStatus};
-use crate::surface::{
-    ArchiveLimits, ArchivedSource, Budget, Outcome,
-    archive::Recording,
-    connection::Result as SourceResult,
-    model::{ReadOperation, ReadRequest},
-};
-use serde_json::{Value, json};
-use std::{io, path::Path};
-use uuid::Uuid;
-impl Recording {
-    pub async fn open_video(root: &Path, output: &Path, descriptor: Value) -> SourceResult<Self> {
-        let archive = Archive::open(root).await?;
-        let mut recording = Self {
-            archive,
-            outcome: Outcome::new(
-                format!("surface-{}", Uuid::new_v4()),
-                ArchiveLimits::default(),
-            )?,
-            output: output.to_owned(),
-            handle: None,
-            sequence: 0,
-            pending: None,
-        };
-        recording.push("surface.video.run",OperationStatus::Observed,json!({"schema":"yosoi.surface.video-run.v1","descriptor":descriptor,"recording_policy":{"mode":"archive","source_and_pixels":true}}),None,None)?;
-        Ok(recording)
-    }
-    pub const fn archive(&self) -> &Archive {
-        &self.archive
-    }
-    pub async fn evidence(&mut self, kind: &str, value: Value) -> SourceResult<()> {
-        if matches!(kind, "surface.video.source" | "surface.video.frame") {
-            let key = value
-                .get("document")
-                .and_then(Value::as_str)
-                .ok_or_else(|| io::Error::other("evidence document missing"))?;
-            let reference: DocumentArchiveRef = key.parse()?;
-            let document = self.archive.read_document(&reference).await?;
-            self.outcome
-                .retain(ArchivedSource::new(key, &document, None))?;
-        }
-        self.push(kind, OperationStatus::Observed, value, None, None)?;
-        self.checkpoint().await?;
-        Ok(())
-    }
-    pub async fn close_video(&mut self) -> SourceResult<()> {
-        let receipt = self.push(
-            "surface.closed",
-            OperationStatus::Observed,
-            json!({"resources_released":true,"browser_started":false}),
-            None,
-            None,
-        );
-        self.finalize().await?;
-        receipt?;
-        Ok(())
-    }
-}
-pub(in crate::surface) async fn replay_loaded(
-    archive: &Archive,
-    record: &AutomationRecord,
-    repeat: usize,
-    query: Option<&str>,
-    output: Option<&Path>,
-) -> SourceResult<Value> {
-    if query.is_some() {
-        return Err(io::Error::other(
-            "video does not advertise text search; use saved frame evidence",
-        )
-        .into());
-    }
-    let source = record
-        .operations()
-        .iter()
-        .find(|op| op.kind == "surface.video.source")
-        .and_then(|op| op.result.as_ref())
-        .ok_or_else(|| io::Error::other("archived video source reference absent"))?;
-    let reference: VideoArchiveRef = serde_json::from_value(source.clone())?;
-    let frames = record
-        .operations()
-        .iter()
-        .filter(|op| op.kind == "surface.video.frame")
-        .map(|op| {
-            serde_json::from_value::<FrameArchiveRef>(
-                op.result
-                    .clone()
-                    .ok_or_else(|| io::Error::other("frame reference absent"))?,
-            )
-            .map_err(Into::into)
-        })
-        .collect::<SourceResult<Vec<_>>>()?;
-    if let Some(directory) = output {
-        fs::create_dir_all(directory).await?;
-    }
-    let mut summaries = Vec::new();
-    let mut observation = None;
-    for iteration in 0..repeat {
-        let video = VideoSurface::read_from(archive, &reference).await?;
-        video.read(&ReadRequest {
-            operation: ReadOperation::Overview,
-            budget: Budget::default(),
-            continuation: None,
-        })?;
-        for (index, reference) in frames.iter().enumerate() {
-            let frame = DecodedFrame::read_from(archive, reference).await?;
-            if frame.info.reference.observation != video.observation().id {
-                return Err(io::Error::other(
-                    "frame belongs to a different archived video observation",
-                )
-                .into());
-            }
-            if iteration == 0 {
-                let path = output.map(|directory| {
-                    directory.join(format!("frame-{}.png", frame.info.png_sha256))
-                });
-                if let Some(path) = &path {
-                    fs::write(path, &frame.png).await?;
-                }
-                if index < 8 {
-                    summaries.push(json!({"frame":frame.info,"path":path}));
-                }
-            }
-        }
-        observation = Some(video.observation().clone());
-    }
-    Ok(
-        json!({"mode":"offline","representation":"yosoi.video.timeline.v1","controllable":false,"browser_started":false,"decoder_started":false,"record":record.id(),"iterations":repeat,"observation":observation,"frames_verified":frames.len(),"frames":summaries,"frames_omitted":frames.len().saturating_sub(8)}),
-    )
-}
+mod recording;
+mod validate;
+pub(in crate::surface) use recording::replay_loaded;
+use validate::validate_pixels;
