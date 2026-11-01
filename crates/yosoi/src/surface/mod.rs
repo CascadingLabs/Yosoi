@@ -11,10 +11,13 @@ pub mod archive;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
 mod document_policy;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+mod image_session;
 mod images;
 pub use document_policy::{DocumentPolicies, DocumentPolicy};
 pub mod model;
 mod outcome;
+pub mod pixels;
 mod policy;
 mod prepare;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
@@ -26,13 +29,24 @@ mod session;
 #[cfg(feature = "surface-video")]
 pub mod video;
 
-#[cfg(any(feature = "browser", feature = "surface-images"))]
-pub use images::ImageCrop;
+#[cfg(any(feature = "browser", feature = "surface-video"))]
+pub use image_session::ImageSession;
 pub use images::PixelRect;
-pub use outcome::{ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use images::{ImageCrop, ImageSurface};
+pub use outcome::{ArchivedFileKind, ArchivedSource, Outcome, OutcomeRef, SourceInterpretation};
+pub use pixels::{
+    PixelArtifact, PixelArtifactArchiveRef, PixelArtifactInfo, PixelCoordinateKind,
+    PixelCoordinateSpace, PixelEdgeTransform, PixelLimits, PixelOperation, PixelOrientation,
+    PixelSource, PixelTransform,
+};
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+pub use pixels::{image_source_identity, pixel_source_identity};
 pub use policy::{ArchiveLimits, ArchivePolicy, ExecutionError, SurfacePolicy};
 pub use session::*;
 
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+use crate::documents::ImageDocument;
 use crate::documents::{Document, DocumentId, DocumentProfile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -295,6 +309,16 @@ enum Original {
     },
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     Image { bytes: Vec<u8>, tile_side: u32 },
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    TypedImage {
+        document: Box<ImageDocument>,
+        tile_side: u32,
+    },
+    #[cfg(any(feature = "browser", feature = "surface-images"))]
+    PixelArtifact {
+        artifact: Box<pixels::PixelArtifact>,
+        tile_side: u32,
+    },
 }
 
 /// Reusable immutable index, safe to share between concurrent Rust readers.

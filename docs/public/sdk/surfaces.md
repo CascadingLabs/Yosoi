@@ -1,45 +1,46 @@
 ---
 title: Surfaces
-description: Reference scopes, budgets, cursor ownership, and provider capabilities in Rust and Python.
+description: Reference scopes, image pixels, budgets, cursor ownership, and provider capabilities in Rust and Python.
 ---
 
 # Surfaces
 
-Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. Start with [Surfaces](../concepts/surfaces.md) for documents, video and an agent-driven CLI task.
+Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. `ImageSurface` applies the shared bounded read contract to a typed image. Start with [Surfaces](../concepts/surfaces.md) for documents, images, video and an agent-driven CLI task.
 
-The Rust `surface::browser` and `surface::video` modules own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI enables it automatically. Browser display mode and video frame bounds remain source-specific rather than generic Surface policy fields.
+Browser, image and video adapters own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI also enables typed image sessions. Browser display mode, image pixel bounds, and video frame bounds remain source-specific rather than generic Surface policy fields.
 
 ## Choose the reader
 
-| Reader       | Input                                    | Supported operations                                                     |
-| ------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
-| Surface      | Any of the six Document classes          | Overview, expand, literal find, inspect, parent, coordinates             |
-| WebSurface   | Any of the six prepared Document classes | Shared describe/read protocol: overview, expand, search, inspect, parent |
-| VideoSurface | Frozen regular local video file          | Shared timeline reads, temporal addresses, frame and crop                |
+| Reader       | Input                           | Supported operations                                                             |
+| ------------ | ------------------------------- | -------------------------------------------------------------------------------- |
+| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates                     |
+| ImageSurface | Typed PNG/JPEG ImageDocument    | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
+| WebSurface   | Any of the six prepared Document classes   | Shared describe/read protocol: overview, expand, search, inspect, parent                       |
+| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                        |
 
-WebSurface keeps each document's native meaning while exposing the same five
-read operations:
+`BrowserSurface`, `ImageSession`, and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class for web and video connections. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode, image pixel limits, and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
-| Document profile    | Shared representation   | Preserved meaning                                      |
-| ------------------- | ----------------------- | ------------------------------------------------------ |
-| Source HTML         | `yosoi.web.document.v1` | HTML5 normalization                                    |
-| Source XML          | `yosoi.web.xml.v1`      | Namespace-aware names and exact source ranges          |
-| Source JSON         | `yosoi.web.json.v1`     | JSON scalar types; duplicate keys are rejected         |
-| Source text         | `yosoi.web.text.v1`     | Exact UTF-8 source ranges                              |
-| Rendered DOM        | `yosoi.web.document.v1` | Snapshot-local node identities and document epoch      |
-| Accessibility tree  | `yosoi.web.ax.v1`       | Snapshot-local identities, epoch and declared coverage |
-| Network-shaped JSON | `yosoi.web.network.v1`  | Bounded event window with incomplete coverage          |
+## Images and pixel artifacts
 
-All of these immutable readers advertise only read capabilities and set
-`controllable` to false. A browser binding may add live actions to its own
-descriptor after it owns the browser Work. An archived or source-file
-WebSurface never becomes a browser action target.
+`ImageDocument` owns the exact encoded PNG/JPEG bytes and source metadata. `Surface::from_image_document` in Rust and `Surface.from_image(ImageDocument)` in Python prepare bounded region metadata. `ImageSurface::from_image_document` in Rust and `ys.ImageSurface(image)` in Python also bind that index to the shared `model::SurfaceRead` contract. Its source identity uses the document ID and exact payload SHA-256, independent of tile size or other preparation options.
 
-`BrowserSurface` and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
+For direct delivery without an index, use `PixelArtifact::decode_image_document(document, limits)` in Rust or `PixelArtifact.from_image_document(image, limits=...)` in Python. Both fully decode under PixelLimits to verify dimensions and allocation, then retain the original encoded bytes.
 
-`Surface::from_image` in Rust and `Surface.from_image` in Python prepare PNG/JPEG pixels as a region tree. They do not perform OCR or apply EXIF rotation. `combine` joins named independently captured views without claiming an atomic observation. Keep each constituent reference when projecting between views.
+`Surface::from_image` and `Surface.from_image(bytes)` remain legacy byte-entry points. New code should pass a typed `ImageDocument`; archived legacy image envelopes continue to restore through their stored image interpretation.
 
-Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable document reads need neither browser nor decoder.
+PNG/JPEG decoding keeps the original encoded bytes. Image coordinates refer to the encoded raster before EXIF rotation; orientation is recorded as `exif_unapplied`. No OCR, inferred labels or text search runs. The reader advertises no search capability.
+
+`ImageSurface.read` returns bounded routing metadata through the same overview, expand, inspect, parent and continuation types as web and video readers. Pixel bytes use explicit `direct_image`, `overview_image`, `resize_image` and `crop_rect` calls. `direct_image` returns exact source bytes. Overview and resize encode PNG using the versioned triangle filter. A crop takes original-raster coordinates, even when its rectangle was selected from a resized overview.
+
+`PixelArtifactInfo` records the exact encoded digest and MIME type, output dimensions, root source identity and coordinate space, orientation handling, parent artifact identity/digest/dimensions, operation version and parameters, and a rational output-edge-to-parent-edge transform. `PixelArtifact.map_rect_to_source` maps a rectangle from an overview back to the root source pixel plane. Crop and resize APIs reject nested derived artifacts so an ambiguous transform cannot be silently composed.
+
+Pass a root video-frame or browser-screenshot artifact to `ImageSurface::from_pixel_artifact` in Rust or `ImageSurface.from_pixel_artifact` in Python to inspect its regions offline. This retains its native source identity and decoded-canvas coordinates. Derived crops and overviews cannot be re-rooted; map their region to the original source first.
+
+Legacy frame envelopes that lack a typed video source ID retain an explicit partial `LegacyVideoFrame` identity with the observation, frame reference, requested time, measured PTS, and source digest only when recorded. They do not invent a VideoDocument identity.
+
+`PixelLimits` separately bounds decoded side length, decoder allocation, output pixels, output bytes and a reader's retained artifact count. `Surface` response-byte and text-page budgets do not count binary pixels. `Archive.write(&pixel)` stores an `ImageDocument` in the existing raw media payload store and a small provenance record. `Archive.read` verifies both and returns the same artifact without a source path or video decoder.
+
+Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable image and document reads need neither browser nor video decoder.
 
 ## Bind an existing native browser
 
@@ -90,6 +91,7 @@ separate DOM-only behavior.
 | Shared observation/address pair | `surface::model::Reference`         | `surface.Reference`         |
 | Native index continuation       | `surface::Continuation`             | `surface.Continuation`      |
 | Shared opaque continuation      | `surface::model::ContinuationToken` | `surface.ContinuationToken` |
+| Pixel artifact transform        | `surface::PixelArtifactInfo`        | `surface.PixelArtifactInfo` |
 
 Native references bind a capture and node. Shared references bind an ObservationId and producer-issued address. WebSurface converts between its own native and shared references; it rejects references belonging to another observation or source binding. Do not parse address spelling, manufacture a replacement ID, or treat an old reference as a durable entity identifier.
 
@@ -166,8 +168,8 @@ Python supports `with` for Cursor and ActionLease. Close the lease before closin
 
 ## Retain evidence
 
-Archive the original Document to reconstruct a document index after the source closes. VideoSurface and DecodedFrame expose `write_to` and `read_from` through the existing Archive backend. A saved video restores its timeline without probing; decoding a new frame still needs a compatible decoder. A saved frame restores actual verified PNG bytes without the source or decoder.
+Archive the original Document to reconstruct a document index after the source closes. PixelArtifact, VideoSurface and DecodedFrame use the existing Archive backend. A pixel artifact stores its exact PNG/JPEG bytes in the raw ImageDocument payload store and a separate provenance record. A saved video restores its timeline without probing; decoding a new frame still needs a compatible decoder. A saved frame restores actual verified PNG bytes without the source or decoder.
 
 Video timestamps use microseconds relative to primary stream start. FrameInfo retains the requested position and measured source PTS separately. PixelRect uses the full decoded canvas, which may have been downscaled. Video coverage remains partial because this provider does not observe audio, OCR, transcription, or every frame eagerly.
 
-Python document navigation and shared read calls release the GIL. Async video and Archive methods execute on the native runtime; cancelled Python awaits can leave Rust completing bounded cleanup. Keep live-source lifecycle in the owning adapter and preserve uncertainty when execution is interrupted.
+Python document navigation, image indexing and shared read calls release the GIL. Async video and Archive methods execute on the native runtime; cancelled Python awaits can leave Rust completing bounded cleanup. Keep live-source lifecycle in the owning adapter and preserve uncertainty when execution is interrupted.

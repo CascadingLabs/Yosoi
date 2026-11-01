@@ -6,9 +6,16 @@ import json
 from collections.abc import Mapping
 from os import PathLike, fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, overload
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, Self, overload
 
-from pydantic import Field, StrictStr, field_validator, model_validator
+from pydantic import (
+    BeforeValidator,
+    Field,
+    PlainSerializer,
+    StrictStr,
+    field_validator,
+    model_validator,
+)
 
 from . import _native
 from ._models import ImmutableModel
@@ -25,7 +32,11 @@ from .documents import (
 from .locators import Plan
 
 if TYPE_CHECKING:
-    from .surface import Outcome, OutcomeRef
+    from .surface import (
+        Outcome,
+        OutcomeRef,
+        PixelArtifact,
+    )
 
 __all__ = [
     "Archive",
@@ -33,6 +44,7 @@ __all__ = [
     "AutomationRecord",
     "AutomationRecordRef",
     "DocumentArchiveRef",
+    "PixelArtifactArchiveRef",
     "FileDocumentArchiveRef",
     "ImageDocumentArchiveRef",
     "VideoDocumentArchiveRef",
@@ -68,6 +80,25 @@ class DocumentArchiveRef(ImmutableModel):
     @classmethod
     def _validate_reference(cls, value: str) -> str:
         return _native.validate_archive_ref("document", value)
+
+
+_DocumentArchiveRefWire = Annotated[
+    DocumentArchiveRef,
+    BeforeValidator(
+        lambda value: (
+            DocumentArchiveRef(value=value) if isinstance(value, str) else value
+        )
+    ),
+    PlainSerializer(lambda value: value.value, return_type=str),
+]
+
+
+class PixelArtifactArchiveRef(ImmutableModel):
+    """Metadata Document selecting a typed raw image payload and pixel provenance."""
+
+    document: _DocumentArchiveRefWire = Field(
+        description="Existing Archive metadata Document reference."
+    )
 
 
 class _MediaDocumentArchiveRef(ImmutableModel):
@@ -275,9 +306,17 @@ class Archive:
     @overload
     async def write(self, value: Outcome) -> OutcomeRef: ...
 
+    @overload
+    async def write(self, value: PixelArtifact) -> PixelArtifactArchiveRef: ...
+
     async def write(
         self,
-        value: Document | FileDocument | Plan | AutomationRecord | Outcome,
+        value: Document
+        | FileDocument
+        | Plan
+        | AutomationRecord
+        | Outcome
+        | PixelArtifact,
     ) -> (
         DocumentArchiveRef
         | ImageDocumentArchiveRef
@@ -287,6 +326,7 @@ class Archive:
         | PlanArchiveRef
         | AutomationRecordRef
         | OutcomeRef
+        | PixelArtifactArchiveRef
     ):
         """Save a supported value and return a distinct immutable reference.
 
@@ -295,7 +335,10 @@ class Archive:
         Unsupported application objects raise TypeError. Invalid evidence,
         excessive payloads and storage failures raise ArchiveError.
         """
-        from .surface import Outcome, OutcomeRef
+        from .surface import Outcome, OutcomeRef, PixelArtifact
+
+        if isinstance(value, PixelArtifact):
+            return await value.write_to(self)
 
         if isinstance(value, Outcome):
             return OutcomeRef.model_validate_json(
@@ -327,7 +370,7 @@ class Archive:
             )
         raise TypeError(
             "Archive.write supports Document, media file documents, Plan, "
-            "AutomationRecord and Outcome"
+            "AutomationRecord, Outcome and PixelArtifact"
         )
 
     @overload
@@ -354,6 +397,9 @@ class Archive:
     @overload
     async def read(self, reference: OutcomeRef) -> Outcome: ...
 
+    @overload
+    async def read(self, reference: PixelArtifactArchiveRef) -> PixelArtifact: ...
+
     async def read(
         self,
         reference: DocumentArchiveRef
@@ -363,8 +409,9 @@ class Archive:
         | BinaryDocumentArchiveRef
         | PlanArchiveRef
         | AutomationRecordRef
-        | OutcomeRef,
-    ) -> FileDocument | Document | Plan | AutomationRecord | Outcome:
+        | OutcomeRef
+        | PixelArtifactArchiveRef,
+    ) -> FileDocument | Document | Plan | AutomationRecord | Outcome | PixelArtifact:
         """Read exact saved evidence without launching a browser or fetching URLs.
 
         References can be serialized with model_dump_json and reconstructed with
@@ -373,7 +420,10 @@ class Archive:
         image, video, audio, or binary class. An unsupported reference type raises
         TypeError.
         """
-        from .surface import Outcome, OutcomeRef
+        from .surface import Outcome, OutcomeRef, PixelArtifact
+
+        if isinstance(reference, PixelArtifactArchiveRef):
+            return await PixelArtifact.read_from(self, reference)
 
         if isinstance(reference, OutcomeRef):
             return Outcome.model_validate_json(

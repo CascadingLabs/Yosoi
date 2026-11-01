@@ -27,7 +27,7 @@
         "properties": {
           "rustPath": {
             "type": "string",
-            "pattern": "^yosoi::(?:browser::surface|surface|SurfacePolicy|ExecutionError|SurfaceConnection|BrowserSurface|VideoSession|Surface|SurfaceBudget|SurfaceLimits|SurfaceSession|SurfaceSessionPolicy|SurfaceError|WebSurface|PixelRect|VideoSurface|VideoPolicy|VideoError|DecodedFrame)(?:::|$)"
+            "pattern": "^yosoi::(?:browser::surface|surface|SurfacePolicy|ExecutionError|SurfaceConnection|BrowserSurface|VideoSession|Surface|SurfaceBudget|SurfaceLimits|SurfaceSession|SurfaceSessionPolicy|SurfaceError|WebSurface|PixelRect|VideoSurface|VideoPolicy|VideoError|DecodedFrame|ImageSession|ImageSurface|PixelArtifact|PixelArtifactInfo|PixelCoordinateKind|PixelCoordinateSpace|PixelEdgeTransform|PixelLimits|PixelOperation|PixelOrientation|PixelSource|PixelTransform)(?:::|$)"
           },
           "kind": {
             "enum": [

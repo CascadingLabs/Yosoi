@@ -98,4 +98,4 @@ yosoi --version
 
 See [Update and uninstall](self.md) to maintain your installation.
 
-Use [Surface](surface.md) for persistent JSON-lines sessions, bounded web/video reads, live web actions, and archived replay.
+Use [Surface](surface.md) for persistent JSON-lines sessions, bounded web/image/video reads, live web actions, and archived replay.

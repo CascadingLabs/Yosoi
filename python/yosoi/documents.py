@@ -64,6 +64,7 @@ class DocumentProfile(ImmutableModel):
         "utf8_text",
         "yosoi_rendered_dom_v1",
         "yosoi_accessibility_tree_v1",
+        "yosoi_network_observation_v1",
     ] = Field(alias="schema")
     epoch: DocumentEpoch | None = None
 
@@ -96,6 +97,15 @@ class DocumentProfile(ImmutableModel):
             representation="source",
             source_format="json",
             schema_profile="json_rfc8259",
+        )
+
+    @classmethod
+    def network_observation(cls) -> Self:
+        """Declare versioned network-observation JSON with typed payload references."""
+        return cls(
+            representation="source",
+            source_format="json",
+            schema_profile="yosoi_network_observation_v1",
         )
 
     @classmethod
