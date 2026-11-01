@@ -25,7 +25,9 @@ use tokio::sync as tokio_sync;
 use tokio::time as tokio_time;
 #[path = "session/capture.rs"]
 mod capture;
+#[path = "session/download.rs"]
 mod download;
+#[path = "session/evaluation.rs"]
 mod evaluation;
 #[path = "session/evidence.rs"]
 mod evidence;

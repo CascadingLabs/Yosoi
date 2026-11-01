@@ -18,6 +18,7 @@ use crate::timing;
 use std::{fmt, path::PathBuf, time::Duration};
 use thiserror::Error;
 use tokio::time as tokio_time;
+#[path = "download/errors.rs"]
 mod errors;
 #[cfg(feature = "browser")]
 use errors::map_browser_error;
