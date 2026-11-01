@@ -87,6 +87,10 @@ mod tests {
     const MP4_SIGNATURE: [u8; 12] = [0, 0, 0, 16, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2'];
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify typed source dependency closure in a portable Archive."
+    )]
     async fn portable_outcome_rewrites_registered_typed_video_dependency()
     -> Result<(), Box<dyn Error>> {
         let original_root = tempfile::tempdir()?;
@@ -137,16 +141,17 @@ mod tests {
         let imported_archive = Archive::open(imported_root.path()).await?;
         let imported_ref = imported_archive.import_file(&portable).await?;
         let imported = imported_archive.read(&imported_ref).await?;
-        let restored_profile = imported
-            .source_document(&original_profile_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
+        let maximum_bytes = u64::try_from(MAX_OUTCOME_BYTES)?;
+        let restored_profile =
+            imported.source_document(&original_profile_ref.to_string(), maximum_bytes)?;
         let profile_json: serde_json::Value = serde_json::from_slice(restored_profile.bytes())?;
         let remapped_video_ref = profile_json
             .get("source")
             .and_then(serde_json::Value::as_str)
             .ok_or("restored video profile has no source ref")?;
         assert_ne!(remapped_video_ref, original_video_ref.to_string());
-        let restored_video = imported
-            .source_file_document(&original_video_ref.to_string(), MAX_OUTCOME_BYTES as u64)?;
+        let restored_video =
+            imported.source_file_document(&original_video_ref.to_string(), maximum_bytes)?;
         assert_eq!(restored_video, FileDocument::Video(video));
 
         let source_receipt = imported
@@ -177,7 +182,7 @@ mod tests {
 #[cfg(all(test, feature = "surface-images"))]
 mod pixel_tests {
     use super::*;
-    use crate::archive::DocumentArchiveRef;
+    use crate::archive::{DocumentArchiveRef, FileDocumentArchiveRef};
     use crate::{
         automation_record::{OperationReceipt, OperationStatus},
         documents::ImageDocument,
@@ -187,6 +192,10 @@ mod pixel_tests {
     use std::error::Error;
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify typed video-frame and nested PixelArtifact dependencies after portable import."
+    )]
     async fn portable_video_frame_closes_pixel_artifact_and_image_payload_refs()
     -> Result<(), Box<dyn Error>> {
         use crate::surface::{
@@ -241,8 +250,8 @@ mod pixel_tests {
         let imported_archive = Archive::open(imported_root.path()).await?;
         let imported_reference = imported_archive.import_file(&portable).await?;
         let imported = imported_archive.read(&imported_reference).await?;
-        let frame =
-            imported.source_document(&frame_reference.to_string(), MAX_OUTCOME_BYTES as u64)?;
+        let maximum_bytes = u64::try_from(MAX_OUTCOME_BYTES)?;
+        let frame = imported.source_document(&frame_reference.to_string(), maximum_bytes)?;
         let frame_json: Value = serde_json::from_slice(frame.bytes())?;
         let metadata_reference: DocumentArchiveRef = frame_json
             .pointer("/pixels/document")
@@ -266,6 +275,10 @@ mod pixel_tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify screenshot pixel provenance and receipt references survive portable import."
+    )]
     async fn portable_screenshot_keeps_root_pixel_provenance_and_archive_ref()
     -> Result<(), Box<dyn Error>> {
         use crate::surface::{
@@ -303,9 +316,7 @@ mod pixel_tests {
             1,
             None,
         );
-        pixel_source.file_archive = Some(crate::archive::FileDocumentArchiveRef::Image(
-            image_reference,
-        ));
+        pixel_source.file_archive = Some(FileDocumentArchiveRef::Image(image_reference));
         let mut metadata_source =
             ArchivedSource::new(pixel_reference.document.to_string(), &metadata, None);
         metadata_source.document_archive = Some(pixel_reference.document.clone());

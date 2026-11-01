@@ -1,6 +1,8 @@
 //! Explicitly versioned, frozen network windows remain separate from source JSON.
 use sha2::Digest;
-use std::{error::Error, io, process::Command};
+use std::{error::Error, io};
+#[cfg(feature = "cli")]
+use std::{fs, process::Command};
 use yosoi::{
     Archive, Document,
     surface::{
@@ -68,6 +70,10 @@ fn window() -> NetworkWindow {
 }
 
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions distinguish ordinary JSON from explicit network windows and enforce independent policy bounds."
+)]
 fn ordinary_json_with_network_looking_fields_stays_ordinary_json() -> Result<(), Box<dyn Error>> {
     let policies = DocumentPolicies {
         json: DocumentPolicy {
@@ -145,7 +151,12 @@ fn ordinary_json_with_network_looking_fields_stays_ordinary_json() -> Result<(),
     Ok(())
 }
 
+#[cfg(feature = "cli")]
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions verify exact Outcome membership and fresh-process portable body restoration; fixture errors propagate."
+)]
 async fn cli_restores_network_payloads_from_portable_outcomes_without_a_browser()
 -> Result<(), Box<dyn Error>> {
     let temporary = tempfile::tempdir()?;
@@ -314,7 +325,7 @@ async fn cli_restores_network_payloads_from_portable_outcomes_without_a_browser(
     if !result.status.success() {
         return Err(io::Error::other(String::from_utf8_lossy(&result.stderr).into_owned()).into());
     }
-    assert_eq!(std::fs::read(output)?, payload.bytes());
+    assert_eq!(fs::read(output)?, payload.bytes());
     let _restored = archive.read(&outcome_ref).await?;
     Ok(())
 }

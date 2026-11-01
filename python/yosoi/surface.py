@@ -49,10 +49,8 @@ from .documents import (
     Document,
     DocumentProfile,
     FileDocument,
-    FileLimits,
     FileMetadata,
     ImageDocument,
-    file_from_bytes,
 )
 from .locators import Plan
 from .scalars import DocumentId, ValidatedString
@@ -2352,8 +2350,8 @@ class ArchivedSource(ImmutableModel):
     """Exact source bytes and interpretation, independent of a source file path."""
 
     key: StrictStr = Field(
-        description="Outcome-local key. Logical keys stay stable; keys used as "
-        "Archive references follow the destination Archive's stored references."
+        description="Stable outcome-local logical key, independent of the "
+        "Document and FileDocument Archive references used for storage."
     )
     document: DocumentId = Field(description="Original SDK document identity.")
     profile: DocumentProfile | None = Field(
@@ -2835,6 +2833,8 @@ class BrowserSurface(SurfaceConnection):
         offset = 0
         chunks: list[bytes] = []
         total_bytes: int | None = None
+        file_metadata: FileMetadata | None = None
+        file_kind: str | None = None
         while total_bytes is None or offset < total_bytes:
             reply = await self.execute(
                 {
@@ -2856,6 +2856,23 @@ class BrowserSurface(SurfaceConnection):
                 raise SurfaceError("network payload reply has an invalid chunk")
             if total_bytes is not None and total_bytes != current_total:
                 raise SurfaceError("network payload length changed during read")
+            if reference.document_kind == "file":
+                current_kind = reply.get("file_kind")
+                current_metadata = reply.get("file_metadata")
+                if (
+                    not isinstance(current_kind, str)
+                    or current_kind not in {"image", "video", "audio", "binary"}
+                    or not isinstance(current_metadata, dict)
+                ):
+                    raise SurfaceError(
+                        "network file reply omitted typed source metadata"
+                    )
+                metadata = FileMetadata.model_validate(current_metadata)
+                if file_metadata is not None and (
+                    file_metadata != metadata or file_kind != current_kind
+                ):
+                    raise SurfaceError("network file metadata changed during read")
+                file_metadata, file_kind = metadata, current_kind
             total_bytes = current_total
             try:
                 chunk = base64.b64decode(encoded, validate=True)
@@ -2882,18 +2899,20 @@ class BrowserSurface(SurfaceConnection):
             value: Document | FileDocument = Document.html(document_id, content)
         elif reference.document_kind == "json":
             value = Document.from_json(document_id, content)
+        elif reference.document_kind == "file":
+            retained = ArchivedSource.model_validate(
+                {
+                    "key": reference.id,
+                    "document": document_id,
+                    "file_kind": file_kind,
+                    "file_metadata": file_metadata,
+                    "sha256": reference.sha256,
+                    "content_base64": base64.b64encode(content).decode("ascii"),
+                }
+            )
+            value = retained.restore_file_document(max(1, len(content)))
         else:
-            metadata = FileMetadata(
-                declared_media_type=reference.declared_media_type,
-                source=f"native network response {reference.request_id}",
-                capture_id=reference.request_id,
-            )
-            value = file_from_bytes(
-                document_id,
-                content,
-                metadata=metadata,
-                limits=FileLimits(max_bytes=max(1, len(content))),
-            )
+            raise SurfaceError("retained network payload has no projection kind")
         return NetworkPayload(reference=reference, value=value)
 
     async def read_network_payload(

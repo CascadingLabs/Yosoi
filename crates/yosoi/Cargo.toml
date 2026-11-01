@@ -31,7 +31,6 @@ required-features = ["surface-images"]
 
 [[example]]
 name = "network_conformance"
-required-features = ["surface-video"]
 
 [features]
 default = []

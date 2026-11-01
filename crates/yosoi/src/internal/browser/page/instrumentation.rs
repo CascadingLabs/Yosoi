@@ -18,7 +18,9 @@ use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::netw
 use crate::internal::browser::vendor::chromiumoxide::cdp::js_protocol::runtime::EventExecutionContextCreated;
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventDelivery;
 use crate::internal::browser::vendor::chromiumoxide::listeners::EventOverflowPolicy;
-use crate::surface::{NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES, NETWORK_PROVIDER_TOTAL_BUFFER_BYTES};
+use crate::internal::network_limits::{
+    NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES, NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
+};
 use futures::StreamExt;
 use serde_json::Value;
 use std::sync::atomic::Ordering;

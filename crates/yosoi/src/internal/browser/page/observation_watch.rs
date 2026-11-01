@@ -29,7 +29,7 @@ use crate::internal::browser::vendor::chromiumoxide::{
     listeners::{EventDelivery, EventOverflowPolicy, EventStream},
 };
 use crate::internal::browser::{DocumentEpoch, DocumentScope, Result, VoidCrawlError};
-use crate::surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
+use crate::internal::network_limits::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES;
 use base64::{engine::general_purpose::STANDARD, read::DecoderReader};
 use futures::{FutureExt, StreamExt, future::pending};
 use serde::{Deserialize, Serialize};

@@ -106,16 +106,12 @@ impl NativeBrowser {
             policy.retain_bodies = retain_bodies;
         }
         policy.validate()?;
-        let (cancellation, authority_cancellation, subscription) = {
-            let work = self.work()?;
-            let cancellation = work.surface_session_cancellation();
-            let authority_cancellation = work.surface_authority_cancellation();
-            let subscription = work
-                .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
-                .await?;
-            drop(work);
-            (cancellation, authority_cancellation, subscription)
-        };
+        let cancellation = self.work()?.surface_session_cancellation();
+        let authority_cancellation = self.work()?.surface_authority_cancellation();
+        let subscription = self
+            .work()?
+            .surface_start_network_subscription(policy.max_events, policy.max_buffered_events)
+            .await?;
         let capture = NetworkCapture::start(
             subscription,
             self.session_id.clone(),
@@ -536,8 +532,21 @@ impl NativeBrowser {
         let chunk = bytes
             .get(offset..end)
             .ok_or_else(|| io::Error::other("network payload range is invalid"))?;
+        let (file_kind, file_metadata) = match payload {
+            NetworkPayloadValue::Document(_) => (None, None),
+            NetworkPayloadValue::File(file) => {
+                let kind = match file.as_ref() {
+                    FileDocument::Image(_) => "image",
+                    FileDocument::Video(_) => "video",
+                    FileDocument::Audio(_) => "audio",
+                    FileDocument::Binary(_) => "binary",
+                };
+                (Some(kind), Some(file.metadata()))
+            }
+        };
         Ok(
             json!({"payload":reference,"total_bytes":bytes.len(),"offset":offset,
+            "file_kind":file_kind,"file_metadata":file_metadata,
             "data_base64":STANDARD.encode(chunk),"next_offset":(end < bytes.len()).then_some(end)}),
         )
     }

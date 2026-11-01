@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
     error::Error,
+    fs,
     io::{self, BufRead, Read},
     path::PathBuf,
     process::ExitCode,
@@ -19,7 +20,7 @@ use tokio::{
     sync::mpsc::{Receiver, channel},
 };
 use yosoi::archive::PixelArtifactArchiveRef;
-use yosoi::documents::{Document, DocumentEpoch};
+use yosoi::documents::{Document, DocumentEpoch, DocumentSchemaProfile};
 use yosoi::surface::{
     ArchivePolicy, DocumentPolicies, DocumentPolicy, ImageSession, Limits as SurfaceLimits,
     NetworkPayloadRef, NetworkPayloadState, NetworkWindow, PixelLimits, Surface, SurfaceConnection,
@@ -296,14 +297,21 @@ async fn drive_native(
     retain_network_bodies: bool,
     network_policy_file: Option<PathBuf>,
 ) -> Result<()> {
+    let mut surface_policy = policy(output, archive);
+    if let Some(path) = network_policy_file {
+        surface_policy.network_observation = serde_json::from_slice(&fs::read(path)?)?;
+    }
+    if retain_network_bodies {
+        surface_policy.network_observation.retain_bodies = true;
+    }
+    surface_policy.network_observation.validate()?;
     let browser_mode = if headless {
         BrowserMode::Headless
     } else {
         BrowserMode::Headful
     };
-    let page = Page::new(vec![Acquisition::Browser(browser_mode)])?;
     let acquisition_policy = Policy {
-        page,
+        page: Page::new(vec![Acquisition::Browser(browser_mode)])?,
         ..Policy::default()
     };
     let session = session::new()
@@ -311,35 +319,31 @@ async fn drive_native(
         .configure(SessionPolicy::default())
         .acquire()
         .await?;
+    let result = Box::pin(drive_native_work(&session, &url, surface_policy)).await;
+    let closed = session.close().await;
+    drop(session);
+    result?;
+    closed?;
+    Ok(())
+}
+
+async fn drive_native_work(
+    session: &session::Session,
+    url: &str,
+    surface_policy: SurfacePolicy,
+) -> Result<()> {
     let work = session.work().await?;
-    let receipt = match work.navigate(&url).await {
-        Ok(receipt) => receipt,
-        Err(error) => {
-            let _ = work.release().await;
-            let _ = session.close().await;
-            return Err(error.into());
-        }
-    };
+    let receipt = work.navigate(url).await?;
     if receipt.status != OperationStatus::Observed {
-        let _ = work.release().await;
-        let _ = session.close().await;
+        drop(work);
         return Err(
             io::Error::other("native browser did not observe its initial navigation").into(),
         );
     }
-    let mut surface_policy = policy(output, archive);
-    if let Some(path) = network_policy_file {
-        surface_policy.network_observation = serde_json::from_slice(&std::fs::read(path)?)?;
-    }
-    if retain_network_bodies {
-        surface_policy.network_observation.retain_bodies = true;
-    }
-    let surface = BrowserSurface::consume_work(work, surface_policy).await?;
-    let result = drive(surface).await;
-    let closed = session.close().await;
-    result?;
-    closed?;
-    Ok(())
+    Box::pin(drive(
+        BrowserSurface::consume_work(work, surface_policy).await?,
+    ))
+    .await
 }
 
 async fn export_network_payload(
@@ -358,7 +362,7 @@ async fn export_network_payload(
     let mut payload_reference: Option<NetworkPayloadRef> = None;
     for source in &outcome.sources {
         if source.profile.is_none_or(|profile| {
-            profile.schema() != yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1
+            profile.schema() != DocumentSchemaProfile::YosoiNetworkObservationV1
         }) {
             continue;
         }
@@ -398,7 +402,7 @@ async fn export_network_payload(
             io::Error::other("network payload source has no supported Document kind").into(),
         );
     };
-    std::fs::write(&file, &bytes)?;
+    fs::write(&file, &bytes)?;
     println!(
         "{}",
         json!({"payload_id":id,"file":file,"bytes":bytes.len(),"sha256":format!("{:x}", Sha256::digest(&bytes)),"declared_media_type":payload_reference.declared_media_type,"mode":"offline"})
@@ -640,14 +644,14 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             network_bodies,
             network_policy,
         } => {
-            drive_native(
+            Box::pin(drive_native(
                 url,
                 headless,
                 output,
                 archive,
                 network_bodies,
                 network_policy,
-            )
+            ))
             .await
         }
         SurfaceCommand::Video {
@@ -685,7 +689,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                     io::Error::other("--archive is required with --pixel-artifact-ref")
                 })?;
                 let reference: PixelArtifactArchiveRef = serde_json::from_str(&reference)?;
-                drive(
+                Box::pin(drive(
                     ImageSession::open_pixel_artifact(
                         &reference,
                         archive_root,
@@ -695,10 +699,10 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                         limits,
                     )
                     .await?,
-                )
+                ))
                 .await
             } else if let Some(file) = file {
-                drive(
+                Box::pin(drive(
                     ImageSession::open(
                         &file,
                         policy(output, archive),
@@ -707,7 +711,7 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
                         limits,
                     )
                     .await?,
-                )
+                ))
                 .await
             } else {
                 Err(io::Error::other("--file or --pixel-artifact-ref is required").into())

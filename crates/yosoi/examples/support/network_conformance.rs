@@ -1,20 +1,32 @@
 //! Deterministic, typed offline network evidence; no browser or request is run.
 
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use std::{error::Error, io};
 use yosoi::{
     Surface,
     documents::{Document, FileDocument},
     surface::{
-        NetworkObservationPolicy, NetworkPayload, NetworkPayloadRef, NetworkPayloadValue,
+        Budget, NetworkObservationPolicy, NetworkPayload, NetworkPayloadRef, NetworkPayloadValue,
         NetworkWindow, Outcome, SurfaceError,
     },
 };
 
 pub fn event(sequence: u64, request: &str, hop: u32, kind: Value) -> Value {
-    json!({"sequence":sequence,"request_id":request,"request_start_observed":request!="late-request","hop":hop,
-        "observed_at_unix_us":1_000_100,"provider_time_us":500,"provider_clock":"cdp_monotonic",
-        "frame_id":"frame-fixture","loader_id":"loader-fixture","kind":kind})
+    Value::Object(Map::from_iter([
+        ("sequence".to_owned(), json!(sequence)),
+        ("request_id".to_owned(), json!(request)),
+        (
+            "request_start_observed".to_owned(),
+            json!(request != "late-request"),
+        ),
+        ("hop".to_owned(), json!(hop)),
+        ("observed_at_unix_us".to_owned(), json!(1_000_100)),
+        ("provider_time_us".to_owned(), json!(500)),
+        ("provider_clock".to_owned(), json!("cdp_monotonic")),
+        ("frame_id".to_owned(), json!("frame-fixture")),
+        ("loader_id".to_owned(), json!("loader-fixture")),
+        ("kind".to_owned(), kind),
+    ]))
 }
 
 pub fn window(
@@ -149,7 +161,7 @@ pub fn payload(value: &NetworkPayload) -> Value {
 
 pub fn surface(value: &Surface) -> Result<Value, Box<dyn Error>> {
     Ok(
-        json!({"identity":value.identity(),"representation":value.representation(),"coverage":value.coverage(),"overview":value.overview(None,yosoi::surface::Budget::default())?}),
+        json!({"identity":value.identity(),"representation":value.representation(),"coverage":value.coverage(),"overview":value.overview(None,Budget::default())?}),
     )
 }
 
@@ -164,7 +176,12 @@ pub fn outcome_arguments(value: &Outcome) -> Value {
 }
 
 pub fn case(name: &str, path: &str, arguments: Value, observed: Value) -> Value {
-    json!({"name":name,"rustPath":path,"input":arguments,"rust":observed})
+    Value::Object(Map::from_iter([
+        ("name".to_owned(), json!(name)),
+        ("rustPath".to_owned(), json!(path)),
+        ("input".to_owned(), arguments),
+        ("rust".to_owned(), observed),
+    ]))
 }
 
 pub fn error(
@@ -174,9 +191,8 @@ pub fn error(
     arguments: Value,
     result: Result<(), SurfaceError>,
 ) -> Result<Value, Box<dyn Error>> {
-    let failure = match result {
-        Err(value) => value,
-        Ok(()) => return Err(io::Error::other(format!("{name} unexpectedly succeeded")).into()),
+    let Err(failure) = result else {
+        return Err(io::Error::other(format!("{name} unexpectedly succeeded")).into());
     };
     let (variant, details) = match &failure {
         SurfaceError::Invalid(message) => ("Invalid", json!({"message":message})),
@@ -188,7 +204,15 @@ pub fn error(
             );
         }
     };
-    Ok(
-        json!({"name":name,"rustPath":path,"operation":operation,"input":arguments,"rust":{"rejected":true},"rustFailure":{"rust_type":"yosoi::surface::SurfaceError","variant":variant,"details":details,"message":failure.to_string()}}),
-    )
+    Ok(Value::Object(Map::from_iter([
+        ("name".to_owned(), json!(name)),
+        ("rustPath".to_owned(), json!(path)),
+        ("operation".to_owned(), json!(operation)),
+        ("input".to_owned(), arguments),
+        ("rust".to_owned(), json!({"rejected": true})),
+        (
+            "rustFailure".to_owned(),
+            json!({"rust_type":"yosoi::surface::SurfaceError","variant":variant,"details":details,"message":failure.to_string()}),
+        ),
+    ])))
 }

@@ -5,6 +5,8 @@
 //! payload length and integrity; saved evidence never restores live authority.
 
 use crate::documents::Document;
+#[cfg(any(feature = "browser", feature = "surface-images"))]
+mod pixel_artifact;
 mod portable;
 mod surface;
 pub use crate::internal::archive::{

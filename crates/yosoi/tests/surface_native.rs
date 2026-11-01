@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 use std::{
     env,
     error::Error,
+    fs,
     io::{self, Write as _},
     sync::Arc,
     time::Duration,
@@ -18,9 +19,11 @@ use std::{
     process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
     sync::Mutex,
 };
+#[cfg(feature = "cli")]
+use tokio::task::spawn_blocking;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpListener,
+    net::{TcpListener, TcpStream},
     sync::{Notify, oneshot},
     task::{JoinHandle, JoinSet},
     time::timeout,
@@ -212,7 +215,7 @@ document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?
 }
 
 async fn write_response(
-    stream: &mut tokio::net::TcpStream,
+    stream: &mut TcpStream,
     status: &str,
     content_type: &str,
     headers: &[(&str, &str)],
@@ -235,7 +238,7 @@ async fn write_response(
 }
 
 async fn write_response_without_content_type(
-    stream: &mut tokio::net::TcpStream,
+    stream: &mut TcpStream,
     status: &str,
     headers: &[(&str, &str)],
     body: &[u8],
@@ -311,7 +314,7 @@ struct CliDiagnostics {
 fn cli_exchange(
     input: &mut ChildStdin,
     output: &mut BufReader<ChildStdout>,
-    command: Value,
+    command: &Value,
     diagnostics: &Mutex<CliDiagnostics>,
 ) -> Result<Value, CliProofError> {
     let operation_id = command
@@ -323,7 +326,7 @@ fn cli_exchange(
         .lock()
         .map_err(|_| io::Error::other("CLI diagnostic lock was poisoned"))?
         .current_operation = Some(operation_id);
-    serde_json::to_writer(&mut *input, &command)?;
+    serde_json::to_writer(&mut *input, command)?;
     input.write_all(b"\n")?;
     input.flush()?;
     let mut line = String::new();
@@ -350,7 +353,7 @@ fn cli_network_window(
     let observation = cli_exchange(
         input,
         output,
-        json!({"id":"observe-network","op":"observe","representation":"network","budget":16384}),
+        &json!({"id":"observe-network","op":"observe","representation":"network","budget":16384}),
         diagnostics,
     )?;
     let root = observation
@@ -360,7 +363,7 @@ fn cli_network_window(
     let inspected = cli_exchange(
         input,
         output,
-        json!({
+        &json!({
             "id":"inspect-network",
             "op":"read_view",
             "representation":"network",
@@ -389,13 +392,13 @@ fn cli_native_root(
     cli_exchange(
         input,
         output,
-        json!({"id":format!("refresh-{id}"),"op":"refresh"}),
+        &json!({"id":format!("refresh-{id}"),"op":"refresh"}),
         diagnostics,
     )?;
     let status = cli_exchange(
         input,
         output,
-        json!({"id":format!("status-{id}"),"op":"status"}),
+        &json!({"id":format!("status-{id}"),"op":"status"}),
         diagnostics,
     )?;
     status
@@ -428,7 +431,7 @@ fn run_native_network_cli(
     let subscription = cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"subscribe","op":"network_subscribe","retain_bodies":true}),
+        &json!({"id":"subscribe","op":"network_subscribe","retain_bodies":true}),
         diagnostics,
     )?;
     if subscription.get("provider").and_then(Value::as_str) != Some("chrome_cdp") {
@@ -437,20 +440,20 @@ fn run_native_network_cli(
     cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"attach","op":"attach"}),
+        &json!({"id":"attach","op":"attach"}),
         diagnostics,
     )?;
     cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"hot","op":"hot"}),
+        &json!({"id":"hot","op":"hot"}),
         diagnostics,
     )?;
     let root = cli_native_root(&mut input, &mut output, "one", diagnostics)?;
     let navigated = cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
+        &json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
         diagnostics,
     )?;
     if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
@@ -465,7 +468,7 @@ fn run_native_network_cli(
         let waited = cli_exchange(
             &mut input,
             &mut output,
-            json!({"id":"wait-network","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            &json!({"id":"wait-network","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
             diagnostics,
         )?;
         if waited.get("state").and_then(Value::as_str) != Some("event") {
@@ -498,7 +501,7 @@ fn run_native_network_cli(
     let chunk = cli_exchange(
         &mut input,
         &mut output,
-        json!({
+        &json!({
             "id":"read-body",
             "op":"network_payload",
             "reference":payload,
@@ -525,13 +528,13 @@ fn run_native_network_cli(
     cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"cancel","op":"network_cancel"}),
+        &json!({"id":"cancel","op":"network_cancel"}),
         diagnostics,
     )?;
     let rearmed = cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"subscribe-again","op":"network_subscribe","retain_bodies":true}),
+        &json!({"id":"subscribe-again","op":"network_subscribe","retain_bodies":true}),
         diagnostics,
     )?;
     if rearmed.get("active").and_then(Value::as_bool) != Some(true) {
@@ -541,7 +544,7 @@ fn run_native_network_cli(
     let navigated = cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
+        &json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
         diagnostics,
     )?;
     if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
@@ -556,7 +559,7 @@ fn run_native_network_cli(
         let waited = cli_exchange(
             &mut input,
             &mut output,
-            json!({"id":"wait-fresh","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+            &json!({"id":"wait-fresh","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
             diagnostics,
         )?;
         if waited.get("state").and_then(Value::as_str) != Some("event") {
@@ -611,14 +614,14 @@ fn run_native_network_cli(
     cli_exchange(
         &mut input,
         &mut output,
-        json!({"id":"close","op":"close"}),
+        &json!({"id":"close","op":"close"}),
         diagnostics,
     )?;
     Ok(())
 }
 
 #[cfg(feature = "cli")]
-fn child_wait(child: Arc<Mutex<Child>>) -> io::Result<ExitStatus> {
+fn child_wait(child: &Mutex<Child>) -> io::Result<ExitStatus> {
     child
         .lock()
         .map_err(|_| io::Error::other("native CLI child lock was poisoned"))?
@@ -936,7 +939,7 @@ async fn native_network_windows_link_bounded_bodies_and_replay_offline()
     fixture.close().await;
     let (json_body, binary, portable) = proof?;
     closed?;
-    std::fs::remove_dir_all(output.path().join("archive"))?;
+    fs::remove_dir_all(output.path().join("archive"))?;
     let fresh = tempfile::tempdir()?;
     let archive = Archive::open(fresh.path()).await?;
     let imported = archive.import_file(&portable).await?;
@@ -1457,11 +1460,6 @@ async fn native_network_authority_loss_freezes_coverage_and_releases_the_page()
 
 #[cfg(feature = "cli")]
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::panic_in_result_fn,
-    clippy::significant_drop_tightening,
-    reason = "The JSON-lines proof owns one child process and loopback fixture through bounded shutdown."
-)]
 async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
 -> Result<(), Box<dyn Error>> {
     if !enabled() {
@@ -1471,7 +1469,7 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
     let proof = Box::pin(async {
         let temporary = tempfile::tempdir()?;
         let policy_file = temporary.path().join("network-policy.json");
-        std::fs::write(
+        fs::write(
             &policy_file,
             br#"{"retain_bodies":true,"retain_url_path":true,"max_events":256}"#,
         )?;
@@ -1500,7 +1498,7 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
             .ok_or_else(|| io::Error::other("native Surface CLI stdout is unavailable"))?;
         let child = Arc::new(Mutex::new(child));
         let diagnostics = Arc::new(Mutex::new(CliDiagnostics::default()));
-        let worker = tokio::task::spawn_blocking({
+        let worker = spawn_blocking({
             let base = fixture.base.clone();
             let diagnostics = Arc::clone(&diagnostics);
             move || run_native_network_cli(input, stdout, &base, &diagnostics)
@@ -1513,7 +1511,7 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
                     let _ = child.kill();
                 }
                 let child_for_wait = Arc::clone(&child);
-                let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+                let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
                 let _ = timeout(Duration::from_secs(5), &mut waiter).await;
                 return Err(io::Error::other(error.to_string()).into());
             }
@@ -1523,7 +1521,7 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
                 }
                 let _ = timeout(Duration::from_secs(5), &mut worker).await;
                 let child_for_wait = Arc::clone(&child);
-                let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+                let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
                 let _ = timeout(Duration::from_secs(5), &mut waiter).await;
                 return Err(io::Error::other(format!(
                     "native network CLI proof exceeded its timeout: {}",
@@ -1537,23 +1535,22 @@ async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
                 let _ = child.kill();
             }
             let child_for_wait = Arc::clone(&child);
-            let waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+            let waiter = spawn_blocking(move || child_wait(&child_for_wait));
             let _ = timeout(Duration::from_secs(5), waiter).await;
             return Err(io::Error::other(error.to_string()).into());
         }
         let child_for_wait = Arc::clone(&child);
-        let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
-        let status = match timeout(Duration::from_secs(15), &mut waiter).await {
-            Ok(joined) => joined
+        let mut waiter = spawn_blocking(move || child_wait(&child_for_wait));
+        let status = if let Ok(joined) = timeout(Duration::from_secs(15), &mut waiter).await {
+            joined
                 .map_err(|error| io::Error::other(error.to_string()))?
-                .map_err(|error| io::Error::other(error.to_string()))?,
-            Err(_) => {
-                if let Ok(mut child) = child.lock() {
-                    let _ = child.kill();
-                }
-                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
-                return Err(io::Error::other("native network CLI did not shut down").into());
+                .map_err(|error| io::Error::other(error.to_string()))?
+        } else {
+            if let Ok(mut child) = child.lock() {
+                let _ = child.kill();
             }
+            let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+            return Err(io::Error::other("native network CLI did not shut down").into());
         };
         if !status.success() {
             return Err(

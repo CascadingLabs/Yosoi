@@ -786,17 +786,11 @@ impl Outcome {
             let _: DocumentArchiveRef = key
                 .parse()
                 .map_err(|error: ArchiveRefError| SurfaceError::Invalid(error.to_string()))?;
-            let source = self.sources.iter().find(|source| {
-                source.key == key
-                    || source
-                        .document_archive
-                        .as_ref()
-                        .is_some_and(|reference| reference.to_string() == key)
-                    || source
-                        .file_archive
-                        .as_ref()
-                        .is_some_and(|reference| reference.to_string() == key)
-            });
+            let source = self
+                .sources
+                .iter()
+                .find(|source| source_matches_archive_reference(source, key))
+                .or_else(|| self.sources.iter().find(|source| source.key == key));
             if self.complete && source.is_none() {
                 return Err(SurfaceError::Invalid(
                     "complete outcome is missing required document evidence".into(),
@@ -819,25 +813,42 @@ impl Outcome {
         Ok(())
     }
 
-    /// Restores one exact retained Surface without granting live authority.
+    /// Restores by logical key, retained Surface identity, or current Archive reference.
     pub fn surface(&self, key: &str, limits: Limits) -> Result<Surface, SurfaceError> {
-        self.sources
+        let source = self
+            .sources
             .iter()
             .find(|source| source.key == key)
+            .or_else(|| {
+                self.sources
+                    .iter()
+                    .find(|source| source.surface.as_deref() == Some(key))
+            })
+            .or_else(|| {
+                self.sources
+                    .iter()
+                    .find(|source| source_matches_archive_reference(source, key))
+            })
             .ok_or(SurfaceError::Unknown)?
-            .restore_surface(limits)
+            .restore_surface(limits)?;
+        Ok(source)
     }
 
-    /// Restores one retained source-backed text/DOM/JSON Document by its stable key.
+    /// Restores a source-backed Document by exact logical key or current Archive reference.
     pub fn source_document(&self, key: &str, maximum: u64) -> Result<Document, SurfaceError> {
         self.sources
             .iter()
-            .find(|source| source_matches_key(source, key))
+            .find(|source| source.key == key)
+            .or_else(|| {
+                self.sources
+                    .iter()
+                    .find(|source| source_matches_archive_reference(source, key))
+            })
             .ok_or(SurfaceError::Unknown)?
             .restore(maximum)
     }
 
-    /// Restores one retained typed file payload by its stable key.
+    /// Restores a typed file by exact logical key or current Archive reference.
     pub fn source_file_document(
         &self,
         key: &str,
@@ -845,12 +856,17 @@ impl Outcome {
     ) -> Result<FileDocument, SurfaceError> {
         self.sources
             .iter()
-            .find(|source| source_matches_key(source, key))
+            .find(|source| source.key == key)
+            .or_else(|| {
+                self.sources
+                    .iter()
+                    .find(|source| source_matches_archive_reference(source, key))
+            })
             .ok_or(SurfaceError::Unknown)?
             .restore_file_document(maximum)
     }
 
-    /// Restores a retained pixel artifact, including derived pixel provenance.
+    /// Restores pixels by logical key or current Archive reference.
     #[cfg(any(feature = "browser", feature = "surface-images"))]
     pub fn source_pixel_artifact(
         &self,
@@ -859,22 +875,34 @@ impl Outcome {
     ) -> Result<PixelArtifact, SurfaceError> {
         self.sources
             .iter()
-            .find(|source| source_matches_key(source, key))
+            .find(|source| source.key == key)
+            .or_else(|| {
+                self.sources
+                    .iter()
+                    .find(|source| source_matches_archive_reference(source, key))
+            })
             .ok_or(SurfaceError::Unknown)?
             .restore_pixel_artifact(maximum)
     }
 }
 
-fn source_matches_key(source: &ArchivedSource, key: &str) -> bool {
-    source.key == key
-        || source
-            .document_archive
-            .as_ref()
-            .is_some_and(|reference| reference.to_string() == key)
+fn source_matches_archive_reference(source: &ArchivedSource, key: &str) -> bool {
+    source
+        .document_archive
+        .as_ref()
+        .is_some_and(|reference| reference.to_string() == key)
         || source
             .file_archive
             .as_ref()
             .is_some_and(|reference| reference.to_string() == key)
+}
+
+fn find_source_by_key<'a>(sources: &'a [ArchivedSource], key: &str) -> Option<&'a ArchivedSource> {
+    sources.iter().find(|source| source.key == key).or_else(|| {
+        sources
+            .iter()
+            .find(|source| source_matches_archive_reference(source, key))
+    })
 }
 
 fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(), SurfaceError> {
@@ -894,11 +922,7 @@ fn validate_network_payloads(outcome: &Outcome, document: &Document) -> Result<(
                 "network payload id and source key differ".into(),
             ));
         }
-        let Some(source) = outcome
-            .sources
-            .iter()
-            .find(|source| source_matches_key(source, key))
-        else {
+        let Some(source) = find_source_by_key(&outcome.sources, key) else {
             if outcome.complete {
                 return Err(SurfaceError::Invalid(
                     "retained network body source is missing from the Outcome".into(),
@@ -951,6 +975,10 @@ mod tests {
     const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify that Archive restoration preserves an explicit BinaryDocument family."
+    )]
     fn typed_source_restore_preserves_forced_binary_classification_and_metadata()
     -> Result<(), Box<dyn Error>> {
         let metadata = FileMetadata::new()
@@ -985,6 +1013,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify structural and provenance rules for typed network payload dependencies."
+    )]
     fn network_payload_dependencies_use_typed_profile_and_exact_state_contract()
     -> Result<(), Box<dyn Error>> {
         let network_document = |payloads: serde_json::Value| -> Result<Document, Box<dyn Error>> {

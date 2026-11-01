@@ -7,21 +7,25 @@ import base64
 import os
 import tempfile
 import unittest
-from typing import Any, cast
 
 import yosoi as ys
 
 
-def as_json_object(value: object) -> dict[str, Any]:
-    return cast(dict[str, Any], value)
+def as_json_object(value: object) -> dict[str, object]:
+    assert isinstance(value, dict)
+    assert all(isinstance(key, str) for key in value)
+    return value
 
 
-async def target(source: ys.surface.BrowserSurface, query: str) -> dict[str, Any]:
+async def target(source: ys.surface.BrowserSurface, query: str) -> dict[str, object]:
     page = as_json_object(await source.execute({"op": "find", "query": query}))
-    entry = page["entries"][0]
+    entries = page["entries"]
+    assert isinstance(entries, list) and entries
+    entry = as_json_object(entries[0])
+    reference = as_json_object(entry["reference"])
     if entry["kind"] == "text":
-        return await source.execute({"op": "parent", "reference": entry["reference"]})
-    return entry["reference"]
+        return await source.execute({"op": "parent", "reference": reference})
+    return reference
 
 
 @unittest.skipUnless(
@@ -43,17 +47,21 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                     pass
                 if path == "/network":
                     body = (
-                        b'<!doctype html><button aria-label="Start requests">Start requests</button>'
-                        b'<button aria-label="Release slow request">Release slow request</button>'
+                        b'<!doctype html><button aria-label="Start requests">'
+                        b"Start requests</button>"
+                        b'<button aria-label="Release slow request">'
+                        b"Release slow request</button>"
                         b'<p id="state">ready</p><script>'
                         b"const s=document.getElementById('state');"
                         b"document.querySelectorAll('button')[0].addEventListener('click',()=>{"
-                        b"s.textContent='requests started';const slow=fetch('/slow').then(r=>r.json());"
+                        b"s.textContent='requests started';"
+                        b"const slow=fetch('/slow').then(r=>r.json());"
                         b"Promise.all([fetch('/api?token=secret'),fetch('/redirect'),"
                         b"fetch('/fail').catch(()=>null),"
                         b"fetch('/legacy-html').then(r=>r.text()),fetch('/sniff-html').then(r=>r.text()),"
                         b"fetch('/misleading-png').then(r=>r.arrayBuffer())])"
-                        b".then(()=>slow).then(()=>{s.textContent='requests complete'})});"
+                        b".then(()=>slow).then(()=>{"
+                        b"s.textContent='requests complete'})});"
                         b"document.querySelectorAll('button')[1].addEventListener('click',()=>fetch('/release'))"
                         b"</script>"
                     )
@@ -64,7 +72,10 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                     body = b'{"api":true}' if path == "/api" else b'{"redirected":true}'
                     status = b"200 OK"
                     content_type = b"application/json; charset=utf-8"
-                    headers = [(b"X-Public", b"kept"), (b"Set-Cookie", b"secret=hidden")]
+                    headers = [
+                        (b"X-Public", b"kept"),
+                        (b"Set-Cookie", b"secret=hidden"),
+                    ]
                 elif path == "/redirect":
                     body = b""
                     status = b"302 Found"
@@ -144,10 +155,15 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                 async with ys.browser.session() as browser:
                     source = await ys.browser.surface.consume_session(browser, policy)
                     ready = as_json_object(await source.ready())
-                    self.assertEqual(ready["source"]["backend"], "native_session")
+                    self.assertEqual(
+                        as_json_object(ready["source"])["backend"], "native_session"
+                    )
                     await source.execute({"op": "attach"})
                     await source.execute(
-                        {"op": "focus", "reference": ready["state"]["root"]}
+                        {
+                            "op": "focus",
+                            "reference": as_json_object(ready["state"])["root"],
+                        }
                     )
                     await source.execute({"op": "hot"})
                     await source.subscribe_network()
@@ -155,12 +171,14 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                         await source.execute(
                             {
                                 "op": "navigate",
-                                "reference": ready["state"]["root"],
+                                "reference": as_json_object(ready["state"])["root"],
                                 "url": base + "/network",
                             }
                         )
                     )
-                    self.assertEqual(navigated["receipt"]["status"], "Confirmed")
+                    self.assertEqual(
+                        as_json_object(navigated["receipt"])["status"], "Confirmed"
+                    )
                     start = await target(source, "Start requests")
                     clicked = as_json_object(
                         await source.execute(
@@ -175,32 +193,48 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                             }
                         )
                     )
-                    self.assertEqual(clicked["receipt"]["status"], "Confirmed")
+                    self.assertEqual(
+                        as_json_object(clicked["receipt"])["status"], "Confirmed"
+                    )
                     await asyncio.wait_for(slow_started.wait(), timeout=5)
                     after_sequence = 0
                     first_window = None
                     for _ in range(16):
                         waited = await source.wait_network_event(after_sequence, 5000)
                         self.assertEqual(waited["state"], "event")
-                        after_sequence = waited["sequence"]
+                        sequence = waited["sequence"]
+                        assert isinstance(sequence, int) and not isinstance(
+                            sequence, bool
+                        )
+                        after_sequence = sequence
                         _, candidate = await source.observe_network()
-                        if any(request.url.endswith("/slow") for request in candidate.in_flight):
+                        if any(
+                            request.url.endswith("/slow")
+                            for request in candidate.in_flight
+                        ):
                             first_window = candidate
                             break
                     self.assertIsNotNone(first_window)
-                    first_window = cast(ys.surface.NetworkWindow, first_window)
+                    assert isinstance(first_window, ys.surface.NetworkWindow)
                     self.assertFalse(first_window.coverage.complete)
                     self.assertTrue(first_window.coverage.start_boundary_unknown)
                     self.assertTrue(
-                        any(request.url.endswith("/slow") for request in first_window.in_flight)
+                        any(
+                            request.url.endswith("/slow")
+                            for request in first_window.in_flight
+                        )
                     )
                     request_urls = [
                         event.kind.url
                         for event in first_window.events
                         if isinstance(event.kind, ys.surface.NetworkRequestStarted)
                     ]
-                    self.assertTrue(all("token=secret" not in url for url in request_urls))
-                    self.assertEqual(first_window.retention.retained_header_names, ("x-public",))
+                    self.assertTrue(
+                        all("token=secret" not in url for url in request_urls)
+                    )
+                    self.assertEqual(
+                        first_window.retention.retained_header_names, ("x-public",)
+                    )
 
                     release = await target(source, "Release slow request")
                     released = as_json_object(
@@ -216,27 +250,47 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                             }
                         )
                     )
-                    self.assertEqual(released["receipt"]["status"], "Confirmed")
+                    self.assertEqual(
+                        as_json_object(released["receipt"])["status"], "Confirmed"
+                    )
                     await source.wait_network_event(after_sequence, 5000)
                     _, second_window = await source.observe_network()
                     self.assertTrue(
-                        any(request.url.endswith("/slow") for request in second_window.in_flight_at_start)
+                        any(
+                            request.url.endswith("/slow")
+                            for request in second_window.in_flight_at_start
+                        )
                     )
                     self.assertFalse(
-                        any(request.url.endswith("/slow") for request in second_window.in_flight)
+                        any(
+                            request.url.endswith("/slow")
+                            for request in second_window.in_flight
+                        )
                     )
                     events = (*first_window.events, *second_window.events)
                     self.assertTrue(
                         any(event.kind.kind == "redirect" for event in events)
                     )
-                    self.assertTrue(any(event.kind.kind == "failed" for event in events))
+                    self.assertTrue(
+                        any(event.kind.kind == "failed" for event in events)
+                    )
+                    api_requests = {
+                        (event.request_id, event.hop)
+                        for event in events
+                        if isinstance(event.kind, ys.surface.NetworkRequestStarted)
+                        and event.kind.url == f"{base}/api"
+                    }
+                    self.assertEqual(len(api_requests), 1)
                     body = next(
                         payload
                         for payload in (*first_window.payloads, *second_window.payloads)
-                        if payload.document_kind == "json" and payload.state == "retained"
+                        if payload.document_kind == "json"
+                        and payload.state == "retained"
+                        and (payload.request_id, payload.hop) in api_requests
                     )
                     live_payload = await source.network_payload(body)
-                    self.assertIn(b"\"api\":true", live_payload.value.data)
+                    assert isinstance(live_payload.value, ys.Document)
+                    self.assertIn(b'"api":true', live_payload.value.data)
                     legacy_html = next(
                         payload
                         for payload in (*first_window.payloads, *second_window.payloads)
@@ -256,6 +310,7 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(legacy_html.provider_base64_encoded)
                     self.assertTrue(legacy_html.text_utf8_normalized)
                     legacy_live = await source.network_payload(legacy_html)
+                    assert isinstance(legacy_live.value, ys.Document)
                     self.assertIn("café".encode(), legacy_live.value.data)
                     sniffed_html = next(
                         payload
@@ -273,13 +328,16 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNotNone(misleading_png.browser_effective_mime)
                     self.assertEqual(misleading_png.detected_media_type, "image/png")
                     self.assertEqual(misleading_png.document_kind, "file")
-                    self.assertEqual(misleading_png.projection_basis, "typed_file_magic")
+                    self.assertEqual(
+                        misleading_png.projection_basis, "typed_file_magic"
+                    )
                     outcome = await source.close()
                     self.assertIsNotNone(outcome)
-                    outcome = cast(ys.surface.Outcome, outcome)
+                    assert isinstance(outcome, ys.surface.Outcome)
                     self.assertIn(body.id, {source.key for source in outcome.sources})
                     offline = outcome.network_payload(body)
                     self.assertEqual(offline.value, live_payload.value)
+
     async def test_facades_and_work_transfer_use_one_retained_native_session(self):
         body = (
             b"<!doctype html><h1>Native Python</h1>"
@@ -311,10 +369,15 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                 source = await ys.browser.surface.consume_session(browser)
                 try:
                     ready = as_json_object(await source.ready())
-                    self.assertEqual(ready["source"]["backend"], "native_session")
+                    self.assertEqual(
+                        as_json_object(ready["source"])["backend"], "native_session"
+                    )
                     await source.execute({"op": "attach"})
                     await source.execute(
-                        {"op": "focus", "reference": ready["state"]["root"]}
+                        {
+                            "op": "focus",
+                            "reference": as_json_object(ready["state"])["root"],
+                        }
                     )
                     await source.execute({"op": "hot"})
                     url = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/"
@@ -322,20 +385,29 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                         await source.execute(
                             {
                                 "op": "navigate",
-                                "reference": ready["state"]["root"],
+                                "reference": as_json_object(ready["state"])["root"],
                                 "url": url,
                             }
                         )
                     )
-                    self.assertEqual(result["receipt"]["status"], "Confirmed")
+                    self.assertEqual(
+                        as_json_object(result["receipt"])["status"], "Confirmed"
+                    )
                     field = await target(source, "Message")
                     result = as_json_object(
                         await source.execute(
                             {"op": "fill", "reference": field, "text": "replacement"}
                         )
                     )
-                    self.assertEqual(result["receipt"]["status"], "Confirmed")
-                    self.assertEqual(result["outcome"]["value"]["characters"], 11)
+                    self.assertEqual(
+                        as_json_object(result["receipt"])["status"], "Confirmed"
+                    )
+                    self.assertEqual(
+                        as_json_object(as_json_object(result["outcome"])["value"])[
+                            "characters"
+                        ],
+                        11,
+                    )
                     button = await target(source, "Click here")
                     result = as_json_object(
                         await source.execute(
@@ -350,7 +422,9 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                             }
                         )
                     )
-                    self.assertEqual(result["receipt"]["status"], "Confirmed")
+                    self.assertEqual(
+                        as_json_object(result["receipt"])["status"], "Confirmed"
+                    )
                 finally:
                     await source.close()
                 work = browser.work()
@@ -358,7 +432,9 @@ class NativeSurfaceTests(unittest.IsolatedAsyncioTestCase):
                 try:
                     self.assertTrue(work._released)
                     self.assertEqual(
-                        as_json_object(await source.ready())["source"]["backend"],
+                        as_json_object(as_json_object(await source.ready())["source"])[
+                            "backend"
+                        ],
                         "native_session",
                     )
                 finally:

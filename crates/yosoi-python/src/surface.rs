@@ -4,11 +4,17 @@
 use pyo3::types::PyBytes;
 use pyo3::{create_exception, prelude::*};
 use serde::{Serialize, de::DeserializeOwned};
-use yosoi::surface::{self, model::SurfaceRead};
+use yosoi::{
+    documents::FileDocument,
+    surface::{self, model::SurfaceRead},
+};
 
 use crate::media::NativeFileDocument;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
-use crate::{archive::NativeArchive, async_runtime};
+use crate::{
+    archive::{NativeArchive, archive_error},
+    async_runtime,
+};
 use crate::{
     documents::{DocumentSource, NativeDocument},
     errors,
@@ -261,7 +267,7 @@ impl NativeSurface {
         pixel_limits: &str,
     ) -> PyResult<Self> {
         let document = match document.inner.as_ref() {
-            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            FileDocument::Image(image) => image.clone(),
             _ => {
                 return Err(failure(surface::SurfaceError::Invalid(
                     "from_image_document requires an ImageDocument".into(),
@@ -307,9 +313,9 @@ impl NativeSurface {
     }
 
     #[cfg(any(feature = "browser", feature = "surface-video"))]
-    fn crop<'py>(
+    fn crop(
         &self,
-        py: Python<'py>,
+        py: Python<'_>,
         reference: &str,
         max_png_bytes: usize,
     ) -> PyResult<(String, NativePixelArtifact)> {
@@ -328,9 +334,9 @@ impl NativeSurface {
     }
 
     #[cfg(any(feature = "browser", feature = "surface-video"))]
-    fn crop_rect<'py>(
+    fn crop_rect(
         &self,
-        py: Python<'py>,
+        py: Python<'_>,
         rect: &str,
         max_png_bytes: usize,
     ) -> PyResult<(String, NativePixelArtifact)> {
@@ -447,7 +453,7 @@ impl NativePixelArtifact {
         limits: &str,
     ) -> PyResult<Self> {
         let document = match document.inner.as_ref() {
-            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            FileDocument::Image(image) => image.clone(),
             _ => {
                 return Err(failure(surface::SurfaceError::Invalid(
                     "PixelArtifact requires an ImageDocument".into(),
@@ -476,9 +482,7 @@ impl NativePixelArtifact {
     }
 
     fn document(&self) -> NativeFileDocument {
-        NativeFileDocument::new(yosoi::documents::FileDocument::Image(
-            self.inner.document().clone(),
-        ))
+        NativeFileDocument::new(FileDocument::Image(self.inner.document().clone()))
     }
 
     fn map_rect_to_source(&self, rect: &str) -> PyResult<String> {
@@ -498,12 +502,7 @@ impl NativePixelArtifact {
         let inner = self.inner.clone();
         let archive = archive.inner.clone();
         async_runtime::bridge(py, None, move |_| async move {
-            encode(
-                &inner
-                    .write_to(&archive)
-                    .await
-                    .map_err(crate::archive::archive_error)?,
-            )
+            encode(&inner.write_to(&archive).await.map_err(archive_error)?)
         })
     }
 
@@ -519,7 +518,7 @@ impl NativePixelArtifact {
             surface::PixelArtifact::read_from(&archive, &reference)
                 .await
                 .map(|inner| Self { inner })
-                .map_err(crate::archive::archive_error)
+                .map_err(archive_error)
         })
     }
 }
@@ -546,9 +545,7 @@ impl NativeImageSurface {
     }
 
     fn source_document(&self) -> NativeFileDocument {
-        NativeFileDocument::new(yosoi::documents::FileDocument::Image(
-            self.inner.source_document().clone(),
-        ))
+        NativeFileDocument::new(FileDocument::Image(self.inner.source_document().clone()))
     }
 
     #[staticmethod]
@@ -560,7 +557,7 @@ impl NativeImageSurface {
         pixel_limits: &str,
     ) -> PyResult<Self> {
         let document = match document.inner.as_ref() {
-            yosoi::documents::FileDocument::Image(image) => image.clone(),
+            FileDocument::Image(image) => image.clone(),
             _ => {
                 return Err(failure(surface::SurfaceError::Invalid(
                     "ImageSurface requires an ImageDocument".into(),
@@ -961,7 +958,7 @@ fn surface_source_restore_image(
         let source: surface::ArchivedSource = decode(value)?;
         source
             .restore_image(maximum)
-            .map(|inner| NativeFileDocument::new(yosoi::documents::FileDocument::Image(inner)))
+            .map(|inner| NativeFileDocument::new(FileDocument::Image(inner)))
             .map_err(failure)
     })
 }

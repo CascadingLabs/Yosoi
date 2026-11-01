@@ -33,9 +33,9 @@ DEFERRED_BETA_ROOTS = {
         "issue": "CAS-566",
         "rationale": (
             "The full generic Rust Archive surface exceeds Python's supported "
-            "Document, Plan, AutomationRecord and Surface outcome operations. These supported "
-            "journeys have Archive tests; additional Rust value kinds and stronger "
-            "guarantees remain deferred."
+            "Document, Plan, AutomationRecord and Surface outcome operations. "
+            "These supported journeys have Archive tests; additional Rust value "
+            "kinds and stronger guarantees remain deferred."
         ),
     },
     "yosoi::view": {

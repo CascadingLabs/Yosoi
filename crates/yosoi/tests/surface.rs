@@ -8,11 +8,14 @@ use std::{
     sync::{Arc, Barrier},
     thread,
 };
+#[cfg(feature = "surface-images")]
+use yosoi::surface::{
+    ImageSurface, PixelCoordinateKind, PixelLimits, PixelOperation, PixelOrientation, PixelRect,
+};
 use yosoi::{
     documents::{Document, DocumentEpoch},
     surface::{
-        ActionStatus, Budget, EventKind, ImageSurface, Limits, PixelCoordinateKind, PixelLimits,
-        PixelOperation, PixelOrientation, PixelRect, Reference, Session, SessionPolicy, Surface,
+        ActionStatus, Budget, EventKind, Limits, Reference, Session, SessionPolicy, Surface,
         SurfaceError,
     },
 };
@@ -924,6 +927,10 @@ fn image_zoom_returns_real_pixels_and_policy_bound_references() -> TestResult {
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResult {
     use std::io::Cursor;
     use yosoi::documents::ImageDocument;
@@ -1094,6 +1101,10 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn small_image_compares_direct_overview_and_crop_delivery() -> TestResult {
     use std::{io::Cursor, time::Instant};
     use yosoi::documents::ImageDocument;
@@ -1208,6 +1219,10 @@ fn small_image_compares_direct_overview_and_crop_delivery() -> TestResult {
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult {
     use std::{io::Cursor, time::Instant};
     use yosoi::documents::ImageDocument;
@@ -1224,7 +1239,7 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
     image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
     let source_bytes = encoded.into_inner();
     let source = ImageDocument::from_bytes("dense-dashboard", source_bytes.clone())?;
-    let started = std::time::Instant::now();
+    let started = Instant::now();
     let direct = PixelArtifact::decode_image_document(source.clone(), PixelLimits::default())?;
     let direct_ms = started.elapsed().as_millis();
     let started = Instant::now();
@@ -1282,6 +1297,10 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
 
 #[cfg(feature = "surface-images")]
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 async fn archived_pixel_artifact_restores_typed_pixels_and_provenance() -> TestResult {
     use std::io::Cursor;
     use yosoi::surface::PixelArtifact;
@@ -1319,9 +1338,14 @@ async fn archived_pixel_artifact_restores_typed_pixels_and_provenance() -> TestR
 
 #[cfg(feature = "surface-images")]
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 async fn archived_legacy_text_image_envelope_restores_exact_pixels() -> TestResult {
     use std::io::Cursor;
     use yosoi::Archive;
+    use yosoi::documents::DocumentProfile;
     use yosoi::surface::{ArchiveLimits, ArchivedSource, Outcome, SourceInterpretation};
 
     let pixels = image::RgbaImage::from_fn(16, 8, |x, y| {
@@ -1340,10 +1364,7 @@ async fn archived_legacy_text_image_envelope_restores_exact_pixels() -> TestResu
         legacy_source.interpretation,
         SourceInterpretation::Image { tile_side: 32 }
     ));
-    assert_eq!(
-        legacy_source.profile,
-        Some(yosoi::documents::DocumentProfile::source_text())
-    );
+    assert_eq!(legacy_source.profile, Some(DocumentProfile::source_text()));
 
     let temporary = tempfile::tempdir()?;
     let archive = Archive::open(temporary.path()).await?;
@@ -1362,6 +1383,10 @@ async fn archived_legacy_text_image_envelope_restores_exact_pixels() -> TestResu
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn pixel_artifact_rejects_corrupt_encoded_pixels_with_valid_header() -> TestResult {
     use std::io::Cursor;
     use yosoi::{
@@ -1415,6 +1440,10 @@ fn pixel_artifact_rejects_corrupt_encoded_pixels_with_valid_header() -> TestResu
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn jpeg_exif_orientation_remains_explicitly_unapplied() -> TestResult {
     use std::io::Cursor;
     use yosoi::{
@@ -1466,6 +1495,10 @@ fn jpeg_exif_orientation_remains_explicitly_unapplied() -> TestResult {
 
 #[cfg(feature = "surface-images")]
 #[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 fn archived_legacy_video_pixels_keep_explicit_partial_source_identity() -> TestResult {
     use std::io::Cursor;
     use yosoi::{
@@ -1537,6 +1570,10 @@ fn archived_legacy_video_pixels_keep_explicit_partial_source_identity() -> TestR
 
 #[cfg(feature = "surface-video")]
 #[tokio::test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions enforce image and Archive regressions; Result propagates fixture errors."
+)]
 async fn image_session_opens_archived_video_pixels_without_video_or_source_path() -> TestResult {
     use std::io::Cursor;
     use yosoi::{

@@ -62,14 +62,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let index = Surface::new(&document)?;
     let ordinary = Document::json("ordinary-json", document.bytes().to_vec())?;
     let outcome = Outcome::new("network-parity-outcome", ArchiveLimits::default())?
+        .with_source(ArchivedSource::new("body-html", &html, None))?
+        .with_source(ArchivedSource::new("body-json", &json_body, None))?
+        .with_source(ArchivedSource::new_file_document("body-file", &file, None))?
         .with_source(ArchivedSource::new(
             "network-window",
             &document,
             Some(&index),
-        ))?
-        .with_source(ArchivedSource::new("body-html", &html, None))?
-        .with_source(ArchivedSource::new("body-json", &json_body, None))?
-        .with_source(ArchivedSource::new_file_document("body-file", &file, None))?;
+        ))?;
     let mut cases = vec![
         support::case(
             "policy-defaults",
@@ -196,8 +196,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         json!({"outcome":support::outcome_arguments(&outcome),"reference":reference,"maximum":1}),
         NetworkPayload::from_outcome(&outcome, reference, 1).map(|_| ()),
     )?);
-    let missing = Outcome::new("network-missing-body", ArchiveLimits::default())?
-        .with_source(ArchivedSource::new("network-window", &document, None))?;
+    let mut missing = Outcome::new("network-missing-body", ArchiveLimits::default())?;
+    missing.complete = false;
+    let missing = missing.with_source(ArchivedSource::new("network-window", &document, None))?;
     errors.push(support::error("missing-body","yosoi::surface::NetworkPayload::from_outcome","missing-body",json!({"outcome":support::outcome_arguments(&missing),"reference":reference,"maximum":1_048_576}),NetworkPayload::from_outcome(&missing,reference,1_048_576).map(|_|()))?);
     let limits = Limits {
         input_bytes: 1,

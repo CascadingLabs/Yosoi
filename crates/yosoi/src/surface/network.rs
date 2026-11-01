@@ -14,10 +14,9 @@ use url::Url;
 /// Schema identifier for frozen native network observation Documents.
 pub const NETWORK_OBSERVATION_SCHEMA: &str = "yosoi.network.v1";
 
-/// Shared Page-lifetime CDP response buffer cap, matching the native 8 MiB body limit.
-pub const NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES: usize = 8 * 1024 * 1024;
-/// Shared Page-lifetime CDP aggregate buffer cap, matching the native watch byte limit.
-pub const NETWORK_PROVIDER_TOTAL_BUFFER_BYTES: usize = 8 * 1024 * 1024;
+pub use crate::internal::network_limits::{
+    NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES, NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
+};
 
 /// Typed status returned after an explicitly requested native subscription starts.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -294,6 +294,8 @@ def test_websurface_uses_shared_reads_for_all_document_classes(
     assert "lamp" in inspected.data.content.lower()
     parent = reader.read(sf.ReadRequest(operation=sf.Parent(reference=reference)))
     assert isinstance(parent, sf.ParentResult)
+
+
 def test_shared_read_continuations_are_scoped_and_bounded() -> None:
     index = sf.Surface(
         ys.Document.html(

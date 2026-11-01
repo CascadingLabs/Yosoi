@@ -76,7 +76,7 @@ def observe_fixtures(fixtures: dict[str, Any], ys: Any) -> list[dict[str, Any]]:
         if body["class"] == "Document":
             value = ys.Document.from_profile(
                 body["id"],
-                ys.DocumentProfile.model_validate(body["profile"]),
+                ys.documents.DocumentProfile.model_validate(body["profile"]),
                 bytes(body["bytes"]),
             )
         else:
@@ -86,9 +86,7 @@ def observe_fixtures(fixtures: dict[str, Any], ys: Any) -> list[dict[str, Any]]:
                 metadata=ys.FileMetadata.model_validate(body["metadata"]),
             )
         values[body["id"]] = value
-    outcome = sf.Outcome.new("network-parity-outcome").with_source(
-        sf.ArchivedSource.from_document("network-window", window_document, index)
-    )
+    outcome = sf.Outcome.new("network-parity-outcome")
     for key, value in values.items():
         retained = (
             sf.ArchivedSource.from_document(key, value)
@@ -96,6 +94,9 @@ def observe_fixtures(fixtures: dict[str, Any], ys: Any) -> list[dict[str, Any]]:
             else sf.ArchivedSource.from_file_document(key, value)
         )
         outcome = outcome.with_source(retained)
+    outcome = outcome.with_source(
+        sf.ArchivedSource.from_document("network-window", window_document, index)
+    )
     references = tuple(window.payloads)
 
     async def portable() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -185,11 +186,13 @@ def observe_fixtures(fixtures: dict[str, Any], ys: Any) -> list[dict[str, Any]]:
                 selected = sf.NetworkPayloadRef.model_validate(args["reference"])
                 selected_outcome = outcome
                 if operation == "missing-body":
-                    selected_outcome = sf.Outcome.new(
-                        "network-missing-body"
-                    ).with_source(
-                        sf.ArchivedSource.from_document(
-                            "network-window", window_document
+                    selected_outcome = (
+                        sf.Outcome.new("network-missing-body")
+                        .model_copy(update={"complete": False})
+                        .with_source(
+                            sf.ArchivedSource.from_document(
+                                "network-window", window_document
+                            )
                         )
                     )
                 arguments["outcome"] = outcome_arguments(selected_outcome)

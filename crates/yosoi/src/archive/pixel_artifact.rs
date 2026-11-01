@@ -1,10 +1,10 @@
+//! Typed pixel artifacts join Archive through the SDK facade.
 use serde::{Deserialize, Serialize};
 
 use crate::{
     documents::{Document, ImageDocument},
     internal::archive::{
-        Archive, ArchiveError, ImageDocumentArchiveRef,
-        dispatch::{ArchiveReference, ArchiveValue, sealed},
+        Archive, ArchiveError, ArchiveReference, ArchiveValue, ImageDocumentArchiveRef, sealed,
     },
     surface::pixels::{PixelArtifact, PixelArtifactArchiveRef, PixelArtifactInfo},
 };

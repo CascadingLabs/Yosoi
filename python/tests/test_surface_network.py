@@ -87,8 +87,12 @@ def network_outcome():
 
 def test_offline_network_payload_accepts_exact_owned_reference(network_outcome):
     outcome, reference, body, _ = network_outcome
-    assert outcome.network_payload(reference).value.data == body.data
-    assert sf.NetworkPayload.from_outcome(outcome, reference).value.data == body.data
+    for payload in (
+        outcome.network_payload(reference),
+        sf.NetworkPayload.from_outcome(outcome, reference),
+    ):
+        assert isinstance(payload.value, ys.Document)
+        assert payload.value.data == body.data
 
 
 @pytest.mark.parametrize(
@@ -153,7 +157,9 @@ def test_offline_network_payload_rejects_foreign_outcome_and_json_magic(
     )
     with pytest.raises(sf.SurfaceError, match="not retained by this Outcome"):
         foreign.network_payload(reference)
-    assert foreign.network_payload(foreign_reference).value.data == body.data
+    payload = foreign.network_payload(foreign_reference)
+    assert isinstance(payload.value, ys.Document)
+    assert payload.value.data == body.data
     ordinary = ys.Document.from_json("ordinary-window", window.model_dump_json())
     foreign = foreign.with_source(
         sf.ArchivedSource.from_document("ordinary-window", ordinary)

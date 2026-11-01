@@ -64,8 +64,8 @@ pub use download_capture::{DownloadCaptureError, NativeDownloadCapture, NativeDo
 pub use download_types::{DownloadCapture, DownloadOutcome};
 pub use navigation_response::{ENDPOINT_SANITIZER_VERSION, PageResponse, safe_endpoint};
 pub use observation_watch::{
-    AccessibilityChangeKind, CompletedResponseCandidate, ObservationChange,
-    NetworkObservationEvent, NetworkObservationSubscription, ObservationResponseBody,
+    AccessibilityChangeKind, CompletedResponseCandidate, NetworkObservationEvent,
+    NetworkObservationSubscription, ObservationChange, ObservationResponseBody,
     ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
 };
 pub use screenshot_types::{Bbox, ScreenshotOptions, ScreenshotOutput};
