@@ -4,6 +4,7 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use std::result::Result as StdResult;
 use std::{error::Error, io, path::Path, process::Stdio};
 use tokio::{fs, process::Command};
 use yosoi::surface::model::SurfaceRead;
@@ -11,15 +12,17 @@ use yosoi::{
     Archive,
     archive::DocumentArchiveRef,
     automation_record::{OperationReceipt, OperationStatus},
-    documents::Document,
+    documents::{Document, DocumentProfile},
     surface::{
         ArchiveLimits, ArchivedSource, Outcome, PixelRect,
         model::ObservationId,
-        video::{DecodedFrame, FrameArchiveRef, VideoArchiveRef, VideoPolicy, VideoSurface},
+        video::{
+            DecodedFrame, FrameArchiveRef, VideoArchiveRef, VideoError, VideoPolicy, VideoSurface,
+        },
     },
 };
 
-type Result<T = ()> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
+type Result<T = ()> = StdResult<T, Box<dyn Error + Send + Sync>>;
 
 async fn dashboard(path: &Path) -> Result {
     let green = "color=c=0x1b2330:s=320x180:r=2:d=2,drawbox=x=8:y=8:w=304:h=32:c=white:t=fill,drawbox=x=8:y=48:w=96:h=124:c=gray:t=fill,drawbox=x=112:y=48:w=200:h=124:c=white:t=fill,drawbox=x=128:y=100:w=24:h=56:c=blue:t=fill,drawbox=x=164:y=72:w=24:h=84:c=blue:t=fill,drawbox=x=288:y=16:w=16:h=16:c=0x00ff00:t=fill";
@@ -100,6 +103,53 @@ fn indicator(frame: &DecodedFrame) -> Result<(u8, u8)> {
     }
     let [red, green, _] = pixels.get_pixel(8, 8).0;
     Ok((red, green))
+}
+
+async fn reject_wrong_source_profiles(archive: &Archive, reference: &VideoArchiveRef) -> Result {
+    let envelope = archive.read_document(&reference.document).await?;
+    for profile in [
+        DocumentProfile::source_text(),
+        DocumentProfile::network_observation_v1(),
+    ] {
+        let wrapped =
+            Document::from_profile(envelope.id().clone(), profile, envelope.bytes().to_vec())?;
+        let wrapped = VideoArchiveRef {
+            document: archive.write_document(&wrapped).await?,
+            observation: reference.observation.clone(),
+        };
+        if !matches!(VideoSurface::read_from(archive, &wrapped).await,
+            Err(VideoError::Invalid(message)) if message == "video source envelope requires the source JSON profile")
+        {
+            return Err(io::Error::other(
+                "valid video JSON was accepted under a different document profile",
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+async fn reject_wrong_frame_profiles(archive: &Archive, reference: &FrameArchiveRef) -> Result {
+    let envelope = archive.read_document(&reference.document).await?;
+    for profile in [
+        DocumentProfile::source_text(),
+        DocumentProfile::network_observation_v1(),
+    ] {
+        let wrapped =
+            Document::from_profile(envelope.id().clone(), profile, envelope.bytes().to_vec())?;
+        let wrapped = FrameArchiveRef {
+            document: archive.write_document(&wrapped).await?,
+        };
+        if !matches!(DecodedFrame::read_from(archive, &wrapped).await,
+            Err(VideoError::Invalid(message)) if message == "video frame envelope requires the source JSON profile")
+        {
+            return Err(io::Error::other(
+                "valid frame JSON was accepted under a different document profile",
+            )
+            .into());
+        }
+    }
+    Ok(())
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -217,6 +267,12 @@ async fn legacy_v1_video_and_frame_envelopes_restore_without_migration_rewrites(
     let video = VideoSurface::open(&path, VideoPolicy::default()).await?;
     let frame = video.frame(&video.at(0)?).await?;
     let archive = Archive::open(root.path().join("legacy-archive")).await?;
+    let typed_source = video.write_to(&archive).await?;
+    let typed_frame = frame.write_to(&archive).await?;
+    VideoSurface::read_from(&archive, &typed_source).await?;
+    DecodedFrame::read_from(&archive, &typed_frame).await?;
+    reject_wrong_source_profiles(&archive, &typed_source).await?;
+    reject_wrong_frame_profiles(&archive, &typed_frame).await?;
     let metadata = video.metadata().clone();
     let policy = video.policy().clone();
     let mut digest = Sha256::new();
@@ -242,16 +298,14 @@ async fn legacy_v1_video_and_frame_envelopes_restore_without_migration_rewrites(
     let source_envelope =
         Document::json("legacy-video-envelope", serde_json::to_vec(&source_value)?)?;
     let source_reference = archive.write_document(&source_envelope).await?;
-    let restored_video = VideoSurface::read_from(
-        &archive,
-        &VideoArchiveRef {
-            document: source_reference,
-            observation: observation.clone(),
-        },
-    )
-    .await?;
+    let legacy_source = VideoArchiveRef {
+        document: source_reference,
+        observation: observation.clone(),
+    };
+    let restored_video = VideoSurface::read_from(&archive, &legacy_source).await?;
     assert_eq!(restored_video.observation().id, observation);
     assert!(restored_video.source_document().is_none());
+    reject_wrong_source_profiles(&archive, &legacy_source).await?;
 
     let mut corrupt_source = source_value;
     let digest = corrupt_source
@@ -286,16 +340,14 @@ async fn legacy_v1_video_and_frame_envelopes_restore_without_migration_rewrites(
     let frame_envelope =
         Document::json("legacy-frame-envelope", serde_json::to_vec(&frame_value)?)?;
     let frame_reference = archive.write_document(&frame_envelope).await?;
-    let restored_frame = DecodedFrame::read_from(
-        &archive,
-        &FrameArchiveRef {
-            document: frame_reference,
-        },
-    )
-    .await?;
+    let legacy_frame = FrameArchiveRef {
+        document: frame_reference,
+    };
+    let restored_frame = DecodedFrame::read_from(&archive, &legacy_frame).await?;
     assert_eq!(restored_frame.info.reference.observation, observation);
     assert_eq!(restored_frame.png, frame.png);
     assert!(restored_frame.pixel_artifact()?.is_none());
+    reject_wrong_frame_profiles(&archive, &legacy_frame).await?;
 
     let mut corrupt_frame = frame_value;
     let digest = corrupt_frame

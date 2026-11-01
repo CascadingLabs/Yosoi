@@ -395,6 +395,10 @@ def test_video_pixels_and_archive_restore_without_decoder(tmp_path: Path) -> Non
         assert not video.observation.coverage.complete
         timeline = video.read(sf.ReadRequest(operation=sf.Overview()))
         assert isinstance(timeline, sf.PageResult) and timeline.data.entries
+        part = timeline.data.entries[0].reference
+        expanded = video.read(sf.ReadRequest(operation=sf.Expand(reference=part)))
+        assert isinstance(expanded, sf.PageResult) and expanded.data.entries
+        assert expanded.data.observation == video.observation.id
         foreign = sf.WebSurface(
             sf.Surface(ys.Document.html("web", "<h1>Other</h1>")), "web:other"
         )

@@ -192,11 +192,10 @@ fn stored_probe_validated_video_matches(metadata: &FileMetadata) -> bool {
         metadata.probe_validated_video_container(),
         metadata.detected_media_type(),
     ) {
-        (Some("ogg"), None | Some("audio/ogg" | "audio/opus")) => true,
         // MPEG-TS prefixes may be classified as audio or binary by the pinned
         // signature matcher. FFprobe's recorded container basis establishes
         // the VideoDocument family; preserve the detector MIME as metadata.
-        (Some("mpegts"), None) => true,
+        (Some("ogg"), None | Some("audio/ogg" | "audio/opus")) | (Some("mpegts"), None) => true,
         (Some("mpegts"), Some(media_type)) => {
             !media_type.is_empty()
                 && !media_type.starts_with("image/")

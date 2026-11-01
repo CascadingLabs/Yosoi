@@ -167,7 +167,7 @@ impl NativeFileDocument {
         metadata_json: &str,
         limits_json: &str,
     ) -> PyResult<Self> {
-        NativeFileDocument::copy_with_values(self, py, id, metadata_json, limits_json)
+        Self::copy_with_values(self, py, id, metadata_json, limits_json)
     }
 
     /// Build an explicitly typed or inferred file document without decoding payload bytes.

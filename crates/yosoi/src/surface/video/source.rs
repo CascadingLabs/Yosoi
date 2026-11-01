@@ -110,7 +110,7 @@ impl VideoSurface {
         let name = document
             .metadata()
             .filename()
-            .unwrap_or(document.id().as_str())
+            .unwrap_or_else(|| document.id().as_str())
             .to_owned();
         Self::prepare_bytes(
             name,
@@ -327,7 +327,7 @@ impl VideoSurface {
         Ok(Self {
             data: Arc::new(Data {
                 source_document,
-                _snapshot: snapshot,
+                snapshot,
                 path,
                 metadata,
                 policy,

@@ -5,6 +5,8 @@ use super::encode;
 use crate::{async_runtime, errors};
 use pyo3::{create_exception, prelude::*};
 use std::{error::Error, path::PathBuf};
+#[cfg(feature = "surface-video")]
+use yosoi::surface::video::VideoError;
 use yosoi::surface::{ExecutionError, Outcome, archive};
 
 create_exception!(_native, SurfaceExecutionError, errors::YosoiError);
@@ -14,8 +16,8 @@ pub(super) fn failure(error: ExecutionError) -> PyErr {
             let details = serde_json::json!({});
             #[cfg(feature = "surface-video")]
             let details = if matches!(
-                source.downcast_ref::<yosoi::surface::video::VideoError>(),
-                Some(yosoi::surface::video::VideoError::Cancelled)
+                source.downcast_ref::<VideoError>(),
+                Some(VideoError::Cancelled)
             ) {
                 serde_json::json!({"cancelled":true})
             } else {

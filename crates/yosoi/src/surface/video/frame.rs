@@ -170,7 +170,7 @@ impl VideoSurface {
             64 * 1024,
             self.data.policy.tool_timeout_ms,
             cancellation,
-            self.data._snapshot.clone(),
+            self.data.snapshot.clone(),
         )
         .await?;
         let decoder = String::from_utf8_lossy(&version.stdout)
@@ -195,7 +195,7 @@ impl VideoSurface {
             self.data.policy.max_frame_bytes,
             self.data.policy.tool_timeout_ms,
             cancellation,
-            self.data._snapshot.clone(),
+            self.data.snapshot.clone(),
         )
         .await?;
         let pts = String::from_utf8_lossy(&output.stderr)
@@ -314,35 +314,32 @@ impl DecodedFrame {
                         "frame and shared pixel metadata differ".into(),
                     ));
                 }
-                let (observation, reference, requested_us, source_pts_us) = match &info.source {
-                    PixelSource::VideoFrame {
-                        observation,
-                        reference,
-                        requested_us,
-                        source_pts_us,
-                        ..
-                    }
-                    | PixelSource::LegacyVideoFrame {
-                        observation,
-                        reference,
-                        requested_us,
-                        source_pts_us,
-                        ..
-                    } => (observation, reference, requested_us, source_pts_us),
-                    _ => {
-                        return Err(VideoError::Invalid(
-                            "frame pixels lack video provenance".into(),
-                        ));
-                    }
+                let (PixelSource::VideoFrame {
+                    observation,
+                    reference,
+                    requested_us,
+                    source_pts_us,
+                    ..
+                }
+                | PixelSource::LegacyVideoFrame {
+                    observation,
+                    reference,
+                    requested_us,
+                    source_pts_us,
+                    ..
+                }) = &info.source
+                else {
+                    return Err(VideoError::Invalid(
+                        "frame pixels lack video provenance".into(),
+                    ));
                 };
                 let expected_frame_address = format!("f:{}", self.info.requested_us);
-                let expected_address = match self.info.region {
-                    None => expected_frame_address,
-                    Some(rect) => format!(
+                let expected_address = self.info.region.map_or(expected_frame_address, |rect| {
+                    format!(
                         "r:{}:{}:{}:{}:{}",
                         self.info.requested_us, rect.x, rect.y, rect.width, rect.height
-                    ),
-                };
+                    )
+                });
                 if observation != self.info.reference.observation.as_str()
                     || reference != &format!("f:{}", self.info.requested_us)
                     || *requested_us != self.info.requested_us
@@ -439,6 +436,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify that altered frame addresses reject otherwise valid pixel provenance."
+    )]
     fn typed_frame_pixels_require_the_exact_frame_address() -> Result<(), VideoError> {
         let artifact = source_artifact()?;
         let png = artifact.bytes().to_vec();
@@ -455,6 +456,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify that altered crop addresses reject otherwise valid pixel provenance."
+    )]
     fn typed_crop_pixels_require_the_exact_crop_address() -> Result<(), VideoError> {
         let parent = source_artifact()?;
         let rect = PixelRect {

@@ -13,7 +13,7 @@ use yosoi::{
             AddressToken, ObservationId, ReadOperation, ReadRequest, ReadResult,
             Reference as EvidenceReference, SourceId, SurfaceRead,
         },
-        video::{DecodedFrame, VideoPolicy, VideoSurface},
+        video::{DecodedFrame, VideoError, VideoPolicy, VideoSurface},
     },
 };
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
@@ -248,6 +248,20 @@ async fn frames_measure_media_time_and_crops_use_decoded_pixels() -> TestResult 
     );
     let restored = video.frame(&crop.info.reference).await?;
     assert_eq!(restored.png, crop.png);
+    assert!(matches!(
+        video
+            .crop(
+                &crop.info.reference,
+                PixelRect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            )
+            .await,
+        Err(VideoError::Invalid(message)) if message == "crop requires a full-frame reference"
+    ));
     assert!(
         video
             .crop(
@@ -473,10 +487,7 @@ async fn typed_video_preparation_retains_source_and_separates_observation() -> T
         },
     )
     .await;
-    assert!(matches!(
-        rejected,
-        Err(yosoi::surface::video::VideoError::Limit("source bytes"))
-    ));
+    assert!(matches!(rejected, Err(VideoError::Limit("source bytes"))));
     Ok(())
 }
 
@@ -607,7 +618,7 @@ async fn variable_rate_selection_reports_actual_pts_and_final_tail() -> TestResu
     assert!(video.metadata().duration_us > 3_100_000);
     assert!(matches!(
         video.frame(&video.at(3_100_000)?).await,
-        Err(yosoi::surface::video::VideoError::NoFrameAtOrAfter {
+        Err(VideoError::NoFrameAtOrAfter {
             requested_us: 3_100_000
         })
     ));

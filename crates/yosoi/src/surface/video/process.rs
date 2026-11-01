@@ -41,8 +41,9 @@ pub(super) async fn run(
     let runtime = Handle::try_current()
         .map_err(|error| VideoError::Tool(format!("video requires a Tokio runtime: {error}")))?;
     let task = runtime.spawn(async move {
-        let _snapshot = snapshot;
-        run_owned(command, limit, timeout_ms, &token).await
+        let result = run_owned(command, limit, timeout_ms, &token).await;
+        drop(snapshot);
+        result
     });
     let result = task
         .await
@@ -51,60 +52,6 @@ pub(super) async fn run(
     result
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{VideoError, run};
-    use crate::request::CancellationToken;
-    use std::sync::Arc;
-    use std::{error::Error, time::Duration};
-    use tokio::{io::AsyncReadExt, net::TcpListener, process::Command, time::timeout};
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn cooperative_cancellation_reaps_decoder_before_returning()
-    -> Result<(), Box<dyn Error + Send + Sync>> {
-        let listener = TcpListener::bind("127.0.0.1:0").await?;
-        let progress = format!("tcp://{}", listener.local_addr()?);
-        let mut command = Command::new("ffmpeg");
-        command.args([
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-nostdin",
-            "-threads",
-            "1",
-            "-filter_threads",
-            "1",
-            "-re",
-            "-f",
-            "lavfi",
-            "-i",
-            "color=c=red:s=16x16:r=2",
-            "-progress",
-            &progress,
-            "-f",
-            "null",
-            "-",
-        ]);
-        let cancellation = CancellationToken::new();
-        let token = cancellation.clone();
-        let snapshot = Arc::new(tempfile::tempdir()?);
-        let snapshot_path = snapshot.path().to_owned();
-        let decoder =
-            tokio::spawn(async move { run(command, 1024, 10_000, &token, snapshot).await });
-        let (mut stream, _) = timeout(Duration::from_secs(5), listener.accept()).await??;
-        cancellation.cancel();
-        let result = timeout(Duration::from_secs(5), decoder).await??;
-        if !matches!(result, Err(VideoError::Cancelled)) {
-            return Err("decoder did not preserve cancellation after cleanup".into());
-        }
-        if snapshot_path.exists() {
-            return Err("decoder owner did not release its snapshot after cleanup".into());
-        }
-        let mut progress = Vec::new();
-        timeout(Duration::from_secs(5), stream.read_to_end(&mut progress)).await??;
-        Ok(())
-    }
-}
 async fn terminate(child: &mut Child) -> Result<(), VideoError> {
     let killed = child.kill().await;
     let reaped = child.wait().await;
@@ -169,5 +116,60 @@ async fn run_owned(
             terminate(&mut child).await?;
             Err(VideoError::Timeout)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{VideoError, run};
+    use crate::request::CancellationToken;
+    use std::sync::Arc;
+    use std::{error::Error, time::Duration};
+    use tokio::{io::AsyncReadExt, net::TcpListener, process::Command, time::timeout};
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn cooperative_cancellation_reaps_decoder_before_returning()
+    -> Result<(), Box<dyn Error + Send + Sync>> {
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let progress = format!("tcp://{}", listener.local_addr()?);
+        let mut command = Command::new("ffmpeg");
+        command.args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-filter_threads",
+            "1",
+            "-re",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=red:s=16x16:r=2",
+            "-progress",
+            &progress,
+            "-f",
+            "null",
+            "-",
+        ]);
+        let cancellation = CancellationToken::new();
+        let token = cancellation.clone();
+        let snapshot = Arc::new(tempfile::tempdir()?);
+        let snapshot_path = snapshot.path().to_owned();
+        let decoder =
+            tokio::spawn(async move { run(command, 1024, 10_000, &token, snapshot).await });
+        let (mut stream, _) = timeout(Duration::from_secs(5), listener.accept()).await??;
+        cancellation.cancel();
+        let result = timeout(Duration::from_secs(5), decoder).await??;
+        if !matches!(result, Err(VideoError::Cancelled)) {
+            return Err("decoder did not preserve cancellation after cleanup".into());
+        }
+        if snapshot_path.exists() {
+            return Err("decoder owner did not release its snapshot after cleanup".into());
+        }
+        let mut progress = Vec::new();
+        timeout(Duration::from_secs(5), stream.read_to_end(&mut progress)).await??;
+        Ok(())
     }
 }

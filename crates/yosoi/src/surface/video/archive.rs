@@ -3,7 +3,7 @@ use super::{DecodedFrame, FrameInfo, VideoError, VideoMetadata, VideoPolicy, Vid
 use crate::{
     Archive,
     archive::{DocumentArchiveRef, VideoDocumentArchiveRef},
-    documents::Document,
+    documents::{Document, DocumentProfile},
     surface::{
         model::{ObservationId, SurfaceRead},
         pixels::{PixelArtifact, PixelArtifactArchiveRef},
@@ -113,6 +113,7 @@ impl VideoSurface {
     }
     /// Restores a timeline without the original file, FFprobe, a browser or network access.
     /// Frame decoding is a separate capability and still requires a compatible FFmpeg.
+    /// Typed and legacy metadata records must declare the source JSON Document profile.
     pub async fn read_from(
         archive: &Archive,
         reference: &VideoArchiveRef,
@@ -121,6 +122,11 @@ impl VideoSurface {
             .read_document(&reference.document)
             .await
             .map_err(|e| VideoError::Invalid(e.to_string()))?;
+        if document.profile() != DocumentProfile::source_json() {
+            return Err(VideoError::Invalid(
+                "video source envelope requires the source JSON profile".into(),
+            ));
+        }
         if document.bytes().len() > 180 * 1024 * 1024 {
             return Err(VideoError::Limit("archived video envelope"));
         }
@@ -258,6 +264,7 @@ impl DecodedFrame {
         })
     }
     /// Restores and verifies observed pixels without a video decoder or original source file.
+    /// Typed and legacy metadata records must declare the source JSON Document profile.
     pub async fn read_from(
         archive: &Archive,
         reference: &FrameArchiveRef,
@@ -266,6 +273,11 @@ impl DecodedFrame {
             .read_document(&reference.document)
             .await
             .map_err(|e| VideoError::Invalid(e.to_string()))?;
+        if document.profile() != DocumentProfile::source_json() {
+            return Err(VideoError::Invalid(
+                "video frame envelope requires the source JSON profile".into(),
+            ));
+        }
         if document.bytes().len() > 48 * 1024 * 1024 {
             return Err(VideoError::Limit("archived frame envelope"));
         }

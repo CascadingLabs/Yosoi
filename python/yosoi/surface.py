@@ -1464,7 +1464,10 @@ class DecodedFrame:
 
     @classmethod
     async def read_from(cls, archive: Archive, reference: FrameArchiveRef) -> Self:
-        """Verify and restore saved PNG pixels without FFmpeg or the original file."""
+        """Verify and restore saved PNG pixels without FFmpeg or the original file.
+
+        Typed and legacy frame records require the source JSON Document profile.
+        """
         _require_video()
         return cls(
             await _native.DecodedFrame.read_from(
@@ -1633,7 +1636,10 @@ class VideoSurface:
 
     @classmethod
     async def read_from(cls, archive: Archive, reference: VideoArchiveRef) -> Self:
-        """Restore a timeline without probing; new frame decoding still needs FFmpeg."""
+        """Restore a timeline without probing; new frame decoding still needs FFmpeg.
+
+        Typed and legacy source records require the source JSON Document profile.
+        """
         _require_video()
         return cls(
             await _native.VideoSurface.read_from(

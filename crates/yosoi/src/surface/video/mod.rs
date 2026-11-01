@@ -23,7 +23,7 @@ pub use types::{DecodedFrame, FrameInfo, VideoError, VideoMetadata, VideoPolicy}
 #[derive(Debug)]
 struct Data {
     source_document: Option<VideoDocument>,
-    _snapshot: Arc<TempDir>,
+    snapshot: Arc<TempDir>,
     path: PathBuf,
     metadata: VideoMetadata,
     policy: VideoPolicy,

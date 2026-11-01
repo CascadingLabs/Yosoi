@@ -3,12 +3,13 @@
 use std::error::Error;
 use std::{path::PathBuf, sync::Arc};
 
-use pyo3::{create_exception, prelude::*, types::PyBytes};
+use pyo3::{create_exception, exceptions::PyTypeError, prelude::*, types::PyBytes};
 use tokio::sync::Mutex;
+use yosoi::documents::FileDocument;
 use yosoi::surface::{SurfaceConnection, model::SurfaceRead, video};
 
 use super::{decode, encode};
-use crate::{archive::NativeArchive, async_runtime, errors};
+use crate::{archive::NativeArchive, async_runtime, errors, media::NativeFileDocument};
 
 create_exception!(_native, VideoError, super::SurfaceError);
 
@@ -67,14 +68,12 @@ impl NativeVideoSurface {
     #[pyo3(signature = (document, policy, cancellation=None))]
     fn from_document<'py>(
         py: Python<'py>,
-        document: &crate::media::NativeFileDocument,
+        document: &NativeFileDocument,
         policy: &str,
         cancellation: Option<&async_runtime::NativeCancellation>,
     ) -> PyResult<Bound<'py, PyAny>> {
-        let yosoi::documents::FileDocument::Video(document) = document.inner.as_ref() else {
-            return Err(pyo3::exceptions::PyTypeError::new_err(
-                "expected VideoDocument",
-            ));
+        let FileDocument::Video(document) = document.inner.as_ref() else {
+            return Err(PyTypeError::new_err("expected VideoDocument"));
         };
         let document = document.clone();
         let policy = decode(policy)?;
@@ -104,12 +103,10 @@ impl NativeVideoSurface {
     fn descriptor(&self) -> PyResult<String> {
         encode(self.inner.descriptor())
     }
-    fn source_document(&self) -> Option<crate::media::NativeFileDocument> {
-        self.inner.source_document().map(|document| {
-            crate::media::NativeFileDocument::new(yosoi::documents::FileDocument::Video(
-                document.clone(),
-            ))
-        })
+    fn source_document(&self) -> Option<NativeFileDocument> {
+        self.inner
+            .source_document()
+            .map(|document| NativeFileDocument::new(FileDocument::Video(document.clone())))
     }
     fn observation(&self) -> PyResult<String> {
         encode(self.inner.observation())
