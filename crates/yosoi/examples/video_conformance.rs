@@ -66,7 +66,7 @@ async fn source_cases(
         "open",
         "yosoi::VideoSurface::open",
         json!({"path":path,"policy":policy}),
-        support::video(video),
+        support::video(video)?,
     )];
     let document = video
         .source_document()
@@ -76,7 +76,7 @@ async fn source_cases(
         "from-document",
         "yosoi::VideoSurface::from_document",
         json!({"document":{"id":document.id(),"sha256":document.sha256()},"policy":policy}),
-        support::video(&from_document),
+        support::video(&from_document)?,
     ));
     Ok(cases)
 }
@@ -138,7 +138,7 @@ async fn archive_cases(
     cases.push(support::case("archive-frame","yosoi::DecodedFrame::read_from",json!({"archive":"archive","reference":{"kind":"FrameArchiveRef","selected_value":frame_value},"observed_storage_reference":frame_ref}),frame_value));
     let video_ref = video.write_to(&archive).await?;
     let restored_video = VideoSurface::read_from(&archive, &video_ref).await?;
-    let video_value = support::video(&restored_video);
+    let video_value = support::video(&restored_video)?;
     cases.push(support::case("archive-video","yosoi::VideoSurface::read_from",json!({"archive":"archive","reference":{"kind":"VideoArchiveRef","selected_value":video_value},"observed_storage_reference":video_ref}),video_value));
     Ok(cases)
 }

@@ -8,8 +8,25 @@ use yosoi::surface::{
     video::{DecodedFrame, VideoError, VideoSurface},
 };
 
-pub fn video(value: &VideoSurface) -> Value {
-    json!({"class":"VideoSurface","descriptor":value.descriptor(),"observation":value.observation(),"root":value.root_reference(),"metadata":value.metadata(),"policy":value.policy(),"source_document":value.source_document().map(|document|json!({"class":"VideoDocument","id":document.id(),"bytes":document.bytes(),"metadata":document.metadata(),"sha256":document.sha256(),"byte_len":document.byte_len()}))})
+pub fn video(value: &VideoSurface) -> Result<Value, Box<dyn Error>> {
+    let source = value
+        .source_document()
+        .map(|document| -> Result<Value, Box<dyn Error>> {
+            let mut metadata = serde_json::to_value(document.metadata())?;
+            let fields = metadata
+                .as_object_mut()
+                .ok_or_else(|| io::Error::other("file metadata did not serialize as an object"))?;
+            // Observe the read-only getter even when serde omits its absent value.
+            fields.insert(
+                "probe_validated_video_container".into(),
+                json!(document.metadata().probe_validated_video_container()),
+            );
+            Ok(json!({"class":"VideoDocument","id":document.id(),"bytes":document.bytes(),"metadata":metadata,"sha256":document.sha256(),"byte_len":document.byte_len()}))
+        })
+        .transpose()?;
+    Ok(
+        json!({"class":"VideoSurface","descriptor":value.descriptor(),"observation":value.observation(),"root":value.root_reference(),"metadata":value.metadata(),"policy":value.policy(),"source_document":source}),
+    )
 }
 
 pub fn frame(value: &DecodedFrame) -> Result<Value, Box<dyn Error>> {
