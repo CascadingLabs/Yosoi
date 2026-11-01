@@ -100,6 +100,15 @@ class DocumentProfile(ImmutableModel):
         )
 
     @classmethod
+    def network_observation(cls) -> Self:
+        """Declare versioned network-observation JSON with typed payload references."""
+        return cls(
+            representation="source",
+            source_format="json",
+            schema_profile="yosoi_network_observation_v1",
+        )
+
+    @classmethod
     def source_text(cls) -> Self:
         """Return a source UTF-8 text profile without a snapshot epoch."""
         return cls(

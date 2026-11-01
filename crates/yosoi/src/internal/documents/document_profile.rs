@@ -45,7 +45,7 @@ pub enum DocumentSchemaProfile {
     YosoiRenderedDomV1,
     /// Yosoi version-1 accessibility-tree JSON schema with snapshot-local node identities.
     YosoiAccessibilityTreeV1,
-    /// Yosoi version-1 frozen browser network-observation window.
+    /// Yosoi version-1 frozen network-observation window with typed body dependencies.
     YosoiNetworkObservationV1,
 }
 
@@ -245,7 +245,13 @@ impl DocumentProfile {
             (
                 DocumentRepresentation::Source,
                 SourceFormat::Json,
-                DocumentSchemaProfile::JsonRfc8259 | DocumentSchemaProfile::YosoiNetworkObservationV1,
+                DocumentSchemaProfile::JsonRfc8259,
+                None,
+            ) => Ok(DocumentClass::SourceJson),
+            (
+                DocumentRepresentation::Source,
+                SourceFormat::Json,
+                DocumentSchemaProfile::YosoiNetworkObservationV1,
                 None,
             ) => Ok(DocumentClass::SourceJson),
             (

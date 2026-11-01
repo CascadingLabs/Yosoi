@@ -7,34 +7,102 @@ description: Reference scopes, image pixels, budgets, cursor ownership, and prov
 
 Use `ys::Surface` in Rust (`use yosoi as ys`) and `ys.Surface` in Python (`import yosoi as ys`). Both use the Rust index and providers. `ImageSurface` applies the shared bounded read contract to a typed image. Start with [Surfaces](../concepts/surfaces.md) for documents, images, video and an agent-driven CLI task.
 
+`ImageSurface` and `PixelArtifact` are available in this source revision. The published 0.4.0 package does not include the typed image reader yet.
+
 Browser, image and video adapters own their source behavior. Stateful connections share `SurfaceConnection` for ready, execute, outcome and close. The `surface-connections` feature enables `BrowserSurface` and `VideoSession`; the CLI also enables typed image sessions. Browser display mode, image pixel bounds, and video frame bounds remain source-specific rather than generic Surface policy fields.
 
 ## Choose the reader
 
-| Reader       | Input                           | Supported operations                                                           |
-| ------------ | ------------------------------- | ------------------------------------------------------------------------------ |
-| Surface      | Any of the six Document classes | Overview, expand, literal find, inspect, parent, coordinates                   |
-| ImageSurface | Typed PNG/JPEG ImageDocument    | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
-| WebSurface   | HTML, DOM, AX or versioned network windows | Shared describe/read protocol, including search and parent                     |
-| VideoSurface | Frozen regular local video file | Shared timeline reads, temporal addresses, frame and crop                     |
+| Reader       | Input                                    | Supported operations                                                     |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
+| Surface      | Any of the six Document classes          | Overview, expand, literal find, inspect, parent, coordinates             |
+| ImageSurface | Typed PNG/JPEG ImageDocument             | Shared overview, expand, inspect and parent, plus direct, overview, resize, crop |
+| WebSurface   | Any of the six prepared Document classes | Shared describe/read protocol: overview, expand, search, inspect, parent |
+| VideoSurface | Frozen regular local video file          | Shared timeline reads, temporal addresses, frame and crop                |
 
 `BrowserSurface`, `ImageSession`, and `VideoSession` own their source-specific execution. Rust shares the `SurfaceConnection` trait; Python shares the `SurfaceConnection` base class for web and video connections. Send bounded JSON commands and await `close` for cleanup and retained evidence. `SurfacePolicy` selects archive retention and output locations. Browser display mode, image pixel limits, and video frame size belong to their respective open factories. `Outcome.rerun` executes a supported confirmed procedure against fresh sources; saved evidence never restores action authority.
 
+WebSurface preserves each Document's native meaning while exposing the same
+five read operations:
+
+| Document profile   | Shared representation   | Preserved meaning                                      |
+| ------------------ | ----------------------- | ------------------------------------------------------ |
+| Source HTML        | `yosoi.web.document.v1` | HTML5 normalization                                    |
+| Source XML         | `yosoi.web.xml.v1`      | Namespace-aware names and exact source ranges          |
+| Source JSON        | `yosoi.web.json.v1`     | JSON scalar types; duplicate keys are rejected         |
+| Source text        | `yosoi.web.text.v1`     | Exact UTF-8 source ranges                              |
+| Rendered DOM       | `yosoi.web.document.v1` | Snapshot-local node identities and document epoch     |
+| Accessibility tree | `yosoi.web.ax.v1`       | Snapshot-local identities, epoch and declared coverage |
+| Network window     | `yosoi.web.network.v1` | Bounded event window with incomplete coverage         |
+
+All immutable readers advertise only read capabilities and set `controllable`
+to false. A live browser binding may add actions to its own descriptor after it
+owns the browser Work. An archived or source-file WebSurface never becomes a
+browser action target.
+
 ## Images and pixel artifacts
 
-`ImageDocument` owns the exact encoded PNG/JPEG bytes and source metadata. `Surface::from_image_document` in Rust and `Surface.from_image(ImageDocument)` in Python prepare bounded region metadata. `ImageSurface::from_image_document` in Rust and `ys.ImageSurface(image)` in Python also bind that index to the shared `model::SurfaceRead` contract. Its source identity uses the document ID and exact payload SHA-256, independent of tile size or other preparation options.
+`ImageDocument` owns the exact encoded PNG/JPEG bytes and source metadata.
+`Surface::from_image_document` in Rust and `Surface.from_image(ImageDocument)`
+in Python prepare bounded region metadata. `ImageSurface::from_image_document`
+in Rust and `ys.ImageSurface(image)` in Python also bind that index to the
+shared `model::SurfaceRead` contract. Its source identity uses the document ID
+and exact payload SHA-256, independent of tile size or other preparation
+options.
 
-`Surface::from_image` and `Surface.from_image(bytes)` remain legacy byte-entry points. New code should pass a typed `ImageDocument`; archived legacy image envelopes continue to restore through their stored image interpretation.
+For direct delivery without an index, use
+`PixelArtifact::decode_image_document(document, limits)` in Rust or
+`PixelArtifact.from_image_document(image, limits=...)` in Python. Both fully
+decode under PixelLimits to verify dimensions and allocation, then retain the
+original encoded bytes.
 
-PNG/JPEG decoding keeps the original encoded bytes. Image coordinates refer to the encoded raster before EXIF rotation; orientation is recorded as `exif_unapplied`. No OCR, inferred labels or text search runs. The reader advertises no search capability.
+`Surface::from_image` and `Surface.from_image(bytes)` remain legacy byte-entry
+points. New code should pass a typed `ImageDocument`; archived legacy image
+envelopes continue to restore through their stored image interpretation.
 
-`ImageSurface.read` returns bounded routing metadata through the same overview, expand, inspect, parent and continuation types as web and video readers. Pixel bytes use explicit `direct_image`, `overview_image`, `resize_image` and `crop_rect` calls. `direct_image` returns exact source bytes. Overview and resize encode PNG using the versioned triangle filter. A crop takes original-raster coordinates, even when its rectangle was selected from a resized overview.
+PNG/JPEG decoding keeps the original encoded bytes. Image coordinates refer to
+the encoded raster before EXIF rotation; orientation is recorded as
+`exif_unapplied`. No OCR, inferred labels or text search runs. The reader
+advertises no search capability.
 
-`PixelArtifactInfo` records the exact encoded digest and MIME type, output dimensions, root source identity and coordinate space, orientation handling, parent artifact identity/digest/dimensions, operation version and parameters, and a rational output-edge-to-parent-edge transform. `PixelArtifact.map_rect_to_source` maps a rectangle from an overview back to the root source pixel plane. Crop and resize APIs reject nested derived artifacts so an ambiguous transform cannot be silently composed.
+`ImageSurface.read` returns bounded routing metadata through the same overview,
+expand, inspect, parent and continuation types as web and video readers. Pixel
+bytes use explicit `direct_image`, `overview_image`, `resize_image` and
+`crop_rect` calls. `direct_image` returns exact source bytes. Overview and resize
+encode PNG using the versioned triangle filter. A crop takes original-raster
+coordinates, even when its rectangle was selected from a resized overview.
 
-`PixelLimits` separately bounds decoded side length, decoder allocation, output pixels, output bytes and a reader's retained artifact count. `Surface` response-byte and text-page budgets do not count binary pixels. `Archive.write(&pixel)` stores an `ImageDocument` in the existing raw media payload store and a small provenance record. `Archive.read` verifies both and returns the same artifact without a source path or video decoder.
+`PixelArtifactInfo` records the exact encoded digest and MIME type, output
+dimensions, root source identity and coordinate space, orientation handling,
+parent artifact identity/digest/dimensions, operation version and parameters,
+and a rational output-edge-to-parent-edge transform.
+`PixelArtifact.map_rect_to_source` maps a rectangle from an overview back to the
+root source pixel plane. Crop and resize APIs reject nested derived artifacts
+so an ambiguous transform cannot be silently composed.
 
-Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable image and document reads need neither browser nor video decoder.
+Pass a root video-frame or browser-screenshot artifact to
+`ImageSurface::from_pixel_artifact` in Rust or
+`ImageSurface.from_pixel_artifact` in Python to inspect its regions offline.
+This retains its native source identity and decoded-canvas coordinates. Derived
+crops and overviews cannot be re-rooted; map their region to the original source
+first.
+
+Legacy frame envelopes that lack a typed video source ID retain an explicit
+partial `LegacyVideoFrame` identity with the observation, frame reference,
+requested time, measured PTS, and source digest only when recorded. They do not
+invent a VideoDocument identity.
+
+`PixelLimits` separately bounds decoded side length, decoder allocation, output
+pixels, output bytes and a reader's retained artifact count. `Surface`
+response-byte and text-page budgets do not count binary pixels. `Archive.write(&pixel)`
+stores an `ImageDocument` in the existing raw media payload store and a small
+provenance record. `Archive.read` verifies both and returns the same artifact
+without a source path or video decoder.
+
+Rust video requires `surface-video`; images require `surface-images` or
+`browser`. Standard Python builds enable browser and video support. FFmpeg and
+FFprobe remain external requirements for opening and decoding video. Immutable
+image and document reads need neither browser nor video decoder.
 
 ## Bind an existing native browser
 
@@ -162,7 +230,7 @@ SourceId, SurfaceId, ObservationId, AddressToken, and ContinuationToken validate
 
 Limits controls input bytes, node count, tree depth, and automatic overview depth. Budget controls the complete serialized result's UTF-8 bytes and routing entry count. The defaults are 8 MiB of document input, 200,000 nodes, depth 96, overview depth 6, and 4,096 reply bytes with 20 entries.
 
-The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 65,536. A useful item that cannot fit produces an explicit error.
+The shared read protocol accepts byte budgets from 512 through 65,536. The CLI separately reserves its outer transport envelope and supports reply budgets from 1,024 through 16,384. A useful item that cannot fit produces an explicit error.
 
 Copy continuations into the same operation with the same reference and query. Inspection chunks are UTF-8 aligned; assemble every chunk before parsing complete JSON. Coverage describes retained source evidence, while `next` describes pagination. Byte bounds do not establish a tokenizer-independent token count.
 
@@ -185,10 +253,17 @@ The declared document profile chooses the matching preparation policy. Use
 `WebSurface::with_policy` or the Python `WebSurface` constructor's `policy`
 argument to limit shared read responses independently of caller budgets.
 
+Rust and Python WebSurface accept all six Document classes. The CLI's offline
+`ys surface document` command accepts the same profiles and uses the same
+`describe` and `read` requests. Its local input remains immutable and
+non-controllable. The live CLI browser adapter continues to own its separate
+Work and action capabilities.
+
 Consumed native Sessions support `BrowserSurface.observe` for DOM and AX.
 `read` explores a captured view under its policy. The isolated `open` provider
-currently supports DOM only. Network is a reserved representation and is not
-advertised by either binding in this layer.
+currently supports DOM only. Live network capture remains reserved and is not
+advertised by either browser binding in this layer. A local network-shaped JSON
+Document can still be read and retains incomplete coverage.
 
 Views are sequential captures. Replacing a view rejects its previous references.
 AX references remain read-only and never become DOM action targets. DOM

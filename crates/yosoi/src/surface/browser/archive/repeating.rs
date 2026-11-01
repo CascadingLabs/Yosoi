@@ -403,7 +403,31 @@ pub(super) async fn run(
                     return Err(io::Error::other("repeated effect was not confirmed").into());
                 }
             }
-            driver.browser.screenshot(&directory, "final").await?;
+            let screenshot = driver.browser.screenshot_artifact().await?;
+            let screenshot_path = directory.join("final.png");
+            fs::write(&screenshot_path, screenshot.bytes())?;
+            if let Some(recording) = &mut driver.recording {
+                let image_reference = recording.archive.write(screenshot.document()).await?;
+                let reference = screenshot.write_to(&recording.archive).await?;
+                let document = recording.archive.read_document(&reference.document).await?;
+                let mut pixel_source = crate::surface::ArchivedSource::new_pixel_artifact(
+                    screenshot.info().identity.clone(),
+                    &screenshot,
+                    1,
+                    None,
+                );
+                pixel_source.file_archive = Some(crate::archive::FileDocumentArchiveRef::Image(
+                    image_reference,
+                ));
+                recording.outcome.retain(pixel_source)?;
+                let mut metadata_source = crate::surface::ArchivedSource::new(
+                    reference.document.to_string(),
+                    &document,
+                    None,
+                );
+                metadata_source.document_archive = Some(reference.document.clone());
+                recording.outcome.retain(metadata_source)?;
+            }
             driver.browser.script("location", json!({})).await
         }
         .await;

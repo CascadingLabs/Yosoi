@@ -11,7 +11,7 @@ A document offers structure and text. An image offers original pixels, bounded o
 
 ## Example: inspect the lamp
 
-Use the [0.4.0 release](../releases/0-4-0.md) or its source checkout. The earlier 0.3.0 packages do not expose these Surface APIs.
+Use the [0.4.0 release](../releases/0-4-0.md) for the document and video examples, or use its source checkout. The typed image reader in this page is available in this source revision; the 0.4.0 package does not include it.
 
 Start with a small product document. These programs search for the same lamp and print the evidence behind the returned reference.
 
@@ -66,7 +66,7 @@ An inspection can split JSON across UTF-8-aligned chunks. Join every chunk befor
 
 ## Example: read a dense image
 
-Place a PNG or JPEG dashboard screenshot at `dashboard.png`. An `ImageDocument` keeps those exact encoded bytes. `ImageSurface.read` uses the same bounded overview and expand protocol as other Surface readers. Pixel bytes travel separately as a `PixelArtifact`.
+Place a PNG or JPEG dashboard screenshot at `dashboard.png`. This example assumes the file fits the default 8 MiB source and output byte limits and is at least 592 by 190 pixels. An `ImageDocument` keeps those exact encoded bytes. A small image can go straight to `PixelArtifact::decode_image_document` or `PixelArtifact.from_image_document`; that bounded decode returns original pixels without building a region tree. `ImageSurface.read` uses the same bounded overview and expand protocol as other Surface readers when the caller needs to route through a larger raster. Pixel bytes travel separately as a `PixelArtifact`.
 
 ### Rust
 
@@ -77,7 +77,7 @@ use yosoi::{
     documents::{FileDocument, FileLimits, read_file},
     surface::{
         Budget, ImageSurface, Limits, PixelArtifact, PixelLimits, PixelRect,
-        SurfaceRead, model::{ReadOperation, ReadRequest, ReadResult},
+        model::{ReadOperation, ReadRequest, ReadResult, SurfaceRead},
     },
 };
 
@@ -88,9 +88,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         FileDocument::Image(image) => image,
         _ => return Err(io::Error::other("dashboard.png is not a PNG or JPEG").into()),
     };
+    let started = Instant::now();
+    let direct = PixelArtifact::decode_image_document(image.clone(), PixelLimits::default())?;
+    let direct_time = started.elapsed();
+    let started = Instant::now();
     let surface = ImageSurface::from_image_document(
         &image, 256, Limits::default(), PixelLimits::default(),
     )?;
+    let index_time = started.elapsed();
     let routing = surface.read(&ReadRequest {
         operation: ReadOperation::Overview,
         budget: Budget::default(),
@@ -101,9 +106,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     println!("Image regions: {}", page.entries.len());
 
-    let started = Instant::now();
-    let direct = surface.direct_image()?;
-    let direct_time = started.elapsed();
     let started = Instant::now();
     let overview = surface.overview_image(640)?;
     let overview_time = started.elapsed();
@@ -118,8 +120,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     fs::write("dashboard-detail.png", crop.png())?;
 
     println!(
-        "direct: {} bytes, {} pixels, {:?}; overview: {} bytes, {} pixels, {:?}; crop: {} bytes, {} pixels, {:?}",
+        "direct: {} bytes, {} pixels, {:?}; index: {:?}; overview: {} bytes, {} pixels, {:?}; crop: {} bytes, {} pixels, {:?}",
         direct.bytes().len(), direct.info().width * direct.info().height, direct_time,
+        index_time,
         overview.bytes().len(), overview.info().width * overview.info().height, overview_time,
         crop.png().len(), crop.artifact.info().width * crop.artifact.info().height, crop_time,
     );
@@ -131,7 +134,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-`direct_image` returns the original encoded raster when the caller wants all pixels. `overview_image` resizes explicitly with the triangle filter. `map_rect_to_source` turns a region selected from the overview back into source-raster pixel edges, then `crop_rect` returns those original-resolution pixels. The crop retains its parent identity, operation, dimensions, digest, and coordinate mapping. Archive stores the artifact bytes as an `ImageDocument` payload with a separate provenance record.
+`PixelArtifact::decode_image_document` and `PixelArtifact.from_image_document` return the original encoded raster without building a region index. `ImageSurface.direct_image` returns those pixels after an index exists. `overview_image` resizes explicitly with the triangle filter. `map_rect_to_source` turns a region selected from the overview back into source-raster pixel edges, then `crop_rect` returns those original-resolution pixels. The crop retains its parent identity, operation, dimensions, digest, and coordinate mapping. Archive stores the artifact bytes as an `ImageDocument` payload with a separate provenance record.
+
+A root `PixelArtifact` from a video frame or browser screenshot can also become an `ImageSurface`. This keeps its original `VideoFrame` or screenshot source, decoded-canvas coordinates, orientation declaration, and identity while the reader indexes its regions. A derived artifact cannot become a new root; map its selected rectangle back and crop from the validated source instead.
 
 ### Python
 
@@ -149,15 +154,17 @@ async def main() -> None:
     image = await read_file("dashboard", "dashboard.png")
     if not isinstance(image, ys.ImageDocument):
         raise TypeError("dashboard.png is not a PNG or JPEG")
+    started = perf_counter()
+    direct = ys.PixelArtifact.from_image_document(image)
+    direct_time = perf_counter() - started
+    started = perf_counter()
     surface = ys.ImageSurface(image, tile_side=256)
+    index_time = perf_counter() - started
     page = surface.read(ReadRequest(operation=Overview()))
     if page.kind != "page":
         raise RuntimeError("image overview did not return a page")
     print("Image regions:", len(page.data.entries))
 
-    started = perf_counter()
-    direct = surface.direct_image()
-    direct_time = perf_counter() - started
     started = perf_counter()
     overview = surface.overview_image(640)
     overview_time = perf_counter() - started
@@ -173,6 +180,7 @@ async def main() -> None:
 
     print(
         f"direct: {len(direct.bytes)} bytes, {direct.info.width * direct.info.height} pixels, {direct_time:.4f}s; "
+        f"index: {index_time:.4f}s; "
         f"overview: {len(overview.bytes)} bytes, {overview.info.width * overview.info.height} pixels, {overview_time:.4f}s; "
         f"crop: {len(crop.png)} bytes, {crop.artifact.info.width * crop.artifact.info.height} pixels, {crop_time:.4f}s"
     )
@@ -186,6 +194,19 @@ asyncio.run(main())
 ```
 
 Both programs print encoded bytes, returned pixels, and local processing time for the exact values they produced. Those measurements describe this image and machine; they do not predict model-token savings. The small red marker in a dense screenshot can disappear in a resized overview, so callers can map an overview region back to the original pixels and crop that detail.
+
+The known-pixel Rust fixtures also compare a tiny raster with a dense dashboard. These are one local run with millisecond timing resolution; index construction is included in the overview-plus-crop path. The tiny fixture encodes a pixel-drawn `λ` label. The dashboard contains a 2×2 red marker.
+
+| Fixture and delivery | Encoded bytes | Pixels sent | Measured processing |
+| --- | ---: | ---: | ---: |
+| Tiny raster, direct decode | 374 | 256 | 0 ms |
+| Tiny raster, overview only | 285 | 64 | 0 ms resize |
+| Tiny raster, overview plus exact crop | 643 | 208 | 0 ms including index, resize and crop |
+| Dense dashboard, direct decode | 42,799 | 2,073,600 | 53 ms |
+| Dense dashboard, overview only | 1,621 | 57,600 | 327 ms resize |
+| Dense dashboard, overview plus exact crop | 1,815 | 57,924 | 380 ms including index, resize and crop |
+
+The tiny raster is cheaper to send directly than to send its overview and crop; its crop still reproduces the pixel label exactly. In the dense dashboard, resizing loses the exact marker pixel, while the mapped source crop recovers it. The combined overview and crop use fewer bytes and pixels than the original raster in that fixture. The timings are local measurements, not performance guarantees or model-token estimates.
 
 ## Example: zoom into a recording
 

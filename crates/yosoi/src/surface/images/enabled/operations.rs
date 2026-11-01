@@ -25,6 +25,14 @@ impl ImageCrop {
     }
 }
 impl Surface {
+    pub(crate) fn prepared_image_artifact(&self) -> Result<&PixelArtifact, SurfaceError> {
+        self.data
+            .image
+            .as_ref()
+            .map(|image| &image.artifact)
+            .ok_or(SurfaceError::Unknown)
+    }
+
     /// Returns the original encoded image as a typed pixel artifact.
     pub fn direct_image(&self) -> Result<PixelArtifact, SurfaceError> {
         let image = self.data.image.as_ref().ok_or(SurfaceError::Unknown)?;

@@ -1,11 +1,24 @@
 #![cfg(feature = "browser")]
 //! Native Surface ownership, input and shared-pool scheduling against loopback only.
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use flate2::{Compression, write::GzEncoder};
 use futures::FutureExt;
 use serde_json::{Value, json};
 use sha2::Digest;
-use std::{env, error::Error, io, io::Write as _, sync::Arc, time::Duration};
+use std::{
+    env,
+    error::Error,
+    io::{self, Write as _},
+    sync::Arc,
+    time::Duration,
+};
+#[cfg(feature = "cli")]
+use std::{
+    io::{BufRead, BufReader},
+    process::{Child, ChildStdin, ChildStdout, Command, ExitStatus, Stdio},
+    sync::Mutex,
+};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
@@ -111,6 +124,10 @@ document.querySelectorAll('button')[0].addEventListener('click',()=>{state.textC
 document.querySelectorAll('button')[1].addEventListener('click',()=>fetch('/release'));
 document.querySelectorAll('button')[2].addEventListener('click',()=>fetch('/api?after-cancel=1').then(()=>{state.textContent='post-cancel request complete'}));
 </script></main>"#;
+                                    let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
+                                }
+                                "/cli-network" => {
+                                    let body = r#"<!doctype html><main><h1>CLI network</h1><script>fetch('/api?cli=1').then(()=>{document.title='request-complete'})</script></main>"#;
                                     let _ = write_response(&mut stream, "200 OK", "text/html; charset=utf-8", &[], body.as_bytes()).await;
                                 }
                                 "/bomb-page" => {
@@ -275,6 +292,267 @@ async fn hot(surface: &mut BrowserSurface) -> Result<(), Box<dyn Error>> {
         .await?;
     surface.execute(json!({"op":"hot"})).await?;
     Ok(())
+}
+
+#[cfg(feature = "cli")]
+type CliProofError = Box<dyn Error + Send + Sync>;
+
+#[cfg(feature = "cli")]
+fn cli_exchange(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+    command: Value,
+) -> Result<Value, CliProofError> {
+    serde_json::to_writer(&mut *input, &command)?;
+    input.write_all(b"\n")?;
+    input.flush()?;
+    let mut line = String::new();
+    if output.read_line(&mut line)? == 0 {
+        return Err(io::Error::other("native Surface CLI closed before replying").into());
+    }
+    let reply: Value = serde_json::from_str(&line)?;
+    if reply.get("ok").and_then(Value::as_bool) != Some(true) {
+        return Err(io::Error::other(format!("native Surface CLI command failed: {reply}")).into());
+    }
+    Ok(reply.get("result").cloned().unwrap_or(Value::Null))
+}
+
+#[cfg(feature = "cli")]
+fn cli_network_window(
+    input: &mut ChildStdin,
+    output: &mut BufReader<ChildStdout>,
+) -> Result<Value, CliProofError> {
+    let observation = cli_exchange(
+        input,
+        output,
+        json!({"id":"observe-network","op":"observe","representation":"network","budget":16384}),
+    )?;
+    let root = observation
+        .get("root")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI network observation omitted its root"))?;
+    let inspected = cli_exchange(
+        input,
+        output,
+        json!({
+            "id":"inspect-network",
+            "op":"read_view",
+            "representation":"network",
+            "budget":16384,
+            "request":{
+                "operation":{"kind":"inspect","reference":root},
+                "budget":{"bytes":16000,"items":1}
+            }
+        }),
+    )?;
+    let content = inspected
+        .pointer("/data/content")
+        .and_then(Value::as_str)
+        .ok_or_else(|| io::Error::other("CLI network inspection omitted window JSON"))?;
+    Ok(serde_json::from_str(content)?)
+}
+
+#[cfg(feature = "cli")]
+fn run_native_network_cli(
+    mut input: ChildStdin,
+    stdout: ChildStdout,
+    base: &str,
+) -> Result<(), CliProofError> {
+    let mut output = BufReader::new(stdout);
+    let mut ready = String::new();
+    if output.read_line(&mut ready)? == 0 {
+        return Err(io::Error::other("native Surface CLI omitted its ready response").into());
+    }
+    let ready: Value = serde_json::from_str(&ready)?;
+    if ready.pointer("/result/source/networkObservation/supported") != Some(&Value::Bool(true)) {
+        return Err(
+            io::Error::other("native CLI did not advertise qualified network support").into(),
+        );
+    }
+    let subscription = cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"subscribe","op":"network_subscribe","retain_bodies":true}),
+    )?;
+    if subscription.get("provider").and_then(Value::as_str) != Some("chrome_cdp") {
+        return Err(io::Error::other("native CLI subscription did not identify Chrome CDP").into());
+    }
+    cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"attach","op":"attach"}),
+    )?;
+    cli_exchange(&mut input, &mut output, json!({"id":"hot","op":"hot"}))?;
+    let dom = cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"dom","op":"observe","representation":"dom","budget":16384}),
+    )?;
+    let root = dom
+        .get("root")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI DOM observation omitted its root"))?;
+    cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
+    )?;
+
+    let mut after_sequence = 0_u64;
+    let mut captured_body = None;
+    for _ in 0..32 {
+        let waited = cli_exchange(
+            &mut input,
+            &mut output,
+            json!({"id":"wait-network","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+        )?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            continue;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("CLI network wait omitted its sequence"))?;
+        let window = cli_network_window(&mut input, &mut output)?;
+        captured_body = window
+            .get("payloads")
+            .and_then(Value::as_array)
+            .and_then(|payloads| {
+                payloads.iter().find(|payload| {
+                    payload.get("document_kind").and_then(Value::as_str) == Some("json")
+                        && matches!(
+                            payload.get("state").and_then(Value::as_str),
+                            Some("retained" | "truncated")
+                        )
+                })
+            })
+            .cloned();
+        if captured_body.is_some() {
+            break;
+        }
+    }
+    let payload = captured_body
+        .ok_or_else(|| io::Error::other("native CLI did not retain its loopback JSON body"))?;
+    let chunk = cli_exchange(
+        &mut input,
+        &mut output,
+        json!({
+            "id":"read-body",
+            "op":"network_payload",
+            "reference":payload,
+            "offset":0,
+            "max_bytes":8192,
+            "budget":16384
+        }),
+    )?;
+    let encoded = chunk
+        .get("data_base64")
+        .and_then(Value::as_str)
+        .ok_or_else(|| io::Error::other("native CLI body chunk omitted base64 data"))?;
+    let decoded = STANDARD.decode(encoded)?;
+    if !decoded
+        .windows(b"\"api\":true".len())
+        .any(|bytes| bytes == b"\"api\":true")
+    {
+        return Err(
+            io::Error::other("native CLI body chunk did not contain the loopback JSON").into(),
+        );
+    }
+
+    cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"cancel","op":"network_cancel"}),
+    )?;
+    let rearmed = cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"subscribe-again","op":"network_subscribe","retain_bodies":true}),
+    )?;
+    if rearmed.get("active").and_then(Value::as_bool) != Some(true) {
+        return Err(io::Error::other("native CLI could not rearm network capture").into());
+    }
+    let dom = cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"dom-again","op":"observe","representation":"dom","budget":16384}),
+    )?;
+    let root = dom
+        .get("root")
+        .cloned()
+        .ok_or_else(|| io::Error::other("CLI fresh DOM observation omitted its root"))?;
+    cli_exchange(
+        &mut input,
+        &mut output,
+        json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
+    )?;
+    let mut fresh_request_seen = false;
+    let mut after_sequence = 0_u64;
+    for _ in 0..24 {
+        let waited = cli_exchange(
+            &mut input,
+            &mut output,
+            json!({"id":"wait-fresh","op":"network_wait","after_sequence":after_sequence,"timeout_ms":5000}),
+        )?;
+        if waited.get("state").and_then(Value::as_str) != Some("event") {
+            continue;
+        }
+        after_sequence = waited
+            .get("sequence")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| io::Error::other("fresh CLI network wait omitted its sequence"))?;
+        let window = cli_network_window(&mut input, &mut output)?;
+        if window
+            .pointer("/coverage/network_was_previously_enabled")
+            .and_then(Value::as_bool)
+            != Some(true)
+            || window
+                .pointer("/coverage/instrumentation_escalated")
+                .and_then(Value::as_bool)
+                != Some(false)
+            || window
+                .pointer("/retention/provider_resource_buffer_bytes")
+                .and_then(Value::as_u64)
+                != Some(u64::try_from(
+                    surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+                )?)
+        {
+            return Err(io::Error::other(
+                "rearmed CLI capture did not preserve shared Page instrumentation bounds",
+            )
+            .into());
+        }
+        fresh_request_seen = window
+            .get("events")
+            .and_then(Value::as_array)
+            .is_some_and(|events| {
+                events.iter().any(|event| {
+                    event.pointer("/kind/kind").and_then(Value::as_str) == Some("request_started")
+                        && event
+                            .pointer("/kind/url")
+                            .and_then(Value::as_str)
+                            .is_some_and(|url| url.ends_with("/api"))
+                })
+            });
+        if fresh_request_seen {
+            break;
+        }
+    }
+    if !fresh_request_seen {
+        return Err(
+            io::Error::other("fresh request was not observed after CLI cancellation").into(),
+        );
+    }
+    cli_exchange(&mut input, &mut output, json!({"id":"close","op":"close"}))?;
+    Ok(())
+}
+
+#[cfg(feature = "cli")]
+fn child_wait(child: Arc<Mutex<Child>>) -> io::Result<ExitStatus> {
+    child
+        .lock()
+        .map_err(|_| io::Error::other("native CLI child lock was poisoned"))?
+        .wait()
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -968,6 +1246,121 @@ async fn native_network_authority_loss_freezes_coverage_and_releases_the_page()
     fresh_tab.close().await?;
     native.close().await?;
     fixture.close().await;
+    Ok(())
+}
+
+#[cfg(feature = "cli")]
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    clippy::significant_drop_tightening,
+    reason = "The JSON-lines proof owns one child process and loopback fixture through bounded shutdown."
+)]
+async fn native_network_cli_json_lines_reads_body_and_rearms_after_cancel()
+-> Result<(), Box<dyn Error>> {
+    if !enabled() {
+        return Ok(());
+    }
+    let fixture = NetworkFixture::start().await?;
+    let proof = Box::pin(async {
+        let temporary = tempfile::tempdir()?;
+        let policy_file = temporary.path().join("network-policy.json");
+        std::fs::write(
+            &policy_file,
+            br#"{"retain_bodies":true,"retain_url_path":true,"max_events":256}"#,
+        )?;
+        let output = temporary.path().join("output");
+        let archive = temporary.path().join("archive");
+        let mut child = Command::new(env!("CARGO_BIN_EXE_yosoi"))
+            .args(["surface", "native-web", "--url"])
+            .arg(format!("{}/network", fixture.base))
+            .args(["--headless", "--network-bodies", "--output"])
+            .arg(&output)
+            .arg("--archive")
+            .arg(&archive)
+            .arg("--network-policy")
+            .arg(&policy_file)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()?;
+        let input = child
+            .stdin
+            .take()
+            .ok_or_else(|| io::Error::other("native Surface CLI stdin is unavailable"))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| io::Error::other("native Surface CLI stdout is unavailable"))?;
+        let child = Arc::new(Mutex::new(child));
+        let worker = tokio::task::spawn_blocking({
+            let base = fixture.base.clone();
+            move || run_native_network_cli(input, stdout, &base)
+        });
+        let mut worker = worker;
+        let proof_result = match timeout(Duration::from_secs(60), &mut worker).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(error)) => {
+                if let Ok(mut child) = child.lock() {
+                    let _ = child.kill();
+                }
+                let child_for_wait = Arc::clone(&child);
+                let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+                return Err(io::Error::other(error.to_string()).into());
+            }
+            Err(_) => {
+                if let Ok(mut child) = child.lock() {
+                    let _ = child.kill();
+                }
+                let _ = timeout(Duration::from_secs(5), &mut worker).await;
+                let child_for_wait = Arc::clone(&child);
+                let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+                return Err(
+                    io::Error::other("native network CLI proof exceeded its timeout").into(),
+                );
+            }
+        };
+        if let Err(error) = proof_result {
+            if let Ok(mut child) = child.lock() {
+                let _ = child.kill();
+            }
+            let child_for_wait = Arc::clone(&child);
+            let waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+            let _ = timeout(Duration::from_secs(5), waiter).await;
+            return Err(io::Error::other(error.to_string()).into());
+        }
+        let child_for_wait = Arc::clone(&child);
+        let mut waiter = tokio::task::spawn_blocking(move || child_wait(child_for_wait));
+        let status = match timeout(Duration::from_secs(15), &mut waiter).await {
+            Ok(joined) => joined
+                .map_err(|error| io::Error::other(error.to_string()))?
+                .map_err(|error| io::Error::other(error.to_string()))?,
+            Err(_) => {
+                if let Ok(mut child) = child.lock() {
+                    let _ = child.kill();
+                }
+                let _ = timeout(Duration::from_secs(5), &mut waiter).await;
+                return Err(io::Error::other("native network CLI did not shut down").into());
+            }
+        };
+        if !status.success() {
+            return Err(
+                io::Error::other(format!("native network CLI exited with {status}")).into(),
+            );
+        }
+        if !output.join("surface.yosoi").is_file() {
+            return Err(io::Error::other(
+                "native network CLI omitted its portable Archive outcome",
+            )
+            .into());
+        }
+        Ok::<(), Box<dyn Error>>(())
+    })
+    .await;
+    fixture.close().await;
+    proof?;
     Ok(())
 }
 

@@ -17,7 +17,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Annotated, Literal, Protocol, Self
+from typing import Annotated, Any, Literal, Protocol, Self
 
 from pydantic import (
     BeforeValidator,
@@ -1049,9 +1049,20 @@ class Surface:
                 limits=limits,
                 pixel_limits=pixel_limits,
             )
+        if pixel_limits is None:
+            return cls._from_native(
+                _native.Surface.from_image(
+                    content, tile_side, (limits or Limits()).model_dump_json()
+                )
+            )
+        if not hasattr(_native.Surface, "from_image_with_pixel_limits"):
+            raise SurfaceError("this wheel has no image support")
         return cls._from_native(
-            _native.Surface.from_image(
-                content, tile_side, (limits or Limits()).model_dump_json()
+            _native.Surface.from_image_with_pixel_limits(
+                content,
+                tile_side,
+                (limits or Limits()).model_dump_json(),
+                pixel_limits.model_dump_json(),
             )
         )
 
@@ -1117,12 +1128,15 @@ class Surface:
 
 
 class WebSurface:
-    """Shared read protocol over immutable HTML, DOM, AX or network evidence.
+    """Shared read protocol over any of the six immutable Document classes.
 
     Args:
-        index: Prepared document index; other document classes are rejected.
+        index: Prepared HTML, XML, JSON, text, rendered DOM or AX evidence.
         source: Nonempty continuing-source identity, without browser authority.
         policy: Optional independent serialized response limits.
+
+    Network-shaped JSON retains partial coverage. Every representation exposes
+    only the read capabilities supported by its prepared index.
     """
 
     def __init__(
@@ -1337,8 +1351,26 @@ class PixelArtifact(ImmutableModel):
     info: PixelArtifactInfo = Field(
         description="Source identity and pixel coordinates."
     )
-    content: bytes = Field(description="Exact encoded image bytes.")
+    content: bytes = Field(
+        repr=False,
+        exclude=True,
+        description="Exact encoded image bytes; excluded from metadata dumps.",
+    )
     _handle: _native.PixelArtifact = PrivateAttr()
+
+    @classmethod
+    def from_image_document(
+        cls, document: ImageDocument, limits: PixelLimits | None = None
+    ) -> Self:
+        """Decode a typed image into a direct pixel artifact without a region index."""
+        if not hasattr(_native, "PixelArtifact"):
+            raise SurfaceError("this wheel has no image support")
+        return cls._from_native(
+            _native.PixelArtifact.from_image_document(
+                document._handle,
+                (limits or PixelLimits()).model_dump_json(),
+            )
+        )
 
     def model_post_init(self, context: object) -> None:
         """Bind the immutable Pydantic view to its Rust-owned artifact."""
@@ -1348,11 +1380,29 @@ class PixelArtifact(ImmutableModel):
             raise ValueError(
                 "construct PixelArtifact values through Surface or Archive"
             )
-        if PixelArtifactInfo.model_validate_json(context.info()) != self.info:
-            raise ValueError("native PixelArtifact metadata does not match")
-        if context.bytes() != self.content:
-            raise ValueError("native PixelArtifact bytes do not match")
+        if not context.matches(self.info.model_dump_json(), self.content):
+            raise ValueError("native PixelArtifact value does not match")
         self._handle = context
+
+    def model_copy(
+        self, *, update: Mapping[str, Any] | None = None, deep: bool = False
+    ) -> Self:
+        """Copy this view without allowing metadata or bytes to diverge from Rust."""
+        if update:
+            unknown = set(update) - {"info", "content"}
+            if unknown:
+                raise ValueError("PixelArtifact copies cannot update native handles")
+            if "info" in update and update["info"] != self.info:
+                raise ValueError("PixelArtifact provenance cannot be forged by copying")
+            if "content" in update and update["content"] != self.content:
+                raise ValueError("PixelArtifact bytes cannot be changed by copying")
+        copied = super().model_copy(deep=deep)
+        copied._verify_native()
+        return copied
+
+    def _verify_native(self) -> None:
+        if not self._handle.matches(self.info.model_dump_json(), self.content):
+            raise ValueError("native PixelArtifact value does not match")
 
     @classmethod
     def _from_native(cls, handle: _native.PixelArtifact) -> Self:
@@ -1369,16 +1419,19 @@ class PixelArtifact(ImmutableModel):
     @property
     def document(self) -> ImageDocument:
         """Return the typed immutable ImageDocument owning this payload."""
+        self._verify_native()
         return ImageDocument._from_native(self._handle.document())
 
     def map_rect_to_source(self, rect: PixelRect) -> PixelRect:
         """Map artifact pixel edges back to the root source pixel plane."""
+        self._verify_native()
         return PixelRect.model_validate_json(
             self._handle.map_rect_to_source(rect.model_dump_json())
         )
 
     async def write_to(self, archive: Archive) -> PixelArtifactArchiveRef:
         """Store pixels in Archive with their source and transform metadata."""
+        self._verify_native()
         return PixelArtifactArchiveRef.model_validate_json(
             await self._handle.write_to(archive._handle)
         )
@@ -1432,6 +1485,27 @@ class ImageSurface:
             (pixel_limits or PixelLimits()).model_dump_json(),
         )
 
+    @classmethod
+    def from_pixel_artifact(
+        cls,
+        artifact: PixelArtifact,
+        *,
+        tile_side: int = 256,
+        limits: Limits | None = None,
+        pixel_limits: PixelLimits | None = None,
+    ) -> Self:
+        """Open a saved root artifact without replacing its source coordinates."""
+        if not hasattr(_native, "ImageSurface"):
+            raise SurfaceError("this wheel has no image support")
+        value = cls.__new__(cls)
+        value._handle = _native.ImageSurface.from_pixel_artifact(
+            artifact._handle,
+            tile_side,
+            (limits or Limits()).model_dump_json(),
+            (pixel_limits or PixelLimits()).model_dump_json(),
+        )
+        return value
+
     @property
     def descriptor(self) -> Descriptor:
         """Return read and pixel capabilities available for this typed image."""
@@ -1446,6 +1520,11 @@ class ImageSurface:
     def root_reference(self) -> Reference:
         """Return the shared reader reference for the complete source raster."""
         return Reference.model_validate_json(self._handle.root_reference())
+
+    @property
+    def source_artifact(self) -> PixelArtifact:
+        """Return the indexed root PixelArtifact with its source provenance."""
+        return PixelArtifact._from_native(self._handle.source_artifact())
 
     def read(self, request: ReadRequest) -> ReadResult:
         """Read bounded image regions through the existing Surface read contract."""
@@ -1754,9 +1833,14 @@ class ArchiveLimits(ImmutableModel):
 class SourceInterpretation(ImmutableModel):
     """Interpreter for an exact document, image or named observation bundle."""
 
-    kind: Literal["document", "image", "image_document", "file_document", "bundle"] = (
-        Field(default="document", description="Interpreter category.")
-    )
+    kind: Literal[
+        "document",
+        "image",
+        "image_document",
+        "pixel_artifact",
+        "file_document",
+        "bundle",
+    ] = Field(default="document", description="Interpreter category.")
     tile_side: int | None = Field(
         default=None,
         strict=True,
@@ -1767,7 +1851,7 @@ class SourceInterpretation(ImmutableModel):
 
     @model_validator(mode="after")
     def _interpretation(self) -> Self:
-        is_image = self.kind in ("image", "image_document")
+        is_image = self.kind in ("image", "image_document", "pixel_artifact")
         if is_image != (self.tile_side is not None):
             raise ValueError("only image interpretations require tile_side")
         return self
@@ -1778,7 +1862,7 @@ class SourceInterpretation(ImmutableModel):
             "kind": self.kind,
             **(
                 {"tile_side": self.tile_side}
-                if self.kind in ("image", "image_document")
+                if self.kind in ("image", "image_document", "pixel_artifact")
                 else {}
             ),
         }
@@ -1797,6 +1881,10 @@ class ArchivedSource(ImmutableModel):
     )
     file_metadata: FileMetadata | None = Field(
         default=None, description="Typed media provenance, absent for Documents."
+    )
+    pixel_info: PixelArtifactInfo | None = Field(
+        default=None,
+        description="Pixel provenance when this source is a PixelArtifact.",
     )
     sha256: StrictStr = Field(description="SHA-256 of decoded original bytes.")
     content_base64: StrictStr | None = Field(
@@ -1845,6 +1933,27 @@ class ArchivedSource(ImmutableModel):
         )
 
     @classmethod
+    def from_pixel_artifact(
+        cls,
+        key: str,
+        artifact: PixelArtifact,
+        *,
+        tile_side: int = 256,
+        surface: ImageSurface | None = None,
+    ) -> Self:
+        """Freeze pixel provenance for an ImageSurface Outcome source."""
+        if not hasattr(_native, "surface_source_pixel_artifact"):
+            raise SurfaceError("this wheel has no image support")
+        return cls.model_validate_json(
+            _native.surface_source_pixel_artifact(
+                key,
+                artifact._handle,
+                tile_side,
+                None if surface is None else surface._handle,
+            )
+        )
+
+    @classmethod
     def capture(cls, key: str, surface: Surface) -> Self:
         """Retain a prepared document, image or bundle with its exact identity."""
         return cls.model_validate_json(
@@ -1867,6 +1976,14 @@ class ArchivedSource(ImmutableModel):
         """Verify and restore a typed media payload without source I/O."""
         return ImageDocument._from_native(
             _native.surface_source_restore_file_document(_rust_json(self), maximum)
+        )
+
+    def restore_pixel_artifact(self, maximum: int = 64 * 1024 * 1024) -> PixelArtifact:
+        """Restore source or derived pixels with their original provenance."""
+        if not hasattr(_native, "PixelArtifact"):
+            raise SurfaceError("this wheel has no image support")
+        return PixelArtifact._from_native(
+            _native.surface_source_restore_pixel_artifact(_rust_json(self), maximum)
         )
 
     def restore_surface(self, limits: Limits | None = None) -> Surface:
@@ -1986,24 +2103,24 @@ class Outcome(ImmutableModel):
             _native.surface_outcome_source_file_document(_rust_json(self), key, maximum)
         )
 
+    def source_pixel_artifact(
+        self, key: str, maximum: int = 64 * 1024 * 1024
+    ) -> PixelArtifact:
+        """Restore source or derived pixels retained under a stable key."""
+        if not hasattr(_native, "PixelArtifact"):
+            raise SurfaceError("this wheel has no image support")
+        return PixelArtifact._from_native(
+            _native.surface_outcome_source_pixel_artifact(
+                _rust_json(self), key, maximum
+            )
+        )
+
     def network_payload(
         self,
         reference: NetworkPayloadRef,
         maximum: int = 64 * 1024 * 1024,
     ) -> NetworkPayload:
-        """Resolve one frozen response-body link from an offline Outcome.
-
-        Args:
-            reference: Payload link copied from a retained NetworkWindow.
-            maximum: Maximum restored source bytes.
-
-        Returns:
-            The existing HTML/JSON Document or FileDocument stored by the Outcome.
-
-        Raises:
-            SurfaceError: The body was omitted, its source key is absent, or its digest
-                or declared projection kind does not match the retained value.
-        """
+        """Resolve one frozen response-body link from an offline Outcome."""
         if not isinstance(reference, NetworkPayloadRef):
             raise TypeError("reference must be a NetworkPayloadRef")
         if reference.state not in {"retained", "truncated"}:
@@ -2024,7 +2141,6 @@ class Outcome(ImmutableModel):
         if reference.sha256 != digest:
             raise SurfaceError("network payload digest did not match the Outcome source")
         return NetworkPayload(reference=reference, value=value)
-
     async def rerun(self, policy: SurfacePolicy, count: int = 1) -> tuple[Outcome, ...]:
         """Execute a supported recipe against fresh isolated live sessions.
 

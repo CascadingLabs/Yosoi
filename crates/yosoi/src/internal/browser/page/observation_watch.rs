@@ -1389,7 +1389,7 @@ impl NetworkObservationSubscription {
         if let Some(event) = self.pending_events.pop_front() {
             return Ok(event);
         }
-        let event = tokio::select! {
+        let event_result: Result<NetworkObservationEvent> = tokio::select! {
             biased;
             delivery = next_delivery(&mut self.requests) => match delivery {
                 Some(EventDelivery::Event(event)) => Ok(NetworkObservationEvent::Request(event)),
@@ -1446,7 +1446,8 @@ impl NetworkObservationSubscription {
                     dropped_events: None,
                 }),
             },
-        }?;
+        };
+        let event = event_result?;
         if let NetworkObservationEvent::Finished(finished) = event {
             loop {
                 let delivery = self

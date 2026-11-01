@@ -380,31 +380,34 @@ impl NetworkCapture {
                 .collect();
             eligible.sort_by_key(|(sequence, _)| *sequence);
             for (_, key) in eligible.into_iter().take(available) {
+                let Some(response_snapshot) = state.response_links.get(&key).cloned() else {
+                    continue;
+                };
+                let provider_reported_body_bytes =
+                    if state.data_lengths_reliable && response_snapshot.request_start_observed {
+                        state
+                            .body_sizes
+                            .get(&response_snapshot.request_id)
+                            .filter(|size| size.saw_chunk)
+                            .and_then(|size| size.decoded_bytes)
+                    } else {
+                        None
+                    };
                 let Some(response) = state.response_links.get_mut(&key) else {
                     continue;
                 };
-                if let Some(response_window_id) = response.window_id.clone() {
+                if let Some(response_window_id) = response_snapshot.window_id {
                     response.body_attempted = true;
-                    let provider_reported_body_bytes =
-                        if state.data_lengths_reliable && response.request_start_observed {
-                            state
-                                .body_sizes
-                                .get(&response.request_id)
-                                .filter(|size| size.saw_chunk)
-                                .and_then(|size| size.decoded_bytes)
-                        } else {
-                            None
-                        };
                     candidates.push(NetworkBodyCandidate {
-                        request_id: response.request_id.clone(),
-                        hop: response.hop,
-                        payload_id: response.payload_id.clone(),
-                        response_sequence: response.sequence,
+                        request_id: response_snapshot.request_id,
+                        hop: response_snapshot.hop,
+                        payload_id: response_snapshot.payload_id,
+                        response_sequence: response_snapshot.sequence,
                         response_window_id,
-                        declared_media_type: response.declared_media_type.clone(),
-                        browser_effective_mime: response.browser_effective_mime.clone(),
-                        browser_effective_charset: response.browser_effective_charset.clone(),
-                        content_encoding: response.content_encoding.clone(),
+                        declared_media_type: response_snapshot.declared_media_type,
+                        browser_effective_mime: response_snapshot.browser_effective_mime,
+                        browser_effective_charset: response_snapshot.browser_effective_charset,
+                        content_encoding: response_snapshot.content_encoding,
                         provider_reported_body_bytes,
                     });
                 }

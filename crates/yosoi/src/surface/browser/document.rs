@@ -1,4 +1,5 @@
 //! Web evidence adapter over the existing immutable document index.
+use crate::documents::DocumentClass;
 use crate::surface::{
     Budget, Continuation, DocumentPolicy, Reference as NativeReference, Surface, SurfaceError,
     model::{
@@ -19,12 +20,14 @@ pub struct WebSurface {
     policy: DocumentPolicy,
 }
 impl WebSurface {
-    /// Wraps captured HTML or a rendered DOM; source identity belongs to the caller's session.
+    /// Wraps prepared HTML, XML, JSON, text, rendered DOM, or AX.
+    /// The caller supplies the continuing source identity.
     pub fn new(index: Surface, source: SourceId) -> Result<Self, SurfaceError> {
         Self::with_policy(index, source, DocumentPolicy::default())
     }
-    /// Wraps HTML, DOM, native AX, or a browser network-event document with
-    /// independently configured response limits. Evidence grants no action authority.
+    /// Wraps one of the six prepared document classes with independently configured
+    /// response limits. Network-shaped JSON keeps partial coverage. Evidence grants
+    /// no action authority.
     pub fn with_policy(
         index: Surface,
         source: SourceId,
@@ -37,15 +40,30 @@ impl WebSurface {
                 items: 1,
             })
             .bytes;
-        let ax = index.representation().contains("accessibility-tree");
+        let class = match index.data.original.as_ref() {
+            Some(super::super::Original::Document { profile, .. }) => {
+                profile.class().map_err(|_| {
+                    SurfaceError::Invalid("web surface requires a supported Document class".into())
+                })?
+            }
+            _ => {
+                return Err(SurfaceError::Invalid(
+                    "web surface requires a supported Document class".into(),
+                ));
+            }
+        };
         let network = index.is_network_observation();
-        if !index.representation().contains("html")
-            && !index.representation().contains("rendered-dom")
-            && !ax
-            && !network
-        {
+        let ax = class == DocumentClass::AccessibilityTree;
+        let xml = class == DocumentClass::SourceXml;
+        let json = class == DocumentClass::SourceJson && !network;
+        let text = class == DocumentClass::SourceText;
+        let document = matches!(
+            class,
+            DocumentClass::SourceHtml | DocumentClass::RenderedDom
+        );
+        if !(document || ax || xml || json || text || network) {
             return Err(SurfaceError::Invalid(
-                "web surface requires HTML, DOM, AX, or browser network evidence".into(),
+                "web surface requires a supported Document class".into(),
             ));
         }
         let id = SurfaceId::new(format!("{}:document", source.as_str()))?;
@@ -66,6 +84,12 @@ impl WebSurface {
                 "yosoi.web.ax.v1"
             } else if network {
                 "yosoi.web.network.v1"
+            } else if xml {
+                "yosoi.web.xml.v1"
+            } else if json {
+                "yosoi.web.json.v1"
+            } else if text {
+                "yosoi.web.text.v1"
             } else {
                 "yosoi.web.document.v1"
             }

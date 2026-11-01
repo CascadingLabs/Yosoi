@@ -701,6 +701,16 @@ pub enum NetworkPayloadValue {
     File(FileDocument),
 }
 
+impl NetworkPayloadValue {
+    /// Returns the exact retained bytes without copying.
+    pub fn bytes(&self) -> &[u8] {
+        match self {
+            Self::Document(document) => document.bytes(),
+            Self::File(document) => document.bytes(),
+        }
+    }
+}
+
 /// A separately retained body paired with its exact NetworkPayloadRef.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NetworkPayload {
@@ -713,10 +723,7 @@ pub struct NetworkPayload {
 impl NetworkPayload {
     /// Returns the exact retained payload bytes without copying.
     pub fn bytes(&self) -> &[u8] {
-        match &self.value {
-            NetworkPayloadValue::Document(document) => document.bytes(),
-            NetworkPayloadValue::File(document) => document.bytes(),
-        }
+        self.value.bytes()
     }
 
     /// Restores a retained body from a portable Surface outcome without opening a browser.

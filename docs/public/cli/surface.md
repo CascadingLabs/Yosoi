@@ -7,6 +7,34 @@ description: Read bounded web, image and video evidence through a JSON-lines ses
 
 `yosoi surface` keeps a reader alive while a coding agent sends one JSON command per line. Replies include the caller's optional `id`, an explicit success or error, and bounded evidence. Errors leave the session available for the next valid command.
 
+## Read an immutable local Document
+
+Use `document` to apply the same shared read protocol to a local Document file,
+without opening a browser:
+
+```sh
+yosoi surface document --format xml --file catalog.xml --id catalog --source file:catalog
+```
+
+`--format` accepts `html`, `xml`, `json`, `text`, `rendered-dom` and
+`accessibility-tree`. The last two require a positive `--epoch`. The command
+prints a ready descriptor and then accepts JSON Lines requests on standard
+input. `describe` returns the descriptor, observation and producer-issued root
+reference. `read` accepts the same typed request used by Rust and Python:
+
+```json
+{"id":1,"op":"describe"}
+{"id":2,"op":"read","request":{"operation":{"kind":"search","query":"lamp"},"budget":{"bytes":4096,"items":20}}}
+```
+
+Use references returned by these reads in later `inspect`, `expand` or `parent`
+requests. Search is literal, and continuations remain bound to their original
+operation and scope. `--max-bytes`, `--max-depth`, `--max-nodes` and
+`--overview-depth` limit preparation; `--response-bytes` limits each complete
+shared-read result independently. The outer JSON Lines reply budget remains
+bounded as described below. This local reader exposes no live actions. Use
+`surface web` only when the owning browser binding is needed for live effects.
+
 ## Open a web surface
 
 ```sh
@@ -67,7 +95,7 @@ For the docs version story, search for `Documentation release`, focus its `summa
 
 For a complete agent task on QScrape’s synthetic shop, follow [Surfaces](../concepts/surfaces.md).
 
-An effect without an observed postcondition remains unconfirmed. A successful transport call alone does not establish that the requested task succeeded. Other web operations include fill, key, scroll, navigate, article inspection, screenshots, refresh, cool, and detach.
+An effect without an observed postcondition remains unconfirmed. A successful transport call alone does not establish that the requested task succeeded. Other web operations include fill, key, scroll, navigate, article inspection, screenshots, refresh, cool, and detach. A screenshot reply carries the shared `PixelArtifactInfo`; with archive policy enabled, its typed PNG pixels and provenance can be reopened through the normal Archive.
 
 ## Open a video surface
 
@@ -83,12 +111,25 @@ Use describe and the shared read protocol to explore its lazy timeline. `seek` s
 
 The image reader accepts a local PNG or JPEG as a typed `ImageDocument`. It uses the same bounded `read` operations for region metadata, and separate pixel commands return encoded artifacts. Image search is unsupported because no OCR runs.
 
+The `surface image` subcommand is available in this source revision; the 0.4.0 release binary does not include it yet.
+
 ```sh
 yosoi surface image \
   --file dashboard.png \
   --output ./image-run \
   --archive ./image-evidence
 ```
+
+To explore an archived root PixelArtifact after removing the original file or video decoder input, pass its typed reference JSON and the existing Archive root:
+
+```sh
+yosoi surface image \
+  --pixel-artifact-ref '{"document":"document:v1:reference-uuid"}' \
+  --archive ./image-evidence \
+  --output ./frame-run
+```
+
+The referenced artifact must be a root source raster. Derived artifacts retain their original coordinate map and cannot be silently made a new crop root.
 
 `describe` reports overview, expand, inspect, parent, direct, overview-image, resize, and crop capabilities. The source read is capped at 8 MiB by default. Decoding is capped at 8,192 pixels per side and 64 MiB of allocation. Returned artifacts default to 16,777,216 pixels and 8 MiB, with up to 32 retained artifacts. Override `--max-source-bytes`, `--max-side`, `--max-decoded-bytes`, `--max-output-pixels`, `--max-output-bytes`, and `--max-retained-artifacts` within their supported limits.
 
@@ -102,11 +143,11 @@ Send the shared structural read, then choose how many pixels to receive:
 {"id":5,"op":"resize_image","width":640,"height":360}
 ```
 
-`image_direct` returns the exact original encoded raster. `overview_image` and `resize_image` apply the named triangle resampling operation. `crop_image` uses explicit coordinates in the original raster. Each pixel reply includes artifact identity, digest, dimensions, parent, operation parameters, and the exact coordinate transform. The output directory receives the image bytes. With `--archive`, the source and each returned artifact use the existing typed media payload store, and replies include references that Rust or Python can reopen. This static reader does not produce a `surface.yosoi` operation outcome.
+`image_direct` returns the exact original encoded raster. `overview_image` and `resize_image` apply the named triangle resampling operation. `crop_image` uses explicit coordinates in the original raster. Each pixel reply includes artifact identity, digest, dimensions, parent, operation parameters, and the exact coordinate transform. The output directory receives the image bytes. With `--archive`, the source and each returned artifact use the existing typed media payload store, and replies include references that Rust or Python can reopen. Normal close also exports `surface.yosoi` with the source, pixel provenance and read receipts. The portable file can be opened through Archive or `--pixel-artifact-ref`; it does not run browser or video replay.
 
 ## Replay or run again
 
-Archive policy is enabled by `--archive`. Each command checkpoints immutable evidence and updates `record.json`. Normal close also exports `surface.yosoi`, a self-contained portable file. Move that file to another directory or machine without keeping the original Archive. Close the session to seal it before using a confirmed action recipe for a live repeat.
+Archive policy is enabled by `--archive`. Web and video sessions checkpoint immutable evidence and update `record.json`; image sessions save typed pixel artifacts as they are produced. Normal close exports `surface.yosoi`, a self-contained portable file. Move that file to another directory or machine without keeping the original Archive. Close the session to seal it before using a confirmed action recipe for a live repeat.
 
 ```sh
 yosoi surface replay --record ./surface-run/surface.yosoi --repeat 3

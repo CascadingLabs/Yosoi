@@ -23,7 +23,7 @@ impl PixelArtifact {
         )
     }
 
-    pub(super) fn validate_metadata(&self) -> Result<(), SurfaceError> {
+    pub(crate) fn validate_metadata(&self) -> Result<(), SurfaceError> {
         if self.info.version != 1
             || self.info.transform.version != 1
             || self.info.width == 0

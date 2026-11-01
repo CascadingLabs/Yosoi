@@ -217,7 +217,7 @@ Archive stores file metadata in versioned records and original bytes in its exis
 
 A `PixelArtifact` uses that same typed image payload store. Its PNG or JPEG bytes stay in the `ImageDocument` raw payload; Archive stores the versioned source and coordinate provenance beside a typed reference. `Archive.read` verifies the source digest, output dimensions and transform metadata before returning the artifact. No second image blob store or text-document wrapper is introduced for new typed image artifacts.
 
-Distinct typed references select image, video, audio and binary documents. Existing text-document records and historical Surface media envelopes remain readable through their original APIs; this foundation does not reinterpret or rewrite them.
+Distinct typed references select image, video, audio and binary documents. Existing text-document records and historical Surface image envelopes remain readable through their original APIs. New typed image Surface captures use `ImageDocument` and retain their pixel interpretation separately.
 
 For executable local-file and HTTP examples, see `crates/yosoi/examples/media_documents.rs` and `python/examples/media_documents.py`. The paired browser examples are `crates/yosoi/examples/media_download.rs` and the Python browser mode in `python/examples/media_documents.py`.
 

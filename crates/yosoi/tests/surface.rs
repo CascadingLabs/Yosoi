@@ -898,6 +898,10 @@ fn image_zoom_returns_real_pixels_and_policy_bound_references() -> TestResult {
     image::DynamicImage::ImageRgb8(image::RgbImage::new(8193, 1))
         .write_to(&mut too_wide, image::ImageFormat::Png)?;
     assert!(Surface::from_image(&too_wide.into_inner(), 64, Limits::default()).is_err());
+    let mut too_tall = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image::RgbImage::new(1, 8193))
+        .write_to(&mut too_tall, image::ImageFormat::Png)?;
+    assert!(Surface::from_image(&too_tall.into_inner(), 64, Limits::default()).is_err());
     let mut blue = Cursor::new(Vec::new());
     image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
         256,
@@ -1027,6 +1031,50 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
             )
             .is_err()
     );
+    assert!(
+        surface
+            .crop_rect(
+                PixelRect {
+                    x: 0,
+                    y: 0,
+                    width: 0,
+                    height: 4,
+                },
+                100_000,
+            )
+            .is_err()
+    );
+
+    let source_limited = Limits {
+        input_bytes: bytes.len().saturating_sub(1),
+        ..Limits::default()
+    };
+    assert!(
+        ImageSurface::from_image_document(&document, 64, source_limited, PixelLimits::default(),)
+            .is_err()
+    );
+    let decode_limited = PixelLimits {
+        max_decoded_bytes: 131_071,
+        ..PixelLimits::default()
+    };
+    assert!(
+        ImageSurface::from_image_document(&document, 64, Limits::default(), decode_limited,)
+            .is_err()
+    );
+    let output_limited = PixelLimits {
+        max_output_pixels: 2_047,
+        ..PixelLimits::default()
+    };
+    let bounded_output =
+        ImageSurface::from_image_document(&document, 64, Limits::default(), output_limited)?;
+    assert!(bounded_output.overview_image(64).is_err());
+    let byte_limited = PixelLimits {
+        max_output_bytes: 1,
+        ..PixelLimits::default()
+    };
+    let bounded_bytes =
+        ImageSurface::from_image_document(&document, 64, Limits::default(), byte_limited)?;
+    assert!(bounded_bytes.direct_image().is_err());
 
     let differently_tiled = ImageSurface::from_image_document(
         &document,
@@ -1046,9 +1094,124 @@ fn typed_image_direct_overview_and_crop_preserve_root_coordinates() -> TestResul
 
 #[cfg(feature = "surface-images")]
 #[test]
+fn small_image_compares_direct_overview_and_crop_delivery() -> TestResult {
+    use std::{io::Cursor, time::Instant};
+    use yosoi::documents::ImageDocument;
+    use yosoi::surface::PixelArtifact;
+
+    let background = image::Rgba([22, 28, 36, 255]);
+    let ink = image::Rgba([245, 232, 180, 255]);
+    let glyph = [
+        (7, 2),
+        (6, 3),
+        (8, 3),
+        (5, 4),
+        (9, 4),
+        (4, 5),
+        (10, 5),
+        (3, 6),
+        (11, 6),
+        (2, 7),
+        (12, 7),
+        (7, 8),
+        (6, 9),
+        (8, 9),
+        (5, 10),
+        (9, 10),
+        (4, 11),
+        (10, 11),
+        (3, 12),
+        (11, 12),
+    ];
+    let original = image::RgbaImage::from_fn(16, 16, |x, y| {
+        if glyph.contains(&(x, y)) {
+            ink
+        } else {
+            background
+        }
+    });
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(original.clone())
+        .write_to(&mut encoded, image::ImageFormat::Png)?;
+    let source_bytes = encoded.into_inner();
+    let document = ImageDocument::from_bytes("small-pixel-label", source_bytes.clone())?;
+
+    let started = Instant::now();
+    let direct = PixelArtifact::decode_image_document(document.clone(), PixelLimits::default())?;
+    let direct_ms = started.elapsed().as_millis();
+    let started = Instant::now();
+    let surface = ImageSurface::from_image_document(
+        &document,
+        32,
+        Limits::default(),
+        PixelLimits::default(),
+    )?;
+    let index_ms = started.elapsed().as_millis();
+    let started = Instant::now();
+    let overview = surface.overview_image(8)?;
+    let overview_ms = started.elapsed().as_millis();
+    let overview_pixels = image::load_from_memory(overview.bytes())?.to_rgba8();
+    assert!(overview_pixels.pixels().all(|pixel| pixel.0 != ink.0));
+
+    let source_rect = overview.map_rect_to_source(PixelRect {
+        x: 1,
+        y: 1,
+        width: 6,
+        height: 6,
+    })?;
+    let started = Instant::now();
+    let crop = surface.crop_rect(source_rect, PixelLimits::default().max_output_bytes)?;
+    let crop_ms = started.elapsed().as_millis();
+    let crop_pixels = image::load_from_memory(crop.png())?.to_rgba8();
+    for y in 0..source_rect.height {
+        for x in 0..source_rect.width {
+            assert_eq!(
+                crop_pixels.get_pixel(x, y),
+                original.get_pixel(source_rect.x + x, source_rect.y + y)
+            );
+        }
+    }
+    assert_eq!(direct.bytes(), source_bytes);
+    assert_eq!(
+        image::load_from_memory(direct.bytes())?
+            .to_rgba8()
+            .get_pixel(7, 8),
+        &ink
+    );
+    let overview_plus_crop_bytes = overview
+        .bytes()
+        .len()
+        .checked_add(crop.png().len())
+        .ok_or("small fixture byte total overflow")?;
+    let overview_plus_crop_pixels = u64::from(overview.info().width)
+        .checked_mul(u64::from(overview.info().height))
+        .and_then(|overview_count| {
+            u64::from(crop.artifact.info().width)
+                .checked_mul(u64::from(crop.artifact.info().height))
+                .and_then(|crop_count| overview_count.checked_add(crop_count))
+        })
+        .ok_or("small fixture pixel total overflow")?;
+    let overview_crop_ms = index_ms
+        .checked_add(overview_ms)
+        .and_then(|elapsed| elapsed.checked_add(crop_ms))
+        .ok_or("small fixture processing time overflow")?;
+    println!(
+        "small image: direct={} bytes/{} pixels/{direct_ms} ms; overview={} bytes/{} pixels/{overview_ms} ms; overview+crop={overview_plus_crop_bytes} bytes/{} pixels/{overview_crop_ms} ms including index preparation; the pixel-encoded λ glyph is exact in direct pixels and recovered exactly by the crop",
+        direct.bytes().len(),
+        direct.info().width * direct.info().height,
+        overview.bytes().len(),
+        overview.info().width * overview.info().height,
+        overview_plus_crop_pixels,
+    );
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+#[test]
 fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult {
     use std::{io::Cursor, time::Instant};
     use yosoi::documents::ImageDocument;
+    use yosoi::surface::{PixelArtifact, PixelLimits};
 
     let pixels = image::RgbaImage::from_fn(1920, 1080, |x, y| {
         if (1500..1502).contains(&x) && (702..704).contains(&y) {
@@ -1061,12 +1224,13 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
     image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
     let source_bytes = encoded.into_inner();
     let source = ImageDocument::from_bytes("dense-dashboard", source_bytes.clone())?;
+    let started = std::time::Instant::now();
+    let direct = PixelArtifact::decode_image_document(source.clone(), PixelLimits::default())?;
+    let direct_ms = started.elapsed().as_millis();
+    let started = Instant::now();
     let surface =
         ImageSurface::from_image_document(&source, 256, Limits::default(), PixelLimits::default())?;
-
-    let started = std::time::Instant::now();
-    let direct = surface.direct_image()?;
-    let direct_ms = started.elapsed().as_millis();
+    let index_ms = started.elapsed().as_millis();
     let started = Instant::now();
     let overview = surface.overview_image(320)?;
     let overview_ms = started.elapsed().as_millis();
@@ -1085,14 +1249,32 @@ fn dense_image_overview_and_crop_report_measured_pixel_tradeoffs() -> TestResult
     let crop_pixels = image::load_from_memory(crop.png())?.to_rgba8();
     assert_eq!(crop_pixels.get_pixel(6, 6).0, [255, 0, 0, 255]);
 
+    let overview_plus_crop_bytes = overview
+        .bytes()
+        .len()
+        .checked_add(crop.png().len())
+        .ok_or("dense fixture byte total overflow")?;
+    let overview_plus_crop_pixels = u64::from(overview.info().width)
+        .checked_mul(u64::from(overview.info().height))
+        .and_then(|overview_count| {
+            u64::from(crop.artifact.info().width)
+                .checked_mul(u64::from(crop.artifact.info().height))
+                .and_then(|crop_count| overview_count.checked_add(crop_count))
+        })
+        .ok_or("dense fixture pixel total overflow")?;
+    let overview_crop_ms = index_ms
+        .checked_add(overview_ms)
+        .and_then(|elapsed| elapsed.checked_add(crop_ms))
+        .ok_or("dense fixture processing time overflow")?;
+
     println!(
-        "dense image: direct={} bytes/{} pixels/{direct_ms} ms; overview={} bytes/{} pixels/{overview_ms} ms; overview+crop={} bytes/{} pixels/{crop_ms} ms; the 2x2 red marker is not a full red overview pixel and is exact in the crop",
+        "dense image: direct={} bytes/{} pixels/{direct_ms} ms; index={index_ms} ms; overview={} bytes/{} pixels/{overview_ms} ms; overview+crop={} bytes/{} pixels/{overview_crop_ms} ms including index preparation; the 2x2 red marker is not a full red overview pixel and is exact in the crop",
         direct.bytes().len(),
         direct.info().width * direct.info().height,
         overview.bytes().len(),
         overview.info().width * overview.info().height,
-        crop.png().len(),
-        crop.artifact.info().width * crop.artifact.info().height,
+        overview_plus_crop_bytes,
+        overview_plus_crop_pixels,
     );
     assert_eq!(direct.bytes(), source_bytes);
     Ok(())
@@ -1132,6 +1314,49 @@ async fn archived_pixel_artifact_restores_typed_pixels_and_provenance() -> TestR
         crop.artifact.info().transform.operation
     );
     assert_eq!(restored.bytes(), crop.png());
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+#[tokio::test]
+async fn archived_legacy_text_image_envelope_restores_exact_pixels() -> TestResult {
+    use std::io::Cursor;
+    use yosoi::Archive;
+    use yosoi::surface::{ArchiveLimits, ArchivedSource, Outcome, SourceInterpretation};
+
+    let pixels = image::RgbaImage::from_fn(16, 8, |x, y| {
+        if x < 8 && y < 4 {
+            image::Rgba([255, 80, 20, 255])
+        } else {
+            image::Rgba([18, 36, 220, 255])
+        }
+    });
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
+    let bytes = encoded.into_inner();
+    let surface = Surface::from_image(&bytes, 32, Limits::default())?;
+    let legacy_source = ArchivedSource::capture("legacy-image", &surface)?;
+    assert!(matches!(
+        legacy_source.interpretation,
+        SourceInterpretation::Image { tile_side: 32 }
+    ));
+    assert_eq!(
+        legacy_source.profile,
+        Some(yosoi::documents::DocumentProfile::source_text())
+    );
+
+    let temporary = tempfile::tempdir()?;
+    let archive = Archive::open(temporary.path()).await?;
+    let outcome = Outcome::new("legacy-image-outcome", ArchiveLimits::default())?
+        .with_source(legacy_source)?;
+    let reference = archive.write(&outcome).await?;
+    let restored = archive.read(&reference).await?;
+    let reopened = restored.surface("legacy-image", Limits::default())?;
+    let crop = reopened.crop(&reopened.root(), 100_000)?;
+    let decoded = image::load_from_memory(crop.png())?.to_rgba8();
+    assert_eq!(decoded.dimensions(), (16, 8));
+    assert_eq!(decoded.get_pixel(0, 0).0, [255, 80, 20, 255]);
+    assert_eq!(decoded.get_pixel(15, 7).0, [18, 36, 220, 255]);
     Ok(())
 }
 
@@ -1185,5 +1410,226 @@ fn pixel_artifact_rejects_corrupt_encoded_pixels_with_valid_header() -> TestResu
         PixelArtifact::from_image_document(document, 8, 4, PixelOrientation::ExifUnapplied,)
             .is_err()
     );
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+#[test]
+fn jpeg_exif_orientation_remains_explicitly_unapplied() -> TestResult {
+    use std::io::Cursor;
+    use yosoi::{
+        documents::ImageDocument,
+        surface::{PixelArtifact, PixelLimits, PixelOrientation},
+    };
+
+    let pixels = image::RgbImage::from_fn(8, 4, |x, _| {
+        if x < 4 {
+            image::Rgb([220, 20, 30])
+        } else {
+            image::Rgb([20, 30, 220])
+        }
+    });
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(pixels).write_to(&mut encoded, image::ImageFormat::Jpeg)?;
+    let jpeg = encoded.into_inner();
+    let header = jpeg.get(..2).ok_or("JPEG fixture is truncated")?;
+    if header != [0xff, 0xd8] {
+        return Err("JPEG fixture has no start-of-image marker".into());
+    }
+    let tail = jpeg.get(2..).ok_or("JPEG fixture is truncated")?;
+    let exif = [
+        b'E', b'x', b'i', b'f', 0, 0, b'I', b'I', 42, 0, 8, 0, 0, 0, 1, 0, 0x12, 0x01, 3, 0, 1, 0,
+        0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
+    ];
+    let segment_length = u16::try_from(exif.len().checked_add(2).ok_or("EXIF length overflow")?)?;
+    let capacity = jpeg
+        .len()
+        .checked_add(exif.len())
+        .and_then(|length| length.checked_add(4))
+        .ok_or("EXIF JPEG allocation overflow")?;
+    let mut with_exif = Vec::with_capacity(capacity);
+    with_exif.extend_from_slice(header);
+    with_exif.extend_from_slice(&[0xff, 0xe1]);
+    with_exif.extend_from_slice(&segment_length.to_be_bytes());
+    with_exif.extend_from_slice(&exif);
+    with_exif.extend_from_slice(tail);
+
+    let document = ImageDocument::from_bytes("exif-orientation-6", with_exif)?;
+    let artifact = PixelArtifact::decode_image_document(document, PixelLimits::default())?;
+    assert_eq!((artifact.info().width, artifact.info().height), (8, 4));
+    assert_eq!(
+        artifact.info().coordinate_space.orientation,
+        PixelOrientation::ExifUnapplied
+    );
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+#[test]
+fn archived_legacy_video_pixels_keep_explicit_partial_source_identity() -> TestResult {
+    use std::io::Cursor;
+    use yosoi::{
+        documents::ImageDocument,
+        surface::{
+            ArchiveLimits, ArchivedSource, Outcome, PixelArtifact, PixelCoordinateKind,
+            PixelCoordinateSpace, PixelLimits, PixelOrientation, PixelSource,
+        },
+    };
+
+    let pixels = image::RgbaImage::from_pixel(32, 16, image::Rgba([40, 90, 140, 255]));
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
+    let frame_image = ImageDocument::from_bytes("legacy-frame-pixels", encoded.into_inner())?;
+    let artifact = PixelArtifact::from_raster_document(
+        frame_image,
+        PixelSource::LegacyVideoFrame {
+            source_sha256: None,
+            observation: "video-observation-legacy".into(),
+            reference: "frame:350000".into(),
+            requested_us: 350_000,
+            source_pts_us: 400_000,
+        },
+        PixelCoordinateSpace {
+            kind: PixelCoordinateKind::DecodedCanvas,
+            width: 32,
+            height: 16,
+            orientation: PixelOrientation::DecoderApplied,
+        },
+    )?;
+    let image_surface = ImageSurface::from_pixel_artifact(
+        &artifact,
+        32,
+        Limits::default(),
+        PixelLimits::default(),
+    )?;
+    let crop = image_surface.crop_rect(
+        PixelRect {
+            x: 8,
+            y: 4,
+            width: 12,
+            height: 8,
+        },
+        100_000,
+    )?;
+    assert_eq!(crop.artifact.info().source, artifact.info().source);
+    assert_eq!(
+        crop.artifact.info().source_space.kind,
+        PixelCoordinateKind::DecodedCanvas
+    );
+
+    let retained = ArchivedSource::new_pixel_artifact(
+        artifact.info().identity.clone(),
+        &artifact,
+        32,
+        Some(image_surface.index()),
+    );
+    let outcome =
+        Outcome::new("legacy-frame-outcome", ArchiveLimits::default())?.with_source(retained)?;
+    let restored = outcome.source_pixel_artifact(&artifact.info().identity, 1_048_576)?;
+    assert_eq!(restored.info(), artifact.info());
+    let restored_surface = outcome.surface(&artifact.info().identity, Limits::default())?;
+    assert_eq!(
+        restored_surface.identity(),
+        image_surface.index().identity()
+    );
+    Ok(())
+}
+
+#[cfg(feature = "surface-video")]
+#[tokio::test]
+async fn image_session_opens_archived_video_pixels_without_video_or_source_path() -> TestResult {
+    use std::io::Cursor;
+    use yosoi::{
+        Archive,
+        documents::ImageDocument,
+        surface::{
+            ArchivePolicy, ImageSession, Limits, PixelArtifact, PixelCoordinateKind,
+            PixelCoordinateSpace, PixelLimits, PixelOrientation, PixelSource, SurfaceConnection,
+            SurfacePolicy,
+        },
+    };
+
+    let pixels = image::RgbaImage::from_pixel(32, 16, image::Rgba([70, 80, 90, 255]));
+    let mut encoded = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
+    let document = ImageDocument::from_bytes("archived-frame-pixels", encoded.into_inner())?;
+    let artifact = PixelArtifact::from_raster_document(
+        document,
+        PixelSource::LegacyVideoFrame {
+            source_sha256: None,
+            observation: "old-video-observation".into(),
+            reference: "frame:350000".into(),
+            requested_us: 350_000,
+            source_pts_us: 400_000,
+        },
+        PixelCoordinateSpace {
+            kind: PixelCoordinateKind::DecodedCanvas,
+            width: 32,
+            height: 16,
+            orientation: PixelOrientation::DecoderApplied,
+        },
+    )?;
+    let archive_root = tempfile::tempdir()?;
+    let archive = Archive::open(archive_root.path()).await?;
+    let reference = artifact.write_to(&archive).await?;
+    drop(archive);
+
+    let output = tempfile::tempdir()?;
+    let policy = SurfacePolicy {
+        output: Some(output.path().to_owned()),
+        archive: ArchivePolicy::Enabled,
+        archive_root: Some(archive_root.path().to_owned()),
+        ..SurfacePolicy::default()
+    };
+    let mut session = ImageSession::open_pixel_artifact(
+        &reference,
+        archive_root.path(),
+        policy,
+        32,
+        Limits::default(),
+        PixelLimits::default(),
+    )
+    .await?;
+    let ready = session.ready()?;
+    assert_eq!(
+        ready
+            .pointer("/state/descriptor/representation")
+            .and_then(serde_json::Value::as_str),
+        Some("yosoi.image.raster.v1")
+    );
+    let direct = session
+        .execute(serde_json::json!({"op":"image_direct"}))
+        .await?;
+    assert_eq!(
+        direct
+            .pointer("/artifact/info/source/kind")
+            .and_then(serde_json::Value::as_str),
+        Some("legacy_video_frame")
+    );
+    assert_eq!(
+        direct
+            .pointer("/artifact/info/source/source_pts_us")
+            .and_then(serde_json::Value::as_i64),
+        Some(400_000)
+    );
+    let outcome = session
+        .close()
+        .await?
+        .ok_or("image archive policy did not return its Outcome")?;
+    let expected_surface_identity = outcome
+        .surface(&artifact.info().identity, Limits::default())?
+        .identity()
+        .to_owned();
+    archive_root.close()?;
+    outcome.validate()?;
+    let retained = outcome.source_pixel_artifact(&artifact.info().identity, 1_048_576)?;
+    assert_eq!(retained.info(), artifact.info());
+    let portable_archive_root = tempfile::tempdir()?;
+    let portable_archive = Archive::open(portable_archive_root.path()).await?;
+    let portable_path = output.path().join("surface.yosoi");
+    let imported_reference = portable_archive.import_file(&portable_path).await?;
+    let imported = portable_archive.read(&imported_reference).await?;
+    let restored_surface = imported.surface(&artifact.info().identity, Limits::default())?;
+    assert_eq!(restored_surface.identity(), expected_surface_identity);
     Ok(())
 }

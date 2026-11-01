@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use serde_json::Value;
-use std::{fs, io, path::Path};
+use std::io;
 
 pub(super) enum Source {
     Driver(Box<process::Browser>),
@@ -170,12 +170,6 @@ impl Browser {
             Source::Driver(browser) => browser.screenshot().await,
             Source::Native(browser) => browser.screenshot_artifact().await,
         }
-    }
-
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
-        let artifact = self.screenshot_artifact().await?;
-        fs::write(output.join(format!("{name}.png")), artifact.bytes())?;
-        Ok(())
     }
 
     pub async fn close(&mut self) -> Result<()> {

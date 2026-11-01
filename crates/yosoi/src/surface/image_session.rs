@@ -1,14 +1,15 @@
 //! Stateful, read-only exploration of one typed image document.
 
 use super::{
-    ArchivePolicy, Budget, ExecutionError, ImageSurface, Outcome, PixelArtifact, PixelLimits,
-    SurfaceConnection, SurfacePolicy,
+    ArchivePolicy, ArchivedSource, Budget, ExecutionError, ImageSurface, Outcome, PixelArtifact,
+    PixelLimits, SurfaceConnection, SurfacePolicy,
     connection::{AgentSurface, Connection, Operation, Request, Result, Trace, connection},
     model::{self, ReadOperation, ReadRequest, SurfaceRead},
 };
 use crate::{
     Archive,
-    archive::ImageDocumentArchiveRef,
+    archive::PixelArtifactArchiveRef,
+    automation_record::OperationStatus,
     documents::{FileDocument, FileLimits, ImageDocument, read_file},
 };
 use serde_json::{Value, json};
@@ -26,9 +27,11 @@ struct ImageDriver {
     trace: Trace,
     output: PathBuf,
     pixel_limits: PixelLimits,
+    tile_side: u32,
     retained_artifacts: usize,
-    source_archive_ref: Option<ImageDocumentArchiveRef>,
+    source_archive_ref: Option<PixelArtifactArchiveRef>,
     archive: Option<Archive>,
+    outcome: Option<Outcome>,
     attached: bool,
 }
 
@@ -53,6 +56,7 @@ impl ImageDriver {
                 "sha256": self.surface.source_document().sha256(),
                 "bytes": self.surface.source_document().byte_len(),
             },
+            "source_pixel_artifact": self.surface.source_artifact().info(),
             "source_archive_ref": self.source_archive_ref,
         })
     }
@@ -66,6 +70,7 @@ impl ImageDriver {
                 "sha256": self.surface.source_document().sha256(),
                 "bytes": self.surface.source_document().byte_len(),
             },
+            "source_pixel_artifact": self.surface.source_artifact().info(),
             "root": self.surface.root_reference(),
             "cursor": {
                 "attached": self.attached,
@@ -103,11 +108,29 @@ impl ImageDriver {
             .output
             .join(format!("image-{}.{}", artifact.info().sha256, extension));
         fs::write(&path, artifact.bytes())?;
-        let archive_ref = if let Some(archive) = &self.archive {
-            Some(archive.write(&artifact).await?)
-        } else {
-            None
-        };
+        let archive_ref =
+            if artifact.info().identity == self.surface.source_artifact().info().identity {
+                self.source_archive_ref.clone()
+            } else if let Some(archive) = &self.archive {
+                Some(archive.write(&artifact).await?)
+            } else {
+                None
+            };
+        if let Some(outcome) = &mut self.outcome {
+            let source = ArchivedSource::new_pixel_artifact(
+                artifact.info().identity.clone(),
+                &artifact,
+                self.tile_side,
+                Some(self.surface.index()),
+            );
+            match outcome.clone().with_source(source) {
+                Ok(updated) => *outcome = updated,
+                Err(error) => {
+                    outcome.complete = false;
+                    return Err(error.into());
+                }
+            }
+        }
         self.retained_artifacts = self
             .retained_artifacts
             .checked_add(1)
@@ -121,8 +144,38 @@ impl ImageDriver {
         }))
     }
 
-    async fn close(self) -> (Option<Outcome>, Result<()>) {
-        (None, Ok(()))
+    async fn close(mut self) -> (Option<Outcome>, Result<()>) {
+        let result = if let Some(outcome) = &mut self.outcome {
+            outcome.sealed = true;
+            outcome.receipt(
+                "surface.closed",
+                OperationStatus::Observed,
+                json!({"resources_released":true,"browser_started":false}),
+            );
+            if let Some(archive) = &self.archive {
+                match archive.write(outcome).await {
+                    Ok(reference) => match archive
+                        .export_file(&reference, self.output.join("surface.yosoi"))
+                        .await
+                    {
+                        Ok(()) => match archive.read(&reference).await {
+                            Ok(restored) => {
+                                *outcome = restored;
+                                Ok(())
+                            }
+                            Err(error) => Err(error.into()),
+                        },
+                        Err(error) => Err(error.into()),
+                    },
+                    Err(error) => Err(error.into()),
+                }
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        };
+        (self.outcome, result)
     }
 }
 
@@ -225,9 +278,32 @@ impl AgentSurface for ImageDriver {
 
     async fn persist_command(
         &mut self,
-        _operation: &Operation,
+        operation: &Operation,
         result: Result<Value>,
     ) -> Result<Value> {
+        if let Some(outcome) = &mut self.outcome {
+            let (status, result_value) = match &result {
+                Ok(value) => {
+                    let mut portable = value.clone();
+                    if let Some(artifact) =
+                        portable.get_mut("artifact").and_then(Value::as_object_mut)
+                    {
+                        artifact.remove("path");
+                        artifact.remove("archive_ref");
+                    }
+                    (OperationStatus::Observed, portable)
+                }
+                Err(error) => (
+                    OperationStatus::Rejected,
+                    json!({"error":error.to_string().chars().take(512).collect::<String>()}),
+                ),
+            };
+            outcome.receipt(
+                "surface.image.command",
+                status,
+                json!({"command":operation,"outcome":result_value}),
+            );
+        }
         result
     }
 
@@ -236,7 +312,7 @@ impl AgentSurface for ImageDriver {
     }
 
     fn outcome(&self) -> Option<Outcome> {
-        None
+        self.outcome.clone()
     }
 
     async fn close(self) -> (Option<Outcome>, Result<()>) {
@@ -292,8 +368,24 @@ impl ImageSession {
                 None => None,
             };
             let source_archive_ref = match &archive {
-                Some(archive) => Some(archive.write(&document).await?),
+                Some(archive) => Some(archive.write(surface.source_artifact()).await?),
                 None => None,
+            };
+            let outcome = if policy.archive == ArchivePolicy::Enabled {
+                Some(
+                    Outcome::new(
+                        format!("image-{}", uuid::Uuid::new_v4()),
+                        policy.archive_limits,
+                    )?
+                    .with_source(ArchivedSource::new_pixel_artifact(
+                        surface.source_artifact().info().identity.clone(),
+                        surface.source_artifact(),
+                        tile_side,
+                        Some(surface.index()),
+                    ))?,
+                )
+            } else {
+                None
             };
             let focus = surface.root_reference();
             let driver = ImageDriver {
@@ -302,9 +394,72 @@ impl ImageSession {
                 trace: Trace::new(&output),
                 output: output.clone(),
                 pixel_limits,
+                tile_side,
                 retained_artifacts: 0,
                 source_archive_ref,
                 archive,
+                outcome,
+                attached: false,
+            };
+            Ok::<_, Box<dyn Error + Send + Sync>>(Self {
+                inner: Connection::new(driver, output, temporary),
+            })
+        }
+        .await;
+        result.map_err(ExecutionError::Operation)
+    }
+
+    /// Opens a saved root PixelArtifact without a source file, browser, or video decoder.
+    pub async fn open_pixel_artifact(
+        reference: &PixelArtifactArchiveRef,
+        archive_root: impl AsRef<Path> + Send + Sync,
+        policy: SurfacePolicy,
+        tile_side: u32,
+        limits: super::Limits,
+        pixel_limits: PixelLimits,
+    ) -> StdResult<Self, ExecutionError> {
+        let result = async {
+            policy.archive_limits.validate()?;
+            let pixel_limits = pixel_limits.validate()?;
+            let temporary = tempfile::tempdir()?;
+            let output = policy
+                .output
+                .clone()
+                .unwrap_or_else(|| temporary.path().join("artifacts"));
+            fs::create_dir_all(&output)?;
+            let archive = Archive::open(archive_root).await?;
+            let artifact = PixelArtifact::read_from(&archive, reference).await?;
+            let surface =
+                ImageSurface::from_pixel_artifact(&artifact, tile_side, limits, pixel_limits)?;
+            let retained_archive = (policy.archive == ArchivePolicy::Enabled).then_some(archive);
+            let outcome = if policy.archive == ArchivePolicy::Enabled {
+                Some(
+                    Outcome::new(
+                        format!("image-{}", uuid::Uuid::new_v4()),
+                        policy.archive_limits,
+                    )?
+                    .with_source(ArchivedSource::new_pixel_artifact(
+                        surface.source_artifact().info().identity.clone(),
+                        surface.source_artifact(),
+                        tile_side,
+                        Some(surface.index()),
+                    ))?,
+                )
+            } else {
+                None
+            };
+            let focus = surface.root_reference();
+            let driver = ImageDriver {
+                surface,
+                focus,
+                trace: Trace::new(&output),
+                output: output.clone(),
+                pixel_limits,
+                tile_side,
+                retained_artifacts: 0,
+                source_archive_ref: Some(reference.clone()),
+                archive: retained_archive,
+                outcome,
                 attached: false,
             };
             Ok::<_, Box<dyn Error + Send + Sync>>(Self {

@@ -404,7 +404,7 @@ impl NativeBrowser {
             Some("text_response_body_not_returned_as_unicode_text".into())
         } else if matches!(source_format, Some(SourceFormat::Xml(_))) {
             Some("existing_requests_xml_projection_not_available_for_network_body".into())
-        } else if (html || json) {
+        } else if html || json {
             Some("existing_requests_source_projection_rejected_response".into())
         } else {
             None
