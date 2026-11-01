@@ -348,7 +348,7 @@
     {
       "rustPath": "yosoi::DecodedFrame::fmt",
       "kind": "function",
-      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "signatureSha256": "7a1c9e4428ee85addaa1531872444e349ab053eeeeb6577da2e7b0394172c88a",
       "trait": "Debug",
       "mechanic": true
     },
@@ -359,6 +359,23 @@
       "pythonTarget": "yosoi.DecodedFrame.info",
       "rationale": "The typed immutable Python field/property retains the Rust value and its documented units, coverage and reference scope.",
       "pythonTargetSha256": "42f7edefa04e62a10d7cc3def16754be7d4eb9097bf489b5f2564ec734a58a0e"
+    },
+    {
+      "rustPath": "yosoi::DecodedFrame::pixel_artifact",
+      "kind": "function",
+      "signatureSha256": "406a161f6a26a7bf95b432fbfa15f0b0db27cda866ab6650640a1abe7ef3bef7",
+      "pythonTarget": "yosoi.DecodedFrame.pixel_artifact",
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "e00479a02706b5ef05d66c5c84db33d11e7752242544586b2fb636beaec97a90"
+    },
+    {
+      "rustPath": "yosoi::DecodedFrame::pixels",
+      "kind": "struct_field",
+      "signatureSha256": "b4350a2eb16a2b7b7514fb957d004a84052da62b9b31c7006f6b70aace9d32b4",
+      "pythonTarget": "yosoi.DecodedFrame.pixel_artifact",
+      "semanticEquivalent": "Checked native frames expose their optional pixels through the pixel_artifact property. Legacy absence remains None; divergent PNG/provenance metadata raises VideoError instead of returning an inconsistent payload.",
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "e00479a02706b5ef05d66c5c84db33d11e7752242544586b2fb636beaec97a90"
     },
     {
       "rustPath": "yosoi::DecodedFrame::png",
@@ -4075,6 +4092,24 @@
       "pythonTargetSha256": "47408e3daeeb51311add26582424c86612559144c2040a605c5e922bef020636"
     },
     {
+      "rustPath": "yosoi::VideoError::Cancelled",
+      "kind": "variant",
+      "signatureSha256": "d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc",
+      "pythonTarget": "yosoi.VideoError",
+      "semanticEquivalent": "rust_error_details exposes VideoError::Cancelled; cancellation and timeout remain distinct from missing-frame and invalid-evidence failures.",
+      "rationale": "The native adapter raises VideoError with its exact Rust variant and structured details after owned decoder cleanup settles.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "error-details",
+        "schemaTarget": "yosoi.errors.RustErrorDetails",
+        "discriminator": "variant",
+        "tag": "Cancelled",
+        "rustType": "yosoi::surface::video::VideoError",
+        "pythonFields": []
+      },
+      "pythonTargetSha256": "91184344e00686d917a625ee2e13527ca4bf912437a478d1d268f6621d0425d9"
+    },
+    {
       "rustPath": "yosoi::VideoError::Invalid",
       "kind": "variant",
       "signatureSha256": "4c6da66ced961bce635c76358d0a556d8c43f75e8ad2ea545f0ec17521700b16",
@@ -4381,6 +4416,34 @@
       "pythonTargetSha256": "0f83a680b7df813a9b914fd17411f0890929bf40af659b912afc12c740a80f47"
     },
     {
+      "rustPath": "yosoi::VideoSession::execute_cancellable",
+      "kind": "function",
+      "signatureSha256": "8677ed241ace5b0d6ae5f779c30957447f9f9aaa2c6897154ac6e7d87c7846dc",
+      "pythonTarget": "yosoi.VideoSession.execute",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "command",
+          "pythonArgument": "command",
+          "conversion": "Python Mapping[str, object] converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "96517164370a791ab59ece775336b1f474a3529d7a0967af94f7b2e1eb8d581b"
+    },
+    {
       "rustPath": "yosoi::VideoSession::execute",
       "kind": "function",
       "signatureSha256": "43cde4575cf58a3cb4150a56a68eedd1615c3292730f16d4d61354b4fbd2125d",
@@ -4394,7 +4457,7 @@
         }
       ],
       "rationale": "The source connection delegates bounded command execution, retained outcomes and cleanup to the corresponding Rust provider.",
-      "pythonTargetSha256": "c089a1bc66f39bf432a0a1590ea906bb9572c60ae8caa62e28e7003f1e2efbc6"
+      "pythonTargetSha256": "96517164370a791ab59ece775336b1f474a3529d7a0967af94f7b2e1eb8d581b"
     },
     {
       "rustPath": "yosoi::VideoSession::fmt",
@@ -4402,6 +4465,61 @@
       "signatureSha256": "f3ac10c72c779b025da70462a9c61f9129ccc4e4a1f0d02f0b419dfcb81efb6b",
       "trait": "Debug",
       "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::VideoSession::open_cancellable",
+      "kind": "function",
+      "signatureSha256": "8cd0390a792ee8de2e44854128bdad50abcdaa12604233a28fb3559cf366f84d",
+      "pythonTarget": "yosoi.VideoSession.open",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "max_side",
+          "pythonArgument": "max_side",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:max_side",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 1920"
+        },
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "video-unit:max_side",
+          "rust": "decoded full-frame pixel coordinates",
+          "python": "decoded full-frame pixel coordinates"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "3289f2f3cabf1baafe6463535594fbbb8ede0d40b4b5984c73ae353efcc3707c"
     },
     {
       "rustPath": "yosoi::VideoSession::open",
@@ -4438,7 +4556,7 @@
         }
       ],
       "rationale": "Rust method maps to the matching Python method/property yosoi.VideoSession.open.",
-      "pythonTargetSha256": "a77d779f123653d985e838eb0bec351900566483ba219114961bf8c99317601e"
+      "pythonTargetSha256": "3289f2f3cabf1baafe6463535594fbbb8ede0d40b4b5984c73ae353efcc3707c"
     },
     {
       "rustPath": "yosoi::VideoSession::outcome",
@@ -4496,6 +4614,46 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::VideoSurface::crop_cancellable",
+      "kind": "function",
+      "signatureSha256": "f8f8cd95efd356dcb0350274336d4d2a7bbab4ac18642d8ecff9895cd0be9890",
+      "pythonTarget": "yosoi.VideoSurface.crop",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python Reference converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "rect",
+          "pythonArgument": "rect",
+          "conversion": "Python PixelRect converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "units": [
+        {
+          "id": "video-unit:rect",
+          "rust": "decoded full-frame pixel coordinates",
+          "python": "decoded full-frame pixel coordinates"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "d67df1cf00f1034a6121bb1b73cf90e1b77650517e571bd8a2eb15f1dd7d9ed6"
+    },
+    {
       "rustPath": "yosoi::VideoSurface::crop",
       "kind": "function",
       "signatureSha256": "32de726ee665bc25c052dbb2fe1f94d5552b7614b5ed25937618f8a341b5e6db",
@@ -4513,7 +4671,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "02ededccbd526014984cbba9050446df21625a03415b8061a4ff95fe0c50c83e"
+      "pythonTargetSha256": "d67df1cf00f1034a6121bb1b73cf90e1b77650517e571bd8a2eb15f1dd7d9ed6"
     },
     {
       "rustPath": "yosoi::VideoSurface::descriptor",
@@ -4532,6 +4690,34 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::VideoSurface::frame_cancellable",
+      "kind": "function",
+      "signatureSha256": "0db846af4d433a35ce19eee5b2d5d9eaf74d3dced8fd20e579f70329560b5f8f",
+      "pythonTarget": "yosoi.VideoSurface.frame",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python Reference converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "8dc05375b41038b04a9335b5e9450ea0a862604d52ea57340c7e6bd6df11212d"
+    },
+    {
       "rustPath": "yosoi::VideoSurface::frame",
       "kind": "function",
       "signatureSha256": "cb85fa70fc6522e955c8e2cbf1667ad777fbbd84bd87f4b9579dae87c24265bb",
@@ -4544,7 +4730,72 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "9406578f0640ab105c3e5951792089c68e62eac75287e604e874af6406bae2d6"
+      "pythonTargetSha256": "8dc05375b41038b04a9335b5e9450ea0a862604d52ea57340c7e6bd6df11212d"
+    },
+    {
+      "rustPath": "yosoi::VideoSurface::from_document_cancellable",
+      "kind": "function",
+      "signatureSha256": "0619c96adb72c6213ec305734edc9f569e702c66789ccdb39318278f578fb468",
+      "pythonTarget": "yosoi.VideoSurface.from_document",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python VideoDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "b23126f9ca018352ca0c0c3e81aa3da782e5138a758f4ce7b6e90d97679590cd"
+    },
+    {
+      "rustPath": "yosoi::VideoSurface::from_document",
+      "kind": "function",
+      "signatureSha256": "2a6b9631e29e161262eb788a9c88cea41cd094fc9f3de29151e15d0bd801fd63",
+      "pythonTarget": "yosoi.VideoSurface.from_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python VideoDocument converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "b23126f9ca018352ca0c0c3e81aa3da782e5138a758f4ce7b6e90d97679590cd"
     },
     {
       "rustPath": "yosoi::VideoSurface::metadata",
@@ -4564,6 +4815,44 @@
       "pythonTargetSha256": "ae7e7885fc43178473cd6e232b1957e2d63a2f227b5c89ad2226ebbc55271339"
     },
     {
+      "rustPath": "yosoi::VideoSurface::open_cancellable",
+      "kind": "function",
+      "signatureSha256": "b3453b09b2725160b0094ae25217a5a96784552207edf789576673e0e43343e1",
+      "pythonTarget": "yosoi.VideoSurface.open",
+      "semanticEquivalent": "Python unifies cancellable and default operations through the optional cancellation keyword. A supplied cooperative token propagates cancellation; cancelling one await signals only its child operation and waits for owned decoder cleanup.",
+      "argumentMappings": [
+        {
+          "rustArgument": "path",
+          "pythonArgument": "path",
+          "conversion": "checked Rust integer maps to Python str | Path"
+        },
+        {
+          "rustArgument": "policy",
+          "pythonArgument": "policy",
+          "conversion": "Python Policy serializes to the native Rust policy value"
+        },
+        {
+          "rustArgument": "cancellation",
+          "pythonArgument": "cancellation",
+          "conversion": "Use the supplied CancellationToken through its native operation child; preserve shared-parent propagation, sibling isolation and awaited decoder reaping."
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:policy",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        },
+        {
+          "id": "python-default:cancellation",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "8a32e6c5bf56c3f1563ddbe0ae48314428dffe0e977d2d683e5ce2fb48599cfe"
+    },
+    {
       "rustPath": "yosoi::VideoSurface::open",
       "kind": "function",
       "signatureSha256": "780c3118b066f85538fb8a116dc38e23aee8f838e6e494a1eccba63a28bee676",
@@ -4581,7 +4870,7 @@
         }
       ],
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "377d65b35ccf28fbce52fddbdd3d3cc2c663382ef6673847b80118f7ac65b833"
+      "pythonTargetSha256": "8a32e6c5bf56c3f1563ddbe0ae48314428dffe0e977d2d683e5ce2fb48599cfe"
     },
     {
       "rustPath": "yosoi::VideoSurface::policy",
@@ -4635,6 +4924,14 @@
       "pythonTarget": "yosoi.VideoSurface.root_reference",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "8c0d4c0ecd439809e2bf44e50efab39d7c7b19336f0714d68c3cebc3bf5633ef"
+    },
+    {
+      "rustPath": "yosoi::VideoSurface::source_document",
+      "kind": "function",
+      "signatureSha256": "ef3e0ebbc2106a68528253269aceda0481bbf3561f246c90174b3057d00ff8cb",
+      "pythonTarget": "yosoi.VideoSurface.source_document",
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "e073a9bc02ac310a505d3ed872e60d223d01972e7e0c95c00c8ac2fe3cea658a"
     },
     {
       "rustPath": "yosoi::VideoSurface::write_to",
@@ -5413,7 +5710,7 @@
         }
       ],
       "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
-      "pythonTargetSha256": "de64f53b2b333556bc5675e2520ed539a7db36d45c54e1364eed185546f6ec85"
+      "pythonTargetSha256": "f3b36ee512203d9821a9007bbc4a51f3b86f44851575c9f0f97f44e7f337d8b6"
     },
     {
       "rustPath": "yosoi::surface::ArchivedSource::fmt",
@@ -5762,7 +6059,7 @@
       "signatureSha256": "b119ee34f890137788c5ad0802064c5150ebeefa7216819235980847085f4c56",
       "pythonTarget": "yosoi.surface.ArchivedSource",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "62501d1ecd480eb55eb798b540c41a99bac1de1bfff5ef29e4242d24a53989a4"
+      "pythonTargetSha256": "4d8e2c74fda9288b6b154f01ae621424ae4a00e3f968558dfc30f87b05a3b50b"
     },
     {
       "rustPath": "yosoi::surface::Continuation::clone",
@@ -8816,7 +9113,7 @@
       "signatureSha256": "6f2939e30518f105bcbec3c5ecf65eec2004f02c8b9c2192f8dc9d8f0da8bc87",
       "pythonTarget": "yosoi.surface.NetworkPayloadValue",
       "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
-      "pythonTargetSha256": "5d609e24c8a902ef1a2f6f299c538167841c870dda58263a6057329e8fd6f0f6"
+      "pythonTargetSha256": "faf7f052bb18883c970a3e0a7658eedcd11ec4be6f8f55fa1c96c73982019019"
     },
     {
       "rustPath": "yosoi::surface::NetworkPayload",
@@ -12415,6 +12712,21 @@
       "pythonTargetSha256": "ec965ad63b917e778fea57502fc775f4533023a23ef549166bd16e7ff67fbc95"
     },
     {
+      "rustPath": "yosoi::surface::video::FrameInfo::pixel_artifact",
+      "kind": "struct_field",
+      "signatureSha256": "85155196c29c0a9ae2b512689b7a58a0531f78b7a9e27455add0007b48bc4418",
+      "pythonTarget": "yosoi.surface.FrameInfo.pixel_artifact",
+      "defaults": [
+        {
+          "id": "optional-default:pixel_artifact",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
+      "pythonTargetSha256": "a94f0ef940bf17d72f7874054c89c64643d28f6c1e26394781a2fe6287a4eb50"
+    },
+    {
       "rustPath": "yosoi::surface::video::FrameInfo::png_bytes",
       "kind": "struct_field",
       "signatureSha256": "2e132f160bd036084814ea895506d946c4b79859be7e206f2e1c1d2c725ddc9c",
@@ -12491,7 +12803,7 @@
       "signatureSha256": "24f31c52d07ce62e9c71542e605e99f8617659f974d244e4a3290e8b58da7343",
       "pythonTarget": "yosoi.surface.FrameInfo",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
-      "pythonTargetSha256": "b3779758012183e0de35b24f6dea653ece777751a83adf6cdbfde80050319d90"
+      "pythonTargetSha256": "168499db63d739c0f8ae55cea85a41754a1dc74c81b0c1383ccdf77f006eb77e"
     },
     {
       "rustPath": "yosoi::surface::video::VideoArchiveRef::clone",

@@ -30,8 +30,19 @@
     {
       "rustPath": "yosoi::documents::FileMetadata",
       "pythonTarget": "yosoi.FileMetadata",
-      "semanticEquivalent": "Filename, declared MIME, detected MIME and provenance remain separate fields. Source values preserve exact URLs up to a 1 MiB UTF-8 bound; other caller metadata retains its smaller field bounds. Rust computes detection and SHA-256 from the exact payload.",
-      "tests": ["test_media_factory_classifies_and_redacts_payload", "test_file_metadata_keeps_long_source_urls_with_a_one_mebibyte_bound"]
+      "semanticEquivalent": "Filename, declared MIME, detected MIME and provenance remain separate fields. Source values preserve exact URLs up to a 1 MiB UTF-8 bound; other caller metadata retains its smaller field bounds. Rust computes detection and SHA-256 from the exact payload. Only a bounded FFprobe-confirmed Ogg or MPEG-TS video ingestion adds probe_validated_video_container; caller values are excluded from native construction and cannot create this classification basis.",
+      "tests": ["test_media_factory_classifies_and_redacts_payload", "test_file_metadata_keeps_long_source_urls_with_a_one_mebibyte_bound", "test_authored_metadata_cannot_claim_decoder_video_validation", "test_signature_ambiguous_video_open_keeps_typed_probe_basis"]
+    },
+    {
+      "rustPath": "yosoi::documents::VideoDocument::copy_with_metadata",
+      "pythonTarget": "yosoi.VideoDocument.copy_with_metadata",
+      "semanticEquivalent": "Both copy the same exact video bytes under an optional new identity and authored metadata. A source already validated as signature-ambiguous Ogg or MPEG-TS retains its native FFprobe-confirmed basis; caller metadata cannot create or replace that basis, detected MIME, or digest.",
+      "argumentMappings": [
+        {"rustArgument": "id", "pythonArgument": "id", "conversion": "Both revalidate the replacement document identity."},
+        {"rustArgument": "metadata", "pythonArgument": "metadata", "conversion": "Both accept optional FileMetadata; omission retains source metadata and native detection fields are recomputed."},
+        {"rustArgument": "limits", "pythonArgument": "limits", "conversion": "Both accept optional FileLimits; omission uses the 64 MiB default."}
+      ],
+      "tests": ["test_signature_ambiguous_video_open_keeps_typed_probe_basis"]
     },
     {
       "rustPath": "yosoi::request::Attempt::file_document",

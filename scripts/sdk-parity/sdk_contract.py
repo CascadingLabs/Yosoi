@@ -267,6 +267,7 @@ REQUIRED_SUITES = (
     "run_surface_conformance.py",
     "run_image_surface_conformance.py",
     "run_network_conformance.py",
+    "run_video_conformance.py",
 )
 
 
