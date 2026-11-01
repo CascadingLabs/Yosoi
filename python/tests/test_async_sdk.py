@@ -181,7 +181,7 @@ def test_invalid_request_and_search_preflight_raise_public_exceptions() -> None:
     with pytest.raises(SearchError):
         ys.search.new(" ")
     with pytest.raises(SearchError):
-        ys.search.new("valid").bind(Policy(search=Search(providers=[]))).check()
+        ys.search.new("valid").bind(Policy(search=Search.disabled())).check()
 
 
 def test_google_and_existing_provider_choices_bind_in_one_search() -> None:

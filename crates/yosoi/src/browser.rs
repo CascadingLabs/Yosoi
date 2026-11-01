@@ -266,7 +266,11 @@ mod tests {
     )]
     fn optional_policy_identity_is_bound_without_changing_legacy_defaults()
     -> Result<(), Box<dyn std_error::Error>> {
-        let baseline = policy::Policy::default();
+        use crate::policy::search::Search;
+        let baseline = policy::Policy {
+            search: Search::disabled(),
+            ..policy::Policy::default()
+        };
         assert_eq!(baseline.effective_identity()?.version(), 7);
         let canonical: serde_json::Value = serde_json::from_str(&baseline.to_canonical_json()?)?;
         assert!(canonical.get("browser").is_none());

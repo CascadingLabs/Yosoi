@@ -75,7 +75,11 @@ def test_provider_factories_and_defaults_status_use_rust_registry() -> None:
     assert exact.profile.kind == "exact"
     assert exact.profile.profile == profile
 
-    rust_route = Policy().effective_policy().search.providers[1]
+    rust_route = next(
+        route
+        for route in Policy().effective_policy().search.providers
+        if route.provider == Provider.bing
+    )
     assert Provider.bing.defaults_status() == rust_route.defaults_status
 
 

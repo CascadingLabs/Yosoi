@@ -210,7 +210,9 @@ async fn schema3_policy_records_preserve_v5_and_v6_timeout_identities() -> Resul
     let temporary = tempdir()?;
     let archive = Archive::open(temporary.path().join(".yosoi")).await?;
 
-    let legacy_policy = Policy::default();
+    let legacy_policy: Policy = serde_json::from_str(include_str!(
+        "../../policy/integration_tests/fixtures/policy-v7-explicit-search.json"
+    ))?;
     let mut legacy_policy_value = serde_json::to_value(&legacy_policy)?;
     legacy_policy_value
         .as_object_mut()
@@ -247,7 +249,7 @@ async fn schema3_policy_records_preserve_v5_and_v6_timeout_identities() -> Resul
     };
     let current_reference = archive.write(&current_policy).await?;
     let reopened_current = read_policy_record(&archive, &current_reference).await?;
-    assert_eq!(reopened_current.effective_identity.version(), 7);
+    assert_eq!(reopened_current.effective_identity.version(), 10);
     assert_eq!(reopened_current.policy.default_action_timeout_ms, 20_000);
     Ok(())
 }
