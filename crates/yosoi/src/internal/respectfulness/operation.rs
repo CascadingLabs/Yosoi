@@ -69,14 +69,18 @@ impl Operation {
             .map_err(|_| setup("initial reservation state poisoned"))?
             .take();
         let permit = if let Some((expected, permit)) = prepaid {
-            if canonical_url(&target)? != canonical_url(&expected)?
-                || now_ms()? >= permit.expires_at_ms
-            {
+            let valid = canonical_url(&target).and_then(|target| {
+                Ok(target == canonical_url(&expected)? && now_ms()? < permit.expires_at_ms)
+            });
+            if matches!(valid, Ok(true)) {
+                Ok(permit)
+            } else {
+                spawn_blocking(move || permit.finish_at(now_ms()?, None, None, false))
+                    .await
+                    .map_err(|_| setup("registry release task failed"))??;
                 Err(setup(
                     "initial reservation target or expiry does not authorize this send",
                 ))
-            } else {
-                Ok(permit)
             }
         } else {
             let runtime = self.runtime.clone();
@@ -182,11 +186,20 @@ impl Operation {
     }
 
     pub async fn finish(&self) -> Result<(), RespectfulnessError> {
-        let permit = self
+        let pending = self
             .pending
             .lock()
             .map_err(|_| setup("permit state poisoned"))?
             .take();
+        let permit = match pending {
+            Some(permit) => Some(permit),
+            None => self
+                .prepaid
+                .lock()
+                .map_err(|_| setup("initial reservation state poisoned"))?
+                .take()
+                .map(|(_, permit)| permit),
+        };
         if let Some(permit) = permit {
             let event = Event {
                 kind: EventKind::Released,

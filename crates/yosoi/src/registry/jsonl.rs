@@ -214,7 +214,7 @@ impl Jsonl {
         expected: &Revision,
         changes: &[Change],
         context: &TransactionContext,
-    ) -> Result<Snapshot, RegistryError> {
+    ) -> Result<(Snapshot, Option<Transaction>), RegistryError> {
         context.validate()?;
         let _lock = self.lock()?;
         let (state, committed_bytes) = self.read()?;
@@ -232,8 +232,9 @@ impl Jsonl {
             file.set_len(committed_bytes)?;
             file.seek(SeekFrom::Start(committed_bytes))?;
             append(&mut file, &record)?;
+            return Ok((next, Some(record.transaction)));
         }
-        Ok(next)
+        Ok((next, None))
     }
 
     pub(super) fn compact(&self) -> Result<(), RegistryError> {

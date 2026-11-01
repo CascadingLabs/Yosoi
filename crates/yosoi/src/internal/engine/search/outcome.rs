@@ -199,7 +199,7 @@ pub enum SearchFailure {
 }
 
 /// Reason an authored provider slot did not start a search Request.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchUnavailableReason {
     /// Auto routing selected another candidate; no work was dispatched here.
@@ -383,6 +383,7 @@ pub enum SearchTermination {
 
 /// The result of one query across all providers selected by Policy.
 pub struct SearchResponse {
+    pub(in crate::internal::engine) rotation: Option<super::AutoRotationTrace>,
     pub(in crate::internal::engine) routing: Routing,
     pub(in crate::internal::engine) selected_provider: Option<Provider>,
     pub(in crate::internal::engine) request_id: SearchRequestId,
@@ -392,6 +393,11 @@ pub struct SearchResponse {
 }
 
 impl SearchResponse {
+    /// Exact registry/cursor audit of Auto selection; None for All or unevaluated routing.
+    pub const fn rotation(&self) -> Option<&super::AutoRotationTrace> {
+        self.rotation.as_ref()
+    }
+
     /// Authored routing mode, separate from the chosen concrete provider.
     pub const fn routing(&self) -> Routing {
         self.routing
@@ -429,6 +435,7 @@ impl fmt::Debug for SearchResponse {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("SearchResponse")
+            .field("rotation", &self.rotation)
             .field("routing", &self.routing)
             .field("selected_provider", &self.selected_provider)
             .field("request_id", &self.request_id)

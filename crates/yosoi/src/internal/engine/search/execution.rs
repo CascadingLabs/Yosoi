@@ -12,8 +12,8 @@ use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 
 use crate::internal::engine::search::{
-    BoundSearchRequest, ProviderOutcome, ProviderResult, SearchFailure, SearchResponse,
-    SearchTermination, SearchUnavailableReason,
+    AutoRotationSkip, AutoRotationTrace, BoundSearchRequest, ProviderOutcome, ProviderResult,
+    SearchFailure, SearchResponse, SearchTermination, SearchUnavailableReason,
 };
 
 mod auto;
@@ -70,6 +70,7 @@ async fn route_jobs(
     slots: &mut [Option<ProviderResult>],
     cancellation: &CancellationToken,
     deadline: Instant,
+    rotation: &mut Option<AutoRotationTrace>,
 ) -> Result<Option<Provider>, super::SearchSendError> {
     let effective_search = &prepared.policy_snapshot().effective_policy().search;
     let provider_count = prepared.providers().len();
@@ -101,6 +102,11 @@ async fn route_jobs(
             registry,
             cancellation,
             deadline,
+            auto::RotationContext {
+                request_id: prepared.request_id().to_string(),
+                policy_version: prepared.policy_snapshot().identity().version(),
+                policy_sha256: prepared.policy_snapshot().identity().digest().to_string(),
+            },
         )
         .await?;
         for (slot, error) in choice.rejected {
@@ -121,6 +127,7 @@ async fn route_jobs(
                 .get_mut(slot)
                 .ok_or(SearchExecutionSetupError::ProviderTarget)? = Some(result);
         }
+        *rotation = choice.rotation.take();
         if choice.slot.is_some() || (!cancellation.is_cancelled() && Instant::now() < deadline) {
             let mut selected_jobs = VecDeque::new();
             while let Some(mut job) = jobs.pop_front() {
@@ -149,7 +156,53 @@ async fn route_jobs(
         }
     }
 
+    if let Some(trace) = rotation.as_mut() {
+        trace.skipped = slots
+            .iter()
+            .filter_map(|slot| slot.as_ref())
+            .filter_map(|slot| {
+                if let ProviderOutcome::NotStarted(reason) = slot.outcome() {
+                    Some(AutoRotationSkip {
+                        provider: slot.provider(),
+                        reason: *reason,
+                        error: slot
+                            .respectfulness()
+                            .iter()
+                            .find_map(|event| event.error.clone()),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
     Ok(selected_provider)
+}
+
+pub(super) fn finish_rotation(
+    rotation: &mut Option<AutoRotationTrace>,
+    providers: &[ProviderResult],
+) -> Result<(), RespectfulnessError> {
+    if let Some(trace) = rotation.as_mut() {
+        for request_id in providers
+            .iter()
+            .flat_map(|provider| {
+                provider
+                    .request_id()
+                    .into_iter()
+                    .chain(provider.attempts().iter().map(|attempt| attempt.request_id))
+            })
+            .map(|request_id| request_id.to_string())
+        {
+            if !trace.request_ids.contains(&request_id) {
+                trace.request_ids.push(request_id);
+            }
+        }
+        if !trace.validate() {
+            return Err(RespectfulnessError::InvalidState);
+        }
+    }
+    Ok(())
 }
 
 async fn execute_prepared(
@@ -198,9 +251,21 @@ async fn execute_prepared(
         }
     }
 
-    let selected_provider =
-        route_jobs(&prepared, &mut jobs, &mut slots, cancellation, deadline).await?;
+    let mut rotation = None;
+    let selected_provider = route_jobs(
+        &prepared,
+        &mut jobs,
+        &mut slots,
+        cancellation,
+        deadline,
+        &mut rotation,
+    )
+    .await?;
 
+    // Retain ownership even when the scheduler discards a queued provider.
+    let initial_operation = jobs
+        .iter()
+        .find_map(|job| job.payload.initial_operation.clone());
     let worker = move |job: ProviderJob, token: CancellationToken| async move {
         execute_provider(job, &token, diagnostic_capture).await
     };
@@ -214,6 +279,9 @@ async fn execute_prepared(
         worker,
     )
     .await;
+    if let Some(operation) = initial_operation {
+        operation.finish().await?;
+    }
 
     let mut providers = Vec::with_capacity(provider_count);
     let scheduler_termination = scheduled.termination;
@@ -249,7 +317,9 @@ async fn execute_prepared(
         SchedulerTermination::Cancelled => SearchTermination::Cancelled,
         SchedulerTermination::DeadlineReached => SearchTermination::DeadlineReached,
     };
+    finish_rotation(&mut rotation, &providers)?;
     Ok(SearchResponse {
+        rotation,
         routing: effective_search.routing,
         selected_provider,
         request_id: prepared.request_id(),

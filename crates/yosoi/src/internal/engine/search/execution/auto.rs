@@ -1,4 +1,5 @@
 //! Atomic rotation and first-request admission. No provider work runs here.
+use super::super::AutoRotationTrace;
 use crate::{
     internal::{
         respectfulness::{Permit, Runtime, expiry, now_ms},
@@ -14,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::future::pending;
 use tokio::{
-    task::spawn_blocking,
+    task::{JoinHandle, spawn_blocking},
     time::{Instant, timeout_at},
 };
 use tokio_util::sync::CancellationToken;
@@ -22,6 +23,7 @@ use tokio_util::sync::CancellationToken;
 #[derive(Default)]
 pub(super) struct Choice {
     pub slot: Option<usize>,
+    pub rotation: Option<AutoRotationTrace>,
     pub permit: Option<Permit>,
     pub rejected: Vec<(usize, RespectfulnessError)>,
 }
@@ -33,6 +35,12 @@ struct Cursor {
     selected: Provider,
 }
 
+pub(super) struct RotationContext {
+    pub request_id: String,
+    pub policy_version: u16,
+    pub policy_sha256: String,
+}
+
 pub(super) async fn select(
     providers: Vec<Provider>,
     targets: Vec<Option<String>>,
@@ -40,29 +48,48 @@ pub(super) async fn select(
     registry: Registry,
     cancellation: &CancellationToken,
     deadline: Instant,
+    context: RotationContext,
 ) -> Result<Choice, RespectfulnessError> {
     if cancellation.is_cancelled() || Instant::now() >= deadline {
         return Ok(Choice::default());
     }
     let token = cancellation.clone();
-    let mut task = spawn_blocking(move || {
-        select_at(&providers, &targets, policy, &registry, &token, deadline)
+    let task = spawn_blocking(move || {
+        select_traced_at(
+            &providers, &targets, policy, &registry, &token, deadline, &context,
+        )
     });
-    tokio::select! {
+    settle_selection(task, cancellation, deadline).await
+}
+
+async fn settle_selection(
+    mut task: JoinHandle<Result<Choice, RespectfulnessError>>,
+    cancellation: &CancellationToken,
+    deadline: Instant,
+) -> Result<Choice, RespectfulnessError> {
+    let result = tokio::select! {
         biased;
-        () = cancellation.cancelled() => { task.abort(); Ok(Choice::default()) },
-        _ = timeout_at(deadline, pending::<()>()) => { task.abort(); Ok(Choice::default()) },
-        result = &mut task => result.map_err(|_| RespectfulnessError::Setup {message:"Auto selection task failed".to_owned()})?,
+        result = &mut task => result,
+        () = cancellation.cancelled() => { task.abort(); task.await },
+        _ = timeout_at(deadline, pending::<()>()) => { task.abort(); task.await },
+    };
+    match result {
+        Ok(choice) => choice,
+        Err(error) if error.is_cancelled() => Ok(Choice::default()),
+        Err(_) => Err(RespectfulnessError::Setup {
+            message: "Auto selection task failed".to_owned(),
+        }),
     }
 }
 
-fn select_at(
+fn select_traced_at(
     providers: &[Provider],
     targets: &[Option<String>],
     policy: Option<Respectfulness>,
     registry: &Registry,
     cancellation: &CancellationToken,
     deadline: Instant,
+    context: &RotationContext,
 ) -> Result<Choice, RespectfulnessError> {
     if providers.is_empty() || targets.len() != providers.len() {
         return Err(RespectfulnessError::InvalidState);
@@ -78,19 +105,36 @@ fn select_at(
             return Ok(Choice::default());
         }
         let snapshot = registry.snapshot()?;
-        let mut index = match snapshot.entries.get(&key) {
-            Some(value) => usize::try_from(
-                serde_json::from_value::<Cursor>(value.clone())
-                    .map_err(|_| RespectfulnessError::InvalidState)?
-                    .next,
-            )
-            .map_err(|_| RespectfulnessError::InvalidState)?,
-            None => 0,
-        };
+        let cursor_before = snapshot
+            .entries
+            .get(&key)
+            .map(|value| serde_json::from_value::<Cursor>(value.clone()).map(|cursor| cursor.next))
+            .transpose()
+            .map_err(|_| RespectfulnessError::InvalidState)?;
+        let mut index = usize::try_from(cursor_before.unwrap_or(0))
+            .map_err(|_| RespectfulnessError::InvalidState)?;
         if index >= providers.len() {
             return Err(RespectfulnessError::InvalidState);
         }
-        let mut choice = Choice::default();
+        let mut choice = Choice {
+            rotation: Some(AutoRotationTrace {
+                schema_version: 1,
+                search_request_id: context.request_id.clone(),
+                policy_identity_version: context.policy_version,
+                policy_identity_sha256: context.policy_sha256.clone(),
+                candidates: providers.to_vec(),
+                registry_key: key.clone(),
+                cursor_before,
+                cursor_after: cursor_before,
+                revision_before: snapshot.revision.clone(),
+                revision_after: snapshot.revision.clone(),
+                transaction: None,
+                selected_provider: None,
+                skipped: Vec::new(),
+                request_ids: Vec::new(),
+            }),
+            ..Choice::default()
+        };
         let mut conflict = false;
         for _ in 0..providers.len() {
             let slot = index;
@@ -123,6 +167,14 @@ fn select_at(
             );
             "search.auto.select".clone_into(&mut context.operation);
             context.resources.push(key.clone());
+            context.resources.push(format!(
+                "search/request/{}",
+                choice
+                    .rotation
+                    .as_ref()
+                    .ok_or(RespectfulnessError::InvalidState)?
+                    .search_request_id
+            ));
             let provider = providers
                 .get(slot)
                 .copied()
@@ -138,8 +190,18 @@ fn select_at(
             if cancellation.is_cancelled() || Instant::now() >= deadline {
                 return Ok(Choice::default());
             }
-            match registry.commit_with_context(&snapshot.revision, &changes, &context) {
-                Ok(_) => {
+            match registry.commit_with_receipt(&snapshot.revision, &changes, &context) {
+                Ok((committed, transaction)) => {
+                    let rotation = choice
+                        .rotation
+                        .as_mut()
+                        .ok_or(RespectfulnessError::InvalidState)?;
+                    rotation.cursor_after =
+                        Some(u64::try_from(index).map_err(|_| RespectfulnessError::InvalidState)?);
+                    rotation.revision_after = committed.revision;
+                    rotation.transaction =
+                        Some(transaction.ok_or(RespectfulnessError::InvalidState)?);
+                    rotation.selected_provider = Some(provider);
                     choice.slot = Some(slot);
                     choice.permit = permit;
                     return Ok(choice);
@@ -172,9 +234,117 @@ mod tests {
         internal::respectfulness::Operation,
         policy::respectfulness::{Group, RateBudget},
     };
-    use std::{error::Error, io, time::Duration};
+    use std::{error::Error, io, sync::mpsc, time::Duration};
+    use tokio::sync::oneshot;
+
+    fn select_at(
+        providers: &[Provider],
+        targets: &[Option<String>],
+        policy: Option<Respectfulness>,
+        registry: &Registry,
+        cancellation: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<Choice, RespectfulnessError> {
+        use uuid::Uuid;
+        select_traced_at(
+            providers,
+            targets,
+            policy,
+            registry,
+            cancellation,
+            deadline,
+            &RotationContext {
+                request_id: Uuid::new_v4().to_string(),
+                policy_version: 10,
+                policy_sha256: "0".repeat(64),
+            },
+        )
+    }
 
     type TestResult = Result<(), Box<dyn Error>>;
+
+    #[tokio::test]
+    async fn cancellation_settles_an_already_running_selection() -> TestResult {
+        let (started_tx, started_rx) = oneshot::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let task = spawn_blocking(move || {
+            let _ = started_tx.send(());
+            release_rx
+                .recv()
+                .map_err(|_| RespectfulnessError::InvalidState)?;
+            Ok(Choice {
+                slot: Some(0),
+                ..Choice::default()
+            })
+        });
+        started_rx.await?;
+        let token = CancellationToken::new();
+        token.cancel();
+        release_tx.send(())?;
+        let deadline = Instant::now()
+            .checked_add(Duration::from_secs(5))
+            .ok_or("deadline")?;
+        assert_eq!(
+            settle_selection(task, &token, deadline).await?.slot,
+            Some(0)
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn unused_prepaid_permit_is_released_without_refunding_start() -> TestResult {
+        let directory = tempfile::tempdir()?;
+        let registry = Registry::jsonl(directory.path().join("unused.jsonl"))?;
+        let target = "https://example.com/search".to_owned();
+        let policy = Respectfulness::new(vec![Group {
+            concurrency: Some(1),
+            budgets: vec![RateBudget {
+                requests: 2,
+                window_ms: 60_000,
+            }],
+            ..Group::new("shared", ["^https://example\\.com/"])
+        }])?;
+        let deadline = Instant::now()
+            .checked_add(Duration::from_secs(5))
+            .ok_or("deadline")?;
+        let providers = [Provider::Bing];
+        let targets = [Some(target.clone())];
+        let mut first = select_at(
+            &providers,
+            &targets,
+            Some(policy.clone()),
+            &registry,
+            &CancellationToken::new(),
+            deadline,
+        )?;
+        let operation = Operation::from_permit(first.permit.take().ok_or("permit")?, target);
+        operation.finish().await?;
+        let mut second = select_at(
+            &providers,
+            &targets,
+            Some(policy.clone()),
+            &registry,
+            &CancellationToken::new(),
+            deadline,
+        )?;
+        assert_eq!(second.slot, Some(0));
+        Operation::from_permit(
+            second.permit.take().ok_or("permit")?,
+            "https://example.com/search".to_owned(),
+        )
+        .finish()
+        .await?;
+        let third = select_at(
+            &providers,
+            &targets,
+            Some(policy),
+            &registry,
+            &CancellationToken::new(),
+            deadline,
+        )?;
+        assert!(third.slot.is_none());
+        Ok(())
+    }
 
     #[test]
     fn rotation_wraps_and_survives_independent_handles_and_restart() -> TestResult {
@@ -378,15 +548,24 @@ mod tests {
         let deadline = Instant::now()
             .checked_add(Duration::from_secs(3))
             .ok_or("deadline")?;
+        let mut rotation = None;
         assert_eq!(
-            route_jobs(&prepared, &mut jobs, &mut slots, &cancellation, deadline).await?,
+            route_jobs(
+                &prepared,
+                &mut jobs,
+                &mut slots,
+                &cancellation,
+                deadline,
+                &mut rotation
+            )
+            .await?,
             Some(Provider::Bing)
         );
         assert_eq!(jobs.len(), 1);
         let job = jobs.pop_front().ok_or("selected job")?;
         let result = timeout(
             Duration::from_secs(3),
-            execute_provider(job.payload, &cancellation, false),
+            execute_provider(job.payload, &cancellation, true),
         )
         .await?;
         assert!(matches!(
@@ -408,6 +587,52 @@ mod tests {
                 .count(),
             1
         );
+        #[cfg(unix)]
+        {
+            use super::super::finish_rotation;
+            use crate::policy::search::Routing;
+            use crate::{
+                Archive,
+                search::{AutoRotationTrace, SearchReplayError, SearchResponse, SearchTermination},
+            };
+            use std::{fs, slice};
+            finish_rotation(&mut rotation, slice::from_ref(&result))?;
+            let response = SearchResponse {
+                rotation,
+                routing: Routing::Auto,
+                selected_provider: Some(Provider::Bing),
+                request_id: prepared.request_id(),
+                policy_identity: prepared.policy_snapshot().identity(),
+                providers: vec![result],
+                termination: SearchTermination::Completed,
+            };
+            let archive = Archive::open(directory.path().join("archive")).await?;
+            let evidence = response.save_diagnostics(&archive).await?;
+            let reference = evidence.rotation.ok_or("rotation reference")?;
+            assert_eq!(evidence.records.len(), 1);
+            let mut record = evidence.records.into_iter().next().ok_or("capture")?;
+            assert_eq!(record.rotation.as_ref(), Some(&reference));
+            let before = registry.snapshot()?;
+            registry.compact()?;
+            assert_eq!(registry.snapshot()?, before);
+            let path = registry.path().to_owned();
+            fs::rename(&path, directory.path().join("registry-offline.jsonl"))?;
+            let restored = AutoRotationTrace::read_from(&archive, &reference).await?;
+            assert_eq!(Some(&restored), response.rotation());
+            assert_eq!(
+                record.replay(&archive).await?.decision().failure,
+                Some(SearchFailure::RateLimited)
+            );
+            assert!(
+                !path.exists(),
+                "replay must not initialize or consult Registry"
+            );
+            record.request_id = restored.search_request_id;
+            assert!(matches!(
+                record.replay(&archive).await,
+                Err(SearchReplayError::InvalidBounds)
+            ));
+        }
         server.await??;
         assert!(
             timeout(Duration::from_millis(10), other.accept())
@@ -487,6 +712,64 @@ mod tests {
                 .ok_or("deadline")?,
         )?;
         assert_eq!(choice.slot, Some(count));
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[tokio::test(flavor = "current_thread")]
+    async fn committed_rotation_links_exact_journal_receipt_and_survives_compaction() -> TestResult
+    {
+        use crate::{Archive, search::AutoRotationTrace};
+        use std::fs;
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("receipt.jsonl");
+        let registry = Registry::jsonl(&path)?;
+        let choice = select_at(
+            &[Provider::Bing, Provider::Brave],
+            &[
+                Some("https://example.com/".to_owned()),
+                Some("https://example.com/".to_owned()),
+            ],
+            None,
+            &registry,
+            &CancellationToken::new(),
+            Instant::now()
+                .checked_add(Duration::from_secs(2))
+                .ok_or("deadline")?,
+        )?;
+        let trace = choice.rotation.ok_or("trace")?;
+        let receipt = trace.transaction.as_ref().ok_or("receipt")?;
+        let journal = fs::read_to_string(&path)?;
+        let row: serde_json::Value =
+            serde_json::from_str(journal.lines().nth(1).ok_or("commit line")?)?;
+        assert_eq!(
+            serde_json::to_value(receipt)?,
+            *row.get("transaction").ok_or("envelope")?
+        );
+        assert_eq!(trace.cursor_before, None);
+        assert_eq!(trace.cursor_after, Some(1));
+        assert_eq!(trace.revision_before.sequence, 0);
+        assert_eq!(trace.revision_after.sequence, 1);
+        assert_eq!(receipt.caller, *registry.caller());
+        assert!(
+            receipt
+                .context
+                .resources
+                .contains(&format!("search/request/{}", trace.search_request_id))
+        );
+        assert!(trace.validate());
+        let archive = Archive::open(directory.path().join("archive")).await?;
+        let reference = trace.write_to(&archive).await?;
+        let before = registry.snapshot()?;
+        registry.compact()?;
+        assert_eq!(registry.snapshot()?, before);
+        assert_eq!(
+            AutoRotationTrace::read_from(&archive, &reference).await?,
+            trace
+        );
+        let mut invalid = trace;
+        invalid.transaction.as_mut().ok_or("receipt")?.sequence = 99;
+        assert!(invalid.write_to(&archive).await.is_err());
         Ok(())
     }
 

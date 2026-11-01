@@ -8,7 +8,7 @@ order: 18
 
 Search combines query intent, provider routing, and per-provider outcomes in one operation. By default, Auto chooses one eligible provider from Google, DuckDuckGo, Bing and Brave, in that rotation order. It never switches engines after that provider starts, even if the result is empty, challenged or unsuccessful.
 
-Rotation is shared through the standard JSONL Registry file. Supply a Registry handle to isolate a workload or share the same file across SDK and CLI callers. A successful selection advances the cursor; a cancelled search after that commit does not refund the turn. With no authored Respectfulness policy, traffic controls remain disabled.
+Rotation is shared through the standard JSONL Registry file. Each evaluated Auto response exposes a correlated `rotation` audit; [capture and replay](search-diagnostics.md) explains how to persist and inspect it independently of that mutable registry. Supply a Registry handle to isolate a workload or share the same file across SDK and CLI callers. A successful selection advances the cursor; a cancelled search after that commit does not refund the turn. With no authored Respectfulness policy, traffic controls remain disabled.
 
 ## Workflow
 

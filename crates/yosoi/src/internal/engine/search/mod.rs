@@ -10,6 +10,8 @@ mod preparation;
 mod provider;
 mod query;
 mod result;
+mod rotation;
+pub use rotation::{AutoRotationSkip, AutoRotationTrace};
 mod target;
 
 pub use diagnostics::{

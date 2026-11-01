@@ -29,6 +29,7 @@ use yosoi::{
 
 pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
     SearchEnvelope {
+        rotation: None,
         routing: Routing::All,
         selected_provider: None,
         schema_version: 4,

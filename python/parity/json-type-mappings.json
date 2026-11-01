@@ -748,6 +748,22 @@
     {
       "rustPath": "yosoi::policy::search::Routing",
       "pythonTarget": "yosoi.policy.SearchRouting"
+    },
+    {
+      "rustPath": "yosoi::search::AutoRotationTrace",
+      "pythonTarget": "yosoi.search.AutoRotationTrace"
+    },
+    {
+      "rustPath": "yosoi::search::AutoRotationSkip",
+      "pythonTarget": "yosoi.search.AutoRotationSkip"
+    },
+    {
+      "rustPath": "yosoi::search::AutoRotationRef",
+      "pythonTarget": "yosoi.search.AutoRotationRef"
+    },
+    {
+      "rustPath": "yosoi::search::SearchEvidence",
+      "pythonTarget": "yosoi.search.SearchEvidence"
     }
   ]
 }

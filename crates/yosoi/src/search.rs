@@ -3,20 +3,23 @@
 use crate::registry::Registry as RuntimeRegistry;
 
 mod diagnostics;
+mod rotation;
 pub use diagnostics::{SearchReplay, SearchReplayError, replay_document};
+pub use rotation::{AutoRotationRef, SearchEvidence};
 
 use crate::internal::engine::search as implementation;
 use crate::policy::Policy;
 use crate::request::CancellationToken;
 
 pub use implementation::{
-    FeatureCoverage, ImageResult, LocalPlace, ProviderCharge, ProviderIdentity, ProviderOutcome,
-    ProviderResult, RequestAttemptSummary, RequestAttemptTerminal, SearchAttemptDiagnostic,
-    SearchCapture, SearchCaptureRetention, SearchCoverage, SearchFailure, SearchFeature, SearchHit,
-    SearchHitMetadata, SearchIssue, SearchIssueKind, SearchPage, SearchParserDecision,
-    SearchParserDiagnostic, SearchParserStatus, SearchProfileFacts, SearchQueryError,
-    SearchReplayPolicy, SearchReplayResult, SearchRequestId, SearchResponse, SearchResultUrl,
-    SearchSendError, SearchTermination, SearchUnavailableReason, WebCoverage,
+    AutoRotationSkip, AutoRotationTrace, FeatureCoverage, ImageResult, LocalPlace, ProviderCharge,
+    ProviderIdentity, ProviderOutcome, ProviderResult, RequestAttemptSummary,
+    RequestAttemptTerminal, SearchAttemptDiagnostic, SearchCapture, SearchCaptureRetention,
+    SearchCoverage, SearchFailure, SearchFeature, SearchHit, SearchHitMetadata, SearchIssue,
+    SearchIssueKind, SearchPage, SearchParserDecision, SearchParserDiagnostic, SearchParserStatus,
+    SearchProfileFacts, SearchQueryError, SearchReplayPolicy, SearchReplayResult, SearchRequestId,
+    SearchResponse, SearchResultUrl, SearchSendError, SearchTermination, SearchUnavailableReason,
+    WebCoverage,
 };
 
 /// Creates query intent without selecting a provider or performing I/O.

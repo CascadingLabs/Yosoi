@@ -34,9 +34,11 @@ use yosoi::{
     registry::{Change, Coordination, Revision, Snapshot},
     request::{CaptureId, new as new_request},
     search::{
-        ProviderOutcome, RequestAttemptSummary, RequestAttemptTerminal, SearchCaptureRetention,
+        AutoRotationRef, AutoRotationSkip, AutoRotationTrace, ProviderOutcome,
+        RequestAttemptSummary, RequestAttemptTerminal, SearchCaptureRetention, SearchEvidence,
         SearchFailure, SearchIssue, SearchIssueKind, SearchParserDecision, SearchParserDiagnostic,
         SearchParserStatus, SearchReplay, SearchReplayPolicy, SearchReplayResult,
+        SearchUnavailableReason,
     },
 };
 
@@ -348,6 +350,7 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         "yosoi::search::SearchReplay",
         "Rust-authored synthetic replay record, not an observed capture",
         SearchReplay {
+            rotation: None,
             schema_version: 1,
             sdk_version: "synthetic-control".to_owned(),
             source_revision: None,
@@ -370,7 +373,70 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
             document: "document:v1:123e4567-e89b-42d3-a456-426614174000".parse()?,
             observed: decision,
         },
-        json!({"nullPaths":["source_revision", "adapter_version", "final_url"]}),
+        json!({"nullPaths":["source_revision", "adapter_version", "final_url"], "absentPaths":["rotation"]}),
+    )?);
+
+    // Synthetic wire controls, never claims about an observed routing transaction.
+    let reference = AutoRotationRef {
+        version: 1,
+        document: "document:v1:123e4567-e89b-42d3-a456-426614174000".parse()?,
+    };
+    output.push(constructed_case(
+        "search-rotation-reference",
+        "yosoi::search::AutoRotationRef",
+        "Rust-authored synthetic Archive reference",
+        reference.clone(),
+        json!({}),
+    )?);
+    let skipped = AutoRotationSkip {
+        provider: Provider::Bing,
+        reason: SearchUnavailableReason::Respectfulness,
+        error: None,
+    };
+    output.push(constructed_case(
+        "search-rotation-skip",
+        "yosoi::search::AutoRotationSkip",
+        "Rust-authored synthetic candidate rejection",
+        skipped.clone(),
+        json!({"nullPaths":["error"]}),
+    )?);
+    let revision = Revision {
+        registry_id: "123e4567-e89b-42d3-a456-426614174000".to_owned(),
+        sequence: 0,
+    };
+    let trace = AutoRotationTrace {
+        schema_version: 1,
+        search_request_id: "123e4567-e89b-42d3-a456-426614174001".to_owned(),
+        policy_identity_version: 10,
+        policy_identity_sha256: "0".repeat(64),
+        candidates: vec![Provider::Bing],
+        registry_key: "synthetic-wire-control".to_owned(),
+        cursor_before: None,
+        cursor_after: None,
+        revision_before: revision.clone(),
+        revision_after: revision,
+        transaction: None,
+        selected_provider: None,
+        skipped: vec![skipped],
+        request_ids: vec![],
+    };
+    output.push(constructed_case(
+        "search-rotation-trace",
+        "yosoi::search::AutoRotationTrace",
+        "Rust-authored synthetic wire shape, not a persisted audit",
+        trace,
+        json!({"nullPaths":["cursor_before", "cursor_after", "transaction", "selected_provider"]}),
+    )?);
+    output.push(constructed_case(
+        "search-evidence-bundle",
+        "yosoi::search::SearchEvidence",
+        "Rust-authored synthetic diagnostic bundle",
+        SearchEvidence {
+            schema_version: 1,
+            rotation: Some(reference),
+            records: vec![],
+        },
+        json!({}),
     )?);
 
     // Public policy defaults. The nested cases each exercise the

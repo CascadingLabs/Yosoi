@@ -27,7 +27,7 @@ yosoi search "photosynthesis" --provider bing --output json
 Choose from `google`, `brave`, `bing`, and `duckduckgo`. Specify one provider
 to send a query to that provider alone. A comma-separated list restricts Auto's candidates; it still selects one provider. Add `--routing all` to execute every listed provider, and `--max-in-flight 1` to run that explicit plan serially.
 
-Without a provider list, Auto rotates Google → DuckDuckGo → Bing → Brave. The JSON result includes `routing` and `selected_provider`. Unsupported or constrained candidates retain not-started reasons; `not_selected` means Auto chose another provider. No eligible candidate means no outbound provider work, and a provider failure never causes an engine switch.
+Without a provider list, Auto rotates Google → DuckDuckGo → Bing → Brave. The JSON result includes `routing`, `selected_provider` and the correlated `rotation` trace. Unsupported or constrained candidates retain not-started reasons; `not_selected` means Auto chose another provider. No eligible candidate means no outbound provider work, and a provider failure never causes an engine switch.
 
 Use `--registry ./search.jsonl` for a workload-specific state file. Otherwise, Auto uses the Respectfulness policy's registry path or the standard per-user Registry file. Rotation survives process exit. Authored Respectfulness rules apply to admission; with no policy, those controls remain disabled.
 
