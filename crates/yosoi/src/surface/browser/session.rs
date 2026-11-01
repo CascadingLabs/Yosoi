@@ -318,9 +318,16 @@ impl Driver {
             }
             Operation::Article => self.browser.script("article", json!({})).await,
             Operation::Screenshot => {
-                let artifact = self.browser.screenshot_artifact().await?;
-                let path = self.trace.output.join("surface.png");
+                let (artifact, capture) = self.browser.screenshot_capture().await?;
+                let name = format!("surface-{}", uuid::Uuid::new_v4());
+                let path = self.trace.output.join(format!("{name}.png"));
                 fs::write(&path, artifact.bytes())?;
+                if let Some(metadata) = capture.as_ref() {
+                    fs::write(
+                        self.trace.output.join(format!("{name}.json")),
+                        serde_json::to_vec(metadata)?,
+                    )?;
+                }
                 let archive_ref = if let Some(recording) = &mut self.recording {
                     let image_reference = recording.archive.write(artifact.document()).await?;
                     let reference = artifact.write_to(&recording.archive).await?;
@@ -342,14 +349,16 @@ impl Driver {
                 } else {
                     None
                 };
-                Ok(json!({"path":path,"info":artifact.info(),"archive_ref":archive_ref}))
+                Ok(
+                    json!({"path":path,"info":artifact.info(),"capture":capture,"archive_ref":archive_ref}),
+                )
             }
             Operation::Click { reference, .. }
             | Operation::Fill { reference, .. }
             | Operation::Key { reference, .. }
             | Operation::Scroll { reference, .. }
             | Operation::Navigate { reference, .. } => {
-                self.effect(reference, &request.operation).await
+                Box::pin(self.effect(reference, &request.operation)).await
             }
             Operation::Close => Ok(json!({"closing":true})),
         }
@@ -687,37 +696,49 @@ impl Driver {
             match operation {
                 Operation::Click { reference, .. } => {
                     native
-                        .input(SurfaceInput::Click {
-                            node: self.native_id(reference)?,
-                        })
+                        .input(
+                            SurfaceInput::Click {
+                                node: self.native_id(reference)?,
+                            },
+                            self.epoch,
+                        )
                         .await?
                 }
                 Operation::Fill {
                     reference, text, ..
                 } => {
                     native
-                        .input(SurfaceInput::Fill {
-                            node: self.native_id(reference)?,
-                            text: text.clone(),
-                        })
+                        .input(
+                            SurfaceInput::Fill {
+                                node: self.native_id(reference)?,
+                                text: text.clone(),
+                            },
+                            self.epoch,
+                        )
                         .await?
                 }
                 Operation::Key { reference, key, .. } => {
                     native
-                        .input(SurfaceInput::Key {
-                            node: self.native_id(reference)?,
-                            key: key.clone(),
-                        })
+                        .input(
+                            SurfaceInput::Key {
+                                node: self.native_id(reference)?,
+                                key: key.clone(),
+                            },
+                            self.epoch,
+                        )
                         .await?
                 }
                 Operation::Scroll {
                     delta_x, delta_y, ..
                 } => {
                     native
-                        .input(SurfaceInput::Scroll {
-                            delta_x: *delta_x,
-                            delta_y: *delta_y,
-                        })
+                        .input(
+                            SurfaceInput::Scroll {
+                                delta_x: *delta_x,
+                                delta_y: *delta_y,
+                            },
+                            self.epoch,
+                        )
                         .await?
                 }
                 Operation::Navigate { url, .. } => native.navigate(url).await?,
@@ -873,7 +894,7 @@ impl AgentSurface for Driver {
         )
     }
     async fn command(&mut self, request: &Request) -> Result<Value> {
-        Self::command(self, request).await
+        Box::pin(Self::command(self, request)).await
     }
     fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()> {
         Self::record_reply(self, operation, result)
@@ -1258,10 +1279,11 @@ impl BrowserSurface {
         &mut self,
         representation: super::BrowserRepresentation,
     ) -> StdResult<super::BrowserObservation, ExecutionError> {
-        let value = self
-            .inner
-            .execute(json!({"op":"observe","representation":representation}))
-            .await?;
+        let value = Box::pin(
+            self.inner
+                .execute(json!({"op":"observe","representation":representation})),
+        )
+        .await?;
         serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
     }
     /// Reads a previously observed representation under both caller and SDK policy bounds.
@@ -1273,7 +1295,7 @@ impl BrowserSurface {
         mut request: model::ReadRequest,
     ) -> StdResult<model::ReadResult, ExecutionError> {
         request.budget.bytes = request.budget.bytes.min(65_280);
-        let value = self.inner.execute(json!({"op":"read_view","representation":representation,"budget":request.budget.bytes.saturating_add(256).max(1024),"request":request})).await?;
+        let value = Box::pin(self.inner.execute(json!({"op":"read_view","representation":representation,"budget":request.budget.bytes.saturating_add(256).max(1024),"request":request}))).await?;
         serde_json::from_value(value).map_err(|e| ExecutionError::Operation(Box::new(e)))
     }
     /// Opens a supported regular Chrome/Chromium source under explicit archive policy.

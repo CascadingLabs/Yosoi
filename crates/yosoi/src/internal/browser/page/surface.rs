@@ -69,7 +69,7 @@ impl Page {
     pub(crate) async fn surface_script(&self, operation: &str, input: &Value) -> Result<Value> {
         let script_operation = match operation {
             "capture" | "eligibility" | "binding" | "location" | "article" | "value"
-            | "condition" => operation,
+            | "target_region" | "condition" => operation,
             _ => {
                 return Err(surface_input_error(
                     "surface_script",
@@ -92,6 +92,18 @@ impl Page {
             return Err(surface_input_error(
                 "surface_script",
                 "value requires a node ID and expected value",
+            ));
+        }
+        if operation == "target_region"
+            && (input.get("id").and_then(Value::as_u64).is_none()
+                || input
+                    .get("expected_epoch")
+                    .and_then(Value::as_u64)
+                    .is_none())
+        {
+            return Err(surface_input_error(
+                "surface_script",
+                "target_region requires a node ID and expected document epoch",
             ));
         }
 

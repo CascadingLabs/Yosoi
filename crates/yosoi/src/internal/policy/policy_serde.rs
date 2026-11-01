@@ -5,7 +5,7 @@ use serde::{
 };
 
 use crate::internal::policy::{
-    policy::{Documents, FlowPolicy, Locators, Map, Page, Request, Search, Tuning},
+    policy::{Documents, FlowPolicy, Locators, Map, ObservePolicy, Page, Request, Search, Tuning},
     policy_value::Policy,
 };
 
@@ -27,6 +27,7 @@ impl Serialize for Policy {
             tuning: self.tuning,
             map: &self.map,
             search: &self.search,
+            observe: &self.observe,
         }
         .serialize(serializer)
     }
@@ -50,6 +51,7 @@ impl<'de> Deserialize<'de> for Policy {
             map: values.map,
             search: values.search,
             flow: values.flow,
+            observe: values.observe,
         };
         policy.validate().map_err(D::Error::custom)?;
         Ok(policy)
@@ -72,6 +74,8 @@ struct PolicyRef<'a> {
     tuning: Tuning,
     map: &'a Map,
     search: &'a Search,
+    #[serde(skip_serializing_if = "ObservePolicy::is_default")]
+    observe: &'a ObservePolicy,
 }
 
 #[derive(Deserialize)]
@@ -95,6 +99,8 @@ struct PolicyValues {
     search: Search,
     #[serde(default)]
     flow: FlowPolicy,
+    #[serde(default)]
+    observe: ObservePolicy,
 }
 
 const fn default_action_timeout_ms() -> u64 {

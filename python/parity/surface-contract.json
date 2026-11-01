@@ -77,7 +77,7 @@
         "status": "reviewed",
         "reviewer": "Codex owner",
         "reviewedAt": "2026-10-31T19:53:46+00:00",
-        "rationale": "The Python façade consumes browser.Work and intentionally does not expose a Tab wrapper or tab-selection API.",
+        "rationale": "The Python fa\u00e7ade consumes browser.Work and intentionally does not expose a Tab wrapper or tab-selection API.",
         "pythonEquivalent": "Pass an already selected browser.Work to BrowserSurface.consume_work; this is not a direct Tab mapping."
       },
       "pythonTargetSha256": "c8b5c07236b0327197593dc0574d7789878726675afd228169d7d374760ca466"
@@ -2860,7 +2860,7 @@
         {
           "rustArgument": "bytes",
           "pythonArgument": "content",
-          "conversion": "Python str is UTF-8 encoded; bytes are preserved"
+          "conversion": "Python bytes pass unchanged; str is rejected. ImageDocument dispatches to its typed preparation path."
         },
         {
           "rustArgument": "tile_side",
@@ -5127,7 +5127,7 @@
           "python": "Python default None"
         }
       ],
-      "rationale": "The reviewed browser-specific module façade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
+      "rationale": "The reviewed browser-specific module fa\u00e7ade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
       "pythonTargetSha256": "96401b653310a254fcf43af7861c4110b3d02bc7957173c897f0f7a644404124"
     },
     {
@@ -5135,7 +5135,7 @@
       "kind": "module",
       "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
       "pythonTarget": "yosoi.browser_surface",
-      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
+      "rationale": "The browser-specific Rust Surface fa\u00e7ade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
       "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
     },
     {
@@ -7265,7 +7265,7 @@
       "kind": "function",
       "signatureSha256": "735482a8c27be0e659f8d6df5b7de6a0f0f24a0ba1da34101c15983f9a77fa9a",
       "pythonTarget": "yosoi.surface.ImageCrop.png",
-      "rationale": "Python retains the same typed pixels, coordinates and bounds through its public model or checked native operation.",
+      "rationale": "Rust replaced the former ImageCrop::png struct field with an accessor to bytes retained by its validated PixelArtifact. Python maps that function to its read-only ImageCrop.png property, which returns those same bytes.",
       "pythonTargetSha256": "16e34af63a98a2bdaabaa4635623fd6b85027b7b7529ae7bdd8c0ce072bc45de"
     },
     {

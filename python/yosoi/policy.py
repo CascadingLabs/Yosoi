@@ -46,6 +46,12 @@ PositiveU32 = Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)]
 """Strict positive u32 integer; zero and numeric coercions are rejected."""
 PositiveU64 = Annotated[int, Field(strict=True, gt=0, le=(1 << 64) - 1)]
 """Strict positive u64 integer; zero and numeric coercions are rejected."""
+MAX_RECORDING_DURATION_MS = 86_400_000
+"""Maximum supported recording output duration in milliseconds (24 hours)."""
+RecordingDurationMs = Annotated[
+    int, Field(strict=True, gt=0, le=MAX_RECORDING_DURATION_MS)
+]
+"""Strict recording duration up to the native 24-hour hard limit."""
 PositiveInt = Annotated[int, Field(strict=True, gt=0)]
 """Strict positive Python integer. Native policy validation applies
 operation-specific width and plan constraints.
@@ -1132,6 +1138,152 @@ class _SnapshotFlowPolicy(ImmutableModel):
     on_cancellation: Continuation = Field(default_factory=Continue)
 
 
+ScreenshotScope = Literal["target", "viewport"]
+"""Region captured by automatic screenshots: the active target or visible viewport."""
+
+RecordingMode = Literal["browser_visible", "each_tab"]
+"""Automatic recording source selection; each rule starts an additive source."""
+
+EvidenceFailurePolicy = Literal["continue", "require"]
+"""Whether unavailable automatic evidence is recorded as a gap or fails its owner."""
+
+
+class ScreenshotPolicy(Model):
+    """Select screenshot capture independently for each action phase.
+
+    Attributes:
+        before: Optional region captured before a browser action; None disables it.
+        after: Optional region captured after a browser action; None disables it.
+        failure: Optional region captured after a failed action; None disables it.
+    """
+
+    before: ScreenshotScope | None = None
+    after: ScreenshotScope | None = None
+    failure: ScreenshotScope | None = None
+
+
+class RecordingRule(Model):
+    """Declare one independently bounded automatic recording source.
+
+    Attributes:
+        mode: Record browser-visible output or each admitted tab independently.
+        max_bytes: Positive per-source output bound, addressable by Rust.
+        max_duration_ms: Hard recording deadline in milliseconds, capped at 24 hours.
+        include_audio: Capture tab audio when the selected source supports it.
+    """
+
+    mode: RecordingMode = "browser_visible"
+    max_bytes: AddressableByteLimit = AddressableByteLimit(64_000_000)
+    max_duration_ms: RecordingDurationMs = Field(
+        default=60_000,
+        description=(
+            "Hard recording duration in milliseconds; defaults to 60000 and cannot "
+            "exceed 86400000 (24 hours)."
+        ),
+    )
+    include_audio: StrictBool = False
+
+
+class ObserveLimits(Model):
+    """Bound the number of capture sources and buffered automatic evidence.
+
+    Attributes:
+        max_sources: Positive maximum number of independent source streams.
+        max_recordings: Positive maximum number of active or declared recording rules.
+        max_buffer_bytes: Positive addressable aggregate bound for in-flight capture
+            data.
+        max_retained_bytes: Positive addressable aggregate retained evidence bound.
+    """
+
+    max_sources: Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)] = 33
+    max_recordings: Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)] = 5
+    max_buffer_bytes: AddressableByteLimit = AddressableByteLimit(16_000_000)
+    max_retained_bytes: AddressableByteLimit = AddressableByteLimit(64_000_000)
+
+
+class ObservePolicy(Model):
+    """Opt in to automatic browser evidence capture with native enforced bounds.
+
+    Automatic capture is disabled by default. Explicit per-tab capture permission is
+    independent: it permits a caller to start a recording without enabling automatic
+    capture. Recording rules are additive and retain independent source bounds.
+
+    Attributes:
+        enabled: Enable automatic screenshot and recording rules for browser work.
+        native_tab_capture: Permit explicit capture from this SDK-owned browser tab.
+        screenshots: Before, after, and failure screenshot triggers.
+        recordings: Additive independently bounded automatic recording rules.
+        failure: Continue with a typed evidence gap or require evidence at the owner.
+        limits: Aggregate source, recording-count, and memory bounds.
+    """
+
+    enabled: StrictBool = False
+    native_tab_capture: StrictBool = False
+    screenshots: ScreenshotPolicy = Field(default_factory=ScreenshotPolicy)
+    recordings: list[RecordingRule] = Field(default_factory=list)
+    failure: EvidenceFailurePolicy = "continue"
+    limits: ObserveLimits = Field(default_factory=ObserveLimits)
+
+    def is_default(self) -> bool:
+        """Return whether Rust's canonical policy JSON can omit this section."""
+        return (
+            not self.enabled
+            and not self.native_tab_capture
+            and self.screenshots == ScreenshotPolicy()
+            and not self.recordings
+            and self.failure == "continue"
+            and self.limits == ObserveLimits()
+        )
+
+
+class _SnapshotScreenshotPolicy(ImmutableModel):
+    before: ScreenshotScope | None = None
+    after: ScreenshotScope | None = None
+    failure: ScreenshotScope | None = None
+
+
+class _SnapshotRecordingRule(ImmutableModel):
+    mode: RecordingMode = "browser_visible"
+    max_bytes: AddressableByteLimit = AddressableByteLimit(64_000_000)
+    max_duration_ms: RecordingDurationMs = Field(
+        default=60_000,
+        description=(
+            "Hard recording duration in milliseconds; defaults to 60000 and cannot "
+            "exceed 86400000 (24 hours)."
+        ),
+    )
+    include_audio: StrictBool = False
+
+
+class _SnapshotObserveLimits(ImmutableModel):
+    max_sources: Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)] = 33
+    max_recordings: Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)] = 5
+    max_buffer_bytes: AddressableByteLimit = AddressableByteLimit(16_000_000)
+    max_retained_bytes: AddressableByteLimit = AddressableByteLimit(64_000_000)
+
+
+class _SnapshotObservePolicy(ImmutableModel):
+    enabled: StrictBool = False
+    native_tab_capture: StrictBool = False
+    screenshots: _SnapshotScreenshotPolicy = Field(
+        default_factory=_SnapshotScreenshotPolicy
+    )
+    recordings: tuple[_SnapshotRecordingRule, ...] = ()
+    failure: EvidenceFailurePolicy = "continue"
+    limits: _SnapshotObserveLimits = Field(default_factory=_SnapshotObserveLimits)
+
+    def is_default(self) -> bool:
+        """Return whether Rust's canonical effective policy omits observation."""
+        return (
+            not self.enabled
+            and not self.native_tab_capture
+            and self.screenshots == _SnapshotScreenshotPolicy()
+            and not self.recordings
+            and self.failure == "continue"
+            and self.limits == _SnapshotObserveLimits()
+        )
+
+
 def _network_is_default(value: Network | _SnapshotNetwork) -> bool:
     return (
         value.ip_family == "system_default"
@@ -1208,6 +1360,8 @@ class EffectivePolicy(ImmutableModel):
         tuning: Resolved package tuning mode.
         map: Resolved discovery scope and resource declaration.
         search: Resolved provider routes and shared budgets.
+        observe: Optional automatic browser evidence rules and explicit native-tab
+            capture permission. Disabled default rules are omitted from canonical JSON.
     """
 
     network: Network = Field(
@@ -1223,6 +1377,10 @@ class EffectivePolicy(ImmutableModel):
     tuning: Tuning
     map: Map
     search: EffectiveSearch
+    observe: _SnapshotObservePolicy = Field(
+        default_factory=_SnapshotObservePolicy,
+        exclude_if=lambda value: value.is_default(),
+    )
 
     @model_serializer(mode="wrap")
     def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
@@ -1284,6 +1442,8 @@ class Policy(Model):
         map: Bounded site discovery scope and budgets.
         search: Ordered search provider selection and shared limits. Later edits are
             rechecked by check, to_json, or snapshot.
+        observe: Opt-in automatic screenshot and recording policy, with separate
+            native-tab capture permission and aggregate lifecycle bounds.
     """
 
     model_config = ConfigDict(hide_input_in_errors=True)
@@ -1299,6 +1459,9 @@ class Policy(Model):
     tuning: Tuning = Field(default_factory=Tuning)
     map: Map = _field("map")
     search: Search = _field("search")
+    observe: ObservePolicy = Field(
+        default_factory=ObservePolicy, exclude_if=lambda value: value.is_default()
+    )
 
     @model_serializer(mode="wrap")
     def _omit_default_browser(self, handler: Any) -> dict[str, Any]:
@@ -1516,6 +1679,10 @@ class _SnapshotPolicy(ImmutableModel):
     tuning: _SnapshotTuning = Field(default_factory=_SnapshotTuning)
     map: _SnapshotMap
     search: _SnapshotSearch
+    observe: _SnapshotObservePolicy = Field(
+        default_factory=_SnapshotObservePolicy,
+        exclude_if=lambda value: value.is_default(),
+    )
 
     @model_serializer(mode="wrap")
     def _omit_default_tuning(self, handler: Any) -> dict[str, Any]:
@@ -1573,6 +1740,10 @@ class _SnapshotEffectivePolicy(ImmutableModel):
     tuning: _SnapshotTuning
     map: _SnapshotMap
     search: _SnapshotEffectiveSearch
+    observe: _SnapshotObservePolicy = Field(
+        default_factory=_SnapshotObservePolicy,
+        exclude_if=lambda value: value.is_default(),
+    )
 
     @model_serializer(mode="wrap")
     def _omit_default_browser(self, handler: Any) -> dict[str, Any]:

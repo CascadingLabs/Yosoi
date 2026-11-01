@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Yosoi tab A/V fixture</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:640px;height:360px;overflow:hidden;font:18px system-ui;background:#101820;color:white}
+header{height:80px;padding:8px;position:relative;background:#153b43}h1{font-size:23px;margin:0}#clock{font:16px monospace}
+#pulse{position:absolute;left:580px;top:20px;width:40px;height:40px;background:black}
+#bits{display:flex;position:absolute;left:8px;top:64px;height:12px}#bits i{width:12px;height:12px}
+canvas{display:block;width:640px;height:280px}button{position:absolute;left:220px;top:170px;font:20px system-ui;padding:14px}
+</style>
+<header><h1 id="name"></h1><span id="clock"></span><div id="pulse"></div><div id="bits"></div></header>
+<canvas width="640" height="280"></canvas><button>Start capture</button>
+<script type="module">
+const parameters=new URLSearchParams(location.search), id=Number(parameters.get('id'));
+const duration=Number(parameters.get('duration')||16000), fps=Number(parameters.get('fps')||30);
+if(!Number.isInteger(id)||id<0||id>3||duration<5000||duration>30000) throw Error('invalid fixture input');
+const label=String.fromCharCode(65+id), frequency=440*(id+1), color=['#176f83','#663d9f','#8e4e16','#295a9c'][id];
+document.title=`Yosoi AV ${label}`;
+document.querySelector('#name').textContent=`Tab ${label} · ${frequency} Hz · real tab capture`;
+const button=document.querySelector('button');button.textContent=`Start tab ${label} capture`;
+const canvas=document.querySelector('canvas'), draw=canvas.getContext('2d');
+const bits=Array.from({length:16},()=>{const bit=document.createElement('i');document.querySelector('#bits').append(bit);return bit});
+let frame=0, context, toneStart=0, recorder, stream, uploading=Promise.resolve(), pendingBytes=0, captureError;
+const visibility=[];
+document.addEventListener('visibilitychange',()=>visibility.push({at:Date.now(),state:document.visibilityState,focus:document.hasFocus()}));
+function tick(){
+  frame=(frame+1)%65536;
+  document.querySelector('#clock').textContent=`${Date.now()} · frame ${frame} · ${document.visibilityState}`;
+  bits.forEach((bit,index)=>bit.style.background=(frame>>index)&1?'white':'black');
+  const elapsed=context ? Math.max(0,context.currentTime-toneStart):0;
+  document.querySelector('#pulse').style.background=context&&context.currentTime>=toneStart&&elapsed%1<.5?'white':'black';
+  draw.fillStyle=color;draw.fillRect(0,0,640,280);
+  draw.fillStyle='#f8d571';draw.beginPath();draw.arc(60+(Math.sin(performance.now()/650)+1)*250,120,38,0,Math.PI*2);draw.fill();
+  draw.fillStyle='white';draw.font='bold 50px system-ui';draw.fillText(`TAB ${label}`,18,240);
+  draw.font='18px system-ui';draw.fillText('Browser MediaStream + MediaRecorder',240,240);
+  requestAnimationFrame(tick);
+}tick();
+let resolveDone,rejectDone;
+window.tabAvDone=new Promise((resolve,reject)=>{resolveDone=resolve;rejectDone=reject});
+window.tabAvDone.catch(()=>{});
+window.tabAvReady=new Promise(resolve=>window.tabAvReadyResolve=resolve);
+button.onclick=async()=>{
+  button.disabled=true;
+  try{
+    context=new AudioContext({sampleRate:48000});const resumed=context.resume();
+    // Only this browser tab is an admissible source; no microphone/camera request.
+    stream=await navigator.mediaDevices.getDisplayMedia({
+      preferCurrentTab:true,selfBrowserSurface:'include',monitorTypeSurfaces:'exclude',surfaceSwitching:'exclude',
+      video:{displaySurface:'browser',width:{ideal:640,max:640},height:{ideal:360,max:360},frameRate:{ideal:fps,max:fps}},
+      audio:{suppressLocalAudioPlayback:true},systemAudio:'exclude'
+    });
+    await resumed;
+    const video=stream.getVideoTracks(),audio=stream.getAudioTracks();
+    if(video.length!==1||audio.length!==1) throw Error(`Expected one video and audio track, got ${video.length}/${audio.length}`);
+    const settings=video[0].getSettings();
+    if(settings.displaySurface!=='browser') throw Error(`Unexpected capture surface ${settings.displaySurface}`);
+    const oscillator=context.createOscillator(),gain=context.createGain();
+    const lfo=context.createOscillator(),depth=context.createGain();
+    oscillator.frequency.value=frequency;gain.gain.value=.08;lfo.frequency.value=1;lfo.type='square';depth.gain.value=.08;
+    oscillator.connect(gain).connect(context.destination);lfo.connect(depth).connect(gain.gain);
+    toneStart=context.currentTime+.05;oscillator.start(toneStart);lfo.start(toneStart);
+    const mimeType='video/webm;codecs=vp8,opus';
+    if(!MediaRecorder.isTypeSupported(mimeType)) throw Error('VP8/Opus MediaRecorder unsupported');
+    recorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:500000,audioBitsPerSecond:64000});
+    let sequence=0,bytes=0;const startFrame=frame,startedAt=Date.now();
+    recorder.ondataavailable=event=>{
+      if(!event.data.size)return;const blob=event.data,index=sequence++;bytes+=blob.size;pendingBytes+=blob.size;
+      if(pendingBytes>8*1024*1024){captureError='upload backlog exceeded 8 MiB';recorder.stop();return;}
+      uploading=uploading.then(async()=>{
+        const response=await fetch(`/chunk/${id}/${index}`,{method:'POST',body:blob});
+        if(!response.ok)throw Error(`chunk upload ${response.status}`);pendingBytes-=blob.size;
+      });
+      uploading.catch(error=>{captureError=String(error);if(recorder.state==='recording')recorder.stop()});
+    };
+    recorder.onerror=event=>{captureError=String(event.error)};
+    recorder.onstop=async()=>{
+      try{
+        const stoppedAt=Date.now();await uploading;
+        stream.getTracks().forEach(track=>track.stop());await context.close();
+        if(captureError)throw Error(captureError);
+        const result={id,label,frequency,startedAt,stoppedAt,framesAdvanced:(frame-startFrame+65536)%65536,
+          chunks:sequence,bytes,videoSettings:settings,audioSettings:audio[0].getSettings(),visibility,
+          focusAtStop:document.hasFocus(),visibilityAtStop:document.visibilityState,mimeType};
+        await fetch(`/result/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
+        resolveDone(result);
+      }catch(error){rejectDone(String(error))}
+    };
+    recorder.start(500);button.hidden=true;
+    window.tabAvReadyResolve({id,label,frequency,startedAt,settings,
+      videoState:video[0].readyState,audioState:audio[0].readyState});
+    // This timer bounds the requested clip duration; it is not a readiness wait.
+    setTimeout(()=>{if(recorder.state==='recording')recorder.stop()},duration);
+  }catch(error){
+    stream?.getTracks().forEach(track=>track.stop());if(context&&context.state!=='closed')await context.close();
+    button.textContent=String(error);window.tabAvReadyResolve({error:String(error)});rejectDone(String(error));
+  }
+};
+</script></html>

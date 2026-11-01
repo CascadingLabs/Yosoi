@@ -5,10 +5,14 @@ use std::{
     io::{self, Write},
     iter::once,
     path::Path,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use pyo3::{create_exception, prelude::*, types::PyDict};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 use yosoi::{
     action,
@@ -18,7 +22,9 @@ use yosoi::{
     locators::Plan,
     policy::Policy,
     session::{
-        self, DownloadOptions, Session, SessionError, SessionPolicy, SessionRequestError, Work,
+        self, DownloadOptions, RecordingHandle as SdkRecordingHandle, RecordingOptions,
+        RecordingOutcome, RecordingScope, ScreenshotCapture, ScreenshotOptions, Session,
+        SessionError, SessionPolicy, SessionRequestError, Tab as SdkTab, Work,
     },
 };
 
@@ -26,21 +32,89 @@ use crate::{
     async_runtime::{self, NativeCancellation},
     downloads::{self, NativeDownloadCapture},
     errors::{self, YosoiError},
+    media::NativeFileDocument,
     policy,
     requests::NativeRequest,
     responses::{NativeResponse, ResponseSource},
 };
+use yosoi::documents::FileDocument;
 
 const MAX_FLOW_JSON_BYTES: usize = 16 * 1024 * 1024;
 const MAX_FLOW_OUTCOME_JSON_BYTES: usize = 32 * 1024 * 1024;
 const MAX_SESSION_POLICY_JSON_BYTES: usize = 64 * 1024;
 const MAX_ASSERTION_CALLBACK_JSON_BYTES: usize = 1024 * 1024;
 
+fn capture_decode<T: DeserializeOwned>(value: &str) -> PyResult<T> {
+    serde_json::from_str(value)
+        .map_err(|error| BrowserError::new_err(format!("invalid capture value: {error}")))
+}
+
+fn capture_encode<T: Serialize>(value: &T) -> PyResult<String> {
+    serde_json::to_string(value)
+        .map_err(|error| BrowserError::new_err(format!("capture result encoding failed: {error}")))
+}
+
+fn capture_cancelled() -> PyErr {
+    BrowserError::new_err("capture operation was cancelled")
+}
+
+fn native_recording(handle: SdkRecordingHandle) -> NativeRecordingHandle {
+    NativeRecordingHandle {
+        state: Arc::new(Mutex::new(Some(handle))),
+    }
+}
+
+fn screenshot_capture_parts(capture: ScreenshotCapture) -> PyResult<(String, NativeFileDocument)> {
+    let (metadata, document) = capture.into_parts();
+    Ok((
+        capture_encode(&metadata)?,
+        NativeFileDocument::new(FileDocument::Image(document)),
+    ))
+}
+
+fn recording_outcome_parts(
+    outcome: RecordingOutcome,
+) -> PyResult<(String, Vec<NativeFileDocument>)> {
+    let (metadata, documents) = outcome.into_parts();
+    let metadata = capture_encode(&metadata)?;
+    let documents = documents
+        .into_iter()
+        .map(|document| NativeFileDocument::new(FileDocument::Video(document)))
+        .collect();
+    Ok((metadata, documents))
+}
+
 create_exception!(_native, BrowserError, YosoiError);
 
 type SessionState = Arc<Mutex<Option<Session>>>;
 type WorkState = Arc<Mutex<Option<NativeLease>>>;
+type TabOwnerState = Arc<Mutex<Option<Session>>>;
 type AssertionCallbacks = HashMap<String, Py<PyAny>>;
+
+#[pyclass(frozen, module = "yosoi._native", name = "RecordingHandle")]
+#[derive(Debug)]
+pub struct NativeRecordingHandle {
+    state: Arc<Mutex<Option<SdkRecordingHandle>>>,
+}
+
+#[pymethods]
+impl NativeRecordingHandle {
+    fn stop<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, None, move |_| async move {
+            let handle = state
+                .lock()
+                .await
+                .take()
+                .ok_or_else(|| BrowserError::new_err("recording handle has already stopped"))?;
+            let outcome = handle
+                .stop()
+                .await
+                .map_err(|error| session_request_error(error.into()))?;
+            recording_outcome_parts(outcome)
+        })
+    }
+}
 
 #[derive(Debug)]
 struct NativeLease {
@@ -52,12 +126,31 @@ struct NativeLease {
 #[derive(Debug)]
 pub struct NativeSession {
     state: SessionState,
+    closed: Arc<AtomicBool>,
 }
 
 impl NativeSession {
     /// Clone the retained owner while its state guard proves it is still live.
     /// This does not acquire another browser or take ownership from Python.
     pub(crate) fn clone_for_surface(&self) -> PyResult<Session> {
+        if self.closed.load(Ordering::Acquire) {
+            return Err(BrowserError::new_err("browser Session is closed"));
+        }
+        let guard = self
+            .state
+            .try_lock()
+            .map_err(|_| BrowserError::new_err("browser Session is busy"))?;
+        let session = guard
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| BrowserError::new_err("browser Session is closed"))?;
+        if self.closed.load(Ordering::Acquire) {
+            return Err(BrowserError::new_err("browser Session is closed"));
+        }
+        Ok(session)
+    }
+
+    fn clone_for_evidence(&self) -> PyResult<Session> {
         let guard = self
             .state
             .try_lock()
@@ -65,7 +158,7 @@ impl NativeSession {
         guard
             .as_ref()
             .cloned()
-            .ok_or_else(|| BrowserError::new_err("browser Session is closed"))
+            .ok_or_else(|| BrowserError::new_err("browser Session evidence is unavailable"))
     }
 }
 
@@ -105,13 +198,24 @@ impl NativeSession {
         })
     }
 
-    #[pyo3(signature = (cancellation=None))]
+    #[pyo3(signature = (cancellation=None, tab=None))]
     fn work<'py>(
         &self,
         py: Python<'py>,
         cancellation: Option<&NativeCancellation>,
+        tab: Option<&NativeTab>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let state = Arc::clone(&self.state);
+        let selected_tab = if let Some(tab) = tab {
+            if !Arc::ptr_eq(&self.state, &tab.session_state) {
+                return Err(BrowserError::new_err(
+                    "browser Tab belongs to a different Session",
+                ));
+            }
+            Some((Arc::clone(&tab.tab), Arc::clone(&tab.closed)))
+        } else {
+            None
+        };
         async_runtime::bridge(py, cancellation, move |token| async move {
             if token.is_cancelled() {
                 return Err(BrowserError::new_err("Work acquisition was cancelled"));
@@ -123,10 +227,17 @@ impl NativeSession {
                 .clone();
             let policy = session.policy().clone();
             drop(guard);
-            let work = session
-                .work()
-                .await
-                .map_err(|error| BrowserError::new_err(error.to_string()))?;
+            if selected_tab
+                .as_ref()
+                .is_some_and(|(_, closed)| closed.load(Ordering::Acquire))
+            {
+                return Err(BrowserError::new_err("browser Tab is closed"));
+            }
+            let work_result = match selected_tab.as_ref() {
+                Some((tab, _)) => tab.work().await,
+                None => session.work().await,
+            };
+            let work = work_result.map_err(|error| BrowserError::new_err(error.to_string()))?;
             if token.is_cancelled() {
                 work.release()
                     .await
@@ -139,25 +250,175 @@ impl NativeSession {
         })
     }
 
+    #[pyo3(signature = (cancellation=None))]
+    fn new_tab<'py>(
+        &self,
+        py: Python<'py>,
+        cancellation: Option<&NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            if token.is_cancelled() {
+                return Err(BrowserError::new_err("Tab acquisition was cancelled"));
+            }
+            let session = {
+                let guard = state.lock().await;
+                guard
+                    .as_ref()
+                    .ok_or_else(|| BrowserError::new_err("browser Session is closed"))?
+                    .clone()
+            };
+            let tab = session
+                .new_tab()
+                .await
+                .map_err(|error| BrowserError::new_err(error.to_string()))?;
+            if token.is_cancelled() {
+                tab.close()
+                    .await
+                    .map_err(|error| BrowserError::new_err(error.to_string()))?;
+                return Err(BrowserError::new_err("Tab acquisition was cancelled"));
+            }
+            Ok(NativeTab {
+                tab: Arc::new(tab),
+                session_state: state,
+                closed: Arc::new(AtomicBool::new(false)),
+            })
+        })
+    }
+
+    #[pyo3(signature = (scope_json, options_json, cancellation=None))]
+    fn start_recording<'py>(
+        &self,
+        py: Python<'py>,
+        scope_json: &str,
+        options_json: &str,
+        cancellation: Option<&NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let scope: RecordingScope = capture_decode(scope_json)?;
+        let options: RecordingOptions = capture_decode(options_json)?;
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            if token.is_cancelled() {
+                return Err(capture_cancelled());
+            }
+            let session = {
+                let guard = state.lock().await;
+                guard
+                    .as_ref()
+                    .cloned()
+                    .ok_or_else(|| BrowserError::new_err("browser Session is closed"))?
+            };
+            let handle = tokio::select! {
+                biased;
+                () = token.cancelled() => return Err(capture_cancelled()),
+                result = session.start_recording(scope, options) =>
+                    result.map_err(|error| session_request_error(error.into()))?,
+            };
+            if token.is_cancelled() {
+                drop(handle);
+                drop(session);
+                return Err(capture_cancelled());
+            }
+            drop(session);
+            Ok(native_recording(handle))
+        })
+    }
+
+    fn evidence(&self) -> PyResult<(String, Vec<NativeFileDocument>)> {
+        let evidence = self.clone_for_evidence()?.evidence();
+        let metadata = capture_encode(&evidence.metadata())?;
+        let documents = evidence
+            .entries()
+            .iter()
+            .filter_map(|entry| {
+                entry.capture.as_ref().map(|capture| {
+                    let (_, document) = capture.clone().into_parts();
+                    NativeFileDocument::new(FileDocument::Image(document))
+                })
+            })
+            .collect();
+        Ok((metadata, documents))
+    }
+
+    fn recording_outcomes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let session = self.clone_for_evidence()?;
+        async_runtime::bridge(py, None, move |_| async move {
+            let outcomes = session
+                .recording_outcomes()
+                .await
+                .map_err(|error| session_request_error(error.into()))?;
+            let mut metadata = Vec::with_capacity(outcomes.len());
+            let mut documents = Vec::new();
+            for outcome in outcomes {
+                let (result, segments) = outcome.into_parts();
+                metadata.push(result);
+                documents.extend(
+                    segments
+                        .into_iter()
+                        .map(|document| NativeFileDocument::new(FileDocument::Video(document))),
+                );
+            }
+            Ok((capture_encode(&metadata)?, documents))
+        })
+    }
+
     fn close<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let state = Arc::clone(&self.state);
+        let closed = Arc::clone(&self.closed);
         async_runtime::bridge(py, None, move |_token| async move {
-            let mut guard = state.lock().await;
+            let guard = state.lock().await;
             let Some(session) = guard.as_ref() else {
+                closed.store(true, Ordering::Release);
                 return Ok(());
             };
             session
                 .close()
                 .await
                 .map_err(|error| BrowserError::new_err(error.to_string()))?;
-            let _ = guard.take();
+            closed.store(true, Ordering::Release);
             Ok(())
         })
     }
 
     #[getter]
     fn closed(&self) -> bool {
-        self.state.try_lock().is_ok_and(|guard| guard.is_none())
+        self.closed.load(Ordering::Acquire)
+    }
+}
+
+#[pyclass(frozen, module = "yosoi._native", name = "BrowserTab")]
+#[derive(Debug)]
+pub struct NativeTab {
+    tab: Arc<SdkTab>,
+    session_state: TabOwnerState,
+    closed: Arc<AtomicBool>,
+}
+
+#[pymethods]
+impl NativeTab {
+    #[getter]
+    fn id(&self) -> String {
+        self.tab.id()
+    }
+
+    #[getter]
+    fn closed(&self) -> bool {
+        self.closed.load(Ordering::Acquire)
+    }
+
+    fn close<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let tab = Arc::clone(&self.tab);
+        let closed = Arc::clone(&self.closed);
+        async_runtime::bridge(py, None, move |_token| async move {
+            if closed.load(Ordering::Acquire) {
+                return Ok(());
+            }
+            tab.close()
+                .await
+                .map_err(|error| BrowserError::new_err(error.to_string()))?;
+            closed.store(true, Ordering::Release);
+            Ok(())
+        })
     }
 }
 
@@ -268,6 +529,69 @@ impl NativeWork {
                 ));
             }
             Ok(NativeDownloadCapture::new(capture))
+        })
+    }
+
+    #[pyo3(signature = (options_json, cancellation=None))]
+    fn screenshot_with<'py>(
+        &self,
+        py: Python<'py>,
+        options_json: &str,
+        cancellation: Option<&NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let options: ScreenshotOptions = capture_decode(options_json)?;
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            if token.is_cancelled() {
+                return Err(capture_cancelled());
+            }
+            let guard = state.try_lock().map_err(|_| {
+                BrowserError::new_err("browser Work is already executing an operation")
+            })?;
+            let capture = tokio::select! {
+                biased;
+                () = token.cancelled() => return Err(capture_cancelled()),
+                result = guard.as_ref()
+                    .ok_or_else(|| BrowserError::new_err("browser Work lease is released"))?
+                    .work.screenshot_with(options) =>
+                    result.map_err(|error| session_request_error(error.into()))?,
+            };
+            let result = screenshot_capture_parts(capture);
+            drop(guard);
+            result
+        })
+    }
+
+    #[pyo3(signature = (options_json, cancellation=None))]
+    fn start_recording<'py>(
+        &self,
+        py: Python<'py>,
+        options_json: &str,
+        cancellation: Option<&NativeCancellation>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let options: RecordingOptions = capture_decode(options_json)?;
+        let state = Arc::clone(&self.state);
+        async_runtime::bridge(py, cancellation, move |token| async move {
+            if token.is_cancelled() {
+                return Err(capture_cancelled());
+            }
+            let guard = state.try_lock().map_err(|_| {
+                BrowserError::new_err("browser Work is already executing an operation")
+            })?;
+            let handle = tokio::select! {
+                biased;
+                () = token.cancelled() => return Err(capture_cancelled()),
+                result = guard.as_ref()
+                    .ok_or_else(|| BrowserError::new_err("browser Work lease is released"))?
+                    .work.start_recording(options) =>
+                    result.map_err(|error| session_request_error(error.into()))?,
+            };
+            if token.is_cancelled() {
+                drop(handle);
+                return Err(capture_cancelled());
+            }
+            drop(guard);
+            Ok(native_recording(handle))
         })
     }
 
@@ -500,6 +824,7 @@ fn acquire_browser_session<'py>(
         }
         Ok(NativeSession {
             state: Arc::new(Mutex::new(Some(session))),
+            closed: Arc::new(AtomicBool::new(false)),
         })
     })
 }
@@ -508,6 +833,21 @@ fn acquire_browser_session<'py>(
 fn default_session_policy() -> PyResult<String> {
     serde_json::to_string(&SessionPolicy::default())
         .map_err(|error| BrowserError::new_err(error.to_string()))
+}
+
+#[pyfunction]
+fn validate_screenshot_options(value: &str) -> PyResult<String> {
+    capture_encode(&capture_decode::<ScreenshotOptions>(value)?)
+}
+
+#[pyfunction]
+fn validate_recording_options(value: &str) -> PyResult<String> {
+    capture_encode(&capture_decode::<RecordingOptions>(value)?)
+}
+
+#[pyfunction]
+fn validate_recording_scope(value: &str) -> PyResult<String> {
+    capture_encode(&capture_decode::<RecordingScope>(value)?)
 }
 
 #[pyfunction]
@@ -547,6 +887,7 @@ fn session_request_error(error: SessionRequestError) -> PyErr {
                 SessionError::ResultLimit { .. } => "ResultLimit",
                 SessionError::EvidenceUnavailable => "EvidenceUnavailable",
                 SessionError::AssertionEvaluation(_) => "AssertionEvaluation",
+                SessionError::Recording => "Recording",
                 SessionError::Cleanup => "Cleanup",
                 SessionError::WatchLagged(_) => "WatchLagged",
                 SessionError::WatchDeadline => "WatchDeadline",
@@ -900,7 +1241,9 @@ impl Write for BoundedJsonWriter {
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("BrowserError", module.py().get_type::<BrowserError>())?;
     module.add_class::<NativeDownloadCapture>()?;
+    module.add_class::<NativeRecordingHandle>()?;
     module.add_class::<NativeSession>()?;
+    module.add_class::<NativeTab>()?;
     module.add_class::<NativeWork>()?;
     module.add_function(wrap_pyfunction!(invoke_flow, module)?)?;
     module.add_function(wrap_pyfunction!(snapshot_evaluate_file, module)?)?;
@@ -910,5 +1253,8 @@ pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(acquire_browser_session, module)?)?;
     module.add_function(wrap_pyfunction!(default_session_policy, module)?)?;
     module.add_function(wrap_pyfunction!(validate_session_policy, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_screenshot_options, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_recording_options, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_recording_scope, module)?)?;
     module.add_function(wrap_pyfunction!(validate_flow, module)?)
 }

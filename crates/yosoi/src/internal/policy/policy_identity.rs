@@ -7,13 +7,15 @@ use crate::internal::policy::{
     EffectivePolicyIdentity, PolicyError,
     policy::{
         AcquisitionKind, BrowserMode, DiscoveryDocuments, DocumentRequest, Documents,
-        EffectivePage, EffectiveSearch, Filters, FlowPolicy, Limits, Locators, Map, PageDiscovery,
-        Request, Robots, Scope, Subdomains, Tuning,
+        EffectivePage, EffectiveSearch, Filters, FlowPolicy, Limits, Locators, Map, ObservePolicy,
+        PageDiscovery, Request, Robots, Scope, Subdomains, Tuning,
     },
     policy_value::Policy,
 };
 
 const POLICY_SCHEMA_VERSION: u16 = 7;
+const BROWSER_POLICY_SCHEMA_VERSION: u16 = 8;
+const OBSERVATION_POLICY_SCHEMA_VERSION: u16 = 9;
 const LEGACY_POLICY_SCHEMA_VERSION_V6: u16 = 6;
 const LEGACY_POLICY_SCHEMA_VERSION_V5: u16 = 5;
 const LEGACY_POLICY_SCHEMA_VERSION_V4_SEARCH: u16 = 4;
@@ -27,6 +29,7 @@ impl Policy {
         if !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
+        ensure_legacy_observe(&self.observe)?;
         self.effective_policy()?.archived_v6_identity()
     }
 
@@ -37,6 +40,7 @@ impl Policy {
         if !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
+        ensure_legacy_observe(&self.observe)?;
         self.effective_policy()?.archived_v5_identity()
     }
 
@@ -49,6 +53,7 @@ impl Policy {
         if !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
+        ensure_legacy_observe(&self.observe)?;
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
@@ -89,6 +94,7 @@ impl Policy {
         if !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
+        ensure_legacy_observe(&self.observe)?;
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
@@ -128,6 +134,7 @@ impl Policy {
         if !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
+        ensure_legacy_observe(&self.observe)?;
         self.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
@@ -208,6 +215,9 @@ pub struct EffectivePolicy {
     /// Default continuation behavior for Flow failures and local cancellations.
     #[serde(default)]
     pub flow: FlowPolicy,
+    /// Optional automatic browser evidence and recording configuration.
+    #[serde(default, skip_serializing_if = "ObservePolicy::is_default")]
+    pub observe: ObservePolicy,
 }
 
 impl EffectivePolicy {
@@ -226,6 +236,7 @@ impl EffectivePolicy {
         validate_default_action_timeout(self.default_action_timeout_ms)?;
         self.map.validate()?;
         self.search.validate()?;
+        self.observe.validate()?;
         let acquisitions = self
             .page
             .acquisitions
@@ -236,10 +247,12 @@ impl EffectivePolicy {
             })
             .collect();
         let json = serde_json::to_string(&EffectivePolicyIdentityEnvelopeRef {
-            schema_version: if self.browser.is_default() {
+            schema_version: if !self.observe.is_default() {
+                OBSERVATION_POLICY_SCHEMA_VERSION
+            } else if self.browser.is_default() {
                 POLICY_SCHEMA_VERSION
             } else {
-                8
+                BROWSER_POLICY_SCHEMA_VERSION
             },
             policy: EffectivePolicyIdentityBodyRef {
                 network: &self.network,
@@ -253,10 +266,13 @@ impl EffectivePolicy {
                 map: &self.map,
                 search: &self.search,
                 flow: self.flow,
+                observe: &self.observe,
             },
         })
         .map_err(|error| PolicyError::Serialization(error.to_string()))?;
-        Ok(if self.browser.is_default() {
+        Ok(if !self.observe.is_default() {
+            EffectivePolicyIdentity::from_observation_json(&json)
+        } else if self.browser.is_default() {
             EffectivePolicyIdentity::from_canonical_json(&json)
         } else {
             EffectivePolicyIdentity::from_browser_json(&json)
@@ -276,6 +292,7 @@ impl EffectivePolicy {
         self.search.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
+        ensure_legacy_observe(&self.observe)?;
         let acquisitions = self
             .page
             .acquisitions
@@ -317,6 +334,7 @@ impl EffectivePolicy {
         ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
+        ensure_legacy_observe(&self.observe)?;
         let acquisitions = self
             .page
             .acquisitions
@@ -357,6 +375,7 @@ impl EffectivePolicy {
         self.search.validate()?;
         ensure_legacy_flow(self.flow)?;
         ensure_legacy_browser(&self.browser)?;
+        ensure_legacy_observe(&self.observe)?;
         if self.map.robots != Robots::Ignore {
             return Err(PolicyError::LegacyIdentityCannotIncludeRobots);
         }
@@ -412,6 +431,14 @@ fn ensure_legacy_browser(browser: &browser_config::BrowserConfig) -> Result<(), 
     }
 }
 
+fn ensure_legacy_observe(observe: &ObservePolicy) -> Result<(), PolicyError> {
+    if observe.is_default() {
+        Ok(())
+    } else {
+        Err(PolicyError::LegacyIdentityCannotIncludeObserve)
+    }
+}
+
 const fn ensure_legacy_flow(flow: FlowPolicy) -> Result<(), PolicyError> {
     if flow.is_default() {
         Ok(())
@@ -461,6 +488,8 @@ struct EffectivePolicyIdentityBodyRef<'a> {
     map: &'a Map,
     search: &'a EffectiveSearch,
     flow: FlowPolicy,
+    #[serde(skip_serializing_if = "ObservePolicy::is_default")]
+    observe: &'a ObservePolicy,
 }
 
 #[derive(Serialize)]

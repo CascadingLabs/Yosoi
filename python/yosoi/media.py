@@ -23,6 +23,10 @@ MAX_FILE_LIMIT_BYTES = 256 * 1024 * 1024
 """Absolute retained file payload limit in bytes."""
 MAX_SOURCE_BYTES = 1_048_576
 """Maximum source provenance size in UTF-8 bytes, enforced by Rust."""
+DEFAULT_FILE_MAX_BYTES = DEFAULT_FILE_LIMIT_BYTES
+"""Rust-compatible alias for the default retained file payload limit."""
+MAX_FILE_BYTES = MAX_FILE_LIMIT_BYTES
+"""Rust-compatible alias for the absolute retained file payload limit."""
 
 
 class FileLimits(ImmutableModel):
@@ -122,6 +126,113 @@ class FileMetadata(ImmutableModel):
             },
         )
 
+    def _with_value(self, field: str, value: str) -> Self:
+        """Return a native-validated immutable copy with one field changed."""
+        metadata_json = _native.file_metadata_with(
+            self.model_dump_json(exclude_none=True), field, value
+        )
+        return type(self).model_validate_json(metadata_json)
+
+    def with_filename(self, value: str) -> Self:
+        """Return a copy with a caller-provided filename.
+
+        Rust checks the UTF-8 byte bound while creating this copy.
+
+        Args:
+            value: Filename to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The filename exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("filename", value)
+
+    def with_declared_media_type(self, value: str) -> Self:
+        """Return a copy with a caller-declared MIME value.
+
+        Args:
+            value: MIME value to retain separately from detected type.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("declared_media_type", value)
+
+    def with_source(self, value: str) -> Self:
+        """Return a copy with a source label.
+
+        Args:
+            value: Source or acquisition label to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("source", value)
+
+    def with_capture_id(self, value: str) -> Self:
+        """Return a copy with an originating capture identity.
+
+        Args:
+            value: Capture identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("capture_id", value)
+
+    def with_session_id(self, value: str) -> Self:
+        """Return a copy with an originating browser Session identity.
+
+        Args:
+            value: Session identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("session_id", value)
+
+    def with_tab_id(self, value: str) -> Self:
+        """Return a copy with an originating browser tab identity.
+
+        Args:
+            value: Tab identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("tab_id", value)
+
+    def with_download_id(self, value: str) -> Self:
+        """Return a copy with an originating provider download identity.
+
+        Args:
+            value: Download identity to retain.
+
+        Returns:
+            New metadata preserving all other fields.
+
+        Raises:
+            FileDocumentError: The value exceeds the native UTF-8 byte bound.
+        """
+        return self._with_value("download_id", value)
+
 
 class _FileDocument(ImmutableModel):
     """Shared immutable metadata view over one Rust-owned file payload."""
@@ -179,7 +290,7 @@ class _FileDocument(ImmutableModel):
         infer: bool = False,
     ) -> _FileDocument:
         """Create a native payload owner with authored or inferred classification."""
-        if not isinstance(content, bytes):
+        if not isinstance(content, builtins.bytes):
             raise TypeError("file content must be bytes")
         selected_metadata = FileMetadata() if metadata is None else metadata
         if not isinstance(selected_metadata, FileMetadata):

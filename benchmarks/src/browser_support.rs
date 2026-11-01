@@ -469,6 +469,8 @@ pub fn warm_manager(
                 NonZeroU32::new(1_000).context("nonzero warm recycle threshold")?,
             )?,
             yosoi_dev_support::internal::web_capture::BrowserExecutionManagerConfig {
+                native_tab_capture: false,
+                private_display: None,
                 headful: mode.headful(),
                 minimal_cdp: false,
                 proxy: None,

@@ -15,6 +15,11 @@ use yosoi::{
         AUTOMATION_RECORD_VERSION, AutomationRecord, AutomationRecordRef,
         MAX_AUTOMATION_RECORD_BYTES,
     },
+    documents::{FileDocument, ImageDocument, VideoDocument},
+    session::{
+        AutomaticEvidence, EvidenceArchiveError, RecordingOutcome, RecordingOutcomeMetadata,
+        RecordingSegment, ScreenshotCapture, SessionEvidence, SessionEvidenceMetadata,
+    },
     view::{View, ViewCursor},
 };
 
@@ -256,6 +261,135 @@ pub fn archive_error(error: ArchiveError) -> PyErr {
             &sources,
         )
     })
+}
+
+fn evidence_archive_error(error: EvidenceArchiveError) -> PyErr {
+    let variant = match &error {
+        EvidenceArchiveError::Archive(_) => "Archive",
+        EvidenceArchiveError::Document(_) => "Document",
+        EvidenceArchiveError::Json(_) => "Json",
+        EvidenceArchiveError::Invalid(_) => "Invalid",
+    };
+    failure(error, "yosoi::session::EvidenceArchiveError", Some(variant))
+}
+
+fn image_from_native(document: &NativeFileDocument) -> PyResult<ImageDocument> {
+    match document.inner.as_ref() {
+        FileDocument::Image(image) => Ok(image.clone()),
+        _ => Err(errors::ArchiveError::new_err(
+            "SessionEvidence archives require image documents",
+        )),
+    }
+}
+
+fn video_from_native(document: &NativeFileDocument) -> PyResult<VideoDocument> {
+    match document.inner.as_ref() {
+        FileDocument::Video(video) => Ok(video.clone()),
+        _ => Err(errors::ArchiveError::new_err(
+            "RecordingOutcome archives require video documents",
+        )),
+    }
+}
+
+fn session_evidence_from_python(
+    metadata_json: &str,
+    documents: &[NativeFileDocument],
+) -> PyResult<SessionEvidence> {
+    let metadata: SessionEvidenceMetadata = serde_json::from_str(metadata_json)
+        .map_err(|error| errors::ArchiveError::new_err(error.to_string()))?;
+    let mut document_iter = documents.iter();
+    let mut entries = Vec::with_capacity(metadata.entries.len());
+    for entry in &metadata.entries {
+        let capture = match &entry.capture {
+            Some(capture) => {
+                let native = document_iter.next().ok_or_else(|| {
+                    errors::ArchiveError::new_err(
+                        "SessionEvidence metadata omitted a captured image document",
+                    )
+                })?;
+                Some(ScreenshotCapture {
+                    document: image_from_native(native)?,
+                    metadata: capture.clone(),
+                })
+            }
+            None => None,
+        };
+        entries.push(AutomaticEvidence {
+            operation_id: entry.operation_id.clone(),
+            phase: entry.phase,
+            capture,
+            gap: entry.gap,
+        });
+    }
+    if document_iter.next().is_some() {
+        return Err(errors::ArchiveError::new_err(
+            "SessionEvidence returned an unreferenced image document",
+        ));
+    }
+    SessionEvidence::from_parts(metadata, entries).map_err(evidence_archive_error)
+}
+
+fn recording_outcome_from_python(
+    metadata_json: &str,
+    documents: &[NativeFileDocument],
+) -> PyResult<RecordingOutcome> {
+    let metadata: RecordingOutcomeMetadata = serde_json::from_str(metadata_json)
+        .map_err(|error| errors::ArchiveError::new_err(error.to_string()))?;
+    if metadata.segments.len() != documents.len() {
+        return Err(errors::ArchiveError::new_err(
+            "RecordingOutcome metadata and video document counts disagree",
+        ));
+    }
+    let mut segments = Vec::with_capacity(metadata.segments.len());
+    for (segment, native_document) in metadata.segments.iter().zip(documents) {
+        segments.push(RecordingSegment {
+            document: video_from_native(native_document)?,
+            metadata: segment.clone(),
+        });
+    }
+    Ok(RecordingOutcome {
+        id: metadata.id,
+        source: metadata.source,
+        segments,
+        gaps: metadata.gaps,
+        actions: metadata.actions,
+        lost_action_events: metadata.lost_action_events,
+        stopped_at_unix_ms: metadata.stopped_at_unix_ms,
+        stop_reason: metadata.stop_reason,
+        complete: metadata.complete,
+    })
+}
+
+fn session_evidence_parts(
+    evidence: &SessionEvidence,
+) -> PyResult<(String, Vec<NativeFileDocument>)> {
+    let metadata = serde_json::to_string(&evidence.metadata())
+        .map_err(|error| errors::ArchiveError::new_err(error.to_string()))?;
+    let documents = evidence
+        .entries()
+        .iter()
+        .filter_map(|entry| {
+            entry.capture.as_ref().map(|capture| {
+                NativeFileDocument::new(FileDocument::Image(capture.document.clone()))
+            })
+        })
+        .collect();
+    Ok((metadata, documents))
+}
+
+fn recording_outcome_parts(
+    outcome: RecordingOutcome,
+) -> PyResult<(String, Vec<NativeFileDocument>)> {
+    let (metadata, documents) = outcome.into_parts();
+    let metadata = serde_json::to_string(&metadata)
+        .map_err(|error| errors::ArchiveError::new_err(error.to_string()))?;
+    Ok((
+        metadata,
+        documents
+            .into_iter()
+            .map(|document| NativeFileDocument::new(FileDocument::Video(document)))
+            .collect(),
+    ))
 }
 
 fn decode<T: DeserializeOwned>(value: &str) -> PyResult<T> {
@@ -536,6 +670,82 @@ impl NativeArchive {
                 .await
                 .map(NativeFileDocument::new)
                 .map_err(archive_error)
+        })
+    }
+
+    fn write_session_evidence<'py>(
+        &self,
+        py: Python<'py>,
+        metadata_json: &str,
+        documents: Vec<PyRef<'_, NativeFileDocument>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let documents: Vec<NativeFileDocument> = documents
+            .into_iter()
+            .map(|document| NativeFileDocument::new(document.inner.as_ref().clone()))
+            .collect();
+        let evidence = session_evidence_from_python(metadata_json, &documents)?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            evidence
+                .write_to(&archive)
+                .await
+                .map(|reference| reference.to_string())
+                .map_err(evidence_archive_error)
+        })
+    }
+
+    fn read_session_evidence<'py>(
+        &self,
+        py: Python<'py>,
+        reference: &str,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let reference: DocumentArchiveRef = reference
+            .parse()
+            .map_err(|error| failure(error, "yosoi::archive::ArchiveRefError", None))?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            let evidence = SessionEvidence::read_from(&archive, &reference)
+                .await
+                .map_err(evidence_archive_error)?;
+            session_evidence_parts(&evidence)
+        })
+    }
+
+    fn write_recording_outcome<'py>(
+        &self,
+        py: Python<'py>,
+        metadata_json: &str,
+        documents: Vec<PyRef<'_, NativeFileDocument>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let documents: Vec<NativeFileDocument> = documents
+            .into_iter()
+            .map(|document| NativeFileDocument::new(document.inner.as_ref().clone()))
+            .collect();
+        let outcome = recording_outcome_from_python(metadata_json, &documents)?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            outcome
+                .write_to(&archive)
+                .await
+                .map(|reference| reference.to_string())
+                .map_err(evidence_archive_error)
+        })
+    }
+
+    fn read_recording_outcome<'py>(
+        &self,
+        py: Python<'py>,
+        reference: &str,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let reference: DocumentArchiveRef = reference
+            .parse()
+            .map_err(|error| failure(error, "yosoi::archive::ArchiveRefError", None))?;
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            let outcome = RecordingOutcome::read_from(&archive, &reference)
+                .await
+                .map_err(evidence_archive_error)?;
+            recording_outcome_parts(outcome)
         })
     }
 
