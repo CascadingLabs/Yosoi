@@ -707,6 +707,7 @@ pub(super) fn is_sensitive_header(name: &str) -> bool {
             | "x-refresh-token"
             | "x-session-token"
             | "x-auth-token"
+            | "x-amz-security-token"
     )
 }
 

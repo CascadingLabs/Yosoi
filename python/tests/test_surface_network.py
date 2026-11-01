@@ -132,7 +132,12 @@ def test_network_policy_uses_native_semantic_validation(choices):
 def test_network_retention_preserves_zero_count_and_filters_sensitive_headers():
     policy = sf.NetworkObservationPolicy(
         max_response_bodies=0,
-        header_allowlist=("Authorization", "X-API-TOKEN", "X-Public"),
+        header_allowlist=(
+            "Authorization",
+            "X-API-TOKEN",
+            "X-AMZ-SECURITY-TOKEN",
+            "X-Public",
+        ),
     )
     policy.validate_policy()
     receipt = policy.retention()

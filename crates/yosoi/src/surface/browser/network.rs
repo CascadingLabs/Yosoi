@@ -108,7 +108,7 @@ struct Journal {
     coverage: NetworkCoverage,
     last_provider_time_us: Option<u64>,
     request_states: HashMap<String, RequestState>,
-    body_sizes: HashMap<String, BodySizeState>,
+    body_sizes: HashMap<(String, u32), BodySizeState>,
     data_lengths_reliable: bool,
     ignored_request_ids: HashSet<String>,
     response_links: HashMap<(String, u32), ResponseLink>,
@@ -408,11 +408,11 @@ impl NetworkCapture {
                 };
                 let provider_reported_body_bytes =
                     if state.data_lengths_reliable && response_snapshot.request_start_observed {
-                        state
-                            .body_sizes
-                            .get(&response_snapshot.request_id)
-                            .filter(|size| size.saw_chunk)
-                            .and_then(|size| size.decoded_bytes)
+                        reported_body_bytes(
+                            &state,
+                            &response_snapshot.request_id,
+                            response_snapshot.hop,
+                        )
                     } else {
                         None
                     };
@@ -669,20 +669,6 @@ fn store_provider_event(
                 return;
             }
             state.ignored_request_ids.remove(&id);
-            if !state.body_sizes.contains_key(&id) {
-                if state.body_sizes.len() < policy.max_events {
-                    state.body_sizes.insert(
-                        id.clone(),
-                        BodySizeState {
-                            decoded_bytes: Some(0),
-                            saw_chunk: false,
-                        },
-                    );
-                } else {
-                    state.data_lengths_reliable = false;
-                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
-                }
-            }
             let prior = state.request_states.get(&id).cloned();
             if prior.is_none() && state.request_states.len() >= policy.max_events {
                 state.coverage.overflow = true;
@@ -749,6 +735,10 @@ fn store_provider_event(
                 },
             );
             if sequence.is_some() {
+                // A redirected Request reuses the provider request ID with a
+                // new hop. Keep any chunks already observed for this hop, but
+                // never add them to the prior response's size.
+                ensure_body_size(&mut state, policy, &id, hop, Some(0), false);
                 state.request_states.insert(
                     id,
                     RequestState {
@@ -767,35 +757,8 @@ fn store_provider_event(
                 return;
             }
             let length = u64::try_from(event.data_length).ok();
-            if !state.body_sizes.contains_key(&id) {
-                if state.body_sizes.len() >= policy.max_events {
-                    state.data_lengths_reliable = false;
-                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
-                    return;
-                }
-                state.body_sizes.insert(
-                    id.clone(),
-                    BodySizeState {
-                        decoded_bytes: length,
-                        saw_chunk: true,
-                    },
-                );
-            } else if let Some(size) = state.body_sizes.get_mut(&id) {
-                size.saw_chunk = true;
-                size.decoded_bytes = match (size.decoded_bytes, length) {
-                    (Some(previous), Some(current)) => previous.checked_add(current),
-                    _ => None,
-                };
-            }
-            if length.is_none()
-                || state
-                    .body_sizes
-                    .get(&id)
-                    .is_some_and(|size| size.decoded_bytes.is_none())
-            {
-                state.data_lengths_reliable = false;
-                push_gap(&mut state, "decoded_body_size_unavailable", None);
-            }
+            let hop = current_request_hop(&state, &id);
+            record_body_chunk(&mut state, policy, &id, hop, length);
         }
         ProviderEvent::Response(event) => {
             let id = event.request_id.inner().clone();
@@ -816,20 +779,6 @@ fn store_provider_event(
                 return;
             }
             let existing = state.request_states.get(&id).cloned();
-            if !state.body_sizes.contains_key(&id) {
-                if state.body_sizes.len() < policy.max_events {
-                    state.body_sizes.insert(
-                        id.clone(),
-                        BodySizeState {
-                            decoded_bytes: None,
-                            saw_chunk: false,
-                        },
-                    );
-                } else {
-                    state.data_lengths_reliable = false;
-                    push_gap(&mut state, "decoded_body_size_tracking_limit", None);
-                }
-            }
             if existing.is_none() && state.request_states.len() >= policy.max_events {
                 state.coverage.overflow = true;
                 state.coverage.dropped_events = state.coverage.dropped_events.saturating_add(1);
@@ -837,6 +786,7 @@ fn store_provider_event(
                 return;
             }
             let hop = existing.as_ref().map_or(0, |request| request.hop);
+            ensure_body_size(&mut state, policy, &id, hop, None, false);
             let request_start_observed = existing.is_some();
             let status = u16::try_from(event.response.status).ok();
             let content_encoding = header_value(event.response.headers.inner(), "content-encoding");
@@ -1037,6 +987,94 @@ fn emit(
     state.total_retained_events = next_event_count;
     state.events.push_back(event);
     Some(sequence)
+}
+
+fn ensure_body_size(
+    state: &mut Journal,
+    policy: &NetworkObservationPolicy,
+    request_id: &str,
+    hop: u32,
+    decoded_bytes: Option<u64>,
+    saw_chunk: bool,
+) {
+    let key = (request_id.to_owned(), hop);
+    if state.body_sizes.contains_key(&key) {
+        return;
+    }
+    if state.body_sizes.len() >= policy.max_events {
+        state.data_lengths_reliable = false;
+        push_gap(state, "decoded_body_size_tracking_limit", None);
+        return;
+    }
+    state.body_sizes.insert(
+        key,
+        BodySizeState {
+            decoded_bytes,
+            saw_chunk,
+        },
+    );
+}
+
+fn current_request_hop(state: &Journal, request_id: &str) -> u32 {
+    state
+        .request_states
+        .get(request_id)
+        .map(|request| request.hop)
+        .or_else(|| {
+            state
+                .response_links
+                .keys()
+                .filter_map(|(id, hop)| (id.as_str() == request_id).then_some(*hop))
+                .max()
+        })
+        .unwrap_or(0)
+}
+
+fn record_body_chunk(
+    state: &mut Journal,
+    policy: &NetworkObservationPolicy,
+    request_id: &str,
+    hop: u32,
+    length: Option<u64>,
+) {
+    let key = (request_id.to_owned(), hop);
+    if !state.body_sizes.contains_key(&key) {
+        if state.body_sizes.len() >= policy.max_events {
+            state.data_lengths_reliable = false;
+            push_gap(state, "decoded_body_size_tracking_limit", None);
+            return;
+        }
+        state.body_sizes.insert(
+            key.clone(),
+            BodySizeState {
+                decoded_bytes: length,
+                saw_chunk: true,
+            },
+        );
+    } else if let Some(size) = state.body_sizes.get_mut(&key) {
+        size.saw_chunk = true;
+        size.decoded_bytes = match (size.decoded_bytes, length) {
+            (Some(previous), Some(current)) => previous.checked_add(current),
+            _ => None,
+        };
+    }
+    if length.is_none()
+        || state
+            .body_sizes
+            .get(&key)
+            .is_some_and(|size| size.decoded_bytes.is_none())
+    {
+        state.data_lengths_reliable = false;
+        push_gap(state, "decoded_body_size_unavailable", None);
+    }
+}
+
+fn reported_body_bytes(state: &Journal, request_id: &str, hop: u32) -> Option<u64> {
+    state
+        .body_sizes
+        .get(&(request_id.to_owned(), hop))
+        .filter(|size| size.saw_chunk)
+        .and_then(|size| size.decoded_bytes)
 }
 
 fn push_gap(state: &mut Journal, reason: &str, dropped_events: Option<u64>) {
@@ -1284,10 +1322,95 @@ fn safe_error(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{finite_u64, provider_time, retained_headers};
+    use super::{
+        Journal, NetworkCapture, finite_u64, provider_time, retained_headers, store_provider_event,
+    };
+    use crate::internal::browser::page::NetworkObservationEvent as ProviderEvent;
     use crate::surface::{NetworkHeader, NetworkObservationPolicy};
-    use serde_json::{Map, Value};
-    use std::time::Duration;
+    use serde_json::{Map, Value, json};
+    use std::{
+        error::Error,
+        io,
+        sync::{Arc, Mutex},
+        time::Duration,
+    };
+    use tokio::sync::Notify;
+    use tokio_util::sync::CancellationToken;
+
+    fn response_json(url: &str, status: i64, encoded_length: f64) -> Value {
+        json!({
+            "url": url,
+            "status": status,
+            "statusText": "OK",
+            "headers": {"content-type": "text/plain"},
+            "mimeType": "text/plain",
+            "charset": "utf-8",
+            "connectionReused": false,
+            "connectionId": 1.0,
+            "encodedDataLength": encoded_length,
+            "securityState": "neutral"
+        })
+    }
+
+    fn request_event(
+        url: &str,
+        timestamp: f64,
+        redirect_response: Option<&Value>,
+    ) -> Result<ProviderEvent, serde_json::Error> {
+        let value = json!({
+            "requestId": "request-redirected",
+            "loaderId": "loader-1",
+            "documentURL": "https://example.test/",
+            "request": {
+                "url": url,
+                "method": "GET",
+                "headers": {},
+                "initialPriority": "High",
+                "referrerPolicy": "no-referrer"
+            },
+            "timestamp": timestamp,
+            "wallTime": 1.0,
+            "initiator": {"type": "other"},
+            "redirectHasExtraInfo": false,
+            "redirectResponse": redirect_response,
+            "type": "XHR",
+            "frameId": "frame-1"
+        });
+        let event = serde_json::from_value(value)?;
+        Ok(ProviderEvent::Request(Arc::new(event)))
+    }
+
+    fn data_received(length: i64, timestamp: f64) -> Result<ProviderEvent, serde_json::Error> {
+        let event = serde_json::from_value(json!({
+            "requestId": "request-redirected",
+            "timestamp": timestamp,
+            "dataLength": length,
+            "encodedDataLength": length
+        }))?;
+        Ok(ProviderEvent::DataReceived(Arc::new(event)))
+    }
+
+    fn response_event(timestamp: f64) -> Result<ProviderEvent, serde_json::Error> {
+        let event = serde_json::from_value(json!({
+            "requestId": "request-redirected",
+            "loaderId": "loader-1",
+            "timestamp": timestamp,
+            "type": "XHR",
+            "response": response_json("https://example.test/final", 200, 5.0),
+            "hasExtraInfo": false,
+            "frameId": "frame-1"
+        }))?;
+        Ok(ProviderEvent::Response(Arc::new(event)))
+    }
+
+    fn finished_event(timestamp: f64) -> Result<ProviderEvent, serde_json::Error> {
+        let event = serde_json::from_value(json!({
+            "requestId": "request-redirected",
+            "timestamp": timestamp,
+            "encodedDataLength": 5.0
+        }))?;
+        Ok(ProviderEvent::Finished(Arc::new(event)))
+    }
 
     #[test]
     fn provider_numeric_values_are_rounded_without_saturating_out_of_range() {
@@ -1320,6 +1443,7 @@ mod tests {
             "x-refresh-token",
             "x-session-token",
             "x-auth-token",
+            "x-amz-security-token",
         ];
         let mut headers = Map::new();
         for name in sensitive_names {
@@ -1363,5 +1487,59 @@ mod tests {
                 .map(|header| header.name.clone())
                 .collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    #[expect(
+        clippy::panic_in_result_fn,
+        reason = "Assertions verify the real provider-event pipeline keeps per-hop body lengths for bounded preflight."
+    )]
+    fn response_body_sizes_are_scoped_to_redirect_hops_and_keep_early_chunks()
+    -> Result<(), Box<dyn Error + Send + Sync>> {
+        let policy = NetworkObservationPolicy {
+            retain_bodies: true,
+            ..NetworkObservationPolicy::default()
+        };
+        let journal = Arc::new(Mutex::new(Journal::new(true)));
+        let events = [
+            request_event("https://example.test/first", 1.0, None)?,
+            data_received(40, 1.1)?,
+            request_event(
+                "https://example.test/final",
+                1.2,
+                Some(&response_json("https://example.test/first", 302, 40.0)),
+            )?,
+            // The body-size preflight must keep dataReceived bytes even when
+            // they arrive before the final responseReceived event.
+            data_received(5, 1.3)?,
+            response_event(1.4)?,
+            finished_event(1.5)?,
+        ];
+        for event in events {
+            store_provider_event(&journal, &policy, event);
+        }
+
+        let mut capture = NetworkCapture {
+            session_id: "session-1".into(),
+            tab_id: "tab-1".into(),
+            subscription_id: "subscription-1".into(),
+            policy,
+            journal,
+            stop: CancellationToken::new(),
+            signal: Arc::new(Notify::new()),
+            task: None,
+            next_window: 1,
+            previous_in_flight: Vec::new(),
+            next_window_start_unix_us: 1,
+        };
+        let snapshot = capture.snapshot(64 * 1024)?;
+        let candidate = snapshot
+            .body_candidates
+            .first()
+            .ok_or_else(|| io::Error::other("final response has no body candidate"))?;
+        assert_eq!(candidate.request_id, "request-redirected");
+        assert_eq!(candidate.hop, 1);
+        assert_eq!(candidate.provider_reported_body_bytes, Some(5));
+        Ok(())
     }
 }

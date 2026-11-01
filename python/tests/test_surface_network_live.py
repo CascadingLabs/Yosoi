@@ -51,6 +51,7 @@ SENSITIVE_HEADERS = (
     "x-refresh-token",
     "x-session-token",
     "x-auth-token",
+    "x-amz-security-token",
 )
 
 
