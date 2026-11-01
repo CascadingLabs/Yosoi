@@ -40,13 +40,35 @@ def test_native_web_reader_honors_policy_and_preserves_network_uncertainty():
         tab_id="tab-1",
         subscription_id="subscription-1",
         window_id="subscription-1:1",
-        first_sequence=None,
-        last_sequence=None,
+        first_sequence=1,
+        last_sequence=1,
         started_at_unix_us=1,
         ended_at_unix_us=2,
-        events=(),
+        events=(
+            sf.NetworkEvent(
+                sequence=1,
+                request_id="request-1",
+                request_start_observed=True,
+                hop=0,
+                observed_at_unix_us=1,
+                kind=sf.NetworkRequestStarted(
+                    kind="request_started",
+                    url="https://owned.example/",
+                    method="GET",
+                    headers=(),
+                ),
+            ),
+        ),
         in_flight_at_start=(),
-        in_flight=(),
+        in_flight=(
+            sf.NetworkInFlight(
+                request_id="request-1",
+                hop=0,
+                url="https://owned.example/",
+                method="GET",
+                response_seen=False,
+            ),
+        ),
         gaps=(),
         coverage=sf.NetworkCoverage(
             complete=False,
@@ -62,7 +84,7 @@ def test_native_web_reader_honors_policy_and_preserves_network_uncertainty():
             starts_not_observed=0,
             omitted_payload_links=0,
             start_boundary_unknown=True,
-            end_boundary_in_flight=False,
+            end_boundary_in_flight=True,
         ),
         retention=sf.NetworkRetention(
             max_duration_ms=300000,
@@ -118,8 +140,18 @@ def test_network_schema_string_in_ordinary_json_does_not_select_network_semantic
         network=sf.DocumentPolicy(max_bytes=1),
     )
     index = sf.Surface.with_policy(document, policies)
-    with pytest.raises(sf.SurfaceError):
-        sf.WebSurface(index, "ordinary-json")
+    assert not index.is_network_observation()
+    reader = sf.WebSurface(index, "ordinary-json")
+    assert reader.descriptor.representation == "yosoi.web.json.v1"
+    result = reader.read(
+        sf.ReadRequest(
+            operation=sf.Search(query="Network.responseReceived"),
+            budget=sf.Budget(bytes=65536),
+        )
+    )
+    assert result.kind == "page"
+    assert result.data.entries
+    assert result.data.coverage.complete
 
 
 def test_prepared_document_read_cap_survives_shared_reader():
