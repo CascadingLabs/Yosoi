@@ -508,6 +508,8 @@ class MediaDocumentsConformanceTests(unittest.TestCase):
                 return {"max_bytes": self.max_bytes}
 
         class FakeMetadata:
+            probe_validated_video_container = None
+
             def __init__(self, **values: Any) -> None:
                 self.values = values
 

@@ -77,6 +77,37 @@ const fn default_items() -> usize {
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Operation {
     Describe,
+    Observe {
+        representation: super::browser::BrowserRepresentation,
+    },
+    ReadView {
+        representation: super::browser::BrowserRepresentation,
+        request: model::ReadRequest,
+    },
+    /// Arm an explicitly bounded live network event subscription on a native tab.
+    NetworkSubscribe {
+        /// Enable bounded response-body retention for this subscription.
+        #[serde(default)]
+        retain_bodies: Option<bool>,
+    },
+    /// Cancel the active network event subscription and release its listeners.
+    NetworkCancel,
+    /// Wait for a new event sequence from the active network subscription.
+    NetworkWait {
+        /// Last event sequence the caller has already observed.
+        after_sequence: u64,
+        /// Maximum event-driven wait time.
+        timeout_ms: u64,
+    },
+    /// Read a bounded chunk from one separately retained network body payload.
+    NetworkPayload {
+        /// Exact response link copied from a frozen NetworkWindow.
+        reference: Box<super::NetworkPayloadRef>,
+        /// Byte offset into the retained body.
+        offset: usize,
+        /// Requested body bytes before base64 transport encoding.
+        max_bytes: usize,
+    },
     Read {
         request: model::ReadRequest,
     },
@@ -271,10 +302,10 @@ impl<D: AgentSurface> Connection<D> {
             return Err(io::Error::other("command exceeds 64 KiB").into());
         }
         let request: Request = serde_json::from_value(command)?;
-        if !(1024..=16384).contains(&request.budget) || serde_json::to_vec(&request.id)?.len() > 64
+        if !(1024..=65536).contains(&request.budget) || serde_json::to_vec(&request.id)?.len() > 64
         {
             return Err(
-                io::Error::other("budget must be 1024..16384; id must fit 64 bytes").into(),
+                io::Error::other("budget must be 1024..65536; id must fit 64 bytes").into(),
             );
         }
         if request.budget < 4096

@@ -1,6 +1,6 @@
 //! Live repetition resolves recorded intentions against newly captured surfaces.
 use super::super::{
-    process::Browser,
+    backend::Browser,
     session::{Driver, validate_effect, validate_url},
 };
 use crate::archive::FileDocumentArchiveRef;
@@ -23,7 +23,12 @@ pub(in crate::surface::browser) struct RunFailure {
     pub source: Box<dyn Error + Send + Sync>,
 }
 use serde_json::{Value, json};
-use std::{error::Error, fs, io, path::Path};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    error::Error,
+    fs, io,
+    path::Path,
+};
 
 pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
     if target.query.is_empty() || target.query.len() > 512 || target.tag.is_empty() {
@@ -90,6 +95,13 @@ pub async fn resolve(driver: &Driver, target: &Target) -> Result<Reference> {
         .ok_or_else(|| io::Error::other("target absent").into())
 }
 fn procedure(record: &AutomationRecord) -> Result<(String, Vec<Operation>)> {
+    if record
+        .operations()
+        .iter()
+        .any(|receipt| receipt.kind == "surface.native_binding")
+    {
+        return Err(io::Error::other("native Surface evidence requires a fresh native Session/Work binding; generic browser rerun does not restore its session policy").into());
+    }
     if record
         .operations()
         .iter()
@@ -234,6 +246,10 @@ fn procedure(record: &AutomationRecord) -> Result<(String, Vec<Operation>)> {
     }
     Ok((url, clicks))
 }
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "The opened browser is moved into Driver; the nursery follows Work fields after that ownership transfer. Cleanup explicitly drops Driver."
+)]
 pub(super) async fn run(
     record: &AutomationRecord,
     count: usize,
@@ -262,7 +278,9 @@ pub(super) async fn run(
             .unwrap_or_else(|| output.join("archive"));
         let mut recording = Recording::open(&root, &directory, &url).await?;
         recording.set_limits(policy.archive_limits);
-        let mut browser = match Browser::open(headless).await {
+        policy.documents.validate()?;
+        let opened = Browser::open_with_policy(headless, policy.documents.clone()).await;
+        let mut browser = match opened {
             Ok(browser) => browser,
             Err(error) => {
                 recording.fault();
@@ -288,7 +306,9 @@ pub(super) async fn run(
         let initial = async {
             browser.post("/url", json!({"url":url})).await?;
             let (surface, document, snapshot) = browser.capture(1, &mut trace).await?;
-            recording.capture(&document, &surface, &snapshot, 1).await?;
+            recording
+                .capture(&document, &surface, &snapshot, 1, &[])
+                .await?;
             Ok::<_, Box<dyn Error + Send + Sync>>(surface)
         }
         .await;
@@ -297,6 +317,7 @@ pub(super) async fn run(
             Err(error) => {
                 recording.fault();
                 let closed = browser.close().await;
+                drop(browser);
                 let _ = recording
                     .command(
                         json!({"op":"open"}),
@@ -315,6 +336,7 @@ pub(super) async fn run(
         session.attach()?;
         let cursor = session.cursor()?;
         cursor.promote()?;
+        let network_evidence_limit = browser.network_window_limit().unwrap_or(1);
         let mut driver = Driver {
             browser,
             session,
@@ -323,6 +345,9 @@ pub(super) async fn run(
             trace,
             recording_fault: false,
             recording: Some(recording),
+            evidence: BTreeMap::new(),
+            network_evidence: VecDeque::new(),
+            network_evidence_limit,
         };
         let execution = async {
             for click in &clicks {
@@ -379,7 +404,7 @@ pub(super) async fn run(
                     return Err(io::Error::other("repeated effect was not confirmed").into());
                 }
             }
-            let screenshot = driver.browser.screenshot().await?;
+            let screenshot = driver.browser.screenshot_artifact().await?;
             let screenshot_path = directory.join("final.png");
             fs::write(&screenshot_path, screenshot.bytes())?;
             if let Some(recording) = &mut driver.recording {
@@ -417,6 +442,7 @@ pub(super) async fn run(
         if let Some(recording) = &driver.recording {
             outcomes.push(recording.outcome());
         }
+        drop(driver);
         let settled = execution
             .map(|_| ())
             .and(archived)

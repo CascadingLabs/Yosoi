@@ -1,6 +1,11 @@
 //! Private provider boundary. Chrome keeps its existing implementation.
 
-use super::page::{DownloadCaptureError, NativeDownloadCapture};
+#[cfg(not(yosoi_dev_support))]
+use super::page::SurfaceInput;
+use super::page::{
+    DownloadCaptureError, NativeDownloadCapture,
+    NetworkObservationSubscription as ChromeNetworkSubscription,
+};
 use crate::browser as browser_config;
 use crate::browser::{BrowserConfig, BrowserEngine};
 use std::result::Result as StdResult;
@@ -315,6 +320,37 @@ pub enum Page {
     Bidi(super::bidi::session::Page),
 }
 
+/// Provider-specific native network event subscription. Only Chrome's CDP
+/// listener is currently qualified for Surface network windows.
+#[derive(Debug)]
+pub enum NetworkObservationSubscription {
+    /// Page-scoped Chromium DevTools Protocol subscription.
+    Chrome(Box<ChromeNetworkSubscription>),
+}
+
+impl NetworkObservationSubscription {
+    /// Whether the Page already had Network instrumentation enabled before this subscription.
+    pub fn network_was_previously_enabled(&self) -> bool {
+        match self {
+            Self::Chrome(subscription) => subscription.network_was_previously_enabled(),
+        }
+    }
+
+    /// Waits for the next provider event without polling.
+    pub async fn next(&mut self) -> Result<super::page::NetworkObservationEvent> {
+        match self {
+            Self::Chrome(subscription) => subscription.next().await,
+        }
+    }
+
+    /// Releases the subscription listeners and the per-page reservation.
+    pub fn settle(&mut self) {
+        match self {
+            Self::Chrome(subscription) => subscription.settle(),
+        }
+    }
+}
+
 macro_rules! native_method {
     (fn $method:ident($($arg:ident: $ty:ty),*) -> $output:ty, |$page:ident, $token:ident, $deadline:ident| $native:expr) => {
         pub async fn $method(&self, $($arg:$ty),*) -> Result<$output> {
@@ -344,6 +380,39 @@ macro_rules! chrome_method {
 }
 
 impl Page {
+    /// Starts native network observation for a qualified CDP page.
+    pub async fn start_network_observation_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+    ) -> Result<NetworkObservationSubscription> {
+        match self {
+            Self::Chrome(page) => page
+                .start_network_observation_subscription(max_events, max_buffered_events)
+                .await
+                .map(Box::new)
+                .map(NetworkObservationSubscription::Chrome),
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface network observation over BiDi")),
+        }
+    }
+
+    /// Retrieves a response body from a currently available completed Chrome request.
+    pub async fn capture_network_response_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<super::page::ObservationResponseBody> {
+        match self {
+            Self::Chrome(page) => {
+                page.capture_network_response_body(request_id, max_bytes)
+                    .await
+            }
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface network response body over BiDi")),
+        }
+    }
+
     pub fn ensure_download_context_available(&self) -> StdResult<(), DownloadCaptureError> {
         match self {
             Self::Chrome(page) => page.ensure_download_context_available(),
@@ -396,6 +465,34 @@ impl Page {
     native_method!(fn screenshot_png() -> Vec<u8>, |page, token, deadline| page.screenshot_png(&token, deadline).await);
     native_method!(fn click_unique_element(selector: &str) -> (), |page, token, deadline| page.click_unique_element(selector, &token, deadline).await);
     native_method!(fn type_into_unique_element(selector: &str, text: &str) -> (), |page, token, deadline| page.type_into_unique_element(selector, text, &token, deadline).await);
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_script(
+        &self,
+        operation: &str,
+        input: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        match self {
+            Self::Chrome(page) => page.surface_script(operation, input).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface browser script")),
+        }
+    }
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_input(&self, input: &SurfaceInput) -> Result<()> {
+        match self {
+            Self::Chrome(page) => page.surface_input(input).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface native input")),
+        }
+    }
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_ax(&self, depth: Option<i64>) -> Result<serde_json::Value> {
+        match self {
+            Self::Chrome(page) => page.surface_ax(depth).await,
+            #[cfg(feature = "browser-bidi")]
+            Self::Bidi(_) => Err(unsupported("Surface accessibility capture")),
+        }
+    }
     native_method!(fn frame_urls() -> Vec<String>, |page, token, deadline| page.frames(&token, deadline).await.map(|frames| frames.into_iter().map(|frame| frame.url).collect()));
     pub async fn navigate_until_dom_content_loaded(
         &self,

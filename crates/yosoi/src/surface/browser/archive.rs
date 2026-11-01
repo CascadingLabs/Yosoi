@@ -4,7 +4,8 @@ use crate::{
     automation_record::{Observation, OperationStatus},
     documents::Document,
     surface::{
-        ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, ExecutionError, Limits, Outcome,
+        ArchiveLimits, ArchivePolicy, ArchivedSource, Budget, DocumentPolicy, ExecutionError,
+        NetworkPayload, NetworkPayloadRef, NetworkPayloadState, NetworkPayloadValue, Outcome,
         Surface, SurfacePolicy,
         archive::{Capture, Loaded, Recording, capture_descriptors},
         connection::Result,
@@ -17,6 +18,19 @@ use uuid::Uuid;
 #[cfg(feature = "browser")]
 pub(super) mod repeating;
 impl Recording {
+    #[cfg(feature = "browser")]
+    pub(super) async fn native_binding(&mut self, source: Value) -> Result<()> {
+        self.push(
+            "surface.native_binding",
+            OperationStatus::Observed,
+            source,
+            None,
+            None,
+        )?;
+        self.checkpoint().await?;
+        Ok(())
+    }
+
     pub async fn open(root: &Path, output: &Path, url: &str) -> Result<Self> {
         let archive = Archive::open(root).await?;
         let mut recording = Self {
@@ -39,8 +53,30 @@ impl Recording {
         surface: &Surface,
         snapshot: &Value,
         epoch: u64,
+        network_payloads: &[(NetworkPayloadRef, NetworkPayload)],
     ) -> Result<()> {
         let reference = self.archive.write_document(document).await?;
+        for (payload_reference, payload) in network_payloads {
+            if !matches!(
+                payload_reference.state,
+                NetworkPayloadState::Retained | NetworkPayloadState::Truncated
+            ) {
+                continue;
+            }
+            let source = match payload {
+                NetworkPayload {
+                    value: NetworkPayloadValue::Document(document),
+                    ..
+                } => ArchivedSource::new(payload_reference.id.clone(), document, None),
+                NetworkPayload {
+                    value: NetworkPayloadValue::File(document),
+                    ..
+                } => {
+                    ArchivedSource::new_file_document(payload_reference.id.clone(), document, None)
+                }
+            };
+            self.outcome.retain(source)?;
+        }
         self.outcome.retain(ArchivedSource::new(
             reference.to_string(),
             document,
@@ -49,9 +85,20 @@ impl Recording {
         let observation = Observation {
             browser: None,
             id: format!("{}:capture:{epoch}", self.outcome.record.id()),
-            session_id: self.outcome.record.id().into(),
-            tab_id: "primary".into(),
-            document_epoch: epoch,
+            session_id: snapshot
+                .get("session_id")
+                .and_then(Value::as_str)
+                .unwrap_or_else(|| self.outcome.record.id())
+                .into(),
+            tab_id: snapshot
+                .get("tab_id")
+                .and_then(Value::as_str)
+                .unwrap_or("primary")
+                .into(),
+            document_epoch: snapshot
+                .get("native_document_epoch")
+                .and_then(Value::as_u64)
+                .unwrap_or(epoch),
             html: snapshot
                 .get("html")
                 .and_then(Value::as_str)
@@ -100,6 +147,22 @@ impl Recording {
         receipt?;
         Ok(())
     }
+
+    #[cfg(feature = "browser")]
+    pub(super) async fn release_work(&mut self, released: &Result<()>) -> Result<()> {
+        let pending = self.abandon_pending();
+        let receipt = self.push(
+            "surface.released",
+            if released.is_ok() { OperationStatus::Observed } else { OperationStatus::Unknown },
+            json!({"work_released":released.is_ok(),"browser_closed_by_surface":false,"tab_closed_by_surface":false}),
+            None,
+            released.as_ref().err().map(ToString::to_string),
+        );
+        self.finalize().await?;
+        pending?;
+        receipt?;
+        Ok(())
+    }
 }
 pub(in crate::surface) async fn replay_loaded(
     loaded: &Loaded,
@@ -127,21 +190,12 @@ pub(in crate::surface) async fn replay_loaded(
     for _ in 0..repeat {
         if captures.is_empty() {
             for source in &retained {
-                last = Some(source.restore_surface(Limits {
-                    input_bytes: 32 * 1024 * 1024,
-                    ..Limits::default()
-                })?);
+                last = Some(source.restore_surface(DocumentPolicy::maximum_limits())?);
             }
         }
         for capture in &captures {
             let document = archive.read_document(&capture.document).await?;
-            let surface = Surface::with_limits(
-                &document,
-                Limits {
-                    input_bytes: 32 * 1024 * 1024,
-                    ..Limits::default()
-                },
-            )?;
+            let surface = Surface::with_limits(&document, DocumentPolicy::maximum_limits())?;
             if surface.identity() != capture.surface {
                 return Err(io::Error::other(
                     "restored surface identity differs from recorded identity",
@@ -151,7 +205,11 @@ pub(in crate::surface) async fn replay_loaded(
             last = Some(surface);
         }
         for observation in record.observations() {
-            View::from_observation(observation, 20)?;
+            // AX and network observations are reconstructed from their typed
+            // Documents above; they deliberately have no captured HTML.
+            if observation.html.is_some() {
+                View::from_observation(observation, 20)?;
+            }
         }
     }
     let last = last.ok_or_else(|| io::Error::other("last surface absent"))?;
@@ -201,8 +259,11 @@ pub async fn rerun(
     count: usize,
     headless: bool,
 ) -> StdResult<Vec<Outcome>, ExecutionError> {
-    let result = async {
+    let result = Box::pin(async {
         value.validate()?;
+        if value.record.operations().iter().any(|receipt| receipt.kind == "surface.native_binding") {
+            return Err(io::Error::other("native Surface evidence requires a fresh native Session/Work binding; generic browser rerun does not restore its session policy").into());
+        }
         policy.archive_limits.validate()?;
         if !value.sealed {
             return Err(io::Error::other("record is not sealed after finalization").into());
@@ -218,9 +279,9 @@ pub async fn rerun(
             .output
             .clone()
             .unwrap_or_else(|| temporary.path().join("runs"));
-        repeating::run(&value.record, count, policy, headless, &output).await
-    }
-    .await;
+        Box::pin(repeating::run(&value.record, count, policy, headless, &output)).await
+        })
+        .await;
     result.map_err(error)
 }
 

@@ -3,8 +3,10 @@
 use super::{BrowserExecutionManagerError, RuntimeBrowserTabLease};
 use crate::browser as browser_config;
 use crate::internal::browser::controller as provider;
+#[cfg(not(yosoi_dev_support))]
+use crate::internal::browser::page::SurfaceInput;
 use crate::internal::browser::page::{
-    DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult,
+    DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult, ObservationResponseBody,
 };
 use serde_json::Value;
 use std::fmt;
@@ -189,6 +191,40 @@ impl RuntimeBrowserControl {
     pub fn execution_identity(&self) -> Option<browser_config::BrowserExecutionIdentity> {
         self.page.execution_identity()
     }
+    /// Runs a fixed bundled Surface evidence operation on this controlled tab.
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_script(
+        &self,
+        operation: &str,
+        input: &Value,
+    ) -> Result<Value, BrowserControlError> {
+        self.check_authority()?;
+        let value = self.page.surface_script(operation, input).await?;
+        self.check_authority()?;
+        Ok(value)
+    }
+    /// Dispatches native input to a node from the current bundled Surface capture.
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_input(
+        &self,
+        input: &SurfaceInput,
+    ) -> Result<(), BrowserControlError> {
+        self.check_authority()?;
+        self.page.surface_input(input).await?;
+        self.check_authority()?;
+        Ok(())
+    }
+    /// Captures the raw browser AX tree from the same controlled tab.
+    #[cfg(not(yosoi_dev_support))]
+    pub(crate) async fn surface_ax(
+        &self,
+        depth: Option<i64>,
+    ) -> Result<Value, BrowserControlError> {
+        self.check_authority()?;
+        let nodes = self.page.surface_ax(depth).await?;
+        self.check_authority()?;
+        Ok(nodes)
+    }
     /// Checks the watch's original frame and loader-derived epoch against a
     /// fresh browser frame-tree read, including after worker admission.
     pub async fn observation_scope_is_current(
@@ -222,6 +258,40 @@ impl RuntimeBrowserControl {
         let watch = self.page.start_observation_watch(options).await?;
         self.check_authority()?;
         Ok(watch)
+    }
+
+    /// Arms the qualified native Chrome network listener on this controlled tab.
+    /// BiDi remains an explicit unsupported capability for Surface network windows.
+    pub async fn start_network_observation_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+    ) -> Result<provider::NetworkObservationSubscription, BrowserControlError> {
+        self.check_authority()?;
+        let mut subscription = self
+            .page
+            .start_network_observation_subscription(max_events, max_buffered_events)
+            .await?;
+        if self.check_authority().is_err() {
+            subscription.settle();
+            return Err(BrowserControlError::Cancelled);
+        }
+        Ok(subscription)
+    }
+
+    /// Captures a bounded completed response body under the native Work permit.
+    pub async fn capture_network_response_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<ObservationResponseBody, BrowserControlError> {
+        self.check_authority()?;
+        let body = self
+            .page
+            .capture_network_response_body(request_id, max_bytes)
+            .await?;
+        self.check_authority()?;
+        Ok(body)
     }
 
     /// Arms native download events and returns only after the browser-context
@@ -384,6 +454,11 @@ impl RuntimeBrowserControl {
     }
     pub fn closing(&self) -> CancellationToken {
         self.closing.clone()
+    }
+
+    /// Whether this particular tab-control lease remains authoritative.
+    pub fn authority_active(&self) -> bool {
+        !self.closing.is_cancelled() && self.authority.active()
     }
 
     /// Deny further control after an unresolved dispatch without releasing its gate.

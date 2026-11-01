@@ -7,7 +7,11 @@ use yosoi::automation_record::OperationStatus;
 use yosoi::{
     Archive,
     documents::{Document, DocumentEpoch},
-    surface::{ArchiveLimits, ArchivePolicy, Budget, Limits, Session, SessionPolicy, Surface},
+    surface::{
+        ArchiveLimits, ArchivePolicy, Budget, Limits, Session, SessionPolicy, Surface,
+        browser::WebSurface,
+        model::{ReadOperation, ReadRequest, ReadResult, SourceId, SurfaceRead},
+    },
 };
 
 type Result<T = ()> = StdResult<T, Box<dyn Error>>;
@@ -108,6 +112,37 @@ async fn all_six_profiles_restore_from_a_moved_file_without_original_store() -> 
             restored.inspect(&target, None, Budget::default())?.content,
             expected
         );
+        let web = WebSurface::new(
+            restored.clone(),
+            SourceId::new(format!("archive:{}", case.name))?,
+        )?;
+        let found = web.read(&ReadRequest {
+            operation: ReadOperation::Search {
+                query: "lamp".into(),
+            },
+            budget: Budget::default(),
+            continuation: None,
+        })?;
+        let ReadResult::Page(found) = found else {
+            return Err(io::Error::other("archived web search did not return a page").into());
+        };
+        let shared_reference = found
+            .entries
+            .first()
+            .map(|entry| entry.reference.clone())
+            .ok_or_else(|| io::Error::other("archived web search returned no evidence"))?;
+        let inspected = web.read(&ReadRequest {
+            operation: ReadOperation::Inspect {
+                reference: shared_reference,
+            },
+            budget: Budget::default(),
+            continuation: None,
+        })?;
+        let ReadResult::Inspection(inspected) = inspected else {
+            return Err(io::Error::other("archived web inspection was not returned").into());
+        };
+        assert!(inspected.content.to_lowercase().contains("lamp"));
+        assert!(!web.descriptor().controllable);
         let reader = Session::new(restored, SessionPolicy::default())?;
         assert!(reader.hot_owner()?.is_none());
     }

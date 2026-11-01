@@ -23,6 +23,8 @@ use tokio::time as tokio_time;
 mod download;
 mod evaluation;
 mod javascript;
+#[cfg(feature = "browser")]
+mod surface;
 mod until;
 
 pub use download::{
@@ -75,6 +77,8 @@ pub enum ActionKind {
     Navigate,
     /// Dispatch a click to a uniquely resolved element.
     Click,
+    /// Dispatch bounded native scrolling on the owned tab.
+    Scroll,
     /// Dispatch keyboard input to a uniquely resolved editable target.
     EnterText,
     /// Capture a screenshot from the current tab.
@@ -87,6 +91,20 @@ pub enum ActionKind {
     Evaluate,
     /// Arm and retain a bounded native browser download from a caller action.
     Download,
+}
+
+impl ActionKind {
+    const ALL: [Self; 9] = [
+        Self::Navigate,
+        Self::Click,
+        Self::Scroll,
+        Self::EnterText,
+        Self::Screenshot,
+        Self::Wait,
+        Self::Assert,
+        Self::Evaluate,
+        Self::Download,
+    ];
 }
 
 /// Frame selection is resolved uniquely immediately before script dispatch.
@@ -164,15 +182,10 @@ impl Default for SessionPolicy {
             maximum_tabs: 1,
             dom: true,
             allow_arbitrary_js: false,
-            allowed_actions: vec![
-                ActionKind::Navigate,
-                ActionKind::Click,
-                ActionKind::EnterText,
-                ActionKind::Screenshot,
-                ActionKind::Wait,
-                ActionKind::Assert,
-                ActionKind::Download,
-            ],
+            allowed_actions: ActionKind::ALL
+                .into_iter()
+                .filter(|kind| *kind != ActionKind::Evaluate)
+                .collect(),
             operation_timeout_ms: 10_000,
             maximum_input_bytes: 65_536,
             maximum_result_bytes: 65_536,
@@ -203,7 +216,7 @@ impl SessionPolicy {
             || self.maximum_input_bytes > 1024 * 1024
             || self.maximum_result_bytes > 1024 * 1024
             || self.maximum_observation_bytes > automation_record::MAX_OBSERVATION_HTML_BYTES
-            || self.allowed_actions.len() > 8
+            || self.allowed_actions.len() > ActionKind::ALL.len()
         {
             return Err(SessionError::InvalidPolicy);
         }
@@ -1220,8 +1233,10 @@ impl Work {
         {
             return Err(SessionError::Denied);
         }
-        if matches!(kind, ActionKind::Click | ActionKind::EnterText)
-            && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
+        if matches!(
+            kind,
+            ActionKind::Click | ActionKind::Scroll | ActionKind::EnterText
+        ) && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
             && self.session.policy().browser.moli_profile == browser_config::MoliProfile::Layout
             && !self
                 .session
@@ -1913,5 +1928,47 @@ mod default_browser_mode_tests {
         assert_eq!(builder.settings.mode, BrowserMode::Headful);
         let explicit = new().bind(&policy).configure(SessionPolicy::default());
         assert_eq!(explicit.settings.mode, BrowserMode::Headless);
+    }
+}
+
+#[cfg(test)]
+mod action_policy_tests {
+    use super::{ActionKind, SessionError, SessionPolicy, new};
+
+    #[test]
+    fn javascript_opt_in_preserves_download_and_validates_every_declared_action() {
+        let defaults = SessionPolicy::default();
+        assert!(defaults.validate().is_ok());
+        assert!(defaults.allowed_actions.contains(&ActionKind::Download));
+        assert!(!defaults.allowed_actions.contains(&ActionKind::Evaluate));
+        assert!(!defaults.allow_arbitrary_js);
+
+        let builder = new().allow_javascript().allow_javascript();
+        assert!(builder.settings.allow_arbitrary_js);
+        assert_eq!(
+            builder.settings.allowed_actions.len(),
+            ActionKind::ALL.len()
+        );
+        for kind in ActionKind::ALL {
+            assert!(builder.settings.allowed_actions.contains(&kind));
+        }
+        assert!(builder.settings.validate().is_ok());
+    }
+
+    #[test]
+    fn javascript_opt_in_does_not_remove_action_or_numeric_policy_bounds() {
+        let mut overlong = new().allow_javascript().settings;
+        overlong.allowed_actions.push(ActionKind::Navigate);
+        assert!(matches!(
+            overlong.validate(),
+            Err(SessionError::InvalidPolicy)
+        ));
+
+        let mut invalid_numeric = new().allow_javascript().settings;
+        invalid_numeric.maximum_result_bytes = 0;
+        assert!(matches!(
+            invalid_numeric.validate(),
+            Err(SessionError::InvalidPolicy)
+        ));
     }
 }

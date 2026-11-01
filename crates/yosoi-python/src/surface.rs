@@ -99,6 +99,10 @@ pub struct NativeSurface {
 
 #[pymethods]
 impl NativeSurface {
+    fn is_network_observation(&self) -> bool {
+        self.inner.is_network_observation()
+    }
+
     #[new]
     fn new(py: Python<'_>, document: &NativeDocument, limits: &str) -> PyResult<Self> {
         let limits = decode(limits)?;
@@ -177,11 +181,23 @@ impl NativeSurface {
         })
     }
 
-    fn web(&self, source: &str) -> PyResult<NativeWebSurface> {
+    #[pyo3(signature = (source, policy=None))]
+    fn web(&self, source: &str, policy: Option<&str>) -> PyResult<NativeWebSurface> {
         let source = surface::model::SourceId::new(source).map_err(failure)?;
-        surface::browser::WebSurface::new(self.inner.clone(), source)
+        let policy = policy.map(decode).transpose()?.unwrap_or_default();
+        surface::browser::WebSurface::with_policy(self.inner.clone(), source, policy)
             .map(|inner| NativeWebSurface { inner })
             .map_err(failure)
+    }
+    #[staticmethod]
+    fn with_policy(py: Python<'_>, document: &NativeDocument, policies: &str) -> PyResult<Self> {
+        let policies = decode(policies)?;
+        let document = document.borrowed()?.to_owned();
+        py.detach(|| {
+            surface::Surface::with_policy(&document, &policies)
+                .map(|inner| Self { inner })
+                .map_err(failure)
+        })
     }
 
     #[staticmethod]
@@ -711,7 +727,40 @@ impl NativeWebSurface {
     }
 }
 
+#[pyfunction]
+fn surface_network_policy_validate(value: &str) -> PyResult<()> {
+    let policy: surface::NetworkObservationPolicy = decode(value)?;
+    policy.validate().map_err(failure)
+}
+
+#[pyfunction]
+fn surface_network_policy_retention(value: &str) -> PyResult<String> {
+    let policy: surface::NetworkObservationPolicy = decode(value)?;
+    encode(&policy.retention())
+}
+
+#[pyfunction]
+fn surface_network_window_validate(value: &str) -> PyResult<()> {
+    let window: surface::NetworkWindow = decode(value)?;
+    window.validate().map_err(failure)
+}
+
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add(
+        "NETWORK_OBSERVATION_SCHEMA",
+        surface::NETWORK_OBSERVATION_SCHEMA,
+    )?;
+    module.add(
+        "NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES",
+        surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+    )?;
+    module.add(
+        "NETWORK_PROVIDER_TOTAL_BUFFER_BYTES",
+        surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES,
+    )?;
+    module.add_function(wrap_pyfunction!(surface_network_policy_validate, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_network_policy_retention, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_network_window_validate, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_new, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_file_document, module)?)?;
     module.add_function(wrap_pyfunction!(surface_source_capture, module)?)?;

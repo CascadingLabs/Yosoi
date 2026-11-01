@@ -42,9 +42,14 @@ pub(in crate::internal::browser) mod observation_watch;
 mod screenshot;
 mod screenshot_types;
 mod shared;
+#[cfg(not(yosoi_dev_support))]
+mod surface;
 mod targets;
 mod viewport;
 mod visual_snapshot;
+
+#[cfg(not(yosoi_dev_support))]
+pub use surface::SurfaceInput;
 
 #[path = "page/document_identity.rs"]
 mod document_identity;
@@ -59,8 +64,9 @@ pub use download_capture::{DownloadCaptureError, NativeDownloadCapture, NativeDo
 pub use download_types::{DownloadCapture, DownloadOutcome};
 pub use navigation_response::{ENDPOINT_SANITIZER_VERSION, PageResponse, safe_endpoint};
 pub use observation_watch::{
-    AccessibilityChangeKind, CompletedResponseCandidate, ObservationChange,
-    ObservationResponseBody, ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
+    AccessibilityChangeKind, CompletedResponseCandidate, NetworkObservationEvent,
+    NetworkObservationSubscription, ObservationChange, ObservationResponseBody,
+    ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
 };
 pub use screenshot_types::{Bbox, ScreenshotOptions, ScreenshotOutput};
 

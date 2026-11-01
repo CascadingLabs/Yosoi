@@ -1,6 +1,7 @@
 //! Web evidence adapter over the existing immutable document index.
+use crate::documents::DocumentClass;
 use crate::surface::{
-    Budget, Continuation, Reference as NativeReference, Surface, SurfaceError,
+    Budget, Continuation, DocumentPolicy, Reference as NativeReference, Surface, SurfaceError,
     model::{
         self, Access, AddressToken, Capability, ContinuationToken, Descriptor, Observation,
         ObservationId, ReadOperation, ReadRequest, ReadResult, SourceId, SurfaceId, SurfaceRead,
@@ -16,15 +17,53 @@ pub struct WebSurface {
     descriptor: Descriptor,
     observation: Observation,
     root: model::Reference,
+    policy: DocumentPolicy,
 }
 impl WebSurface {
-    /// Wraps captured HTML or a rendered DOM; source identity belongs to the caller's session.
+    /// Wraps prepared HTML, XML, JSON, text, rendered DOM, or AX.
+    /// The caller supplies the continuing source identity.
     pub fn new(index: Surface, source: SourceId) -> Result<Self, SurfaceError> {
-        if !index.representation().contains("html")
-            && !index.representation().contains("rendered-dom")
-        {
+        Self::with_policy(index, source, DocumentPolicy::default())
+    }
+    /// Wraps one of the six prepared document classes with independently configured
+    /// response limits. Explicit network windows preserve their coverage. Evidence grants
+    /// no action authority.
+    pub fn with_policy(
+        index: Surface,
+        source: SourceId,
+        mut policy: DocumentPolicy,
+    ) -> Result<Self, SurfaceError> {
+        policy.validate()?;
+        policy.response_bytes = index
+            .response_budget(Budget {
+                bytes: policy.response_bytes,
+                items: 1,
+            })
+            .bytes;
+        let class = match index.data.original.as_ref() {
+            Some(super::super::Original::Document { profile, .. }) => {
+                profile.class().map_err(|_| {
+                    SurfaceError::Invalid("web surface requires a supported Document class".into())
+                })?
+            }
+            _ => {
+                return Err(SurfaceError::Invalid(
+                    "web surface requires a supported Document class".into(),
+                ));
+            }
+        };
+        let network = index.is_network_observation();
+        let ax = class == DocumentClass::AccessibilityTree;
+        let xml = class == DocumentClass::SourceXml;
+        let json = class == DocumentClass::SourceJson && !network;
+        let text = class == DocumentClass::SourceText;
+        let document = matches!(
+            class,
+            DocumentClass::SourceHtml | DocumentClass::RenderedDom
+        );
+        if !(document || ax || xml || json || text || network) {
             return Err(SurfaceError::Invalid(
-                "web surface requires HTML or a rendered DOM".into(),
+                "web surface requires a supported Document class".into(),
             ));
         }
         let id = SurfaceId::new(format!("{}:document", source.as_str()))?;
@@ -41,7 +80,20 @@ impl WebSurface {
         let descriptor = Descriptor {
             id: id.clone(),
             source,
-            representation: "yosoi.web.document.v1".into(),
+            representation: if ax {
+                "yosoi.web.ax.v1"
+            } else if network {
+                "yosoi.web.network.v1"
+            } else if xml {
+                "yosoi.web.xml.v1"
+            } else if json {
+                "yosoi.web.json.v1"
+            } else if text {
+                "yosoi.web.text.v1"
+            } else {
+                "yosoi.web.document.v1"
+            }
+            .into(),
             controllable: false,
             capabilities,
         };
@@ -63,6 +115,7 @@ impl WebSurface {
             descriptor,
             observation,
             root,
+            policy,
         })
     }
     /// Converts an index reference into a representation-neutral evidence address.
@@ -140,6 +193,9 @@ impl SurfaceRead for WebSurface {
         self.root.clone()
     }
     fn read(&self, request: &ReadRequest) -> Result<ReadResult, SurfaceError> {
+        let mut bounded = request.clone();
+        bounded.budget = self.policy.budget(request.budget);
+        let request = &bounded;
         if request.budget.bytes < 512 || request.budget.bytes > 65536 {
             return Err(SurfaceError::Invalid(
                 "read budget must be 512..65536 bytes".into(),
@@ -186,7 +242,7 @@ impl SurfaceRead for WebSurface {
                             .next
                             .map(|token| encode(token, &self.observation.id))
                             .transpose()?,
-                        coverage: detail.coverage,
+                        coverage: self.observation.coverage.clone(),
                     })
                 }
                 operation => {
@@ -224,7 +280,7 @@ impl SurfaceRead for WebSurface {
                             .next
                             .map(|token| encode(token, &self.observation.id))
                             .transpose()?,
-                        coverage: page.coverage,
+                        coverage: self.observation.coverage.clone(),
                     })
                 }
             };

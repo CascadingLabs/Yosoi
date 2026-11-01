@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "kind": "python-rust-sdk-parity-ledger",
   "sourcePin": {
-    "sourceRevision": "bf39d974fe37f7ef33d8926712fa96eb4793655c",
-    "inventorySignature": "c315088a7b7b15bf5201d846021e7ab80551ed8e369dc0dac18b4da15137f61d",
+    "sourceRevision": "1b1ef091fcfbb69027756f15de32cef5312c69e9",
+    "inventorySignature": "2a8eda5e2e16294099bcb4be104f5cffb4d42ead534cff76b1008a8959a4dd92",
     "featureProfileDigest": "b254e1fdf9e6f317e099d345e015017d5cf0323adb8e73de9b970dbe4916c270"
   },
   "pythonPin": {
-    "surfaceDigest": "5325167f064cd5849216d9a6f65592295121dd40af448bac794e6102b8393be7",
-    "implementationDigest": "47155ca7fdb4f3480d01116a71cfb3ed643fedb96d510c2a949a56075a005600"
+    "surfaceDigest": "85ba9dab572e127b9c84ca240cffd9901fb970d15fb403fda1a382148ccae322",
+    "implementationDigest": "cd6e6efad9524ae8d22406a8adc1b6fe4cc3a7fa7d297388381c2063ac3eacb6"
   },
   "entries": [
     {
@@ -35216,7 +35216,7 @@
     },
     {
       "rustPath": "yosoi::DocumentProfile::network_observation_v1",
-      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:131a0590ef06ad73cec79255deb8d102d8aa6f20a5afa14fbcc4e65df0535f80",
+      "symbolKey": "member:function:yosoi::DocumentProfile::network_observation_v1@signature:4474e366b192f0fc08fc0cb3a589a353644f9359bfdf861d5bceaec96ab2f501@source:5c7d8ae74ad01c68b2dd28e50b12bf890924e083c256850584cc3437d4f1a5d1",
       "decision": "mapped",
       "pythonTarget": "yosoi.documents.DocumentProfile.network_observation",
       "argumentMappings": [],
@@ -35224,61 +35224,6 @@
       "units": [],
       "cardinality": [],
       "rationale": "Rust's network source profile is the same checked Python profile with source representation, JSON format and network schema."
-    },
-    {
-      "rustPath": "yosoi::documents::FileMetadata::probe_validated_video_container",
-      "symbolKey": "member:function:yosoi::documents::FileMetadata::probe_validated_video_container@signature:74b1155bb12cc622f70f1bf9181a54325d7988823fec2bf686309c7c1ae6d184@source:1e39feb9face48e491b7570e74cdcd0cb5ab746c0c746e1673b01cccb5b5ac16",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.documents.FileMetadata.probe_validated_video_container",
-      "argumentMappings": [],
-      "defaults": [
-        {
-          "id": "optional-default:probe_validated_video_container",
-          "rust": "optional value; no constructor default",
-          "python": "None default"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control."
-    },
-    {
-      "rustPath": "yosoi::documents::VideoDocument::copy_with_metadata",
-      "symbolKey": "member:function:yosoi::documents::VideoDocument::copy_with_metadata@signature:1f3d4568cc6fb21da7b4e5fa5ac38d877518309a1616124c985f348187fe4d6d@source:0f3cc52aad50b920bc2ec2f8ae0038bacc3542c592efc7796d6fba6c4096a3f5",
-      "decision": "mapped",
-      "pythonTarget": "yosoi.documents.VideoDocument.copy_with_metadata",
-      "argumentMappings": [
-        {
-          "rustArgument": "id",
-          "pythonArgument": "id",
-          "conversion": "Both APIs revalidate the replacement stable document identity."
-        },
-        {
-          "rustArgument": "metadata",
-          "pythonArgument": "metadata",
-          "conversion": "Both APIs accept optional FileMetadata; omission retains the source values, while Rust recomputes detector MIME, digest and probe provenance."
-        },
-        {
-          "rustArgument": "limits",
-          "pythonArgument": "limits",
-          "conversion": "Both APIs accept optional FileLimits; omission uses the 64 MiB default."
-        }
-      ],
-      "defaults": [
-        {
-          "id": "python-default:metadata",
-          "rust": "no explicit default on this Rust parameter",
-          "python": "Python default None"
-        },
-        {
-          "id": "python-default:limits",
-          "rust": "no explicit default on this Rust parameter",
-          "python": "Python default None"
-        }
-      ],
-      "units": [],
-      "cardinality": [],
-      "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control."
     },
     {
       "rustPath": "yosoi::documents::DocumentSchemaProfile::YosoiNetworkObservationV1",

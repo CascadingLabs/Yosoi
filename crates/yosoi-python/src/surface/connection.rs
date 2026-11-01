@@ -4,6 +4,8 @@ use super::decode;
 use super::encode;
 use crate::{async_runtime, errors};
 use pyo3::{create_exception, prelude::*};
+#[cfg(feature = "browser")]
+use std::io;
 use std::{error::Error, path::PathBuf};
 #[cfg(feature = "surface-video")]
 use yosoi::surface::video::VideoError;
@@ -50,13 +52,24 @@ pub(super) fn failure(error: ExecutionError) -> PyErr {
         )
     })
 }
+
+#[cfg(feature = "browser")]
+pub(super) fn cancelled() -> PyErr {
+    failure(ExecutionError::Operation(
+        io::Error::other("Surface operation cancelled; a dispatched effect is not assumed undone")
+            .into(),
+    ))
+}
 #[cfg(feature = "browser")]
 macro_rules! connection {
     ($module:ident, $native:ident, $name:literal, $rust:path, $input:ident : $input_type:ident, $option:ident : $option_type:ty) => {
         mod $module {
             use super::super::{decode, encode};
             use super::$input_type;
-            use crate::{async_runtime, surface::connection::failure};
+            use crate::{
+                async_runtime,
+                surface::connection::{cancelled, failure},
+            };
             use pyo3::prelude::*;
             use std::sync::Arc;
             use tokio::sync::Mutex;
@@ -80,9 +93,7 @@ macro_rules! connection {
                     async_runtime::bridge(py, None, move |_| async move {
                         Source::open(&$input, policy, $option)
                             .await
-                            .map(|inner| Self {
-                                inner: Arc::new(Mutex::new(inner)),
-                            })
+                            .map(Self::from_source)
                             .map_err(failure)
                     })
                 }
@@ -99,8 +110,19 @@ macro_rules! connection {
                 ) -> PyResult<Bound<'py, PyAny>> {
                     let command = decode(command)?;
                     let inner = Arc::clone(&self.inner);
-                    async_runtime::bridge(py, None, move |_| async move {
-                        encode(&inner.lock().await.execute(command).await.map_err(failure)?)
+                    async_runtime::bridge(py, None, move |token| async move {
+                        let mut source = tokio::select! {
+                            biased;
+                            () = token.cancelled() => return Err(cancelled()),
+                            source = inner.lock() => source,
+                        };
+                        let result = tokio::select! {
+                            biased;
+                            () = token.cancelled() => Err(cancelled()),
+                            result = source.execute(command) => result.map_err(failure),
+                        };
+                        drop(source);
+                        encode(&result?)
                     })
                 }
                 fn outcome<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -114,6 +136,14 @@ macro_rules! connection {
                     async_runtime::bridge(py, None, move |_| async move {
                         encode(&inner.lock().await.close().await.map_err(failure)?)
                     })
+                }
+            }
+
+            impl $native {
+                pub(super) fn from_source(inner: Source) -> Self {
+                    Self {
+                        inner: Arc::new(Mutex::new(inner)),
+                    }
                 }
             }
         }

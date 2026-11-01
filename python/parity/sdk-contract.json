@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "bf39d974fe37f7ef33d8926712fa96eb4793655c",
-    "inventorySignature": "c315088a7b7b15bf5201d846021e7ab80551ed8e369dc0dac18b4da15137f61d"
+    "revision": "1b1ef091fcfbb69027756f15de32cef5312c69e9",
+    "inventorySignature": "2a8eda5e2e16294099bcb4be104f5cffb4d42ead534cff76b1008a8959a4dd92"
   },
   "scope": {
     "crate": "yosoi",
@@ -12104,7 +12104,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.AudioDocument",
-        "pythonTargetSha256": "c3105f081688c35ce8fb70ac5f7c4c8e85e2745f15105e342bf7e5038e1f3b32",
+        "pythonTargetSha256": "3f6f31ab134eb56c9e5a22aec99dc8baddfcacd94fe6fdccf04c829633e4f715",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq and Python equality use the same Rust-backed value comparison for this concrete document; acquisition limits and handle identity do not affect equality.",
         "review": {
@@ -12135,7 +12135,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.AudioDocument",
-        "pythonTargetSha256": "c3105f081688c35ce8fb70ac5f7c4c8e85e2745f15105e342bf7e5038e1f3b32",
+        "pythonTargetSha256": "3f6f31ab134eb56c9e5a22aec99dc8baddfcacd94fe6fdccf04c829633e4f715",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatter flags and wrapper syntax have no Python protocol equivalent. The immutable Python model repr is diagnostic, and exact formatter text is not part of parity.",
         "review": {
@@ -12250,7 +12250,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.AudioDocument.metadata",
-        "pythonTargetSha256": "6cc3f15f7fba0eccac9d1f32d13950de01e9429e4e58edde78ba5e1fc4b336b4",
+        "pythonTargetSha256": "da71da702a375c94c67bd0bc41fec49cffcfa024c346de78f4a06f0203dccf54",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.AudioDocument.metadata.",
         "review": null,
@@ -12292,7 +12292,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.AudioDocument",
-        "pythonTargetSha256": "c3105f081688c35ce8fb70ac5f7c4c8e85e2745f15105e342bf7e5038e1f3b32",
+        "pythonTargetSha256": "3f6f31ab134eb56c9e5a22aec99dc8baddfcacd94fe6fdccf04c829633e4f715",
         "semanticEquivalent": "The Python concrete class is backed by the same Rust audio document; signatures are checked without decoding tracks.",
         "rationale": "Python AudioDocument retains the same exact audio bytes and native signature-checked metadata.",
         "review": null,
@@ -12380,7 +12380,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.BinaryDocument",
-        "pythonTargetSha256": "c68a95ccf5b7b300f12993eb29609a42370bb718f6876b9b081a45fc807482ed",
+        "pythonTargetSha256": "a3f24c2b388695d056acbf9fe94e1181bba60d6593097e50f739ac1b190f68da",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq and Python equality use the same Rust-backed value comparison for this concrete document; acquisition limits and handle identity do not affect equality.",
         "review": {
@@ -12411,7 +12411,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.BinaryDocument",
-        "pythonTargetSha256": "c68a95ccf5b7b300f12993eb29609a42370bb718f6876b9b081a45fc807482ed",
+        "pythonTargetSha256": "a3f24c2b388695d056acbf9fe94e1181bba60d6593097e50f739ac1b190f68da",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatter flags and wrapper syntax have no Python protocol equivalent. The immutable Python model repr is diagnostic, and exact formatter text is not part of parity.",
         "review": {
@@ -12526,7 +12526,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.BinaryDocument.metadata",
-        "pythonTargetSha256": "c2bf2885cb29d0bdc4a414f9d522a285904b51574d5d5c9fde8ef2cbde78141a",
+        "pythonTargetSha256": "f51681d2ceb7420a36f8ed42a092e9f2e5508bd7b74b18c106f08f60f6bf7087",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.BinaryDocument.metadata.",
         "review": null,
@@ -12568,7 +12568,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.BinaryDocument",
-        "pythonTargetSha256": "c68a95ccf5b7b300f12993eb29609a42370bb718f6876b9b081a45fc807482ed",
+        "pythonTargetSha256": "a3f24c2b388695d056acbf9fe94e1181bba60d6593097e50f739ac1b190f68da",
         "semanticEquivalent": "The Python concrete class retains arbitrary exact bytes; detected media metadata remains separate from the caller-selected binary family.",
         "rationale": "Python BinaryDocument retains opaque bytes even when a media signature is recognized.",
         "review": null,
@@ -14405,7 +14405,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.AudioDocument",
-        "pythonTargetSha256": "c3105f081688c35ce8fb70ac5f7c4c8e85e2745f15105e342bf7e5038e1f3b32",
+        "pythonTargetSha256": "3f6f31ab134eb56c9e5a22aec99dc8baddfcacd94fe6fdccf04c829633e4f715",
         "semanticEquivalent": "The Rust Audio variant is returned as a Python AudioDocument instance with the same native bytes and metadata. No separate tagged Python constructor is exposed.",
         "rationale": "Rust FileDocument::Audio owns an already-built AudioDocument; Python exposes that payload directly as the same concrete immutable model.",
         "review": null,
@@ -14427,7 +14427,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.BinaryDocument",
-        "pythonTargetSha256": "c68a95ccf5b7b300f12993eb29609a42370bb718f6876b9b081a45fc807482ed",
+        "pythonTargetSha256": "a3f24c2b388695d056acbf9fe94e1181bba60d6593097e50f739ac1b190f68da",
         "semanticEquivalent": "The Rust Binary variant is returned as a Python BinaryDocument instance with the same native bytes and metadata. No separate tagged Python constructor is exposed.",
         "rationale": "Rust FileDocument::Binary owns an already-built BinaryDocument; Python exposes that payload directly as the same concrete immutable model.",
         "review": null,
@@ -14449,7 +14449,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.ImageDocument",
-        "pythonTargetSha256": "8fed7f8eb622b0d314edf058efc293593f285258cfefabb13a8eff73d290c323",
+        "pythonTargetSha256": "1e54c1d4f3036441b522f8d6213fcc63da069588cd4eb424a6151b6e9f56a332",
         "semanticEquivalent": "The Rust Image variant is returned as a Python ImageDocument instance with the same native bytes and metadata. No separate tagged Python constructor is exposed.",
         "rationale": "Rust FileDocument::Image owns an already-built ImageDocument; Python exposes that payload directly as the same concrete immutable model.",
         "review": null,
@@ -14471,7 +14471,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.VideoDocument",
-        "pythonTargetSha256": "723be2d6cd49190d7a1c2a9322feff9c4af1f2c296f83f20ce7d9d142139decc",
+        "pythonTargetSha256": "d847aea759091cbf018ce1ccb20e5e9e80cf1fbaf87b4525ff89c648bbd0eed1",
         "semanticEquivalent": "The Rust Video variant is returned as a Python VideoDocument instance with the same native bytes and metadata. No separate tagged Python constructor is exposed.",
         "rationale": "Rust FileDocument::Video owns an already-built VideoDocument; Python exposes that payload directly as the same concrete immutable model.",
         "review": null,
@@ -14535,7 +14535,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileDocument",
-        "pythonTargetSha256": "9e96af85905801387e41b78657c55bb170686d0f49e532ea6061892dc3724481",
+        "pythonTargetSha256": "56dd4fd90076495bbbcf4f595b05c723e13995a80c6e98a53bc3c1a7b17ea14a",
         "semanticEquivalent": null,
         "rationale": "Rust FileDocument::clone preserves its concrete variant and the same immutable inner value. Python exposes clone on each concrete file model, not on the union alias.",
         "review": {
@@ -14566,7 +14566,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileDocument",
-        "pythonTargetSha256": "9e96af85905801387e41b78657c55bb170686d0f49e532ea6061892dc3724481",
+        "pythonTargetSha256": "56dd4fd90076495bbbcf4f595b05c723e13995a80c6e98a53bc3c1a7b17ea14a",
         "semanticEquivalent": null,
         "rationale": "Rust FileDocument equality compares the concrete variant and retained value. Python returns the concrete immutable class, whose equality uses the same native value comparison.",
         "review": {
@@ -14597,7 +14597,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileDocument",
-        "pythonTargetSha256": "9e96af85905801387e41b78657c55bb170686d0f49e532ea6061892dc3724481",
+        "pythonTargetSha256": "56dd4fd90076495bbbcf4f595b05c723e13995a80c6e98a53bc3c1a7b17ea14a",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formats the enum variant while Python exposes the corresponding concrete class. The Python repr is diagnostic; exact enum formatter text is not part of parity.",
         "review": {
@@ -15034,7 +15034,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileDocument",
-        "pythonTargetSha256": "9e96af85905801387e41b78657c55bb170686d0f49e532ea6061892dc3724481",
+        "pythonTargetSha256": "56dd4fd90076495bbbcf4f595b05c723e13995a80c6e98a53bc3c1a7b17ea14a",
         "semanticEquivalent": "Signature classification selects one concrete Python union member, with all variants retaining the same opaque bytes and provenance semantics as the Rust enum.",
         "rationale": "Python exposes the Rust media enum as the union of concrete immutable ImageDocument, VideoDocument, AudioDocument, and BinaryDocument classes; native Rust performs classification.",
         "review": null,
@@ -15380,7 +15380,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "Rust Default value and Python authoring default value.",
         "rationale": "Rust Default maps to this Python constructor or Rust-backed default helper; independent default-model conformance compares the resulting values.",
         "review": null,
@@ -15405,7 +15405,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": null,
         "rationale": "Rust serde deserializes FileMetadata at the JSON boundary. Python uses ordinary Pydantic JSON serialization/validation and may reject invalid metadata earlier; native operations remain authoritative.",
         "review": {
@@ -15478,7 +15478,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq compares the FileMetadata values; Python frozen Pydantic model equality compares the corresponding authoring fields.",
         "review": {
@@ -15530,7 +15530,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatter syntax differs from Python repr for FileMetadata. The immutable model repr is diagnostic, with exact formatter text outside the parity contract.",
         "review": {
@@ -15561,32 +15561,11 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.FileMetadata.",
         "review": null,
         "ledgerMappingSha256": "0847782922af2314a2f29c56e306044467bbaa93d2ee33852401bdb76fa1203b"
-      }
-    },
-    {
-      "id": "yosoi::documents::FileMetadata::probe_validated_video_container|function|trait:|occurrence:1",
-      "rustPath": "yosoi::documents::FileMetadata::probe_validated_video_container",
-      "kind": "function",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::documents::FileMetadata",
-      "signatureSha256": "74b1155bb12cc622f70f1bf9181a54325d7988823fec2bf686309c7c1ae6d184",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::documents::FileMetadata::probe_validated_video_container@signature:74b1155bb12cc622f70f1bf9181a54325d7988823fec2bf686309c7c1ae6d184@source:1e39feb9face48e491b7570e74cdcd0cb5ab746c0c746e1673b01cccb5b5ac16",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.documents.FileMetadata.probe_validated_video_container",
-        "pythonTargetSha256": "c90d0a7497f0910f14beaf3e004d27cb3fec5a8ed43a3dd9d192d4e257918083",
-        "semanticEquivalent": null,
-        "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
-        "review": null,
-        "ledgerMappingSha256": "4968d87c5d3aa93fd999a8582a81cb04f8071c72b2668e470bf8326695919dde"
       }
     },
     {
@@ -15603,7 +15582,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": null,
         "rationale": "Rust serde serializes FileMetadata at the JSON boundary. Python uses ordinary Pydantic JSON serialization/validation and may reject invalid metadata earlier; native operations remain authoritative.",
         "review": {
@@ -15718,7 +15697,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.capture_id field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_capture_id returns immutable metadata with the capture_id value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15739,7 +15718,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.declared_media_type field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_declared_media_type returns immutable metadata with the declared_media_type value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15760,7 +15739,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.download_id field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_download_id returns immutable metadata with the download_id value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15781,7 +15760,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.filename field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_filename returns immutable metadata with the filename value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15802,7 +15781,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.session_id field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_session_id returns immutable metadata with the session_id value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15823,7 +15802,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.source field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_source returns immutable metadata with the source value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15844,7 +15823,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "The Rust builder value and Python FileMetadata.tab_id field produce the same retained metadata value; Rust enforces UTF-8 byte limits before a file document retains it.",
         "rationale": "Rust FileMetadata::with_tab_id returns immutable metadata with the tab_id value set; Python's immutable FileMetadata constructor exposes that same field in its authoring model.",
         "review": null,
@@ -15865,7 +15844,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.FileMetadata",
-        "pythonTargetSha256": "29255e3459f27444c7edd56a7ff7279b712835446ceff3755b4bb4b8ae399c12",
+        "pythonTargetSha256": "42302261f6896fb81a7938d8d928cafd69556b88aef58afe44a1429fb6e4375c",
         "semanticEquivalent": "Declared and detected media types remain distinct. Rust computes the payload digest, and source provenance preserves the exact value within its UTF-8 bound.",
         "rationale": "Python FileMetadata keeps declared MIME, detected MIME, exact source provenance, and computed digest separate.",
         "review": null,
@@ -15953,7 +15932,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.ImageDocument",
-        "pythonTargetSha256": "8fed7f8eb622b0d314edf058efc293593f285258cfefabb13a8eff73d290c323",
+        "pythonTargetSha256": "1e54c1d4f3036441b522f8d6213fcc63da069588cd4eb424a6151b6e9f56a332",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq and Python equality use the same Rust-backed value comparison for this concrete document; acquisition limits and handle identity do not affect equality.",
         "review": {
@@ -15984,7 +15963,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.ImageDocument",
-        "pythonTargetSha256": "8fed7f8eb622b0d314edf058efc293593f285258cfefabb13a8eff73d290c323",
+        "pythonTargetSha256": "1e54c1d4f3036441b522f8d6213fcc63da069588cd4eb424a6151b6e9f56a332",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatter flags and wrapper syntax have no Python protocol equivalent. The immutable Python model repr is diagnostic, and exact formatter text is not part of parity.",
         "review": {
@@ -16099,7 +16078,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.ImageDocument.metadata",
-        "pythonTargetSha256": "64ed286b4146140e1619f9052f337ebaa1fe644fb60a77895b330d1c1d4a534e",
+        "pythonTargetSha256": "b23520f1d2df0ef9597d22b3df8d13c5057863e6a13dbf90644e88617cd0500a",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.ImageDocument.metadata.",
         "review": null,
@@ -16141,7 +16120,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.ImageDocument",
-        "pythonTargetSha256": "8fed7f8eb622b0d314edf058efc293593f285258cfefabb13a8eff73d290c323",
+        "pythonTargetSha256": "1e54c1d4f3036441b522f8d6213fcc63da069588cd4eb424a6151b6e9f56a332",
         "semanticEquivalent": "The Python concrete class is backed by the same Rust image document; signatures are checked without decoding pixels.",
         "rationale": "Python ImageDocument retains the same exact image bytes and native signature-checked metadata.",
         "review": null,
@@ -16767,27 +16746,6 @@
       }
     },
     {
-      "id": "yosoi::documents::VideoDocument::copy_with_metadata|function|trait:|occurrence:1",
-      "rustPath": "yosoi::documents::VideoDocument::copy_with_metadata",
-      "kind": "function",
-      "trait": null,
-      "surface": "member",
-      "parentRustPath": "yosoi::documents::VideoDocument",
-      "signatureSha256": "1f3d4568cc6fb21da7b4e5fa5ac38d877518309a1616124c985f348187fe4d6d",
-      "baselineStatus": "mapped",
-      "symbolKey": "member:function:yosoi::documents::VideoDocument::copy_with_metadata@signature:1f3d4568cc6fb21da7b4e5fa5ac38d877518309a1616124c985f348187fe4d6d@source:0f3cc52aad50b920bc2ec2f8ae0038bacc3542c592efc7796d6fba6c4096a3f5",
-      "classification": "sdk",
-      "mapping": {
-        "decision": "mapped",
-        "pythonTarget": "yosoi.documents.VideoDocument.copy_with_metadata",
-        "pythonTargetSha256": "5b1e5af593a122478b17f3f79cafbef21ee45f490db1bf95f4f3d9913a5e5efb",
-        "semanticEquivalent": null,
-        "rationale": "Python exposes the same frozen video source, measured frame metadata and checked native pixel/Archive value without granting live control.",
-        "review": null,
-        "ledgerMappingSha256": "37fb566cf591a8c22743e88f069e57e3e2d9d3692db2ae4c6f33b78bd3674936"
-      }
-    },
-    {
       "id": "yosoi::documents::VideoDocument::eq|function|trait:PartialEq|occurrence:1",
       "rustPath": "yosoi::documents::VideoDocument::eq",
       "kind": "function",
@@ -16801,7 +16759,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.VideoDocument",
-        "pythonTargetSha256": "723be2d6cd49190d7a1c2a9322feff9c4af1f2c296f83f20ce7d9d142139decc",
+        "pythonTargetSha256": "d847aea759091cbf018ce1ccb20e5e9e80cf1fbaf87b4525ff89c648bbd0eed1",
         "semanticEquivalent": null,
         "rationale": "Rust PartialEq and Python equality use the same Rust-backed value comparison for this concrete document; acquisition limits and handle identity do not affect equality.",
         "review": {
@@ -16832,7 +16790,7 @@
       "mapping": {
         "decision": "language-specific",
         "pythonTarget": "yosoi.documents.VideoDocument",
-        "pythonTargetSha256": "723be2d6cd49190d7a1c2a9322feff9c4af1f2c296f83f20ce7d9d142139decc",
+        "pythonTargetSha256": "d847aea759091cbf018ce1ccb20e5e9e80cf1fbaf87b4525ff89c648bbd0eed1",
         "semanticEquivalent": null,
         "rationale": "Rust Debug formatter flags and wrapper syntax have no Python protocol equivalent. The immutable Python model repr is diagnostic, and exact formatter text is not part of parity.",
         "review": {
@@ -16947,7 +16905,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.VideoDocument.metadata",
-        "pythonTargetSha256": "ef8d385e277dc2c035154c5f134529e6fb0850cf544fee68df84e71ef3a48175",
+        "pythonTargetSha256": "47d1c1a3483ce10614378bda2bde3b4bf4d25cabae6d0acd6da4ee3fb60ed730",
         "semanticEquivalent": null,
         "rationale": "Rust method maps to the matching Python method/property yosoi.documents.VideoDocument.metadata.",
         "review": null,
@@ -16989,7 +16947,7 @@
       "mapping": {
         "decision": "mapped",
         "pythonTarget": "yosoi.documents.VideoDocument",
-        "pythonTargetSha256": "723be2d6cd49190d7a1c2a9322feff9c4af1f2c296f83f20ce7d9d142139decc",
+        "pythonTargetSha256": "d847aea759091cbf018ce1ccb20e5e9e80cf1fbaf87b4525ff89c648bbd0eed1",
         "semanticEquivalent": "The Python concrete class is backed by the same Rust video document; signatures are checked without codec or frame decoding.",
         "rationale": "Python VideoDocument retains the same exact video bytes and native signature-checked metadata.",
         "review": null,

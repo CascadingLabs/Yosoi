@@ -33,6 +33,9 @@ required-features = ["surface-images"]
 name = "video_conformance"
 required-features = ["surface-video"]
 
+[[example]]
+name = "network_conformance"
+
 [features]
 default = []
 surface-images = ["dep:image"]

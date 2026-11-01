@@ -10,9 +10,20 @@
 pub mod archive;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod connection;
+mod document_policy;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 mod image_session;
 mod images;
+pub use document_policy::{DocumentPolicies, DocumentPolicy};
+pub mod network;
+pub use network::{
+    NETWORK_OBSERVATION_SCHEMA, NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES,
+    NETWORK_PROVIDER_TOTAL_BUFFER_BYTES, NetworkByteProvenance, NetworkCoverage, NetworkEvent,
+    NetworkEventKind, NetworkGap, NetworkHeader, NetworkInFlight, NetworkObservation,
+    NetworkObservationPolicy, NetworkPayload, NetworkPayloadKind, NetworkPayloadRef,
+    NetworkPayloadState, NetworkPayloadValue, NetworkProjectionBasis, NetworkProviderClock,
+    NetworkRetention, NetworkSubscription, NetworkWindow,
+};
 pub mod model;
 mod outcome;
 pub mod pixels;
@@ -21,6 +32,8 @@ mod prepare;
 #[cfg(any(feature = "browser", feature = "surface-video"))]
 pub use connection::SurfaceConnection;
 pub mod browser;
+#[cfg(feature = "browser")]
+pub use browser::consume_session;
 mod session;
 #[cfg(feature = "surface-video")]
 pub mod video;
@@ -43,7 +56,7 @@ pub use session::*;
 
 #[cfg(any(feature = "browser", feature = "surface-images"))]
 use crate::documents::ImageDocument;
-use crate::documents::{Document, DocumentId, DocumentProfile};
+use crate::documents::{Document, DocumentId, DocumentProfile, DocumentSchemaProfile};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -321,6 +334,7 @@ enum Original {
 #[derive(Clone)]
 pub struct Surface {
     data: Arc<Data>,
+    response_bytes: Option<usize>,
 }
 impl fmt::Debug for Surface {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -335,6 +349,14 @@ impl fmt::Debug for Surface {
 }
 
 impl Surface {
+    fn response_budget(&self, budget: Budget) -> Budget {
+        Budget {
+            bytes: self
+                .response_bytes
+                .map_or(budget.bytes, |cap| budget.bytes.min(cap)),
+            items: budget.items,
+        }
+    }
     /// Combines named document/image views into one address space without claiming atomic capture.
     /// Each original source keeps its identity. Nested bundles are intentionally unsupported.
     pub fn combine(
@@ -456,6 +478,7 @@ impl Surface {
         prepare::reduce(&mut data, limits.overview_depth)?;
         Ok(Self {
             data: Arc::new(data),
+            response_bytes: None,
         })
     }
     /// Prepares any of Yosoi's six supported document classes with default limits.
@@ -466,6 +489,18 @@ impl Surface {
     /// Prepares evidence with explicit resource limits and interpreter-bound identity.
     pub fn with_limits(document: &Document, limits: Limits) -> Result<Self, SurfaceError> {
         prepare::document(document, limits)
+    }
+    /// Prepares a document with the limits selected by its declared representation.
+    /// This performs no I/O and rejects inputs exceeding their policy.
+    pub fn with_policy(
+        document: &Document,
+        policies: &DocumentPolicies,
+    ) -> Result<Self, SurfaceError> {
+        policies.validate()?;
+        let policy = policies.for_document(document);
+        let mut surface = Self::with_limits(document, policy.limits()?)?;
+        surface.response_bytes = Some(policy.response_bytes);
+        Ok(surface)
     }
     /// Returns the exact immutable capture identity.
     pub fn identity(&self) -> &str {
@@ -486,6 +521,18 @@ impl Surface {
     /// Returns declared source coverage.
     pub fn coverage(&self) -> &Coverage {
         &self.data.coverage
+    }
+    /// Returns whether this index was prepared from the explicit network-window profile.
+    ///
+    /// Ordinary source JSON remains JSON even if its values happen to resemble
+    /// a network observation envelope.
+    pub fn is_network_observation(&self) -> bool {
+        matches!(
+            &self.data.original,
+            Some(Original::Document { profile, .. })
+                if profile.schema()
+                    == DocumentSchemaProfile::YosoiNetworkObservationV1
+        )
     }
     /// Returns the document/root evidence reference.
     pub fn root(&self) -> Reference {
@@ -668,6 +715,7 @@ impl Surface {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Page, SurfaceError> {
+        let budget = self.response_budget(budget);
         if budget.items == 0 || budget.bytes == 0 {
             return Err(SurfaceError::BudgetTooSmall);
         }
@@ -791,6 +839,7 @@ impl Surface {
         token: Option<&Continuation>,
         budget: Budget,
     ) -> Result<Inspection, SurfaceError> {
+        let budget = self.response_budget(budget);
         self.node(reference)?;
         let content = self.detail(reference.node)?;
         let offset = self.offset(token, "inspect", reference.node, "")?;

@@ -7,6 +7,34 @@ description: Read bounded web, image and video evidence through a JSON-lines ses
 
 `yosoi surface` keeps a reader alive while a coding agent sends one JSON command per line. Replies include the caller's optional `id`, an explicit success or error, and bounded evidence. Errors leave the session available for the next valid command.
 
+## Read an immutable local Document
+
+Use `document` to apply the same shared read protocol to a local Document file,
+without opening a browser:
+
+```sh
+yosoi surface document --format xml --file catalog.xml --id catalog --source file:catalog
+```
+
+`--format` accepts `html`, `xml`, `json`, `text`, `rendered-dom` and
+`accessibility-tree`. The last two require a positive `--epoch`. The command
+prints a ready descriptor and then accepts JSON Lines requests on standard
+input. `describe` returns the descriptor, observation and producer-issued root
+reference. `read` accepts the same typed request used by Rust and Python:
+
+```json
+{"id":1,"op":"describe"}
+{"id":2,"op":"read","request":{"operation":{"kind":"search","query":"lamp"},"budget":{"bytes":4096,"items":20}}}
+```
+
+Use references returned by these reads in later `inspect`, `expand` or `parent`
+requests. Search is literal, and continuations remain bound to their original
+operation and scope. `--max-bytes`, `--max-depth`, `--max-nodes` and
+`--overview-depth` limit preparation; `--response-bytes` limits each complete
+shared-read result independently. The outer JSON Lines reply budget remains
+bounded as described below. This local reader exposes no live actions. Use
+`surface web` only when the owning browser binding is needed for live effects.
+
 ## Open a web surface
 
 ```sh
@@ -25,6 +53,37 @@ Send commands on standard input:
 ```
 
 The initial cursor is detached. `attach` enables a live reader; `hot` acquires the action slot. Reading and focusing do not grant action authority. Captures are explicit: `refresh` publishes current evidence, and effects attempt a fresh capture before reporting their outcome. A live reader can inspect without clicking.
+
+## Open a managed native Chrome session
+
+Use `native-web` when the workflow needs the managed Session/Work provider and its page-scoped CDP network subscription. It launches regular Chrome or Chromium through Yosoi's browser Session, so it does not require ChromeDriver. `web` remains the isolated ChromeDriver provider and advertises DOM only.
+
+```sh
+yosoi surface native-web \
+  --url https://qscrape.dev/eshop/html/product/obj-001/ \
+  --headless --network-bodies --archive ./surface-evidence
+```
+
+`--network-bodies` opts the Surface policy into bounded body capture. Without it, response bodies are not exposed. A JSON `NetworkObservationPolicy` file can set independent queue, event, window, duration, body, URL-filter, method-filter and header-allowlist settings with `--network-policy path/to/network-policy.json`. The default URL view keeps the origin and removes path and query data. Header retention is empty, and authorization, proxy authorization, cookies and token headers are always excluded.
+
+Arm network capture before the action that may issue requests. Event waiting is notification-driven and bounded; it does not poll or sleep for readiness.
+
+```json
+{"id":1,"op":"network_subscribe","retain_bodies":true}
+{"id":2,"op":"network_wait","after_sequence":0,"timeout_ms":5000}
+{"id":3,"op":"observe","representation":"network"}
+{"id":4,"op":"read_view","representation":"network","request":{"operation":{"kind":"overview"},"budget":{"bytes":2048,"items":5}}}
+```
+
+`observe` freezes one `yosoi.network.v1` window with its session, tab, listener sequence, time interval, redirects, request state, gaps and coverage. A `NetworkPayloadRef` records whether a response body was retained, truncated, unavailable or unsupported. Copy its complete object into `network_payload` with an offset and byte limit to read base64 chunks; the decoded body becomes an HTML/JSON `Document` or a `FileDocument`. A gzip response is returned as browser-decoded bytes with the declared content encoding and SHA-256 provenance. It is not a wire capture.
+
+The payload reference distinguishes the raw `Content-Type` header, CDP's effective MIME/charset, and the type detected from body bytes. `projection_basis` records whether Requests' declared-type rule, structured suffix, source sniffing, or typed file magic selected the representation. It also distinguishes CDP's UTF-8 normalized Unicode text view from its base64 transport form. A declared legacy charset remains in the raw header metadata and is not applied a second time to CDP text.
+
+CDP response buffers use the shared Page-lifetime cap of 8 MiB per resource and 8 MiB aggregate for Requests and Surface consumers. Window retention separately records the selected body count, per-body and subscription byte limits. Bodies whose decoded `Network.dataReceived` size is unknown or exceeds the selected per-body cap are omitted before `Network.getResponseBody` is requested.
+
+Cancel the subscription with `network_cancel`. The listener task and queues are released; bounded Network instrumentation stays enabled for the Page lifetime. The window always reports page-target scope and partial coverage. BiDi and the isolated `web` provider do not advertise this capability.
+
+After close, restore a body saved by Archive without opening a browser with `yosoi surface payload --record ./surface-evidence/surface.yosoi --id ID --file ./response.bin`. Replace `ID` with the `NetworkPayloadRef.id` copied from the frozen window. The command verifies the outcome dependency and writes the exact retained Document or FileDocument bytes.
 
 ## Follow a reference before acting
 
