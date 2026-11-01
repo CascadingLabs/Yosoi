@@ -45,7 +45,7 @@ pub enum DocumentSchemaProfile {
     YosoiRenderedDomV1,
     /// Yosoi version-1 accessibility-tree JSON schema with snapshot-local node identities.
     YosoiAccessibilityTreeV1,
-    /// Yosoi version-1 network observation JSON with typed retained body dependencies.
+    /// Yosoi version-1 frozen network-observation window with typed body dependencies.
     YosoiNetworkObservationV1,
 }
 
@@ -152,14 +152,6 @@ impl DocumentProfile {
         Self::source(SourceFormat::Json, DocumentSchemaProfile::JsonRfc8259)
     }
 
-    /// Creates version-1 network observation metadata with typed payload dependencies.
-    pub const fn network_observation_v1() -> Self {
-        Self::source(
-            SourceFormat::Json,
-            DocumentSchemaProfile::YosoiNetworkObservationV1,
-        )
-    }
-
     /// Creates UTF-8 source text metadata without an epoch or acquisition.
     pub const fn source_text() -> Self {
         Self::source(SourceFormat::Text, DocumentSchemaProfile::Utf8Text)
@@ -185,6 +177,18 @@ impl DocumentProfile {
             schema: DocumentSchemaProfile::YosoiAccessibilityTreeV1,
             epoch: Some(epoch),
         }
+    }
+
+    /// Declares a version-1 immutable browser network-observation window.
+    ///
+    /// This profile is distinct from ordinary RFC 8259 source JSON. It does not
+    /// capture a browser or prove that the window is complete; the versioned
+    /// network contract carries its own coverage and loss metadata.
+    pub const fn network_observation_v1() -> Self {
+        Self::source(
+            SourceFormat::Json,
+            DocumentSchemaProfile::YosoiNetworkObservationV1,
+        )
     }
 
     const fn source(source_format: SourceFormat, schema: DocumentSchemaProfile) -> Self {

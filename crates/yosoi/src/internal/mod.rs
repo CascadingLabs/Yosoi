@@ -21,6 +21,7 @@ pub mod extractor;
 pub mod map;
 pub mod media_documents;
 pub mod network;
+pub mod network_limits;
 pub mod policy;
 pub mod types;
 pub mod web_capture;

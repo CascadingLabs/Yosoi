@@ -21,6 +21,8 @@ pub mod map;
 pub mod media_documents;
 #[path = "../../../crates/yosoi/src/internal/network.rs"]
 pub mod network;
+#[path = "../../../crates/yosoi/src/internal/network_limits.rs"]
+pub mod network_limits;
 #[path = "../../../crates/yosoi/src/internal/policy/mod.rs"]
 pub mod policy;
 #[path = "../../../crates/yosoi/src/internal/types/mod.rs"]

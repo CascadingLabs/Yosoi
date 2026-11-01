@@ -33,9 +33,9 @@ DEFERRED_BETA_ROOTS = {
         "issue": "CAS-566",
         "rationale": (
             "The full generic Rust Archive surface exceeds Python's supported "
-            "Document, Plan, AutomationRecord and Surface outcome operations. These supported "
-            "journeys have Archive tests; additional Rust value kinds and stronger "
-            "guarantees remain deferred."
+            "Document, Plan, AutomationRecord and Surface outcome operations. "
+            "These supported journeys have Archive tests; additional Rust value "
+            "kinds and stronger guarantees remain deferred."
         ),
     },
     "yosoi::view": {
@@ -266,6 +266,7 @@ REQUIRED_SUITES = (
     "run_media_documents_conformance.py",
     "run_surface_conformance.py",
     "run_image_surface_conformance.py",
+    "run_network_conformance.py",
 )
 
 
@@ -976,6 +977,8 @@ def load_surface_contract(
             "struct_field",
             "variant",
             "assoc_type",
+            "constant",
+            "type_alias",
         }:
             raise ValueError("unsupported Surface declaration kind")
         if not isinstance(signature, str) or not SHA256_RE.fullmatch(signature):
@@ -984,7 +987,11 @@ def load_surface_contract(
         occurrence = row.pop("occurrence", 1)
         if type(occurrence) is not int or occurrence < 1:
             raise ValueError("invalid Surface declaration occurrence")
-        surface = "item" if kind in {"struct", "enum", "trait", "module"} else "member"
+        surface = (
+            "item"
+            if kind in {"struct", "enum", "trait", "module", "constant", "type_alias"}
+            else "member"
+        )
         prefix = "page" if surface == "item" else "member"
         symbol = f"{prefix}:{kind}:{rust_path}@signature:{signature}"
         if trait is not None:

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "b15927a1abd2403203155a476696a983975e9038",
-    "inventorySignature": "72cb0c45bc17e45645d385cd0702b1c5f5120a87d2b4c35506f7bb161d82a35b"
+    "revision": "1b1ef091fcfbb69027756f15de32cef5312c69e9",
+    "inventorySignature": "2a8eda5e2e16294099bcb4be104f5cffb4d42ead534cff76b1008a8959a4dd92"
   },
   "scope": {
     "crate": "yosoi",
