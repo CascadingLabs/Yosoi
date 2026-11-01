@@ -1317,6 +1317,8 @@ class VideoSurface:
 
         Requires FFmpeg and FFprobe on PATH or YOSOI_FFMPEG/YOSOI_FFPROBE.
         The original file can be removed once this returns successfully.
+        Signature-ambiguous Ogg and MPEG-TS files are accepted only after FFprobe
+        confirms a self-contained video stream; their detector MIME remains unchanged.
         """
         _require_video()
         token = _video_token(cancellation)

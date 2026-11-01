@@ -25,7 +25,10 @@ use tokio::{fs, process::Command};
 
 impl VideoSurface {
     /// Copies and probes one local file under explicit byte, duration and pixel limits.
-    /// No full-video frame scan occurs. YOSOI_FFMPEG/YOSOI_FFPROBE select local executables.
+    /// Signature-recognized sources use the ordinary VideoDocument contract. Ogg and
+    /// MPEG-TS sources require FFprobe to confirm a self-contained video stream before
+    /// Rust records their decoder-validated container provenance. No full-video frame
+    /// scan occurs. YOSOI_FFMPEG/YOSOI_FFPROBE select local executables.
     pub async fn open(path: impl AsRef<Path>, policy: VideoPolicy) -> Result<Self, VideoError> {
         Self::open_cancellable(path, policy, &CancellationToken::new()).await
     }
@@ -50,19 +53,32 @@ impl VideoSurface {
             || "video".to_owned(),
             |name| name.to_string_lossy().into_owned(),
         );
-        let document = VideoDocument::from_bytes_with_metadata(
-            format!("video-source-{:x}", Sha256::digest(&bytes)),
+        let id = format!("video-source-{:x}", Sha256::digest(&bytes));
+        let source_metadata = FileMetadata::new()
+            .with_filename(name.clone())
+            .map_err(|error| VideoError::Invalid(error.to_string()))?;
+        let file_limits = FileLimits {
+            max_bytes: u64::try_from(policy.max_source_bytes)
+                .map_err(|_| VideoError::Limit("source bytes"))?,
+        };
+        if VideoDocument::has_video_signature(&bytes) {
+            let document =
+                VideoDocument::from_bytes_with_metadata(id, bytes, source_metadata, file_limits)
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?;
+            return Self::from_document_cancellable(&document, policy, cancellation).await;
+        }
+        // Preserve signature-ambiguous Ogg/MPEG-TS sources only after the bounded
+        // FFprobe path confirms a self-contained video stream and container.
+        Self::prepare_bytes(
+            name,
             bytes,
-            FileMetadata::new()
-                .with_filename(name)
-                .map_err(|error| VideoError::Invalid(error.to_string()))?,
-            FileLimits {
-                max_bytes: u64::try_from(policy.max_source_bytes)
-                    .map_err(|_| VideoError::Limit("source bytes"))?,
-            },
+            source_metadata,
+            None,
+            true,
+            policy,
+            cancellation,
         )
-        .map_err(|error| VideoError::Invalid(error.to_string()))?;
-        Self::from_document_cancellable(&document, policy, cancellation).await
+        .await
     }
     /// Prepares an immutable typed video without reacquiring its original source.
     ///
@@ -95,8 +111,10 @@ impl VideoSurface {
             .to_owned();
         Self::prepare_bytes(
             name,
-            document.bytes(),
+            document.bytes().to_vec(),
+            document.metadata().clone(),
             Some(document.clone()),
+            false,
             policy,
             cancellation,
         )
@@ -104,8 +122,10 @@ impl VideoSurface {
     }
     async fn prepare_bytes(
         name: String,
-        bytes: &[u8],
+        bytes: Vec<u8>,
+        source_metadata: FileMetadata,
         source_document: Option<VideoDocument>,
+        probe_validated_fallback: bool,
         policy: VideoPolicy,
         cancellation: &CancellationToken,
     ) -> Result<Self, VideoError> {
@@ -209,6 +229,33 @@ impl VideoSurface {
                 .count(),
             decoder,
         };
+        let source_document = match (source_document, probe_validated_fallback) {
+            (Some(document), _) => Some(document),
+            (None, true) => {
+                validate_metadata(&metadata, &policy)?;
+                let container =
+                    decoder_validated_container(&metadata.container).ok_or_else(|| {
+                        VideoError::Invalid(
+                        "signature-ambiguous video container is not supported for typed ingestion"
+                            .into(),
+                    )
+                    })?;
+                Some(
+                    VideoDocument::from_probe_validated_bytes(
+                        format!("video-source-{:x}", Sha256::digest(&bytes)),
+                        bytes,
+                        source_metadata,
+                        FileLimits {
+                            max_bytes: u64::try_from(policy.max_source_bytes)
+                                .map_err(|_| VideoError::Limit("source bytes"))?,
+                        },
+                        container,
+                    )
+                    .map_err(|error| VideoError::Invalid(error.to_string()))?,
+                )
+            }
+            (None, false) => None,
+        };
         Self::prepared(snapshot, frozen, metadata, policy, ffmpeg, source_document)
     }
     pub(super) fn prepared(
@@ -220,28 +267,20 @@ impl VideoSurface {
         source_document: Option<VideoDocument>,
     ) -> Result<Self, VideoError> {
         policy.validate()?;
-        if !metadata.container.split(',').any(|name| {
-            matches!(
-                name,
-                "mov" | "mp4" | "matroska" | "webm" | "avi" | "mpegts" | "ogg"
-            )
-        }) {
-            return Err(VideoError::Invalid(
-                "video snapshot requires a supported self-contained container".into(),
-            ));
-        }
-        if metadata.width == 0
-            || metadata.height == 0
-            || metadata
-                .width
-                .checked_mul(metadata.height)
-                .is_none_or(|v| v > 16_777_216)
-            || metadata.duration_us == 0
-            || metadata.duration_us > policy.max_duration_us
-            || metadata.source_bytes > policy.max_source_bytes
+        validate_metadata(&metadata, &policy)?;
+        if source_document
+            .as_ref()
+            .and_then(|document| document.metadata().probe_validated_video_container())
+            .is_some_and(|container| {
+                !metadata
+                    .container
+                    .split(',')
+                    .map(str::trim)
+                    .any(|observed| observed == container)
+            })
         {
-            return Err(VideoError::Limit(
-                "source dimensions, duration or byte size",
+            return Err(VideoError::Invalid(
+                "video probe provenance differs from the retained container".into(),
             ));
         }
         let source = if let Some(document) = source_document.as_ref() {
@@ -297,4 +336,47 @@ impl VideoSurface {
             }),
         })
     }
+}
+
+fn validate_metadata(metadata: &VideoMetadata, policy: &VideoPolicy) -> Result<(), VideoError> {
+    if !is_self_contained_video_container(&metadata.container) {
+        return Err(VideoError::Invalid(
+            "video snapshot requires a supported self-contained container".into(),
+        ));
+    }
+    if metadata.width == 0
+        || metadata.height == 0
+        || metadata
+            .width
+            .checked_mul(metadata.height)
+            .is_none_or(|value| value > 16_777_216)
+        || metadata.duration_us == 0
+        || metadata.duration_us > policy.max_duration_us
+        || metadata.source_bytes > policy.max_source_bytes
+    {
+        return Err(VideoError::Limit(
+            "source dimensions, duration or byte size",
+        ));
+    }
+    Ok(())
+}
+
+fn is_self_contained_video_container(container: &str) -> bool {
+    container.split(',').any(|name| {
+        matches!(
+            name.trim(),
+            "mov" | "mp4" | "matroska" | "webm" | "avi" | "mpegts" | "ogg"
+        )
+    })
+}
+
+fn decoder_validated_container(container: &str) -> Option<&'static str> {
+    container
+        .split(',')
+        .map(str::trim)
+        .find_map(|name| match name {
+            "ogg" => Some("ogg"),
+            "mpegts" => Some("mpegts"),
+            _ => None,
+        })
 }

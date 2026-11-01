@@ -5,7 +5,7 @@ use std::{error::Error, io, path::Path, process::Stdio};
 use tokio::{fs, process::Command};
 use yosoi::{
     Archive,
-    documents::Document,
+    documents::{Document, FileLimits, FileMetadata, VideoDocument, file_from_bytes},
     surface::{
         Budget, PixelRect, Surface,
         browser::WebSurface,
@@ -48,6 +48,40 @@ async fn fixture(path: &Path) -> TestResult {
             "1",
             "-output_ts_offset",
             "5",
+        ])
+        .arg(path)
+        .stdin(Stdio::null())
+        .output()
+        .await?;
+    if !output.status.success() {
+        return Err(io::Error::other(String::from_utf8_lossy(&output.stderr).into_owned()).into());
+    }
+    Ok(())
+}
+async fn ambiguous_video_fixture(path: &Path, codec: &str, muxer: &str) -> TestResult {
+    let output = Command::new("ffmpeg")
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-filter_threads",
+            "1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=green:s=64x48:r=2:d=2",
+            "-an",
+            "-frames:v",
+            "4",
+            "-c:v",
+            codec,
+            "-threads:v",
+            "1",
+            "-f",
+            muxer,
         ])
         .arg(path)
         .stdin(Stdio::null())
@@ -384,7 +418,6 @@ async fn runtime_executes_without_terminal_and_closes_idempotently() -> TestResu
     reason = "Assertions verify native media identity and preparation bounds."
 )]
 async fn typed_video_preparation_retains_source_and_separates_observation() -> TestResult {
-    use yosoi::documents::{FileLimits, FileMetadata, VideoDocument};
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("typed.mp4");
     fixture(&path).await?;
@@ -444,6 +477,72 @@ async fn typed_video_preparation_retains_source_and_separates_observation() -> T
         rejected,
         Err(yosoi::surface::video::VideoError::Limit("source bytes"))
     ));
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions preserve legacy Ogg and MPEG-TS support behind typed provenance."
+)]
+async fn signature_ambiguous_ogg_and_transport_streams_become_typed_after_probe() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let archive = Archive::open(directory.path().join("archive")).await?;
+    for (container, extension, codec, muxer) in [
+        ("ogg", "ogv", "libtheora", "ogg"),
+        ("mpegts", "ts", "mpeg2video", "mpegts"),
+    ] {
+        let path = directory.path().join(format!("fixture.{extension}"));
+        ambiguous_video_fixture(&path, codec, muxer).await?;
+        let bytes = fs::read(&path).await?;
+        assert!(VideoDocument::from_bytes("signature-gated", bytes.clone()).is_err());
+        let inferred = file_from_bytes(
+            "inferred",
+            bytes,
+            FileMetadata::new(),
+            FileLimits::default(),
+        )?;
+
+        let surface = VideoSurface::open(&path, VideoPolicy::default()).await?;
+        let source = surface
+            .source_document()
+            .ok_or_else(|| io::Error::other("decoder-probed source was not typed"))?;
+        assert_eq!(
+            source.metadata().probe_validated_video_container(),
+            Some(container)
+        );
+        assert_eq!(
+            source.metadata().detected_media_type(),
+            inferred.metadata().detected_media_type(),
+            "retain the pinned detector MIME without inventing a video MIME"
+        );
+        let copied = source.copy_with_metadata("copied-probed-video", None, None)?;
+        assert_eq!(copied.bytes(), source.bytes());
+        assert_eq!(
+            copied.metadata().probe_validated_video_container(),
+            Some(container)
+        );
+
+        let frame = surface.frame(&surface.at(0)?).await?;
+        assert!(frame.pixel_artifact()?.is_some());
+        let saved_surface = surface.write_to(&archive).await?;
+        let profile = archive.read_document(&saved_surface.document).await?;
+        let profile: serde_json::Value = serde_json::from_slice(profile.bytes())?;
+        assert_eq!(profile["schema"], "yosoi.surface.video-source.v2");
+        assert!(profile.get("content_base64").is_none());
+        let saved_frame = frame.write_to(&archive).await?;
+        let archived_frame = archive.read_document(&saved_frame.document).await?;
+        let archived_frame: serde_json::Value = serde_json::from_slice(archived_frame.bytes())?;
+        assert_eq!(archived_frame["schema"], "yosoi.surface.video-frame.v2");
+        assert!(archived_frame.get("png_base64").is_none());
+
+        fs::remove_file(path).await?;
+        let restored_surface = VideoSurface::read_from(&archive, &saved_surface).await?;
+        assert_eq!(restored_surface.source_document(), Some(source));
+        let restored_frame = DecodedFrame::read_from(&archive, &saved_frame).await?;
+        assert_eq!(restored_frame.png, frame.png);
+        assert!(restored_frame.pixel_artifact()?.is_some());
+    }
     Ok(())
 }
 
