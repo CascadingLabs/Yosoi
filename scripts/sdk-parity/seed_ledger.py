@@ -492,6 +492,9 @@ MEMBER_TARGETS = {
     "yosoi::documents::FileDocument::bytes": "yosoi.documents.FileDocument.bytes",
     "yosoi::documents::FileDocument::byte_len": "yosoi.documents.FileDocument.byte_len",
     "yosoi::documents::FileDocument::sha256": "yosoi.documents.FileDocument.sha256",
+    "yosoi::documents::VideoDocument::copy_with_metadata": (
+        "yosoi.documents.VideoDocument.copy_with_metadata"
+    ),
     "yosoi::documents::FileLimits::max_bytes": "yosoi.documents.FileLimits.max_bytes",
     "yosoi::documents::FileMetadata::filename": "yosoi.documents.FileMetadata.filename",
     "yosoi::documents::FileMetadata::declared_media_type": (
@@ -510,6 +513,9 @@ MEMBER_TARGETS = {
     "yosoi::documents::FileMetadata::tab_id": "yosoi.documents.FileMetadata.tab_id",
     "yosoi::documents::FileMetadata::download_id": (
         "yosoi.documents.FileMetadata.download_id"
+    ),
+    "yosoi::documents::FileMetadata::probe_validated_video_container": (
+        "yosoi.documents.FileMetadata.probe_validated_video_container"
     ),
     "yosoi::documents::FileMetadata::sha256": "yosoi.documents.FileMetadata.sha256",
     "yosoi::locators::accessibility_text": "yosoi.locators.accessibility_text",
@@ -661,6 +667,16 @@ MEMBER_SEMANTIC_EQUIVALENTS = {
     "yosoi::documents::FileMetadata::sha256": (
         "Both metadata values expose no digest before payload construction and the "
         "canonical SHA-256 hex string after construction."
+    ),
+    "yosoi::documents::FileMetadata::probe_validated_video_container": (
+        "Both metadata views expose the FFprobe-confirmed Ogg or MPEG-TS container "
+        "only for decoder-validated typed video sources. Rust populates the field; "
+        "authored metadata cannot create this classification basis."
+    ),
+    "yosoi::documents::VideoDocument::copy_with_metadata": (
+        "Both copies retain the same immutable payload and concrete video family. "
+        "A decoder-confirmed Ogg or MPEG-TS source keeps its existing provenance "
+        "basis while detector MIME and payload digest remain Rust-computed."
     ),
     **{
         f"yosoi::documents::FileMetadata::{builder}": (
@@ -1146,6 +1162,10 @@ for _media_document_type in (
             (f"yosoi::documents::{_media_document_type}::{_constructor}", "bytes")
         ] = "content"
 ARGUMENT_ALIASES[("yosoi::documents::file_from_bytes", "bytes")] = "content"
+for _argument in ("id", "metadata", "limits"):
+    ARGUMENT_ALIASES[
+        ("yosoi::documents::VideoDocument::copy_with_metadata", _argument)
+    ] = _argument
 
 for _builder, _field in FILE_METADATA_BUILDER_FIELDS.items():
     MEMBER_TARGETS[f"yosoi::documents::FileMetadata::{_builder}"] = (
@@ -1163,6 +1183,20 @@ ARGUMENT_CONVERSIONS = {
     )
     for builder, field in FILE_METADATA_BUILDER_FIELDS.items()
 }
+ARGUMENT_CONVERSIONS.update(
+    {
+        ("yosoi::documents::VideoDocument::copy_with_metadata", "id"): (
+            "Both APIs revalidate the replacement stable document identity."
+        ),
+        ("yosoi::documents::VideoDocument::copy_with_metadata", "metadata"): (
+            "Both APIs accept optional FileMetadata; omission retains the source values, "
+            "while Rust recomputes detector MIME, digest and probe provenance."
+        ),
+        ("yosoi::documents::VideoDocument::copy_with_metadata", "limits"): (
+            "Both APIs accept optional FileLimits; omission uses the 64 MiB default."
+        ),
+    }
+)
 
 
 def _python_module(rust_path: str, *, module_item: bool = False) -> str | None:

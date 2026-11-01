@@ -183,8 +183,8 @@ class ImageContractTests(unittest.TestCase):
             run_sdk_parity.EXAMPLES,
         )
         self.assertIn("run_image_surface_conformance.py", sdk_contract.REQUIRED_SUITES)
-        self.assertEqual(len(run_sdk_parity.EXAMPLES), 13)
-        self.assertEqual(len(sdk_contract.REQUIRED_SUITES), 13)
+        self.assertEqual(len(run_sdk_parity.EXAMPLES), 14)
+        self.assertEqual(len(sdk_contract.REQUIRED_SUITES), 14)
 
     def test_attribution_requires_pinned_declaration_and_actual_arguments(self) -> None:
         path = "yosoi::surface::ImageSurface::overview_image"

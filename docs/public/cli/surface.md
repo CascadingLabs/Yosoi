@@ -105,7 +105,7 @@ Install FFmpeg and FFprobe on PATH, or select their executable paths with `YOSOI
 yosoi surface video --file recording.mp4 --archive ./video-evidence --output ./video-run
 ```
 
-Use describe and the shared read protocol to explore its lazy timeline. `seek` selects a time in microseconds; frame and crop commands materialize PNG artifacts and return their paths with measured timestamps and integrity metadata. Video advertises `controllable: false` and rejects action commands.
+Use describe and the shared read protocol to explore its lazy timeline. `seek` selects a time in microseconds; frame and crop commands materialize PNG artifacts and return their paths with measured timestamps and integrity metadata. Video advertises `controllable: false` and rejects action commands. The video reader retains recognized `VideoDocument` bytes. Ogg and MPEG-TS use bounded FFprobe validation because their signatures do not identify video on their own; detector MIME metadata remains unchanged.
 
 ## Open an image surface
 

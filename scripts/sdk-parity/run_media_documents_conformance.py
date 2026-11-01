@@ -79,6 +79,9 @@ def main() -> int:
 
     standalone = ys.FileMetadata()
     standalone_python = _plain(standalone.model_dump())
+    standalone_python["probe_validated_video_container"] = (
+        standalone.probe_validated_video_container
+    )
     standalone_equal = (
         standalone_python == standalone_rust and standalone.sha256 is None
     )
