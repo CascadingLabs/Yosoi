@@ -26,7 +26,7 @@ impl WebSurface {
         Self::with_policy(index, source, DocumentPolicy::default())
     }
     /// Wraps one of the six prepared document classes with independently configured
-    /// response limits. Network-shaped JSON keeps partial coverage. Evidence grants
+    /// response limits. Explicit network windows preserve their coverage. Evidence grants
     /// no action authority.
     pub fn with_policy(
         index: Surface,
@@ -104,16 +104,7 @@ impl WebSurface {
         let observation = Observation {
             id: ObservationId::new(format!("web-v1:{:x}", digest.finalize()))?,
             surface: id,
-            coverage: if network {
-                super::super::Coverage {
-                    complete: false,
-                    reason: Some(
-                        "browser_network_log_window; completeness is unestablished".into(),
-                    ),
-                }
-            } else {
-                index.coverage().clone()
-            },
+            coverage: index.coverage().clone(),
         };
         let root = model::Reference {
             observation: observation.id.clone(),

@@ -1,11 +1,13 @@
 //! Explicitly versioned, frozen network windows remain separate from source JSON.
 use sha2::Digest;
-use std::{error::Error, process::Command};
+use std::{error::Error, io, process::Command};
 use yosoi::{
     Archive, Document,
     surface::{
-        DocumentPolicies, DocumentPolicy, NetworkCoverage, NetworkObservationPolicy,
-        NetworkRetention, NetworkWindow, Surface, browser::WebSurface, model::SourceId,
+        self, DocumentPolicies, DocumentPolicy, NetworkCoverage, NetworkObservationPolicy,
+        NetworkRetention, NetworkWindow, Surface,
+        browser::WebSurface,
+        model::{SourceId, SurfaceRead},
     },
 };
 
@@ -84,14 +86,13 @@ fn ordinary_json_with_network_looking_fields_stays_ordinary_json() -> Result<(),
     assert!(!ordinary_index.is_network_observation());
     assert!(ordinary_index.coverage().complete);
     assert!(NetworkWindow::from_document(&ordinary).is_err());
-    assert!(
-        WebSurface::with_policy(
-            ordinary_index,
-            SourceId::new("ordinary-json")?,
-            policies.json,
-        )
-        .is_err()
-    );
+    let ordinary = WebSurface::with_policy(
+        ordinary_index,
+        SourceId::new("ordinary-json")?,
+        policies.json,
+    )?;
+    assert_eq!(ordinary.descriptor().representation, "yosoi.web.json.v1");
+    assert!(ordinary.observation().coverage.complete);
 
     let typed = window().to_document("network-window")?;
     let typed_policies = DocumentPolicies::default();
@@ -112,7 +113,14 @@ fn ordinary_json_with_network_looking_fields_stays_ordinary_json() -> Result<(),
     assert!(!defaults.retain_url_path);
     assert!(!defaults.retain_url_query);
     assert!(!defaults.retain_bodies);
-    assert_eq!(defaults.provider_resource_buffer_bytes, 1);
+    assert_eq!(
+        defaults.provider_resource_buffer_bytes,
+        surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES
+    );
+    assert_eq!(
+        defaults.provider_total_buffer_bytes,
+        surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES
+    );
     let opted_in = NetworkObservationPolicy {
         retain_bodies: true,
         header_allowlist: vec![
@@ -124,7 +132,14 @@ fn ordinary_json_with_network_looking_fields_stays_ordinary_json() -> Result<(),
     }
     .retention();
     assert_eq!(opted_in.retained_header_names, ["accept"]);
-    assert_eq!(opted_in.provider_resource_buffer_bytes, 1024 * 1024);
+    assert_eq!(
+        opted_in.provider_resource_buffer_bytes,
+        surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES
+    );
+    assert_eq!(
+        opted_in.provider_total_buffer_bytes,
+        surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES
+    );
     Ok(())
 }
 

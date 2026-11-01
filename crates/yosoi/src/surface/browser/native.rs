@@ -8,9 +8,9 @@ use crate::{
     },
     internal::browser::page::SurfaceInput,
     internal::web_capture::{
-        ClassificationBasis, ClassificationExtent, DeclarationDisagreement,
-        SourceClassificationOutcome, SourceFormat, SourceMediaType, XmlProfile,
-        classify_source_bytes,
+        CharsetDeclaration, ClassificationBasis, ClassificationExtent, DeclarationDisagreement,
+        MediaDeclaration, SourceClassificationOutcome, SourceFormat, SourceMediaType, XmlProfile,
+        classify_source_bytes, parse_media_declaration,
     },
     session::{ActionKind, Work},
     surface::{
@@ -348,7 +348,28 @@ impl NativeBrowser {
             Some(SourceFormat::Json) => (false, true),
             _ => (false, false),
         };
-        if (html || json) && text_utf8_normalized {
+        // Base64 is a CDP transport wrapper, not a source-media classification.
+        // Preserve exact valid UTF-8 bytes when no conflicting charset requires
+        // character decoding; keep the provider-normalization fact unchanged.
+        let utf8_view = text_utf8_normalized
+            || (std::str::from_utf8(bytes).is_ok()
+                && (json
+                    || matches!(
+                        parse_media_declaration(&source_media_type),
+                        MediaDeclaration::Missing
+                            | MediaDeclaration::Parsed {
+                                charset: CharsetDeclaration::Missing,
+                                ..
+                            }
+                    )
+                    || matches!(
+                        parse_media_declaration(&source_media_type),
+                        MediaDeclaration::Parsed {
+                            charset: CharsetDeclaration::Label { canonical, .. },
+                            ..
+                        } if canonical.eq_ignore_ascii_case("utf-8")
+                    )));
+        if (html || json) && utf8_view {
             let document = if html {
                 Document::html(payload_id, bytes.to_vec())
             } else {
@@ -400,7 +421,7 @@ impl NativeBrowser {
         } else {
             NetworkProjectionBasis::OpaqueBytes
         };
-        let reason = if (html || json) && !text_utf8_normalized {
+        let reason = if (html || json) && !utf8_view {
             Some("text_response_body_not_returned_as_unicode_text".into())
         } else if matches!(source_format, Some(SourceFormat::Xml(_))) {
             Some("existing_requests_xml_projection_not_available_for_network_body".into())

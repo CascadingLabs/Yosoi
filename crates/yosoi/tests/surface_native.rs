@@ -376,10 +376,9 @@ fn cli_network_window(
 }
 
 #[cfg(feature = "cli")]
-fn cli_native_reference(
+fn cli_native_root(
     input: &mut ChildStdin,
     output: &mut BufReader<ChildStdout>,
-    query: &str,
     id: &str,
     diagnostics: &Mutex<CliDiagnostics>,
 ) -> Result<Value, CliProofError> {
@@ -389,31 +388,16 @@ fn cli_native_reference(
         json!({"id":format!("refresh-{id}"),"op":"refresh"}),
         diagnostics,
     )?;
-    let page = cli_exchange(
+    let status = cli_exchange(
         input,
         output,
-        json!({"id":format!("find-{id}"),"op":"find","query":query}),
+        json!({"id":format!("status-{id}"),"op":"status"}),
         diagnostics,
     )?;
-    let entry = page
-        .get("entries")
-        .and_then(Value::as_array)
-        .and_then(|entries| entries.first())
-        .ok_or_else(|| io::Error::other("CLI navigation target was not found"))?;
-    let reference = entry
-        .get("reference")
+    status
+        .get("root")
         .cloned()
-        .ok_or_else(|| io::Error::other("CLI navigation target omitted its reference"))?;
-    if entry.get("kind").and_then(Value::as_str) == Some("text") {
-        cli_exchange(
-            input,
-            output,
-            json!({"id":format!("parent-{id}"),"op":"parent","reference":reference}),
-            diagnostics,
-        )
-    } else {
-        Ok(reference)
-    }
+        .ok_or_else(|| io::Error::other("CLI status omitted its native Surface root").into())
 }
 
 #[cfg(feature = "cli")]
@@ -458,19 +442,18 @@ fn run_native_network_cli(
         json!({"id":"hot","op":"hot"}),
         diagnostics,
     )?;
-    let root = cli_native_reference(
-        &mut input,
-        &mut output,
-        "Start network requests",
-        "one",
-        diagnostics,
-    )?;
-    cli_exchange(
+    let root = cli_native_root(&mut input, &mut output, "one", diagnostics)?;
+    let navigated = cli_exchange(
         &mut input,
         &mut output,
         json!({"id":"navigate-one","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=1")}),
         diagnostics,
     )?;
+    if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(
+            io::Error::other(format!("CLI navigation was not confirmed: {navigated}")).into(),
+        );
+    }
 
     let mut after_sequence = 0_u64;
     let mut captured_body = None;
@@ -550,13 +533,19 @@ fn run_native_network_cli(
     if rearmed.get("active").and_then(Value::as_bool) != Some(true) {
         return Err(io::Error::other("native CLI could not rearm network capture").into());
     }
-    let root = cli_native_reference(&mut input, &mut output, "CLI network", "two", diagnostics)?;
-    cli_exchange(
+    let root = cli_native_root(&mut input, &mut output, "two", diagnostics)?;
+    let navigated = cli_exchange(
         &mut input,
         &mut output,
         json!({"id":"navigate-two","op":"navigate","reference":root,"url":format!("{base}/cli-network?cli=2")}),
         diagnostics,
     )?;
+    if navigated.pointer("/receipt/status").and_then(Value::as_str) != Some("Confirmed") {
+        return Err(io::Error::other(format!(
+            "rearmed CLI navigation was not confirmed: {navigated}"
+        ))
+        .into());
+    }
     let mut fresh_request_seen = false;
     let mut after_sequence = 0_u64;
     for _ in 0..24 {
@@ -856,16 +845,20 @@ async fn native_network_windows_link_bounded_bodies_and_replay_offline()
                     && payload.document_kind == Some(NetworkPayloadKind::Html)
                     && payload.detected_media_type.as_deref() == Some("text/html")
             })
-            .ok_or_else(|| io::Error::other("missing Content-Type HTML was not sniffed"))?;
+            .ok_or_else(|| io::Error::other(format!("missing Content-Type HTML was not sniffed; payloads={payload_refs:?}")))?;
         assert_eq!(
             sniffed_html.projection_basis,
             Some(surface::NetworkProjectionBasis::RequestsSniffed)
         );
-        assert!(sniffed_html.browser_effective_mime.is_some());
+        assert_eq!(sniffed_html.browser_effective_mime, None);
+        assert_eq!(sniffed_html.browser_effective_charset, None);
+        assert!(sniffed_html.provider_base64_encoded);
+        assert!(!sniffed_html.text_utf8_normalized);
         let misleading_png = payload_refs
             .iter()
             .find(|payload| {
                 payload.declared_media_type.as_deref() == Some("application/octet-stream")
+                    && payload.detected_media_type.as_deref() == Some("image/png")
             })
             .ok_or_else(|| io::Error::other("octet-stream PNG response was not linked"))?;
         assert!(misleading_png.browser_effective_mime.is_some());
