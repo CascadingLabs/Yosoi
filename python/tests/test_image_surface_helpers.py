@@ -10,6 +10,11 @@ import yosoi as ys
 from yosoi import surface as sf
 
 
+def _object(value: object) -> dict[str, object]:
+    assert isinstance(value, dict)
+    return value
+
+
 def _png() -> bytes:
     def chunk(tag, data):
         return (
@@ -111,18 +116,19 @@ def test_image_connection_file_and_saved_root_lifecycle(tmp_path):
         )
         session = await sf.ImageSession.open(source, policy, tile_side=32)
         ready = await session.ready()
-        assert ready["state"]["descriptor"]["controllable"] is False
+        state = _object(ready["state"])
+        assert _object(state["descriptor"])["controllable"] is False
         result = await session.execute({"op": "image_direct"})
-        assert result["artifact"]["info"]["width"] == 8
+        assert _object(_object(result["artifact"])["info"])["width"] == 8
         with pytest.raises(sf.ExecutionError):
             await session.execute({"op": "hot"})
         assert await session.outcome() is not None
         outcome = await session.close()
         assert outcome is not None and outcome.complete and outcome.sealed
         assert await session.close() == outcome
-        artifact = outcome.source_pixel_artifact(
-            ready["state"]["source_pixel_artifact"]["identity"]
-        )
+        source_identity = _object(state["source_pixel_artifact"])["identity"]
+        assert isinstance(source_identity, str)
+        artifact = outcome.source_pixel_artifact(source_identity)
         archive = await ys.Archive.open(tmp_path / "archive")
         reference = await artifact.write_to(archive)
         reopened = await sf.ImageSession.open_pixel_artifact(
@@ -134,7 +140,9 @@ def test_image_connection_file_and_saved_root_lifecycle(tmp_path):
         async with reopened:
             await reopened.ready()
             saved = await reopened.execute({"op": "image_direct"})
-            assert saved["artifact"]["info"] == artifact.info.model_dump(mode="json")
+            assert _object(_object(saved["artifact"])["info"]) == (
+                artifact.info.model_dump(mode="json")
+            )
         with pytest.raises(sf.ExecutionError):
             await reopened.ready()
         retained = sf.ArchivedSource.from_image(

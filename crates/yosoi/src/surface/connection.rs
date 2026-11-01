@@ -1,5 +1,6 @@
 //! Bounded command protocol and state shared by source-specific connections.
 use super::{Budget, Continuation, ExecutionError, Outcome, PixelRect, Reference, model};
+use crate::request::CancellationToken;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
@@ -189,6 +190,13 @@ pub(super) enum Expectation {
 pub(super) trait AgentSurface: Send {
     fn ready(&mut self) -> Result<Value>;
     fn command(&mut self, request: &Request) -> impl Future<Output = Result<Value>> + Send;
+    fn command_cancellable(
+        &mut self,
+        request: &Request,
+        _cancellation: &CancellationToken,
+    ) -> impl Future<Output = Result<Value>> + Send {
+        self.command(request)
+    }
     fn record_reply(&mut self, operation: &Operation, result: &Result<Value>) -> Result<()>;
     fn persist_command(
         &mut self,
@@ -242,11 +250,23 @@ impl<D: AgentSurface> Connection<D> {
             .map_err(ExecutionError::Operation)
     }
     pub(super) async fn execute(&mut self, command: Value) -> StdResult<Value, ExecutionError> {
-        self.execute_inner(command)
+        self.execute_cancellable(command, &CancellationToken::new())
+            .await
+    }
+    pub(super) async fn execute_cancellable(
+        &mut self,
+        command: Value,
+        cancellation: &CancellationToken,
+    ) -> StdResult<Value, ExecutionError> {
+        self.execute_inner(command, cancellation)
             .await
             .map_err(ExecutionError::Operation)
     }
-    async fn execute_inner(&mut self, command: Value) -> Result<Value> {
+    async fn execute_inner(
+        &mut self,
+        command: Value,
+        cancellation: &CancellationToken,
+    ) -> Result<Value> {
         if serde_json::to_vec(&command)?.len() > 65536 {
             return Err(io::Error::other("command exceeds 64 KiB").into());
         }
@@ -275,7 +295,7 @@ impl<D: AgentSurface> Connection<D> {
             .driver
             .as_mut()
             .ok_or_else(|| io::Error::other("surface connection is closed"))?;
-        let result = driver.command(&request).await;
+        let result = driver.command_cancellable(&request, cancellation).await;
         driver.record_reply(&request.operation, &result)?;
         let result = driver.persist_command(&request.operation, result).await;
         let trace = driver.trace();

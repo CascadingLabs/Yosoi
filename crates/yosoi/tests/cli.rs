@@ -1,6 +1,8 @@
 #![cfg(feature = "cli")]
 #![allow(clippy::panic_in_result_fn)] // Assertions intentionally fail integration tests.
 
+#[cfg(feature = "surface-images")]
+use std::{collections::BTreeMap, io::Cursor, path::PathBuf};
 use std::{
     error::Error,
     fs,
@@ -135,6 +137,37 @@ fn surface_image_help_exposes_bounded_pixel_inputs() -> Result<(), Box<dyn Error
 #[cfg(feature = "surface-images")]
 #[test]
 fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), Box<dyn Error>> {
+    image_cli_journey(false)
+}
+
+#[cfg(all(feature = "surface-images", unix))]
+#[test]
+fn surface_image_cli_reopens_archived_pixel_artifacts() -> Result<(), Box<dyn Error>> {
+    image_cli_journey(true)
+}
+
+#[cfg(all(feature = "surface-images", not(unix)))]
+#[test]
+fn surface_image_cli_reports_unsupported_archive_platform() -> Result<(), Box<dyn Error>> {
+    let directory = tempfile::tempdir()?;
+    let source = directory.path().join("source.png");
+    image::RgbaImage::new(1, 1).save(&source)?;
+    let output = Command::new(env!("CARGO_BIN_EXE_yosoi"))
+        .args(["surface", "image", "--file"])
+        .arg(source)
+        .arg("--archive")
+        .arg(directory.path().join("archive"))
+        .arg("--output")
+        .arg(directory.path().join("output"))
+        .output()?;
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("not certified on platform"));
+    Ok(())
+}
+
+#[cfg(feature = "surface-images")]
+fn image_cli_journey(retain: bool) -> Result<(), Box<dyn Error>> {
     let directory = tempfile::tempdir()?;
     let source_path = directory.path().join("known-pixels.png");
     let output_directory = directory.path().join("image-output");
@@ -146,26 +179,31 @@ fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), 
             image::Rgba([10, 30, 240, 255])
         }
     });
-    let mut encoded = std::io::Cursor::new(Vec::new());
+    let mut encoded = Cursor::new(Vec::new());
     image::DynamicImage::ImageRgba8(pixels).write_to(&mut encoded, image::ImageFormat::Png)?;
     let source_bytes = encoded.into_inner();
     fs::write(&source_path, &source_bytes)?;
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_yosoi"))
-        .args([
-            "surface",
-            "image",
-            "--file",
-            source_path.to_str().ok_or("source path is not UTF-8")?,
-            "--output",
-            output_directory
-                .to_str()
-                .ok_or("output path is not UTF-8")?,
+    let mut command = Command::new(env!("CARGO_BIN_EXE_yosoi"));
+    command.args([
+        "surface",
+        "image",
+        "--file",
+        source_path.to_str().ok_or("source path is not UTF-8")?,
+        "--output",
+        output_directory
+            .to_str()
+            .ok_or("output path is not UTF-8")?,
+        "--max-retained-artifacts",
+        "3",
+    ]);
+    if retain {
+        command.args([
             "--archive",
             archive_root.to_str().ok_or("archive path is not UTF-8")?,
-            "--max-retained-artifacts",
-            "3",
-        ])
+        ]);
+    }
+    let mut child = command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -193,14 +231,14 @@ fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), 
     assert_eq!(output.stderr.as_slice(), b"");
 
     let stdout = String::from_utf8(output.stdout)?;
-    let mut replies = std::collections::BTreeMap::new();
+    let mut replies = BTreeMap::new();
     for line in stdout.lines() {
         let reply: serde_json::Value = serde_json::from_str(line)?;
         if let Some(id) = reply.get("id").and_then(serde_json::Value::as_str) {
             replies.insert(id.to_owned(), reply);
         }
     }
-    let artifact_path = |id: &str| -> Result<std::path::PathBuf, Box<dyn Error>> {
+    let artifact_path = |id: &str| -> Result<PathBuf, Box<dyn Error>> {
         let value = replies
             .get(id)
             .and_then(|reply| reply.pointer("/result/artifact/path"))
@@ -214,11 +252,20 @@ fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), 
     let direct_reply = replies
         .get("direct")
         .ok_or("direct image CLI reply is missing")?;
-    let pixel_reference = direct_reply
-        .pointer("/result/artifact/archive_ref")
-        .filter(|value| !value.is_null())
-        .ok_or("direct image Archive reference is missing")?;
-    let pixel_reference_json = serde_json::to_string(pixel_reference)?;
+    let pixel_reference_json = if retain {
+        let pixel_reference = direct_reply
+            .pointer("/result/artifact/archive_ref")
+            .filter(|value| !value.is_null())
+            .ok_or("direct image Archive reference is missing")?;
+        Some(serde_json::to_string(pixel_reference)?)
+    } else {
+        assert!(
+            direct_reply
+                .pointer("/result/artifact/archive_ref")
+                .is_none_or(serde_json::Value::is_null)
+        );
+        None
+    };
     let overview_path = artifact_path("overview")?;
     let overview = image::load_from_memory(&fs::read(overview_path)?)?.to_rgba8();
     assert_eq!(overview.dimensions(), (4, 2));
@@ -240,6 +287,9 @@ fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), 
             .is_some_and(|error| error.contains("retained image artifact limit"))
     );
 
+    let Some(pixel_reference_json) = pixel_reference_json else {
+        return Ok(());
+    };
     fs::remove_file(&source_path)?;
     let reopened_output = directory.path().join("reopened-image-output");
     let mut reopened = Command::new(env!("CARGO_BIN_EXE_yosoi"))
@@ -272,7 +322,7 @@ fn surface_image_cli_returns_direct_overview_and_crop_artifacts() -> Result<(), 
         "{reopened_output_result:?}"
     );
     assert_eq!(reopened_output_result.stderr.as_slice(), b"");
-    let reopened_replies: std::collections::BTreeMap<String, serde_json::Value> =
+    let reopened_replies: BTreeMap<String, serde_json::Value> =
         String::from_utf8(reopened_output_result.stdout)?
             .lines()
             .filter_map(|line| serde_json::from_str(line).ok())

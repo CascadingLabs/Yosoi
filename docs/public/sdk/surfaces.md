@@ -42,6 +42,16 @@ Legacy frame envelopes that lack a typed video source ID retain an explicit part
 
 Rust video requires `surface-video`; images require `surface-images` or `browser`. Standard Python builds enable browser and video support. FFmpeg and FFprobe remain external requirements for opening and decoding video. Immutable image and document reads need neither browser nor video decoder.
 
+`VideoSurface.open` retains recognized local files as typed `VideoDocument`
+values. The signature detector classifies generic Ogg as audio and does not
+recognize MPEG-TS. For these containers, `open` uses FFprobe to confirm a
+self-contained video stream before creating the typed source. Its
+`FileMetadata.probe_validated_video_container` records that basis while keeping
+the signature detector's MIME unchanged, such as `audio/ogg` or no detected
+MIME. Public `VideoDocument.from_bytes` remains signature-gated, and caller
+metadata cannot supply this probe basis. A saved typed video restores its
+timeline without FFprobe, while materializing a new frame still needs FFmpeg.
+
 ## Keep reference types distinct
 
 | Meaning                         | Rust                                | Python                      |

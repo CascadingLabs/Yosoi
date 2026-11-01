@@ -6,13 +6,13 @@ use pyo3::prelude::*;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
 use yosoi::{
-    documents::ImageDocument,
+    documents::{FileDocument, ImageDocument},
     surface::{self, SurfaceConnection},
 };
 
 pub(super) fn document(value: &NativeFileDocument) -> PyResult<ImageDocument> {
     match value.inner.as_ref() {
-        yosoi::documents::FileDocument::Image(document) => Ok(document.clone()),
+        FileDocument::Image(document) => Ok(document.clone()),
         _ => Err(failure(surface::SurfaceError::Invalid(
             "image operation requires an ImageDocument".into(),
         ))),

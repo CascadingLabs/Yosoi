@@ -1,5 +1,7 @@
 //! Thin Python ownership boundary over modality-specific Surface connections.
-use super::{decode, encode};
+#[cfg(feature = "browser")]
+use super::decode;
+use super::encode;
 use crate::{async_runtime, errors};
 use pyo3::{create_exception, prelude::*};
 use std::{error::Error, path::PathBuf};
@@ -8,7 +10,21 @@ use yosoi::surface::{ExecutionError, Outcome, archive};
 create_exception!(_native, SurfaceExecutionError, errors::YosoiError);
 pub(super) fn failure(error: ExecutionError) -> PyErr {
     let (variant, details) = match &error {
-        ExecutionError::Operation(_) => ("Operation", serde_json::json!({})),
+        ExecutionError::Operation(source) => {
+            let details = serde_json::json!({});
+            #[cfg(feature = "surface-video")]
+            let details = if matches!(
+                source.downcast_ref::<yosoi::surface::video::VideoError>(),
+                Some(yosoi::surface::video::VideoError::Cancelled)
+            ) {
+                serde_json::json!({"cancelled":true})
+            } else {
+                details
+            };
+            #[cfg(not(feature = "surface-video"))]
+            let _ = source;
+            ("Operation", details)
+        }
         ExecutionError::Execution { outcomes, .. } => {
             ("Execution", serde_json::json!({"outcomes":outcomes}))
         }
@@ -32,6 +48,7 @@ pub(super) fn failure(error: ExecutionError) -> PyErr {
         )
     })
 }
+#[cfg(feature = "browser")]
 macro_rules! connection {
     ($module:ident, $native:ident, $name:literal, $rust:path, $input:ident : $input_type:ident, $option:ident : $option_type:ty) => {
         mod $module {
@@ -101,6 +118,7 @@ macro_rules! connection {
         pub(super) use $module::$native;
     };
 }
+#[cfg(feature = "browser")]
 pub(super) use connection;
 #[pyfunction]
 fn surface_replay(

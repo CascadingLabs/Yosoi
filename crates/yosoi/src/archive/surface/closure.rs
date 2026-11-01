@@ -181,91 +181,31 @@ fn add_aliases(
     fresh: &str,
     previous: Option<String>,
 ) {
-    references.insert(source.key.clone(), fresh.to_owned());
+    references
+        .entry(source.key.clone())
+        .or_insert_with(|| fresh.to_owned());
     if let Some(previous) = previous {
         references.insert(previous, fresh.to_owned());
     }
 }
 
-fn referenced_archive_keys(value: &Outcome) -> Result<BTreeSet<String>, ArchiveError> {
-    let mut references = BTreeSet::new();
-    for source in &value.sources {
-        if source.file_kind.is_none() && source.profile.is_some() {
-            let document = source.restore(value.limits.bytes).map_err(invalid)?;
-            references.extend(
-                dependencies(&document)?
-                    .into_iter()
-                    .map(|dependency| dependency.reference),
-            );
-        }
-    }
-    for operation in value.record.operations() {
-        let known_reference = if operation.kind == "surface.command"
-            && operation
-                .result
-                .as_ref()
-                .and_then(|result| result.pointer("/command/op"))
-                .and_then(Value::as_str)
-                == Some("screenshot")
-        {
-            operation
-                .result
-                .as_ref()
-                .and_then(|result| result.pointer("/outcome/archive_ref/document"))
-        } else if matches!(
-            operation.kind.as_str(),
-            "surface.capture" | "surface.video.source" | "surface.video.frame"
-        ) {
-            operation
-                .result
-                .as_ref()
-                .and_then(|result| result.get("document"))
-        } else {
-            None
-        };
-        if let Some(reference) = known_reference.and_then(Value::as_str) {
-            references.insert(reference.to_owned());
-        }
-    }
-    Ok(references)
-}
-
-fn source_key_is_archive_reference(
-    source: &ArchivedSource,
-    referenced_keys: &BTreeSet<String>,
-) -> bool {
-    let own_archive_reference = source
-        .document_archive
-        .as_ref()
-        .is_some_and(|reference| reference.to_string() == source.key)
-        || source
-            .file_archive
-            .as_ref()
-            .is_some_and(|reference| reference.to_string() == source.key);
-    own_archive_reference || referenced_keys.contains(&source.key)
-}
-
 pub(super) async fn rehydrate(archive: &Archive, value: &mut Outcome) -> Result<(), ArchiveError> {
     close_dependencies(archive, value).await?;
     value.validate().map_err(invalid)?;
-    let referenced_keys = referenced_archive_keys(value)?;
-    let file_references = rehydrate_files(archive, value, &referenced_keys).await?;
-    let document_references =
-        rehydrate_documents(archive, value, &file_references, &referenced_keys).await?;
+    let file_references = rehydrate_files(archive, value).await?;
+    let document_references = rehydrate_documents(archive, value, &file_references).await?;
     rehydrate_receipts(value, &file_references, &document_references)
 }
 
 async fn rehydrate_files(
     archive: &Archive,
     value: &mut Outcome,
-    referenced_keys: &BTreeSet<String>,
 ) -> Result<BTreeMap<String, String>, ArchiveError> {
     let mut file_references = BTreeMap::new();
     for source in &mut value.sources {
         if source.file_kind.is_none() {
             continue;
         }
-        let rehome_key = source_key_is_archive_reference(source, referenced_keys);
         let previous = source.file_archive.as_ref().map(ToString::to_string);
         let file = source
             .restore_file_document(value.limits.bytes)
@@ -284,9 +224,6 @@ async fn rehydrate_files(
         };
         let fresh = reference.to_string();
         add_aliases(&mut file_references, source, &fresh, previous);
-        if rehome_key {
-            source.key.clone_from(&fresh);
-        }
         source.file_archive = Some(reference);
         source.content_base64 = None;
     }
@@ -298,7 +235,6 @@ async fn rehydrate_documents(
     archive: &Archive,
     value: &mut Outcome,
     file_references: &BTreeMap<String, String>,
-    referenced_keys: &BTreeSet<String>,
 ) -> Result<BTreeMap<String, String>, ArchiveError> {
     let mut document_references = BTreeMap::new();
     let mut pending: BTreeSet<usize> = value
@@ -338,11 +274,7 @@ async fn rehydrate_documents(
                 .sources
                 .get_mut(*index)
                 .ok_or_else(|| invalid("outcome source index disappeared"))?;
-            let rehome_key = source_key_is_archive_reference(source, referenced_keys);
             add_aliases(&mut document_references, source, &fresh, previous);
-            if rehome_key {
-                source.key.clone_from(&fresh);
-            }
             source.document_archive = Some(reference);
             source.sha256 = format!("{:x}", Sha256::digest(document.bytes()));
             source.content_base64 = None;
@@ -373,11 +305,7 @@ async fn rehydrate_documents(
                     .sources
                     .get_mut(index)
                     .ok_or_else(|| invalid("outcome source index disappeared"))?;
-                let rehome_key = source_key_is_archive_reference(source, referenced_keys);
                 add_aliases(&mut document_references, source, &fresh, previous);
-                if rehome_key {
-                    source.key.clone_from(&fresh);
-                }
                 source.document_archive = Some(reference);
                 source.sha256 = format!("{:x}", Sha256::digest(document.bytes()));
                 source.content_base64 = None;

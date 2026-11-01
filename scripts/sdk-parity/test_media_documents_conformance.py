@@ -47,6 +47,7 @@ def _snapshot(
                 "session_id",
                 "tab_id",
                 "download_id",
+                "probe_validated_video_container",
                 "sha256",
             )
         )
@@ -64,6 +65,7 @@ def _snapshot(
                 "session_id",
                 "tab_id",
                 "download_id",
+                "probe_validated_video_container",
                 "sha256",
             )
         )
@@ -83,6 +85,7 @@ def _snapshot(
             "session_id": "session-media-conformance",
             "tab_id": "tab-media-conformance",
             "download_id": f"download-{name}",
+            "probe_validated_video_container": None,
             "sha256": digest,
         }
     if not factory_defaults and not read_file_case:
@@ -101,7 +104,12 @@ def _snapshot(
         else {
             key: value
             for key, value in metadata.items()
-            if key not in {"detected_media_type", "sha256"}
+            if key
+            not in {
+                "detected_media_type",
+                "probe_validated_video_container",
+                "sha256",
+            }
         }
     )
     id_value = (
@@ -271,6 +279,7 @@ def _fixtures() -> dict[str, Any]:
             "session_id": None,
             "tab_id": None,
             "download_id": None,
+            "probe_validated_video_container": None,
             "sha256": None,
         },
         "equality": {

@@ -5,7 +5,7 @@ use std::{error::Error, io, path::Path, process::Stdio};
 use tokio::{fs, process::Command};
 use yosoi::{
     Archive,
-    documents::Document,
+    documents::{Document, FileLimits, FileMetadata, VideoDocument, file_from_bytes},
     surface::{
         Budget, PixelRect, Surface,
         browser::WebSurface,
@@ -48,6 +48,40 @@ async fn fixture(path: &Path) -> TestResult {
             "1",
             "-output_ts_offset",
             "5",
+        ])
+        .arg(path)
+        .stdin(Stdio::null())
+        .output()
+        .await?;
+    if !output.status.success() {
+        return Err(io::Error::other(String::from_utf8_lossy(&output.stderr).into_owned()).into());
+    }
+    Ok(())
+}
+async fn ambiguous_video_fixture(path: &Path, codec: &str, muxer: &str) -> TestResult {
+    let output = Command::new("ffmpeg")
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-filter_threads",
+            "1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=green:s=64x48:r=2:d=2",
+            "-an",
+            "-frames:v",
+            "4",
+            "-c:v",
+            codec,
+            "-threads:v",
+            "1",
+            "-f",
+            muxer,
         ])
         .arg(path)
         .stdin(Stdio::null())
@@ -375,5 +409,207 @@ async fn runtime_executes_without_terminal_and_closes_idempotently() -> TestResu
     runtime.close().await?;
     assert!(runtime.ready().is_err());
     assert!(runtime.execute(json!({"op":"status"})).await.is_err());
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions verify native media identity and preparation bounds."
+)]
+async fn typed_video_preparation_retains_source_and_separates_observation() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("typed.mp4");
+    fixture(&path).await?;
+    let bytes = fs::read(&path).await?;
+    let first = VideoDocument::from_bytes_with_metadata(
+        "first",
+        bytes.clone(),
+        FileMetadata::new().with_filename("clip.mp4")?,
+        FileLimits::default(),
+    )?;
+    let second = VideoDocument::from_bytes_with_metadata(
+        "second",
+        bytes,
+        FileMetadata::new().with_filename("clip.mp4")?,
+        FileLimits::default(),
+    )?;
+    fs::remove_file(path).await?;
+    let surface = VideoSurface::from_document(&first, VideoPolicy::default()).await?;
+    let other = VideoSurface::from_document(&second, VideoPolicy::default()).await?;
+    assert_eq!(surface.source_document(), Some(&first));
+    let archive = Archive::open(directory.path().join("native-archive")).await?;
+    let saved = surface.write_to(&archive).await?;
+    let profile = archive.read_document(&saved.document).await?;
+    let profile: serde_json::Value = serde_json::from_slice(profile.bytes())?;
+    assert_eq!(
+        profile.get("schema").and_then(serde_json::Value::as_str),
+        Some("yosoi.surface.video-source.v2")
+    );
+    assert!(profile.get("content_base64").is_none());
+    let restored = VideoSurface::read_from(&archive, &saved).await?;
+    assert_eq!(restored.source_document(), Some(&first));
+    assert_eq!(restored.observation().id, surface.observation().id);
+
+    assert_ne!(surface.descriptor().source, other.descriptor().source);
+    assert_ne!(surface.observation().id, other.observation().id);
+    let resized = VideoSurface::from_document(
+        &first,
+        VideoPolicy {
+            frame_max_side: 64,
+            ..VideoPolicy::default()
+        },
+    )
+    .await?;
+    assert_eq!(surface.descriptor().source, resized.descriptor().source);
+    assert_ne!(surface.observation().id, resized.observation().id);
+    let frame = surface.frame(&surface.at(0)?).await?;
+    assert!(frame.info.png_bytes > 0);
+    let rejected = VideoSurface::from_document(
+        &first,
+        VideoPolicy {
+            max_source_bytes: 1,
+            ..VideoPolicy::default()
+        },
+    )
+    .await;
+    assert!(matches!(
+        rejected,
+        Err(yosoi::surface::video::VideoError::Limit("source bytes"))
+    ));
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions preserve legacy Ogg and MPEG-TS support behind typed provenance."
+)]
+async fn signature_ambiguous_ogg_and_transport_streams_become_typed_after_probe() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let archive = Archive::open(directory.path().join("archive")).await?;
+    for (container, extension, codec, muxer) in [
+        ("ogg", "ogv", "libtheora", "ogg"),
+        ("mpegts", "ts", "mpeg2video", "mpegts"),
+    ] {
+        let path = directory.path().join(format!("fixture.{extension}"));
+        ambiguous_video_fixture(&path, codec, muxer).await?;
+        let bytes = fs::read(&path).await?;
+        assert!(VideoDocument::from_bytes("signature-gated", bytes.clone()).is_err());
+        let inferred = file_from_bytes(
+            "inferred",
+            bytes,
+            FileMetadata::new(),
+            FileLimits::default(),
+        )?;
+
+        let surface = VideoSurface::open(&path, VideoPolicy::default()).await?;
+        let source = surface
+            .source_document()
+            .ok_or_else(|| io::Error::other("decoder-probed source was not typed"))?;
+        assert_eq!(
+            source.metadata().probe_validated_video_container(),
+            Some(container)
+        );
+        assert_eq!(
+            source.metadata().detected_media_type(),
+            inferred.metadata().detected_media_type(),
+            "retain the pinned detector MIME without inventing a video MIME"
+        );
+        let copied = source.copy_with_metadata("copied-probed-video", None, None)?;
+        assert_eq!(copied.bytes(), source.bytes());
+        assert_eq!(
+            copied.metadata().probe_validated_video_container(),
+            Some(container)
+        );
+
+        let frame = surface.frame(&surface.at(0)?).await?;
+        assert!(frame.pixel_artifact()?.is_some());
+        let saved_surface = surface.write_to(&archive).await?;
+        let profile = archive.read_document(&saved_surface.document).await?;
+        let profile: serde_json::Value = serde_json::from_slice(profile.bytes())?;
+        assert_eq!(profile["schema"], "yosoi.surface.video-source.v2");
+        assert!(profile.get("content_base64").is_none());
+        let saved_frame = frame.write_to(&archive).await?;
+        let archived_frame = archive.read_document(&saved_frame.document).await?;
+        let archived_frame: serde_json::Value = serde_json::from_slice(archived_frame.bytes())?;
+        assert_eq!(archived_frame["schema"], "yosoi.surface.video-frame.v2");
+        assert!(archived_frame.get("png_base64").is_none());
+
+        fs::remove_file(path).await?;
+        let restored_surface = VideoSurface::read_from(&archive, &saved_surface).await?;
+        assert_eq!(restored_surface.source_document(), Some(source));
+        let restored_frame = DecodedFrame::read_from(&archive, &saved_frame).await?;
+        assert_eq!(restored_frame.png, frame.png);
+        assert!(restored_frame.pixel_artifact()?.is_some());
+    }
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions verify variable-rate frame selection and final-tail semantics."
+)]
+async fn variable_rate_selection_reports_actual_pts_and_final_tail() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("variable.mp4");
+    let help = Command::new("ffmpeg")
+        .args(["-hide_banner", "-h", "full"])
+        .output()
+        .await?;
+    let mode = if String::from_utf8_lossy(&help.stdout).contains("-fps_mode") {
+        "-fps_mode"
+    } else {
+        "-vsync"
+    };
+    let output = Command::new("ffmpeg")
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-threads",
+            "1",
+            "-filter_threads",
+            "1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=red:s=64x32:r=4:d=1",
+            "-vf",
+            "setpts=N*(N+1)",
+            mode,
+            "vfr",
+            "-c:v",
+            "mpeg4",
+            "-threads:v",
+            "1",
+            "-output_ts_offset",
+            "5",
+        ])
+        .arg(&path)
+        .stdin(Stdio::null())
+        .output()
+        .await?;
+    if !output.status.success() {
+        return Err(io::Error::other(String::from_utf8_lossy(&output.stderr).into_owned()).into());
+    }
+    let video = VideoSurface::open(path, VideoPolicy::default()).await?;
+    assert_eq!(video.metadata().stream_start_us, 5_000_000);
+    let first = video.frame(&video.at(250_000)?).await?;
+    assert_eq!(first.info.requested_us, 250_000);
+    assert_eq!(first.info.position_us, Some(500_000));
+    assert_eq!(first.info.source_pts_us, 5_500_000);
+    let second = video.frame(&video.at(750_000)?).await?;
+    assert_eq!(second.info.position_us, Some(1_500_000));
+    assert_eq!(second.info.source_pts_us, 6_500_000);
+    assert!(video.metadata().duration_us > 3_100_000);
+    assert!(matches!(
+        video.frame(&video.at(3_100_000)?).await,
+        Err(yosoi::surface::video::VideoError::NoFrameAtOrAfter {
+            requested_us: 3_100_000
+        })
+    ));
     Ok(())
 }
