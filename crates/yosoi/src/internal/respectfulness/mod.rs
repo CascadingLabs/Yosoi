@@ -2,6 +2,7 @@
 
 use std::{
     collections::BTreeMap,
+    future::pending,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -12,6 +13,11 @@ use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
+use tokio::{
+    task::spawn_blocking,
+    time::{Instant, timeout_at},
+};
+use tokio_util::sync::CancellationToken;
 use url::Url;
 use uuid::Uuid;
 
@@ -486,15 +492,32 @@ pub use operation::Operation;
 pub async fn resolve_registry(
     policy: &Respectfulness,
     registry: Option<&Registry>,
-) -> Result<Registry, RespectfulnessError> {
+    cancellation: &CancellationToken,
+    deadline: Option<Instant>,
+) -> Result<Option<Registry>, RespectfulnessError> {
+    if cancellation.is_cancelled() || deadline.is_some_and(|at| Instant::now() >= at) {
+        return Ok(None);
+    }
     if let Some(registry) = registry {
-        return Ok(registry.clone());
+        return Ok(Some(registry.clone()));
     }
     let policy = policy.clone();
-    tokio::task::spawn_blocking(move || policy.open_registry())
-        .await
-        .map_err(|error| setup(format!("registry setup task failed: {error}")))?
-        .map_err(RespectfulnessError::from)
+    let mut task = spawn_blocking(move || policy.open_registry());
+    let deadline_signal = async {
+        if let Some(at) = deadline {
+            let _ = timeout_at(at, pending::<()>()).await;
+        } else {
+            pending::<()>().await;
+        }
+    };
+    tokio::select! {
+        biased;
+        () = cancellation.cancelled() => { task.abort(); Ok(None) },
+        () = deadline_signal => { task.abort(); Ok(None) },
+        result = &mut task => result
+            .map_err(|error| setup(format!("registry setup task failed: {error}")))?
+            .map(Some).map_err(RespectfulnessError::from),
+    }
 }
 
 fn reservation(id: &str, expires_at_ms: u64) -> Result<Reservation, RespectfulnessError> {

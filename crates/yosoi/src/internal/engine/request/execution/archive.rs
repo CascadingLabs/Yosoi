@@ -250,7 +250,7 @@ impl PageRequest {
         archive: &Archive,
     ) -> Result<ArchivedResponse, ArchivedRequestError> {
         let cancellation = CancellationToken::new();
-        self.send_archived_cancellable(archive, &cancellation).await
+        Box::pin(self.send_archived_cancellable(archive, &cancellation)).await
     }
 
     /// Archived send with caller-owned cancellation.
@@ -290,7 +290,7 @@ impl BoundPageRequest<'_> {
         archive: &Archive,
     ) -> Result<ArchivedResponse, ArchivedRequestError> {
         let cancellation = CancellationToken::new();
-        self.send_archived_cancellable(archive, &cancellation).await
+        Box::pin(self.send_archived_cancellable(archive, &cancellation)).await
     }
 
     /// Archived bound send with caller-owned cancellation.
@@ -303,7 +303,7 @@ impl BoundPageRequest<'_> {
         let executor = standard::for_prepared(&prepared)
             .map_err(RequestSendError::from)?
             .with_respectfulness(
-                self.respectfulness_runtime()
+                self.respectfulness_runtime(cancellation)
                     .await
                     .map_err(RequestSendError::from)?,
             );
@@ -321,7 +321,7 @@ impl BoundPageRequest<'_> {
     ) -> Result<ArchivedResponse, ArchivedRequestError> {
         let prepared = self.prepare().map_err(RequestSendError::from)?;
         let executor = executor.clone().with_respectfulness(
-            self.respectfulness_runtime()
+            self.respectfulness_runtime(cancellation)
                 .await
                 .map_err(RequestSendError::from)?,
         );

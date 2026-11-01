@@ -5,7 +5,7 @@
 
 use std::{
     error::Error,
-    io,
+    fs, io,
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -302,7 +302,7 @@ async fn registry_failure_prevents_requests_and_search_and_explicit_handle_overr
     use ys::policy::search::{Provider, ProviderRequestProfile, ProviderSelection};
     let directory = tempfile::tempdir()?;
     let corrupt = directory.path().join("corrupt.jsonl");
-    std::fs::write(&corrupt, "broken\n")?;
+    fs::write(&corrupt, "broken\n")?;
     let mut respect = Respectfulness::new(vec![Group {
         blocked: true,
         ..Group::new("blocked", ["^https?://"])
@@ -352,5 +352,40 @@ async fn registry_failure_prevents_requests_and_search_and_explicit_handle_overr
                 }
             )))
     );
+    Ok(())
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn pre_cancelled_request_and_search_skip_registry_setup() -> TestResult {
+    use tokio_util::sync::CancellationToken;
+    use ys::policy::search::{Provider, Search};
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("not-opened.jsonl");
+    let mut respect = Respectfulness::new(vec![group("http://127.0.0.1:1/")])?;
+    respect.registry_path = Some(path.clone());
+    let policy = ys::Policy {
+        respectfulness: Some(respect),
+        search: Search::new([Provider::Bing])?,
+        ..ys::Policy::default()
+    };
+    let cancellation = CancellationToken::new();
+    cancellation.cancel();
+    let response = ys::request::new("http://127.0.0.1:1/")
+        .bind(&policy)
+        .send_cancellable(&cancellation)
+        .await?;
+    assert_eq!(
+        response.termination(),
+        ys::request::ResponseTermination::Cancelled
+    );
+    let response = ys::search::new("cancelled setup")?
+        .bind(&policy)
+        .send_cancellable(&cancellation)
+        .await?;
+    assert_eq!(
+        response.termination(),
+        ys::search::SearchTermination::Cancelled
+    );
+    assert!(!path.exists());
     Ok(())
 }

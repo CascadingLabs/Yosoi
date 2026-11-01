@@ -5,7 +5,10 @@ use std::{collections::BTreeSet, path::PathBuf};
 use regex::RegexBuilder;
 use serde::{Deserialize, Serialize};
 
-use crate::internal::policy::PolicyError;
+use crate::{
+    internal::policy::PolicyError,
+    registry::{Registry, RegistryError},
+};
 
 /// Traffic rules applied by Requests and Search when explicitly supplied.
 ///
@@ -44,13 +47,10 @@ impl Respectfulness {
 
     /// Opens the configured JSONL file, or the standard user file. No fallback
     /// occurs after contention, corrupt state or an unavailable location.
-    pub(crate) fn open_registry(
-        &self,
-    ) -> Result<crate::registry::Registry, crate::registry::RegistryError> {
-        match &self.registry_path {
-            Some(path) => crate::registry::Registry::jsonl(path),
-            None => crate::registry::Registry::new(),
-        }
+    pub(crate) fn open_registry(&self) -> Result<Registry, RegistryError> {
+        self.registry_path
+            .as_ref()
+            .map_or_else(Registry::new, Registry::jsonl)
     }
 
     pub(crate) fn validate(&self) -> Result<(), PolicyError> {

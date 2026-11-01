@@ -1,5 +1,6 @@
 //! Bounded execution for policy-selected Search providers.
 
+use crate::internal::respectfulness::resolve_registry;
 use std::{collections::VecDeque, time::Duration};
 
 use crate::internal::policy::policy::AddressableByteLimit;
@@ -46,9 +47,8 @@ impl BoundSearchRequest<'_> {
             .ok_or(SearchExecutionSetupError::DeadlineUnrepresentable)?;
         let mut prepared = self.prepare()?;
         if let Some(policy) = &self.policy().respectfulness {
-            prepared.registry = Some(
-                crate::internal::respectfulness::resolve_registry(policy, self.registry()).await?,
-            );
+            prepared.registry =
+                resolve_registry(policy, self.registry(), cancellation, Some(deadline)).await?;
         }
         execute_prepared(prepared, deadline, cancellation, self.diagnostic_capture()).await
     }

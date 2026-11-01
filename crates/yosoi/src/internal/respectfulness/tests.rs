@@ -3,7 +3,9 @@
     reason = "Assertions intentionally fail behavioral tests."
 )]
 
-use crate::registry::Registry;
+use crate::registry::{Registry, Transaction};
+use std::fs;
+use tokio_util::sync::CancellationToken;
 
 use std::error::Error;
 
@@ -26,7 +28,7 @@ fn regex_groups_share_subdomain_capacity_and_release_it() -> TestResult {
         let directory = tempfile::tempdir()?;
         let registry = Registry::jsonl(directory.path().join("state.jsonl"))?;
         let policy = Respectfulness::new(vec![group("domain")])?;
-        let first = Runtime::new(policy.clone(), registry.clone())?;
+        let first = Runtime::new(policy.clone(), registry)?;
         let second = Runtime::new(
             policy,
             Registry::jsonl(directory.path().join("state.jsonl"))?,
@@ -214,23 +216,23 @@ async fn policy_selected_file_records_reservation_owner_and_release() -> TestRes
     let path = directory.path().join("traffic.jsonl");
     let mut policy = Respectfulness::new(vec![group("owner")])?;
     policy.registry_path = Some(path.clone());
-    let registry = super::resolve_registry(&policy, None).await?;
+    let registry = super::resolve_registry(&policy, None, &CancellationToken::new(), None)
+        .await?
+        .ok_or("unexpected cancellation")?;
     let runtime = Runtime::new(policy, registry.clone())?;
     let permit = runtime.reserve_at("https://example.com/private?token=secret", 1000, 2000)?;
     permit.finish_at(1001, Some(200), None, false)?;
-    let text = std::fs::read_to_string(&path)?;
+    let text = fs::read_to_string(&path)?;
     assert!(!text.contains("secret"));
     let transactions = text
         .lines()
         .skip(1)
-        .map(
-            |line| -> Result<crate::registry::Transaction, Box<dyn Error>> {
-                let record: serde_json::Value = serde_json::from_str(line)?;
-                Ok(serde_json::from_value(
-                    record.get("transaction").ok_or("missing envelope")?.clone(),
-                )?)
-            },
-        )
+        .map(|line| -> Result<Transaction, Box<dyn Error>> {
+            let record: serde_json::Value = serde_json::from_str(line)?;
+            Ok(serde_json::from_value(
+                record.get("transaction").ok_or("missing envelope")?.clone(),
+            )?)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(transactions.len(), 2);
     let admission = transactions.first().ok_or("missing admission")?;
@@ -255,4 +257,67 @@ async fn policy_selected_file_records_reservation_owner_and_release() -> TestRes
         2000
     );
     Ok(())
+}
+
+#[test]
+fn queued_registry_setup_observes_cancellation_and_deadline() -> TestResult {
+    use std::{
+        future::{Future, poll_fn},
+        sync::mpsc,
+        task::Poll,
+        time::Duration,
+    };
+    use tokio::{
+        runtime::Builder,
+        sync::oneshot,
+        task::spawn_blocking,
+        time::{Instant, timeout},
+    };
+
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .max_blocking_threads(1)
+        .build()?;
+    runtime.block_on(async {
+        let directory = tempfile::tempdir()?;
+        let path = directory.path().join("queued.jsonl");
+        let mut policy = Respectfulness::new(vec![group("cancel")])?;
+        policy.registry_path = Some(path.clone());
+        let (ready, started) = oneshot::channel();
+        let (release, gate) = mpsc::channel::<()>();
+        let worker = spawn_blocking(move || {
+            let _ = ready.send(());
+            gate.recv()
+        });
+        started.await?;
+        for deadline_only in [false, true] {
+            let cancellation = CancellationToken::new();
+            let deadline = deadline_only
+                .then(|| Instant::now().checked_add(Duration::from_millis(20)))
+                .flatten();
+            let mut setup = Box::pin(super::resolve_registry(
+                &policy,
+                None,
+                &cancellation,
+                deadline,
+            ));
+            poll_fn(|context| {
+                assert!(setup.as_mut().poll(context).is_pending());
+                Poll::Ready(())
+            })
+            .await;
+            if !deadline_only {
+                cancellation.cancel();
+            }
+            assert!(timeout(Duration::from_millis(250), setup).await??.is_none());
+        }
+        release.send(())?;
+        worker.await??;
+        spawn_blocking(|| ()).await?;
+        assert!(
+            !path.exists(),
+            "aborted queued setup must not create the journal"
+        );
+        Ok(())
+    })
 }

@@ -4,9 +4,10 @@
 //! policy, and gives each effective acquisition a fresh capture identity. It
 //! does not contact a provider or perform any other I/O.
 
-use crate::internal::respectfulness::Runtime as RespectRuntime;
+use crate::internal::respectfulness::{Runtime as RespectRuntime, resolve_registry};
 use crate::policy::respectfulness::RespectfulnessError as TrafficError;
 use crate::registry::Registry as RuntimeRegistry;
+use tokio_util::sync::CancellationToken;
 
 use std::{borrow::Cow, fmt};
 
@@ -184,13 +185,16 @@ impl<'policy> BoundPageRequest<'policy> {
 
     pub(crate) async fn respectfulness_runtime(
         &self,
+        cancellation: &CancellationToken,
     ) -> Result<Option<RespectRuntime>, TrafficError> {
         let Some(policy) = &self.policy.respectfulness else {
             return Ok(None);
         };
-        let registry =
-            crate::internal::respectfulness::resolve_registry(policy, self.registry.as_ref())
-                .await?;
+        let Some(registry) =
+            resolve_registry(policy, self.registry.as_ref(), cancellation, None).await?
+        else {
+            return Ok(None);
+        };
         RespectRuntime::new(policy.clone(), registry).map(Some)
     }
     /// Returns this bound request's logical identity.

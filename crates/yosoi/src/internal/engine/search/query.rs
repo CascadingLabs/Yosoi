@@ -86,7 +86,7 @@ impl SearchRequest {
     }
 
     /// Binds query intent to one complete borrowed Policy declaration.
-    pub fn bind(self, policy: &Policy) -> BoundSearchRequest<'_> {
+    pub const fn bind(self, policy: &Policy) -> BoundSearchRequest<'_> {
         BoundSearchRequest {
             request: self,
             policy,
