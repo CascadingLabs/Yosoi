@@ -3,9 +3,7 @@ use std::sync::Arc;
 use crate::internal::documents::DocumentId;
 
 use super::{
-    FileDocumentError, FileLimits, FileMetadata,
-    classify::{MediaKind, detected_kind},
-    payload::MediaDocument,
+    FileDocumentError, FileLimits, FileMetadata, classify::MediaKind, payload::MediaDocument,
 };
 
 /// Immutable video bytes and their provenance.
@@ -15,11 +13,6 @@ pub struct VideoDocument {
 }
 
 impl VideoDocument {
-    /// Reports whether the pinned signature matcher classifies these bytes as video.
-    pub(crate) fn has_video_signature(bytes: &[u8]) -> bool {
-        detected_kind(bytes) == MediaKind::Video
-    }
-
     /// Creates a typed source after FFprobe confirms an Ogg or MPEG-TS video stream.
     /// The ordinary public byte constructors remain signature-gated.
     pub(crate) fn from_probe_validated_bytes(

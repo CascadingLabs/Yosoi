@@ -9113,7 +9113,7 @@
       "signatureSha256": "6f2939e30518f105bcbec3c5ecf65eec2004f02c8b9c2192f8dc9d8f0da8bc87",
       "pythonTarget": "yosoi.surface.NetworkPayloadValue",
       "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
-      "pythonTargetSha256": "5d609e24c8a902ef1a2f6f299c538167841c870dda58263a6057329e8fd6f0f6"
+      "pythonTargetSha256": "faf7f052bb18883c970a3e0a7658eedcd11ec4be6f8f55fa1c96c73982019019"
     },
     {
       "rustPath": "yosoi::surface::NetworkPayload",

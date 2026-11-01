@@ -64,7 +64,7 @@ impl VideoSurface {
             max_bytes: u64::try_from(policy.max_source_bytes)
                 .map_err(|_| VideoError::Limit("source bytes"))?,
         };
-        if VideoDocument::has_video_signature(&bytes) {
+        if infer::get(&bytes).is_some_and(|kind| kind.matcher_type() == infer::MatcherType::Video) {
             let document =
                 VideoDocument::from_bytes_with_metadata(id, bytes, source_metadata, file_limits)
                     .map_err(|error| VideoError::Invalid(error.to_string()))?;

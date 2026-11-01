@@ -25,7 +25,12 @@ def video(value: Any) -> dict[str, Any]:
             "class": type(source).__name__,
             "id": str(source.id),
             "bytes": list(source.bytes),
-            "metadata": dump(source.metadata),
+            "metadata": {
+                **dump(source.metadata),
+                "probe_validated_video_container": (
+                    source.metadata.probe_validated_video_container
+                ),
+            },
             "sha256": source.sha256,
             "byte_len": source.byte_len,
         }
