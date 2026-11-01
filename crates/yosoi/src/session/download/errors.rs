@@ -22,14 +22,14 @@ pub(super) const fn map_session_error(error: &SessionError) -> DownloadError {
         | SessionError::ResultLimit { .. }
         | SessionError::AssertionEvaluation(_)
         | SessionError::WatchLagged(_)
-        | SessionError::WatchDeadline => DownloadError::Provider,
+        | SessionError::WatchDeadline
+        | SessionError::Recording => DownloadError::Provider,
         SessionError::Cancelled | SessionError::Closed => DownloadError::Cancelled,
         SessionError::Deadline
         | SessionError::TimeoutAfterDispatch
         | SessionError::AcquisitionDeadline => DownloadError::Timeout,
         SessionError::Admission | SessionError::ExecutionCapacity(_) => DownloadError::Busy,
         SessionError::Unsupported(_) => DownloadError::UnsupportedEngine,
-        SessionError::Recording => DownloadError::Provider,
         SessionError::Cleanup => DownloadError::Cleanup {
             recovery_directory: None,
         },
