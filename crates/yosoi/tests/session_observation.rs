@@ -145,6 +145,7 @@ async fn five_outputs_share_session_without_sharing_recording_lifetimes() -> Res
             execution_concurrency: 1,
             ..SessionPolicy::default()
         })
+        .allow_javascript()
         .acquire()
         .await?;
     let result = Box::pin(AssertUnwindSafe(qualify(&browser, &mut fixture)).catch_unwind()).await;
@@ -235,6 +236,16 @@ async fn qualify(browser: &session::Session, fixture: &mut Fixture) -> Result<()
     eprintln!("PHASE all streams rendering");
     let began = Instant::now();
     fixture.rendered(&[0, 1, 2, 3], 0, began).await?;
+    let realm = first
+        .evaluate(
+            "({poisoned:(()=>{try{MediaRecorder.isTypeSupported('video/webm');return false}catch{return true}})(),bindings:Object.getOwnPropertyNames(globalThis).filter(name=>name.startsWith('__yosoi_media_'))})",
+        )
+        .await?;
+    assert_eq!(
+        realm.result,
+        Some(serde_json::json!({"poisoned": true, "bindings": []})),
+        "native recording must ignore site intrinsics and keep its binding private"
+    );
     let waiting = workers
         .first()
         .ok_or_else(|| io::Error::other("initial Work missing"))?;

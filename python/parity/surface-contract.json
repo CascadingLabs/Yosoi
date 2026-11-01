@@ -44,6 +44,7 @@
       "signatureSha256": "df97aafe42ca83ff63df7dcd21ee939777082a8d2fb4f7d7e245bfebd93dfd46",
       "decision": "language-specific",
       "pythonTarget": "yosoi.BrowserSurface.consume_work",
+      "semanticEquivalent": "Python can bind an already selected Work lease. It cannot accept a Tab handle or select a non-initial tab directly.",
       "argumentMappings": [
         {
           "rustArgument": "tab",
@@ -63,7 +64,6 @@
           "python": "Python default None"
         }
       ],
-      "semanticEquivalent": "Python can bind an already selected Work lease. It cannot accept a Tab handle or select a non-initial tab directly.",
       "rationale": "Rust exposes the Tab-specific convenience because Tab is a public Rust owner. Python does not expose Tab creation or selection in this release, so there is no direct Python Tab target.",
       "review": {
         "status": "reviewed",
@@ -946,9 +946,9 @@
       "kind": "trait",
       "signatureSha256": "87b171ee46f481c0c8bfb35c7b27c337421f7ff6f19370b78edcd370bd2c94ed",
       "pythonTarget": "yosoi.SurfaceConnection",
+      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait.",
       "rationale": "The live Python surface exposes the corresponding public target yosoi.SurfaceConnection.",
-      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702",
-      "semanticEquivalent": "Python's SurfaceConnection base class exposes ready, bounded execute, retained outcome and acknowledged close for BrowserSurface and VideoSession through their native handles. Both SDKs preserve source-specific permissions, ownership and partial cleanup evidence. Rust trait implementation, Send bounds and future types are language mechanics; this mapping does not claim that Python implements a Rust trait."
+      "pythonTargetSha256": "2cb6d2edb0a88562525e8ed95c52bd204071dd24f435d36e276a627a2f7be702"
     },
     {
       "rustPath": "yosoi::SurfaceError::ActionInFlight",
@@ -2342,14 +2342,6 @@
       "pythonTargetSha256": "54be2c7833fac4536fd4818540ee3c458ab1691e93be7a33a536ff4429da0046"
     },
     {
-      "rustPath": "yosoi::browser::surface",
-      "kind": "module",
-      "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
-      "pythonTarget": "yosoi.browser_surface",
-      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
-      "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
-    },
-    {
       "rustPath": "yosoi::browser::surface::consume_session",
       "kind": "function",
       "signatureSha256": "b6a1d6a8bb33a8b877818330935f93177d8941f95e907921490f489f3c98c6a7",
@@ -2375,6 +2367,14 @@
       ],
       "rationale": "The reviewed browser-specific module façade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
       "pythonTargetSha256": "96401b653310a254fcf43af7861c4110b3d02bc7957173c897f0f7a644404124"
+    },
+    {
+      "rustPath": "yosoi::browser::surface",
+      "kind": "module",
+      "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
+      "pythonTarget": "yosoi.browser_surface",
+      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
+      "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
     },
     {
       "rustPath": "yosoi::surface::ActionLease::drop",

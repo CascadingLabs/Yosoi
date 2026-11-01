@@ -8,6 +8,15 @@
 <button id="tone" data-playing="false">Toggle tone</button>
 <a>Next document</a>
 <script>
+// Recording must use browser-owned intrinsics, regardless of site polyfills.
+window.MediaRecorder = class {
+  static isTypeSupported() { throw Error('page MediaRecorder must never run'); }
+};
+if (navigator.mediaDevices) {
+  navigator.mediaDevices.getDisplayMedia = () => {
+    throw Error('page getDisplayMedia must never run');
+  };
+}
 const parameters = new URLSearchParams(location.search);
 const id = Number(parameters.get('id') || 0);
 const generation = Number(parameters.get('generation') || 0);

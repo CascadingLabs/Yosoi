@@ -92,8 +92,10 @@ if (operation === 'start_source') {
       for (const recorder of outputs.values()) {
         if (recorder.state === 'recording') recorder.stop();
       }
+      outputs.clear();
       for (const track of stream?.getTracks() ?? []) track.stop();
       stream = null;
+      delete window[input.binding];
     },
   };
   window[input.property] = state;
@@ -152,6 +154,7 @@ if (operation === 'stop_source') {
   const state = window[input.property];
   if (state) state.stop();
   delete window[input.property];
+  delete window[input.binding];
   return true;
 }
 

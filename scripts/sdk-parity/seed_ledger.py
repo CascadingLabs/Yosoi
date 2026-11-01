@@ -97,6 +97,16 @@ def _matches_prior_mapping(entry: dict[str, Any], item: dict[str, Any]) -> bool:
         new_signature = re.search(r"@signature:([^@]+)", item["symbolKey"])
         if old_signature and new_signature:
             return old_signature.group(1) == new_signature.group(1)
+        if old_signature and item.get("surface") == "item" and not new_signature:
+            old_kind = re.match(r"(?:page|member):([^:]+):", selector)
+            signature = item.get("signature")
+            return (
+                old_kind is not None
+                and old_kind.group(1) == item.get("kind")
+                and isinstance(signature, str)
+                and old_signature.group(1)
+                == parity.digest_bytes(signature.encode("utf-8"))
+            )
     return selector is None
 
 
@@ -142,6 +152,7 @@ ERROR_TARGETS = {
     "SearchSendError": "yosoi.errors.SearchError",
     "SearchFailure": "yosoi.search.Failed.value",
     "SearchUnavailableReason": "yosoi.search.NotStarted.value",
+    "SurfaceError": "yosoi.SurfaceError",
 }
 
 VALUE_TARGETS = {
@@ -387,6 +398,18 @@ MEMBER_TARGETS = {
     "yosoi::locators::text_literal": "yosoi.locators.text_literal",
     "yosoi::locators::tree_text_contains": "yosoi.locators.tree_text_contains",
     "yosoi::locators::xpath": "yosoi.locators.xpath",
+    **{
+        f"yosoi::documents::{document}::{method}": (
+            f"yosoi.documents.{document}.from_bytes"
+        )
+        for document in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        )
+        for method in ("from_bytes_with_limits", "from_bytes_with_metadata")
+    },
 }
 
 VARIANT_PARENT_TARGETS = {
@@ -440,20 +463,36 @@ FILE_DOCUMENT_ERROR_OUTPUT_FIELDS = {
     "BodyUnavailable": [],
     "ArchivedMetadataMismatch": [],
     "NotRegularFile": [
-        ("0", "details.path", "PathBuf rendered as the native error's lossy path string."),
+        (
+            "0",
+            "details.path",
+            "PathBuf rendered as the native error's lossy path string.",
+        ),
     ],
     "Document": [
-        ("0", "details.message", "Nested DocumentError Display text; source_chain is preserved separately."),
+        (
+            "0",
+            "details.message",
+            "Nested DocumentError Display text; source_chain is preserved separately.",
+        ),
     ],
     "Io": [
-        ("path", "details.path", "PathBuf rendered as the native error's lossy path string."),
+        (
+            "path",
+            "details.path",
+            "PathBuf rendered as the native error's lossy path string.",
+        ),
         ("source", "source_chain[*]", "Underlying filesystem error Display text."),
     ],
 }
 
 POLICY_ERROR_OUTPUT_FIELDS = {
     "ObservationRulesExceedRecordingLimit": [
-        ("configured", "details.configured", "Exact number of configured recording rules."),
+        (
+            "configured",
+            "details.configured",
+            "Exact number of configured recording rules.",
+        ),
         ("maximum", "details.maximum", "Exact configured maximum recording count."),
     ],
 }
@@ -656,8 +695,17 @@ BORROWED_VIEW_TARGETS = {
 ARGUMENT_ALIASES = {
     **{
         (f"yosoi::documents::{document}::{method}", "bytes"): "content"
-        for document in ("ImageDocument", "VideoDocument", "AudioDocument", "BinaryDocument")
-        for method in ("from_bytes", "from_bytes_with_limits", "from_bytes_with_metadata")
+        for document in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        )
+        for method in (
+            "from_bytes",
+            "from_bytes_with_limits",
+            "from_bytes_with_metadata",
+        )
     },
     ("yosoi::documents::file_from_bytes", "bytes"): "content",
     ("yosoi::Document::html", "bytes"): "content",
@@ -842,7 +890,19 @@ def _conversion(rust_type: str, python_parameter: dict[str, Any]) -> str:
     if "String" in rust_type or "str" in rust_type:
         return "Rust string-like input maps to Python str"
     if "Vec<u8>" in rust_type or "[u8]" in rust_type:
-        return "Python str is UTF-8 encoded; bytes are preserved"
+        normalized_python_type = python_type.replace("builtins.", "")
+        accepts_bytes = re.search(r"(?<![\w])bytes(?![\w])", normalized_python_type)
+        accepts_str = re.search(r"(?<![\w])str(?![\w])", normalized_python_type)
+        if accepts_bytes and accepts_str:
+            return "Python str is UTF-8 encoded; bytes are preserved"
+        if accepts_bytes:
+            return "Python bytes are preserved exactly; str is rejected"
+        if accepts_str:
+            return "Python str is UTF-8 encoded to Rust bytes; bytes are rejected"
+        return (
+            f"Python {python_type or 'value'} converts to Rust bytes according to "
+            "its declared parameter type"
+        )
     if "CancellationToken" in rust_type:
         return "Python CancellationToken forwards its native handle"
     if "Policy" in rust_type:
@@ -1190,6 +1250,52 @@ def _mapped_error_target(item: dict[str, Any], python: dict[str, Any]) -> str | 
     return target if target in python["targets"] else None
 
 
+def _file_document_variant_entry(
+    item: dict[str, Any], python: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Map one concrete Rust FileDocument variant to its typed Python union member."""
+    member_name = item["rustPath"].rsplit("::", 1)[-1]
+    target = FILE_DOCUMENT_VARIANT_TARGETS.get(member_name)
+    arguments = [
+        argument
+        for argument in item.get("rustArguments", [])
+        if not argument.get("receiver")
+    ]
+    if (
+        item.get("kind") != "variant"
+        or item.get("parentRustPath") != "yosoi::documents::FileDocument"
+        or target not in python["targets"]
+        or len(arguments) != 1
+        or arguments[0].get("name") != "0"
+        or not isinstance(arguments[0].get("type"), str)
+    ):
+        return None
+    return {
+        "rustPath": item["rustPath"],
+        "symbolKey": item["symbolKey"],
+        "decision": "mapped",
+        "pythonTarget": target,
+        "argumentMappings": [],
+        "mappingDirection": "output",
+        "outputBinding": {
+            "kind": "union-member",
+            "schemaTarget": "yosoi.documents.FileDocument",
+            "rustType": arguments[0]["type"],
+        },
+        "defaults": [],
+        "units": [],
+        "cardinality": [],
+        "semanticEquivalent": (
+            "The Python FileDocument union represents this Rust variant with the "
+            "same concrete native document class."
+        ),
+        "rationale": (
+            "The Rust variant wraps one concrete media document; Python's public "
+            "FileDocument union selects the corresponding class by runtime type."
+        ),
+    }
+
+
 def seed_entries(
     rust: dict[str, Any], python: dict[str, Any], existing: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -1234,6 +1340,10 @@ def seed_entries(
                     )
                     if updated:
                         copied = updated
+            if item.get("parentRustPath") == "yosoi::documents::FileDocument":
+                updated = _file_document_variant_entry(item, python)
+                if updated is not None:
+                    copied = updated
             preferred_target = VALUE_TARGETS.get(item["rustPath"])
             if preferred_target in python["targets"]:
                 if copied.get("pythonTarget") != preferred_target:
@@ -1458,27 +1568,9 @@ def seed_entries(
             if parent is None:
                 continue
             if parent["rustPath"] == "yosoi::documents::FileDocument":
-                target = FILE_DOCUMENT_VARIANT_TARGETS.get(member_name)
-                if target in python["targets"]:
-                    entries_by_identity[item["symbolKey"]] = {
-                        "rustPath": item["rustPath"],
-                        "symbolKey": item["symbolKey"],
-                        "decision": "mapped",
-                        "pythonTarget": target,
-                        "argumentMappings": [],
-                        "defaults": [],
-                        "units": [],
-                        "cardinality": [],
-                        "semanticEquivalent": (
-                            "The Python FileDocument union represents this Rust media "
-                            "variant with its concrete typed document class."
-                        ),
-                        "rationale": (
-                            "The native file factory selects the matching Python "
-                            "ImageDocument, VideoDocument, AudioDocument, or BinaryDocument "
-                            "class from the retained Rust FileDocument kind."
-                        ),
-                    }
+                updated = _file_document_variant_entry(item, python)
+                if updated is not None:
+                    entries_by_identity[item["symbolKey"]] = updated
                 continue
             wrapped_target = WRAPPED_OUTCOME_ENUMS.get(parent["rustPath"])
             if wrapped_target and wrapped_target in python["targets"]:
@@ -1899,7 +1991,10 @@ def seed_entries(
     # This native policy failure carries a meaningful payload through
     # rust_error_details() and has a Python regression for both counts.
     for item in rust["items"]:
-        if item["rustPath"] != "yosoi::PolicyError::ObservationRulesExceedRecordingLimit":
+        if (
+            item["rustPath"]
+            != "yosoi::PolicyError::ObservationRulesExceedRecordingLimit"
+        ):
             continue
         target = "yosoi.errors.PolicyError"
         if target not in python["targets"]:

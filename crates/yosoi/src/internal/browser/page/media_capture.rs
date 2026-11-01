@@ -6,7 +6,9 @@ use crate::internal::browser::{
     error::{Result, VoidCrawlError},
     vendor::chromiumoxide::{
         cdp::{
-            browser_protocol::page::{EventDomContentEventFired, EventFrameNavigated},
+            browser_protocol::page::{
+                CreateIsolatedWorldParams, EventDomContentEventFired, EventFrameNavigated,
+            },
             js_protocol::runtime::{
                 AddBindingParams, EvaluateParams, EventBindingCalled, RemoveBindingParams,
             },
@@ -39,6 +41,8 @@ const DOCUMENT_READY_DEADLINE: Duration = Duration::from_secs(10);
 const MEDIA_COMMAND_TIMEOUT: Duration = Duration::from_secs(5);
 const MEDIA_SOURCE_SETUP_TIMEOUT: Duration = Duration::from_secs(20);
 const MEDIA_CAPTURE_SCRIPT: &str = include_str!("media_capture.js");
+// Reuse one trusted realm per tab/document, including across sequential sources.
+const MEDIA_CAPTURE_WORLD: &str = "yosoi.capture";
 
 /// A shared transient-byte permit retained by one queued/consumed media event.
 pub trait NativeMediaBufferLease: Send + Sync {}
@@ -293,8 +297,8 @@ impl Drop for SourceSetupGuard {
         let binding = self.binding.clone();
         let property = self.property.clone();
         let _cleanup = self.executor.spawn(async move {
-            stop_stream(&page, &property).await;
             remove_binding(&page, &binding).await;
+            stop_stream(&page, &property, &binding).await;
         });
     }
 }
@@ -382,13 +386,12 @@ impl NativeTabMediaSource {
         .await
         .map_err(|_| unsupported_capture("tab MediaStream document events"))?
         .map_err(|_| VoidCrawlError::BrowserClosed)?;
-        timeout(
-            MEDIA_COMMAND_TIMEOUT,
-            page.cdp().execute(AddBindingParams::new(binding.clone())),
-        )
-        .await
-        .map_err(|_| unsupported_capture("tab MediaStream binding setup"))?
-        .map_err(|_| VoidCrawlError::BrowserClosed)?;
+        let mut binding_params = AddBindingParams::new(binding.clone());
+        binding_params.execution_context_name = Some(MEDIA_CAPTURE_WORLD.to_owned());
+        timeout(MEDIA_COMMAND_TIMEOUT, page.cdp().execute(binding_params))
+            .await
+            .map_err(|_| unsupported_capture("tab MediaStream binding setup"))?
+            .map_err(|_| VoidCrawlError::BrowserClosed)?;
 
         let maximum_chunk_bytes = maximum_buffer_bytes.clamp(1, MAX_MEDIA_CHUNK_BYTES);
         let initial_stream = tokio::select! {
@@ -408,15 +411,15 @@ impl NativeTabMediaSource {
         let initial_stream = match initial_stream {
             Ok(started) => started,
             Err(error) => {
-                stop_stream(page, &property).await;
                 remove_binding(page, &binding).await;
+                stop_stream(page, &property, &binding).await;
                 setup.disarm();
                 return Err(error);
             }
         };
         if !initial_stream {
             remove_binding(page, &binding).await;
-            stop_stream(page, &property).await;
+            stop_stream(page, &property, &binding).await;
             setup.disarm();
             return Err(unsupported_capture("self-tab MediaStream permission"));
         }
@@ -608,11 +611,11 @@ async fn stop_output(page: &Page, property: &str, output_id: &str) -> Result<()>
     Ok(())
 }
 
-async fn stop_stream(page: &Page, property: &str) {
+async fn stop_stream(page: &Page, property: &str, binding: &str) {
     let _ = evaluate_media_script(
         page,
         "stop_source",
-        serde_json::json!({"property":property}),
+        serde_json::json!({"property":property,"binding":binding}),
         false,
         false,
         MEDIA_COMMAND_TIMEOUT,
@@ -643,19 +646,41 @@ async fn evaluate_media_script(
         serde_json::to_string(&input).map_err(|_| unsupported_capture("native media input"))?;
     let expression =
         format!("(function() {{{MEDIA_CAPTURE_SCRIPT}}}).apply(null, [{operation}, {input}])");
-    let params = EvaluateParams::builder()
-        .expression(expression)
-        .await_promise(await_promise)
-        .return_by_value(true)
-        .user_gesture(user_gesture)
-        .build()
-        .map_err(|_| unsupported_capture("native media evaluation"))?;
-    timeout(command_timeout, page.cdp().evaluate_expression(params))
-        .await
-        .map_err(|_| VoidCrawlError::Timeout("native media command".into()))?
-        .map_err(|_| unsupported_capture("native media evaluation"))?
-        .into_value::<Value>()
-        .map_err(|_| unsupported_capture("native media result"))
+    // Site scripts must not replace recorder intrinsics or access the capture binding.
+    // The named world is recreated for the current main frame after navigation.
+    timeout(command_timeout, async {
+        let frame = page
+            .cdp()
+            .mainframe()
+            .await
+            .map_err(|_| unsupported_capture("native media frame"))?
+            .ok_or_else(|| unsupported_capture("native media frame"))?;
+        let mut world = CreateIsolatedWorldParams::new(frame);
+        world.world_name = Some(MEDIA_CAPTURE_WORLD.to_owned());
+        world.grant_univeral_access = Some(false);
+        let context = page
+            .cdp()
+            .execute(world)
+            .await
+            .map_err(|_| unsupported_capture("native media isolated world"))?
+            .execution_context_id;
+        let params = EvaluateParams::builder()
+            .expression(expression)
+            .context_id(context)
+            .await_promise(await_promise)
+            .return_by_value(true)
+            .user_gesture(user_gesture)
+            .build()
+            .map_err(|_| unsupported_capture("native media evaluation"))?;
+        page.cdp()
+            .evaluate_expression(params)
+            .await
+            .map_err(|_| unsupported_capture("native media evaluation"))?
+            .into_value::<Value>()
+            .map_err(|_| unsupported_capture("native media result"))
+    })
+    .await
+    .map_err(|_| VoidCrawlError::Timeout("native media command".into()))?
 }
 
 struct SourceRuntime {
@@ -792,7 +817,12 @@ impl SourceRuntime {
             return false;
         }
         if self.outputs.is_empty() {
-            stop_stream(&self.source.page, &self.source.property).await;
+            stop_stream(
+                &self.source.page,
+                &self.source.property,
+                &self.source.binding,
+            )
+            .await;
             return false;
         }
         true
@@ -964,7 +994,12 @@ impl SourceRuntime {
                 });
         }
         if self.outputs.is_empty() {
-            stop_stream(&self.source.page, &self.source.property).await;
+            stop_stream(
+                &self.source.page,
+                &self.source.property,
+                &self.source.binding,
+            )
+            .await;
             return false;
         }
         true
@@ -1109,15 +1144,27 @@ impl SourceRuntime {
 
     async fn fail_and_stop_source(&self) {
         self.source_failure();
-        stop_stream(&self.source.page, &self.source.property).await;
+        stop_stream(
+            &self.source.page,
+            &self.source.property,
+            &self.source.binding,
+        )
+        .await;
     }
 
     async fn finish(self) {
         if !self.outputs.is_empty() {
             self.source_failure();
         }
-        stop_stream(&self.source.page, &self.source.property).await;
+        // Unregister first so a racing navigation cannot re-expose the binding
+        // between removing the JavaScript property and ending the CDP registration.
         remove_binding(&self.source.page, &self.source.binding).await;
+        stop_stream(
+            &self.source.page,
+            &self.source.property,
+            &self.source.binding,
+        )
+        .await;
     }
 }
 

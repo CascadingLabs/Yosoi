@@ -134,6 +134,22 @@ function makeHarness(getDisplayMedia) {
 	};
 }
 
+test('cleanup removes the binding even before source state is installed', () => {
+	const harness = makeHarness(() => {
+		throw Error('cleanup must not request capture');
+	});
+	assert.equal(typeof harness.window.nativeMediaBinding, 'function');
+	assert.equal(harness.window.nativeMediaState, undefined);
+	assert.equal(
+		harness.run('stop_source', {
+			property: 'nativeMediaState',
+			binding: 'nativeMediaBinding',
+		}),
+		true,
+	);
+	assert.equal(harness.window.nativeMediaBinding, undefined);
+});
+
 test('successful getDisplayMedia clears the permission timeout', async () => {
 	const stream = {
 		getVideoTracks: () => [track],
@@ -177,6 +193,7 @@ test('permission timeout closes state and stops tracks from a late stream', asyn
 	assert.ok(harness.window.nativeMediaState);
 	assert.equal(harness.run('stop_source', { property: 'nativeMediaState' }), true);
 	assert.equal(harness.window.nativeMediaState, undefined);
+	assert.equal(harness.window.nativeMediaBinding, undefined);
 
 	const track = {
 		stopped: false,
@@ -245,5 +262,6 @@ test('stop_output cleans its recorder before stop_source stops the tracks', asyn
 	assert.equal(track.stopped, false);
 
 	assert.equal(harness.run('stop_source', { property: 'nativeMediaState' }), true);
+	assert.equal(harness.window.nativeMediaBinding, undefined);
 	assert.equal(track.stopped, true);
 });

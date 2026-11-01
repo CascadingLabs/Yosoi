@@ -64,34 +64,47 @@
           },
           "outputBinding": {
             "type": "object",
-            "required": ["kind", "discriminator", "tag", "pythonFields"],
-            "properties": {
-              "kind": {"enum": ["error-details", "outcome-view"]},
-              "schemaTarget": {"type": "string", "minLength": 1},
-              "discriminator": {"type": "string", "minLength": 1},
-              "tag": {"type": "string", "minLength": 1},
-              "rustType": {"type": "string", "minLength": 1},
-              "pythonFields": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["rustArgument", "pythonFieldPath", "conversion"],
-                  "properties": {
-                    "rustArgument": {"type": "string", "minLength": 1},
-                    "pythonFieldPath": {"type": "string", "minLength": 1},
-                    "conversion": {"type": "string", "minLength": 1}
-                  },
-                  "additionalProperties": false
-                }
-              }
-            },
-            "allOf": [
+            "oneOf": [
               {
-                "if": {"properties": {"kind": {"const": "error-details"}}},
-                "then": {"required": ["schemaTarget", "rustType"]}
+                "required": ["kind", "schemaTarget", "rustType"],
+                "properties": {
+                  "kind": {"const": "union-member"},
+                  "schemaTarget": {"type": "string", "minLength": 1},
+                  "rustType": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+              },
+              {
+                "required": ["kind", "discriminator", "tag", "pythonFields"],
+                "properties": {
+                  "kind": {"enum": ["error-details", "outcome-view"]},
+                  "schemaTarget": {"type": "string", "minLength": 1},
+                  "discriminator": {"type": "string", "minLength": 1},
+                  "tag": {"type": "string", "minLength": 1},
+                  "rustType": {"type": "string", "minLength": 1},
+                  "pythonFields": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["rustArgument", "pythonFieldPath", "conversion"],
+                      "properties": {
+                        "rustArgument": {"type": "string", "minLength": 1},
+                        "pythonFieldPath": {"type": "string", "minLength": 1},
+                        "conversion": {"type": "string", "minLength": 1}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {"properties": {"kind": {"const": "error-details"}}},
+                    "then": {"required": ["schemaTarget", "rustType"]}
+                  }
+                ],
+                "additionalProperties": false
               }
-            ],
-            "additionalProperties": false
+            ]
           },
           "rustSignatureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "argumentMappings": {

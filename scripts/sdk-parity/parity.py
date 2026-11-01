@@ -987,9 +987,8 @@ def introspect_python_package(
                 or name in exported
                 or _is_public_native_exception(value, module_name, package_name)
             )
-            is_public_constant = (
-                target in PUBLIC_MODULE_CONSTANTS
-                and isinstance(value, (bool, int, float, str))
+            is_public_constant = target in PUBLIC_MODULE_CONSTANTS and isinstance(
+                value, (bool, int, float, str)
             )
             pep695_alias = getattr(typing, "TypeAliasType", None)
             is_type_alias = (
@@ -1231,22 +1230,31 @@ def load_ledger(path: Path) -> dict[str, Any]:
                 f"output mapping needs outputBinding: {entry['rustPath']}"
             )
         if output_binding is not None:
-            required_output = {"kind", "discriminator", "tag", "pythonFields"}
-            allowed_output = required_output | {"schemaTarget", "rustType"}
-            if (
-                not isinstance(output_binding, dict)
-                or direction != "output"
-                or not required_output.issubset(output_binding)
-                or set(output_binding) - allowed_output
-                or output_binding.get("kind") not in {"error-details", "outcome-view"}
-                or any(
-                    not isinstance(output_binding.get(name), str)
-                    or not output_binding[name].strip()
-                    for name in ("discriminator", "tag")
-                )
-                or not isinstance(output_binding.get("pythonFields"), list)
-            ):
+            if not isinstance(output_binding, dict) or direction != "output":
                 raise ParityError(f"invalid output binding: {entry['rustPath']}")
+            output_kind = output_binding.get("kind")
+            if output_kind == "union-member":
+                required_output = {"kind", "schemaTarget", "rustType"}
+                if set(output_binding) != required_output:
+                    raise ParityError(
+                        "union-member output binding needs only kind, schemaTarget, "
+                        f"and rustType: {entry['rustPath']}"
+                    )
+            else:
+                required_output = {"kind", "discriminator", "tag", "pythonFields"}
+                allowed_output = required_output | {"schemaTarget", "rustType"}
+                if (
+                    not required_output.issubset(output_binding)
+                    or set(output_binding) - allowed_output
+                    or output_kind not in {"error-details", "outcome-view"}
+                    or any(
+                        not isinstance(output_binding.get(name), str)
+                        or not output_binding[name].strip()
+                        for name in ("discriminator", "tag")
+                    )
+                    or not isinstance(output_binding.get("pythonFields"), list)
+                ):
+                    raise ParityError(f"invalid output binding: {entry['rustPath']}")
             for name in ("schemaTarget", "rustType"):
                 if name in output_binding and (
                     not isinstance(output_binding[name], str)
@@ -1278,7 +1286,7 @@ def load_ledger(path: Path) -> dict[str, Any]:
                     "output payloads cannot use input variant or argument mappings: "
                     f"{entry['rustPath']}"
                 )
-            for output_field in output_binding["pythonFields"]:
+            for output_field in output_binding.get("pythonFields", []):
                 if (
                     not isinstance(output_field, dict)
                     or set(output_field)
@@ -1851,6 +1859,11 @@ def _output_mapping_configuration_problem(
         or entry.get("receiverMapping")
     ):
         return "output payloads cannot be declared as constructor arguments"
+    all_targets = python_targets or {}
+    if binding.get("kind") == "union-member":
+        return _union_member_output_problem(
+            rust_item, entry, binding, target, all_targets
+        )
     if binding.get("kind") not in {"error-details", "outcome-view"}:
         return "unsupported outputBinding kind"
     if (
@@ -1887,7 +1900,6 @@ def _output_mapping_configuration_problem(
     ):
         return "output Python fields need an explicit conversion"
 
-    all_targets = python_targets or {}
     schema_target, schema_description = _output_schema_target(
         binding,
         entry.get("pythonTarget", ""),
@@ -1915,6 +1927,81 @@ def _output_mapping_configuration_problem(
                 "output Python field path is absent from the live public schema: "
                 f"{field['pythonFieldPath']}"
             )
+    return None
+
+
+def _union_member_output_problem(
+    rust_item: dict[str, Any],
+    entry: dict[str, Any],
+    binding: dict[str, Any],
+    target: dict[str, Any],
+    python_targets: dict[str, Any],
+) -> str | None:
+    """Validate FileDocument variants against Python's class-selected union."""
+    schema_target = binding.get("schemaTarget")
+    if (
+        rust_item.get("parentRustPath") != "yosoi::documents::FileDocument"
+        or schema_target != "yosoi.documents.FileDocument"
+    ):
+        return "union-member output is supported only for FileDocument"
+    arguments = rust_item.get("rustArguments")
+    if not isinstance(arguments, list) or len(arguments) != 1:
+        return "union-member output needs exactly one Rust payload type"
+    argument = arguments[0]
+    if (
+        not isinstance(argument, dict)
+        or argument.get("receiver")
+        or argument.get("name") != "0"
+        or not isinstance(argument.get("type"), str)
+        or not argument["type"].strip()
+    ):
+        return "union-member output payload must be one typed tuple field"
+    rust_type = argument["type"]
+    if binding.get("rustType") != rust_type:
+        return "union-member rustType must exactly match the Rust payload type"
+    member_name = rust_type.rsplit("::", 1)[-1]
+    if rust_type not in {
+        member_name,
+        f"yosoi::documents::{member_name}",
+        f"crate::documents::{member_name}",
+    }:
+        return "union-member payload type is not a public FileDocument media type"
+
+    alias_description = python_targets.get(schema_target)
+    if not isinstance(alias_description, dict):
+        return "union-member schema target is absent from Python introspection"
+    alias = alias_description.get("alias") or {}
+    if alias_description.get("kind") != "type-alias" or alias.get("kind") != "union":
+        return "union-member schema target must be a public Python union alias"
+
+    matching_members = [
+        member
+        for member in alias.get("unionMembers", [])
+        if member.get("name") == member_name
+    ]
+    if len(matching_members) != 1:
+        return "Rust payload type must select one member of the Python union"
+    member_target = matching_members[0].get("target")
+    member_description = python_targets.get(member_target)
+    if not isinstance(member_target, str) or not isinstance(member_description, dict):
+        return "Python union member target is absent from live introspection"
+
+    selected_target = entry.get("pythonTarget")
+    selected_description = python_targets.get(selected_target)
+    if (
+        not isinstance(selected_target, str)
+        or not isinstance(selected_description, dict)
+        or selected_description.get("kind") != "class"
+        or target.get("kind") != "class"
+    ):
+        return "union-member mapping needs a live concrete Python class target"
+    member_identity = member_description.get("canonicalTarget") or member_target
+    selected_identity = selected_description.get("canonicalTarget") or selected_target
+    if (
+        member_identity != selected_identity
+        or target.get("canonicalTarget") != selected_identity
+    ):
+        return "selected Python class is not the Rust payload's union member"
     return None
 
 
