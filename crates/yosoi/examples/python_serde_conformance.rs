@@ -30,6 +30,7 @@ use yosoi::{
         RedirectHopLimit, Request, Scope, SourceLimits, Tuning,
         search::{Provider, Search},
     },
+    registry::{Change, Coordination, Revision, Snapshot},
     request::{CaptureId, new as new_request},
     search::{
         ProviderOutcome, RequestAttemptSummary, RequestAttemptTerminal, SearchCaptureRetention,
@@ -956,6 +957,61 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
             resolution_placement: Some(placement),
             ..attempt
         },
+        json!({}),
+    )?);
+
+    let revision = Revision {
+        registry_id: "8a08b00e-0d19-4513-9230-65869bfc87b3".to_owned(),
+        sequence: u64::MAX,
+    };
+    output.push(constructed_case(
+        "registry-revision-full-width-sequence",
+        "yosoi::registry::Revision",
+        "Rust Registry revision DTO",
+        revision.clone(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "registry-snapshot-portable-values",
+        "yosoi::registry::Snapshot",
+        "Rust Registry snapshot DTO",
+        Snapshot {
+            revision,
+            entries: BTreeMap::from([(
+                "group/雪".to_owned(),
+                json!({"active": 2, "optional": null, "history": [1, 2]}),
+            )]),
+        },
+        json!({}),
+    )?);
+    for (name, change) in [
+        (
+            "put",
+            Change::Put {
+                key: "group/雪".to_owned(),
+                value: json!({"active": 2}),
+            },
+        ),
+        (
+            "remove",
+            Change::Remove {
+                key: "group/雪".to_owned(),
+            },
+        ),
+    ] {
+        output.push(constructed_case(
+            &format!("registry-change-{name}"),
+            "yosoi::registry::Change",
+            "Rust Registry ordered mutation DTO",
+            change,
+            json!({}),
+        )?);
+    }
+    output.push(constructed_case(
+        "registry-coordination-local",
+        "yosoi::registry::Coordination",
+        "Rust Registry coordination DTO",
+        Coordination::LocalProcesses,
         json!({}),
     )?);
 

@@ -32,6 +32,9 @@ from ._native import (
     PolicyError as PolicyError,
 )
 from ._native import (
+    RegistryError as RegistryError,
+)
+from ._native import (
     RequestError as RequestError,
 )
 from ._native import (

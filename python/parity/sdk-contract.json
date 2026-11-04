@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "yosoi-scoped-python-sdk-contract",
   "sourceSnapshot": {
-    "revision": "96c74b8dac731fdf0f196f6d4c3b2e36d0e28b3c",
-    "inventorySignature": "bf26cd0f51721c8c7961ca8ee6f7479d13832c7ead6cf4120842076c69006fd9"
+    "revision": "d906201a629cf75a2095499dc172ae8e6d78ccbe",
+    "inventorySignature": "e445b57f3054494edf699c363ed1eea5a76e6c3a019740fcc7d2899fc9d24d2e"
   },
   "scope": {
     "crate": "yosoi",
@@ -15,6 +15,7 @@
       "map",
       "policy",
       "request",
+      "registry",
       "search",
       "surface"
     ]
@@ -44288,6 +44289,2257 @@
       "mechanic": {
         "rationale": "The Rust prelude is an import convenience re-exporting SDK names.",
         "equivalentCapability": "The same Python API is available from the yosoi root and named Python namespaces; the Rust prelude creates no additional Python API."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "4363a47d9f28aa920d130f809f8ef96ae2bd33f225a70eb55f94b2d029d886ef",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Caller::clone@signature:4363a47d9f28aa920d130f809f8ef96ae2bd33f225a70eb55f94b2d029d886ef@trait:Clone@source:06a485bdd3cf33c760c92c32da69cc8bf92a1eb48b35b6b8a773347b6247143f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Caller.clone",
+        "pythonTargetSha256": "c7398d9107e7e6c72873c8155a8e22d35e60dffb12871513cddbd5e0fb6608cf",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Caller::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:06a485bdd3cf33c760c92c32da69cc8bf92a1eb48b35b6b8a773347b6247143f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "c0330abe656482c165e251b7bb6adff9bdd6623f729ce1984618843a1b2f3828",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Caller::eq@signature:c0330abe656482c165e251b7bb6adff9bdd6623f729ce1984618843a1b2f3828@trait:PartialEq@source:06a485bdd3cf33c760c92c32da69cc8bf92a1eb48b35b6b8a773347b6247143f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Caller",
+        "pythonTargetSha256": "1248b1362105f548f83eb0b2e660b9ca3226729166e55758ba25cc70a094053e",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Caller::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:06a485bdd3cf33c760c92c32da69cc8bf92a1eb48b35b6b8a773347b6247143f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Caller",
+        "pythonTargetSha256": "1248b1362105f548f83eb0b2e660b9ca3226729166e55758ba25cc70a094053e",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::instance_id|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::instance_id",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "57724bccca44810ea674ef07c3f726abc4c91a5c2842fe7253bc92fefd79e9c0",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Caller::instance_id@signature:57724bccca44810ea674ef07c3f726abc4c91a5c2842fe7253bc92fefd79e9c0@source:4bd053e991b7f912f4a1dffc089cd341fc97c623c2d7b32f2f8a2cd76a979fc5",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Caller.instance_id",
+        "pythonTargetSha256": "cc1badfbfc46a09673a9a2a937969c5aa9cd1fdffe43d181d1f0f312f1d6d49e",
+        "semanticEquivalent": null,
+        "rationale": "Rust field instance_id maps to Python field instance_id.",
+        "review": null,
+        "ledgerMappingSha256": "0958c52c2ca3e93fc1c4194f106651af43a89664dc5eb1e71d688b6bd4c40c58"
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::pid|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::pid",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "53b4d65d86b1b06e795360db39f1dd14eb6435f7c2cab497ec0df484771dea00",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Caller::pid@signature:53b4d65d86b1b06e795360db39f1dd14eb6435f7c2cab497ec0df484771dea00@source:4c4de7566a874e75299a6ef854c1334e8e0a86c48e5242bf29f540d245ea6170",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Caller.pid",
+        "pythonTargetSha256": "1f68e8281944c4f8cc3684b07f1b9b5418b6f5b8a826a77dd6ac2a75bfd6da05",
+        "semanticEquivalent": null,
+        "rationale": "Rust field pid maps to Python field pid.",
+        "review": null,
+        "ledgerMappingSha256": "9e7d5cbcab8bc4844d1fd4bfb94219c780b910ea28409b0f26efd9ec9c25d4a6"
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Caller::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Caller",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Caller::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:06a485bdd3cf33c760c92c32da69cc8bf92a1eb48b35b6b8a773347b6247143f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Caller|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Caller",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "fd1560b4aeb18a87a6e3a062483e90b7e3af64c3b3796c40a80402500b9ea597",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Caller",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Caller",
+        "pythonTargetSha256": "1248b1362105f548f83eb0b2e660b9ca3226729166e55758ba25cc70a094053e",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Caller.",
+        "review": null,
+        "ledgerMappingSha256": "43cbb158f018d43ea3ddba5e69f20a3ac67befeee163d0ebf87d783a3be8acc4"
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::Put|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Change::Put",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "ac0c4e9d7e2dd30a44ad8bfd55282356cf87f16b95364e8507960fdea0b567e2",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::Change::Put@signature:ac0c4e9d7e2dd30a44ad8bfd55282356cf87f16b95364e8507960fdea0b567e2@source:8100852773ca1d4c0b6b23139a402e8ae1a52393914b3abe4cc8500754d3ad8e",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Put",
+        "pythonTargetSha256": "06d1b772ed3eed171f2235db015f5cc1ddd40244e3f4fa5d761fcd1a686829cf",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant Put maps to the corresponding Python tagged value yosoi.registry.Put. The Python discriminator value is 'kind=put'.",
+        "review": null,
+        "ledgerMappingSha256": "0f7e55fd13f3808f50d72d6a273aa6fc383f016e62550748ba1866d66c0b2fc9"
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::Remove|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Change::Remove",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "52759ae7aff36423f8157a6f56f83e4d131a5e3a5ffbae721638f9ca5c92b71a",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::Change::Remove@signature:52759ae7aff36423f8157a6f56f83e4d131a5e3a5ffbae721638f9ca5c92b71a@source:f52410746cbbe09c09537247860316a4a2eb3ed359a14295537a1f3b74d548f6",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Remove",
+        "pythonTargetSha256": "b75ef9584206464b8e940ef4f8f444f52a935e62b865e2a0090ef408be5406f5",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant Remove maps to the corresponding Python tagged value yosoi.registry.Remove. The Python discriminator value is 'kind=remove'.",
+        "review": null,
+        "ledgerMappingSha256": "5d9c9762bab571d66e9b738255c96575670c6875b1584ce3bf46603c48717caf"
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Change::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "cac5792e9bc0db52ca07604f88a0d3300f14179858528d314281cf360c3afee6",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Change::clone@signature:cac5792e9bc0db52ca07604f88a0d3300f14179858528d314281cf360c3afee6@trait:Clone@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Change::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Change::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Change::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "6262d20445d2607b8919690f07e7cfdebfde9fe6d36d514a200f73989bd93411",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Change::eq@signature:6262d20445d2607b8919690f07e7cfdebfde9fe6d36d514a200f73989bd93411@trait:PartialEq@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Change::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Change::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Change::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Change::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Change",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Change::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:974f280c5c77dbf85490a592b144e0f8879a045124af35f60055055e1cbeb3f8",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Change|enum|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Change",
+      "kind": "enum",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "c1351c94d2e777d2a2d4d440299d0d76b3904a6226644c1896c0cc550a1c6340",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:enum:yosoi::registry::Change",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Change",
+        "pythonTargetSha256": "3daf9c0f40edae49437f6b9c1d42242d9a396005c62a8e33c04133a5fe402b87",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Change.",
+        "review": null,
+        "ledgerMappingSha256": "1a60502d88ea9b4101ee7f9686002c3977d14582ca258ad678c99162b7fcf88e"
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::LocalProcesses|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::LocalProcesses",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "92f78082a0e47c4543d61d759457c814570c4c3ea30962c83e51d36662cebf62",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::Coordination::LocalProcesses@signature:92f78082a0e47c4543d61d759457c814570c4c3ea30962c83e51d36662cebf62@source:3b1d6b6fab86bef06ca45b2420d391ebfa1870b2104e73f61e2f0c34833339f5",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Coordination",
+        "pythonTargetSha256": "f66ac85e179676b2e0b12570445792bcc355f4c8f5acf58256de261d09b52876",
+        "semanticEquivalent": null,
+        "rationale": "Rust variant LocalProcesses maps to the corresponding Python tagged value yosoi.registry.Coordination. The Python discriminator value is 'local_processes'.",
+        "review": null,
+        "ledgerMappingSha256": "2a9ed5708286528d2c96a78bbf53610966944ae2c4dacc495351583fcd40cf15"
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "52f223a8ffd673c3f3da6fef1aaa7d07407bdf155d34cd2593ca35b8a93807bf",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Coordination::clone@signature:52f223a8ffd673c3f3da6fef1aaa7d07407bdf155d34cd2593ca35b8a93807bf@trait:Clone@source:bf9191df25e857d764ddd0089f99e78a47852679b40bee1dd6124962421fe602",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Coordination::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:bf9191df25e857d764ddd0089f99e78a47852679b40bee1dd6124962421fe602",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "a8d572363aa7da5cf0910916bd8c35ea7cb9acebceaaac496b2e1677dc472c79",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Coordination::eq@signature:a8d572363aa7da5cf0910916bd8c35ea7cb9acebceaaac496b2e1677dc472c79@trait:PartialEq@source:bf9191df25e857d764ddd0089f99e78a47852679b40bee1dd6124962421fe602",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Coordination::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:bf9191df25e857d764ddd0089f99e78a47852679b40bee1dd6124962421fe602",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Coordination",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Coordination::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:bf9191df25e857d764ddd0089f99e78a47852679b40bee1dd6124962421fe602",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Coordination|enum|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Coordination",
+      "kind": "enum",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "62baa2591f5a61300019ffa463e4f9c3d975bdd9c6c459911a7a409b3e3401b2",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:enum:yosoi::registry::Coordination",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Coordination",
+        "pythonTargetSha256": "f66ac85e179676b2e0b12570445792bcc355f4c8f5acf58256de261d09b52876",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Coordination.",
+        "review": null,
+        "ledgerMappingSha256": "ebe5a288700d755e8f7aa85a0cafef46cca7c5fed6d1db81cc46c25bae7eaa09"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::caller|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::caller",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "738cd0752ef5b8baa6cc3de7a17282f39d1b2963161d57e822abaaf59b0d332e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::caller@signature:738cd0752ef5b8baa6cc3de7a17282f39d1b2963161d57e822abaaf59b0d332e@source:208a7e85c0a4345f99222cd20ec5f36cca2e95a91f47f857e7fd271efe28dd4d",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.caller",
+        "pythonTargetSha256": "cc00cc777725ca587ab0f887b9de2e6042ebcc3c3dbe100ca03b0aa20aa5b8b9",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.caller.",
+        "review": null,
+        "ledgerMappingSha256": "68138134275de685e0a1609dc2688ece626143308214d19c10fd65dcf329499f"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "f470257c074284769ef429c4c1b476624e5133fec6c642330fab6e531de17ea8",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::clone@signature:f470257c074284769ef429c4c1b476624e5133fec6c642330fab6e531de17ea8@trait:Clone@source:03e65e9c6189f725c15fa391b210e4fa26d9aa469e9d6d4d23f9fe474d42f9b5",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.clone",
+        "pythonTargetSha256": "a6cb942e734d29f846416f60778d8f322031d8c5b4461623a687745a7aaafc27",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::commit_with_context|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::commit_with_context",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "e2cac3fc388a3faf5d0731b4711a994bb206924151a280a58e2e2dd50ae61253",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::commit_with_context@signature:e2cac3fc388a3faf5d0731b4711a994bb206924151a280a58e2e2dd50ae61253@source:9fca44e7ebe53dad1e1fc715ec7ce46493b9855957d40a2723bd73527952570c",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.commit_with_context",
+        "pythonTargetSha256": "76c20129764e339fe8c44f809305d107ea11e5e7d8e96d3d8b0fdbe07e9a8685",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.commit_with_context.",
+        "review": null,
+        "ledgerMappingSha256": "5f45fa7c41839548eb3eccac3bbfc13944dc8f81b75c8b13952b96b1b68204bc"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::commit|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::commit",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "f455d53097b51871dfa62cf70be2d7be825ade46dd436469043c083d0f22ac85",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::commit@signature:f455d53097b51871dfa62cf70be2d7be825ade46dd436469043c083d0f22ac85@source:2a074f6b6e48154c0b32443b099ea5cfcc251fc36ade892f05e5cfb81754cd14",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.commit",
+        "pythonTargetSha256": "a31fd3d59c2d28b93731cff47b6d1db486b2aa4f4f9d5d7a9e27b5347ef73050",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.commit.",
+        "review": null,
+        "ledgerMappingSha256": "0ced4b36505b6d14f0253708cc9b8cf1556637fd0348abfefe6aad31e9e85cc4"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::compact|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::compact",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "088d25354e7b8d4055ddd54c55cab97ef2a55f50e553e847cc4a0eac55ed237e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::compact@signature:088d25354e7b8d4055ddd54c55cab97ef2a55f50e553e847cc4a0eac55ed237e@source:d0545d2b7215a0119feec1b1083b58a755d788e870d92e69233f956ac749eb20",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.compact",
+        "pythonTargetSha256": "b3bee83564b40de9615891eaa86c8f7b3eb9e469aa0117f23f498820bd03772a",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.compact.",
+        "review": null,
+        "ledgerMappingSha256": "d60d35829b0396c8dce5ba2dab4487900da60e9f3fb7390a55d9fd8c9be1fd61"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::coordination|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::coordination",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "db7f603f33b33588e6f0f86fa0bce787c11ade87a75174bfb101177d3ff65f15",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::coordination@signature:db7f603f33b33588e6f0f86fa0bce787c11ade87a75174bfb101177d3ff65f15@source:eef2b343c8284c705487d78347008e893e4a364ea9135e112d86c7b5971a3b03",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.coordination",
+        "pythonTargetSha256": "9c48b146afb0deac704d4c62e696e39a37fd74939c3945e6b9e3347e8944f8a6",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.coordination.",
+        "review": null,
+        "ledgerMappingSha256": "63fde7e536733a559cbbe9d3fe7acf8fd2bbf08a7de593d897472631ac85ef1e"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Registry::fmt@signature:40e4547a6adf447be07ed986e8191d0c04de16c93a11b14960a9eeb485c37b29@trait:Debug@source:8ae95d7c94907fa75a9959c2e0f902b5359bf615a26bee3eca01b984e3798f66",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Registry",
+        "pythonTargetSha256": "a8d58f7c17192a7bff91c12606a0cdb6b890c7c9b8227c98e19847ce6b2e8ad9",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::jsonl|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::jsonl",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "1691c26d64cbb4e4f1523f712069193b90e546e29d373b846971e2a6a16c052a",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::jsonl@signature:1691c26d64cbb4e4f1523f712069193b90e546e29d373b846971e2a6a16c052a@source:4a977ef9ca6cfe2c30616db14194ce76c3e8311ff31a5f22305df7627d0c3bfe",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.jsonl",
+        "pythonTargetSha256": "74274a3e4f98b17b89adaec4ec17fd0f32939c440c7724f8ad0fd74c06aebe51",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.jsonl.",
+        "review": null,
+        "ledgerMappingSha256": "e9b4b2a8f1721c3a38861ec0258c8524e096da7bead44b2f28bf8b068edb57e4"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::new|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::new",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "415d88060708fd8fcdf9a75a8a64cce0c8a6eb2df1766d3a1e02d752775c7a9a",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::new@signature:415d88060708fd8fcdf9a75a8a64cce0c8a6eb2df1766d3a1e02d752775c7a9a@source:55117efbecc5f3d30ce7fe1712a2733cbc905a104f6f917002076d9fffc6fe1b",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry",
+        "pythonTargetSha256": "a8d58f7c17192a7bff91c12606a0cdb6b890c7c9b8227c98e19847ce6b2e8ad9",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.",
+        "review": null,
+        "ledgerMappingSha256": "54a5b1fa6b4c21b265059755d77c69745b52c597410879ff41517d1a879b695e"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::path|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::path",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "58d22c80defcf4df8bad5ca2b0f88cc70651bfff664c9150cffdee134f2feda7",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::path@signature:58d22c80defcf4df8bad5ca2b0f88cc70651bfff664c9150cffdee134f2feda7@source:38ef0bbf75eeccac1b65895af7178c39b92dbd248129db9694e4a56ea1b88ff3",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.path",
+        "pythonTargetSha256": "7ea0865a0c11d0f789a8e01f53cf9dad2252f9e80d27a5e5af83b95cde41b5c7",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.path.",
+        "review": null,
+        "ledgerMappingSha256": "b0e8a3eba2c7e6313c649aea3dfbdf11031e010a61d214286666a1c761ffc7f1"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry::snapshot|function|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry::snapshot",
+      "kind": "function",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Registry",
+      "signatureSha256": "afccd932414bb26eeed8bbb41785821e9412ac8af74b614b8cbef8b98eaadf90",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Registry::snapshot@signature:afccd932414bb26eeed8bbb41785821e9412ac8af74b614b8cbef8b98eaadf90@source:88e62b32e5be4fb025f18c26e187bc556e3e370a406975edb0b33e9e69bd1242",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry.snapshot",
+        "pythonTargetSha256": "89e570e4be87fe36505baf6a635339254bed51663e9b1b6620f0f37a959a7332",
+        "semanticEquivalent": null,
+        "rationale": "Rust method maps to the matching Python method/property yosoi.registry.Registry.snapshot.",
+        "review": null,
+        "ledgerMappingSha256": "8c6e91bdde6c8cd10cb1dc599a14f00fcf34b3a0c6400fddb3442b534ed64071"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::Busy|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::Busy",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "2b9cf77b67940911033d20da888c871c41dc5052fc13be9b8cb892662a555d72",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Busy@signature:2b9cf77b67940911033d20da888c871c41dc5052fc13be9b8cb892662a555d72@source:8a84833ebcf2db38881352b69a44d973b8f100a55369fa24d2ad6d4dba6e97b6",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant Busy in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "3faf413646457a3e2d5d57e6bdd17f65c0a408d4eee965641496985e891c2194"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::CapacityExceeded|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::CapacityExceeded",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "dd3801c4294df100f2253090572a1a96fbd8b7db8cef45dd2f17ccf03d8181c5",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::CapacityExceeded@signature:dd3801c4294df100f2253090572a1a96fbd8b7db8cef45dd2f17ccf03d8181c5@source:e38e1971147256a2e064755f0d149cfcf30b5693e61c9262fbb1a54f5d40b17a",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant CapacityExceeded in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "80e9313105caa129b5e29d5544d72df18af6be6cc125176f5b44814d57d30065"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::Conflict|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::Conflict",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "014659ab9d98c8fea5fed2a5a3bc3c41d6478904a9184c65a57769c439940d14",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Conflict@signature:014659ab9d98c8fea5fed2a5a3bc3c41d6478904a9184c65a57769c439940d14@source:3a20867c5e9aa94f82234a6e3b6360c384ac134c422bd059b981fdbe5f5aa481",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant Conflict in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "2a5be4b83e41d4468f6b90f7df32e4eb455f34c41c68f054513444ab160630da"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::InvalidKey|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::InvalidKey",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "99614aa077e4bd14b6ac2568f1a9c06a9225757e83307bae0a4ee2a15f641a98",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::InvalidKey@signature:99614aa077e4bd14b6ac2568f1a9c06a9225757e83307bae0a4ee2a15f641a98@source:3f6112120c85fe6bb719fa8ca8926387796d6c5dd881819f8aea428e8a685f16",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant InvalidKey in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "9773b5e0227ddcb3474e31aa48b1d3d2d6ca05676a75e6d60f47dd550c01ca4b"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::InvalidState|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::InvalidState",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "bfd93652d490bc16bce3fce7c753e3b80739d841a114bec87ee41135da41dde8",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::InvalidState@signature:bfd93652d490bc16bce3fce7c753e3b80739d841a114bec87ee41135da41dde8@source:f709075b952a6c569c51dfe5544d04f0be24ee3d226ccb5fccf0e832f09a0aa7",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant InvalidState in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "1d409be5c2f42698a0b4f0d856ba5f06f78b7d12ceba62fbc81352a64e953d4d"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::Io|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::Io",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "8a68f3b084ca49121d3786c6c6d91285627eddbdb8a571c02a3ac8429249c126",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Io@signature:8a68f3b084ca49121d3786c6c6d91285627eddbdb8a571c02a3ac8429249c126@source:ef11cb5e28878653741bafeb9f8f3773da0032106768a94004b813c7cd05685d",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant Io in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "e2abc0c588d681075ba4d42551f7803b7de44e2e1a2d1dac49c001b1814ff481"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::Json|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::Json",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "87ddc7e555c63b07140da768b56d246b9a36fbd077e64cac8019885f9aeaecc1",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::Json@signature:87ddc7e555c63b07140da768b56d246b9a36fbd077e64cac8019885f9aeaecc1@source:98c04389ce9d5ced715cc7e6b2021bd54f1902390fbf8491c40742752c70abc3",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant Json in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "7b55a0917f55ff2a46a6805bda5f9e9b47c117f67c96abb2ce408b66ae52e2a7"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::NoGlobalLocation|variant|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::NoGlobalLocation",
+      "kind": "variant",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "3808397c315091e6c6f812199419dcdc60ec7708eeaa8888f49fa7e3221c5dce",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:variant:yosoi::registry::RegistryError::NoGlobalLocation@signature:3808397c315091e6c6f812199419dcdc60ec7708eeaa8888f49fa7e3221c5dce@source:73e7d265f0182c3700676db104d0300d7fe10781cfc61c481c59c84479f636d4",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Raised RegistryError retains Rust variant NoGlobalLocation in exception.variant and source messages in source_chain; this is an observed failure, not a Python constructor.",
+        "review": null,
+        "ledgerMappingSha256": "45d049747323cae09d4adb41cbfb3fe5f4ac408698d70e2113b53d14f70b13ed"
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::RegistryError::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::fmt|function|trait:Display|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::fmt",
+      "kind": "function",
+      "trait": "Display",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "2653e7ab50af9f961a708d2db3b3bd062e8f00d17290d0a8127aa19b81156c7d",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::RegistryError::fmt@signature:2653e7ab50af9f961a708d2db3b3bd062e8f00d17290d0a8127aa19b81156c7d@trait:Display@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Display formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python str(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Display provides a user-facing textual representation.",
+        "equivalentCapability": "Python str(value) is the corresponding user-facing textual representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::from|function|trait:From|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::from",
+      "kind": "function",
+      "trait": "From",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "368c2e4b93c2fa2bb868cef23d78f8b1181a2086afb1a902e89607789bd09e00",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::RegistryError::from@signature:368c2e4b93c2fa2bb868cef23d78f8b1181a2086afb1a902e89607789bd09e00@trait:From@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust From supplies an infallible conversion into a target type.",
+        "equivalentCapability": "The corresponding Python constructor or explicit conversion helper provides the supported conversion."
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::from|function|trait:From|occurrence:2",
+      "rustPath": "yosoi::registry::RegistryError::from",
+      "kind": "function",
+      "trait": "From",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "6266722d6fd0a016029ce69bee84e73e64df4811ff1a7d62fb04a0cbdca6ecc0",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::RegistryError::from@signature:6266722d6fd0a016029ce69bee84e73e64df4811ff1a7d62fb04a0cbdca6ecc0@trait:From@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust From supplies an infallible conversion into a target type.",
+        "equivalentCapability": "The corresponding Python constructor or explicit conversion helper provides the supported conversion."
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError::source|function|trait:Error|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError::source",
+      "kind": "function",
+      "trait": "Error",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::RegistryError",
+      "signatureSha256": "1dcf3d70095830d97ebde0706192b3b1175999b3a6b327bb148a6cfabee9e761",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::RegistryError::source@signature:1dcf3d70095830d97ebde0706192b3b1175999b3a6b327bb148a6cfabee9e761@trait:Error@source:ba2038deb8dbb219439f155464b771cadb1be3c22c7565907f777c8765e95c52",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Error integrates an error type with Rust's error-reporting protocol.",
+        "equivalentCapability": "The Python exception hierarchy and structured error attributes expose the corresponding failure."
+      }
+    },
+    {
+      "id": "yosoi::registry::RegistryError|enum|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::RegistryError",
+      "kind": "enum",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "77448ce0e1e3cfefed642c3a14db02c812ccd3389d80bfa8bedec559fd3a7366",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:enum:yosoi::registry::RegistryError",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.RegistryError",
+        "pythonTargetSha256": "4b21bc7a1ea5db1e44ab6951e5524c65c5eb8991f828d35a29fe8041795650f0",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.RegistryError.",
+        "review": null,
+        "ledgerMappingSha256": "8c3b4eb8c0106b7ffb485da03abb3ac472837e755084f4caa3a7389787845f7f"
+      }
+    },
+    {
+      "id": "yosoi::registry::Registry|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Registry",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "b5c6deb4e9766bf8e7a6d0e80b6bacb26c5598dfee3fe7e90778851bc51d4cf2",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Registry",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Registry",
+        "pythonTargetSha256": "a8d58f7c17192a7bff91c12606a0cdb6b890c7c9b8227c98e19847ce6b2e8ad9",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Registry.",
+        "review": null,
+        "ledgerMappingSha256": "63379e4e18c90c0fd8dd66bf129c089e86a51ed60f7e8d242e4edfdf6679e44b"
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "ff4aaacd45548a1bedc78c2715d0d970dbb269f74c66daef764c7f798afb4495",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Reservation::clone@signature:ff4aaacd45548a1bedc78c2715d0d970dbb269f74c66daef764c7f798afb4495@trait:Clone@source:538e0289c3eecae1b968dc1665b5bcc7eacf3a4daf008dee8b07bc679d858bb4",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Reservation.clone",
+        "pythonTargetSha256": "7e12eeee0590756aa45a1503d620f6a513578ef30041d82f0977f88f475d3902",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Reservation::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:538e0289c3eecae1b968dc1665b5bcc7eacf3a4daf008dee8b07bc679d858bb4",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "05ec1c89a791c9d265cb4fcc7c5d9835ba8d02841a8f3e6ed1640222d6a81711",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Reservation::eq@signature:05ec1c89a791c9d265cb4fcc7c5d9835ba8d02841a8f3e6ed1640222d6a81711@trait:PartialEq@source:538e0289c3eecae1b968dc1665b5bcc7eacf3a4daf008dee8b07bc679d858bb4",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Reservation",
+        "pythonTargetSha256": "c8d4189b2437fbfe58bbd85db8834b6d4e3c1cffe4111338cbe411bf3a4d3bdf",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::expires_at|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::expires_at",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "2f55edfd0f203b6ce52147e908a756974b1a57ba0728af03e844f564673d71d6",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Reservation::expires_at@signature:2f55edfd0f203b6ce52147e908a756974b1a57ba0728af03e844f564673d71d6@source:0ee47cf794826f3b5fe0924595f7c339b5169fcd0f94b9a002a8e71c11ea3f76",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Reservation.expires_at",
+        "pythonTargetSha256": "49257a45ef426179766462de66d986daec2ea70bf4540f59e8bc7b147b384044",
+        "semanticEquivalent": null,
+        "rationale": "Rust field expires_at maps to Python field expires_at.",
+        "review": null,
+        "ledgerMappingSha256": "ff1c2f5b64f72a6b4b5c36bebbd011e4e024758cb283770cc8e265520522829a"
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Reservation::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:538e0289c3eecae1b968dc1665b5bcc7eacf3a4daf008dee8b07bc679d858bb4",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Reservation",
+        "pythonTargetSha256": "c8d4189b2437fbfe58bbd85db8834b6d4e3c1cffe4111338cbe411bf3a4d3bdf",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::id|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::id",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "502ce273cc3d6b40aa6465e2a3808c79cdae88f428c44bda6c881a22d953e0e1",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Reservation::id@signature:502ce273cc3d6b40aa6465e2a3808c79cdae88f428c44bda6c881a22d953e0e1@source:81bb193aea726c7e20c203ea280aa8dff4d49e96ad8b08cfa5302ca8f4848d67",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Reservation.id",
+        "pythonTargetSha256": "ae9212d9304e3f22a24b203e637d8eedfa8a6905254bf19a5ce4e27373b0873b",
+        "semanticEquivalent": null,
+        "rationale": "Rust field id maps to Python field id.",
+        "review": null,
+        "ledgerMappingSha256": "d142b4b886dd7f45f83ffd97f56c5e8533527d8a6f41539fceb77d1547280d9a"
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Reservation",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Reservation::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:538e0289c3eecae1b968dc1665b5bcc7eacf3a4daf008dee8b07bc679d858bb4",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Reservation|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Reservation",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "5c1aae1b535618d89ecc537b800ef3699b71c164b477ccb390994352180d38a9",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Reservation",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Reservation",
+        "pythonTargetSha256": "c8d4189b2437fbfe58bbd85db8834b6d4e3c1cffe4111338cbe411bf3a4d3bdf",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Reservation.",
+        "review": null,
+        "ledgerMappingSha256": "314aa75034a9e490e3d68b78b4c7133a3553183b3d7d8592ae38f66043dc9048"
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "8fa9b717ab681b0828da19e019db30368194e144b3b6ce005e2d0a7b120a997f",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Revision::clone@signature:8fa9b717ab681b0828da19e019db30368194e144b3b6ce005e2d0a7b120a997f@trait:Clone@source:eabb14b2dabff434a86573014140362ebfd57401731210575266b679fe42d24f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Revision.clone",
+        "pythonTargetSha256": "ec52ea8b1293fd42db6731fa2b36c582b76cde1c873f11364f60e8cedfd056c9",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Revision::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:eabb14b2dabff434a86573014140362ebfd57401731210575266b679fe42d24f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "b1da24648b27d7da314b44dab96d1bc884d536372f783e01ccddb07fc063ed5c",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Revision::eq@signature:b1da24648b27d7da314b44dab96d1bc884d536372f783e01ccddb07fc063ed5c@trait:PartialEq@source:eabb14b2dabff434a86573014140362ebfd57401731210575266b679fe42d24f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Revision",
+        "pythonTargetSha256": "92150b2ba332888afbfc0714b437e3184b4f21b656ed549310e3e4f80abc57b0",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Revision::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:eabb14b2dabff434a86573014140362ebfd57401731210575266b679fe42d24f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Revision",
+        "pythonTargetSha256": "92150b2ba332888afbfc0714b437e3184b4f21b656ed549310e3e4f80abc57b0",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::registry_id|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::registry_id",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "0431af9f60c2a147409c917efc20b7bebf8362027332540ff67c45484fe170cf",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Revision::registry_id@signature:0431af9f60c2a147409c917efc20b7bebf8362027332540ff67c45484fe170cf@source:61e5b326f04ba784b082b51b5c1770a705c1433e0a1cfe22ae7637bece75db96",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Revision.registry_id",
+        "pythonTargetSha256": "345e24d6c2edb77634178a564cbe1d2a20eff41f9d59c1b18b629f0a6472bffd",
+        "semanticEquivalent": null,
+        "rationale": "Rust field registry_id maps to Python field registry_id.",
+        "review": null,
+        "ledgerMappingSha256": "e85e9270d226545c6c1a205e46385c009f11dc893b6de4e140dca50b83a47573"
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::sequence|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::sequence",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Revision::sequence@signature:f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e@source:c56b195e1b3e8fe9ebd20963b2bc30e58835aad9b013f20535e70b339c31f05c",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Revision.sequence",
+        "pythonTargetSha256": "65a528dc7a7fb5dbcf384b188aaed7e02bf66d049b3d84d3663c02999b14c1f0",
+        "semanticEquivalent": null,
+        "rationale": "Rust field sequence maps to Python field sequence.",
+        "review": null,
+        "ledgerMappingSha256": "69c7692ae50a8d2c6e9a0ba5a1c5fb3a980082706e87c5c7a1408fd21d8e2749"
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Revision::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Revision",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Revision::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:eabb14b2dabff434a86573014140362ebfd57401731210575266b679fe42d24f",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Revision|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Revision",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "ea6679057728210c134082cf2c0c638ac6810a7cb3e3c383deb3b4991f2fcbec",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Revision",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Revision",
+        "pythonTargetSha256": "92150b2ba332888afbfc0714b437e3184b4f21b656ed549310e3e4f80abc57b0",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Revision.",
+        "review": null,
+        "ledgerMappingSha256": "0c0bdf19c901dc7f262b7dfc0c37c0d1be3d50ba3aa848970813874d7ecb079c"
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "82926bd811df95a14f628cab41dd9e05aa91831d01716be78a9827de5bc81d4e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Snapshot::clone@signature:82926bd811df95a14f628cab41dd9e05aa91831d01716be78a9827de5bc81d4e@trait:Clone@source:3e4472c0c0041901a747e1f400229ef8fbd9b3867ee943bd3f4614bd76f01c02",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Snapshot.clone",
+        "pythonTargetSha256": "e722ea96b0b30224d9d88cc53ad8d79f1dc63bb291445c6a0c8b547cc5682cf9",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Snapshot::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:3e4472c0c0041901a747e1f400229ef8fbd9b3867ee943bd3f4614bd76f01c02",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::entries|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::entries",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "675a15966b0923baf6cf566f51d8dbef944237793d10874c187368d2aef99b8c",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Snapshot::entries@signature:675a15966b0923baf6cf566f51d8dbef944237793d10874c187368d2aef99b8c@source:dac3581d2b2c0ce73dd3f8f9124fd6911b04d9332bc4394785b344b2f2b8a07c",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Snapshot.entries",
+        "pythonTargetSha256": "9d579f0395d9c0d5c65261e8fe6596db806496f5203f4308831bb176ffecc07d",
+        "semanticEquivalent": null,
+        "rationale": "Rust field entries maps to Python field entries.",
+        "review": null,
+        "ledgerMappingSha256": "8b197c0e1000c506b4bf64252b8529524c5cb737242250f3d059a610c4284ff4"
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "96d9311f4cc1a1c3d9b90f76aa9dc95b61ee61031880b6bacad919fbafc20a1e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Snapshot::eq@signature:96d9311f4cc1a1c3d9b90f76aa9dc95b61ee61031880b6bacad919fbafc20a1e@trait:PartialEq@source:3e4472c0c0041901a747e1f400229ef8fbd9b3867ee943bd3f4614bd76f01c02",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Snapshot",
+        "pythonTargetSha256": "355fbebf607fffb89359fc8c7a74c9d7e9fe9051a4ce8977521ddfb24dfe347e",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Snapshot::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:3e4472c0c0041901a747e1f400229ef8fbd9b3867ee943bd3f4614bd76f01c02",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Snapshot",
+        "pythonTargetSha256": "355fbebf607fffb89359fc8c7a74c9d7e9fe9051a4ce8977521ddfb24dfe347e",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::revision|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::revision",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "dececff90b8cbb88fcd98c69486eaaf18bd8714716f994085c8be9aa01a7c3c0",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Snapshot::revision@signature:dececff90b8cbb88fcd98c69486eaaf18bd8714716f994085c8be9aa01a7c3c0@source:ab88aae02bf0fb882449a9209696bf4d3e205b7b6900de27570492ecb997df1b",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Snapshot.revision",
+        "pythonTargetSha256": "3259cb20e8d84244d5b39403ad5a07485079ae2ab4d22f2a52c44bffd06a38e4",
+        "semanticEquivalent": null,
+        "rationale": "Rust field revision maps to Python field revision.",
+        "review": null,
+        "ledgerMappingSha256": "0a4e8808319dcfe608c19e05d1abbaffe5dabc2121e122eff1fa8b5e8ce21654"
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Snapshot",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Snapshot::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:3e4472c0c0041901a747e1f400229ef8fbd9b3867ee943bd3f4614bd76f01c02",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Snapshot|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Snapshot",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "89e396f5bff6d8b72c8d222f47a4ed653a98afa37ec4d9141d8e026a2976f89e",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Snapshot",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Snapshot",
+        "pythonTargetSha256": "355fbebf607fffb89359fc8c7a74c9d7e9fe9051a4ce8977521ddfb24dfe347e",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Snapshot.",
+        "review": null,
+        "ledgerMappingSha256": "03b74152264aab0e3e562a200a5116798faf5037e4aa49fa76f9926aa5fcd6ab"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::at|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::at",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "d53278f654c50a7bc901713e909e86e3dd55ef8c55ca4fedac00f7ae322d2218",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Transaction::at@signature:d53278f654c50a7bc901713e909e86e3dd55ef8c55ca4fedac00f7ae322d2218@source:87705a91c5f82a0b371d9d19ee17c4d10bf6d07e536556e89026c25cd38834ef",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.at",
+        "pythonTargetSha256": "8bb6429063e5b4eee0b3abf3b1e162d9c0138d1fce4d7101f663779f492ea577",
+        "semanticEquivalent": null,
+        "rationale": "Rust field at maps to Python field at.",
+        "review": null,
+        "ledgerMappingSha256": "1b386e4e6590a27f6183ce7ba93ed1491b258e75e9eeb7c1a10bc1de32dc39b2"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::caller|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::caller",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "c6e094f1e9f49c94d43722be877bc490ff9c0dfed29d4f710c749969e4135131",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Transaction::caller@signature:c6e094f1e9f49c94d43722be877bc490ff9c0dfed29d4f710c749969e4135131@source:35980d85e50fde69470f8bc460d589d76d00d218c0dcd24c2f7f5261b84c716a",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.caller",
+        "pythonTargetSha256": "db909714e58678d95f300b869a5e422465b883b6ed9f51458cadb67b1abff980",
+        "semanticEquivalent": null,
+        "rationale": "Rust field caller maps to Python field caller.",
+        "review": null,
+        "ledgerMappingSha256": "84935db952b52431538d5e4622eddabc79ab8abaa191b2b51d4710eeed0822dd"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "52c64a8a0ab60e45dca182f291d5f2a2530c321db22f55a92e3e7a5dee398c2b",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::Transaction::clone@signature:52c64a8a0ab60e45dca182f291d5f2a2530c321db22f55a92e3e7a5dee398c2b@trait:Clone@source:2c45ff11f5e65f9b10f66759f367c59b044713e28bac38f9bd5be512c54e7b61",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.clone",
+        "pythonTargetSha256": "1413ece7c0a8c740f48d97b48ef2188ca244a3552a51f28f04f34ab2685b7dde",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::context|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::context",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "b1551dba691ecb85b77da970b08aa14369ac6b67106de5aaa767b0c3db2e5cd3",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Transaction::context@signature:b1551dba691ecb85b77da970b08aa14369ac6b67106de5aaa767b0c3db2e5cd3@source:c1963cde0b5fd5ed4807d130347c25222d0370074bcc019d4305d6db882fa670",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.context",
+        "pythonTargetSha256": "075ea12592a3217bd64353c3cb012ba58b64179218d2f2d1f2f187fb4d19233a",
+        "semanticEquivalent": null,
+        "rationale": "Rust field context maps to Python field context.",
+        "review": null,
+        "ledgerMappingSha256": "85d32e3cccb740541693e41f4d63254dc739baadeead040e616438426514e94a"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Transaction::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:2c45ff11f5e65f9b10f66759f367c59b044713e28bac38f9bd5be512c54e7b61",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "781fbd03600d0c70afbec3e362c8af1f02b4481a8f68ac7fecb53383e6b75f35",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Transaction::eq@signature:781fbd03600d0c70afbec3e362c8af1f02b4481a8f68ac7fecb53383e6b75f35@trait:PartialEq@source:2c45ff11f5e65f9b10f66759f367c59b044713e28bac38f9bd5be512c54e7b61",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Transaction",
+        "pythonTargetSha256": "377d6441ce833aa3eaeeddafeb77e73afe09e9ed535a505743c36d46106349b9",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Transaction::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:2c45ff11f5e65f9b10f66759f367c59b044713e28bac38f9bd5be512c54e7b61",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.Transaction",
+        "pythonTargetSha256": "377d6441ce833aa3eaeeddafeb77e73afe09e9ed535a505743c36d46106349b9",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::id|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::id",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "502ce273cc3d6b40aa6465e2a3808c79cdae88f428c44bda6c881a22d953e0e1",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Transaction::id@signature:502ce273cc3d6b40aa6465e2a3808c79cdae88f428c44bda6c881a22d953e0e1@source:498faf8379f4d61f650ccf01740ed832e450bca9f62c4428ac50ef38a2c2e2b5",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.id",
+        "pythonTargetSha256": "11f53685ac8d48e5d20da63ebc083e70511078d455a2f239f4ce87343d1a13e6",
+        "semanticEquivalent": null,
+        "rationale": "Rust field id maps to Python field id.",
+        "review": null,
+        "ledgerMappingSha256": "ce38337825c786a60a123b67585b137c3775fe95827416848a42848ae387dee6"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::sequence|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::sequence",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::Transaction::sequence@signature:f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e@source:6befe48945ba7fd38ffbb86bd46fb0ddf6233187055021c4aabec97bb5ac6432",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction.sequence",
+        "pythonTargetSha256": "5f84a4850b9c6ca60ff8896f55adc1c60d758aa220c60311701e95f952e4662c",
+        "semanticEquivalent": null,
+        "rationale": "Rust field sequence maps to Python field sequence.",
+        "review": null,
+        "ledgerMappingSha256": "b217edf5e3db54a3e8d2d88127d30da8e1759317cffaf9e2f1424340ba3a0cd1"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::Transaction",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::Transaction::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:2c45ff11f5e65f9b10f66759f367c59b044713e28bac38f9bd5be512c54e7b61",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::clone|function|trait:Clone|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::clone",
+      "kind": "function",
+      "trait": "Clone",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "8186e83080ed83d1520565da5e1e0e91ca606614ae59a9bd6b92cef32ae7c9de",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::clone@signature:8186e83080ed83d1520565da5e1e0e91ca606614ae59a9bd6b92cef32ae7c9de@trait:Clone@source:b3f42a9792787f0ed41211ba851ffa60973f3b1cabcfc75ddf05e61ddf003bea",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.TransactionContext.clone",
+        "pythonTargetSha256": "cb2f173468a5777f66b84fe047630b88319e35b45a63f8786e62525cd61fa85d",
+        "semanticEquivalent": "Rust Clone and Python clone() return an independently editable logical value.",
+        "rationale": "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Clone is a value-copying protocol implemented by the source type.",
+        "equivalentCapability": "The Python SDK's explicit clone operations and value ownership preserve the documented copied value semantics."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::default|function|trait:Default|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::default",
+      "kind": "function",
+      "trait": "Default",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:55d3a4e51135093add7f5ca20a8ec5f9a220384671792ef413abebfb6e80e347",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.TransactionContext",
+        "pythonTargetSha256": "84b52700cd7a915488ee7ec65de4dad24a9e99ffd74622312390de805305c19b",
+        "semanticEquivalent": null,
+        "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Default maps to Python constructor defaults; owner review must compare every field value and default factory.",
+          "pythonEquivalent": "Construct the Python model with its declared Pydantic defaults."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Default constructs the documented default value.",
+        "equivalentCapability": "Python constructors and explicit default factories provide the documented default value."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::deserialize|function|trait:Deserialize|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::deserialize",
+      "kind": "function",
+      "trait": "Deserialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::deserialize@signature:f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982@trait:Deserialize@source:b3f42a9792787f0ed41211ba851ffa60973f3b1cabcfc75ddf05e61ddf003bea",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Deserialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::eq|function|trait:PartialEq|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::eq",
+      "kind": "function",
+      "trait": "PartialEq",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "bc460f64374de3110729ee238c60caa88480a2246aad53f17132639d002c45c7",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::eq@signature:bc460f64374de3110729ee238c60caa88480a2246aad53f17132639d002c45c7@trait:PartialEq@source:b3f42a9792787f0ed41211ba851ffa60973f3b1cabcfc75ddf05e61ddf003bea",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.TransactionContext",
+        "pythonTargetSha256": "84b52700cd7a915488ee7ec65de4dad24a9e99ffd74622312390de805305c19b",
+        "semanticEquivalent": null,
+        "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust PartialEq compares the public value fields; Python model equality is a candidate semantic equivalent requiring owner review and per-symbol conformance.",
+          "pythonEquivalent": "Python equality on the corresponding immutable Pydantic model."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust PartialEq compares values according to the type's documented fields.",
+        "equivalentCapability": "Python == uses the SDK's value equality behavior for the corresponding type."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::fmt|function|trait:Debug|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::fmt",
+      "kind": "function",
+      "trait": "Debug",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::fmt@signature:6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e@trait:Debug@source:b3f42a9792787f0ed41211ba851ffa60973f3b1cabcfc75ddf05e61ddf003bea",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "language-specific",
+        "pythonTarget": "yosoi.registry.TransactionContext",
+        "pythonTargetSha256": "84b52700cd7a915488ee7ec65de4dad24a9e99ffd74622312390de805305c19b",
+        "semanticEquivalent": null,
+        "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+        "review": {
+          "status": "proposed",
+          "rationale": "Rust Debug formatting and Python formatting are language-specific; owner review may accept the inspection behavior, but exact string equality is not claimed.",
+          "pythonEquivalent": "Python repr(value) for the corresponding public value."
+        },
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Debug provides a diagnostic representation.",
+        "equivalentCapability": "Python repr(value) is the corresponding diagnostic representation where the SDK exposes the value."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::operation|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::operation",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "bddcaf74654114e4771873f946a7b4860a32e9d1b5411e8ff555eb6ebc15442a",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::TransactionContext::operation@signature:bddcaf74654114e4771873f946a7b4860a32e9d1b5411e8ff555eb6ebc15442a@source:e7ee93e857f63ec464c74746eb2e79a1b1029c4b94f5d8a12369f241ffc6f233",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.TransactionContext.operation",
+        "pythonTargetSha256": "43ce8b76dd876b4aa5ab3058e0948756a6b74a03a6fb617afdbe21e9b092a145",
+        "semanticEquivalent": null,
+        "rationale": "Rust field operation maps to Python field operation.",
+        "review": null,
+        "ledgerMappingSha256": "4cd1a779129f7b7e29031b1b901e053282faf3a443bc3652ef37b25094c5f11f"
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::reservation|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::reservation",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "4f3fde9d7d0651e54ecb08ed1bad11b1c8e3b210ae6e837ba6143fd1683c1321",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::TransactionContext::reservation@signature:4f3fde9d7d0651e54ecb08ed1bad11b1c8e3b210ae6e837ba6143fd1683c1321@source:0583da054f7ac9a79789138463f27ede53dfc7a8f3621c44ec0606b42a19dc69",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.TransactionContext.reservation",
+        "pythonTargetSha256": "5f03c30253d575d1179ab1122888a26176374a74b7c9234078d11cc0e1c04346",
+        "semanticEquivalent": null,
+        "rationale": "Rust field reservation maps to Python field reservation.",
+        "review": null,
+        "ledgerMappingSha256": "92bd9703d5a5f746341982fbaec0df6b28b78cf3de08528d29c45da06813605e"
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::resources|struct_field|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::resources",
+      "kind": "struct_field",
+      "trait": null,
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "7c0a71d536649babda0cca0de63a0b013c0ef3e6ebbf94017b47a044d49dcd91",
+      "baselineStatus": "mapped",
+      "symbolKey": "member:struct_field:yosoi::registry::TransactionContext::resources@signature:7c0a71d536649babda0cca0de63a0b013c0ef3e6ebbf94017b47a044d49dcd91@source:f5a3965827feecb8d9def85e6acabc03a11465457ba08a5af15c51d1c74bf32f",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.TransactionContext.resources",
+        "pythonTargetSha256": "2652bb68b17819ff41e0184868660baa69948b0955c7a1e27ca0caee1b0101de",
+        "semanticEquivalent": null,
+        "rationale": "Rust field resources maps to Python field resources.",
+        "review": null,
+        "ledgerMappingSha256": "031d24b6d88fd16379007d417d66f77018395987be2d89a3e267a8e6481d4098"
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext::serialize|function|trait:Serialize|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext::serialize",
+      "kind": "function",
+      "trait": "Serialize",
+      "surface": "member",
+      "parentRustPath": "yosoi::registry::TransactionContext",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "baselineStatus": "missing",
+      "symbolKey": "member:function:yosoi::registry::TransactionContext::serialize@signature:0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e@trait:Serialize@source:b3f42a9792787f0ed41211ba851ffa60973f3b1cabcfc75ddf05e61ddf003bea",
+      "classification": "trait-mechanic",
+      "mapping": {
+        "decision": "missing",
+        "pythonTarget": null,
+        "pythonTargetSha256": null,
+        "semanticEquivalent": null,
+        "rationale": null,
+        "review": null,
+        "ledgerMappingSha256": null
+      },
+      "mechanic": {
+        "rationale": "Rust Serialize is a format-neutral trait; this parity contract makes no format-neutral wire claim.",
+        "equivalentCapability": "Only Yosoi's explicitly supported JSON wire APIs are covered by run_serde_conformance.py."
+      }
+    },
+    {
+      "id": "yosoi::registry::TransactionContext|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::TransactionContext",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "4c286b4cf2ebf1e698b383a77645f243e7be3574dc4b3ae89aa96181db112438",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::TransactionContext",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.TransactionContext",
+        "pythonTargetSha256": "84b52700cd7a915488ee7ec65de4dad24a9e99ffd74622312390de805305c19b",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.TransactionContext.",
+        "review": null,
+        "ledgerMappingSha256": "17f2bc4fb0b31c01188449d52a693153166e9a119913477acecdfe45f38eff15"
+      }
+    },
+    {
+      "id": "yosoi::registry::Transaction|struct|trait:|occurrence:1",
+      "rustPath": "yosoi::registry::Transaction",
+      "kind": "struct",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "15a77a5350829f9b9b66bfccdc2895fd53e6e3159b0a3247f3f95af66acf70ee",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:struct:yosoi::registry::Transaction",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry.Transaction",
+        "pythonTargetSha256": "377d6441ce833aa3eaeeddafeb77e73afe09e9ed535a505743c36d46106349b9",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.Transaction.",
+        "review": null,
+        "ledgerMappingSha256": "016e1ab810893bba8549f32a79a22448f3697791e46d6276da13d850dbb027e7"
+      }
+    },
+    {
+      "id": "yosoi::registry|module|trait:|occurrence:1",
+      "rustPath": "yosoi::registry",
+      "kind": "module",
+      "trait": null,
+      "surface": "item",
+      "parentRustPath": null,
+      "signatureSha256": "7317c887f300c1132d3be8659dddb5caa74758795b7ab98905e82b23dc4205a0",
+      "baselineStatus": "mapped",
+      "symbolKey": "page:module:yosoi::registry",
+      "classification": "sdk",
+      "mapping": {
+        "decision": "mapped",
+        "pythonTarget": "yosoi.registry",
+        "pythonTargetSha256": "e158a520a43137cf365c8c00110f1d57da9255e4e053a418b993ea0fc4fe6b1c",
+        "semanticEquivalent": null,
+        "rationale": "The live Python surface exposes the corresponding public target yosoi.registry.",
+        "review": null,
+        "ledgerMappingSha256": "1ae189dae68c103705e2813ebb8f1175dc89ac8e5f9ce840ecd39ac3317bfb48"
       }
     },
     {
