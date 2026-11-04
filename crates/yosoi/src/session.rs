@@ -22,6 +22,8 @@ use tokio::sync as tokio_sync;
 use tokio::time as tokio_time;
 mod evaluation;
 mod javascript;
+#[cfg(feature = "browser")]
+mod surface;
 mod until;
 
 pub use until::{
@@ -69,6 +71,8 @@ pub enum ActionKind {
     Navigate,
     /// Dispatch a click to a uniquely resolved element.
     Click,
+    /// Dispatch bounded native scrolling on the owned tab.
+    Scroll,
     /// Dispatch keyboard input to a uniquely resolved editable target.
     EnterText,
     /// Capture a screenshot from the current tab.
@@ -159,6 +163,7 @@ impl Default for SessionPolicy {
             allowed_actions: vec![
                 ActionKind::Navigate,
                 ActionKind::Click,
+                ActionKind::Scroll,
                 ActionKind::EnterText,
                 ActionKind::Screenshot,
                 ActionKind::Wait,
@@ -194,7 +199,7 @@ impl SessionPolicy {
             || self.maximum_input_bytes > 1024 * 1024
             || self.maximum_result_bytes > 1024 * 1024
             || self.maximum_observation_bytes > automation_record::MAX_OBSERVATION_HTML_BYTES
-            || self.allowed_actions.len() > 7
+            || self.allowed_actions.len() > 8
         {
             return Err(SessionError::InvalidPolicy);
         }
@@ -1216,8 +1221,10 @@ impl Work {
         {
             return Err(SessionError::Denied);
         }
-        if matches!(kind, ActionKind::Click | ActionKind::EnterText)
-            && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
+        if matches!(
+            kind,
+            ActionKind::Click | ActionKind::Scroll | ActionKind::EnterText
+        ) && self.session.policy().browser.engine == browser_config::BrowserEngine::Moli
             && self.session.policy().browser.moli_profile == browser_config::MoliProfile::Layout
             && !self
                 .session

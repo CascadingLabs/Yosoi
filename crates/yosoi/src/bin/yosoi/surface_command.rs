@@ -185,7 +185,12 @@ pub async fn run(args: SurfaceArgs) -> anyhow::Result<ExitCode> {
             headless,
             output,
             archive,
-        } => drive(BrowserSurface::open(&url, policy(output, archive), headless).await?).await,
+        } => {
+            Box::pin(drive(
+                BrowserSurface::open(&url, policy(output, archive), headless).await?,
+            ))
+            .await
+        }
         SurfaceCommand::Video {
             file,
             output,
