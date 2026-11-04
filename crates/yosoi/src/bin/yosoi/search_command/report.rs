@@ -1,6 +1,7 @@
 use std::{
     io::{self, Write},
     process::ExitCode,
+    slice,
 };
 
 use anyhow::{Context as _, Result};
@@ -29,7 +30,14 @@ pub(super) fn render_human(
     let label = theme.label;
     let value = theme.value;
     let muted = theme.muted;
-    for provider in &envelope.providers {
+    if let Some(provider) = envelope.selected_provider {
+        writeln!(writer, "{heading}Auto selected {provider}{heading:#}")?;
+    }
+    for provider in envelope.providers.iter().filter(|provider| {
+        envelope
+            .selected_provider
+            .is_none_or(|selected| provider.provider == selected)
+    }) {
         writeln!(writer, "{heading}{}:{heading:#}", provider.provider)?;
         let status = theme.status(provider.status.label());
         writeln!(
@@ -225,7 +233,11 @@ fn safe_terminal_text(value: &str) -> String {
 pub(super) fn report_diagnostics(response: &SearchResponse, interrupted: bool) -> io::Result<()> {
     let error = Theme::stderr().error;
     let mut stderr = io::stderr().lock();
-    for provider in response.providers() {
+    for provider in response.providers().iter().filter(|provider| {
+        response
+            .selected_provider()
+            .is_none_or(|selected| provider.provider() == selected)
+    }) {
         match provider.outcome() {
             ProviderOutcome::Results(_) | ProviderOutcome::Empty => {}
             ProviderOutcome::Failed(failure) => {
@@ -320,6 +332,19 @@ pub(super) fn render_stats(
         "{label}Known retained source bytes:{label:#} {value}{retained_source_bytes}{value:#}"
     )?;
     Ok(())
+}
+
+pub(super) fn exit_code_for_search(envelope: &SearchEnvelope<'_>, interrupted: bool) -> ExitCode {
+    let active = envelope
+        .selected_provider
+        .and_then(|selected| {
+            envelope
+                .providers
+                .iter()
+                .find(|provider| provider.provider == selected)
+        })
+        .map_or(envelope.providers.as_slice(), slice::from_ref);
+    exit_code(active, envelope.termination, interrupted)
 }
 
 pub(super) fn exit_code(

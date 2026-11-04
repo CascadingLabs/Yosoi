@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -9,15 +10,25 @@ use tokio::{
 
 use crate::policy::respectfulness::Retry;
 
-use super::{Event, EventKind, Permit, RespectfulnessError, Runtime, expiry, now_ms, setup};
+use super::{
+    Event, EventKind, Permit, RespectfulnessError, Runtime, canonical_url, expiry, now_ms, setup,
+};
 
 /// One serial acquisition's live permit. Spec clones share ownership; separate
 /// acquisitions get separate operations over the same Registry.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Operation {
     runtime: Runtime,
     pending: Arc<Mutex<Option<Permit>>>,
+    prepaid: Arc<Mutex<Option<(String, Permit)>>>,
     events: Arc<Mutex<Vec<Event>>>,
+}
+
+impl fmt::Debug for Operation {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The prepaid target may contain a search query. It is never diagnostic data.
+        formatter.debug_struct("Operation").finish_non_exhaustive()
+    }
 }
 
 impl PartialEq for Operation {
@@ -32,8 +43,15 @@ impl Operation {
         Self {
             runtime,
             pending: Arc::new(Mutex::new(None)),
+            prepaid: Arc::new(Mutex::new(None)),
             events: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+
+    pub fn from_permit(permit: Permit, target: String) -> Self {
+        let mut operation = Self::new(permit.runtime.clone());
+        operation.prepaid = Arc::new(Mutex::new(Some((target, permit))));
+        operation
     }
 
     pub fn retry(&self) -> &Retry {
@@ -45,14 +63,35 @@ impl Operation {
         target: String,
         remaining: Duration,
     ) -> Result<(), RespectfulnessError> {
-        let runtime = self.runtime.clone();
-        let expires = expiry(now_ms()?, remaining)?;
-        let permit = spawn_blocking(move || {
-            let now = now_ms()?;
-            runtime.reserve_at(&target, now, expires)
-        })
-        .await
-        .map_err(|_| setup("registry admission task failed"))?;
+        let prepaid = self
+            .prepaid
+            .lock()
+            .map_err(|_| setup("initial reservation state poisoned"))?
+            .take();
+        let permit = if let Some((expected, permit)) = prepaid {
+            let valid = canonical_url(&target).and_then(|target| {
+                Ok(target == canonical_url(&expected)? && now_ms()? < permit.expires_at_ms)
+            });
+            if matches!(valid, Ok(true)) {
+                Ok(permit)
+            } else {
+                spawn_blocking(move || permit.finish_at(now_ms()?, None, None, false))
+                    .await
+                    .map_err(|_| setup("registry release task failed"))??;
+                Err(setup(
+                    "initial reservation target or expiry does not authorize this send",
+                ))
+            }
+        } else {
+            let runtime = self.runtime.clone();
+            let expires = expiry(now_ms()?, remaining)?;
+            spawn_blocking(move || {
+                let now = now_ms()?;
+                runtime.reserve_at(&target, now, expires)
+            })
+            .await
+            .map_err(|_| setup("registry admission task failed"))?
+        };
         let permit = match permit {
             Ok(permit) => permit,
             Err(error) => {
@@ -147,11 +186,20 @@ impl Operation {
     }
 
     pub async fn finish(&self) -> Result<(), RespectfulnessError> {
-        let permit = self
+        let pending = self
             .pending
             .lock()
             .map_err(|_| setup("permit state poisoned"))?
             .take();
+        let permit = match pending {
+            Some(permit) => Some(permit),
+            None => self
+                .prepaid
+                .lock()
+                .map_err(|_| setup("initial reservation state poisoned"))?
+                .take()
+                .map(|(_, permit)| permit),
+        };
         if let Some(permit) = permit {
             let event = Event {
                 kind: EventKind::Released,

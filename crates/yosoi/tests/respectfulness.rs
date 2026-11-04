@@ -282,11 +282,15 @@ async fn redirect_hop_requires_its_own_admission() -> TestResult {
 
 #[test]
 fn policy_identity_and_wire_keep_disabled_behavior_compatible() -> TestResult {
-    let ordinary = ys::Policy::default();
+    let ordinary = ys::Policy {
+        search: ys::policy::search::Search::disabled(),
+        ..ys::Policy::default()
+    };
     assert!(!ordinary.to_canonical_json()?.contains("respectfulness"));
     assert_eq!(ordinary.effective_identity()?.version(), 7);
     let policy = ys::Policy {
         respectfulness: Some(Respectfulness::new(vec![group("http://example.com/")])?),
+        search: ys::policy::search::Search::disabled(),
         ..ys::Policy::default()
     };
     assert_eq!(policy.effective_identity()?.version(), 9);

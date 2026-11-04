@@ -2,8 +2,8 @@ use serde::Serialize;
 use yosoi::{
     EffectivePolicyIdentity,
     documents::DocumentClass,
-    policy::{AcquisitionKind, respectfulness::Event},
-    search::{SearchCaptureRetention, SearchParserDiagnostic},
+    policy::{AcquisitionKind, respectfulness::Event, search::Routing},
+    search::{AutoRotationTrace, SearchCaptureRetention, SearchParserDiagnostic},
 };
 
 mod convert;
@@ -52,6 +52,10 @@ impl From<EffectivePolicyIdentity> for PolicyIdentityView {
 
 #[derive(Debug, Serialize)]
 pub(super) struct SearchEnvelope<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) rotation: Option<&'a AutoRotationTrace>,
+    pub(super) routing: Routing,
+    pub(super) selected_provider: Option<&'static str>,
     pub(super) schema_version: u16,
     pub(super) cli_version: &'static str,
     pub(super) policy_profile: Option<&'a str>,

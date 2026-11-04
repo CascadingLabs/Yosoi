@@ -10,13 +10,38 @@ use crate::internal::policy::{
 use super::provider::{ProfileSelection, Provider, ProviderDefaultsStatus, ProviderSelection};
 use super::{EffectiveProviderRoute, EffectiveSearch};
 
+/// How Search routes its authored provider list. Missing historical wire fields
+/// retain explicit execution; fresh Search defaults select Auto.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Routing {
+    /// Choose one eligible provider using persistent round-robin state.
+    Auto,
+    /// Execute every authored provider under the shared Search bounds.
+    #[default]
+    All,
+}
+
+impl Routing {
+    #[expect(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "Serde skip_serializing_if callbacks receive fields by reference."
+    )]
+    pub(crate) const fn is_all(&self) -> bool {
+        matches!(self, Self::All)
+    }
+}
+
 /// Search provider selection and resource bounds.
 ///
-/// The default selects all three local-preview providers with five hits each.
+/// The default rotates across four candidates and executes one, retaining five hits.
 /// Use `Search::disabled()` when a child Request or historical policy must not search.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Search {
+    /// Auto chooses one eligible candidate; All executes every listed provider.
+    #[serde(default, skip_serializing_if = "Routing::is_all")]
+    pub routing: Routing,
     /// Providers in authored and response-slot order.
     pub providers: Vec<ProviderSelection>,
     /// Maximum concurrently running provider Requests.
@@ -37,6 +62,7 @@ impl Search {
     /// A bounded Search policy with no provider Requests.
     pub fn disabled() -> Self {
         Self {
+            routing: Routing::All,
             providers: Vec::new(),
             max_in_flight: NonZeroUsize::new(2).unwrap_or(NonZeroUsize::MIN),
             max_browser_in_flight: NonZeroUsize::MIN,
@@ -47,9 +73,10 @@ impl Search {
         }
     }
 
-    /// Creates an ordered Search policy from distinct providers using Current.
+    /// Creates an explicit All plan from distinct providers using Current profiles.
     pub fn new(providers: impl IntoIterator<Item = Provider>) -> Result<Self, PolicyError> {
         let mut search = Self {
+            routing: Routing::All,
             providers: providers
                 .into_iter()
                 .map(ProviderSelection::current)
@@ -61,6 +88,15 @@ impl Search {
         if planned_results > search.max_total_results.get() {
             search.max_total_results = NonZeroU32::new(planned_results).unwrap_or(NonZeroU32::MIN);
         }
+        search.validate()?;
+        Ok(search)
+    }
+
+    /// Creates a nonempty ordered candidate list, selecting one eligible provider
+    /// per operation. Cursor advancement and traffic admission share a transaction.
+    pub fn auto(providers: impl IntoIterator<Item = Provider>) -> Result<Self, PolicyError> {
+        let mut search = Self::new(providers)?;
+        search.routing = Routing::Auto;
         search.validate()?;
         Ok(search)
     }
@@ -164,6 +200,9 @@ impl Search {
     }
 
     pub(in crate::internal::policy) fn validate(&self) -> Result<(), PolicyError> {
+        if self.routing == Routing::Auto && self.providers.is_empty() {
+            return Err(PolicyError::EmptyAutoSearch);
+        }
         let mut seen = Vec::with_capacity(self.providers.len());
         for selection in &self.providers {
             if seen.contains(&selection.provider) {
@@ -180,8 +219,14 @@ impl Search {
             .to_capture_deadline()
             .map_err(|_| PolicyError::ZeroMaximumElapsed)?;
 
-        let required_results =
-            required_total_results(self.providers.len(), self.max_results_per_provider)?;
+        let required_results = required_total_results(
+            if self.routing == Routing::Auto {
+                1
+            } else {
+                self.providers.len()
+            },
+            self.max_results_per_provider,
+        )?;
         if required_results > self.max_total_results.get() {
             return Err(PolicyError::SearchPlanExceedsTotalResults {
                 required: required_results,
@@ -214,6 +259,7 @@ impl Search {
             })
             .collect();
         EffectiveSearch {
+            routing: self.routing,
             providers,
             max_in_flight: self.max_in_flight,
             max_browser_in_flight: self.max_browser_in_flight,
@@ -228,10 +274,12 @@ impl Search {
 impl Default for Search {
     fn default() -> Self {
         let mut search = Self::disabled();
+        search.routing = Routing::Auto;
         search.providers = vec![
-            ProviderSelection::current(Provider::Brave),
-            ProviderSelection::current(Provider::Bing),
+            ProviderSelection::current(Provider::Google),
             ProviderSelection::current(Provider::DuckDuckGo),
+            ProviderSelection::current(Provider::Bing),
+            ProviderSelection::current(Provider::Brave),
         ];
         search.max_results_per_provider = NonZeroU16::new(5).unwrap_or(NonZeroU16::MIN);
         search.max_total_results = NonZeroU32::new(15).unwrap_or(NonZeroU32::MIN);

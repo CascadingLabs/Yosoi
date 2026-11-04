@@ -8,7 +8,7 @@ use crate::internal::policy::{
     Policy, PolicyError, PolicySnapshot,
     policy::{
         AddressableByteLimit,
-        search::{EffectiveProviderRoute, Search},
+        search::{EffectiveProviderRoute, Routing, Search},
     },
 };
 use thiserror::Error;
@@ -104,7 +104,8 @@ impl BoundSearchRequest<'_> {
         {
             return Err(SearchSendError::NoProviderConfigured);
         }
-        if self.policy().respectfulness.is_some()
+        if self.policy().search.routing != Routing::Auto
+            && self.policy().respectfulness.is_some()
             && policy_snapshot
                 .effective_policy()
                 .search

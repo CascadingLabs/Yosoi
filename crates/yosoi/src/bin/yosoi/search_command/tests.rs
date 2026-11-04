@@ -1,6 +1,6 @@
 use std::{error::Error, slice};
 
-use super::report::{exit_code, render_human, render_json, render_stats};
+use super::report::{exit_code, exit_code_for_search, render_human, render_json, render_stats};
 use super::search_for_cli;
 use super::view::names::{failure_name, issue_name};
 use super::view::{
@@ -22,14 +22,17 @@ use yosoi::{
     Policy,
     policy::{
         self, AcquisitionKind,
-        search::{Provider, Search},
+        search::{Provider, Routing, Search},
     },
     search::{self, SearchCaptureRetention, SearchFailure, SearchIssueKind},
 };
 
 pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
     SearchEnvelope {
-        schema_version: 3,
+        rotation: None,
+        routing: Routing::All,
+        selected_provider: None,
+        schema_version: 4,
         cli_version: env!("CARGO_PKG_VERSION"),
         policy_profile: Some("daily"),
         policy_identity: PolicyIdentityView {
@@ -142,6 +145,7 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
+        routing: None,
         registry: RegistryArgs::default(),
         query: Some("unused fixture query".to_owned()),
         diagnostics: None,
@@ -154,10 +158,11 @@ fn cli_args(
 }
 
 #[test]
-fn default_search_runs_three_preview_routes_at_five_each() -> Result<(), Box<dyn Error>> {
+fn default_search_rotates_four_preview_candidates_at_five_each() -> Result<(), Box<dyn Error>> {
     let args = cli_args(Vec::new(), None, None);
     let resolved = search_for_cli(&Search::default(), &args)?;
-    assert_eq!(resolved.providers().len(), 3);
+    assert_eq!(resolved.providers().len(), 4);
+    assert_eq!(resolved.routing, Routing::Auto);
     assert_eq!(resolved.max_results_per_provider().get(), 5);
     assert_eq!(resolved.max_total_results().get(), 15);
     Ok(())
@@ -315,7 +320,7 @@ fn json_formatter_keeps_provider_order_profile_facts_issues_and_unknown_cost()
         value
             .get("schema_version")
             .and_then(serde_json::Value::as_u64),
-        Some(3)
+        Some(4)
     );
     let providers = value
         .get("providers")
@@ -538,4 +543,37 @@ fn google_redirect_issue_names_are_stable_for_cli_json() {
         super::view::names::issue_name(SearchIssueKind::RedirectChallenge),
         "redirect_challenge"
     );
+}
+
+#[test]
+fn successful_auto_selection_ignores_unselected_candidates_for_output_and_exit()
+-> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    envelope.routing = Routing::Auto;
+    envelope.selected_provider = Some("brave");
+    let selected = envelope.providers.first_mut().ok_or("selected provider")?;
+    selected.issues.clear();
+    selected.coverage = None;
+    let skipped = envelope.providers.get_mut(1).ok_or("skipped provider")?;
+    skipped.status = ProviderStatus::NotStarted;
+    skipped.detail = Some("not_selected");
+    assert_eq!(exit_code_for_search(&envelope, false), ExitCode::SUCCESS);
+    let mut output = Vec::new();
+    render_human(&mut output, &envelope, Theme::plain())?;
+    let output = String::from_utf8(output)?;
+    assert!(output.contains("Auto selected brave"));
+    assert!(!output.contains("bing:"));
+    Ok(())
+}
+
+#[test]
+fn failed_auto_selection_keeps_the_selected_providers_failure_exit() -> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    envelope.routing = Routing::Auto;
+    envelope.selected_provider = Some("brave");
+    let selected = envelope.providers.first_mut().ok_or("selected provider")?;
+    selected.status = ProviderStatus::Failed;
+    selected.detail = Some("rate_limited");
+    assert_eq!(exit_code_for_search(&envelope, false), ExitCode::from(1));
+    Ok(())
 }

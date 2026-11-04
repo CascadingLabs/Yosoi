@@ -86,6 +86,8 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<search::NativeSearchResponse>()?;
     module.add_class::<search::NativeSearchCapture>()?;
     module.add_function(wrap_pyfunction!(search::search_replay, module)?)?;
+    module.add_function(wrap_pyfunction!(search::search_rotation_write, module)?)?;
+    module.add_function(wrap_pyfunction!(search::search_rotation_read, module)?)?;
     module.add_function(wrap_pyfunction!(search::search_replay_document, module)?)?;
     module.add_class::<responses::NativeResponse>()?;
     module.add_class::<async_runtime::NativeCancellation>()?;

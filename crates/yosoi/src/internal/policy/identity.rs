@@ -20,6 +20,10 @@ pub struct EffectivePolicyIdentity {
 }
 
 impl EffectivePolicyIdentity {
+    pub(in crate::internal::policy) fn from_auto_search_json(json: &str) -> Self {
+        Self::from_json_version(10, b"yosoi-effective-policy\0v10\0", json)
+    }
+
     pub(in crate::internal::policy) fn from_canonical_json(json: &str) -> Self {
         Self::from_json_version(EFFECTIVE_POLICY_IDENTITY_VERSION, IDENTITY_DOMAIN, json)
     }

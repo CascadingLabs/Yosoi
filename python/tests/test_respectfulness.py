@@ -28,10 +28,11 @@ def policy_for(url: str, **constraints: Any) -> ys.Policy:
 
 
 def test_policy_roundtrip_identity_and_snapshot_are_explicit():
-    ordinary = ys.Policy()
+    ordinary = ys.Policy(search=ys.policy.Search.disabled())
     assert "respectfulness" not in json.loads(ordinary.to_json())
     assert ordinary.identity().version == 7
     policy = policy_for("https://example.com/", spacing_ms=100)
+    policy.search = ys.policy.Search.disabled()
     assert policy.identity().version == 9
     restored = ys.Policy.model_validate_json(policy.to_json())
     assert restored.identity() == policy.identity()
@@ -148,5 +149,6 @@ def test_explicit_retry_retains_the_prior_error_and_charges_again(tmp_path):
 
 def test_browser_search_fails_before_any_provider_work():
     policy = policy_for("https://example.com/")
+    policy.search = ys.policy.Search.new(["google"])
     with pytest.raises(SearchError, match="per-request respectfulness"):
         ys.search.new("offline preflight").bind(policy).check()

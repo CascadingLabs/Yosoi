@@ -4,7 +4,9 @@
 //! policy, and gives each effective acquisition a fresh capture identity. It
 //! does not contact a provider or perform any other I/O.
 
-use crate::internal::respectfulness::{Runtime as RespectRuntime, resolve_registry};
+use crate::internal::respectfulness::{
+    Operation as RespectOperation, Runtime as RespectRuntime, resolve_registry,
+};
 use crate::policy::respectfulness::RespectfulnessError as TrafficError;
 use crate::registry::Registry as RuntimeRegistry;
 use tokio_util::sync::CancellationToken;
@@ -144,6 +146,7 @@ impl PageRequest {
             target: self.target,
             policy,
             registry: None,
+            initial_operation: None,
         }
     }
 
@@ -164,6 +167,7 @@ pub struct BoundPageRequest<'policy> {
     target: WebTarget,
     policy: &'policy Policy,
     registry: Option<RuntimeRegistry>,
+    initial_operation: Option<RespectOperation>,
 }
 
 impl fmt::Debug for BoundPageRequest<'_> {
@@ -178,6 +182,11 @@ impl fmt::Debug for BoundPageRequest<'_> {
 }
 
 impl<'policy> BoundPageRequest<'policy> {
+    pub(crate) fn with_initial_operation(mut self, operation: RespectOperation) -> Self {
+        self.initial_operation = Some(operation);
+        self
+    }
+
     pub(crate) fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
         self.registry = Some(registry.clone());
         self
@@ -191,7 +200,7 @@ impl<'policy> BoundPageRequest<'policy> {
             return Ok(None);
         };
         let Some(registry) =
-            resolve_registry(policy, self.registry.as_ref(), cancellation, None).await?
+            resolve_registry(Some(policy), self.registry.as_ref(), cancellation, None).await?
         else {
             return Ok(None);
         };

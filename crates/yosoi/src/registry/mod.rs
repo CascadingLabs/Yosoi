@@ -86,6 +86,17 @@ impl Registry {
         changes: &[Change],
         context: &TransactionContext,
     ) -> Result<Snapshot, RegistryError> {
+        self.0
+            .commit(expected, changes, context)
+            .map(|(snapshot, _)| snapshot)
+    }
+
+    pub(crate) fn commit_with_receipt(
+        &self,
+        expected: &Revision,
+        changes: &[Change],
+        context: &TransactionContext,
+    ) -> Result<(Snapshot, Option<Transaction>), RegistryError> {
         self.0.commit(expected, changes, context)
     }
 

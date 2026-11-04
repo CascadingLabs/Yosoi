@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use yosoi::{
     Archive,
-    search::{SearchReplay, SearchResponse},
+    policy::search::Routing,
+    search::{AutoRotationRef, AutoRotationTrace, SearchReplay, SearchResponse},
 };
 
 use super::view::{
@@ -47,6 +48,12 @@ struct EvidenceBundle<'a> {
 
 #[derive(Serialize)]
 struct SearchEvidenceSummary<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rotation: Option<&'a AutoRotationTrace>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rotation_ref: Option<AutoRotationRef>,
+    routing: Routing,
+    selected_provider: Option<&'static str>,
     policy_identity: &'a PolicyIdentityView,
     termination: &'a str,
     providers: Vec<ProviderEvidenceSummary<'a>>,
@@ -70,6 +77,10 @@ struct ProviderEvidenceSummary<'a> {
 
 fn summarize<'a>(envelope: &'a SearchEnvelope<'_>) -> SearchEvidenceSummary<'a> {
     SearchEvidenceSummary {
+        rotation: envelope.rotation,
+        rotation_ref: None,
+        routing: envelope.routing,
+        selected_provider: envelope.selected_provider,
         policy_identity: &envelope.policy_identity,
         termination: envelope.termination,
         providers: envelope
@@ -97,6 +108,16 @@ fn summarize<'a>(envelope: &'a SearchEnvelope<'_>) -> SearchEvidenceSummary<'a> 
 struct ReplayBundle {
     schema_version: u16,
     records: Vec<SearchReplay>,
+    #[serde(default)]
+    rotation: Option<AutoRotationRef>,
+    #[serde(default)]
+    search: Option<ReplaySearchSummary>,
+}
+
+#[derive(Deserialize)]
+struct ReplaySearchSummary {
+    #[serde(default)]
+    rotation_ref: Option<AutoRotationRef>,
 }
 
 pub(super) async fn save(
@@ -107,20 +128,17 @@ pub(super) async fn save(
     let archive = Archive::open(root)
         .await
         .context("could not open Search diagnostic Archive")?;
-    let mut records = Vec::new();
-    for provider in response.providers() {
-        for capture in provider.captures() {
-            if records.len() >= MAX_RECORDS {
-                bail!("Search evidence exceeds the {MAX_RECORDS} document limit");
-            }
-            records.push(
-                capture
-                    .save(&archive)
-                    .await
-                    .context("could not save Search document")?,
-            );
-        }
+    let evidence = response
+        .save_diagnostics(&archive)
+        .await
+        .context("could not save Search diagnostics")?;
+    let rotation_ref = evidence.rotation;
+    let records = evidence.records;
+    if records.len() > MAX_RECORDS {
+        bail!("Search evidence exceeds the {MAX_RECORDS} document limit");
     }
+    let mut summary = summarize(envelope);
+    summary.rotation_ref = rotation_ref;
     let bundle = EvidenceBundle {
         schema_version: 1,
         cli_version: env!("CARGO_PKG_VERSION").to_owned(),
@@ -128,7 +146,7 @@ pub(super) async fn save(
         source_revision: option_env!("YOSOI_BUILD_SOURCE_REVISION").map(str::to_owned),
         // A compiled revision assertion plus binary hash still needs exact-head test evidence.
         exact_source_validation: false,
-        search: summarize(envelope),
+        search: summary,
         records,
     };
     let bytes = serde_json::to_vec_pretty(&bundle).context("could not encode Search evidence")?;
@@ -182,6 +200,20 @@ pub async fn run(args: ReplayArgs) -> Result<ExitCode> {
     let archive = Archive::open(root)
         .await
         .context("could not open Search replay Archive")?;
+    let reference = bundle.rotation.as_ref().or_else(|| {
+        bundle
+            .search
+            .as_ref()
+            .and_then(|search| search.rotation_ref.as_ref())
+    });
+    let rotation = match reference {
+        Some(reference) => Some(
+            AutoRotationTrace::read_from(&archive, reference)
+                .await
+                .context("could not restore Search rotation audit")?,
+        ),
+        None => None,
+    };
     let mut records = Vec::with_capacity(bundle.records.len());
     let mut all_match = !bundle.records.is_empty();
     for (index, record) in bundle.records.iter().enumerate() {
@@ -204,6 +236,7 @@ pub async fn run(args: ReplayArgs) -> Result<ExitCode> {
         io_stdout(),
         &serde_json::json!({"schema_version": 1,
         "network_requests": 0, "record_count": records.len(), "all_match": all_match,
+        "rotation": rotation,
         "source_revision": option_env!("YOSOI_BUILD_SOURCE_REVISION"), "binary_sha256": executable_sha256()?, "records": records}),
     )
     .context("could not write Search replay report")?;
@@ -297,6 +330,66 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(unix)]
+    async fn cli_restores_metadata_only_rotation_and_rejects_missing_audit() -> Result<()> {
+        use yosoi::{
+            policy::respectfulness::{Group, Respectfulness},
+            registry::Registry,
+            search,
+        };
+        let directory = tempfile::tempdir()?;
+        let registry = Registry::jsonl(directory.path().join("registry.jsonl"))?;
+        let policy = Policy {
+            respectfulness: Some(Respectfulness::new(vec![Group {
+                blocked: true,
+                ..Group::new("blocked", ["^https://"])
+            }])?),
+            ..Policy::default()
+        };
+        let response = search::new("no outbound work")?
+            .bind(&policy)
+            .with_registry(&registry)
+            .send()
+            .await?;
+        let envelope = SearchEnvelope::from_response(&response, None);
+        let manifest = save(directory.path(), &response, &envelope).await?;
+        let value: serde_json::Value = serde_json::from_slice(&fs::read(&manifest)?)?;
+        assert!(
+            value
+                .pointer("/search/rotation/transaction")
+                .is_some_and(serde_json::Value::is_null)
+        );
+        assert!(value.pointer("/search/rotation_ref/document").is_some());
+        let bundle: ReplayBundle = serde_json::from_value(value)?;
+        assert!(bundle.records.is_empty());
+        fs::rename(registry.path(), directory.path().join("offline.jsonl"))?;
+        // No parser inputs still means the parent audit must be restored and validated.
+        assert_eq!(
+            run(ReplayArgs {
+                manifest: manifest.clone(),
+                archive_root: None
+            })
+            .await?,
+            ExitCode::from(2)
+        );
+        assert!(!registry.path().exists());
+        let mut invalid: serde_json::Value = serde_json::from_slice(&fs::read(&manifest)?)?;
+        *invalid
+            .pointer_mut("/search/rotation_ref/version")
+            .context("missing rotation reference version")? = serde_json::json!(2);
+        fs::write(&manifest, serde_json::to_vec(&invalid)?)?;
+        assert!(
+            run(ReplayArgs {
+                manifest,
+                archive_root: None
+            })
+            .await
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn cli_replays_sdk_record_bundle_from_archive() -> Result<()> {
         let directory = tempfile::tempdir()?;
         let opened = Archive::open(directory.path()).await;
@@ -323,6 +416,7 @@ mod tests {
         let observed =
             replay_document(Provider::Bing, document.as_ref(), url, replay_policy).decision();
         let record = SearchReplay {
+            rotation: None,
             schema_version: 1,
             sdk_version: "synthetic-control".to_owned(),
             source_revision: None,

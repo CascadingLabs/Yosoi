@@ -94,6 +94,7 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
         ),
         E::NonCanonicalDocumentOrder => ("NonCanonicalDocumentOrder", json!({})),
         E::UnsupportedDirectHttpDocument => ("UnsupportedDirectHttpDocument", json!({})),
+        E::EmptyAutoSearch => ("EmptyAutoSearch", json!({})),
         E::DuplicateSearchProvider(provider) => (
             "DuplicateSearchProvider",
             json!({"provider": provider_name(*provider)}),

@@ -7,7 +7,7 @@ use crate::internal::policy::{
     policy::{AddressableByteLimit, Documents, MaximumElapsed, Page, Request},
 };
 
-use super::plan::required_total_results;
+use super::plan::{Routing, required_total_results};
 use super::provider::{
     ProfileSelectionKind, Provider, ProviderDefaultsStatus, ProviderDefaultsVersion,
     ProviderRequestProfile,
@@ -17,6 +17,9 @@ use super::provider::{
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EffectiveSearch {
+    /// Routing intent retained separately from the concrete selected provider.
+    #[serde(default, skip_serializing_if = "Routing::is_all")]
+    pub routing: Routing,
     /// Resolved routes in policy order; unavailable Current routes remain present.
     pub providers: Vec<EffectiveProviderRoute>,
     /// Maximum concurrently running provider Requests.
@@ -70,6 +73,9 @@ impl EffectiveSearch {
     }
 
     pub(in crate::internal::policy) fn validate(&self) -> Result<(), PolicyError> {
+        if self.routing == Routing::Auto && self.providers.is_empty() {
+            return Err(PolicyError::EmptyAutoSearch);
+        }
         let mut seen = Vec::with_capacity(self.providers.len());
         for route in &self.providers {
             if seen.contains(&route.provider) {
@@ -106,8 +112,14 @@ impl EffectiveSearch {
         self.maximum_elapsed
             .to_capture_deadline()
             .map_err(|_| PolicyError::ZeroMaximumElapsed)?;
-        let required_results =
-            required_total_results(self.providers.len(), self.max_results_per_provider)?;
+        let required_results = required_total_results(
+            if self.routing == Routing::Auto {
+                1
+            } else {
+                self.providers.len()
+            },
+            self.max_results_per_provider,
+        )?;
         if required_results > self.max_total_results.get() {
             return Err(PolicyError::SearchPlanExceedsTotalResults {
                 required: required_results,

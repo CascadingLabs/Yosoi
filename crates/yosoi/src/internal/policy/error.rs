@@ -101,6 +101,9 @@ pub enum PolicyError {
     /// A provider was selected more than once in Search policy order.
     #[error("Search provider is selected more than once: {0:?}")]
     DuplicateSearchProvider(Provider),
+    /// Auto routing requires at least one configured candidate.
+    #[error("Auto Search requires at least one candidate provider")]
+    EmptyAutoSearch,
     /// Search hit-budget multiplication exceeded the supported integer range.
     #[error("Search result budget arithmetic exceeded its supported range")]
     SearchPlanArithmeticOverflow,

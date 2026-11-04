@@ -42,13 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .send()
         .await?;
     let archive = Archive::open("search-evidence").await?;
-    let mut records = Vec::new();
-    for provider in response.providers() {
-        println!("{:?}: {:?}", provider.provider(), provider.outcome());
-        for capture in provider.captures() {
-            records.push(capture.save(&archive).await?);
-        }
-    }
+    let evidence = response.save_diagnostics(&archive).await?;
     let manifest = archive
         .root()
         .join(format!("sdk-{}.json", response.request_id()));
@@ -62,15 +56,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     options
         .open(&manifest)?
         .write_all(&serde_json::to_vec_pretty(
-            &serde_json::json!({"schema_version": 1, "records": records}),
+            &evidence,
         )?)?;
     println!("Replay manifest: {}", manifest.display());
     Ok(())
 }
 ```
 
-`with_diagnostic_capture()` opts into retaining documents. `save()` writes each
-exact document through Archive and returns its portable replay record. Add
+`with_diagnostic_capture()` opts into retaining documents. `save_diagnostics()`
+saves the captures. With Auto routing it also saves the routing audit and links
+each document's replay record to it. Add
 `tokio` with `macros` and `rt`, and `serde_json = "1"`, to run this complete
 program. Keeping the response separate from saving lets an application handle
 an Archive error while retaining the completed Search result.
@@ -97,16 +92,11 @@ async def main():
     bound = ys.search.new("photosynthesis").bind(policy).with_diagnostic_capture()
     response = await bound.send()
     archive = await Archive.open("search-evidence")
-    records = []
-    for provider in response.providers:
-        print(provider.provider, provider.outcome)
-        for capture in provider.diagnostic_captures:
-            record = await capture.save(archive)
-            records.append(record.model_dump(mode="json"))
+    evidence = await response.save_diagnostics(archive)
     manifest = archive.root / f"sdk-{response.request_id}.json"
     fd = os.open(manifest, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as stream:
-        json.dump({"schema_version": 1, "records": records}, stream, indent=2)
+        json.dump(evidence.model_dump(mode="json"), stream, indent=2)
     print("Replay manifest:", manifest)
 
 
@@ -114,10 +104,42 @@ asyncio.run(main())
 ```
 
 `diagnostic_captures` contains owning views of the retained native documents;
-they are excluded from ordinary response JSON. Saving each view explicitly
-keeps persistence separate from the completed response. For automatic saving,
+they are excluded from ordinary response JSON. Saving the response explicitly
+keeps persistence separate from the completed result and links every retained
+capture to the same Auto routing record. For automatic saving,
 `await bound.send(diagnostic_archive=archive)` instead populates
 `provider.captures` with replay records; a saving error raises from that call.
+
+## Inspect the rotation decision
+
+An evaluated Auto response exposes `rotation`. It records the Search identity,
+ordered candidates, skipped-candidate reasons, the cursor before and after,
+and the exact Registry revisions. A committed decision includes the actual
+transaction UUID, UTC time, caller and reservation metadata returned by the
+atomic commit. The journal's resources also name the Search request, so the
+correlation works in both directions without a second, racy journal read.
+
+A rejected decision has no transaction and leaves its revision and cursor
+unchanged. A missing cursor means that this candidate set was not initialized.
+Routing that stops before Registry evaluation has no trace.
+
+Rust `response.save_rotation(&archive).await?` and Python
+`await response.save_rotation(archive)` save just this content-free audit,
+even when no page was captured. Restore it with Rust
+`AutoRotationTrace::read_from(&archive, &reference).await?` or Python
+`await AutoRotationTrace.read_from(archive, reference)`. Reads work after the
+Registry has been compacted or removed; they restore evidence, not live leases.
+
+`save_diagnostics()` saves this audit once and includes its reference in every
+retained parser record. Python `send(diagnostic_archive=archive)` and CLI
+`--diagnostics DIR` do that automatically, including metadata-only records when
+no provider is admitted. Responses expose `rotation_ref` in Python; the CLI
+manifest contains both the inline trace and its immutable reference.
+
+Replay validates that each linked capture belongs to the recorded provider
+and Request identity. It never opens Registry, advances rotation, charges a
+budget, or sends another provider request. Historical records without a
+rotation reference remain readable as standalone parser evidence.
 
 ## What was retained
 

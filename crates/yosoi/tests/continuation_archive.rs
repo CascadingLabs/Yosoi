@@ -221,7 +221,7 @@ async fn policy_archive_round_trips_nondefault_flow_behavior() -> Result<(), Box
     let mut policy = Policy::default();
     policy.flow.on_failure = Continuation::Stop(StopScope::Invocation);
     let expected_identity = policy.effective_identity()?;
-    assert_eq!(expected_identity.version(), 7);
+    assert_eq!(expected_identity.version(), 10);
 
     let reference = archive.write(&policy).await?;
     let reopened: Policy = archive.read(&reference).await?;

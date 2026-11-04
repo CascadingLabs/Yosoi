@@ -45,21 +45,32 @@ async fn response_json(
         ),
         None => None,
     };
-    let mut saved = Vec::with_capacity(response.providers().len());
-    for provider in response.providers() {
-        let mut records = Vec::new();
-        if let Some(archive) = &archive {
-            for capture in provider.captures() {
-                records.push(
-                    capture
-                        .save(archive)
-                        .await
-                        .map_err(|error| replay_error(&error))?,
-                );
-            }
-        }
-        saved.push(records);
-    }
+    let evidence = match &archive {
+        Some(archive) => Some(
+            response
+                .save_diagnostics(archive)
+                .await
+                .map_err(|error| replay_error(&error))?,
+        ),
+        None => None,
+    };
+    let rotation_ref = evidence
+        .as_ref()
+        .and_then(|evidence| evidence.rotation.clone());
+    let saved: Vec<Vec<_>> = response
+        .providers()
+        .iter()
+        .map(|provider| {
+            evidence.as_ref().map_or_else(Vec::new, |evidence| {
+                evidence
+                    .records
+                    .iter()
+                    .filter(|record| record.provider == provider.provider())
+                    .cloned()
+                    .collect()
+            })
+        })
+        .collect();
     let providers: Vec<_> = response.providers().iter().zip(saved).map(|(provider, captures)| {
         let identity = provider.identity();
         let profile = provider.profile();
@@ -81,6 +92,8 @@ async fn response_json(
         "request_id": response.request_id().to_string(),
         "policy_identity": responses::identity(response.policy_identity()),
         "termination": response.termination(), "providers": providers,
+        "routing": response.routing(), "selected_provider": response.selected_provider(),
+        "rotation": response.rotation(), "rotation_ref": rotation_ref,
     }))
     .map_err(|error| {
         Python::attach(|py| {
@@ -307,5 +320,46 @@ pub fn search_replay_document(
             policy,
         ))
         .map_err(|error| errors::SearchError::new_err(error.to_string()))
+    })
+}
+
+#[pyfunction]
+pub fn search_rotation_write<'py>(
+    py: Python<'py>,
+    trace_json: &str,
+    archive_root: String,
+) -> PyResult<Bound<'py, PyAny>> {
+    let trace: search::AutoRotationTrace = serde_json::from_str(trace_json)
+        .map_err(|error| errors::SearchError::new_err(error.to_string()))?;
+    async_runtime::bridge(py, None, move |_token| async move {
+        let archive = yosoi::Archive::open(archive_root)
+            .await
+            .map_err(|error| replay_error(&error.into()))?;
+        let reference = trace
+            .write_to(&archive)
+            .await
+            .map_err(|error| replay_error(&error))?;
+        serde_json::to_string(&reference)
+            .map_err(|error| errors::SearchError::new_err(error.to_string()))
+    })
+}
+
+#[pyfunction]
+pub fn search_rotation_read<'py>(
+    py: Python<'py>,
+    reference_json: &str,
+    archive_root: String,
+) -> PyResult<Bound<'py, PyAny>> {
+    let reference: search::AutoRotationRef = serde_json::from_str(reference_json)
+        .map_err(|error| errors::SearchError::new_err(error.to_string()))?;
+    async_runtime::bridge(py, None, move |_token| async move {
+        let archive = yosoi::Archive::open(archive_root)
+            .await
+            .map_err(|error| replay_error(&error.into()))?;
+        let trace = search::AutoRotationTrace::read_from(&archive, &reference)
+            .await
+            .map_err(|error| replay_error(&error))?;
+        serde_json::to_string(&trace)
+            .map_err(|error| errors::SearchError::new_err(error.to_string()))
     })
 }

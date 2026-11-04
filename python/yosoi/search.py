@@ -23,9 +23,10 @@ from .policy import (
     PolicyIdentity,
     ProviderDefaultsStatus,
     RespectfulnessEvent,
+    RespectfulnessFailure,
     Tuning,
 )
-from .registry import Registry
+from .registry import Registry, Revision, Transaction
 from .request import _token
 
 Provider = Literal["brave", "bing", "duck_duck_go", "google"]
@@ -480,6 +481,8 @@ class NotStarted(ImmutableModel):
         "adapter_unavailable",
         "unsupported_capability",
         "request_setup_failed",
+        "not_selected",
+        "respectfulness",
         "cancelled",
         "deadline_reached",
     ]
@@ -589,12 +592,136 @@ class SearchReplayPolicy(ImmutableModel):
     output_limit: AddressableByteLimitValue = Field(default=1048576)
 
 
+class AutoRotationSkip(ImmutableModel):
+    """One candidate Auto did not admit, with its exact constraint when available."""
+
+    provider: Provider = Field(description="Concrete candidate from the ordered set.")
+    reason: Literal[
+        "not_selected",
+        "respectfulness",
+        "default_uncertified",
+        "adapter_unavailable",
+        "unsupported_capability",
+        "request_setup_failed",
+        "cancelled",
+        "deadline_reached",
+    ] = Field(description="Why the candidate did not start.")
+    error: RespectfulnessFailure | None = Field(
+        default=None, description="Constraint details and next eligibility."
+    )
+
+
+class AutoRotationRef(ImmutableModel):
+    """Immutable Archive JSON Document reference for an Auto routing audit."""
+
+    version: int = Field(
+        ge=1,
+        le=65535,
+        strict=True,
+        description="Logical reference version, currently one.",
+    )
+    document: str = Field(
+        description="Exact Document Archive reference, validated by Rust during read."
+    )
+
+
+class AutoRotationTrace(ImmutableModel):
+    """Content-free correlation from a Search operation to a registry decision.
+
+    Reading this evidence never opens Registry, advances a cursor or grants a lease.
+    """
+
+    schema_version: int = Field(
+        ge=1, le=65535, strict=True, description="Audit schema, currently one."
+    )
+    search_request_id: str = Field(
+        description="Parent Search identity from the response."
+    )
+    policy_identity_version: int = Field(
+        ge=1,
+        le=65535,
+        strict=True,
+        description="Effective authored policy identity version.",
+    )
+    policy_identity_sha256: str = Field(
+        pattern=r"^[0-9a-f]{64}$",
+        description="Effective policy digest, without query text.",
+    )
+    candidates: tuple[Provider, ...] = Field(description="Exact ordered candidate set.")
+    registry_key: str = Field(description="Stable rotation resource key in Registry.")
+    cursor_before: int | None = Field(
+        ge=0, le=2**64 - 1, description="Stored prior index; None means uninitialized."
+    )
+    cursor_after: int | None = Field(
+        ge=0, le=2**64 - 1, description="Stored next index after the decision."
+    )
+    revision_before: Revision = Field(
+        description="Exact evaluated Registry identity and sequence."
+    )
+    revision_after: Revision = Field(
+        description="Committed revision, or unchanged revision for rejection."
+    )
+    transaction: Transaction | None = Field(
+        description="Actual committed journal envelope; None when no state changed."
+    )
+    selected_provider: Provider | None = Field(
+        description="Concrete admission, including choices later cancelled or failed."
+    )
+    skipped: tuple[AutoRotationSkip, ...] = Field(
+        description="Candidate reasons independent of execution outcome."
+    )
+    request_ids: tuple[str, ...] = Field(
+        description="Original, recovery and resolution Request identities."
+    )
+
+    async def write_to(self, archive: Archive) -> AutoRotationRef:
+        """Save validated routing metadata independently of page captures.
+
+        Args:
+            archive: Destination immutable Archive.
+
+        Returns:
+            A portable immutable reference.
+
+        Raises:
+            SearchError: Invalid metadata or Archive storage failure.
+        """
+        return AutoRotationRef.model_validate_json(
+            await _native.search_rotation_write(
+                self.model_dump_json(), str(archive.root)
+            )
+        )
+
+    @classmethod
+    async def read_from(
+        cls, archive: Archive, reference: AutoRotationRef
+    ) -> AutoRotationTrace:
+        """Restore the original audit without registry, browser or network work.
+
+        Args:
+            archive: Archive containing the exact JSON Document.
+            reference: Immutable routing record to restore.
+
+        Returns:
+            Validated routing evidence, never live execution authority.
+
+        Raises:
+            SearchError: Unsupported, corrupt, mismatched or missing evidence.
+        """
+        return cls.model_validate_json(
+            await _native.search_rotation_read(
+                reference.model_dump_json(), str(archive.root)
+            )
+        )
+
+
 class SearchReplay(ImmutableModel):
     """Portable reference to an explicitly retained Archive document and replay inputs.
 
     URLs retain query/page content. Sanitize evidence before committing fixtures.
 
     Attributes:
+        rotation: Optional parent Auto decision persisted independently of captures.
         schema_version: Manifest version, currently one.
         sdk_version: Capturing SDK version; this alone is not exact-source validation.
         source_revision: Optional revision assertion embedded at native build time.
@@ -618,6 +745,11 @@ class SearchReplay(ImmutableModel):
         observed: Content-free original parser decision for comparison.
     """
 
+    rotation: AutoRotationRef | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Optional parent Auto decision; absent on standalone captures.",
+    )
     schema_version: Literal[1]
     sdk_version: str
     source_revision: str | None
@@ -680,6 +812,20 @@ def replay_document(
         _native.search_replay_document(
             provider, document._handle, provider_page_url, policy.model_dump_json()
         )
+    )
+
+
+class SearchEvidence(ImmutableModel):
+    """One immutable routing reference linked to retained parser replay records."""
+
+    schema_version: Literal[1] = Field(
+        default=1, description="Diagnostic bundle schema."
+    )
+    rotation: AutoRotationRef | None = Field(
+        default=None, description="Parent routing audit reference."
+    )
+    records: tuple[SearchReplay, ...] = Field(
+        default=(), description="Original, recovery and resolution replay inputs."
     )
 
 
@@ -921,6 +1067,8 @@ class SearchResponse(ImmutableModel):
     """A cross-provider result retaining failed and unstarted slots.
 
     Attributes:
+        rotation: Exact Auto cursor and transaction decision when evaluated.
+        rotation_ref: Audit persisted when diagnostic_archive is supplied.
         request_id: Identity assigned to the authored search.
         policy_identity: Resolved policy identity used for execution.
         termination: completed means the scheduler finished without observed
@@ -930,10 +1078,66 @@ class SearchResponse(ImmutableModel):
             completion order.
     """
 
+    rotation: AutoRotationTrace | None = Field(
+        default=None,
+        description="Exact Auto cursor/transaction decision, when evaluated.",
+    )
+    rotation_ref: AutoRotationRef | None = Field(
+        default=None, description="Audit persisted when diagnostic_archive is supplied."
+    )
     request_id: str
     policy_identity: PolicyIdentity
+    routing: Literal["auto", "all"] = Field(
+        default="all", description="Authored routing mode."
+    )
+    selected_provider: Provider | None = Field(
+        default=None,
+        description="Chosen Auto provider, or None when no candidate was admitted.",
+    )
     termination: Literal["completed", "cancelled", "deadline_reached"]
     providers: tuple[ProviderResult, ...] = Field(repr=False)
+
+    async def save_rotation(self, archive: Archive) -> AutoRotationRef | None:
+        """Persist routing metadata even when there are no page captures.
+
+        Args:
+            archive: Destination immutable Archive.
+
+        Returns:
+            Saved audit reference, or None when Auto was not evaluated.
+
+        Raises:
+            SearchError: Invalid audit metadata or storage failure.
+        """
+        return (
+            await self.rotation.write_to(archive) if self.rotation is not None else None
+        )
+
+    async def save_diagnostics(self, archive: Archive) -> SearchEvidence:
+        """Save one audit and link every retained live capture to that record.
+
+        Deserialized metadata alone cannot recreate page bytes. Cancellation or
+        failure can leave immutable documents without a returned bundle.
+
+        Args:
+            archive: Destination for metadata and explicitly retained page content.
+
+        Returns:
+            Portable routing reference and linked parser replay records.
+
+        Raises:
+            SearchError: Storage or validation failure.
+            ValueError: More than 256 retained captures were supplied.
+        """
+        rotation = await self.save_rotation(archive)
+        records = []
+        for provider in self.providers:
+            for capture in provider.diagnostic_captures:
+                if len(records) >= 256:
+                    raise ValueError("Search diagnostics exceed 256 captures")
+                record = await capture.save(archive)
+                records.append(record.model_copy(update={"rotation": rotation}))
+        return SearchEvidence(rotation=rotation, records=tuple(records))
 
     @classmethod
     def _from_native(cls, handle: _native.SearchResponse) -> SearchResponse:

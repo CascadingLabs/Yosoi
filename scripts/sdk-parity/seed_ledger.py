@@ -145,6 +145,7 @@ ERROR_TARGETS = {
 }
 
 VALUE_TARGETS = {
+    "yosoi::policy::search::Routing": "yosoi.policy.SearchRouting",
     "yosoi::Continuation": "yosoi.policy.Continuation",
     "yosoi::FlowPolicy": "yosoi.policy.FlowPolicy",
     "yosoi::StopScope": "yosoi.policy.StopScope",
@@ -326,6 +327,7 @@ ITEM_SEMANTIC_EQUIVALENTS = {
 }
 
 MEMBER_TARGETS = {
+    "yosoi::policy::search::Search::new": "yosoi.policy.Search.new",
     "yosoi::search::ProviderResult::captures": "yosoi.search.ProviderResult.diagnostic_captures",
     "yosoi::request::RequestPreparationError::respectfulness": (
         "yosoi.errors.RequestError"

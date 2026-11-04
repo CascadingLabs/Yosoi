@@ -16,7 +16,10 @@ use crate::{
     },
 };
 
-use super::{SearchCapture, SearchParserDecision, SearchReplayPolicy, SearchReplayResult};
+use super::{
+    AutoRotationRef, AutoRotationTrace, SearchCapture, SearchParserDecision, SearchReplayPolicy,
+    SearchReplayResult,
+};
 
 #[cfg(test)]
 mod tests;
@@ -29,6 +32,9 @@ mod tests;
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct SearchReplay {
+    /// Optional parent Auto decision, stored independently of provider documents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rotation: Option<AutoRotationRef>,
     /// Search diagnostic manifest format; currently one.
     pub schema_version: u16,
     /// SDK version that captured this evidence; this alone is not exact-source proof.
@@ -206,6 +212,7 @@ impl SearchCapture {
     pub async fn save(&self, archive: &Archive) -> Result<SearchReplay, SearchReplayError> {
         let document = archive.write_document(&self.document()).await?;
         Ok(SearchReplay {
+            rotation: None,
             schema_version: 1,
             sdk_version: env!("CARGO_PKG_VERSION").to_owned(),
             source_revision: option_env!("YOSOI_BUILD_SOURCE_REVISION").map(str::to_owned),
@@ -252,6 +259,14 @@ impl SearchReplay {
             || self.replay_policy.output_limit == 0
         {
             return Err(SearchReplayError::InvalidBounds);
+        }
+        if let Some(reference) = &self.rotation {
+            let trace = AutoRotationTrace::read_from(archive, reference).await?;
+            if trace.selected_provider != Some(self.provider)
+                || !trace.request_ids.contains(&self.request_id)
+            {
+                return Err(SearchReplayError::InvalidBounds);
+            }
         }
         let document = archive.read_document(&self.document).await?;
         if let Some(failure) = status_failure(self.http_status) {

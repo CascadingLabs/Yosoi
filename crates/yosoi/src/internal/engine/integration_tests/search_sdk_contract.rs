@@ -50,11 +50,12 @@ fn search_result_url_requires_safe_web_destination() -> TestResult {
 }
 
 #[test]
-fn default_binding_selects_three_versioned_preview_routes_at_five_each() -> TestResult {
+fn default_binding_uses_auto_with_four_versioned_candidates_at_five_each() -> TestResult {
     let policy = ys::Policy::default();
     let prepared = ys::search::new("rust ownership")?.bind(&policy).prepare()?;
     let search = &prepared.policy_snapshot().effective_policy().search;
-    assert_eq!(search.providers().len(), 3);
+    assert_eq!(search.providers().len(), 4);
+    assert_eq!(search.routing, ys::policy::search::Routing::Auto);
     assert_eq!(search.max_results_per_provider().get(), 5);
     assert_eq!(search.max_total_results().get(), 15);
     assert!(
