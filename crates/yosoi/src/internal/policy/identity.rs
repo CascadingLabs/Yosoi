@@ -24,6 +24,10 @@ impl EffectivePolicyIdentity {
         Self::from_json_version(EFFECTIVE_POLICY_IDENTITY_VERSION, IDENTITY_DOMAIN, json)
     }
 
+    pub(in crate::internal::policy) fn from_respectfulness_json(json: &str) -> Self {
+        Self::from_json_version(9, b"yosoi-effective-policy\0v9\0", json)
+    }
+
     pub(in crate::internal::policy) fn from_browser_json(json: &str) -> Self {
         Self::from_json_version(8, BROWSER_IDENTITY_DOMAIN, json)
     }

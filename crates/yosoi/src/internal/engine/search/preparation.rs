@@ -1,3 +1,7 @@
+use crate::policy::AcquisitionKind as TrafficAcquisitionKind;
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+use crate::registry::Registry as RuntimeRegistry;
+
 use std::{cmp::min, fmt};
 
 use crate::internal::policy::{
@@ -14,6 +18,9 @@ use super::{BoundSearchRequest, SearchExecutionSetupError, SearchRequestId};
 /// A structural or setup failure before any provider Requests begin.
 #[derive(Debug, Error)]
 pub enum SearchSendError {
+    /// Required traffic enforcement is unavailable before any provider starts.
+    #[error(transparent)]
+    Respectfulness(#[from] TrafficError),
     /// The resolved search policy selects no providers, so no provider Request can start.
     #[error("Search policy has no selected providers")]
     NoProviderConfigured,
@@ -27,6 +34,7 @@ pub enum SearchSendError {
 
 /// Immutable query intent and one fully resolved Policy snapshot.
 pub struct PreparedSearch {
+    pub(crate) registry: Option<RuntimeRegistry>,
     request_id: SearchRequestId,
     query: String,
     policy_snapshot: PolicySnapshot,
@@ -72,6 +80,7 @@ impl fmt::Debug for PreparedSearch {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("PreparedSearch")
+            .field("registry_bound", &self.registry.is_some())
             .field("request_id", &self.request_id)
             .field("query", &"<redacted>")
             .field("policy_identity", &self.policy_snapshot.identity())
@@ -95,7 +104,25 @@ impl BoundSearchRequest<'_> {
         {
             return Err(SearchSendError::NoProviderConfigured);
         }
+        if self.policy().respectfulness.is_some()
+            && policy_snapshot
+                .effective_policy()
+                .search
+                .providers()
+                .iter()
+                .filter_map(|route| route.page())
+                .any(|page| {
+                    page.acquisitions.iter().any(|acquisition| {
+                        matches!(acquisition.kind(), TrafficAcquisitionKind::Browser { .. })
+                    })
+                })
+        {
+            return Err(SearchSendError::Respectfulness(
+                TrafficError::UnsupportedBrowser,
+            ));
+        }
         Ok(PreparedSearch {
+            registry: self.registry().cloned(),
             request_id: self.request().id(),
             query: self.request().query().to_owned(),
             policy_snapshot,

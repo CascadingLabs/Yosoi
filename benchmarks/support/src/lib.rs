@@ -113,3 +113,11 @@ pub mod internal;
 /// Shared engine/profile declaration used by the embedded SDK component sources.
 #[path = "../../../crates/yosoi/src/browser.rs"]
 pub mod browser;
+
+/// Shared policy declarations required by embedded request execution.
+#[path = "../../../crates/yosoi/src/policy.rs"]
+pub mod policy;
+
+/// Shared operational state implementation used by embedded request execution.
+#[path = "../../../crates/yosoi/src/registry/mod.rs"]
+pub mod registry;

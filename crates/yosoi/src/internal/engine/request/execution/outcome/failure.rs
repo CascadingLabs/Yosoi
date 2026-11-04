@@ -31,6 +31,8 @@ pub use crate::internal::types::BrowserFailureReason;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum AttemptDiagnostic {
+    /// Required traffic coordination failed; inspect Response respectfulness events.
+    RespectfulnessFailed,
     /// Selected acquisition has no configured execution adapter context.
     MissingExecutionContext,
     /// Request policy resolution failed before dispatch.

@@ -228,6 +228,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let request = search::new("rust")?.bind(&policy);
     let error = require_error(request.validate(), "Search without providers")?;
     let (variant, details, error_path) = match &error {
+        SearchSendError::Respectfulness(source) => (
+            "Respectfulness",
+            json!({"respectfulness":source}),
+            "yosoi::search::SearchSendError",
+        ),
         SearchSendError::NoProviderConfigured => (
             "NoProviderConfigured",
             json!({}),

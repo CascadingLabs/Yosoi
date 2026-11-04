@@ -28,6 +28,7 @@ pub enum RequestDirectHttpRedirectDiagnostic {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RequestDirectHttpTransportDiagnostic {
+    Respectfulness,
     Dns,
     Connect,
     Tls,
@@ -45,6 +46,7 @@ pub enum RequestDirectHttpTransportDiagnostic {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RequestAttemptDiagnostic {
+    RespectfulnessFailed,
     MissingExecutionContext,
     PolicyResolutionFailed,
     DirectHttpTransport(RequestDirectHttpTransportDiagnostic),

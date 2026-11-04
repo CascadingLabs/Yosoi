@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::RespectfulnessError as TrafficError;
+
 use crate::browser as browser_config;
 use crate::internal::direct_http as internal_direct_http;
 #[cfg(feature = "browser")]
@@ -6,10 +8,12 @@ use crate::internal::web_capture as internal_web_capture;
 use std::fmt;
 #[cfg(feature = "browser")]
 use std::time as std_time;
+use std::time::Duration;
 #[cfg(feature = "browser")]
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 #[cfg(feature = "browser")]
 use tokio::time as tokio_time;
+use tokio::time::Instant as CaptureInstant;
 
 use crate::internal::direct_http::{
     DirectHttpCapture, DirectHttpCaptureError, capture_direct_http_with_redirect_policy,
@@ -143,6 +147,9 @@ impl PolicyCapture {
 /// Acquisition-specific execution failure with the policy snapshot retained.
 #[derive(Error)]
 pub enum PolicyCaptureExecutionError {
+    /// Shared traffic-state finalization failed after the transport was stopped.
+    #[error(transparent)]
+    Respectfulness(#[from] TrafficError),
     /// Direct HTTP failed while preserving its typed transport/body evidence.
     #[error("Direct HTTP capture failed")]
     DirectHttp(#[source] Box<DirectHttpCaptureError>),
@@ -165,6 +172,10 @@ pub enum PolicyCaptureExecutionError {
 impl fmt::Debug for PolicyCaptureExecutionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Respectfulness(error) => formatter
+                .debug_tuple("Respectfulness")
+                .field(error)
+                .finish(),
             Self::DirectHttp(_) => formatter
                 .debug_tuple("PolicyCaptureExecutionError::DirectHttp")
                 .field(&"<redacted evidence>")
@@ -191,7 +202,7 @@ impl PolicyCaptureExecutionError {
     pub fn browser_evidence(&self) -> Option<&BrowserAdapterResult> {
         match self {
             Self::BrowserFinalization { evidence, .. } => Some(evidence),
-            Self::DirectHttp(_) | Self::BrowserFeatureDisabled => None,
+            Self::Respectfulness(_) | Self::DirectHttp(_) | Self::BrowserFeatureDisabled => None,
             #[cfg(feature = "browser")]
             Self::Browser(_) => None,
         }
@@ -320,12 +331,32 @@ async fn execute_direct_http(
     applied_policy: AppliedPolicy,
     cancellation: &CancellationToken,
 ) -> Result<PolicyCapture, PolicyCaptureError> {
+    let cleanup_deadline = CaptureInstant::now().checked_add(Duration::from_micros(
+        spec.maximum_elapsed().as_microseconds(),
+    ));
+    let operation = spec.respectfulness.clone();
     let capture = Box::pin(capture_direct_http_with_redirect_policy(
         *spec,
         cancellation,
         redirect_targets,
     ))
     .await;
+    if let Some(operation) = operation {
+        let cleanup = match cleanup_deadline {
+            Some(deadline) => operation.finish_before(deadline).await,
+            None => Err(TrafficError::Setup {
+                message: "cleanup deadline exceeds runtime range".to_owned(),
+            }),
+        };
+        if let Err(error) = cleanup
+            && capture.is_ok()
+        {
+            return Err(PolicyCaptureError::Execution {
+                applied_policy,
+                source: Box::new(PolicyCaptureExecutionError::Respectfulness(error)),
+            });
+        }
+    }
     match capture {
         Ok(capture) => Ok(PolicyCapture::new(
             applied_policy,

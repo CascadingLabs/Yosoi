@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::Event as TrafficEvent;
+
 use std::{fmt, num::NonZeroU16};
 
 use crate::internal::policy::{
@@ -48,6 +50,8 @@ pub struct ProviderIdentity {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchAttemptDiagnostic {
+    /// Traffic coordination failed before further provider work could proceed.
+    RespectfulnessFailed,
     /// No executor context was available for the selected acquisition.
     MissingExecutionContext,
     /// Authored policy could not be resolved into an executable request.
@@ -175,6 +179,8 @@ pub enum ProviderCharge {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SearchFailure {
+    /// An applicable traffic rule or required Registry operation rejected work.
+    Respectfulness,
     /// The provider reported throttling or a rate-limit response.
     RateLimited,
     /// The response was classified as an access challenge rather than search results.
@@ -240,6 +246,7 @@ impl fmt::Debug for ProviderOutcome {
 /// One provider slot, kept in authored Policy order even when work completes
 /// in another order.
 pub struct ProviderResult {
+    pub(in crate::internal::engine) respectfulness: Vec<TrafficEvent>,
     pub(in crate::internal::engine) identity: ProviderIdentity,
     pub(in crate::internal::engine) profile: SearchProfileFacts,
     pub(in crate::internal::engine) request_id: Option<RequestId>,
@@ -252,6 +259,11 @@ pub struct ProviderResult {
 }
 
 impl ProviderResult {
+    /// Content-free admission, feedback and retry history for this provider slot.
+    pub fn respectfulness(&self) -> &[TrafficEvent] {
+        &self.respectfulness
+    }
+
     /// Retains one authored provider slot when no Request was started.
     pub(in crate::internal::engine) fn not_started(
         route: &EffectiveProviderRoute,
@@ -278,6 +290,7 @@ impl ProviderResult {
             recovery_query: None,
             attempts: Vec::new(),
             captures: Vec::new(),
+            respectfulness: Vec::new(),
             outcome: ProviderOutcome::NotStarted(reason),
             charge: ProviderCharge::Unknown,
         }
@@ -337,6 +350,7 @@ impl fmt::Debug for ProviderResult {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("ProviderResult")
+            .field("respectfulness_events", &self.respectfulness.len())
             .field("identity", &self.identity)
             .field("profile", &self.profile)
             .field("request_id", &self.request_id)

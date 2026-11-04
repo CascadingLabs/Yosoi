@@ -22,6 +22,7 @@ pub(super) const fn failure_kind(kind: AttemptFailureKind) -> RequestAttemptFail
 
 pub(super) const fn diagnostic(value: AttemptDiagnostic) -> RequestAttemptDiagnostic {
     match value {
+        AttemptDiagnostic::RespectfulnessFailed => RequestAttemptDiagnostic::RespectfulnessFailed,
         AttemptDiagnostic::MissingExecutionContext => {
             RequestAttemptDiagnostic::MissingExecutionContext
         }
@@ -58,6 +59,9 @@ const fn direct_http_transport(
     value: DirectHttpTransportErrorKind,
 ) -> RequestDirectHttpTransportDiagnostic {
     match value {
+        DirectHttpTransportErrorKind::Respectfulness => {
+            RequestDirectHttpTransportDiagnostic::Respectfulness
+        }
         DirectHttpTransportErrorKind::Dns => RequestDirectHttpTransportDiagnostic::Dns,
         DirectHttpTransportErrorKind::Connect => RequestDirectHttpTransportDiagnostic::Connect,
         DirectHttpTransportErrorKind::Tls => RequestDirectHttpTransportDiagnostic::Tls,

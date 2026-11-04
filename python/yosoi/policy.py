@@ -1192,6 +1192,237 @@ class _SnapshotBrowserConfig(BrowserConfig):
     model_config = ConfigDict(frozen=True)
 
 
+class RateBudget(Model):
+    """Maximum charged starts in a rolling window; spacing controls bursts."""
+
+    requests: int = Field(
+        gt=0, le=512, strict=True, description="Allowed starts in the window."
+    )
+    window_ms: int = Field(
+        gt=0,
+        le=86_400_000,
+        strict=True,
+        description="Rolling duration in milliseconds.",
+    )
+
+
+class RespectfulnessCooldown(Model):
+    """Observed HTTP/transport feedback that temporarily stops a group."""
+
+    statuses: list[int] = Field(
+        description="HTTP error statuses that trigger cooldown."
+    )
+    fallback_ms: int = Field(
+        gt=0,
+        le=86_400_000,
+        strict=True,
+        description="Fallback delay when Retry-After is absent or unsupported.",
+    )
+    transport_errors: bool = Field(
+        default=False,
+        description="Cool down on transport failure, excluding cancellation/deadlines.",
+    )
+
+
+class RespectfulnessRetry(Model):
+    """Explicit bounded retries; every send must obtain new group admission."""
+
+    max_attempts: int = Field(
+        default=1,
+        ge=1,
+        le=8,
+        strict=True,
+        description="Total sends per URL, including the original.",
+    )
+    statuses: list[int] = Field(
+        default_factory=list, description="HTTP errors eligible for retry."
+    )
+    backoff_ms: int = Field(
+        default=0,
+        ge=0,
+        le=86_400_000,
+        strict=True,
+        description="Constant backoff in milliseconds; positive when retrying.",
+    )
+    transport_errors: bool = Field(
+        default=False,
+        description="Retry transport failures, excluding cancellation/deadlines.",
+    )
+
+
+class RespectfulnessGroup(Model):
+    """Shared constraints for URLs matching any of this group's Rust regexes.
+
+    The stable ID selects Registry state. Changing settings for a registered ID
+    fails explicitly rather than resetting an existing budget.
+    """
+
+    id: str = Field(
+        description="Stable nonsensitive group ID, at most 128 UTF-8 bytes."
+    )
+    patterns: list[str] = Field(
+        description="Rust URL regexes; queries retained, fragments removed."
+    )
+    concurrency: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        gt=0,
+        le=128,
+        strict=True,
+        description="Maximum active request leases.",
+    )
+    spacing_ms: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        gt=0,
+        le=86_400_000,
+        strict=True,
+        description="Minimum interval between charged starts.",
+    )
+    budgets: list[RateBudget] = Field(
+        default_factory=list,
+        description="Simultaneously applicable rolling-window budgets.",
+    )
+    cooldown: RespectfulnessCooldown | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Optional response/error cooldown reactions.",
+    )
+    blocked: bool = Field(
+        default=False, description="Reject every matching request without dispatch."
+    )
+
+
+class Respectfulness(Model):
+    """Regex-group traffic constraints inside Policy, backed by a bound Registry.
+
+    Every matching group applies. No Respectfulness value means disabled; there
+    is no separate enabled flag. Native Policy validation checks Rust regexes.
+    Browser paths without per-request enforcement fail before dispatch.
+    """
+
+    registry_path: str | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description=(
+            "JSONL file; absent uses the standard user file. "
+            "A bound Registry overrides it."
+        ),
+    )
+    groups: list[RespectfulnessGroup] = Field(
+        description="One through 32 distinct named groups."
+    )
+    unmatched: Literal["allow", "reject"] = Field(
+        default="allow", description="Treatment of canonical URLs matching no group."
+    )
+    retry: RespectfulnessRetry = Field(
+        default_factory=RespectfulnessRetry,
+        description="Bounded explicit retry settings; default is one attempt.",
+    )
+
+
+class RespectfulnessLimited(ImmutableModel):
+    """An applicable traffic constraint rejected a start before dispatch."""
+
+    kind: Literal["limited"] = Field(
+        default="limited", description="Native failure discriminator."
+    )
+    group: str = Field(description="Stable rejecting group ID.")
+    reason: Literal["blocked", "cooldown", "concurrency", "spacing", "rate_budget"] = (
+        Field(description="Constraint that rejected admission.")
+    )
+    next_eligible_at_ms: int | None = Field(
+        description="Unix-millisecond eligibility, or None for an authored block."
+    )
+
+
+class RespectfulnessUnmatched(ImmutableModel):
+    """Policy required explicit coverage but no URL regex matched."""
+
+    kind: Literal["unmatched"] = Field(
+        default="unmatched", description="Native failure discriminator."
+    )
+
+
+class RespectfulnessUnsupportedBrowser(ImmutableModel):
+    """A browser path cannot supply required per-request enforcement."""
+
+    kind: Literal["unsupported_browser"] = Field(
+        default="unsupported_browser", description="Native failure discriminator."
+    )
+
+
+class RespectfulnessConfigurationMismatch(ImmutableModel):
+    """A registered group ID has different settings; state was not reset."""
+
+    kind: Literal["configuration_mismatch"] = Field(
+        default="configuration_mismatch", description="Native failure discriminator."
+    )
+    group: str = Field(description="Group whose configuration must be reviewed.")
+
+
+class RespectfulnessRegistryFailure(ImmutableModel):
+    """An operational Registry error prevented coordinated work."""
+
+    kind: Literal["registry"] = Field(
+        default="registry", description="Native failure discriminator."
+    )
+    variant: str = Field(
+        description="Original Registry failure variant, including Busy or Conflict."
+    )
+    message: str = Field(description="Source error description without a request URL.")
+
+
+class RespectfulnessInvalidState(ImmutableModel):
+    """Persisted traffic-state DTOs are malformed or incompatible."""
+
+    kind: Literal["invalid_state"] = Field(
+        default="invalid_state", description="Native failure discriminator."
+    )
+
+
+class RespectfulnessSetupFailure(ImmutableModel):
+    """Policy, clock, lease or arithmetic setup failed before further dispatch."""
+
+    kind: Literal["setup"] = Field(
+        default="setup", description="Native failure discriminator."
+    )
+    message: str = Field(description="Concrete setup failure without a request URL.")
+
+
+RespectfulnessFailure = Annotated[
+    RespectfulnessLimited
+    | RespectfulnessUnmatched
+    | RespectfulnessUnsupportedBrowser
+    | RespectfulnessConfigurationMismatch
+    | RespectfulnessRegistryFailure
+    | RespectfulnessInvalidState
+    | RespectfulnessSetupFailure,
+    Field(discriminator="kind"),
+]
+"""Typed native failure data. Raised exceptions remain RequestError/SearchError."""
+
+
+class RespectfulnessEvent(ImmutableModel):
+    """Content-free accounting for admission, feedback, retries and cleanup."""
+
+    kind: Literal["admitted", "response", "retry", "released", "rejected"] = Field(
+        description="Observed enforcement transition."
+    )
+    groups: tuple[str, ...] = Field(
+        description="Applicable stable group IDs, without URLs or queries."
+    )
+    registry_id: str | None = Field(
+        description="Logical registry identity when shared state was accessed."
+    )
+    status: int | None = Field(
+        description="Observed HTTP status, independently of final provider success."
+    )
+    error: RespectfulnessFailure | None = Field(
+        description="Native rejection details, including kind and eligibility time."
+    )
+
+
 class EffectivePolicy(ImmutableModel):
     """Rust-resolved behavior view, separate from caller authoring intent.
 
@@ -1210,6 +1441,11 @@ class EffectivePolicy(ImmutableModel):
         search: Resolved provider routes and shared budgets.
     """
 
+    respectfulness: Respectfulness | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Resolved traffic rules, absent in historical snapshots.",
+    )
     network: Network = Field(
         default_factory=lambda: Network(), exclude_if=_network_is_default
     )
@@ -1288,6 +1524,11 @@ class Policy(Model):
 
     model_config = ConfigDict(hide_input_in_errors=True)
 
+    respectfulness: Respectfulness | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Optional traffic constraints; bind Registry handles at runtime.",
+    )
     network: Network = Field(default_factory=Network, exclude_if=_network_is_default)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
     default_action_timeout_ms: PositiveU64 = 10_000
@@ -1502,7 +1743,51 @@ class _SnapshotNetwork(ImmutableModel):
     )
 
 
+class _SnapshotRateBudget(ImmutableModel):
+    requests: int
+    window_ms: int
+
+
+class _SnapshotRespectfulnessCooldown(ImmutableModel):
+    statuses: tuple[int, ...]
+    fallback_ms: int
+    transport_errors: bool
+
+
+class _SnapshotRespectfulnessRetry(ImmutableModel):
+    max_attempts: int
+    statuses: tuple[int, ...]
+    backoff_ms: int
+    transport_errors: bool
+
+
+class _SnapshotRespectfulnessGroup(ImmutableModel):
+    id: str
+    patterns: tuple[str, ...]
+    concurrency: int | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    spacing_ms: int | None = Field(default=None, exclude_if=lambda value: value is None)
+    budgets: tuple[_SnapshotRateBudget, ...]
+    cooldown: _SnapshotRespectfulnessCooldown | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    blocked: bool
+
+
+class _SnapshotRespectfulness(ImmutableModel):
+    registry_path: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    groups: tuple[_SnapshotRespectfulnessGroup, ...]
+    unmatched: Literal["allow", "reject"]
+    retry: _SnapshotRespectfulnessRetry
+
+
 class _SnapshotPolicy(ImmutableModel):
+    respectfulness: _SnapshotRespectfulness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     network: _SnapshotNetwork = Field(
         default_factory=_SnapshotNetwork, exclude_if=_network_is_default
     )
@@ -1560,6 +1845,9 @@ class _SnapshotEffectiveSearch(ImmutableModel):
 
 
 class _SnapshotEffectivePolicy(ImmutableModel):
+    respectfulness: _SnapshotRespectfulness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     network: _SnapshotNetwork = Field(
         default_factory=_SnapshotNetwork, exclude_if=_network_is_default
     )

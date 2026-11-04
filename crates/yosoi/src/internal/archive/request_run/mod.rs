@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::Event as TrafficEvent;
+
 use std::collections::BTreeSet;
 
 use crate::internal::policy::{
@@ -282,6 +284,8 @@ impl<'de> Deserialize<'de> for RequestAttemptRecord {
 #[derive(Clone, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RequestRunRecord {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    respectfulness: Vec<TrafficEvent>,
     request_id: ActivityId,
     target_origin: TupleWebOrigin,
     policy: PolicyArchiveRef,
@@ -291,6 +295,14 @@ pub struct RequestRunRecord {
 }
 
 impl RequestRunRecord {
+    pub(crate) fn set_respectfulness(&mut self, events: Vec<TrafficEvent>) {
+        self.respectfulness = events;
+    }
+    /// Content-free traffic transitions retained with the archived request.
+    pub fn respectfulness(&self) -> &[TrafficEvent] {
+        &self.respectfulness
+    }
+
     pub fn try_new(
         request_id: ActivityId,
         target_origin: TupleWebOrigin,
@@ -300,6 +312,7 @@ impl RequestRunRecord {
         attempts: Vec<RequestAttemptRecord>,
     ) -> Result<Self, RequestRunRecordError> {
         let record = Self {
+            respectfulness: Vec::new(),
             request_id,
             target_origin,
             policy,
@@ -359,6 +372,8 @@ impl<'de> Deserialize<'de> for RequestRunRecord {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
         struct Wire {
+            #[serde(default)]
+            respectfulness: Vec<TrafficEvent>,
             request_id: ActivityId,
             target_origin: TupleWebOrigin,
             policy: PolicyArchiveRef,
@@ -367,7 +382,7 @@ impl<'de> Deserialize<'de> for RequestRunRecord {
             attempts: Vec<RequestAttemptRecord>,
         }
         let wire = Wire::deserialize(deserializer)?;
-        Self::try_new(
+        let mut record = Self::try_new(
             wire.request_id,
             wire.target_origin,
             wire.policy,
@@ -375,7 +390,9 @@ impl<'de> Deserialize<'de> for RequestRunRecord {
             wire.termination,
             wire.attempts,
         )
-        .map_err(D::Error::custom)
+        .map_err(D::Error::custom)?;
+        record.respectfulness = wire.respectfulness;
+        Ok(record)
     }
 }
 

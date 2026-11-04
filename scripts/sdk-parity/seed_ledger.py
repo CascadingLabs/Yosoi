@@ -132,6 +132,7 @@ ERROR_TARGETS = {
     "RequestError": "yosoi.errors.RequestError",
     "RequestPreparationError": "yosoi.errors.RequestError",
     "RequestSendError": "yosoi.errors.RequestError",
+    "RespectfulnessError": "yosoi.policy.RespectfulnessFailure",
     "ResourceBudgetError": "yosoi.errors.LocatorError",
     "RuntimeContractError": "yosoi.errors.ContractError",
     "RuntimeContractArchiveError": "yosoi.errors.ContractError",
@@ -182,6 +183,21 @@ VALUE_TARGETS = {
     "yosoi::map::SkipReason": "yosoi.map.SkipReason",
     "yosoi::map::SourceSkipReason": "yosoi.map.SourceSkipReason",
     "yosoi::policy::Limits": "yosoi.policy.MapLimits",
+    "yosoi::policy::respectfulness::Cooldown": ("yosoi.policy.RespectfulnessCooldown"),
+    "yosoi::policy::respectfulness::Event": "yosoi.policy.RespectfulnessEvent",
+    "yosoi::policy::respectfulness::EventKind": (
+        "yosoi.policy.RespectfulnessEvent.kind"
+    ),
+    "yosoi::policy::respectfulness::Group": "yosoi.policy.RespectfulnessGroup",
+    "yosoi::policy::respectfulness::LimitReason": (
+        "yosoi.policy.RespectfulnessLimited.reason"
+    ),
+    "yosoi::policy::respectfulness::RateBudget": "yosoi.policy.RateBudget",
+    "yosoi::policy::respectfulness::Respectfulness": "yosoi.policy.Respectfulness",
+    "yosoi::policy::respectfulness::Retry": "yosoi.policy.RespectfulnessRetry",
+    "yosoi::policy::respectfulness::Unmatched": (
+        "yosoi.policy.Respectfulness.unmatched"
+    ),
     "yosoi::request::ActivityId": "yosoi.request.ActivityId",
     "yosoi::request::CaptureId": "yosoi.request.CaptureId",
     "yosoi::request::RequestId": "yosoi.request.RequestId",
@@ -311,6 +327,10 @@ ITEM_SEMANTIC_EQUIVALENTS = {
 
 MEMBER_TARGETS = {
     "yosoi::search::ProviderResult::captures": "yosoi.search.ProviderResult.diagnostic_captures",
+    "yosoi::request::RequestPreparationError::respectfulness": (
+        "yosoi.errors.RequestError"
+    ),
+    "yosoi::request::RequestSendError::respectfulness": "yosoi.errors.RequestError",
     "yosoi::request::DocumentOutcome::document": "yosoi.request.DocumentOutcome.document",
     "yosoi::Document::bytes": "yosoi.documents.Document.data",
     "yosoi::Document::class": "yosoi.documents.Document.document_class",
@@ -379,7 +399,21 @@ MEMBER_TARGETS = {
     "yosoi::locators::xpath": "yosoi.locators.xpath",
 }
 
+MEMBER_MAPPING_RATIONALES = {
+    "yosoi::request::RequestPreparationError::respectfulness": (
+        "The Rust accessor's typed respectfulness cause is carried in the Python "
+        "RequestError details['respectfulness'] payload."
+    ),
+    "yosoi::request::RequestSendError::respectfulness": (
+        "The Rust accessor's typed respectfulness cause is carried in the Python "
+        "RequestError details['respectfulness'] payload."
+    ),
+}
+
 VARIANT_PARENT_TARGETS = {
+    "yosoi::search::SearchAttemptDiagnostic": {
+        "RespectfulnessFailed": "yosoi.diagnostics.SearchAttemptDiagnostic",
+    },
     "yosoi::Continuation": {
         "Continue": "yosoi.policy.Continue",
         "Stop": "yosoi.policy.Stop",
@@ -400,6 +434,29 @@ VARIANT_PARENT_TARGETS = {
         "Unavailable": "yosoi.request.Unavailable",
         "Unprojectable": "yosoi.request.Unprojectable",
     },
+}
+
+VARIANT_MAPPING_RATIONALES = {
+    ("yosoi::search::SearchAttemptDiagnostic", "RespectfulnessFailed"): (
+        "The Rust variant maps to the Python search attempt diagnostic literal."
+    ),
+}
+
+EXPLICIT_VARIANT_MAPPINGS = {
+    "yosoi::PolicyError::InvalidRespectfulness": (
+        "yosoi.errors.PolicyError",
+        "yosoi::PolicyError",
+        {"rustArgument": "0", "pythonFieldPath": "details.message"},
+        "The native PolicyError adapter retains variant and details for "
+        "rust_error_details.",
+    ),
+    "yosoi::search::SearchSendError::Respectfulness": (
+        "yosoi.errors.SearchError",
+        "yosoi::search::SearchSendError",
+        {"rustArgument": "0", "pythonFieldPath": "details.respectfulness"},
+        "The native SearchError adapter retains the typed respectfulness failure "
+        "in details for rust_error_details.",
+    ),
 }
 
 VARIANT_MODEL_PARENTS = {
@@ -1337,8 +1394,9 @@ def seed_entries(
                 target_info = python["targets"].get(target)
             if target_info is None:
                 continue
-            rationale = (
-                f"Rust method maps to the matching Python method/property {target}."
+            rationale = MEMBER_MAPPING_RATIONALES.get(
+                item["rustPath"],
+                f"Rust method maps to the matching Python method/property {target}.",
             )
         elif item["kind"] == "variant":
             parent = next(
@@ -1442,7 +1500,10 @@ def seed_entries(
             target_info = python["targets"].get(target)
             if target_info is None:
                 continue
-            rationale = f"Rust variant {member_name} maps to the corresponding Python tagged value {target}."
+            rationale = VARIANT_MAPPING_RATIONALES.get(
+                (parent["rustPath"], member_name),
+                f"Rust variant {member_name} maps to the corresponding Python tagged value {target}.",
+            )
             if wire_value is None:
                 tag_defaults = _variant_tag_defaults(target_info, member_name)
                 if tag_defaults:
@@ -1491,6 +1552,42 @@ def seed_entries(
             if item["kind"] == "variant":
                 row["defaults"].extend(_variant_tag_defaults(target_info, member_name))
             entries_by_identity[item["symbolKey"]] = row
+
+    for item in rust["items"]:
+        target_mapping = EXPLICIT_VARIANT_MAPPINGS.get(item["rustPath"])
+        if target_mapping is None:
+            continue
+        target, rust_type, payload, semantic_equivalent = target_mapping
+        target_info = python["targets"].get(target)
+        if target_info is None:
+            continue
+        leaf = item["rustPath"].rsplit("::", 1)[-1]
+        entries_by_identity[item["symbolKey"]] = {
+            "rustPath": item["rustPath"],
+            "symbolKey": item["symbolKey"],
+            "decision": "mapped",
+            "pythonTarget": target,
+            "argumentMappings": [],
+            "defaults": [],
+            "units": [],
+            "cardinality": [],
+            "mappingDirection": "output",
+            "outputBinding": {
+                "kind": "error-details",
+                "schemaTarget": "yosoi.errors.RustErrorDetails",
+                "discriminator": "variant",
+                "tag": leaf,
+                "rustType": rust_type,
+                "pythonFields": [
+                    {
+                        **payload,
+                        "conversion": "Rust error payload is retained at this details path.",
+                    }
+                ],
+            },
+            "semanticEquivalent": semantic_equivalent,
+            "rationale": semantic_equivalent,
+        }
 
     for item in rust["items"]:
         if item.get("trait") != "Default":

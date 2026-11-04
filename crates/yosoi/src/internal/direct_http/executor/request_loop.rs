@@ -2,7 +2,6 @@ use crate::internal::direct_http as yosoi_web_capture_direct_http;
 
 use tokio::time::{Instant, timeout_at};
 use tokio_util::sync::CancellationToken;
-use wreq::header::USER_AGENT;
 
 use super::boundary_offset;
 use crate::internal::direct_http::{
@@ -53,12 +52,8 @@ pub(super) async fn execute(
                 }
             }
         };
-        let request = client.get(current.as_str());
-        let request = match spec.strategy().user_agent() {
-            Some(user_agent) => request.header(USER_AGENT, user_agent.as_str()),
-            None => request,
-        }
-        .send();
+        let request =
+            super::respectfulness::send(&client, &spec, current.as_str(), cancellation, deadline);
         let response = tokio::select! {
             biased;
             () = cancellation.cancelled() => {
@@ -83,7 +78,6 @@ pub(super) async fn execute(
             result = timeout_at(deadline, request) => match result {
                 Ok(Ok(response)) => response,
                 Ok(Err(error)) => {
-                    let error = DirectHttpTransportError::from_wreq(error);
                     if error.kind() == DirectHttpTransportErrorKind::Timeout {
                         return Err(termination::deadline(spec, lifecycle, prior_resolution, error));
                     }

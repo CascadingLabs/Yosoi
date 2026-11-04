@@ -13,6 +13,7 @@ use std::{
 
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
+use yosoi::policy::respectfulness as traffic;
 use yosoi::{
     CountLimit, DocumentId, Policy, StepLimit,
     browser::{BrowserConfig, BrowserEngine, MoliProfile},
@@ -374,7 +375,20 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
 
     // Public policy defaults. The nested cases each exercise the
     // direct Rust type and its own Python model, in addition to Policy itself.
-    default_case::<Policy>(&mut output, "default-policy", "yosoi::Policy")?;
+    let policy_default = Policy::default();
+    let policy_fields = json!({"respectfulness": &policy_default.respectfulness});
+    let mut policy_default_case = constructed_case(
+        "default-policy",
+        "yosoi::Policy",
+        "Rust Default::default",
+        policy_default,
+        json!({"absentPaths": ["respectfulness"]}),
+    )?;
+    policy_default_case
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Policy fixture must be an object"))?
+        .insert("field_observations".to_owned(), policy_fields);
+    output.push(policy_default_case);
     let network = Network::default();
     // Read the actual typed defaults before moving the value into its JSON
     // codec. Missing wire keys alone cannot prove the fields contain None.
@@ -1014,6 +1028,133 @@ fn build_fixtures() -> Result<Vec<Value>, Box<dyn Error>> {
         Coordination::LocalProcesses,
         json!({}),
     )?);
+
+    let respect_group = traffic::Group {
+        concurrency: Some(2),
+        spacing_ms: Some(100),
+        budgets: vec![traffic::RateBudget {
+            requests: 10,
+            window_ms: 60_000,
+        }],
+        ..traffic::Group::new("wire", [r"^https://example\.com/"])
+    };
+    let respect = traffic::Respectfulness::new(vec![respect_group.clone()])?;
+    output.push(constructed_case(
+        "respectfulness-group",
+        "yosoi::policy::respectfulness::Group",
+        "Rust traffic group",
+        respect_group,
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-policy",
+        "yosoi::policy::respectfulness::Respectfulness",
+        "Rust traffic policy",
+        respect.clone(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-budget",
+        "yosoi::policy::respectfulness::RateBudget",
+        "Rust rolling budget",
+        traffic::RateBudget {
+            requests: 2,
+            window_ms: 1000,
+        },
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-retry",
+        "yosoi::policy::respectfulness::Retry",
+        "Rust retry policy",
+        traffic::Retry::default(),
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "respectfulness-cooldown",
+        "yosoi::policy::respectfulness::Cooldown",
+        "Rust cooldown policy",
+        traffic::Cooldown {
+            statuses: vec![429],
+            fallback_ms: 1000,
+            transport_errors: true,
+        },
+        json!({}),
+    )?);
+    output.push(constructed_case(
+        "policy-with-respectfulness",
+        "yosoi::Policy",
+        "Rust Policy with traffic rules",
+        Policy {
+            respectfulness: Some(respect),
+            ..Policy::default()
+        },
+        json!({}),
+    )?);
+    for (name, failure) in [
+        (
+            "limited",
+            traffic::RespectfulnessError::Limited {
+                group: "wire".to_owned(),
+                reason: traffic::LimitReason::RateBudget,
+                next_eligible_at_ms: Some(2000),
+            },
+        ),
+        (
+            "blocked",
+            traffic::RespectfulnessError::Limited {
+                group: "wire".to_owned(),
+                reason: traffic::LimitReason::Blocked,
+                next_eligible_at_ms: None,
+            },
+        ),
+        ("unmatched", traffic::RespectfulnessError::Unmatched),
+        (
+            "unsupported",
+            traffic::RespectfulnessError::UnsupportedBrowser,
+        ),
+        (
+            "configuration",
+            traffic::RespectfulnessError::ConfigurationMismatch {
+                group: "wire".to_owned(),
+            },
+        ),
+        (
+            "registry",
+            traffic::RespectfulnessError::Registry {
+                variant: "Busy".to_owned(),
+                message: "busy".to_owned(),
+            },
+        ),
+        ("state", traffic::RespectfulnessError::InvalidState),
+        (
+            "setup",
+            traffic::RespectfulnessError::Setup {
+                message: "range".to_owned(),
+            },
+        ),
+    ] {
+        output.push(constructed_case(
+            &format!("respectfulness-error-{name}"),
+            "yosoi::policy::respectfulness::RespectfulnessError",
+            "Rust traffic failure",
+            failure.clone(),
+            json!({}),
+        )?);
+        output.push(constructed_case(
+            &format!("respectfulness-event-{name}"),
+            "yosoi::policy::respectfulness::Event",
+            "Rust traffic event",
+            traffic::Event {
+                kind: traffic::EventKind::Rejected,
+                groups: vec!["wire".to_owned()],
+                registry_id: None,
+                status: None,
+                error: Some(failure),
+            },
+            json!({}),
+        )?);
+    }
 
     Ok(output)
 }

@@ -2,7 +2,7 @@ use serde::Serialize;
 use yosoi::{
     EffectivePolicyIdentity,
     documents::DocumentClass,
-    policy::AcquisitionKind,
+    policy::{AcquisitionKind, respectfulness::Event},
     search::{SearchCaptureRetention, SearchParserDiagnostic},
 };
 
@@ -163,6 +163,7 @@ pub(super) struct RequestAttemptView {
 
 #[derive(Debug, Serialize)]
 pub(super) struct ProviderView<'a> {
+    pub(super) respectfulness: &'a [Event],
     pub(super) provider: &'static str,
     pub(super) identity: ProviderIdentityView<'a>,
     pub(super) status: ProviderStatus,

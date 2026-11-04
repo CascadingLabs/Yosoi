@@ -1,4 +1,6 @@
 //! Pure preflight shared by SDK dispatch and CLI explanations.
+use crate::policy::PolicyError as TrafficPolicyError;
+
 use crate::internal::map::admission::{Scope, normalize};
 use crate::internal::policy::policy::{AcquisitionKind, DocumentRequest};
 use tokio::time::Instant;
@@ -20,6 +22,11 @@ impl MapRequest {
     }
 
     pub(super) fn prepare_inputs(&self) -> Result<PreparedInputs, MapError> {
+        if self.policy.respectfulness.is_some() {
+            return Err(MapError::Policy(TrafficPolicyError::InvalidRespectfulness(
+                "Map-wide Registry binding/enforcement is not supported yet".to_owned(),
+            )));
+        }
         let snapshot = PolicySnapshot::from_policy(&self.policy)?;
         let seed = normalize(&self.seed, None, self.policy.map.limits.max_url_bytes.get())?;
         let scope = Scope::new(&seed, &self.policy.map)?;

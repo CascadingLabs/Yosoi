@@ -1,4 +1,4 @@
-use super::policy::Network;
+use super::policy::{Network, respectfulness::Respectfulness};
 use crate::browser as browser_config;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -24,7 +24,7 @@ impl Policy {
     /// Computes the v6 identity used by archived policies without Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.effective_policy()?.archived_v6_identity()
@@ -34,7 +34,7 @@ impl Policy {
     /// default action timeout field.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.effective_policy()?.archived_v5_identity()
@@ -46,7 +46,7 @@ impl Policy {
     /// legacy archive schema, before a Search section existed.
     #[doc(hidden)]
     pub fn archived_v2_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -86,7 +86,7 @@ impl Policy {
     /// The v3 projection included Map but preceded Search.
     #[doc(hidden)]
     pub fn archived_v3_map_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -125,7 +125,7 @@ impl Policy {
     pub fn archived_v3_map_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.validate()?;
@@ -179,6 +179,9 @@ impl Policy {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct EffectivePolicy {
+    /// Resolved traffic constraints; absent historical/default values remain disabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub respectfulness: Option<Respectfulness>,
     /// Routing behavior included in identity when explicitly configured.
     #[serde(default, skip_serializing_if = "Network::is_default")]
     pub network: Network,
@@ -213,6 +216,9 @@ pub struct EffectivePolicy {
 impl EffectivePolicy {
     /// Validates the stored effective behavior and computes its versioned identity.
     pub fn effective_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        if let Some(respectfulness) = &self.respectfulness {
+            respectfulness.validate()?;
+        }
         self.network.validate()?;
         self.browser.validate()?;
         self.page.validate()?;
@@ -236,12 +242,15 @@ impl EffectivePolicy {
             })
             .collect();
         let json = serde_json::to_string(&EffectivePolicyIdentityEnvelopeRef {
-            schema_version: if self.browser.is_default() {
+            schema_version: if self.respectfulness.is_some() {
+                9
+            } else if self.browser.is_default() {
                 POLICY_SCHEMA_VERSION
             } else {
                 8
             },
             policy: EffectivePolicyIdentityBodyRef {
+                respectfulness: &self.respectfulness,
                 network: &self.network,
                 browser: &self.browser,
                 page: EffectivePageIdentityRef { acquisitions },
@@ -256,7 +265,9 @@ impl EffectivePolicy {
             },
         })
         .map_err(|error| PolicyError::Serialization(error.to_string()))?;
-        Ok(if self.browser.is_default() {
+        Ok(if self.respectfulness.is_some() {
+            EffectivePolicyIdentity::from_respectfulness_json(&json)
+        } else if self.browser.is_default() {
             EffectivePolicyIdentity::from_canonical_json(&json)
         } else {
             EffectivePolicyIdentity::from_browser_json(&json)
@@ -266,7 +277,7 @@ impl EffectivePolicy {
     /// Recomputes the v6 identity for snapshots archived before Flow behavior.
     #[doc(hidden)]
     pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;
@@ -306,7 +317,7 @@ impl EffectivePolicy {
     /// default action timeouts became part of Policy.
     #[doc(hidden)]
     pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;
@@ -347,7 +358,7 @@ impl EffectivePolicy {
     pub fn archived_v4_search_pre_robots_identity(
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
-        if !self.network.is_default() {
+        if self.respectfulness.is_some() || !self.network.is_default() {
             return Err(PolicyError::ArchivedIdentityMismatch);
         }
         self.page.validate()?;
@@ -447,6 +458,8 @@ struct EffectivePolicyIdentityEnvelopeRef<'a> {
 
 #[derive(Serialize)]
 struct EffectivePolicyIdentityBodyRef<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    respectfulness: &'a Option<Respectfulness>,
     #[serde(skip_serializing_if = "Network::is_default")]
     network: &'a Network,
     #[serde(skip_serializing_if = "browser_config::BrowserConfig::is_default")]

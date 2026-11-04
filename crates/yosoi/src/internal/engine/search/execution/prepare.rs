@@ -1,3 +1,5 @@
+use crate::registry::Registry as RuntimeRegistry;
+
 use crate::internal::policy::{
     Policy, PolicySnapshot,
     policy::{
@@ -28,6 +30,7 @@ pub enum SearchExecutionSetupError {
 }
 
 pub(super) struct ProviderJob {
+    pub(super) registry: Option<RuntimeRegistry>,
     pub(super) route: EffectiveProviderRoute,
     pub(super) provider: Provider,
     pub(super) request: PageRequest,
@@ -167,6 +170,7 @@ pub(super) fn prepare_provider_job(
     Ok((
         None,
         Some(ProviderJob {
+            registry: prepared.registry.clone(),
             route: route.clone(),
             provider: route.provider(),
             request,

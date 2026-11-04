@@ -15,6 +15,14 @@ pub use search::{
     ProviderSelection,
 };
 
+/// Regex-group traffic constraints backed by a runtime-bound Registry.
+pub mod respectfulness {
+    pub use crate::internal::policy::policy::respectfulness::{
+        Cooldown, Group, RateBudget, Respectfulness, Retry, Unmatched,
+    };
+    pub use crate::internal::respectfulness::{Event, EventKind, LimitReason, RespectfulnessError};
+}
+
 /// Provider selection and bounded Search configuration.
 pub mod search {
     pub use crate::internal::policy::policy::search::{

@@ -33,6 +33,7 @@ use crate::{
     policy_store::PolicyStore,
     presentation::Theme,
     progress::Spinner,
+    registry_args::RegistryArgs,
     stats::{RunTimer, StatsArgs},
 };
 
@@ -81,6 +82,8 @@ pub enum SearchCommand {
 
 #[derive(Debug, Args)]
 pub struct SearchArgs {
+    #[command(flatten)]
+    pub registry: RegistryArgs,
     /// Text to search for.
     #[arg(required = true)]
     pub query: Option<String>,
@@ -128,6 +131,10 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
         request.with_diagnostic_capture()
     } else {
         request
+    };
+    let request = match args.registry.open().map_err(SearchCommandError::Setup)? {
+        Some(registry) => request.with_registry(&registry),
+        None => request,
     };
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);

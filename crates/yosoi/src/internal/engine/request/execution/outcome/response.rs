@@ -1,3 +1,5 @@
+use crate::policy::respectfulness::Event as TrafficEvent;
+
 use std::fmt;
 
 use crate::internal::engine::{PolicySnapshot, PreparedPageRequest, RequestId};
@@ -6,6 +8,7 @@ use super::AttemptOutcome;
 
 /// Result of executing a prepared page request.
 pub struct Response {
+    respectfulness: Vec<TrafficEvent>,
     request_id: RequestId,
     requested_target: String,
     policy_snapshot: PolicySnapshot,
@@ -14,12 +17,21 @@ pub struct Response {
 }
 
 impl Response {
+    pub(crate) fn with_respectfulness(mut self, events: Vec<TrafficEvent>) -> Self {
+        self.respectfulness = events;
+        self
+    }
+    pub(crate) fn respectfulness(&self) -> &[TrafficEvent] {
+        &self.respectfulness
+    }
+
     pub(in crate::internal::engine) fn new(
         prepared: &PreparedPageRequest,
         attempts: Vec<AttemptOutcome>,
         termination: ResponseTermination,
     ) -> Self {
         Self {
+            respectfulness: Vec::new(),
             request_id: prepared.id(),
             requested_target: prepared.target().to_owned(),
             policy_snapshot: prepared.policy_snapshot().clone(),

@@ -11,6 +11,7 @@ use super::view::{
 use super::{OutputFormat, ProviderChoice, SearchArgs};
 use crate::{
     presentation::Theme,
+    registry_args::RegistryArgs,
     stats::{RunTimer, StatsArgs},
 };
 use std::{
@@ -38,6 +39,7 @@ pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
         termination: "completed",
         providers: vec![
             ProviderView {
+                respectfulness: &[],
                 provider: "brave",
                 identity: ProviderIdentityView {
                     endpoint: Some("https://search.brave.com/search"),
@@ -101,6 +103,7 @@ pub(super) fn fixture<'a>() -> SearchEnvelope<'a> {
                 },
             },
             ProviderView {
+                respectfulness: &[],
                 provider: "bing",
                 identity: ProviderIdentityView {
                     endpoint: None,
@@ -139,6 +142,7 @@ fn cli_args(
     max_in_flight: Option<NonZeroUsize>,
 ) -> SearchArgs {
     SearchArgs {
+        registry: RegistryArgs::default(),
         query: Some("unused fixture query".to_owned()),
         diagnostics: None,
         providers,

@@ -1,4 +1,4 @@
-use super::policy::Network;
+use super::policy::{Network, respectfulness::Respectfulness};
 use crate::browser as browser_config;
 use std::time::{Duration, Instant};
 
@@ -16,6 +16,8 @@ use crate::internal::policy::{
 /// Validation runs before serialization and identity calculation.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Policy {
+    /// Optional regex-group traffic constraints; runtime Registry handles are bound separately.
+    pub respectfulness: Option<Respectfulness>,
     /// Opt-in outbound routing bound to requests and owned browser lifetimes.
     pub network: Network,
     /// Browser implementation and launch/profile settings; defaults to Chrome/CDP.
@@ -44,6 +46,7 @@ pub struct Policy {
 impl Default for Policy {
     fn default() -> Self {
         Self {
+            respectfulness: None,
             network: Network::default(),
             browser: browser_config::BrowserConfig::default(),
             default_action_timeout_ms: 10_000,
@@ -62,6 +65,9 @@ impl Default for Policy {
 impl Policy {
     /// Validates nested page choices and all typed policy bounds.
     pub fn validate(&self) -> Result<(), PolicyError> {
+        if let Some(respectfulness) = &self.respectfulness {
+            respectfulness.validate()?;
+        }
         self.network.validate()?;
         self.browser.validate()?;
         self.page.validate()?;
@@ -92,6 +98,7 @@ impl Policy {
     pub fn effective_policy(&self) -> Result<EffectivePolicy, PolicyError> {
         self.validate()?;
         Ok(EffectivePolicy {
+            respectfulness: self.respectfulness.clone(),
             network: self.network.clone(),
             browser: self.browser.clone(),
             page: self.page.effective(),
@@ -122,7 +129,8 @@ impl Policy {
     ) -> Result<(), PolicyError> {
         self.validate()?;
         effective.search.validate()?;
-        if effective.network != self.network
+        if effective.respectfulness != self.respectfulness
+            || effective.network != self.network
             || effective.browser != self.browser
             || effective.request != self.request
             || effective.default_action_timeout_ms != self.default_action_timeout_ms

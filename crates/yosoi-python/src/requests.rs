@@ -1,5 +1,6 @@
 //! Async page acquisition calls only the public SDK and retains typed results.
 
+use crate::registry::NativeRegistry;
 use std::sync::Arc;
 
 use pyo3::prelude::*;
@@ -53,18 +54,24 @@ impl NativeRequest {
             .map_err(|error| errors::request_preparation_error(py, &error))
     }
 
-    #[pyo3(signature = (policy_json=None, cancellation=None))]
+    #[pyo3(signature = (policy_json=None, cancellation=None, registry=None))]
     fn send<'py>(
         &self,
         py: Python<'py>,
         policy_json: Option<&str>,
         cancellation: Option<&NativeCancellation>,
+        registry: Option<&NativeRegistry>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let policy = policy::parse(policy_json)?;
         let request = self.inner.as_ref().clone();
+        let registry = registry.map(NativeRegistry::clone_registry);
         async_runtime::bridge(py, cancellation, move |token| async move {
-            let response = request
-                .bind(&policy)
+            let bound = request.bind(&policy);
+            let bound = match &registry {
+                Some(registry) => bound.with_registry(registry),
+                None => bound,
+            };
+            let response = bound
                 .send_cancellable(&token)
                 .await
                 .map_err(|error| Python::attach(|py| errors::request_send_error(py, &error)))?;

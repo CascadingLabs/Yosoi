@@ -39,7 +39,8 @@ from .identities import (
 from .identities import (
     RequestId as RequestId,
 )
-from .policy import AcquisitionKind, Policy, PolicySnapshot
+from .policy import AcquisitionKind, Policy, PolicySnapshot, RespectfulnessEvent
+from .registry import Registry
 from .scalars import ValidatedString
 
 if TYPE_CHECKING:
@@ -243,6 +244,10 @@ class Response(ImmutableModel):
     policy_snapshot: PolicySnapshot
     termination: Literal["completed", "cancelled"]
     attempts: tuple[Attempt, ...] = Field(repr=False)
+    respectfulness: tuple[RespectfulnessEvent, ...] = Field(
+        default=(),
+        description="Traffic accounting, retaining failed sends before success.",
+    )
     _handle: _native.Response = PrivateAttr()
 
     def __repr__(self) -> str:
@@ -372,6 +377,13 @@ class BoundPageRequest:
         """
         self.request = request
         self._policy_json = policy.to_json()
+        self._registry: Registry | None = None
+
+    def with_registry(self, registry: Registry) -> BoundPageRequest:
+        """Return a binding sharing this Registry; preserve the policy snapshot."""
+        bound = BoundPageRequest(self.request, self.policy)
+        bound._registry = registry.clone()
+        return bound
 
     @property
     def id(self) -> RequestId:
@@ -421,7 +433,9 @@ class BoundPageRequest:
             pydantic.ValidationError: Native response data cannot form a typed result.
         """
         handle = await self.request._handle.send(
-            self._policy_json, _token(cancellation)
+            self._policy_json,
+            _token(cancellation),
+            self._registry._handle if self._registry is not None else None,
         )
         return Response._from_native(handle)
 

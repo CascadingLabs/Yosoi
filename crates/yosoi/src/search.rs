@@ -1,5 +1,7 @@
 //! Find candidate URLs and inspect each provider's bounded, typed outcome.
 
+use crate::registry::Registry as RuntimeRegistry;
+
 mod diagnostics;
 pub use diagnostics::{SearchReplay, SearchReplayError, replay_document};
 
@@ -59,6 +61,13 @@ pub struct BoundSearchRequest<'policy> {
 }
 
 impl BoundSearchRequest<'_> {
+    /// Shares traffic state across provider work and other Request/Search callers.
+    /// The runtime handle remains separate from the portable Policy snapshot.
+    pub fn with_registry(mut self, registry: &RuntimeRegistry) -> Self {
+        self.inner = self.inner.with_registry(registry);
+        self
+    }
+
     /// Returns the query correlation identity.
     pub const fn id(&self) -> SearchRequestId {
         self.inner.request().id()
