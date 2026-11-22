@@ -3,10 +3,53 @@ use super::connection::connection;
 use pyo3::prelude::*;
 use std::string::String;
 connection!(browser_connection, NativeBrowserSurface, "BrowserSurface", yosoi::surface::browser::BrowserSurface, url: String, headless: bool);
-use super::connection::failure;
+use super::connection::{cancelled, failure};
 use super::{decode, encode};
-use crate::async_runtime;
-use yosoi::surface::{Outcome, browser::archive};
+use crate::{
+    async_runtime,
+    browser::{NativeSession, NativeWork},
+};
+use yosoi::surface::{
+    Outcome,
+    browser::{BrowserSurface, archive},
+};
+
+#[pyfunction]
+fn surface_browser_consume_session<'py>(
+    py: Python<'py>,
+    session: &NativeSession,
+    policy_json: &str,
+) -> PyResult<Bound<'py, PyAny>> {
+    let session = session.clone_for_surface()?;
+    let policy = decode(policy_json)?;
+    async_runtime::bridge(py, None, move |token| async move {
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(cancelled()),
+            result = BrowserSurface::consume_session(session, policy) =>
+                result.map(NativeBrowserSurface::from_source).map_err(failure),
+        }
+    })
+}
+
+#[pyfunction]
+fn surface_browser_consume_work<'py>(
+    py: Python<'py>,
+    work: &NativeWork,
+    policy_json: &str,
+) -> PyResult<Bound<'py, PyAny>> {
+    let policy = decode(policy_json)?;
+    let work = work.take_for_surface()?;
+    async_runtime::bridge(py, None, move |token| async move {
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(cancelled()),
+            result = BrowserSurface::consume_work(work, policy) =>
+                result.map(NativeBrowserSurface::from_source).map_err(failure),
+        }
+    })
+}
+
 #[pyfunction]
 fn surface_browser_rerun<'py>(
     py: Python<'py>,
@@ -26,6 +69,8 @@ fn surface_browser_rerun<'py>(
     })
 }
 pub fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(surface_browser_consume_session, module)?)?;
+    module.add_function(wrap_pyfunction!(surface_browser_consume_work, module)?)?;
     module.add_function(wrap_pyfunction!(surface_browser_rerun, module)?)?;
     module.add_class::<NativeBrowserSurface>()
 }

@@ -382,7 +382,7 @@ impl Outcome {
         policy: SurfacePolicy,
         count: usize,
     ) -> StdResult<Vec<Self>, ExecutionError> {
-        super::browser::archive::rerun(self, policy, count, true).await
+        Box::pin(super::browser::archive::rerun(self, policy, count, true)).await
     }
 }
 

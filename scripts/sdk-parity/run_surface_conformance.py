@@ -106,6 +106,35 @@ def main() -> None:
         document = constructors[case["format"]](case["name"], case["content"])
         index = ys.Surface(document)
         found = index.find(case["query"])
+        policies = ys.surface.DocumentPolicies.model_validate(
+            {
+                name: {**value, "response_bytes": 1024}
+                for name, value in ys.surface.DocumentPolicies()
+                .model_dump(mode="json")
+                .items()
+            }
+        )
+        bounded = ys.Surface.with_policy(document, policies)
+        bounded_found = bounded.find(
+            case["query"], budget=ys.surface.Budget(bytes=65536, items=20)
+        )
+        rejection = ys.surface.DocumentPolicies.model_validate(
+            {
+                name: {**value, "max_nodes": 1}
+                for name, value in policies.model_dump(mode="json").items()
+            }
+        )
+        try:
+            ys.Surface.with_policy(document, rejection)
+            node_limit_rejected = False
+        except ys.surface.SurfaceError:
+            node_limit_rejected = True
+        policy_result = {
+            "configuration": policies.model_dump(mode="json"),
+            "limits": policies.html.limits().model_dump(mode="json"),
+            "found": bounded_found.model_dump(mode="json"),
+            "node_limit_rejected": node_limit_rejected,
+        }
         python.append(
             {
                 "name": case["name"],
@@ -117,6 +146,7 @@ def main() -> None:
                     for entry in found.entries
                 ],
                 "archive": asyncio.run(archive_case(case, document, index)),
+                "document_policy": policy_result,
             }
         )
     if python != rust:
@@ -166,6 +196,7 @@ def write_evidence(
     methods = {
         "new",
         "with_limits",
+        "with_policy",
         "identity",
         "representation",
         "source_bytes",

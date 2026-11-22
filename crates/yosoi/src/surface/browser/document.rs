@@ -1,6 +1,6 @@
 //! Web evidence adapter over the existing immutable document index.
 use crate::surface::{
-    Budget, Continuation, Reference as NativeReference, Surface, SurfaceError,
+    Budget, Continuation, DocumentPolicy, Reference as NativeReference, Surface, SurfaceError,
     model::{
         self, Access, AddressToken, Capability, ContinuationToken, Descriptor, Observation,
         ObservationId, ReadOperation, ReadRequest, ReadResult, SourceId, SurfaceId, SurfaceRead,
@@ -16,15 +16,42 @@ pub struct WebSurface {
     descriptor: Descriptor,
     observation: Observation,
     root: model::Reference,
+    policy: DocumentPolicy,
 }
 impl WebSurface {
     /// Wraps captured HTML or a rendered DOM; source identity belongs to the caller's session.
     pub fn new(index: Surface, source: SourceId) -> Result<Self, SurfaceError> {
+        Self::with_policy(index, source, DocumentPolicy::default())
+    }
+    /// Wraps HTML, DOM, native AX, or a browser network-event document with
+    /// independently configured response limits. Evidence grants no action authority.
+    pub fn with_policy(
+        index: Surface,
+        source: SourceId,
+        mut policy: DocumentPolicy,
+    ) -> Result<Self, SurfaceError> {
+        policy.validate()?;
+        policy.response_bytes = index
+            .response_budget(Budget {
+                bytes: policy.response_bytes,
+                items: 1,
+            })
+            .bytes;
+        let ax = index.representation().contains("accessibility-tree");
+        let network = index
+            .data
+            .json
+            .as_ref()
+            .and_then(|v| v.get("schema"))
+            .and_then(serde_json::Value::as_str)
+            == Some("yosoi.network.v1");
         if !index.representation().contains("html")
             && !index.representation().contains("rendered-dom")
+            && !ax
+            && !network
         {
             return Err(SurfaceError::Invalid(
-                "web surface requires HTML or a rendered DOM".into(),
+                "web surface requires HTML, DOM, AX, or browser network evidence".into(),
             ));
         }
         let id = SurfaceId::new(format!("{}:document", source.as_str()))?;
@@ -41,7 +68,14 @@ impl WebSurface {
         let descriptor = Descriptor {
             id: id.clone(),
             source,
-            representation: "yosoi.web.document.v1".into(),
+            representation: if ax {
+                "yosoi.web.ax.v1"
+            } else if network {
+                "yosoi.web.network.v1"
+            } else {
+                "yosoi.web.document.v1"
+            }
+            .into(),
             controllable: false,
             capabilities,
         };
@@ -52,7 +86,16 @@ impl WebSurface {
         let observation = Observation {
             id: ObservationId::new(format!("web-v1:{:x}", digest.finalize()))?,
             surface: id,
-            coverage: index.coverage().clone(),
+            coverage: if network {
+                super::super::Coverage {
+                    complete: false,
+                    reason: Some(
+                        "browser_network_log_window; completeness is unestablished".into(),
+                    ),
+                }
+            } else {
+                index.coverage().clone()
+            },
         };
         let root = model::Reference {
             observation: observation.id.clone(),
@@ -63,6 +106,7 @@ impl WebSurface {
             descriptor,
             observation,
             root,
+            policy,
         })
     }
     /// Converts an index reference into a representation-neutral evidence address.
@@ -140,6 +184,9 @@ impl SurfaceRead for WebSurface {
         self.root.clone()
     }
     fn read(&self, request: &ReadRequest) -> Result<ReadResult, SurfaceError> {
+        let mut bounded = request.clone();
+        bounded.budget = self.policy.budget(request.budget);
+        let request = &bounded;
         if request.budget.bytes < 512 || request.budget.bytes > 65536 {
             return Err(SurfaceError::Invalid(
                 "read budget must be 512..65536 bytes".into(),
@@ -186,7 +233,7 @@ impl SurfaceRead for WebSurface {
                             .next
                             .map(|token| encode(token, &self.observation.id))
                             .transpose()?,
-                        coverage: detail.coverage,
+                        coverage: self.observation.coverage.clone(),
                     })
                 }
                 operation => {
@@ -224,7 +271,7 @@ impl SurfaceRead for WebSurface {
                             .next
                             .map(|token| encode(token, &self.observation.id))
                             .transpose()?,
-                        coverage: page.coverage,
+                        coverage: self.observation.coverage.clone(),
                     })
                 }
             };

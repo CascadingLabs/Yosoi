@@ -9,6 +9,12 @@ use std::{fmt, path::PathBuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Browser-specific Surface connections over existing native Session/Work ownership.
+#[cfg(all(feature = "browser", not(yosoi_dev_support)))]
+pub mod surface {
+    pub use crate::surface::consume_session;
+}
+
 /// The browser implementation used for a browser acquisition or retained Session.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]

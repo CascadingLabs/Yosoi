@@ -38,7 +38,7 @@ fn same_input_scope(expected: &DocumentScope, current: &DocumentScope) -> bool {
 }
 
 impl Page {
-    async fn prepare_native_input_surface(&self) -> Result<()> {
+    pub(super) async fn prepare_native_input_surface(&self) -> Result<()> {
         if matches!(
             &self.browser_mode,
             EnvironmentObservation::Known {
