@@ -367,3 +367,82 @@ The live adapter checks current-document binding, visibility, enabled state and 
 Use a Surface session when readers need independent positions, subscriptions and explicit hot ownership. Rust uses `ys::SurfaceSession`; Python uses `ys.SurfaceSession`. Detaching revokes hot ownership. An external adapter owns observation and effects; attaching a session does not install a DOM observer by itself.
 
 Video source and frame references can be retained through normal Archive Documents. Saved evidence does not restore live browser memory or permission to click. Continue with [Keeping the evidence](keeping-the-evidence.md), the [Surface SDK guide](../sdk/surfaces.md), or the [CLI command guide](../cli/surface.md).
+
+## Example: inspect native network events
+
+This fragment assumes `surface` is bound to a managed native Chrome Session. Start the subscription before the application action that may issue requests. Run that action through the normal Surface control flow, then wait for an event and freeze its window. A timeout means no new event arrived before the deadline; it does not prove the page made no request.
+
+### Rust
+
+```rust
+use std::error::Error;
+use yosoi as ys;
+
+async fn inspect_network(
+    surface: &mut ys::surface::browser::BrowserSurface,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let subscription = surface.subscribe_network(Some(true)).await?;
+    println!("CDP subscription {}", subscription.subscription_id);
+
+    let waited = surface.wait_network_event(0, 5_000).await?;
+    let (observation, window) = surface.observe_network().await?;
+    println!(
+        "Window {} has {} events; complete: {}",
+        window.window_id,
+        window.events.len(),
+        window.coverage.complete,
+    );
+    println!("Wait result: {waited}");
+
+    if let Some(reference) = window.payloads.iter().find(|payload|
+        matches!(payload.state, ys::surface::NetworkPayloadState::Retained
+            | ys::surface::NetworkPayloadState::Truncated)
+    ) {
+        let body = surface.network_payload(reference, 8_192).await?;
+        println!("Retained response bytes: {}", body.bytes().len());
+    }
+
+    println!("Observation: {}", observation.observation.id.as_str());
+    surface.cancel_network().await?;
+    Ok(())
+}
+```
+
+`subscribe_network` opts into response bodies here; pass `None` to use the policy setting, which defaults off. `observe_network` reads the resulting `NetworkWindow` through the shared bounded inspection protocol. Body links point to separate existing HTML/JSON `Document`s or `FileDocument`s. CDP returns browser-decoded response bytes, not a lossless wire copy. Truncation, unsupported projection, provider errors, event loss and requests still in flight stay explicit.
+
+For a non-base64 CDP body, the bytes are the browser's Unicode text encoded as UTF-8. The payload reference marks this with `text_utf8_normalized`; `declared_media_type` preserves the observed Content-Type header, while `browser_effective_charset` records CDP's interpretation separately. Yosoi does not decode CDP text a second time. Base64 responses keep decoded entity bytes and their content-encoding declaration separately.
+
+### Python
+
+```python
+import yosoi as ys
+
+async def inspect_network(surface: ys.BrowserSurface) -> None:
+    subscription = await surface.subscribe_network(retain_bodies=True)
+    print("CDP subscription:", subscription.subscription_id)
+
+    waited = await surface.wait_network_event(after_sequence=0, timeout_ms=5_000)
+    observation, window = await surface.observe_network()
+    print(
+        f"Window {window.window_id} has {len(window.events)} events; "
+        f"complete: {window.coverage.complete}"
+    )
+    print("Wait result:", waited)
+
+    reference = next(
+        (payload for payload in window.payloads
+         if payload.state in {"retained", "truncated"}),
+        None,
+    )
+    if reference is not None:
+        payload = await surface.network_payload(reference, chunk_bytes=8_192)
+        body = payload.value.data if isinstance(payload.value, ys.Document) else payload.value.bytes
+        print("Retained response bytes:", len(body))
+
+    print("Observation:", observation.observation.id)
+    await surface.cancel_network()
+```
+
+## Keep network coverage explicit
+
+Both SDKs use the same Rust event producer and typed window contract. Network evidence is available only for a consumed native Chrome Session. BiDi and the isolated ChromeDriver provider do not advertise it. URLs keep only their origin by default, header retention is empty, credentials and cookie headers are always excluded, and response bodies stay off unless requested. Coverage remains partial because CDP events are scoped to one page target rather than the whole browser. A response body appears in a window only after the provider reports request completion; unfinished responses remain in the in-flight list and can appear with their body link in a later frozen window.

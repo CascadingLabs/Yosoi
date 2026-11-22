@@ -198,6 +198,7 @@ impl Page {
         Ok(ObservationResponseBody {
             complete: body.bytes.len() == body.complete_bytes,
             bytes: body.bytes,
+            provider_base64_encoded: false,
         })
     }
 

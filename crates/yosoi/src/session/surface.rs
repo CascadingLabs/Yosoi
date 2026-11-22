@@ -1,12 +1,54 @@
 //! Trusted Surface adapters reuse Work admission without granting authored JavaScript.
 use super::{ActionKind, SessionError, Work};
+use crate::internal::browser::{
+    controller::NetworkObservationSubscription, page::ObservationResponseBody,
+};
 use crate::{automation_record::OperationReceipt, internal::browser::page::SurfaceInput};
 use serde_json::{Value, json};
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 const SCRIPT: &str = include_str!("../surface/browser/extract.js");
 
 impl Work {
+    pub(crate) fn surface_session_cancellation(&self) -> CancellationToken {
+        self.session.inner.backend.cancellation()
+    }
+
+    pub(crate) fn surface_authority_cancellation(&self) -> CancellationToken {
+        self.control.closing()
+    }
+
+    pub(crate) fn surface_authority_active(&self) -> bool {
+        self.control.authority_active()
+    }
+
+    pub(crate) async fn surface_start_network_subscription(
+        &self,
+        max_events: usize,
+        max_buffered_events: usize,
+    ) -> Result<NetworkObservationSubscription, SessionError> {
+        let _operation = self.operation()?;
+        self.call(
+            self.control
+                .start_network_observation_subscription(max_events, max_buffered_events),
+        )
+        .await
+    }
+
+    pub(crate) async fn surface_capture_network_body(
+        &self,
+        request_id: &str,
+        max_bytes: usize,
+    ) -> Result<ObservationResponseBody, SessionError> {
+        let _operation = self.operation()?;
+        self.call(
+            self.control
+                .capture_network_response_body(request_id, max_bytes),
+        )
+        .await
+    }
+
     pub(crate) fn surface_authorize(
         &self,
         kind: ActionKind,

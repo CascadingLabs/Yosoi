@@ -217,7 +217,7 @@ pub use source::{
     SelectedEncoding, SourceBindingError, SourceClassificationOutcome, SourceDecoderProducerError,
     SourceFormat, SourceRepresentationEvidence, SourceRepresentationEvidenceError,
     SourceRepresentationFacts, UnknownReason, ValidatedSourceBinding, XmlProfile,
-    classify_and_decode, parse_media_declaration, source_decoder_producer,
+    classify_and_decode, classify_source_bytes, parse_media_declaration, source_decoder_producer,
 };
 pub use source_input::{
     AcquiredPayloadAccounting, AcquiredPayloadError, AcquiredPayloadOutcome, AcquiredPayloadState,

@@ -261,6 +261,17 @@ pub fn classify_and_decode(
     }
 }
 
+/// Classifies retained response bytes with the same declaration and sniffing
+/// rules used by Requests, without decoding or changing the bytes.
+pub fn classify_source_bytes(
+    media_type: &SourceMediaType,
+    bytes: &[u8],
+    extent: ClassificationExtent,
+) -> SourceClassificationOutcome {
+    let declaration = declaration::parse(media_type);
+    classify(&declaration, bytes, extent)
+}
+
 fn classify(
     declaration: &MediaDeclaration,
     bytes: &[u8],

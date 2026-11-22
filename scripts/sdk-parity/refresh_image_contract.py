@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,8 @@ import seed_ledger
 from run_sdk_parity import _assert_installed_package
 
 import parity
+
+MappingFactory = Callable[[dict[str, Any], dict[str, Any]], dict[str, Any] | None]
 
 REVIEWED_SIGNATURE_CHANGES = {
     "yosoi::surface::ArchivedSource::content_base64",
@@ -66,7 +69,11 @@ def _network_profile_mapping(
 
 
 def refresh(
-    rust: dict[str, Any], python: dict[str, Any], ledger: dict[str, Any]
+    rust: dict[str, Any],
+    python: dict[str, Any],
+    ledger: dict[str, Any],
+    *,
+    additional_mapping: MappingFactory | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Keep matching reviewed entries and explicitly map new source declarations."""
     result = copy.deepcopy(ledger)
@@ -113,9 +120,11 @@ def refresh(
             row["symbolKey"] = item["symbolKey"]
             entries.append(row)
         elif sdk_contract._expected_classification(item) == "sdk":
-            row = image_surface_mappings.image_mapping(
-                item, python
-            ) or _network_profile_mapping(item, python)
+            row = (
+                (additional_mapping(item, python) if additional_mapping else None)
+                or image_surface_mappings.image_mapping(item, python)
+                or _network_profile_mapping(item, python)
+            )
             if row is not None:
                 entries.append(row)
     result["entries"] = entries
@@ -140,17 +149,10 @@ def refresh(
     return result, contract, report
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rust-reference", type=Path, required=True)
-    parser.add_argument(
-        "--ledger", type=Path, default=Path("python/parity/ledger.json")
-    )
-    parser.add_argument(
-        "--contract", type=Path, default=Path("python/parity/sdk-contract.json")
-    )
-    parser.add_argument("--write", action="store_true")
-    args = parser.parse_args()
+def run_refresh(
+    args: argparse.Namespace, *, additional_mapping: MappingFactory | None = None
+) -> int:
+    """Refresh and read back compact inputs using explicit additional mappings."""
     _assert_installed_package()
     rust = parity.load_rust_inventory(args.rust_reference)
     python = parity.introspect_python_package()
@@ -158,7 +160,9 @@ def main() -> int:
     stored_contract = parity.read_json(args.contract)
     original = sdk_contract.load_contract(args.contract)
     ledger = parity.load_ledger(args.ledger)
-    fresh_ledger, fresh_contract, report = refresh(rust, python, ledger)
+    fresh_ledger, fresh_contract, report = refresh(
+        rust, python, ledger, additional_mapping=additional_mapping
+    )
     compact = sdk_contract.build_surface_contract(fresh_contract, fresh_ledger)
     # Stable rows retain their original compiler selector. Source keys are
     # rebound by prepare_ledger only after the final clean source matches.
@@ -254,6 +258,19 @@ def main() -> int:
         )
     )
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rust-reference", type=Path, required=True)
+    parser.add_argument(
+        "--ledger", type=Path, default=Path("python/parity/ledger.json")
+    )
+    parser.add_argument(
+        "--contract", type=Path, default=Path("python/parity/sdk-contract.json")
+    )
+    parser.add_argument("--write", action="store_true")
+    return run_refresh(parser.parse_args())
 
 
 if __name__ == "__main__":
