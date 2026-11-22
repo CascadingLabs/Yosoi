@@ -6,13 +6,19 @@ use pyo3::prelude::*;
 use serde::{Serialize, de::DeserializeOwned};
 use yosoi::{
     Archive,
-    archive::{ArchiveError, DocumentArchiveRef, PlanArchiveRef},
+    archive::{
+        ArchiveError, ArchiveRefError, AudioDocumentArchiveRef, BinaryDocumentArchiveRef,
+        DocumentArchiveRef, FileDocumentArchiveRef, ImageDocumentArchiveRef, PlanArchiveRef,
+        VideoDocumentArchiveRef,
+    },
     automation_record::{
         AUTOMATION_RECORD_VERSION, AutomationRecord, AutomationRecordRef,
         MAX_AUTOMATION_RECORD_BYTES,
     },
     view::{View, ViewCursor},
 };
+
+use crate::media::NativeFileDocument;
 
 use yosoi::surface::{Outcome, OutcomeRef};
 
@@ -88,6 +94,10 @@ fn archive_error(error: ArchiveError) -> PyErr {
         ArchiveError::InvalidPolicy(_) => ("InvalidPolicy", serde_json::json!({})),
         ArchiveError::InvalidRequestRun(_) => ("InvalidRequestRun", serde_json::json!({})),
         ArchiveError::InvalidDocument(_) => ("InvalidDocument", serde_json::json!({})),
+        ArchiveError::InvalidFileDocument(source) => (
+            "InvalidFileDocument",
+            serde_json::json!({"message": source.to_string()}),
+        ),
         ArchiveError::InvalidEvaluationRun(_) => ("InvalidEvaluationRun", serde_json::json!({})),
         ArchiveError::InvalidLocatorRun(_) => ("InvalidLocatorRun", serde_json::json!({})),
         ArchiveError::InvalidContractRun(_) => ("InvalidContractRun", serde_json::json!({})),
@@ -313,6 +323,18 @@ fn validate_archive_ref(kind: &str, value: &str) -> PyResult<String> {
         "plan" => value
             .parse::<PlanArchiveRef>()
             .map(|reference| reference.to_string()),
+        "image_document" => value
+            .parse::<ImageDocumentArchiveRef>()
+            .map(|reference| reference.to_string()),
+        "video_document" => value
+            .parse::<VideoDocumentArchiveRef>()
+            .map(|reference| reference.to_string()),
+        "audio_document" => value
+            .parse::<AudioDocumentArchiveRef>()
+            .map(|reference| reference.to_string()),
+        "binary_document" => value
+            .parse::<BinaryDocumentArchiveRef>()
+            .map(|reference| reference.to_string()),
         _ => {
             return Err(errors::ArchiveError::new_err(
                 "unsupported Archive reference kind",
@@ -454,6 +476,66 @@ impl NativeArchive {
             Ok(NativeDocument {
                 source: DocumentSource::Owned(Arc::new(document)),
             })
+        })
+    }
+
+    fn write_file_document<'py>(
+        &self,
+        py: Python<'py>,
+        document: &NativeFileDocument,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let archive = self.inner.clone();
+        let document = document.inner.as_ref().clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            let reference = archive.write(&document).await.map_err(archive_error)?;
+            let (kind, value) = match reference {
+                FileDocumentArchiveRef::Image(reference) => ("image", reference.to_string()),
+                FileDocumentArchiveRef::Video(reference) => ("video", reference.to_string()),
+                FileDocumentArchiveRef::Audio(reference) => ("audio", reference.to_string()),
+                FileDocumentArchiveRef::Binary(reference) => ("binary", reference.to_string()),
+            };
+            Ok((kind.to_owned(), value))
+        })
+    }
+
+    fn read_file_document<'py>(
+        &self,
+        py: Python<'py>,
+        kind: &str,
+        reference: &str,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let parsed: FileDocumentArchiveRef = reference
+            .parse()
+            .map_err(|error| failure(error, "yosoi::archive::ArchiveRefError", None))?;
+        let expected = match &parsed {
+            FileDocumentArchiveRef::Image(_) => "image_document",
+            FileDocumentArchiveRef::Video(_) => "video_document",
+            FileDocumentArchiveRef::Audio(_) => "audio_document",
+            FileDocumentArchiveRef::Binary(_) => "binary_document",
+        };
+        if kind != expected {
+            return Err(failure(
+                ArchiveRefError::WrongKind {
+                    expected: match kind {
+                        "image_document" => "image-document",
+                        "video_document" => "video-document",
+                        "audio_document" => "audio-document",
+                        "binary_document" => "binary-document",
+                        _ => "file document",
+                    },
+                    found: expected.replace('_', "-"),
+                },
+                "yosoi::archive::ArchiveRefError",
+                None,
+            ));
+        }
+        let archive = self.inner.clone();
+        async_runtime::bridge(py, None, move |_| async move {
+            archive
+                .read(&parsed)
+                .await
+                .map(NativeFileDocument::new)
+                .map_err(archive_error)
         })
     }
 

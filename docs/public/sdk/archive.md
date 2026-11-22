@@ -6,6 +6,8 @@ order: 0
 
 # Archive
 
+For image, video, audio and opaque files, see [Media documents and downloads](media-documents.md).
+
 The current Rust facade exports `yosoi::Archive`, `automation_record` and `view`. Browser records can retain receipts and captured evidence after a Session closes.
 
 Python exposes `Archive`, `AutomationRecord`, and bounded `View` inspection over the same Rust storage and record validation. `await archive.write(value)` and `await archive.read(reference)` support Documents, compiled Plans, automation records, and Surface outcomes. See [Keeping the evidence](../concepts/keeping-the-evidence.md) for paired runnable examples.

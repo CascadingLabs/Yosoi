@@ -1200,13 +1200,18 @@ def load_ledger(path: Path) -> dict[str, Any]:
             )
         if output_binding is not None:
             required_output = {"kind", "discriminator", "tag", "pythonFields"}
-            allowed_output = required_output | {"schemaTarget", "rustType"}
+            allowed_output = required_output | {
+                "schemaTarget",
+                "rustType",
+                "behaviorEvidence",
+            }
             if (
                 not isinstance(output_binding, dict)
                 or direction != "output"
                 or not required_output.issubset(output_binding)
                 or set(output_binding) - allowed_output
-                or output_binding.get("kind") not in {"error-details", "outcome-view"}
+                or output_binding.get("kind")
+                not in {"error-details", "outcome-view", "concrete-model"}
                 or any(
                     not isinstance(output_binding.get(name), str)
                     or not output_binding[name].strip()
@@ -1215,6 +1220,23 @@ def load_ledger(path: Path) -> dict[str, Any]:
                 or not isinstance(output_binding.get("pythonFields"), list)
             ):
                 raise ParityError(f"invalid output binding: {entry['rustPath']}")
+            if output_binding.get("kind") == "concrete-model" and not {
+                "schemaTarget",
+                "rustType",
+                "behaviorEvidence",
+            }.issubset(output_binding):
+                raise ParityError(
+                    "concrete-model output binding needs schemaTarget, rustType, "
+                    f"and behaviorEvidence: {entry['rustPath']}"
+                )
+            if (
+                "behaviorEvidence" in output_binding
+                and output_binding.get("kind") != "concrete-model"
+            ):
+                raise ParityError(
+                    "behaviorEvidence is supported only for concrete-model output: "
+                    f"{entry['rustPath']}"
+                )
             for name in ("schemaTarget", "rustType"):
                 if name in output_binding and (
                     not isinstance(output_binding[name], str)
@@ -1223,6 +1245,20 @@ def load_ledger(path: Path) -> dict[str, Any]:
                     raise ParityError(
                         f"invalid output binding {name}: {entry['rustPath']}"
                     )
+            if "behaviorEvidence" in output_binding and (
+                not isinstance(output_binding["behaviorEvidence"], list)
+                or not all(
+                    isinstance(item, dict)
+                    and isinstance(item.get("path"), str)
+                    and item["path"]
+                    and isinstance(item.get("test"), str)
+                    and item["test"]
+                    for item in output_binding["behaviorEvidence"]
+                )
+            ):
+                raise ParityError(
+                    f"invalid output behavior evidence: {entry['rustPath']}"
+                )
             if output_binding["kind"] == "error-details" and not all(
                 isinstance(output_binding.get(name), str)
                 and output_binding[name].strip()
@@ -1640,6 +1676,14 @@ def _output_field_exists(
     python_targets: dict[str, Any],
 ) -> bool:
     if field_path == "$":
+        if binding.get("kind") == "concrete-model":
+            target = python_targets.get(schema_target)
+            return (
+                schema_target == binding.get("schemaTarget")
+                and isinstance(target, dict)
+                and target.get("kind") == "class"
+                and target.get("canonicalTarget", schema_target) == schema_target
+            )
         return (
             binding.get("kind") == "error-details"
             and schema_target == "yosoi.errors.RustErrorDetails"
@@ -1652,7 +1696,7 @@ def _output_field_exists(
     prefix = schema_target + "."
     if path.startswith(prefix):
         path = path[len(prefix) :]
-    path = path.replace("[*]", ".[*]")
+    path = re.sub(r"(?<!\.)\[\*\]", ".[*]", path)
     if not path or any(not segment for segment in path.split(".")):
         return False
     if _model_field_at_path(schema_description.get("fields", []), path) is not None:
@@ -1708,6 +1752,35 @@ def _output_tag_problem(
 ) -> str | None:
     discriminator = binding["discriminator"]
     tag = binding["tag"]
+    if binding["kind"] == "concrete-model":
+        if rust_item.get("kind") != "variant":
+            return (
+                "concrete-model output binding is supported only for Rust enum variants"
+            )
+        rust_arguments = [
+            argument
+            for argument in rust_item.get("rustArguments", [])
+            if not argument.get("receiver")
+        ]
+        if len(rust_arguments) != 1:
+            return (
+                "concrete-model output binding requires exactly one Rust "
+                "payload argument"
+            )
+        rust_type = binding.get("rustType")
+        rust_payload_type = re.sub(
+            r"[&*\s]", "", rust_arguments[0].get("type", "")
+        ).rsplit("::", 1)[-1]
+        if (
+            not isinstance(rust_type, str)
+            or rust_type.rsplit("::", 1)[-1] != rust_payload_type
+        ):
+            return "concrete-model rustType does not identify the Rust payload type"
+        if discriminator != "python_class":
+            return "concrete-model discriminator must identify the Python runtime class"
+        if tag != schema_target.rsplit(".", 1)[-1]:
+            return "concrete-model tag must match its concrete Python class name"
+        return None
     if binding["kind"] == "error-details":
         if schema_target != "yosoi.errors.RustErrorDetails":
             return "error-details output schema must be yosoi.errors.RustErrorDetails"
@@ -1800,6 +1873,54 @@ def _output_tag_problem(
     return None
 
 
+def _concrete_model_behavior_problem(
+    binding: dict[str, Any],
+    schema_target: str,
+    python_targets: dict[str, Any],
+) -> str | None:
+    if binding.get("schemaTarget") != schema_target:
+        return "concrete-model schemaTarget must match the Python target"
+    target = python_targets.get(schema_target)
+    if not isinstance(target, dict) or target.get("kind") != "class":
+        return "concrete-model target must be a live Python class"
+    if target.get("canonicalTarget", schema_target) != schema_target:
+        return "concrete-model target must use the canonical live Python class"
+    evidence = binding.get("behaviorEvidence")
+    if not isinstance(evidence, list) or not evidence:
+        return "concrete-model output binding requires linked behavior evidence"
+    languages: set[str] = set()
+    root = Path(__file__).resolve().parents[2]
+    for row in evidence:
+        if not isinstance(row, dict):
+            return "concrete-model behavior evidence entries must be objects"
+        relative = row.get("path")
+        test = row.get("test")
+        if not isinstance(relative, str) or not isinstance(test, str) or not test:
+            return "concrete-model behavior evidence needs a source path and test name"
+        try:
+            path = _safe_artifact_path(relative)
+            source_path = (root / path).resolve()
+            source_path.relative_to(root)
+            content = source_path.read_text(encoding="utf-8")
+        except (OSError, ValueError) as error:
+            return (
+                f"concrete-model behavior evidence is not a safe source file: {error}"
+            )
+        suffix = source_path.suffix
+        if suffix == ".py":
+            pattern = rf"^\s*(?:async\s+)?def\s+{re.escape(test)}\s*\("
+        elif suffix == ".rs":
+            pattern = rf"^\s*(?:pub\s+)?fn\s+{re.escape(test)}\s*\("
+        else:
+            return "concrete-model behavior evidence must link Python or Rust tests"
+        if re.search(pattern, content, re.MULTILINE) is None:
+            return f"concrete-model behavior test is absent from {relative}: {test}"
+        languages.add(suffix)
+    if languages != {".py", ".rs"}:
+        return "concrete-model behavior evidence must link both Python and Rust tests"
+    return None
+
+
 def _output_mapping_configuration_problem(
     rust_item: dict[str, Any],
     entry: dict[str, Any],
@@ -1819,7 +1940,11 @@ def _output_mapping_configuration_problem(
         or entry.get("receiverMapping")
     ):
         return "output payloads cannot be declared as constructor arguments"
-    if binding.get("kind") not in {"error-details", "outcome-view"}:
+    if binding.get("kind") not in {
+        "error-details",
+        "outcome-view",
+        "concrete-model",
+    }:
         return "unsupported outputBinding kind"
     if (
         not isinstance(binding.get("discriminator"), str)
@@ -1831,6 +1956,20 @@ def _output_mapping_configuration_problem(
     python_fields = binding.get("pythonFields")
     if not isinstance(python_fields, list):
         return "outputBinding pythonFields must be an array"
+    if binding.get("kind") == "concrete-model":
+        if any(not isinstance(field, dict) for field in python_fields):
+            return "concrete-model pythonFields entries must be objects"
+        if len(python_fields) != 1 or python_fields[0].get("pythonFieldPath") != "$":
+            return "concrete-model output must bind the whole Python value exactly once"
+        if entry.get("pythonTarget") != binding.get("schemaTarget"):
+            return (
+                "concrete-model Python target and schemaTarget must identify "
+                "the same class"
+            )
+        if not str(entry.get("semanticEquivalent", "")).strip():
+            return "concrete-model output binding requires a semantic rationale"
+        if not str(entry.get("rationale", "")).strip():
+            return "concrete-model output binding requires a mapping rationale"
     rust_arguments = rust_item.get("rustArguments")
     if not isinstance(rust_arguments, list):
         return "Rust variant arguments could not be read from the compiler signature"
@@ -1866,6 +2005,12 @@ def _output_mapping_configuration_problem(
         return "outputBinding schemaTarget is absent from live Python introspection"
     if not schema_description:
         return "outputBinding has no live public schema description"
+    if binding.get("kind") == "concrete-model":
+        behavior_problem = _concrete_model_behavior_problem(
+            binding, schema_target, all_targets
+        )
+        if behavior_problem is not None:
+            return behavior_problem
     tag_problem = _output_tag_problem(
         rust_item, binding, schema_target, schema_description, all_targets
     )

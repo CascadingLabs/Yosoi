@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 import json
 import re
 from pathlib import Path
@@ -17,7 +18,13 @@ def inline(value: str) -> str:
     return value.replace("\n", " ").replace("|", "\\|")
 
 
-def signature(node: ast.AST) -> str:
+def _contains_self(node: ast.AST | None) -> bool:
+    return node is not None and any(
+        isinstance(child, ast.Name) and child.id == "Self" for child in ast.walk(node)
+    )
+
+
+def signature(node: ast.AST, concrete_class: str | None = None) -> str:
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         prefix = "async " if isinstance(node, ast.AsyncFunctionDef) else ""
         parameters = (
@@ -25,10 +32,22 @@ def signature(node: ast.AST) -> str:
             if node.type_params
             else ""
         )
-        result = f"{prefix}def {node.name}{parameters}({ast.unparse(node.args)})"
-        if node.returns:
-            result += f" -> {ast.unparse(node.returns)}"
         decorators = [ast.unparse(d) for d in node.decorator_list]
+        arguments = copy.deepcopy(node.args)
+        returns = node.returns
+        if concrete_class and "classmethod" in decorators and _contains_self(returns):
+            positional = [*arguments.posonlyargs, *arguments.args]
+            if positional and positional[0].arg == "cls":
+                positional[0].annotation = ast.Subscript(
+                    value=ast.Name(id="type", ctx=ast.Load()),
+                    slice=ast.Name(id=concrete_class, ctx=ast.Load()),
+                    ctx=ast.Load(),
+                )
+            if returns:
+                returns = _specialize_self(returns, concrete_class)
+        result = f"{prefix}def {node.name}{parameters}({ast.unparse(arguments)})"
+        if returns:
+            result += f" -> {ast.unparse(returns)}"
         visible = [
             f"@{d}"
             for d in decorators
@@ -49,6 +68,20 @@ def signature(node: ast.AST) -> str:
         )
         return f"class {node.name}{parameters}" + (f"({bases})" if bases else "") + ":"
     return ast.unparse(node)
+
+
+def _specialize_self(node: ast.AST, concrete_class: str) -> ast.AST:
+    """Render an authored classmethod's Self annotation for its public subclass."""
+
+    class SelfSpecializer(ast.NodeTransformer):
+        def visit_Name(self, name: ast.Name) -> ast.AST:
+            if name.id == "Self":
+                return ast.copy_location(
+                    ast.Name(id=concrete_class, ctx=name.ctx), name
+                )
+            return name
+
+    return SelfSpecializer().visit(copy.deepcopy(node))
 
 
 def definition_name(node: ast.AST) -> str | None:
@@ -92,14 +125,29 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
     # class docstrings. Do not infer explanations from names or annotations.
     attribute_docs = {}
     for _, tree in modules.values():
-        for node, following in zip(tree.body, tree.body[1:], strict=False):
-            if (
-                isinstance(node, (ast.Assign, ast.AnnAssign, ast.TypeAlias))
-                and isinstance(following, ast.Expr)
-                and isinstance(following.value, ast.Constant)
-                and isinstance(following.value.value, str)
-            ):
-                attribute_docs[id(node)] = following.value.value.strip()
+        bodies = [tree.body]
+        bodies.extend(node.body for node in tree.body if isinstance(node, ast.ClassDef))
+        for body in bodies:
+            for node, following in zip(body, body[1:], strict=False):
+                if (
+                    isinstance(node, (ast.Assign, ast.AnnAssign, ast.TypeAlias))
+                    and isinstance(following, ast.Expr)
+                    and isinstance(following.value, ast.Constant)
+                    and isinstance(following.value.value, str)
+                ):
+                    attribute_docs[id(node)] = following.value.value.strip()
+
+    def field_description(node):
+        value = getattr(node, "value", None)
+        if isinstance(value, ast.Call):
+            for keyword in value.keywords:
+                if (
+                    keyword.arg == "description"
+                    and isinstance(keyword.value, ast.Constant)
+                    and isinstance(keyword.value.value, str)
+                ):
+                    return keyword.value.value
+        return ""
 
     reexport_targets = {}
 
@@ -108,6 +156,9 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
             return ast.get_docstring(node) or ""
         if id(node) in attribute_docs:
             return attribute_docs[id(node)]
+        description = field_description(node)
+        if description:
+            return description
         target = reexport_targets.get(id(node))
         if target:
             definition = target[1]
@@ -118,6 +169,12 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
             return attribute_docs.get(id(definition), "")
         return ""
 
+    class_definitions = {
+        (module, node.name): (file, node)
+        for module, (file, tree) in modules.items()
+        for node in tree.body
+        if isinstance(node, ast.ClassDef)
+    }
     symbols = {}
     for module, (file, tree) in modules.items():
         if module == "__init__":
@@ -173,6 +230,91 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
             key = aliases[key]
         return symbols.get(key)
 
+    def authored_class_members(module, root):
+        """Collect authored members in a source-only C3 order for local bases."""
+        members = []
+        member_names = set()
+        linearizations = {}
+
+        def merge(sequences, class_name):
+            result = []
+            sequences = [sequence for sequence in sequences if sequence]
+            while sequences:
+                candidate = None
+                for sequence in sequences:
+                    head = sequence[0]
+                    if not any(head in tail[1:] for tail in sequences):
+                        candidate = head
+                        break
+                if candidate is None:
+                    raise ValueError(
+                        f"Inconsistent same-module inheritance order for "
+                        f"{module}.{class_name}"
+                    )
+                result.append(candidate)
+                remaining = []
+                for sequence in sequences:
+                    if sequence[0] == candidate:
+                        sequence = sequence[1:]
+                    if sequence:
+                        remaining.append(sequence)
+                sequences = remaining
+            return result
+
+        def linearize(class_node, visiting):
+            key = ("local", module, class_node.name)
+            if key in linearizations:
+                return list(linearizations[key])
+            if key in visiting:
+                raise ValueError(
+                    f"Cyclic same-module inheritance involving {module}.{class_node.name}"
+                )
+            visiting.add(key)
+            direct_bases = []
+            sequences = []
+            for base in class_node.bases:
+                local_base = (
+                    class_definitions.get((module, base.id))
+                    if isinstance(base, ast.Name)
+                    else None
+                )
+                base_key = (
+                    ("local", module, base.id)
+                    if local_base
+                    else ("external", ast.unparse(base))
+                )
+                if base_key in direct_bases:
+                    raise ValueError(
+                        f"Duplicate source base {ast.unparse(base)} "
+                        f"in {module}.{class_node.name}"
+                    )
+                direct_bases.append(base_key)
+                sequences.append(
+                    linearize(local_base[1], visiting) if local_base else [base_key]
+                )
+            sequences.append(direct_bases.copy())
+            order = (key, *merge(sequences, class_node.name))
+            visiting.remove(key)
+            linearizations[key] = order
+            return list(order)
+
+        for key in linearize(root, set()):
+            if key[0] != "local":
+                continue
+            class_node = class_definitions[(key[1], key[2])][1]
+            for member in class_node.body:
+                if not isinstance(
+                    member,
+                    (ast.Assign, ast.AnnAssign, ast.FunctionDef, ast.AsyncFunctionDef),
+                ):
+                    continue
+                name = definition_name(member)
+                if not name or name in member_names:
+                    continue
+                member_names.add(name)
+                members.append(member)
+        return members
+
     for key, (_, node, _) in symbols.items():
         target = resolve(*key)
         if target and target[1] is not node:
@@ -224,16 +366,17 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
                 "",
             ]
         if isinstance(node, ast.ClassDef):
+            class_members = authored_class_members(module, node)
             fields = [
                 n
-                for n in node.body
+                for n in class_members
                 if isinstance(n, (ast.Assign, ast.AnnAssign))
                 and (definition_name(n) or "").strip()
                 and not definition_name(n).startswith("_")
             ]
             methods = [
                 n
-                for n in node.body
+                for n in class_members
                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
                 and (
                     not n.name.startswith("_")
@@ -261,34 +404,53 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
             if linked:
                 parts += ["## Base classes", "", ", ".join(linked), ""]
             parts += [
-                "Members below are declared on this class. Inherited Pydantic methods "
-                "and generated constructor signatures are not expanded.",
+                "Members below are authored on this class or inherited from authored "
+                "classes in the same module. External-base and dynamically generated "
+                "members are not expanded.",
                 "",
             ]
             if fields:
-                parts += [
-                    "## Fields and class attributes",
-                    "",
-                    "```python",
-                    "\n".join(signature(n) for n in fields),
-                    "```",
-                    "",
-                ]
+                parts += ["## Fields and class attributes", ""]
+                for field in fields:
+                    field_name = definition_name(field)
+                    parts += [
+                        f"### `{field_name}`",
+                        "",
+                        "```python",
+                        signature(field),
+                        "```",
+                        "",
+                    ]
+                    if source_docs(field):
+                        parts += [source_docs(field), ""]
+                    parts += [source_link(file, field), ""]
             if methods:
                 parts += ["## Methods", ""]
             for method in methods:
+                method_decorators = [ast.unparse(d) for d in method.decorator_list]
+                specializes_self = (
+                    "classmethod" in method_decorators
+                    and _contains_self(method.returns)
+                )
                 parts += [
                     f"### {method.name}",
                     "",
                     "```python",
-                    signature(method),
+                    signature(method, name),
                     "```",
                     "",
-                    ast.get_docstring(method) or "",
+                    source_docs(method),
                     "",
                     source_link(file, method),
                     "",
                 ]
+                if specializes_self:
+                    parts += [
+                        "The classmethod receiver and `Self` return type are shown "
+                        "for this concrete class; the source link identifies the "
+                        "original declaration.",
+                        "",
+                    ]
         write(route, name, f"{public_path} Python API reference.", "\n".join(parts))
 
     for module, (file, tree) in modules.items():
@@ -360,9 +522,9 @@ def render_reference(package: Path, output: Path, source: str, repository: str) 
         "",
         "This reference is generated from public Python source declarations without "
         "importing or executing the native extension. Signatures preserve Python "
-        "annotations, defaults, and async declarations. Class pages show declared "
-        "fields and methods; inherited or dynamically generated members are not "
-        "expanded.",
+        "annotations, defaults, and async declarations. Class pages show authored "
+        "fields and methods declared locally or inherited from same-module authored "
+        "bases. External-base and dynamically generated members are not expanded.",
         "",
         "## Package exports",
         "",

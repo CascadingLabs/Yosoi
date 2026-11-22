@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::super::capture_facts::{
     AttemptCaptureFacts, AttemptCaptureFailureFacts, browser_document_observation,
 };
@@ -22,7 +24,7 @@ impl AttemptOutcome {
         capture_archive_ref: Option<CaptureArchiveRef>,
         document_archive_refs: Option<&[Option<DocumentArchiveRef>]>,
     ) -> Self {
-        let raw_response = projected.take_raw_response();
+        let raw_response = projected.take_raw_response().map(Arc::new);
         let (
             capture_id,
             applied_policy,

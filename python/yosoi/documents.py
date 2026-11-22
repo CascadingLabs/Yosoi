@@ -11,6 +11,17 @@ from pydantic import Field, PrivateAttr, ValidationInfo, model_validator
 from . import _native
 from ._models import ImmutableModel
 from .locators import Plan
+from .media import MAX_SOURCE_BYTES as MAX_SOURCE_BYTES
+from .media import AudioDocument as AudioDocument
+from .media import BinaryDocument as BinaryDocument
+from .media import FileDocument as FileDocument
+from .media import FileLimits as FileLimits
+from .media import FileMetadata as FileMetadata
+from .media import ImageDocument as ImageDocument
+from .media import VideoDocument as VideoDocument
+from .media import _FileDocument as _FileDocument
+from .media import file_from_bytes as file_from_bytes
+from .media import read_file as read_file
 from .outcomes import LocateOutcome, _read
 from .policy import Policy
 from .scalars import RUST_DOMAIN_VALIDATED, DocumentEpoch, DocumentId

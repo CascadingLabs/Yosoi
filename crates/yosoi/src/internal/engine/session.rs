@@ -253,6 +253,12 @@ pub fn control_error(error: &capture::BrowserControlError) -> capture::VoidCrawl
         | capture::BrowserControlError::InvalidInput
         | capture::BrowserControlError::InputTargetLost
         | capture::BrowserControlError::Capacity => capture::VoidCrawlAdapterError::InvalidStaging,
+        capture::BrowserControlError::DownloadCapture(_) => {
+            capture::VoidCrawlAdapterError::Provider {
+                code: "session.download",
+                category: capture::VoidCrawlAdapterErrorCategory::ProviderFailure,
+            }
+        }
         capture::BrowserControlError::ConditionWaitLost => {
             capture::VoidCrawlAdapterError::InvalidStaging
         }

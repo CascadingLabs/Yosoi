@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -414,6 +415,122 @@ class InventoryTests(unittest.TestCase):
             parity._mapping_configuration_problem(
                 wrapper, entry, target, python_targets
             )
+        )
+
+    def test_concrete_model_output_requires_one_live_class_and_linked_tests(self):
+        target_path = "yosoi.ImageDocument"
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::documents::FileDocument::Image",
+            "parentRustPath": "yosoi::documents::FileDocument",
+            "rustArguments": [{"name": "0", "type": "yosoi::documents::ImageDocument"}],
+        }
+        target = {
+            "kind": "class",
+            "canonicalTarget": target_path,
+            "signature": {"display": "ImageDocument", "parameters": []},
+            "fields": [],
+        }
+        python_targets = {target_path: target}
+        entry = {
+            "pythonTarget": target_path,
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "semanticEquivalent": (
+                "Rust returns this payload as an ImageDocument instance."
+            ),
+            "rationale": (
+                "Concrete class identity selects the FileDocument union member."
+            ),
+            "outputBinding": {
+                "kind": "concrete-model",
+                "schemaTarget": target_path,
+                "discriminator": "python_class",
+                "tag": "ImageDocument",
+                "rustType": "yosoi::documents::ImageDocument",
+                "pythonFields": [
+                    {
+                        "rustArgument": "0",
+                        "pythonFieldPath": "$",
+                        "conversion": (
+                            "The whole native value is the Python concrete model."
+                        ),
+                    }
+                ],
+                "behaviorEvidence": [
+                    {
+                        "path": "python/tests/test_media_documents.py",
+                        "test": "test_media_factory_classifies_and_redacts_payload",
+                    },
+                    {
+                        "path": "crates/yosoi/src/internal/media_documents/tests.rs",
+                        "test": "file_factory_classifies_signatures_without_decoding",
+                    },
+                ],
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+
+        for payloads in (
+            [],
+            [*item["rustArguments"], {"name": "1", "type": "str"}],
+        ):
+            invalid_item = {**item, "rustArguments": payloads}
+            self.assertIn(
+                "exactly one",
+                parity._output_tag_problem(
+                    invalid_item,
+                    entry["outputBinding"],
+                    target_path,
+                    target,
+                    python_targets,
+                ),
+            )
+
+        for invalid_targets in (
+            {},
+            {target_path: {**target, "kind": "type-alias"}},
+            {target_path: {**target, "canonicalTarget": "yosoi.media.ImageDocument"}},
+        ):
+            self.assertIsNotNone(
+                parity._mapping_configuration_problem(
+                    item, entry, target, invalid_targets
+                )
+            )
+
+        invalid_entry = copy.deepcopy(entry)
+        invalid_entry["outputBinding"]["kind"] = "unknown-model"
+        self.assertIn(
+            "unsupported outputBinding kind",
+            parity._mapping_configuration_problem(
+                item, invalid_entry, target, python_targets
+            ),
+        )
+        invalid_entry = copy.deepcopy(entry)
+        invalid_entry["outputBinding"]["behaviorEvidence"] = []
+        self.assertIn(
+            "linked behavior evidence",
+            parity._mapping_configuration_problem(
+                item, invalid_entry, target, python_targets
+            ),
+        )
+        invalid_entry = copy.deepcopy(entry)
+        invalid_entry["semanticEquivalent"] = ""
+        self.assertIn(
+            "semantic rationale",
+            parity._mapping_configuration_problem(
+                item, invalid_entry, target, python_targets
+            ),
+        )
+        invalid_entry = copy.deepcopy(entry)
+        invalid_entry["outputBinding"]["behaviorEvidence"][0]["test"] = "missing_test"
+        self.assertIn(
+            "behavior test is absent",
+            parity._mapping_configuration_problem(
+                item, invalid_entry, target, python_targets
+            ),
         )
 
     def test_output_outcome_view_checks_readonly_status_slot_and_variant_tag(self):
@@ -918,6 +1035,181 @@ print(parity.digest_json(first))
             seed_ledger._inventory_with_mapping_root(
                 {"sdk": {"crate": "future_sdk"}, "items": []}
             )
+
+    def test_seed_reclassifies_unmapped_fromstr_error_associated_type(self) -> None:
+        type_item = {
+            "symbolKey": "page:struct:yosoi::archive::AudioDocumentArchiveRef",
+            "id": "struct:yosoi::archive::AudioDocumentArchiveRef",
+            "rustPath": "yosoi::archive::AudioDocumentArchiveRef",
+            "aliases": [],
+            "kind": "struct",
+            "signature": "pub struct AudioDocumentArchiveRef",
+            "rustArguments": [],
+            "surface": "item",
+            "parentRustPath": None,
+            "trait": None,
+        }
+        error_item = {
+            "symbolKey": (
+                "member:assoc_type:yosoi::archive::AudioDocumentArchiveRef::Err"
+                "@signature:fromstr-err@trait:FromStr"
+            ),
+            "id": "assoc_type:yosoi::archive::AudioDocumentArchiveRef::Err",
+            "rustPath": "yosoi::archive::AudioDocumentArchiveRef::Err",
+            "aliases": [],
+            "kind": "assoc_type",
+            "signature": "type Err = yosoi::archive::ArchiveRefError",
+            "rustArguments": [],
+            "surface": "member",
+            "parentRustPath": "yosoi::archive::AudioDocumentArchiveRef",
+            "trait": "FromStr",
+        }
+        rust = {
+            **inventory(),
+            "sdk": {"crate": "yosoi"},
+            "items": [type_item, error_item],
+        }
+        python = python_surface()
+        python["targets"] = {
+            "yosoi.AudioDocumentArchiveRef": {
+                "kind": "class",
+                "signature": {"display": "(*, value: str)", "parameters": []},
+                "fields": [],
+            }
+        }
+        existing = {
+            "schemaVersion": 1,
+            "kind": "python-rust-sdk-parity-ledger",
+            "sourcePin": {
+                "sourceRevision": None,
+                "inventorySignature": None,
+                "featureProfileDigest": None,
+            },
+            "pythonPin": {"surfaceDigest": None, "implementationDigest": None},
+            "entries": [
+                {
+                    "rustPath": error_item["rustPath"],
+                    "symbolKey": error_item["symbolKey"],
+                    "trait": "FromStr",
+                    "decision": "mapped",
+                    "pythonTarget": None,
+                    "argumentMappings": [],
+                    "defaults": [],
+                    "units": [],
+                    "cardinality": [],
+                    "rationale": "A stale invalid row from an earlier seed.",
+                }
+            ],
+        }
+
+        seeded, _report = seed_ledger.seed_entries(rust, python, existing)
+        error_entry = next(
+            entry
+            for entry in seeded["entries"]
+            if entry["rustPath"] == error_item["rustPath"]
+        )
+        self.assertEqual(error_entry["decision"], "language-specific")
+        self.assertNotIn("pythonTarget", error_entry)
+        self.assertEqual(error_entry["review"]["status"], "reviewed")
+        self.assertIn("not a callable SDK member", error_entry["rationale"])
+
+    def test_seed_keeps_existing_fromstr_error_exception_mapping(self) -> None:
+        type_item = {
+            "symbolKey": "page:struct:yosoi::request::ActivityId",
+            "id": "struct:yosoi::request::ActivityId",
+            "rustPath": "yosoi::request::ActivityId",
+            "aliases": [],
+            "kind": "struct",
+            "signature": "pub struct ActivityId",
+            "rustArguments": [],
+            "surface": "item",
+            "parentRustPath": None,
+            "trait": None,
+        }
+        error_item = {
+            "symbolKey": (
+                "member:assoc_type:yosoi::request::ActivityId::Err"
+                "@signature:fromstr-err@trait:FromStr"
+            ),
+            "id": "assoc_type:yosoi::request::ActivityId::Err",
+            "rustPath": "yosoi::request::ActivityId::Err",
+            "aliases": [],
+            "kind": "assoc_type",
+            "signature": "type Err = yosoi::request::OccurrenceIdParseError",
+            "rustArguments": [],
+            "surface": "member",
+            "parentRustPath": "yosoi::request::ActivityId",
+            "trait": "FromStr",
+        }
+        rust = {
+            **inventory(),
+            "sdk": {"crate": "yosoi"},
+            "items": [type_item, error_item],
+        }
+        python = python_surface()
+        python["targets"] = {
+            "yosoi.request.ActivityId": {
+                "kind": "class",
+                "signature": {"display": "(*, value: str)", "parameters": []},
+                "fields": [],
+            },
+            "yosoi.errors.RequestError": {"kind": "class"},
+        }
+        existing = {
+            "schemaVersion": 1,
+            "kind": "python-rust-sdk-parity-ledger",
+            "sourcePin": {
+                "sourceRevision": None,
+                "inventorySignature": None,
+                "featureProfileDigest": None,
+            },
+            "pythonPin": {"surfaceDigest": None, "implementationDigest": None},
+            "entries": [
+                {
+                    "rustPath": error_item["rustPath"],
+                    "symbolKey": error_item["symbolKey"],
+                    "trait": "FromStr",
+                    "decision": "mapped",
+                    "pythonTarget": "yosoi.errors.RequestError",
+                    "argumentMappings": [],
+                    "defaults": [],
+                    "units": [],
+                    "cardinality": [],
+                    "rationale": "Existing checked parser exception mapping.",
+                    "semanticEquivalent": "Keep this reviewed declaration intact.",
+                }
+            ],
+        }
+
+        seeded, _report = seed_ledger.seed_entries(rust, python, existing)
+        entry = next(
+            row
+            for row in seeded["entries"]
+            if row["rustPath"] == error_item["rustPath"]
+        )
+
+        self.assertEqual(entry["decision"], "mapped")
+        self.assertEqual(entry["pythonTarget"], "yosoi.errors.RequestError")
+        self.assertEqual(
+            entry["semanticEquivalent"], "Keep this reviewed declaration intact."
+        )
+
+    def test_infallible_tryfrom_error_is_trait_metadata_not_python_exception(self):
+        item = {
+            "symbolKey": "member:assoc_type:yosoi::surface::model::AddressToken::Error",
+            "rustPath": "yosoi::surface::model::AddressToken::Error",
+            "kind": "assoc_type",
+            "signature": "type Error = Infallible",
+            "trait": "TryFrom",
+        }
+
+        entry = seed_ledger._conversion_error_type_entry(item, {"targets": {}})
+
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry["decision"], "language-specific")
+        self.assertNotIn("pythonTarget", entry)
+        self.assertEqual(entry["review"]["status"], "reviewed")
+        self.assertIn("not a callable SDK member", entry["rationale"])
 
     def test_seed_ledger_has_stable_mapping_metadata(self) -> None:
         root = Path(__file__).resolve().parents[2]

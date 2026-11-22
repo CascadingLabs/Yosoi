@@ -3,6 +3,7 @@ use crate::internal::direct_http as yosoi_web_capture_direct_http;
 mod classification;
 
 use std::fmt;
+use std::sync::Arc;
 
 use crate::internal::policy::policy::{AcquisitionKind, DocumentRequest, DocumentSelectionKind};
 use crate::internal::types::CaptureId;
@@ -37,7 +38,7 @@ pub struct AttemptResult {
     capture_facts: AttemptCaptureFacts,
     transport: AttemptTransportOutcome,
     response_facts: Option<Box<yosoi_web_capture_direct_http::DirectHttpResponseFacts>>,
-    raw_response: Option<Vec<u8>>,
+    raw_response: Option<Arc<Vec<u8>>>,
     documents: Vec<AttemptDocumentOutcome>,
 }
 
@@ -82,12 +83,17 @@ impl AttemptResult {
             .iter()
             .all(|document| document.outcome().document().is_none())
             .then_some(())
-            .and(self.raw_response.as_deref())
+            .and_then(|()| self.raw_response.as_deref().map(Vec::as_slice))
     }
 
     /// Complete HTTP representation bytes, independent of document projection.
     pub fn response_body(&self) -> Option<&[u8]> {
-        self.raw_response.as_deref()
+        self.raw_response.as_deref().map(Vec::as_slice)
+    }
+
+    /// Shares a complete retained body without copying its payload.
+    pub fn shared_response_body(&self) -> Option<Arc<Vec<u8>>> {
+        self.raw_response.clone()
     }
 
     pub fn documents(&self) -> &[AttemptDocumentOutcome] {
