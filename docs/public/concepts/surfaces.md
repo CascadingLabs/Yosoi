@@ -210,7 +210,7 @@ The tiny raster is cheaper to send directly than to send its overview and crop; 
 
 ## Example: zoom into a recording
 
-A video Surface freezes a local file and probes its timeline. It decodes a frame only when requested. Place a recording longer than four seconds at `recording.mp4`; these programs save the first frame at or after 3.5 seconds, then restore its PNG through Archive.
+A video Surface freezes a local file and probes its timeline. It decodes a frame only when requested. Place a recording longer than four seconds at `recording.mp4`; these programs read and expand the timeline, save the first frame at or after 3.5 seconds, crop its decoded pixels, and archive the source and both pixel artifacts. The saved timeline reopens without probing; saved pixels reopen without FFmpeg.
 
 Rust requires `surface-video` and Tokio. Python's wheel needs video support. Opening and decoding use local FFmpeg and FFprobe, selected from PATH or `YOSOI_FFMPEG` and `YOSOI_FFPROBE`. The local Archive backend requires Unix.
 
@@ -218,19 +218,60 @@ Rust requires `surface-video` and Tokio. Python's wheel needs video support. Ope
 
 ```rust
 use std::{error::Error, fs};
+use std::io;
 use yosoi as ys;
+use ys::surface::{
+    Budget,
+    model::{ReadOperation, ReadRequest, ReadResult, SurfaceRead},
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     let video = ys::VideoSurface::open("recording.mp4", ys::VideoPolicy::default()).await?;
+    let overview = video.read(&ReadRequest {
+        operation: ReadOperation::Overview,
+        budget: Budget::default(),
+        continuation: None,
+    })?;
+    let ReadResult::Page(overview) = overview else {
+        return Err(io::Error::other("video overview did not return a page").into());
+    };
+    let expanded = video.read(&ReadRequest {
+        operation: ReadOperation::Expand {
+            reference: video.root_reference(),
+        },
+        budget: Budget::default(),
+        continuation: None,
+    })?;
+    let ReadResult::Page(expanded) = expanded else {
+        return Err(io::Error::other("video expansion did not return a page").into());
+    };
+    println!("{} overview entries, {} time windows", overview.total, expanded.total);
     let frame = video.frame(&video.at(3_500_000)?).await?;
+    let rect = ys::surface::PixelRect {
+        x: 0,
+        y: 0,
+        width: frame.info.width.min(160),
+        height: frame.info.height.min(90),
+    };
+    let crop = video.crop(&frame.info.reference, rect).await?;
     fs::write("frame.png", &frame.png)?;
     println!("Source timestamp: {}", frame.info.source_pts_us);
+    fs::write("crop.png", &crop.png)?;
 
     let archive = ys::Archive::open("video-evidence").await?;
-    let reference = frame.write_to(&archive).await?;
-    let restored = ys::DecodedFrame::read_from(&archive, &reference).await?;
-    println!("Restored PNG bytes: {}", restored.png.len());
+    let video_reference = video.write_to(&archive).await?;
+    let frame_reference = frame.write_to(&archive).await?;
+    let crop_reference = crop.write_to(&archive).await?;
+    let restored_video = ys::VideoSurface::read_from(&archive, &video_reference).await?;
+    let restored_frame = ys::DecodedFrame::read_from(&archive, &frame_reference).await?;
+    let restored_crop = ys::DecodedFrame::read_from(&archive, &crop_reference).await?;
+    println!(
+        "Restored timeline duration: {} microseconds; {} frame bytes and {} crop bytes",
+        restored_video.metadata().duration_us,
+        restored_frame.png.len(),
+        restored_crop.png.len()
+    );
     Ok(())
 }
 ```
@@ -243,17 +284,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
 import asyncio
 from pathlib import Path
 import yosoi as ys
+from yosoi import surface as sf
 
 async def main() -> None:
     video = await ys.VideoSurface.open("recording.mp4")
+    overview = video.read(sf.ReadRequest(operation=sf.Overview()))
+    expanded = video.read(
+        sf.ReadRequest(operation=sf.Expand(reference=video.root_reference))
+    )
+    print("Overview entries:", overview.data.total)
+    print("Time windows:", expanded.data.total)
     frame = await video.frame(video.at(3_500_000))
+    rect = ys.PixelRect(
+        x=0,
+        y=0,
+        width=min(frame.info.width, 160),
+        height=min(frame.info.height, 90),
+    )
+    crop = await video.crop(frame.info.reference, rect)
     Path("frame.png").write_bytes(frame.png)
+    Path("crop.png").write_bytes(crop.png)
     print("Source timestamp:", frame.info.source_pts_us)
 
     archive = await ys.Archive.open("video-evidence")
-    reference = await frame.write_to(archive)
-    restored = await ys.DecodedFrame.read_from(archive, reference)
-    print("Restored PNG bytes:", len(restored.png))
+    video_reference = await video.write_to(archive)
+    frame_reference = await frame.write_to(archive)
+    crop_reference = await crop.write_to(archive)
+    restored_video = await ys.VideoSurface.read_from(archive, video_reference)
+    restored_frame = await ys.DecodedFrame.read_from(archive, frame_reference)
+    restored_crop = await ys.DecodedFrame.read_from(archive, crop_reference)
+    print("Restored duration:", restored_video.metadata.duration_us)
+    print("Restored pixel bytes:", len(restored_frame.png), len(restored_crop.png))
 
 asyncio.run(main())
 ```

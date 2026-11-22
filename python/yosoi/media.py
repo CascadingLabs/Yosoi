@@ -55,6 +55,9 @@ class FileMetadata(ImmutableModel):
         session_id: Optional browser Session identity for captured downloads.
         tab_id: Optional browser tab identity for captured downloads.
         download_id: Optional provider download identity.
+        probe_validated_video_container: Container confirmed by FFprobe when a generic
+            signature required decoder-side validation. The original detected MIME
+            remains separate and may still be audio/ogg or absent.
         sha256: Lowercase SHA-256 hex digest of the exact payload, populated by Rust.
     """
 
@@ -92,6 +95,16 @@ class FileMetadata(ImmutableModel):
     download_id: StrictStr | None = Field(
         default=None, max_length=4096, description="Provider download ID."
     )
+    probe_validated_video_container: StrictStr | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        max_length=4096,
+        description=(
+            "FFprobe-confirmed self-contained container for signature-ambiguous video. "
+            "Rust populates this field; caller-authored values are ignored by file "
+            "constructors."
+        ),
+    )
     sha256: StrictStr | None = Field(
         default=None,
         max_length=64,
@@ -99,9 +112,14 @@ class FileMetadata(ImmutableModel):
     )
 
     def _native_input(self) -> str:
-        """Serialize caller-authored metadata without claiming detection or digest."""
+        """Serialize caller-authored fields without detector or probe evidence."""
         return self.model_dump_json(
-            exclude_none=True, exclude={"detected_media_type", "sha256"}
+            exclude_none=True,
+            exclude={
+                "detected_media_type",
+                "sha256",
+                "probe_validated_video_container",
+            },
         )
 
 
@@ -288,12 +306,18 @@ class _FileDocument(ImmutableModel):
         identity = values["id"]
         if not isinstance(identity, str):
             raise TypeError("file document identity must be a string")
-        result = type(self).from_bytes(
-            identity,
-            self.bytes,
-            metadata=metadata,
-            limits=FileLimits(max_bytes=max(self._limits.max_bytes, self.byte_len)),
+        limits = FileLimits(max_bytes=max(self._limits.max_bytes, self.byte_len))
+        result = cast(
+            Self,
+            _FileDocument._from_native(
+                self._handle.copy_with(
+                    identity,
+                    metadata._native_input(),
+                    limits.model_dump_json(),
+                )
+            ),
         )
+        result._limits = limits
         return result
 
 
@@ -307,6 +331,41 @@ class VideoDocument(_FileDocument):
     """Immutable video bytes with native MIME detection and retained provenance."""
 
     _kind = "video"
+
+    def copy_with_metadata(
+        self,
+        id: str,
+        metadata: FileMetadata | None = None,
+        limits: FileLimits | None = None,
+    ) -> Self:
+        """Copy exact bytes under a new identity without authoring detector evidence.
+
+        For a signature-ambiguous video created by `VideoSurface.open`, Rust keeps
+        the existing probe-validated container basis because the payload is unchanged.
+        Caller-supplied metadata cannot create or replace that basis, detected MIME,
+        or digest. Omitted metadata keeps the current value; omitted limits use the
+        default file limit.
+        """
+        if not isinstance(id, str):
+            raise TypeError("id must be a string")
+        selected_metadata = self.metadata if metadata is None else metadata
+        if not isinstance(selected_metadata, FileMetadata):
+            raise TypeError("metadata must be FileMetadata")
+        selected_limits = FileLimits() if limits is None else limits
+        if not isinstance(selected_limits, FileLimits):
+            raise TypeError("limits must be FileLimits")
+        result = cast(
+            Self,
+            _FileDocument._from_native(
+                self._handle.copy_with(
+                    id,
+                    selected_metadata._native_input(),
+                    selected_limits.model_dump_json(),
+                )
+            ),
+        )
+        result._limits = selected_limits
+        return result
 
 
 class AudioDocument(_FileDocument):

@@ -1,5 +1,6 @@
 //! Stateful, read-only exploration of a frozen video source.
 use super::{DecodedFrame, VideoPolicy, VideoSurface};
+use crate::request::CancellationToken;
 use crate::surface::{
     ArchiveLimits, ArchivePolicy, Budget, ExecutionError, Outcome, SurfaceConnection,
     SurfacePolicy,
@@ -82,6 +83,14 @@ impl AgentSurface for VideoDriver {
         )
     }
     async fn command(&mut self, request: &Request) -> Result<Value> {
+        self.command_cancellable(request, &CancellationToken::new())
+            .await
+    }
+    async fn command_cancellable(
+        &mut self,
+        request: &Request,
+        cancellation: &CancellationToken,
+    ) -> Result<Value> {
         match &request.operation{
             Operation::Describe=>Ok(self.describe()),
             Operation::Status=>Ok(self.status()),
@@ -92,11 +101,11 @@ impl AgentSurface for VideoDriver {
             Operation::Seek{position_us}=>{self.focus=self.surface.at(*position_us)?;Ok(json!({"focus":self.focus,"controllable":false,"meaning":"read cursor moved; immutable source was not changed"}))},
             Operation::Frame{reference}=>{
                 if self.recording_fault{return Err(io::Error::other("recording failed; pixel materialization blocked").into());}
-                let frame=self.surface.frame(reference).await?;self.pixels(frame).await
+                let frame=self.surface.frame_cancellable(reference,cancellation).await?;self.pixels(frame).await
             },
             Operation::Crop{reference,rect}=>{
                 if self.recording_fault{return Err(io::Error::other("recording failed; pixel materialization blocked").into());}
-                let frame=self.surface.crop(reference,*rect).await?;self.pixels(frame).await
+                let frame=self.surface.crop_cancellable(reference,*rect,cancellation).await?;self.pixels(frame).await
             },
             Operation::Close=>Ok(json!({"closing":true})),
             _=>Err(io::Error::other("capability unavailable on read-only video; use describe and the shared read protocol").into()),
@@ -146,14 +155,16 @@ pub(super) async fn open(
     archive: Option<PathBuf>,
     max_side: u32,
     limits: ArchiveLimits,
+    cancellation: &CancellationToken,
 ) -> Result<VideoDriver> {
     fs::create_dir_all(&output)?;
-    let surface = VideoSurface::open(
+    let surface = VideoSurface::open_cancellable(
         path,
         VideoPolicy {
             frame_max_side: max_side,
             ..VideoPolicy::default()
         },
+        cancellation,
     )
     .await?;
     let mut recording = match archive {
@@ -207,6 +218,16 @@ impl VideoSession {
         policy: SurfacePolicy,
         max_side: u32,
     ) -> StdResult<Self, ExecutionError> {
+        Self::open_cancellable(path, policy, max_side, &CancellationToken::new()).await
+    }
+    /// Opens a detached reader with cooperative cancellation of source probing.
+    /// Cancellation awaits owned decoder cleanup before returning an operation error.
+    pub async fn open_cancellable(
+        path: impl AsRef<Path> + Send + Sync,
+        policy: SurfacePolicy,
+        max_side: u32,
+        cancellation: &CancellationToken,
+    ) -> StdResult<Self, ExecutionError> {
         let result = async {
             policy.archive_limits.validate()?;
             let temporary = tempfile::tempdir()?;
@@ -226,6 +247,7 @@ impl VideoSession {
                 root,
                 max_side,
                 policy.archive_limits,
+                cancellation,
             )
             .await?;
             Ok::<_, Box<dyn Error + Send + Sync>>(Self {
@@ -234,6 +256,17 @@ impl VideoSession {
         }
         .await;
         result.map_err(ExecutionError::Operation)
+    }
+    /// Executes a bounded command with cooperative cancellation of frame decoding.
+    /// Cancellation awaits owned subprocess cleanup and records the failed attempt;
+    /// previously retained evidence remains available through `outcome` and `close`.
+    /// Commands without decoder work still finish their dispatched bookkeeping.
+    pub async fn execute_cancellable(
+        &mut self,
+        command: Value,
+        cancellation: &CancellationToken,
+    ) -> StdResult<Value, ExecutionError> {
+        self.inner.execute_cancellable(command, cancellation).await
     }
 }
 connection!(VideoSession);

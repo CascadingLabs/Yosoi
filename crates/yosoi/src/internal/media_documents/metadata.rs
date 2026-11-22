@@ -25,6 +25,8 @@ pub struct FileMetadata {
     session_id: Option<String>,
     tab_id: Option<String>,
     download_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    probe_validated_video_container: Option<String>,
     sha256: Option<String>,
 }
 
@@ -40,6 +42,7 @@ impl FileMetadata {
             session_id: None,
             tab_id: None,
             download_id: None,
+            probe_validated_video_container: None,
             sha256: None,
         }
     }
@@ -157,6 +160,12 @@ impl FileMetadata {
         self.download_id.as_deref()
     }
 
+    /// Returns the self-contained container confirmed by FFprobe when a generic
+    /// signature required decoder-side video validation, if one was needed.
+    pub fn probe_validated_video_container(&self) -> Option<&str> {
+        self.probe_validated_video_container.as_deref()
+    }
+
     /// Returns the lowercase payload SHA-256 when payload construction has populated it.
     pub fn sha256(&self) -> Option<&str> {
         self.sha256.as_deref()
@@ -164,9 +173,14 @@ impl FileMetadata {
 
     pub(super) fn complete_for_payload(&mut self, bytes: &[u8]) -> String {
         self.detected_media_type = infer::get(bytes).map(|kind| kind.mime_type().to_owned());
+        self.probe_validated_video_container = None;
         let sha256 = Sha256Digest::digest(bytes).to_string();
         self.sha256 = Some(sha256.clone());
         sha256
+    }
+
+    pub(super) fn record_probe_validated_video_container(&mut self, container: &str) {
+        self.probe_validated_video_container = Some(container.to_owned());
     }
 
     pub(super) fn validate(&self) -> Result<(), FileDocumentError> {
@@ -196,6 +210,11 @@ impl FileMetadata {
         validate_optional(
             "download_id",
             self.download_id.as_deref(),
+            MAX_METADATA_VALUE_BYTES,
+        )?;
+        validate_optional(
+            "probe_validated_video_container",
+            self.probe_validated_video_container.as_deref(),
             MAX_METADATA_VALUE_BYTES,
         )?;
         validate_optional("sha256", self.sha256.as_deref(), 64)?;

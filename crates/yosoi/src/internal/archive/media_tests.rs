@@ -34,11 +34,17 @@ async fn media_records_round_trip_from_a_fresh_archive_handle() {
     let audio =
         AudioDocument::from_bytes("audio-1", ID3_SIGNATURE.to_vec()).expect("audio signature");
     let binary = BinaryDocument::from_bytes("binary-1", b"opaque".to_vec()).expect("binary bytes");
+    let explicit_binary_image = BinaryDocument::from_bytes("binary-image", PNG_SIGNATURE.to_vec())
+        .expect("an explicit BinaryDocument retains recognized image bytes");
 
     let image_ref = archive.write(&image).await.expect("write image");
     let video_ref = archive.write(&video).await.expect("write video");
     let audio_ref: AudioDocumentArchiveRef = archive.write(&audio).await.expect("write audio");
     let binary_ref: BinaryDocumentArchiveRef = archive.write(&binary).await.expect("write binary");
+    let explicit_binary_image_ref: BinaryDocumentArchiveRef = archive
+        .write(&explicit_binary_image)
+        .await
+        .expect("write explicit binary with a recognized signature");
     let runtime = file_from_bytes(
         "runtime-image",
         PNG_SIGNATURE.to_vec(),
@@ -57,6 +63,10 @@ async fn media_records_round_trip_from_a_fresh_archive_handle() {
     let video_copy: VideoDocument = reopened.read(&video_ref).await.expect("read video");
     let audio_copy: AudioDocument = reopened.read(&audio_ref).await.expect("read audio");
     let binary_copy: BinaryDocument = reopened.read(&binary_ref).await.expect("read binary");
+    let explicit_binary_image_copy: BinaryDocument = reopened
+        .read(&explicit_binary_image_ref)
+        .await
+        .expect("read explicit binary with a recognized signature");
     let runtime_ref: FileDocumentArchiveRef = runtime_text
         .parse()
         .expect("parse runtime string reference");
@@ -72,6 +82,11 @@ async fn media_records_round_trip_from_a_fresh_archive_handle() {
     assert_eq!(video_copy.bytes(), MP4_SIGNATURE);
     assert_eq!(audio_copy.bytes(), ID3_SIGNATURE);
     assert_eq!(binary_copy.bytes(), b"opaque");
+    assert_eq!(explicit_binary_image_copy.bytes(), PNG_SIGNATURE);
+    assert_eq!(
+        explicit_binary_image_copy.metadata().detected_media_type(),
+        Some("image/png")
+    );
     assert!(matches!(runtime_copy, FileDocument::Image(_)));
     assert!(matches!(runtime_ref, FileDocumentArchiveRef::Image(_)));
 }

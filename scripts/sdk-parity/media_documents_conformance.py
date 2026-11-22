@@ -75,6 +75,7 @@ FILE_METADATA_FIELDS = (
     "session_id",
     "tab_id",
     "download_id",
+    "probe_validated_video_container",
     "sha256",
 )
 FILE_DOCUMENT_FIELDS = ("id", "metadata", "bytes", "byte_len", "sha256")

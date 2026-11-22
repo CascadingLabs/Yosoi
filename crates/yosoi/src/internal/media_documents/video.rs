@@ -13,6 +13,26 @@ pub struct VideoDocument {
 }
 
 impl VideoDocument {
+    /// Creates a typed source after FFprobe confirms an Ogg or MPEG-TS video stream.
+    /// The ordinary public byte constructors remain signature-gated.
+    pub(crate) fn from_probe_validated_bytes(
+        id: impl Into<String>,
+        bytes: impl Into<Vec<u8>>,
+        metadata: FileMetadata,
+        limits: FileLimits,
+        container: &str,
+    ) -> Result<Self, FileDocumentError> {
+        Ok(Self {
+            inner: MediaDocument::new_probe_validated_video(
+                id,
+                Arc::new(bytes.into()),
+                metadata,
+                limits,
+                container,
+            )?,
+        })
+    }
+
     /// Creates a video document with the default file size limit.
     pub fn from_bytes(
         id: impl Into<String>,
@@ -33,7 +53,9 @@ impl VideoDocument {
     /// Creates a video document with provenance and an explicit size limit.
     ///
     /// This checks the signature with the pinned `infer` matcher and retains the bytes unchanged;
-    /// it does not decode the video.
+    /// it does not decode the video. Signature-ambiguous Ogg and MPEG-TS cannot be authored
+    /// through this constructor; the video Surface can retain them after its bounded FFprobe
+    /// validation confirms a self-contained video stream.
     pub fn from_bytes_with_metadata(
         id: impl Into<String>,
         bytes: impl Into<Vec<u8>>,
@@ -49,6 +71,32 @@ impl VideoDocument {
                 Some(MediaKind::Video),
             )?,
         })
+    }
+
+    /// Copies this exact payload under a new identity and optional caller metadata.
+    ///
+    /// Signature-ambiguous Ogg and MPEG-TS documents retain their existing
+    /// FFprobe-confirmed container basis. Caller metadata cannot create that basis;
+    /// detected MIME and digest are recomputed from the unchanged payload. Omitted
+    /// metadata retains the current value; omitted limits use the default file limit.
+    pub fn copy_with_metadata(
+        &self,
+        id: impl Into<String>,
+        metadata: Option<FileMetadata>,
+        limits: Option<FileLimits>,
+    ) -> Result<Self, FileDocumentError> {
+        let metadata = metadata.unwrap_or_else(|| self.metadata().clone());
+        let limits = limits.unwrap_or_default();
+        if let Some(container) = self.metadata().probe_validated_video_container() {
+            return Self::from_probe_validated_bytes(
+                id,
+                self.bytes().to_vec(),
+                metadata,
+                limits,
+                container,
+            );
+        }
+        Self::from_bytes_with_metadata(id, self.bytes().to_vec(), metadata, limits)
     }
 
     /// Returns the stable caller-provided document identity.

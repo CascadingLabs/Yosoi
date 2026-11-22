@@ -30,6 +30,10 @@ name = "image_surface_conformance"
 required-features = ["surface-images"]
 
 [[example]]
+name = "video_conformance"
+required-features = ["surface-video"]
+
+[[example]]
 name = "network_conformance"
 
 [features]

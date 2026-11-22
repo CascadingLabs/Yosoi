@@ -20,6 +20,7 @@ pub fn metadata_value(metadata: &FileMetadata) -> Value {
         "session_id": metadata.session_id(),
         "tab_id": metadata.tab_id(),
         "download_id": metadata.download_id(),
+        "probe_validated_video_container": metadata.probe_validated_video_container(),
         "sha256": metadata.sha256(),
     })
 }

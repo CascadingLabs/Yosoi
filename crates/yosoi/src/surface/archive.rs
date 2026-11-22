@@ -27,7 +27,7 @@ pub(super) struct Handle {
     #[serde(default)]
     pub(super) outcome: Option<OutcomeRef>,
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(super) struct Recording {
     pub(super) archive: Archive,
     pub(super) outcome: Outcome,

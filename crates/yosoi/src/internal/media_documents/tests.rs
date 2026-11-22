@@ -1,7 +1,8 @@
 use super::{
     AudioDocument, BinaryDocument, FileDocument, FileDocumentError, FileLimits, FileMetadata,
-    ImageDocument, VideoDocument, file_from_bytes, read_file,
+    ImageDocument, VideoDocument, file_from_bytes, from_archived_video, read_file,
 };
+use std::sync::Arc;
 use tokio::fs;
 
 const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
@@ -99,6 +100,54 @@ fn typed_media_constructors_require_matching_signatures() {
     let binary = BinaryDocument::from_bytes("binary-image", PNG_SIGNATURE.to_vec())
         .expect("explicit BinaryDocument keeps any bytes");
     assert_eq!(binary.metadata().detected_media_type(), Some("image/png"));
+}
+
+#[test]
+fn archived_probe_validated_video_keeps_recorded_container_and_detector_mime() {
+    for (container, bytes, expected_mime) in [
+        ("ogg", b"OggS\x00".as_slice(), Some("audio/ogg")),
+        ("mpegts", b"\x47transport-stream".as_slice(), None),
+    ] {
+        let original = VideoDocument::from_probe_validated_bytes(
+            format!("probe-{container}"),
+            bytes.to_vec(),
+            FileMetadata::new(),
+            FileLimits::default(),
+            container,
+        )
+        .expect("probe-validated constructor stores only the supported basis");
+        assert_eq!(original.metadata().detected_media_type(), expected_mime);
+        let restored = from_archived_video(
+            original.id().clone(),
+            Arc::new(original.bytes().to_vec()),
+            original.metadata().clone(),
+        )
+        .expect("Archive restoration validates stored provenance without reprobe");
+        assert_eq!(restored.metadata(), original.metadata());
+        assert_eq!(restored.bytes(), original.bytes());
+    }
+}
+
+#[test]
+fn archived_probe_validated_mpegts_preserves_audio_detector_mime() {
+    let original = VideoDocument::from_probe_validated_bytes(
+        "probe-mpegts-audio-classified",
+        b"OggS\x00".to_vec(),
+        FileMetadata::new(),
+        FileLimits::default(),
+        "mpegts",
+    )
+    .expect("FFprobe-validated video may retain an audio-classified prefix");
+    assert_eq!(original.metadata().detected_media_type(), Some("audio/ogg"));
+
+    let restored = from_archived_video(
+        original.id().clone(),
+        Arc::new(original.bytes().to_vec()),
+        original.metadata().clone(),
+    )
+    .expect("Archive must preserve the recorded container and detector MIME");
+    assert_eq!(restored.metadata(), original.metadata());
+    assert_eq!(restored.bytes(), original.bytes());
 }
 
 #[test]
