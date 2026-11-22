@@ -35,6 +35,7 @@ use crate::internal::browser::{
     environment::EnvironmentObservation,
     error::{Result, VoidCrawlError},
     interrupt::InterruptRegistry,
+    page::DownloadCaptureCoordinator,
     stealth::StealthConfig,
 };
 
@@ -110,6 +111,7 @@ pub struct IsolatedBrowserContext {
     browser: Arc<Mutex<Browser>>,
     context_id: BrowserContextId,
     capture_lock: Arc<Mutex<()>>,
+    download_coordinator: Arc<DownloadCaptureCoordinator>,
     interrupts: Arc<InterruptRegistry>,
     browser_mode: EnvironmentObservation<yosoi_types::BrowserMode>,
     cdp_mode: CdpMode,
@@ -139,6 +141,7 @@ impl IsolatedBrowserContext {
         browser: Arc<Mutex<Browser>>,
         context_id: BrowserContextId,
         capture_lock: Arc<Mutex<()>>,
+        download_coordinator: Arc<DownloadCaptureCoordinator>,
         interrupts: Arc<InterruptRegistry>,
         browser_mode: EnvironmentObservation<yosoi_types::BrowserMode>,
         cdp_mode: CdpMode,
@@ -152,6 +155,7 @@ impl IsolatedBrowserContext {
             browser,
             context_id,
             capture_lock,
+            download_coordinator,
             interrupts,
             browser_mode,
             cdp_mode,
@@ -201,6 +205,7 @@ impl IsolatedBrowserContext {
         let browser = Arc::clone(&self.browser);
         let context_id = self.context_id.clone();
         let capture_lock = Arc::clone(&self.capture_lock);
+        let download_coordinator = Arc::clone(&self.download_coordinator);
         let interrupts = Arc::clone(&self.interrupts);
         let browser_mode = self.browser_mode.clone();
         let cdp_mode = self.cdp_mode;
@@ -227,7 +232,9 @@ impl IsolatedBrowserContext {
                     .map_err(|error| VoidCrawlError::PageError(error.to_string()))?;
                 let page = Page::new(
                     cdp_page,
+                    Arc::clone(&browser),
                     capture_lock,
+                    download_coordinator,
                     interrupts,
                     browser_mode,
                     cdp_mode,

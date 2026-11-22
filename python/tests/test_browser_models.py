@@ -78,19 +78,20 @@ def test_session_policy_defaults_and_wire_enum_names_come_from_rust() -> None:
     assert settings.mode == "headless"
     assert not settings.allow_arbitrary_js
     assert "evaluate" not in settings.allowed_actions
+    assert "download" in settings.allowed_actions
     assert settings.execution_concurrency == 2
     assert settings.maximum_queued_operations == 64
     assert settings.yield_on_wait is True
 
     custom = SessionPolicy(
-        allowed_actions=("navigate", "evaluate"),
+        allowed_actions=("navigate", "evaluate", "download"),
         allow_arbitrary_js=True,
         execution_concurrency=4,
         maximum_queued_operations=12,
         yield_on_wait=False,
     )
     wire = json.loads(custom.to_json())
-    assert wire["allowed_actions"] == ["Navigate", "Evaluate"]
+    assert wire["allowed_actions"] == ["Navigate", "Evaluate", "Download"]
     assert wire["allow_arbitrary_js"] is True
     assert wire["execution_concurrency"] == 4
     assert wire["maximum_queued_operations"] == 12

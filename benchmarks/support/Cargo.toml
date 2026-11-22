@@ -34,7 +34,7 @@ browser = [
     "tokio/full",
 ]
 cli = ["browser", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "tokio/signal"]
-scanner = ["browser", "dep:infer"]
+scanner = ["browser"]
 encode-gif = ["browser", "image/gif"]
 encode-ffmpeg = ["browser"]
 
@@ -71,7 +71,7 @@ rustls-platform-verifier = { workspace = true }
 tokio-rustls = { workspace = true }
 html5ever = { workspace = true }
 image = { workspace = true, features = ["jpeg", "png"], optional = true }
-infer = { workspace = true, optional = true }
+infer = { workspace = true }
 libc = { workspace = true }
 markup5ever_rcdom = { workspace = true }
 memchr = { workspace = true }

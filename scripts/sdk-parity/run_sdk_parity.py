@@ -32,6 +32,11 @@ EXAMPLES: tuple[tuple[str, str, bool], ...] = (
     ("python_serde_conformance", "run_serde_conformance.py", False),
     ("python_document_errors_conformance", "run_document_errors_conformance.py", True),
     ("python_webtarget_conformance", "run_webtarget_conformance.py", True),
+    (
+        "media_documents_conformance",
+        "run_media_documents_conformance.py",
+        True,
+    ),
     ("surface_conformance", "run_surface_conformance.py", False),
 )
 

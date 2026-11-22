@@ -5,6 +5,9 @@ use crate::browser as browser_config;
 use crate::internal::browser::controller as provider;
 #[cfg(not(yosoi_dev_support))]
 use crate::internal::browser::page::SurfaceInput;
+use crate::internal::browser::page::{
+    DownloadCaptureError, NativeDownloadCapture, NativeDownloadResult,
+};
 use serde_json::Value;
 use std::fmt;
 use std::str as std_str;
@@ -38,6 +41,8 @@ pub enum BrowserControlError {
     Capacity,
     #[error("parked condition observation was interrupted or invalidated")]
     ConditionWaitLost,
+    #[error("native browser download capture failed")]
+    DownloadCapture(#[from] DownloadCaptureError),
 }
 
 impl BrowserControlError {
@@ -103,6 +108,7 @@ fn navigation_failure_kind(reason: &str) -> &'static str {
 }
 
 /// Held control on a concrete tab. Provider handles remain inside the capture crate.
+#[derive(Clone)]
 pub struct RuntimeBrowserControl {
     page: Arc<provider::Page>,
     authority: Arc<ControlAuthority>,
@@ -254,6 +260,59 @@ impl RuntimeBrowserControl {
         Ok(watch)
     }
 
+    /// Arms native download events and returns only after the browser-context
+    /// download route and event listeners are ready for the caller's action.
+    pub async fn start_download_capture(
+        &self,
+        max_bytes: u64,
+        timeout: Duration,
+    ) -> Result<NativeDownloadCapture, BrowserControlError> {
+        self.check_authority()?;
+        let mut capture = self.page.start_download_capture(max_bytes, timeout).await?;
+        if self.check_authority().is_err() {
+            capture.cancel().await?;
+            return Err(BrowserControlError::Cancelled);
+        }
+        Ok(capture)
+    }
+
+    /// Parks without issuing browser commands while a native download settles.
+    pub async fn wait_download_capture(
+        &self,
+        capture: &mut NativeDownloadCapture,
+        timeout: Duration,
+        cancellation: &CancellationToken,
+        owner_cancellation: &CancellationToken,
+        scoped_cancellation: &CancellationToken,
+    ) -> Result<NativeDownloadResult, BrowserControlError> {
+        // Cleanup belongs to the armed capture, even after input authority ends.
+        if self.check_authority().is_err() {
+            capture.cancel().await?;
+            return Err(BrowserControlError::Cancelled);
+        }
+        let result = capture
+            .wait_cancellable(
+                timeout,
+                cancellation,
+                owner_cancellation,
+                &self.closing,
+                scoped_cancellation,
+            )
+            .await?;
+        Ok(result)
+    }
+
+    /// Cancels a native download when its GUID is known, restores the context's
+    /// default download behavior, and releases its exclusive capture lease.
+    pub async fn cancel_download_capture(
+        &self,
+        capture: &mut NativeDownloadCapture,
+    ) -> Result<(), BrowserControlError> {
+        // A revoked owner must still be able to settle its retained resources.
+        capture.cancel().await?;
+        Ok(())
+    }
+
     /// Park on an already-armed event stream without issuing browser commands.
     /// Completed response candidates retain their provider request-start wall
     /// time in Unix microseconds, along with the watched frame/loader IDs.
@@ -356,6 +415,7 @@ impl RuntimeBrowserControl {
         if self.closing.is_cancelled() || !self.authority.active() {
             return Err(BrowserExecutionManagerError::TabReleased.into());
         }
+        self.page.ensure_download_context_available()?;
         Ok(())
     }
     pub fn closing(&self) -> CancellationToken {

@@ -11,6 +11,10 @@ selected commit. Local preparation reads the selected working tree. The docs
 validator checks generated Python pages, links, and navigation, and fixture tests
 cover signatures, export accounting, and commit-pinned bundle generation.
 
+Python class pages expand authored members inherited from same-module bases and
+link each member to its original declaration. External-base and dynamically
+generated members are not expanded.
+
 Only workspace library crates named `yosoi` or with a reserved `*-sdk` package
 name and `[package.metadata.yosoi] sdk = true` enter discovery. The private
 implementation modules under `crates/yosoi/src/internal` are not separate SDK

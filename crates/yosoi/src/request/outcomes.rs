@@ -5,7 +5,10 @@ use super::{
     UnavailableReason, UnprojectableReason,
 };
 use crate::{
-    documents::DocumentRef,
+    documents::{
+        DocumentRef, FileDocument, FileDocumentError, FileLimits, FileMetadata,
+        file_from_shared_bytes,
+    },
     policy::{AcquisitionKind, DocumentRequest, DocumentSelectionKind},
 };
 
@@ -59,6 +62,27 @@ impl<'response> Attempt<'response> {
         self.inner
             .result()
             .and_then(|result| result.response_body())
+    }
+
+    /// Classifies a complete retained HTTP representation as a media or opaque file.
+    ///
+    /// The returned value shares native payload ownership with this response.
+    /// No character or media decoding runs. Missing, incomplete or unretained
+    /// bodies return `BodyUnavailable`; HTTP error statuses can still have a
+    /// complete body, so inspect [`Self::status`] separately before using it.
+    pub fn file_document(self, limits: FileLimits) -> Result<FileDocument, FileDocumentError> {
+        let body = self
+            .inner
+            .result()
+            .and_then(yosoi_engine::AttemptResult::shared_response_body)
+            .ok_or(FileDocumentError::BodyUnavailable)?;
+        let mut metadata = FileMetadata::new()
+            .with_source(self.requested_target())?
+            .with_capture_id(self.capture_id().to_string())?;
+        if let Some(media_type) = self.content_type() {
+            metadata = metadata.with_declared_media_type(media_type)?;
+        }
+        file_from_shared_bytes(self.capture_id().to_string(), body, metadata, limits)
     }
     /// Returns the bounded declared Content-Type, including any parameters.
     ///

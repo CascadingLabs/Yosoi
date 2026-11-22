@@ -6,6 +6,8 @@ order: 5
 
 # Documents
 
+For image, video, audio and opaque files, see [Media documents and downloads](media-documents.md).
+
 A Document holds an identity, a representation profile, and immutable bytes. Create one from local data or borrow one from a [response](responses.md).
 
 ## Example: documents
