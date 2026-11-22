@@ -262,4 +262,5 @@ impl Work {
 }
 
 #[cfg(feature = "browser")]
+#[path = "until/browser.rs"]
 mod browser;

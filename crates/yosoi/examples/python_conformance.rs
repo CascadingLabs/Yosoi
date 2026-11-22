@@ -10,12 +10,123 @@ use yosoi::{
         ContractSchema, ContractValue, RuntimeContract, RuntimeContractOutcome, RuntimeFieldValue,
         RuntimeValue,
     },
-    documents::{Document, DocumentId, DocumentProfile},
+    documents::{
+        AudioDocument, BinaryDocument, DEFAULT_FILE_MAX_BYTES, Document, DocumentId,
+        DocumentProfile, FileDocument, FileDocumentError, FileLimits, FileMetadata, ImageDocument,
+        MAX_FILE_BYTES, VideoDocument, file_from_bytes,
+    },
     locators::{Plan, QuerySpec, TreeCoordinate, css, xpath},
     map::{MapTermination, Summary},
-    policy::{Filters as PolicyFilters, Map as PolicyMap, Policy, PolicySnapshot},
+    policy::{
+        Filters as PolicyFilters, Map as PolicyMap, ObserveLimits, ObservePolicy, Policy,
+        PolicyError, PolicySnapshot, RecordingRule, observe::MAX_RECORDING_DURATION_MS,
+    },
     search::SearchHitMetadata,
 };
+
+fn file_metadata(value: &Value) -> Result<FileMetadata, Box<dyn Error>> {
+    let mut metadata = FileMetadata::new();
+    if let Some(value) = value.get("filename").and_then(Value::as_str) {
+        metadata = metadata.with_filename(value.to_owned())?;
+    }
+    if let Some(value) = value.get("declared_media_type").and_then(Value::as_str) {
+        metadata = metadata.with_declared_media_type(value.to_owned())?;
+    }
+    if let Some(value) = value.get("source").and_then(Value::as_str) {
+        metadata = metadata.with_source(value.to_owned())?;
+    }
+    if let Some(value) = value.get("capture_id").and_then(Value::as_str) {
+        metadata = metadata.with_capture_id(value.to_owned())?;
+    }
+    if let Some(value) = value.get("session_id").and_then(Value::as_str) {
+        metadata = metadata.with_session_id(value.to_owned())?;
+    }
+    if let Some(value) = value.get("tab_id").and_then(Value::as_str) {
+        metadata = metadata.with_tab_id(value.to_owned())?;
+    }
+    if let Some(value) = value.get("download_id").and_then(Value::as_str) {
+        metadata = metadata.with_download_id(value.to_owned())?;
+    }
+    Ok(metadata)
+}
+
+fn file_bytes(value: &Value) -> Result<Vec<u8>, Box<dyn Error>> {
+    let values = value.as_array().ok_or("file bytes missing")?;
+    let mut bytes = Vec::with_capacity(values.len());
+    for value in values {
+        let byte = value
+            .as_u64()
+            .ok_or_else(|| io::Error::other("file byte is not an unsigned integer"))?;
+        bytes.push(u8::try_from(byte).map_err(|_| io::Error::other("file byte exceeds u8"))?);
+    }
+    Ok(bytes)
+}
+
+const fn file_kind(file: &FileDocument) -> &'static str {
+    match file {
+        FileDocument::Image(_) => "image",
+        FileDocument::Video(_) => "video",
+        FileDocument::Audio(_) => "audio",
+        FileDocument::Binary(_) => "binary",
+    }
+}
+
+fn file_value(file: &FileDocument, maximum_bytes: u64) -> Value {
+    json!({
+        "id": file.id().as_str(),
+        "kind": file_kind(file),
+        "bytes": file.bytes(),
+        "byte_len": file.byte_len(),
+        "sha256": file.sha256(),
+        "metadata": file.metadata(),
+        "maximum_bytes": maximum_bytes,
+        "default_file_max_bytes": DEFAULT_FILE_MAX_BYTES,
+        "max_file_bytes": MAX_FILE_BYTES,
+        "max_recording_duration_ms": MAX_RECORDING_DURATION_MS,
+    })
+}
+
+fn typed_file_document(
+    family: &str,
+    constructor: &str,
+    id: String,
+    bytes: Vec<u8>,
+    metadata: FileMetadata,
+    maximum_bytes: u64,
+) -> Result<FileDocument, Box<dyn Error>> {
+    let limits = FileLimits::new(maximum_bytes)?;
+    Ok(match (family, constructor) {
+        ("image", "default") => FileDocument::Image(ImageDocument::from_bytes(id, bytes)?),
+        ("image", "limits") => {
+            FileDocument::Image(ImageDocument::from_bytes_with_limits(id, bytes, limits)?)
+        }
+        ("image", "metadata") => FileDocument::Image(ImageDocument::from_bytes_with_metadata(
+            id, bytes, metadata, limits,
+        )?),
+        ("video", "default") => FileDocument::Video(VideoDocument::from_bytes(id, bytes)?),
+        ("video", "limits") => {
+            FileDocument::Video(VideoDocument::from_bytes_with_limits(id, bytes, limits)?)
+        }
+        ("video", "metadata") => FileDocument::Video(VideoDocument::from_bytes_with_metadata(
+            id, bytes, metadata, limits,
+        )?),
+        ("audio", "default") => FileDocument::Audio(AudioDocument::from_bytes(id, bytes)?),
+        ("audio", "limits") => {
+            FileDocument::Audio(AudioDocument::from_bytes_with_limits(id, bytes, limits)?)
+        }
+        ("audio", "metadata") => FileDocument::Audio(AudioDocument::from_bytes_with_metadata(
+            id, bytes, metadata, limits,
+        )?),
+        ("binary", "default") => FileDocument::Binary(BinaryDocument::from_bytes(id, bytes)?),
+        ("binary", "limits") => {
+            FileDocument::Binary(BinaryDocument::from_bytes_with_limits(id, bytes, limits)?)
+        }
+        ("binary", "metadata") => FileDocument::Binary(BinaryDocument::from_bytes_with_metadata(
+            id, bytes, metadata, limits,
+        )?),
+        _ => return Err("unknown typed file-document family or constructor".into()),
+    })
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
@@ -159,7 +270,138 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let identity = snapshot.identity();
                 json!({"policy": policy, "effective": policy.effective_policy()?,
                     "snapshot": {"policy": snapshot.policy(), "effective_policy": snapshot.effective_policy(),
-                        "identity": {"version": identity.version(), "sha256": identity.digest().to_string()}}})
+                        "identity": {"version": identity.version(), "sha256": identity.digest().to_string()}},
+                    "max_recording_duration_ms": MAX_RECORDING_DURATION_MS})
+            }
+            "policy_error" => {
+                let policy = Policy {
+                    observe: ObservePolicy {
+                        enabled: true,
+                        native_tab_capture: true,
+                        recordings: vec![RecordingRule::default(), RecordingRule::default()],
+                        limits: ObserveLimits {
+                            max_recordings: 1,
+                            ..ObserveLimits::default()
+                        },
+                        ..ObservePolicy::default()
+                    },
+                    ..Policy::default()
+                };
+                match policy.validate() {
+                    Err(PolicyError::ObservationRulesExceedRecordingLimit {
+                        configured,
+                        maximum,
+                    }) => json!({"error": {
+                        "rust_type": "yosoi_policy::PolicyError",
+                        "variant": "ObservationRulesExceedRecordingLimit",
+                        "details": {"configured": configured, "maximum": maximum},
+                        "source_chain": []
+                    }}),
+                    Err(error) => return Err(Box::new(error)),
+                    Ok(()) => json!({"error": null}),
+                }
+            }
+            "file_document" => {
+                let id = case
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .ok_or("file-document identity missing")?;
+                let bytes = file_bytes(case.get("bytes").ok_or("file bytes missing")?)?;
+                let metadata = file_metadata(case.get("metadata").ok_or("file metadata missing")?)?;
+                let maximum_bytes = case
+                    .get("max_bytes")
+                    .and_then(Value::as_u64)
+                    .ok_or("file maximum bytes missing")?;
+                let limits = FileLimits::new(maximum_bytes)?;
+                let file = file_from_bytes(id.to_owned(), bytes, metadata, limits)?;
+                file_value(&file, maximum_bytes)
+            }
+            "file_limits" => {
+                let maximum_bytes = case
+                    .get("max_bytes")
+                    .and_then(Value::as_u64)
+                    .ok_or("file maximum bytes missing")?;
+                let limits = FileLimits::new(maximum_bytes)?;
+                json!({"max_bytes": limits.max_bytes()})
+            }
+            "file_too_large_error" => {
+                let id = case
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .ok_or("file-document identity missing")?;
+                let bytes = file_bytes(case.get("bytes").ok_or("file bytes missing")?)?;
+                let maximum_bytes = case
+                    .get("max_bytes")
+                    .and_then(Value::as_u64)
+                    .ok_or("file maximum bytes missing")?;
+                let metadata = FileMetadata::new();
+                let limits = FileLimits::new(maximum_bytes)?;
+                match file_from_bytes(id.to_owned(), bytes, metadata, limits) {
+                    Err(FileDocumentError::TooLarge { maximum, observed }) => json!({
+                        "error": {
+                            "rust_type": "yosoi::documents::FileDocumentError",
+                            "variant": "TooLarge",
+                            "details": {"maximum": maximum, "observed": observed},
+                            "source_chain": []
+                        }
+                    }),
+                    Err(error) => return Err(Box::new(error)),
+                    Ok(_) => json!({"error": null}),
+                }
+            }
+            "typed_file_document" => {
+                let id = case
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .ok_or("file-document identity missing")?;
+                let family = case
+                    .get("family")
+                    .and_then(Value::as_str)
+                    .ok_or("file-document family missing")?;
+                let constructor = case
+                    .get("constructor")
+                    .and_then(Value::as_str)
+                    .ok_or("file-document constructor missing")?;
+                let bytes = file_bytes(case.get("bytes").ok_or("file bytes missing")?)?;
+                let metadata = file_metadata(case.get("metadata").ok_or("file metadata missing")?)?;
+                let maximum_bytes = case
+                    .get("max_bytes")
+                    .and_then(Value::as_u64)
+                    .ok_or("file maximum bytes missing")?;
+                let file = typed_file_document(
+                    family,
+                    constructor,
+                    id.to_owned(),
+                    bytes,
+                    metadata,
+                    maximum_bytes,
+                )?;
+                let retained_limit = if constructor == "default" {
+                    DEFAULT_FILE_MAX_BYTES
+                } else {
+                    maximum_bytes
+                };
+                file_value(&file, retained_limit)
+            }
+            "file_metadata_error" => {
+                let filename = case
+                    .get("filename")
+                    .and_then(Value::as_str)
+                    .ok_or("metadata filename missing")?;
+                match FileMetadata::new().with_filename(filename.to_owned()) {
+                    Err(FileDocumentError::MetadataTooLong {
+                        field,
+                        maximum,
+                        observed,
+                    }) => json!({"error": {
+                        "rust_type": "yosoi::documents::FileDocumentError",
+                        "variant": "MetadataTooLong",
+                        "details": {"field": field, "maximum": maximum, "observed": observed},
+                        "source_chain": []
+                    }}),
+                    Err(error) => return Err(Box::new(error)),
+                    Ok(_) => json!({"error": null}),
+                }
             }
             "document" | "contract" => {
                 let profile: DocumentProfile = serde_json::from_value(
@@ -274,6 +516,12 @@ fn default_model(type_name: &str) -> Result<Value, Box<dyn Error>> {
         "yosoi::policy::EventLimit" => default_json::<p::EventLimit>(),
         "yosoi::policy::MaximumElapsed" => default_json::<p::MaximumElapsed>(),
         "yosoi::policy::RedirectHopLimit" => default_json::<p::RedirectHopLimit>(),
+        "yosoi::policy::ObserveLimits" => default_json::<p::ObserveLimits>(),
+        "yosoi::policy::ObservePolicy" => default_json::<p::ObservePolicy>(),
+        "yosoi::policy::RecordingRule" => default_json::<p::RecordingRule>(),
+        "yosoi::policy::ScreenshotPolicy" => default_json::<p::ScreenshotPolicy>(),
+        "yosoi::documents::FileLimits" => default_json::<FileLimits>(),
+        "yosoi::documents::FileMetadata" => default_json::<FileMetadata>(),
         "yosoi::map::Summary" => default_json::<Summary>(),
         "yosoi::search::SearchHitMetadata" => default_json::<SearchHitMetadata>(),
         _ => Err("unsupported default model".into()),

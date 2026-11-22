@@ -19,6 +19,9 @@ pub enum PolicyError {
     /// Older identity projections cannot describe newly selected browser behavior.
     #[error("legacy policy identity cannot include non-default browser settings")]
     LegacyIdentityCannotIncludeBrowser,
+    /// Older identity projections cannot describe browser observation policy.
+    #[error("legacy policy identity cannot include observation settings")]
+    LegacyIdentityCannotIncludeObserve,
     /// A positive document or locator count was given zero.
     #[error("count limit must be greater than zero")]
     ZeroCountLimit,
@@ -28,6 +31,36 @@ pub enum PolicyError {
     /// A positive byte bound was given zero.
     #[error("byte limit must be greater than zero")]
     ZeroByteLimit,
+    /// A native observation source limit was given zero.
+    #[error("observation source limit must be greater than zero")]
+    ZeroObservationSourceLimit,
+    /// A native observation output limit was given zero.
+    #[error("observation recording limit must be greater than zero")]
+    ZeroObservationRecordingLimit,
+    /// More recording rules were supplied than the configured output limit.
+    #[error(
+        "{configured} observation recording rules exceed the configured output limit {maximum}"
+    )]
+    ObservationRulesExceedRecordingLimit {
+        /// Number of configured recording rules.
+        configured: u32,
+        /// Maximum allowed recording outputs.
+        maximum: u32,
+    },
+    /// A recording duration is zero, exceeds 24 hours, or cannot form a monotonic deadline.
+    #[error(
+        "observation recording duration must be positive, at most 24 hours, and fit a monotonic deadline"
+    )]
+    InvalidObservationRecordingDuration,
+    /// Browser-visible recordings do not support audio tracks.
+    #[error("browser-visible recordings do not support audio capture")]
+    BrowserVisibleAudioUnsupported,
+    /// Each-tab capture was configured without the explicit native capture opt-in.
+    #[error("each-tab recording requires explicit native tab capture permission")]
+    NativeTabCaptureNotPermitted,
+    /// The configured number of recording rules exceeds the supported integer range.
+    #[error("observation recording rule count exceeds its supported integer range")]
+    TooManyObservationRecordingRules,
     /// A byte bound cannot be represented by this platform's address space.
     #[error("byte limit exceeds the supported platform size")]
     ByteLimitNotAddressable,

@@ -92,6 +92,11 @@ pub struct VisualSnapshot {
     pub generated_at_unix_ms: Option<u64>,
     pub format: VisualFormat,
     pub region: VisualCaptureRegion,
+    /// Resolved CSS-pixel rectangle when the capture used a rectangle or visual target.
+    ///
+    /// Target rectangles are viewport-relative. Explicit bounding-box rectangles
+    /// use the coordinate origin documented by ScreenshotOptions.
+    pub resolved_bounds: Option<Bbox>,
     pub image_width_pixels: u32,
     pub image_height_pixels: u32,
     pub capture_viewport: Viewport,
@@ -127,6 +132,7 @@ impl fmt::Debug for VisualSnapshot {
             .field("generated_at_unix_ms", &self.generated_at_unix_ms)
             .field("format", &self.format)
             .field("region", &self.region)
+            .field("resolved_bounds", &self.resolved_bounds)
             .field("image_width_pixels", &self.image_width_pixels)
             .field("image_height_pixels", &self.image_height_pixels)
             .field("capture_viewport", &self.capture_viewport)
@@ -141,6 +147,7 @@ pub(in crate::internal::browser) fn visual_snapshot(
     bytes: Vec<u8>,
     scope: DocumentScope,
     region: VisualCaptureRegion,
+    resolved_bounds: Option<Bbox>,
     capture_viewport: Viewport,
     device_scale_factor: f64,
 ) -> Option<VisualSnapshot> {
@@ -150,6 +157,7 @@ pub(in crate::internal::browser) fn visual_snapshot(
         generated_at_unix_ms: unix_millis(),
         format: VisualFormat::Png,
         region,
+        resolved_bounds,
         image_width_pixels,
         image_height_pixels,
         capture_viewport,

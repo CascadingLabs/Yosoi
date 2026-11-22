@@ -1,8 +1,12 @@
 //! Serializable browser workflows and their bounded execution records.
 
+#[path = "flow/error.rs"]
 mod error;
+#[path = "flow/execution.rs"]
 mod execution;
+#[path = "flow/model.rs"]
 mod model;
+#[path = "flow/validation.rs"]
 mod validation;
 
 pub use error::FlowValidationError;

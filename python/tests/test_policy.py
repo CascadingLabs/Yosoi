@@ -5,16 +5,20 @@ import pytest
 from pydantic import ValidationError
 
 from yosoi import _native
-from yosoi.errors import PolicyError
+from yosoi.errors import PolicyError, rust_error_details
 from yosoi.policy import (
+    MAX_RECORDING_DURATION_MS,
     Acquisition,
     DocumentSelection,
     MapLimits,
+    ObserveLimits,
+    ObservePolicy,
     Page,
     Policy,
     ProfileSelection,
     ProviderRequestProfile,
     ProviderSelection,
+    RecordingRule,
     Search,
     SourceLimits,
 )
@@ -27,6 +31,76 @@ def test_default_policy_and_identity_are_exactly_rust_owned() -> None:
     assert policy.identity().model_dump() == json.loads(
         _native.policy_identity(defaults)
     )
+
+
+def test_observation_defaults_are_disabled_and_omitted_from_policy_json() -> None:
+    policy = Policy()
+
+    assert policy.observe.is_default()
+    assert policy.observe.limits.max_buffer_bytes == 16_000_000
+    assert policy.observe.limits.max_retained_bytes == 64_000_000
+    assert RecordingRule().mode == "browser_visible"
+    assert "observe" not in json.loads(policy.to_json())
+    assert json.loads(policy.to_json()) == json.loads(_native.default_policy())
+
+
+def test_observation_recording_rules_are_additive_and_native_validated() -> None:
+    policy = Policy(
+        observe=ObservePolicy(
+            native_tab_capture=True,
+            recordings=[
+                RecordingRule(mode="each_tab"),
+                RecordingRule(mode="each_tab", include_audio=True),
+            ],
+        )
+    )
+
+    serialized = json.loads(policy.to_json())["observe"]
+    assert serialized["native_tab_capture"] is True
+    assert [rule["mode"] for rule in serialized["recordings"]] == [
+        "each_tab",
+        "each_tab",
+    ]
+    assert serialized["recordings"][1]["include_audio"] is True
+
+    with pytest.raises(ValidationError):
+        Policy(observe=ObservePolicy(recordings=[RecordingRule(mode="each_tab")]))
+
+
+def test_observation_recording_limit_error_preserves_configured_counts() -> None:
+    with pytest.raises(ValidationError) as rejected:
+        Policy(
+            observe=ObservePolicy(
+                native_tab_capture=True,
+                recordings=[
+                    RecordingRule(mode="each_tab"),
+                    RecordingRule(mode="each_tab"),
+                ],
+                limits=ObserveLimits(max_recordings=1),
+            )
+        )
+
+    details = rust_error_details(rejected.value)
+    assert details is not None
+    assert details.variant == "ObservationRulesExceedRecordingLimit"
+    assert details.details["configured"] == 2
+    assert details.details["maximum"] == 1
+
+
+def test_observe_limits_reject_zero_and_non_integer_values() -> None:
+    with pytest.raises(ValidationError):
+        ObserveLimits(max_sources=0)
+    with pytest.raises(ValidationError):
+        ObserveLimits(max_recordings=True)
+
+
+def test_recording_duration_constant_matches_typed_24_hour_cap() -> None:
+    assert MAX_RECORDING_DURATION_MS == 86_400_000
+    assert RecordingRule(max_duration_ms=MAX_RECORDING_DURATION_MS).max_duration_ms == (
+        MAX_RECORDING_DURATION_MS
+    )
+    with pytest.raises(ValidationError):
+        RecordingRule(max_duration_ms=MAX_RECORDING_DURATION_MS + 1)
 
 
 def test_policy_instances_have_independent_mutable_sections() -> None:

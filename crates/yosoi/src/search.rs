@@ -2,7 +2,9 @@
 
 use crate::registry::Registry as RuntimeRegistry;
 
+#[path = "search/diagnostics.rs"]
 mod diagnostics;
+#[path = "search/rotation.rs"]
 mod rotation;
 pub use diagnostics::{SearchReplay, SearchReplayError, replay_document};
 pub use rotation::{AutoRotationRef, SearchEvidence};

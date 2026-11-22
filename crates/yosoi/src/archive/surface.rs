@@ -1,5 +1,6 @@
 //! Surface values join the existing sealed Archive dispatch.
 
+#[path = "surface/closure.rs"]
 mod closure;
 
 use super::{Archive, ArchiveError};

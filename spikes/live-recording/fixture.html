@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Display capture fixture</title>
+<style>body{font:24px system-ui;background:#152b49;color:white;padding:40px}button,input{font:inherit;padding:12px}#motion{width:90px;height:90px;background:#5ef0b2;animation:move 3s infinite alternate linear}@keyframes move{to{transform:translateX(850px) rotate(180deg)}}#clock{font:22px monospace}</style>
+<h1>Same display. Different transport.</h1>
+<p id="clock"></p><div id="motion"></div>
+<p><button id="count">Click count: 0</button> <input aria-label="Text input" placeholder="Type here"></p>
+<p>Click, type, scroll, record. No CDP or BiDi is used by this capture fixture.</p>
+<div style="height:1000px;background:linear-gradient(#152b49,#417267)"></div>
+<script>let count=0;document.querySelector('button').onclick=e=>e.target.textContent=`Click count: ${++count}`;function tick(){document.querySelector('#clock').textContent=`Fixture wall clock: ${Date.now()} ms`;requestAnimationFrame(tick)}tick();</script></html>

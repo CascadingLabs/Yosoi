@@ -349,7 +349,7 @@ pub(super) async fn run(
             network_evidence: VecDeque::new(),
             network_evidence_limit,
         };
-        let execution = async {
+        let execution = Box::pin(async {
             for click in &clicks {
                 let reference = match click {
                     Operation::Click {
@@ -385,7 +385,7 @@ pub(super) async fn run(
                     continuation: None,
                     operation: operation.clone(),
                 };
-                let result = driver.command(&request).await;
+                let result = Box::pin(driver.command(&request)).await;
                 driver.record_reply(&operation, &result)?;
                 let result = driver.persist_command(&operation, result).await?;
                 let confirmed = if matches!(operation, Operation::Wait { .. }) {
@@ -425,7 +425,7 @@ pub(super) async fn run(
                 recording.outcome.retain(metadata_source)?;
             }
             driver.browser.script("location", json!({})).await
-        }
+        })
         .await;
         if let Err(error) = &execution
             && let Some(recording) = &mut driver.recording

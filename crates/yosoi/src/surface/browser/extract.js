@@ -95,6 +95,38 @@ if (operation === 'eligibility') return eligibility(state()?.nodes.get(input.id)
 if (operation === 'element') return state()?.nodes.get(input.id) ?? null;
 if (operation === 'article') return article();
 if (operation === 'binding') return {current: state()?.document === document && state()?.url === location.href, url: location.href};
+if (operation === 'target_region') {
+  const capture = state();
+  if (!capture || capture.document !== document || capture.url !== location.href
+      || capture.epoch !== input.expected_epoch) {
+    return {valid: false, reason: 'stale_capture'};
+  }
+  const node = capture.nodes?.get(input.id);
+  if (!(node instanceof Element) || !node.isConnected) {
+    return {valid: false, reason: 'missing_node'};
+  }
+  const style = getComputedStyle(node);
+  if (!style || style.display === 'none' || ['hidden', 'collapse'].includes(style.visibility)) {
+    return {valid: false, reason: 'hidden_node'};
+  }
+  const previous = capture.signatures?.get(node);
+  if (previous !== undefined && previous !== signature(node)) {
+    return {valid: false, reason: 'changed_node'};
+  }
+  const rect = node.getBoundingClientRect();
+  if (!(rect.width > 0 && rect.height > 0) || node.getClientRects().length === 0) {
+    return {valid: false, reason: 'empty_rect'};
+  }
+  const pageLeft = rect.left + scrollX, pageTop = rect.top + scrollY;
+  const pageRight = rect.right + scrollX, pageBottom = rect.bottom + scrollY;
+  const documentWidth = document.documentElement?.scrollWidth ?? document.body?.scrollWidth ?? 0;
+  const documentHeight = document.documentElement?.scrollHeight ?? document.body?.scrollHeight ?? 0;
+  const x = Math.max(0, Math.floor(pageLeft)), y = Math.max(0, Math.floor(pageTop));
+  const right = Math.min(documentWidth, Math.ceil(pageRight));
+  const bottom = Math.min(documentHeight, Math.ceil(pageBottom));
+  if (!(right > x && bottom > y)) return {valid: false, reason: 'empty_rect'};
+  return {valid: true, x, y, width: right - x, height: bottom - y, coordinate_space: 'page'};
+}
 if (operation === 'location') return {url: location.href, title: document.title};
 if (operation === 'value') {
   const element = input.element ?? state()?.nodes.get(input.id);
