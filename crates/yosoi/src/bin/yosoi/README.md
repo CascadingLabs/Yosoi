@@ -13,7 +13,8 @@ For manual compilation, install from a checkout with
 `cargo install --path crates/yosoi --features cli --bin yosoi --locked`, or run it with
 `cargo run -p yosoi --features cli -- <command>`.
 
-The experimental `yosoi surface drive` command keeps a live browser open for
-coding agents to control through bounded JSON lines. See the
-[public Surface guide](../../../../../docs/public/cli/surface.md) for commands, references,
-hot cursor authority, action receipts, and native verification.
+The experimental `yosoi surface` commands read images and videos through the shared
+bounded JSON-lines protocol, and keep a live browser open for coding agents to control.
+See the [public Surface guide](../../../../../docs/public/cli/surface.md) for image
+pixel artifacts, video frames, references, hot cursor authority, action receipts, and
+native verification.

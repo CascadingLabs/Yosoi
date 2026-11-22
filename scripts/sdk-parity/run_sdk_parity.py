@@ -38,6 +38,7 @@ EXAMPLES: tuple[tuple[str, str, bool], ...] = (
         True,
     ),
     ("surface_conformance", "run_surface_conformance.py", False),
+    ("image_surface_conformance", "run_image_surface_conformance.py", True),
 )
 
 

@@ -7,8 +7,10 @@ import hashlib
 import json
 import os
 import shutil
+import struct
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,29 @@ import pytest
 import yosoi as ys
 from yosoi import surface as sf
 from yosoi.errors import rust_error_details
+
+
+def _rgba_png(width: int, height: int, pixel) -> bytes:
+    def chunk(kind: bytes, content: bytes) -> bytes:
+        checksum = zlib.crc32(kind + content) & 0xFFFFFFFF
+        return (
+            struct.pack(">I", len(content))
+            + kind
+            + content
+            + struct.pack(">I", checksum)
+        )
+
+    rows = b"".join(
+        b"\x00" + b"".join(bytes(pixel(x, y)) for x in range(width))
+        for y in range(height)
+    )
+    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
 
 
 @pytest.mark.parametrize(
@@ -196,6 +221,79 @@ def test_websurface_uses_shared_reads_for_all_document_classes(
     assert "lamp" in inspected.data.content.lower()
     parent = reader.read(sf.ReadRequest(operation=sf.Parent(reference=reference)))
     assert isinstance(parent, sf.ParentResult)
+
+
+def test_typed_image_direct_overview_crop_and_archive(tmp_path) -> None:
+    async def run() -> None:
+        encoded = _rgba_png(
+            256,
+            128,
+            lambda x, y: (255, 0, 0, 255) if x < 128 and y < 64 else (0, 0, 255, 255),
+        )
+        image = ys.ImageDocument.from_bytes(
+            "typed-dashboard",
+            encoded,
+            metadata=ys.FileMetadata(source="fixture:dashboard"),
+        )
+        direct_without_index = ys.PixelArtifact.from_image_document(image)
+        assert direct_without_index.content == encoded
+        surface = sf.ImageSurface(image, tile_side=64)
+        page = surface.read(
+            sf.ReadRequest(
+                operation=sf.Overview(), budget=sf.Budget(bytes=2048, items=5)
+            )
+        )
+        assert isinstance(page, sf.PageResult)
+        assert not surface.descriptor.controllable
+        assert any(
+            capability.id == "image.direct@1"
+            for capability in surface.descriptor.capabilities
+        )
+
+        direct = surface.direct_image()
+        assert direct.content == encoded
+        assert direct.info.identity == direct_without_index.info.identity
+        assert direct.info.coordinate_space.kind == "original_raster"
+        assert direct.info.coordinate_space.orientation == "exif_unapplied"
+        direct_surface = sf.ImageSurface.from_pixel_artifact(direct, tile_side=64)
+        assert direct_surface.source_artifact.info == direct.info
+        overview = surface.overview_image(64)
+        assert (overview.info.width, overview.info.height) == (64, 32)
+        source_rect = overview.map_rect_to_source(
+            sf.PixelRect(x=0, y=0, width=32, height=16)
+        )
+        assert source_rect == sf.PixelRect(x=0, y=0, width=128, height=64)
+        crop = surface.crop_rect(source_rect)
+        assert (crop.artifact.info.width, crop.artifact.info.height) == (128, 64)
+        assert crop.artifact.info.transform.parent_identity == direct.info.identity
+        assert crop.artifact.content not in repr(crop.artifact).encode()
+        assert "content" not in crop.artifact.model_dump()
+        changed_info = crop.artifact.info.model_copy(update={"sha256": "0" * 64})
+        with pytest.raises(ValueError, match="provenance cannot be forged"):
+            crop.artifact.model_copy(update={"info": changed_info})
+        with pytest.raises(ValueError, match="bytes cannot be changed"):
+            crop.artifact.model_copy(update={"content": b"forged pixels"})
+
+        other = sf.ImageSurface(
+            ys.ImageDocument.from_bytes("other-dashboard", encoded), tile_side=64
+        )
+        with pytest.raises(sf.SurfaceError) as caught:
+            other.crop(surface.root_reference)
+        details = rust_error_details(caught.value)
+        assert details is not None and details.variant == "WrongCapture"
+        with pytest.raises(sf.SurfaceError):
+            surface.crop_rect(sf.PixelRect(x=255, y=0, width=2, height=2))
+
+        archive = await ys.Archive.open(tmp_path / "archive")
+        reference = await archive.write(crop.artifact)
+        restored = await archive.read(reference)
+        assert isinstance(restored, sf.PixelArtifact)
+        assert restored.content == crop.png
+        assert restored.info == crop.artifact.info
+        with pytest.raises(sf.SurfaceError, match="derived pixel artifacts"):
+            sf.ImageSurface.from_pixel_artifact(restored, tile_side=64)
+
+    asyncio.run(run())
 
 
 def test_shared_read_continuations_are_scoped_and_bounded() -> None:

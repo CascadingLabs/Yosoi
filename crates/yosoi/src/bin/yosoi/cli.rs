@@ -52,7 +52,7 @@ enum Commands {
     Search(search_command::SearchCommandArgs),
     /// Locate values in a file or one typed Yosoi Document on stdin.
     Locate(locate_command::LocateArgs),
-    /// Inspect web/video evidence and drive controllable surfaces through bounded JSON.
+    /// Read web/image/video evidence and drive controllable browser surfaces through JSON.
     Surface(surface_command::SurfaceArgs),
     /// Generate a shell completion script from this command tree.
     Completions { shell: Shell },

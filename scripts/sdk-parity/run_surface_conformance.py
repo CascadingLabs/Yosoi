@@ -15,6 +15,23 @@ from tempfile import TemporaryDirectory
 import parity
 
 
+def source_wire(source) -> dict:
+    """Match only ArchivedSource fields Rust explicitly omits when absent."""
+    value = source.model_dump(mode="json")
+    for field in (
+        "profile",
+        "file_kind",
+        "file_metadata",
+        "pixel_info",
+        "content_base64",
+        "document_archive",
+        "file_archive",
+    ):
+        if value.get(field) is None:
+            value.pop(field, None)
+    return value
+
+
 def load_vectors(path: Path) -> list[dict[str, str]]:
     """Require the six agreed document representations before comparing SDKs."""
     value = json.loads(path.read_text())
@@ -91,7 +108,7 @@ def main() -> None:
             imported = await fresh.import_file(file)
             loaded = await fresh.read(imported)
             return {
-                "source": source.model_dump(mode="json"),
+                "source": source_wire(source),
                 "record_id": loaded.record.id,
                 "version": loaded.version,
                 "sealed": loaded.sealed,
