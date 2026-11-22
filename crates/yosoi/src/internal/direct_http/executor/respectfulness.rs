@@ -20,17 +20,22 @@ pub(super) async fn send(
     client: &Client,
     spec: &ResolvedDirectHttpCaptureSpec,
     target: &str,
+    following_redirect: bool,
     cancellation: &CancellationToken,
     deadline: Instant,
 ) -> Result<Response, DirectHttpTransportError> {
+    // The first send may already hold Auto Search's reservation. Only a
+    // redirect has a preceding exchange to release here. Retries release below.
+    if following_redirect && let Some(operation) = &spec.respectfulness {
+        operation
+            .finish()
+            .await
+            .map_err(DirectHttpTransportError::respectfulness)?;
+    }
     let mut attempts = 0_u8;
     let mut reschedules = 0_u8;
     loop {
         if let Some(operation) = &spec.respectfulness {
-            operation
-                .finish()
-                .await
-                .map_err(DirectHttpTransportError::respectfulness)?;
             let admitted = operation
                 .acquire(
                     target.to_owned(),

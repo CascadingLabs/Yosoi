@@ -52,8 +52,14 @@ pub(super) async fn execute(
                 }
             }
         };
-        let request =
-            super::respectfulness::send(&client, &spec, current.as_str(), cancellation, deadline);
+        let request = super::respectfulness::send(
+            &client,
+            &spec,
+            current.as_str(),
+            !redirects.is_empty(),
+            cancellation,
+            deadline,
+        );
         let response = tokio::select! {
             biased;
             () = cancellation.cancelled() => {
