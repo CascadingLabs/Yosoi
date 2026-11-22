@@ -170,7 +170,7 @@ def _valid_report(
         "browser": {
             "channel": "stable",
             "distribution": "Google Chrome Stable",
-            "version": "157.0.8103.38",
+            "version": "158.0.8127.36",
             "executable": "/usr/bin/google-chrome-stable",
             "executableSha256": "e" * 64,
         },
