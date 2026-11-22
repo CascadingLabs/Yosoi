@@ -219,6 +219,16 @@ An ordinary `Document::json` stays ordinary JSON even if its values contain a
 `schema` field resembling `yosoi.network.v1`. Only a `NetworkWindow`-created
 Document with the `yosoi_network_observation_v1` profile has network semantics.
 
+`VideoSurface.open` retains recognized local files as typed `VideoDocument`
+values. The signature detector classifies generic Ogg as audio and does not
+recognize MPEG-TS. For these containers, `open` uses FFprobe to confirm a
+self-contained video stream before creating the typed source. Its
+`FileMetadata.probe_validated_video_container` records that basis while keeping
+the signature detector's MIME unchanged, such as `audio/ogg` or no detected
+MIME. Public `VideoDocument.from_bytes` remains signature-gated, and caller
+metadata cannot supply this probe basis. A saved typed video restores its
+timeline without FFprobe, while materializing a new frame still needs FFmpeg.
+
 ## Keep reference types distinct
 
 | Meaning                         | Rust                                | Python                      |

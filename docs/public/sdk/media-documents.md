@@ -18,6 +18,19 @@ File limits default to 64 MiB. The maximum is 256 MiB. HTTP acquisition also has
 
 Classification uses byte signatures. Detected MIME is separate from a server's declared Content-Type and suggested filename. A `.jpg` name does not make PNG bytes a JPEG. Unknown and non-media formats remain retainable as binary documents. Recognition does not promise that a decoder supports the file's codecs or that a recording contains particular tracks.
 
+`VideoDocument.from_bytes` remains signature-gated. `VideoSurface.open` also
+accepts the existing Ogg and MPEG-TS timeline formats when bounded FFprobe
+confirms a self-contained video stream. For these two ambiguous signatures,
+`FileMetadata.probe_validated_video_container` records the confirmed container.
+`detected_media_type` remains the signature detector's value, such as
+`audio/ogg`, or stays absent when no signature is recognized. Caller-authored
+metadata cannot create this validation basis.
+
+Rust `VideoDocument::copy_with_metadata` and Python
+`VideoDocument.copy_with_metadata` preserve this basis only when copying the same
+Rust-owned payload. Python's `model_copy` uses the same native path; updates cannot
+replace detected MIME, SHA-256, or probe provenance.
+
 Source provenance keeps the exact URL or source value up to 1 MiB of UTF-8 bytes. Filename metadata is limited to 1 KiB, and declared MIME and other provenance fields are limited to 4 KiB. Values are rejected at their limits, not shortened.
 
 ## Example: retain a local file

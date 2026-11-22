@@ -58,6 +58,12 @@ impl NativeCancellation {
         self.inner.cancel();
     }
 
+    fn child(&self) -> Self {
+        Self {
+            inner: self.inner.child_token(),
+        }
+    }
+
     #[getter]
     fn cancelled(&self) -> bool {
         self.inner.is_cancelled()

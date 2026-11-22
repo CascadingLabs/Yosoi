@@ -110,6 +110,45 @@ impl NativeFileDocument {
             inner: Arc::new(inner),
         }
     }
+
+    fn copy_with_values(
+        &self,
+        py: Python<'_>,
+        id: &str,
+        metadata_json: &str,
+        limits_json: &str,
+    ) -> PyResult<Self> {
+        let metadata = decode_metadata(py, metadata_json)?;
+        let limits = decode_limits(py, limits_json)?;
+        let inner = match self.inner.as_ref() {
+            FileDocument::Image(_) => ImageDocument::from_bytes_with_metadata(
+                id,
+                self.inner.bytes().to_vec(),
+                metadata,
+                limits,
+            )
+            .map(FileDocument::Image),
+            FileDocument::Video(document) => document
+                .copy_with_metadata(id, Some(metadata), Some(limits))
+                .map(FileDocument::Video),
+            FileDocument::Audio(_) => AudioDocument::from_bytes_with_metadata(
+                id,
+                self.inner.bytes().to_vec(),
+                metadata,
+                limits,
+            )
+            .map(FileDocument::Audio),
+            FileDocument::Binary(_) => BinaryDocument::from_bytes_with_metadata(
+                id,
+                self.inner.bytes().to_vec(),
+                metadata,
+                limits,
+            )
+            .map(FileDocument::Binary),
+        }
+        .map_err(|error| file_document_error(&error))?;
+        Ok(Self::new(inner))
+    }
 }
 
 #[pymethods]
@@ -117,6 +156,18 @@ impl NativeFileDocument {
     /// Compare the concrete family, identity, metadata and exact immutable bytes.
     fn value_equals(&self, other: &Self) -> bool {
         self.inner == other.inner
+    }
+
+    /// Copies authored fields while recomputing detector-owned metadata and preserving
+    /// decoder-validated Ogg/MPEG-TS classification from this exact immutable payload.
+    fn copy_with(
+        &self,
+        py: Python<'_>,
+        id: &str,
+        metadata_json: &str,
+        limits_json: &str,
+    ) -> PyResult<Self> {
+        Self::copy_with_values(self, py, id, metadata_json, limits_json)
     }
 
     /// Build an explicitly typed or inferred file document without decoding payload bytes.

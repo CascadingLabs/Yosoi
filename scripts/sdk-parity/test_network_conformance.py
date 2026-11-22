@@ -131,7 +131,7 @@ class NetworkFixtureTests(unittest.TestCase):
 
     def test_all_twelve_prior_suites_are_preserved(self):
         self.assertEqual(
-            tuple(name for name, _, _ in run_sdk_parity.EXAMPLES[:-1]),
+            tuple(name for name, _, _ in run_sdk_parity.EXAMPLES[:12]),
             (
                 "python_conformance",
                 "python_diagnostics_conformance",
@@ -148,11 +148,11 @@ class NetworkFixtureTests(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            run_sdk_parity.EXAMPLES[-1],
+            run_sdk_parity.EXAMPLES[12],
             ("network_conformance", "run_network_conformance.py", True),
         )
-        self.assertEqual(len(sdk_contract.REQUIRED_SUITES), 13)
-        self.assertEqual(sdk_contract.REQUIRED_SUITES[-1], "run_network_conformance.py")
+        self.assertEqual(len(sdk_contract.REQUIRED_SUITES), 14)
+        self.assertEqual(sdk_contract.REQUIRED_SUITES[12], "run_network_conformance.py")
 
     def test_metadata_only_and_tampered_bodies_are_rejected(self):
         for mode in ("missing-bytes", "wrong-digest", "wrong-profile"):
