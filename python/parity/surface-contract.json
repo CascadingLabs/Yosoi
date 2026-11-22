@@ -3,6 +3,14 @@
   "kind": "yosoi-surface-sdk-contract",
   "declarations": [
     {
+      "rustPath": "yosoi::BrowserSurface::cancel_network",
+      "kind": "function",
+      "signatureSha256": "4c17ff5070478872b00f3a8dd59ec4035328777162e643fcf0c5bf004a58e947",
+      "pythonTarget": "yosoi.BrowserSurface.cancel_network",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e60fa41609994feede16bc76e32249ffec0b9d7b6dc524d00bf6fcd74fbdc901"
+    },
+    {
       "rustPath": "yosoi::BrowserSurface::close",
       "kind": "function",
       "signatureSha256": "45c403899abdbcda2c573674a1ec9765b423cea31c20736b14a665929ad374f5",
@@ -44,6 +52,7 @@
       "signatureSha256": "df97aafe42ca83ff63df7dcd21ee939777082a8d2fb4f7d7e245bfebd93dfd46",
       "decision": "language-specific",
       "pythonTarget": "yosoi.BrowserSurface.consume_work",
+      "semanticEquivalent": "Python can bind an already selected Work lease. It cannot accept a Tab handle or select a non-initial tab directly.",
       "argumentMappings": [
         {
           "rustArgument": "tab",
@@ -63,7 +72,6 @@
           "python": "Python default None"
         }
       ],
-      "semanticEquivalent": "Python can bind an already selected Work lease. It cannot accept a Tab handle or select a non-initial tab directly.",
       "rationale": "Rust exposes the Tab-specific convenience because Tab is a public Rust owner. Python does not expose Tab creation or selection in this release, so there is no direct Python Tab target.",
       "review": {
         "status": "reviewed",
@@ -123,6 +131,48 @@
       "signatureSha256": "f3ac10c72c779b025da70462a9c61f9129ccc4e4a1f0d02f0b419dfcb81efb6b",
       "trait": "Debug",
       "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::network_payload",
+      "kind": "function",
+      "signatureSha256": "8289f79476ab939db87b2c6f2a1dcb07bca0351acc4856aabc865c1553287c5c",
+      "pythonTarget": "yosoi.BrowserSurface.network_payload",
+      "argumentMappings": [
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python NetworkPayloadRef converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "chunk_bytes",
+          "pythonArgument": "chunk_bytes",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:chunk_bytes",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 8192"
+        }
+      ],
+      "units": [
+        {
+          "id": "network-unit:chunk_bytes",
+          "rust": "retained body bytes",
+          "python": "retained body bytes"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "24c56fd54e20ee552db5db370f4bf38329e7f3c19368f72d87301673fe1aae18"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::observe_network",
+      "kind": "function",
+      "signatureSha256": "f811d1999166ab1b767e5da1d0462313e539ee816e17bfb11b7f13d56b7cbe87",
+      "pythonTarget": "yosoi.BrowserSurface.observe_network",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "0faaeb9f656e01a1be4eb8170f7c164ed8b041b9e0e84d1abf5f06d65910f699"
     },
     {
       "rustPath": "yosoi::BrowserSurface::observe",
@@ -213,6 +263,72 @@
       ],
       "rationale": "Rust method maps to the matching Python method/property yosoi.BrowserSurface.read.",
       "pythonTargetSha256": "2f8ee79251c5fb054b288318dda655dd23be63850fe18c2c75e57dd5eb3fe597"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::subscribe_network",
+      "kind": "function",
+      "signatureSha256": "a2dc3b1557627f33dbfcdeecf87e9d35d5616f2da98e599089714bde8e5948bd",
+      "pythonTarget": "yosoi.BrowserSurface.subscribe_network",
+      "argumentMappings": [
+        {
+          "rustArgument": "retain_bodies",
+          "pythonArgument": "retain_bodies",
+          "conversion": "Python bool | None converts to the Rust parameter type"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:retain_bodies",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default None"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "18aa9b9d78bbdba3d47b37a79af2436a55f5c20e4ae632d42a874186b3c00cfd"
+    },
+    {
+      "rustPath": "yosoi::BrowserSurface::wait_network_event",
+      "kind": "function",
+      "signatureSha256": "1dde1e771f51569a97a82100349f2182ab1e1125ea396cd9e77f5cdc5fb3b8e8",
+      "pythonTarget": "yosoi.BrowserSurface.wait_network_event",
+      "argumentMappings": [
+        {
+          "rustArgument": "after_sequence",
+          "pythonArgument": "after_sequence",
+          "conversion": "checked Rust integer maps to Python int"
+        },
+        {
+          "rustArgument": "timeout_ms",
+          "pythonArgument": "timeout_ms",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:after_sequence",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 0"
+        },
+        {
+          "id": "python-default:timeout_ms",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 5000"
+        }
+      ],
+      "units": [
+        {
+          "id": "network-unit:after_sequence",
+          "rust": "event sequence",
+          "python": "event sequence"
+        },
+        {
+          "id": "network-unit:timeout_ms",
+          "rust": "milliseconds",
+          "python": "milliseconds"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9dcc3c07fd6bbbbc4f2d022f96c1892a6f3d49d549b8253fd7f1c9a42b2f6642"
     },
     {
       "rustPath": "yosoi::BrowserSurface",
@@ -2936,6 +3052,14 @@
       "pythonTargetSha256": "74da4b1662470b1f50e158b0d33358ac3eebfe18241f296da8795043dee543de"
     },
     {
+      "rustPath": "yosoi::Surface::is_network_observation",
+      "kind": "function",
+      "signatureSha256": "a316080ece74a347a9d3156290fa63daff0d5b47f85eb3188e73f675404103e2",
+      "pythonTarget": "yosoi.Surface.is_network_observation",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8f8335dd80266567432ee35f7c23aed96615ff018ed0275947c20c8754ccfe42"
+    },
+    {
       "rustPath": "yosoi::Surface::new",
       "kind": "function",
       "signatureSha256": "3f52149a2bb113ad44347fdec7a77926f03665db1c10138797aaa858c5a98fa1",
@@ -3693,6 +3817,14 @@
       "mechanic": true
     },
     {
+      "rustPath": "yosoi::SurfacePolicy::network_observation",
+      "kind": "struct_field",
+      "signatureSha256": "ae7cf1bd7f7d8149a9dcf149b6bc23f6d807debf85bcac156fbdea3a99293205",
+      "pythonTarget": "yosoi.SurfacePolicy.network_observation",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "23900b0b9906fcccb6ee9e2f48eb2dc9d21567c21ce1641018fa93424b2ca560"
+    },
+    {
       "rustPath": "yosoi::SurfacePolicy::output",
       "kind": "struct_field",
       "signatureSha256": "63d52533819599783f17a4283606548e90e6b1c4fd007b78da5cddf2cc8dac21",
@@ -3713,7 +3845,7 @@
       "signatureSha256": "ac219bb17fd465659e38003aa2c8797fe645af7c065d51ad6bee88e20905e822",
       "pythonTarget": "yosoi.SurfacePolicy",
       "rationale": "Both interfaces delegate this capability to the same Rust Surface policy and Archive implementation.",
-      "pythonTargetSha256": "7124ac6d4a736b92f2835b373ac12236473fa0d81e5c728d91978d8039b6259c"
+      "pythonTargetSha256": "eb7b83a7088aa424f17cc7e046c302ecdd6da3711ad02e314595b10a606db316"
     },
     {
       "rustPath": "yosoi::SurfaceSession::attach",
@@ -4675,14 +4807,6 @@
       "pythonTargetSha256": "54be2c7833fac4536fd4818540ee3c458ab1691e93be7a33a536ff4429da0046"
     },
     {
-      "rustPath": "yosoi::browser::surface",
-      "kind": "module",
-      "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
-      "pythonTarget": "yosoi.browser_surface",
-      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
-      "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
-    },
-    {
       "rustPath": "yosoi::browser::surface::consume_session",
       "kind": "function",
       "signatureSha256": "b6a1d6a8bb33a8b877818330935f93177d8941f95e907921490f489f3c98c6a7",
@@ -4708,6 +4832,14 @@
       ],
       "rationale": "The reviewed browser-specific module façade forwards to the same Rust BrowserSurface Session binding; Python exposes its canonical target through yosoi.browser_surface and aliases it from yosoi.surface.",
       "pythonTargetSha256": "96401b653310a254fcf43af7861c4110b3d02bc7957173c897f0f7a644404124"
+    },
+    {
+      "rustPath": "yosoi::browser::surface",
+      "kind": "module",
+      "signatureSha256": "67513455303e8c7e1b23da293436d47a2c08bf924bb157fb8fe2f4944d66b0c3",
+      "pythonTarget": "yosoi.browser_surface",
+      "rationale": "The browser-specific Rust Surface façade maps to Python's importable browser_surface module, which also backs the browser.surface compatibility attribute.",
+      "pythonTargetSha256": "ad30cfecc2a0b8634f32b0669938a4ac620d5eb2d5bfeafbccd4f995a3795f52"
     },
     {
       "rustPath": "yosoi::surface::ActionLease::drop",
@@ -6954,6 +7086,2560 @@
       "pythonTarget": "yosoi.surface.NativeInspection",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
       "pythonTargetSha256": "15c305489b10198d51dada7d473d60efcd45735b1573481f2ec11a30d4d7d298"
+    },
+    {
+      "rustPath": "yosoi::surface::NETWORK_OBSERVATION_SCHEMA",
+      "kind": "constant",
+      "signatureSha256": "7efe0286f9a491a71654baa12c7abb3777efa876b9a381408d7c1348de4ab144",
+      "pythonTarget": "yosoi.surface.NETWORK_OBSERVATION_SCHEMA",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9e83042a921cb257cb1ba302255cdddfcd0843d1f677639ca767b5ce7ed6af97"
+    },
+    {
+      "rustPath": "yosoi::surface::NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES",
+      "kind": "constant",
+      "signatureSha256": "4a34f0140b18b63275f1e76f5245e0a8db4f82e00f0fea59189b1da529b252d8",
+      "pythonTarget": "yosoi.surface.NETWORK_PROVIDER_RESOURCE_BUFFER_BYTES",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "a61bd0bcb9bf432063ce50a1fe55d797f6e254c03aab7368028122341d6fe504"
+    },
+    {
+      "rustPath": "yosoi::surface::NETWORK_PROVIDER_TOTAL_BUFFER_BYTES",
+      "kind": "constant",
+      "signatureSha256": "29564d514b27fb682ed92419aa651bb1b5ebb522e1dd26f207df44763391415a",
+      "pythonTarget": "yosoi.surface.NETWORK_PROVIDER_TOTAL_BUFFER_BYTES",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "3d8f7083fafcd1aa15130ca960579cfa1d743eefb8ad57ddb9aaf4af635e0e33"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::CdpDecodedResponseBody",
+      "kind": "variant",
+      "signatureSha256": "156ef2f0614cef712377ae0e01df1b13ce45b7e910fcd98305d6977bf717e679",
+      "pythonTarget": "yosoi.surface.NetworkByteProvenance",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "CdpDecodedResponseBody serializes as cdp_decoded_response_body",
+          "python": "Literal cdp_decoded_response_body"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c67ef4d0b359c4de8c41a25e7565d1d63f43d3564348dc11141029682d4d5284"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::None",
+      "kind": "variant",
+      "signatureSha256": "dc937b59892604f5a86ac96936cd7ff09e25f18ae6b758e8014a24c7fa039e91",
+      "pythonTarget": "yosoi.surface.NetworkByteProvenance",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "None serializes as none",
+          "python": "Literal none"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c67ef4d0b359c4de8c41a25e7565d1d63f43d3564348dc11141029682d4d5284"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::clone",
+      "kind": "function",
+      "signatureSha256": "74758e7f3d69a6cff6c17dfb086ec117ef711ae38b6055b460e2b1b59a1b1af1",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::eq",
+      "kind": "function",
+      "signatureSha256": "21cb3daea3e8a80a31e28d4164a72ceb7651f90fd5c6d4c52070b252c6bf0ce8",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkByteProvenance",
+      "kind": "enum",
+      "signatureSha256": "ea2fd362d96a12a8a16589f8740d3f081193714e396997ab61215e0cd524fbbc",
+      "pythonTarget": "yosoi.surface.NetworkByteProvenance",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c67ef4d0b359c4de8c41a25e7565d1d63f43d3564348dc11141029682d4d5284"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::clone",
+      "kind": "function",
+      "signatureSha256": "850551c4c49fec8692ac926acd17df879dc1314f35422cbb1d151d163867df4e",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::complete",
+      "kind": "struct_field",
+      "signatureSha256": "f60b3eeffffe76339bf1502556c76c4d134f0e8f9cd329013bc77c6b15d78b29",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.complete",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "a21f5ab89d503f21fb56a692117cd96af8cedf5ebddb2312467c3b45d7725d5a"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::disconnected",
+      "kind": "struct_field",
+      "signatureSha256": "4403e5922574ed4fa37c0aa4044d9fb8c394470c39e0e8f7f5851b4e44fe472e",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.disconnected",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9674625a42f5e3b3e3d873c4e42c5d222fc2ead599e2a6539a738d0dd13c12dc"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::dropped_events",
+      "kind": "struct_field",
+      "signatureSha256": "9808c2b51c0136bd341c27f14d3a3120c26ab92a95f29ba9c28c61dd7ad64260",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.dropped_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ac3deb5c08750b5780a3ea0c5b4092820a133fb97564c43e97e0579d2655bb70"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::end_boundary_in_flight",
+      "kind": "struct_field",
+      "signatureSha256": "62dcaffa944f93819a75341d2ba58ab90968c69d49e77b1cf62f5e3b00407cbd",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.end_boundary_in_flight",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "56dac429cd4ba1d37e09464dc666da4315fac2809d1a4fd7af535355ac1d91ca"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::eq",
+      "kind": "function",
+      "signatureSha256": "74ed32e7e7e2584c72729c035537ab8a0927f28c20df9025b8fb2c5ace2be3a0",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::expired",
+      "kind": "struct_field",
+      "signatureSha256": "1bc15673a851b62ab13de04581318f7529ae9fcebb04058aa88b5c9cc7f57f4c",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.expired",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "23f54bc1f8ed554799199ca108e476913c729c55c7f13c79a29043ec86811e26"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::filtered_events",
+      "kind": "struct_field",
+      "signatureSha256": "e802fbf4fac831e1aed29d131cacf16529e9fc2583926f7dc43ee3994a098a02",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.filtered_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9cf14feaa41e277be9d0159f2b5ac81dc97563ca8167a10a6c5262f3467049c2"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::instrumentation_escalated",
+      "kind": "struct_field",
+      "signatureSha256": "c2402a2ef73217cc29736dacaf4e59f0c96f80d1bbe327ed6e315717b4f1c14c",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.instrumentation_escalated",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ea8e26fcfd7a87c755dba2c03a6e976a7081774c1c0f3c3c511f1df01b83dbdb"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::late_events",
+      "kind": "struct_field",
+      "signatureSha256": "42a8d3aea77e5a6e9d76b5b283c1a4680576273e0d4eb3e90e2fdac2ffa07995",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.late_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "32547a56c529bda42796f49591ce87355e4b74bfeccec4dd4fac2d5ef840476d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::network_was_previously_enabled",
+      "kind": "struct_field",
+      "signatureSha256": "b5c3720e28b70fbb3a21dd1e9032279d47080eef46750071457ccf0753281396",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.network_was_previously_enabled",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "3a8eaf537f8f11604498c98ce9d0bb128b42568b99bf6ccfc0011a1c42ac5cff"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::omitted_payload_links",
+      "kind": "struct_field",
+      "signatureSha256": "6273f992aedb1c91bc8bba9b6804ab466c66a460e2f1719806147f7673591341",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.omitted_payload_links",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2d3bf3ed98335f908c462e307407eb3e6588f43a4aa4cb0fa331e263dba292c3"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::overflow",
+      "kind": "struct_field",
+      "signatureSha256": "006f0fef6cd03218c79e8ad3b9ff098564ad3004f09144ed536e853ea4509cdd",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.overflow",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2a1e2e742e0f78ab0586e0acdc74c13b28bcf6a488aec7ee691830e9a9998e1b"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::reason",
+      "kind": "struct_field",
+      "signatureSha256": "624e2f6a92c66dd8f56eaad088dea93e639bfb0cb8afc9032501dff1ce2e552b",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.reason",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "fe641975387dcdf6116492adcb9ffb352332f037e8e65847dafbf3590648d7ac"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::start_boundary_unknown",
+      "kind": "struct_field",
+      "signatureSha256": "74d60ef89ba8fddcd87f67a29331e0ca7b74786e46fe26580bb85149948e5943",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.start_boundary_unknown",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "446769cb4e79a73a7e22a0e345d27926ab3747764474fbdcab1b513ab8ae35ab"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage::starts_not_observed",
+      "kind": "struct_field",
+      "signatureSha256": "7f772b6902504fb61c62a40cf109bb217356f14a82b1477bb49689b1c253a6ba",
+      "pythonTarget": "yosoi.surface.NetworkCoverage.starts_not_observed",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "4c5db0b6396387a561febec4dc1f642cefc3da5412157da326fc31c0a4655964"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkCoverage",
+      "kind": "struct",
+      "signatureSha256": "d4390428a9fc470feef63247f6044248bbbbf4e8bd1e036088e90e3105761919",
+      "pythonTarget": "yosoi.surface.NetworkCoverage",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d03591020db2ee0cbd87d756f1e0cf78bf645047dfaac62e7a22490ccbec20c8"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::clone",
+      "kind": "function",
+      "signatureSha256": "c0bbac34ea653a2971a91d41c66737a9823e88edb823e501b168e153b00263cd",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::eq",
+      "kind": "function",
+      "signatureSha256": "fafac953cf9343efc7dff6bb90f5b0d60ad30145a744ec04e4718bf1161a8e3e",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::frame_id",
+      "kind": "struct_field",
+      "signatureSha256": "b4f06e086888e9e39054025e4af1d1f9c11c57aebf70c07f0f4d7fc4f81754f6",
+      "pythonTarget": "yosoi.surface.NetworkEvent.frame_id",
+      "defaults": [
+        {
+          "id": "optional-default:frame_id",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "5483f39e07072e6250f7e33499ac3b4d97ac3fb47aa6dcdd86694f85c63a9130"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::hop",
+      "kind": "struct_field",
+      "signatureSha256": "80e0b6814fd9b5f2f04734eae25e677fe96ff6d049f858a996bbe27a7d84a2a5",
+      "pythonTarget": "yosoi.surface.NetworkEvent.hop",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f2d2e0278f6d25e31c8cb667a267913048ba9acf35bec5f95719233c2c654e2d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::kind",
+      "kind": "struct_field",
+      "signatureSha256": "c024007975ca72a14f7feb8f9dcc118a63492ba044c61ba753c1efe5a828f029",
+      "pythonTarget": "yosoi.surface.NetworkEvent.kind",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8b9bf8f76801d562668c608a1578e7b59cbf3ef913c3c47a3d83369df1a94b56"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::loader_id",
+      "kind": "struct_field",
+      "signatureSha256": "b65efeeb8ad4a674e3b47fa5ddcc1d4d66704d183580173ef119db8b5efefa62",
+      "pythonTarget": "yosoi.surface.NetworkEvent.loader_id",
+      "defaults": [
+        {
+          "id": "optional-default:loader_id",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "21f60a90a32e4b0a28bdacdbc907622765c3ed52687ea41459937bcfdc76d610"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::observed_at_unix_us",
+      "kind": "struct_field",
+      "signatureSha256": "3e7b6be7f803d344758f09534d3c79ec0f395cc26398ac0a66883d1b43da5c59",
+      "pythonTarget": "yosoi.surface.NetworkEvent.observed_at_unix_us",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ab8c0d6bf64bac9f64f29ad16da2e2c61922c2067f7b1c891f995b17325c1ccb"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::provider_clock",
+      "kind": "struct_field",
+      "signatureSha256": "7e98094edc91125fc5115815098ec4c73c7dc7d360d7d133ed4bf2312acf99e0",
+      "pythonTarget": "yosoi.surface.NetworkEvent.provider_clock",
+      "defaults": [
+        {
+          "id": "optional-default:provider_clock",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9fbe6b247342f99c77d70b3e5a8d759f7ecd3afe8f576c07047432289db94268"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::provider_time_us",
+      "kind": "struct_field",
+      "signatureSha256": "70536b4840842bc6c07de60bdf054ca0a8ddd8ead837156d65d855f08fd63e14",
+      "pythonTarget": "yosoi.surface.NetworkEvent.provider_time_us",
+      "defaults": [
+        {
+          "id": "optional-default:provider_time_us",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8d7eb69c1803ca2863601cd1931503da402fdd68bf49d174d837c70d96b6731f"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::request_id",
+      "kind": "struct_field",
+      "signatureSha256": "1e49cca2169fe4d90517cca8b5543ffcaf78cc9d9a2f78a1ca774c2cdc22e3c5",
+      "pythonTarget": "yosoi.surface.NetworkEvent.request_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9a25056a9e5e8939d4953e7efabf849d1b77ad3ebba6352569c17f47265045f6"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::request_start_observed",
+      "kind": "struct_field",
+      "signatureSha256": "7381f00b86e5afe589828a84ea88c77a254a219c41debe34008eff61d3ac0561",
+      "pythonTarget": "yosoi.surface.NetworkEvent.request_start_observed",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "90e494df7fceb1923dad02e03e93bba30fc2ece60fce1403bd8de0870457f450"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::sequence",
+      "kind": "struct_field",
+      "signatureSha256": "f85e895d566829a275e4820fbb1ec1fb300ffb19e10b2e59eb838639fafe2c1e",
+      "pythonTarget": "yosoi.surface.NetworkEvent.sequence",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d4f70b7690112a3c5343edb2103e13f6e4d54f51b83cae6656b11d7f4aec1742"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::Failed",
+      "kind": "variant",
+      "signatureSha256": "e2c0078f1ff8f5d5dcf83059ccbd247e7bb06f043651dcb6eff6507b75c5d723",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "failed",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "error",
+          "pythonArgument": "error",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "canceled",
+          "pythonArgument": "canceled",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::Finished",
+      "kind": "variant",
+      "signatureSha256": "27aee1aeccb1a07d59f864cf2b04189a2c27e100ec6b64ca9fafc79cf5dcad88",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "finished",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "encoded_data_length",
+          "pythonArgument": "encoded_data_length",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::Redirect",
+      "kind": "variant",
+      "signatureSha256": "ae9ae0c91eede3dcd7cdebac3c0d1322e2d2b1ebbaaa572766da09af6c44862d",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "redirect",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "from_url",
+          "pythonArgument": "from_url",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "to_url",
+          "pythonArgument": "to_url",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "status",
+          "pythonArgument": "status",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "headers",
+          "pythonArgument": "headers",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::RequestStarted",
+      "kind": "variant",
+      "signatureSha256": "1f6b61b990c8f4e8837fd1ab7ea592dca3c61c54df2d07e6e1cda03979021b73",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "request_started",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "url",
+          "pythonArgument": "url",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "method",
+          "pythonArgument": "method",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "resource_type",
+          "pythonArgument": "resource_type",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "headers",
+          "pythonArgument": "headers",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::ResponseReceived",
+      "kind": "variant",
+      "signatureSha256": "9817b29d52f7964f2bf72ff96376493df2a9301b9de776e526ef4420f2966b0b",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "semanticEquivalent": "TypeAdapter(public_union).validate_python accepts a tagged dictionary; the alias is not a callable constructor.",
+      "variantBinding": {
+        "discriminator": "kind",
+        "tag": "response_received",
+        "input": "TypeAdapter.validate_python"
+      },
+      "argumentMappings": [
+        {
+          "rustArgument": "url",
+          "pythonArgument": "url",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "status",
+          "pythonArgument": "status",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "declared_media_type",
+          "pythonArgument": "declared_media_type",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "browser_effective_mime",
+          "pythonArgument": "browser_effective_mime",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "browser_effective_charset",
+          "pythonArgument": "browser_effective_charset",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "content_encoding",
+          "pythonArgument": "content_encoding",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        },
+        {
+          "rustArgument": "headers",
+          "pythonArgument": "headers",
+          "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::clone",
+      "kind": "function",
+      "signatureSha256": "51b5639d644a9dfcecd234294822beb64a3df37c3996135da87cd56ac1ed18c3",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::eq",
+      "kind": "function",
+      "signatureSha256": "0da4531fb55cce863048002670a6313469b169c5d0a0dd3ddacafbcb818844bb",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEventKind",
+      "kind": "enum",
+      "signatureSha256": "27245c1fe025965cb89c4a62704b855a2950fc2b00b9e1a0943b1b45292a1124",
+      "pythonTarget": "yosoi.surface.NetworkEventDetails",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "843c6ea1c36648e9370784f026e4ac8ea017ff28acdbb94b34905eb20525c332"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkEvent",
+      "kind": "struct",
+      "signatureSha256": "38c17dde6a5e0cac47c44fe8a42f5648df0d152e4f01b87297a067e46ea23e12",
+      "pythonTarget": "yosoi.surface.NetworkEvent",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "3582aba179e5f0749a0404e2460c64f66227472d9d373e550ff7c4b3720da979"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::after_sequence",
+      "kind": "struct_field",
+      "signatureSha256": "3dda12ec384180b124f6bf526a308bc0e0a8e3b40b36cf660dc3741df67b6a51",
+      "pythonTarget": "yosoi.surface.NetworkGap.after_sequence",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "173b1d18e7a0adf4c61cd455b312e0f24b0bb55b78f9cb2ad296e7c6307c2a63"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::clone",
+      "kind": "function",
+      "signatureSha256": "c501ca7c0718b7d198ee428cf2e8a628c13264ec3825097213db03446eb13076",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::dropped_events",
+      "kind": "struct_field",
+      "signatureSha256": "4617d49783ec8c379daef6348ce7855f3f4ee5baf3bb9cf1f1e249d9e6538d38",
+      "pythonTarget": "yosoi.surface.NetworkGap.dropped_events",
+      "defaults": [
+        {
+          "id": "optional-default:dropped_events",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "cbc548e1511e3693b3f60afcdd8098c122ee7f1084b5583f89c331bcabda7168"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::eq",
+      "kind": "function",
+      "signatureSha256": "cdf9dd40bfcf4230068bef4f38a90d8a6b52a9b928776f93ecf61698b8fc72fb",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::reason",
+      "kind": "struct_field",
+      "signatureSha256": "624e2f6a92c66dd8f56eaad088dea93e639bfb0cb8afc9032501dff1ce2e552b",
+      "pythonTarget": "yosoi.surface.NetworkGap.reason",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "965de1d27891a23e14964b2c5344b44916cd26d3822b35696c28094659c08050"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkGap",
+      "kind": "struct",
+      "signatureSha256": "c735be52230edff2f63a220425f635041ec079a5a55402b2e5b0b458c9d92d2b",
+      "pythonTarget": "yosoi.surface.NetworkGap",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "293841cc17b385305da7ff05414695442f66254217493d156ea51e3690b9a630"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::clone",
+      "kind": "function",
+      "signatureSha256": "ee91262270276a97b6b21f8fb162a45dbb95f0ac150a86d205c31a9f0df52f9a",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::eq",
+      "kind": "function",
+      "signatureSha256": "270035fea58d236409eb91e16890ba37a4ca8b254e8f06f5434e15dd4a678458",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::name",
+      "kind": "struct_field",
+      "signatureSha256": "cb33212189385fa76c731a9c3d9bcf496b8436ef30c8a0372dd4218881257de6",
+      "pythonTarget": "yosoi.surface.NetworkHeader.name",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d410a177c6a7055b4afd0ad14e48e500de8de2dc819029193bcda0dd19039c62"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader::value",
+      "kind": "struct_field",
+      "signatureSha256": "34b381dfec09875f9be6013f4960869339259913b19b9f6a576274164469b83a",
+      "pythonTarget": "yosoi.surface.NetworkHeader.value",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "dbac4b4c1cab67ee153932d5cd5e9e6f19bc684d368aa3b27fd0265dc90e15bc"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkHeader",
+      "kind": "struct",
+      "signatureSha256": "2577dfc96cd8ee53d7ee2d841957fb0d909eb5cca50895af3011655ec3e41e6a",
+      "pythonTarget": "yosoi.surface.NetworkHeader",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "06aed7b6f5d3b5d47a4d7871324cf7c405f33cc5e7f00949c62f5c696fb79111"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::clone",
+      "kind": "function",
+      "signatureSha256": "3c0e0ee411f0bc87d2765e00732c9e4b1c828d02d0bf68a2fda8c935b315fdb5",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::eq",
+      "kind": "function",
+      "signatureSha256": "5dbf8cf2e287170c4ae84f24c51f1a27d2d0f49e617fd732cef572e6eabf503d",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::hop",
+      "kind": "struct_field",
+      "signatureSha256": "80e0b6814fd9b5f2f04734eae25e677fe96ff6d049f858a996bbe27a7d84a2a5",
+      "pythonTarget": "yosoi.surface.NetworkInFlight.hop",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "cbbc5e902f2cac2b4f6bc09055f6a49686f0a1395499db9785794864d33c3aaf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::method",
+      "kind": "struct_field",
+      "signatureSha256": "7044cf55a0860ca3cb9e201e185fda29e913413709867197e5f5ae6ac4a00e17",
+      "pythonTarget": "yosoi.surface.NetworkInFlight.method",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "164aeb44a64f8dc31bc3e0cf1dce90c5471894ffc684dc99d6c9ded57a0ee3d3"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::request_id",
+      "kind": "struct_field",
+      "signatureSha256": "1e49cca2169fe4d90517cca8b5543ffcaf78cc9d9a2f78a1ca774c2cdc22e3c5",
+      "pythonTarget": "yosoi.surface.NetworkInFlight.request_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "301fd4c834219b64d5a0bf2a5fa3aef23f7297f939b9cae0e3068b40c67b75f3"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::response_seen",
+      "kind": "struct_field",
+      "signatureSha256": "ce7166fa3b4b8a204160d617202a025c06552029a4fd9de3145f4e3dbdf88abd",
+      "pythonTarget": "yosoi.surface.NetworkInFlight.response_seen",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "77ad25b80ce68122d54145ca509e50a30a25dd081bf158fb55cc1c62bef881d2"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight::url",
+      "kind": "struct_field",
+      "signatureSha256": "b349687f4299e985e276a733ae9286be7b9a1b555f8458b975d802dbe1002bcf",
+      "pythonTarget": "yosoi.surface.NetworkInFlight.url",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d5d47a9766f9d4205ca5e24cc9c8ec326a93cb839eafa56a7205f922c3dafd59"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkInFlight",
+      "kind": "struct",
+      "signatureSha256": "f3d99ed47af24fea079be06f4312764f87336467cf498d420df9e99edf275a67",
+      "pythonTarget": "yosoi.surface.NetworkInFlight",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "70fc173aabccbb542aabd6d1e557cdfee04a044251103bd09c9b31a0ed655895"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::allowed_methods",
+      "kind": "struct_field",
+      "signatureSha256": "c4544ef37c302aeb541771365c167f832042f964546d5775c713ecc318982603",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.allowed_methods",
+      "cardinality": [
+        {
+          "id": "sequence:allowed_methods",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "fcf4bbbb9b006d4a7d28e78f168b838d054887bbc5e4bfe5d452b2a53e820d17"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::allowed_origins",
+      "kind": "struct_field",
+      "signatureSha256": "e4b10d96c52b3ec5ed7abfd9e3baad165f8a5cacab9bccd576a1a712cf18bce6",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.allowed_origins",
+      "cardinality": [
+        {
+          "id": "sequence:allowed_origins",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "756bdbbac44f5ec0814f2d1d622494b524a41af4a26b1c356689be21970fde1c"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::clone",
+      "kind": "function",
+      "signatureSha256": "64f4080b60299a9462f429c84f2920e9afe42561df32c2cf4cb6f78914e92535",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::default",
+      "kind": "function",
+      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "trait": "Default",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::eq",
+      "kind": "function",
+      "signatureSha256": "684937606efd3882f909f5604ac2967d7118e8c344a4edf3935cc502893a655f",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::header_allowlist",
+      "kind": "struct_field",
+      "signatureSha256": "ae5cfcac0639ddf4f1ea19388071a33c1f9b718de5e38ec4ea643446a07f7bd2",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.header_allowlist",
+      "cardinality": [
+        {
+          "id": "sequence:header_allowlist",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "90770c5f1047c197df146f427d82bd16be355c339d3ad49d72d4fcc574194b28"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "5c940c68b9a716010eba8c98bb4e316381d1765063373ffdb70016018cc5b21f",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_body_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "17cc7bea825b4a7d7d3230f035c55b2b6f7fe722cd91ea2a2d73ae93fafd1ded"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_buffered_events",
+      "kind": "struct_field",
+      "signatureSha256": "aab566ddf0de0a252087e78dafab8a4f56f74407d1a8719ef68bfc9548038038",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_buffered_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "944b990b550c09face8fec5c8bc1560d45668f682fc2a99771128c9a406f0110"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_duration_ms",
+      "kind": "struct_field",
+      "signatureSha256": "c29ca21b1ee0ac91746bf4a688993e26a062396df790cddee37dc314b69845d4",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_duration_ms",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "5a7768be8dcc1df558f52e158586936c77188b46a3623e5b160ac47f5f40978a"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_event_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "0479f7ef4b8f30e6edebbc104e612223efd63baedc56ef9d41a5605dc3cb2dc3",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_event_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "91811d71b5a2b3602ee9e3089961db64c7cd43163db48425d962176bfe24cba0"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_events",
+      "kind": "struct_field",
+      "signatureSha256": "4d9a50ea70be7e2da36e4fb8dbeed9686823e5160591f498f888ae55a60066a0",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "65768ae59a5cbd95e92e2b4f5ace3c9f2263cec3b686247ac4589a538dbf8988"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_response_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "e774645214ef86789b806745118b95a144b1607b177d225af107b3bf7ea7baac",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_response_bodies",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "7062dbf2057360cb0e693add08a57f6bb84852cceb7f410b1671241048cfc7e3"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_total_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "e14f1f3fc65d6c3a64e92877e4786629ed499464147c9503aeaa5ab5587e819f",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_total_body_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ffe08916e37b66e17860fea847819355c89f86b60ee7af983c0813fd8d338814"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::max_windows",
+      "kind": "struct_field",
+      "signatureSha256": "4ff0ee6cfe331f24b3464fbcd55142877e88838370b670231272207970a9dbc6",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.max_windows",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "1b281a02395a5d4bcfac77c30d0e83b186519093d78ee0b07da77a18fd9e3b6b"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::retain_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "54d6a005a9de3020da06b392ad26a2c49cc21af6cedfc292eb61a8f71b0070a4",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.retain_bodies",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d7b044c4978ad4d378d24db2561e2cb7e180a7b8eeab0c57ebf8e79eda277192"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::retain_url_path",
+      "kind": "struct_field",
+      "signatureSha256": "9ff4298cae00e2aaa749693f3fa5eb409d347dc05b0a4b29b423e905f06cfc15",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.retain_url_path",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "56e18b772d4b66b7b1239df9bbd64e06e0af5ff5be50b92b7de4fb90a5732ebe"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::retain_url_query",
+      "kind": "struct_field",
+      "signatureSha256": "cd99905b89f645191078024b5514e9cb1cceeb70e7f92716da605a88326460b8",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.retain_url_query",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d2b391991cd3cfe42068166a2dc752349358c7b1a7b77aff9f11264dd35891e3"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::retention",
+      "kind": "function",
+      "signatureSha256": "0b8378d4443b62026ad4cdbb6966e2dcb1cdad60b8297317392671f531d31f89",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.retention",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "336773e324b00e37adc1400f4d8b216f20881346565db5afef5fff4cc2682198"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy::validate",
+      "kind": "function",
+      "signatureSha256": "d60eeb9c5921cb667dad6f236ff5fd0d8ab3612f83bacea3c747a2e627fd7f35",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy.validate_policy",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b42495ab53fc0758750be74a321d798d1d127f9f9000cb153842bea3656b6cb0"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservationPolicy",
+      "kind": "struct",
+      "signatureSha256": "26c943200ed34afc847bba5590c6b7055d5999d99d9ead7879e350115d0847ca",
+      "pythonTarget": "yosoi.surface.NetworkObservationPolicy",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8f2417088576464877a19da3c101f99bcffc7b326a82d9de90b6d1c55c1ddfcf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkObservation",
+      "kind": "type_alias",
+      "signatureSha256": "ed868e0fb2b49f1c819992e4578de802c3f4891f0b357a589ce12ced494b8964",
+      "pythonTarget": "yosoi.surface.NetworkObservation",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "739c1d1f54c616a2f6d416008bca05b03cb9759cdcf967d3f05aefdc68b0dbae"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::bytes",
+      "kind": "function",
+      "signatureSha256": "c11ee9b4cdb14075beb37d12d530b7ca2437964e54d662e775a9baf8a6869fa9",
+      "pythonTarget": "yosoi.surface.NetworkPayload.bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "93a8408e48493e0cb345718e752dc2689968b5d136585333a5425b0d8fe5b1b1"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::clone",
+      "kind": "function",
+      "signatureSha256": "9b78d15bba86471d351069909632947dec1372d241b246e6655e6022fbb206e5",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::eq",
+      "kind": "function",
+      "signatureSha256": "ab054e65326d3ebb1a052d02eb5cafe05d581fbfe81847c82bb013cc1263f5b8",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::from_outcome",
+      "kind": "function",
+      "signatureSha256": "00ec28a19379dc2ac5fb1c2ee2cc034164f32132bce03ccd748a78551983bc1a",
+      "pythonTarget": "yosoi.surface.NetworkPayload.from_outcome",
+      "argumentMappings": [
+        {
+          "rustArgument": "outcome",
+          "pythonArgument": "outcome",
+          "conversion": "Python Outcome converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "reference",
+          "pythonArgument": "reference",
+          "conversion": "Python NetworkPayloadRef converts to the Rust parameter type"
+        },
+        {
+          "rustArgument": "maximum",
+          "pythonArgument": "maximum",
+          "conversion": "checked Rust integer maps to Python int"
+        }
+      ],
+      "defaults": [
+        {
+          "id": "python-default:maximum",
+          "rust": "no explicit default on this Rust parameter",
+          "python": "Python default 67108864"
+        }
+      ],
+      "units": [
+        {
+          "id": "network-unit:maximum",
+          "rust": "retained body bytes",
+          "python": "retained body bytes"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b65a496240655aa38a1829a853ce32751511ab951967a22dcb0f445f129e565d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::reference",
+      "kind": "struct_field",
+      "signatureSha256": "244c972373d0f03294113ccad8ca191b8a0516dd4a76ba2bacc7654dde5c6283",
+      "pythonTarget": "yosoi.surface.NetworkPayload.reference",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "43c7f2c679d7cc5bfa58e274267a3bcb15dee505332752adf930206aba8b1265"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload::value",
+      "kind": "struct_field",
+      "signatureSha256": "861a617fd3226bf7057be769c7ac64ded00c79ddba4bea138639603e85150948",
+      "pythonTarget": "yosoi.surface.NetworkPayload.value",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f4b2f7f8fc2b59aa5c377e7df544c92a2b4b22aeca265e2fde83f3872d331d34"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::File",
+      "kind": "variant",
+      "signatureSha256": "50009ce1da4d15e1c4a04024df691eed5f0d598e2c4c67092f205366d0adf99e",
+      "pythonTarget": "yosoi.surface.NetworkPayloadKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "File serializes as file",
+          "python": "Literal file"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f2670fc45bb75b52211c5bfa5f3514bdfeade15508b3d49af320b63fd22158bf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::Html",
+      "kind": "variant",
+      "signatureSha256": "9c0fca3b23381bf8de7f96f037d0f48f6b87274755fc1790bdae7b6330dec1be",
+      "pythonTarget": "yosoi.surface.NetworkPayloadKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Html serializes as html",
+          "python": "Literal html"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f2670fc45bb75b52211c5bfa5f3514bdfeade15508b3d49af320b63fd22158bf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::Json",
+      "kind": "variant",
+      "signatureSha256": "89364b2a930cd2ff5bff91ed50be2b4c7e5aa966ba455d935c0653a3cd8e05a8",
+      "pythonTarget": "yosoi.surface.NetworkPayloadKind",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Json serializes as json",
+          "python": "Literal json"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f2670fc45bb75b52211c5bfa5f3514bdfeade15508b3d49af320b63fd22158bf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::clone",
+      "kind": "function",
+      "signatureSha256": "33f8eaab4bd76c05da15a049c333b54fbd5af1eae0b77921ca6f0af3062ad968",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::eq",
+      "kind": "function",
+      "signatureSha256": "16db85901d18bbc88943f0cbfcd3b6c9da171df9060b44e3d48a3774ad0cccb4",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadKind",
+      "kind": "enum",
+      "signatureSha256": "9833b7360ec580e5b543dba90a0aaa375e5e2ff6198b4bea5879b742316bed9b",
+      "pythonTarget": "yosoi.surface.NetworkPayloadKind",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f2670fc45bb75b52211c5bfa5f3514bdfeade15508b3d49af320b63fd22158bf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::body_capture_at_unix_us",
+      "kind": "struct_field",
+      "signatureSha256": "860eab819a01cd077f85ea2831184843bd88dcaa5cd3addc9b2c17562f1e8ce7",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.body_capture_at_unix_us",
+      "defaults": [
+        {
+          "id": "optional-default:body_capture_at_unix_us",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ff177a061a821156fdb069bcdb242be7440a2771ec29c8f4f8d575f2d8e1f3bf"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::browser_effective_charset",
+      "kind": "struct_field",
+      "signatureSha256": "ea2471f02be1f5122780d2cac1e302571f45fa8c40a059350d3a7091b33c2375",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.browser_effective_charset",
+      "defaults": [
+        {
+          "id": "optional-default:browser_effective_charset",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "31c10737a15d2d38049288c4d98666f1ebb3e0164341486cdaa6f2c2d809ce96"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::browser_effective_mime",
+      "kind": "struct_field",
+      "signatureSha256": "d2678b1e83d9214a774048b4fa2afd5a7e6f7c3e39cc8d878211e64afd4c0310",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.browser_effective_mime",
+      "defaults": [
+        {
+          "id": "optional-default:browser_effective_mime",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ae6a5d7cc7c39c7366d84369df0cb1ef87d70abeca79e5e88cf2d4fa9f8570af"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::byte_provenance",
+      "kind": "struct_field",
+      "signatureSha256": "8543294f4c7c859dec47e78f3b65d1ae6c30c57368fd39c641ebf731e8847db6",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.byte_provenance",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f3417328ee106ae2d4fdd78a758c110af7c4b89a2f600383c28331b2dcaaefee"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::clone",
+      "kind": "function",
+      "signatureSha256": "477fb34e9c7f06be223de514014bfb7b1be31ba758fea102689fde14fa464087",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::content_encoding",
+      "kind": "struct_field",
+      "signatureSha256": "9a803606485694aa72f403e0655d4885f1455c9c769de9abf8d24d56d4765014",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.content_encoding",
+      "defaults": [
+        {
+          "id": "optional-default:content_encoding",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "80e512fa16d11d8778973137d880ad2a550a1753145287a039ea8f68605205a7"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::declared_media_type",
+      "kind": "struct_field",
+      "signatureSha256": "3ec3f9d8091ef246ec057c8f76e3eeeb10bb6b008c8302949e7eeb6c2dbb7c3d",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.declared_media_type",
+      "defaults": [
+        {
+          "id": "optional-default:declared_media_type",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ef09012bb9850e236f7f284304efc2da46f328b7fa3050409f5e6d2f55492a16"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::detected_media_type",
+      "kind": "struct_field",
+      "signatureSha256": "5ab982a109297efeb2a37fc39a1617a1fd1fd30931b5ae9d8aea1613c720fa11",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.detected_media_type",
+      "defaults": [
+        {
+          "id": "optional-default:detected_media_type",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e76ad288cd5251c084d8b94624b7513389f6e829e0c837be721b1b7718894a4a"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::document_id",
+      "kind": "struct_field",
+      "signatureSha256": "dd51dd8fead9379ae4140f627f269e200b57950727ac6368a0c9d7508647df03",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.document_id",
+      "defaults": [
+        {
+          "id": "optional-default:document_id",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "fbe5fe50ca40d753fa6da13928cd237fbb67ff905bde19c54217cfeae99ddb51"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::document_kind",
+      "kind": "struct_field",
+      "signatureSha256": "1c3dc4087f978bf8d019958ff24a70eb4b3544ab176a3aa9ec7a5b609133f075",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.document_kind",
+      "defaults": [
+        {
+          "id": "optional-default:document_kind",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "ce3558d2603eda979ee44dfec18b7b33fe7b1c80107335284da5d664694574ba"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::eq",
+      "kind": "function",
+      "signatureSha256": "f9798a1eaec9296ae4809962c5998f0827dad257a71c22f1e4dab767a9054e1c",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::hop",
+      "kind": "struct_field",
+      "signatureSha256": "80e0b6814fd9b5f2f04734eae25e677fe96ff6d049f858a996bbe27a7d84a2a5",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.hop",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "4df6eb2f4c4d98f31aeeee4b8cc54ee0d8cf16270f21df1aac66d19883c2ef4e"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::id",
+      "kind": "struct_field",
+      "signatureSha256": "6a9e1e13b373f57f68a0bab57fa4bd0984bdbc13b98572aea489f55e6b326f78",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c4d90e40898d06659bae91e22c5e50f0cc186535e57a897aadefc2256f5ea899"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::projection_basis",
+      "kind": "struct_field",
+      "signatureSha256": "6753a92343e84d93962539b9bce3085651c13e54f11355d4a35731e3d99e47c6",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.projection_basis",
+      "defaults": [
+        {
+          "id": "optional-default:projection_basis",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "beceef0ccddeb1caaed835b8e49a4e668590a4b8f7e68746339e3a0ed1ebf061"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::provider_base64_encoded",
+      "kind": "struct_field",
+      "signatureSha256": "82d672ec61e4aaac640d479acf084c532cc735edff0aac4b17ee3017a0bef543",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.provider_base64_encoded",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2f58d4a6c378782e98efadfdfc4762dd8eefbc56a68589f1c26bc358725d7795"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::provider_reported_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "52d274697949d20df476a195a3861bd611f96f22287e889bf447ad62b77a2eef",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.provider_reported_body_bytes",
+      "defaults": [
+        {
+          "id": "optional-default:provider_reported_body_bytes",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "bf0d8bb69f66e4088d4f1c0cd0ead67fe1362c9b0c78eabd87d93f14f7c5483d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::reason",
+      "kind": "struct_field",
+      "signatureSha256": "5be66d7371901e2f36d5357bcc4ba19680c068c954af85c9e7f77fb6ce106827",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.reason",
+      "defaults": [
+        {
+          "id": "optional-default:reason",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "89214ab8fa09856c5dbd8774273fdfee6660ad71a0943d0ec006b040966d412f"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::request_id",
+      "kind": "struct_field",
+      "signatureSha256": "1e49cca2169fe4d90517cca8b5543ffcaf78cc9d9a2f78a1ca774c2cdc22e3c5",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.request_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "096bc9838c0ef39f75dbdd639fdf47bb8823db622a660d972d9dee924daec097"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::response_sequence",
+      "kind": "struct_field",
+      "signatureSha256": "ef7ea92f9a67204169745393cba78734f09673c50fc51b0d910c5b63d1fd885e",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.response_sequence",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9b8c261ac23fc6196f2ea1d334928b65120e6a4baba07b280f6ff3d80c79da73"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::response_window_id",
+      "kind": "struct_field",
+      "signatureSha256": "a6da365f2b68cee840a30e492d47786010df95d58c660157b816a4cf0e9f2c40",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.response_window_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8393ad6796aa4e33cc6eb76d2574b5d368e8859a7676e06629bc67497f6b352d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::retained_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "608522ffe830726bcffc0c26b807d740561c69055c41ee9205ff92d86d536f8c",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.retained_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "a00f1b81e9f401a857fb84b1f3082af19a954308d287b3cb7fc732efa6cdf958"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::sha256",
+      "kind": "struct_field",
+      "signatureSha256": "f862fd9c3e55099b058020b77ea5f843cb5e12ce0dee9aa4e34271d585691dba",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.sha256",
+      "defaults": [
+        {
+          "id": "optional-default:sha256",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2e4bc3cde7443bea1c8a0b6f1ddba0ae5d27f8099a09384105ae1b44112c0633"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::state",
+      "kind": "struct_field",
+      "signatureSha256": "f7d1d06f59f36991b9836323976fd86ee7b1a4693af9a1cdc1e54f3c1906825d",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.state",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b520995eb7f517a3aa446217cd3ed13334190e7eca515854a46d94049d8d75ea"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef::text_utf8_normalized",
+      "kind": "struct_field",
+      "signatureSha256": "25c4b6669a97980481cb544309ec7da97dabe54c924eeaea226bf166cd74c830",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef.text_utf8_normalized",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "3dca1242f13882fc142e5686c4f0edcb8b260e953d664fc545c0b34fe8818c45"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadRef",
+      "kind": "struct",
+      "signatureSha256": "0bd2bac2dbd259f6bd1ecf96cce39e519683c20f6d74554cfcf88d57d6cb81d6",
+      "pythonTarget": "yosoi.surface.NetworkPayloadRef",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "1d23ac2158f36cafc1ad4d03b4d9f4e79eeb24e103732313fd863357a1f9a5b0"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::NotRequested",
+      "kind": "variant",
+      "signatureSha256": "11a4bdbffeeb5fc51955918444be4824548d19428efcdb96557101d112fc6ed8",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "NotRequested serializes as not_requested",
+          "python": "Literal not_requested"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::Retained",
+      "kind": "variant",
+      "signatureSha256": "2a64df82cdaad5511bea0259973c8e12cdf3e6a99a62974f7ff46cb948a1f539",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Retained serializes as retained",
+          "python": "Literal retained"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::Truncated",
+      "kind": "variant",
+      "signatureSha256": "d9d9fcf3bd8af3458a4bceab8b07cf7739b980fd0f8418ea73f7738ec9127abe",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Truncated serializes as truncated",
+          "python": "Literal truncated"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::Unavailable",
+      "kind": "variant",
+      "signatureSha256": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Unavailable serializes as unavailable",
+          "python": "Literal unavailable"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::Unsupported",
+      "kind": "variant",
+      "signatureSha256": "54324658e2eba91c826cb01a802414559c8b8b713b28b4df68cd5075611cf1b5",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "Unsupported serializes as unsupported",
+          "python": "Literal unsupported"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::clone",
+      "kind": "function",
+      "signatureSha256": "7ee83f1d62b642ec8c91ba3f3060fadf5d60d91e8ca889ea2fcd5277b650b4b8",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::eq",
+      "kind": "function",
+      "signatureSha256": "ab6dff03ead96db7211bbfb749665985e6790bc0b501e9e47368da40903f2ce1",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadState",
+      "kind": "enum",
+      "signatureSha256": "f7e9312ec637b6bbe9ecaa1637bb639d791aba9a651cfeb6cb43a1d317d25680",
+      "pythonTarget": "yosoi.surface.NetworkPayloadState",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "372708513c393d3caeec346ac1d5583b50b31d4283600fb7e9f8ee2319209153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::Document",
+      "kind": "variant",
+      "signatureSha256": "e649003fb614ece430244d8692558b48350bacd4c7389b8352d5215674450503",
+      "pythonTarget": "yosoi.Document",
+      "semanticEquivalent": "Document bytes remain a Document; file bytes retain the native FileDocument classification. The Python file branch is identified by its exact response reference document_kind=file.",
+      "rationale": "Rust NetworkPayloadValue returns the existing typed Python body. File bodies retain their concrete class and metadata in the owning NetworkPayload value field.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "concrete-model",
+        "schemaTarget": "yosoi.Document",
+        "discriminator": "python_class",
+        "tag": "Document",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "$",
+            "conversion": "Retain the complete native Document or FileDocument body; response provenance remains in NetworkPayload.reference."
+          }
+        ],
+        "rustType": "yosoi::Document",
+        "behaviorEvidence": [
+          {
+            "path": "python/tests/test_surface_network.py",
+            "test": "test_offline_network_payload_accepts_exact_owned_reference"
+          },
+          {
+            "path": "crates/yosoi/tests/surface_network.rs",
+            "test": "cli_restores_network_payloads_from_portable_outcomes_without_a_browser"
+          }
+        ]
+      },
+      "pythonTargetSha256": "4b31627d07c55700179ea391d9001f99b52e5d9c5ff1ae003c573d0f99f13b39"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::File",
+      "kind": "variant",
+      "signatureSha256": "89e2c20e40cbd5ad00f755eda3ba0042b0eaf49010fab200419a1e2cda8d0ce3",
+      "pythonTarget": "yosoi.surface.NetworkPayload",
+      "semanticEquivalent": "Document bytes remain a Document; file bytes retain the native FileDocument classification. The Python file branch is identified by its exact response reference document_kind=file.",
+      "rationale": "Rust NetworkPayloadValue returns the existing typed Python body. File bodies retain their concrete class and metadata in the owning NetworkPayload value field.",
+      "mappingDirection": "output",
+      "outputBinding": {
+        "kind": "outcome-view",
+        "schemaTarget": "yosoi.surface.NetworkPayload",
+        "discriminator": "reference.document_kind",
+        "tag": "file",
+        "pythonFields": [
+          {
+            "rustArgument": "0",
+            "pythonFieldPath": "value",
+            "conversion": "Retain the complete native Document or FileDocument body; response provenance remains in NetworkPayload.reference."
+          }
+        ]
+      },
+      "pythonTargetSha256": "be6eebcb525a0118fcb2cddbec5180a168cad89a78e2599c61b144a77ac1d9ab"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::bytes",
+      "kind": "function",
+      "signatureSha256": "c11ee9b4cdb14075beb37d12d530b7ca2437964e54d662e775a9baf8a6869fa9",
+      "pythonTarget": "yosoi.surface.network_payload_bytes",
+      "receiverMapping": {
+        "rustArgument": "self",
+        "pythonArgument": "value",
+        "conversion": "The typed Document/FileDocument value supplies the Rust enum payload receiver."
+      },
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c462f78eddc41f04c483cd2d964542bd4a11cf87acd65db144a2e9aa829b2e29"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::clone",
+      "kind": "function",
+      "signatureSha256": "283dd70e41c7ae8c8766c690d17fd7da796d5922f7db6ce15f0fd8bcf60d793d",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::eq",
+      "kind": "function",
+      "signatureSha256": "c42939582c21330a8e6d849e08953f15b74385503c93ff32e0d2e09ab316a20f",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayloadValue",
+      "kind": "enum",
+      "signatureSha256": "6f2939e30518f105bcbec3c5ecf65eec2004f02c8b9c2192f8dc9d8f0da8bc87",
+      "pythonTarget": "yosoi.surface.NetworkPayloadValue",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "5d609e24c8a902ef1a2f6f299c538167841c870dda58263a6057329e8fd6f0f6"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkPayload",
+      "kind": "struct",
+      "signatureSha256": "49884cd84134541acae7b9b1919c053ad6866d1b7eb4e2086a7dcb490ecf24a0",
+      "pythonTarget": "yosoi.surface.NetworkPayload",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "be6eebcb525a0118fcb2cddbec5180a168cad89a78e2599c61b144a77ac1d9ab"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::OpaqueBytes",
+      "kind": "variant",
+      "signatureSha256": "05a170567cdc076bc7ff27182fea86ca228cd0629a8285c0f9e6b3f713f477b3",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "OpaqueBytes serializes as opaque_bytes",
+          "python": "Literal opaque_bytes"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::RequestsDeclared",
+      "kind": "variant",
+      "signatureSha256": "656603ec081edb7a903f0a6b4c567114669ff31282e7421b387833af8783476b",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "RequestsDeclared serializes as requests_declared",
+          "python": "Literal requests_declared"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::RequestsSniffed",
+      "kind": "variant",
+      "signatureSha256": "659426d753c21e381142acc9d1ecb2755050a68eb0dc575cd28a86c74cb462df",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "RequestsSniffed serializes as requests_sniffed",
+          "python": "Literal requests_sniffed"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::RequestsStructuredSuffix",
+      "kind": "variant",
+      "signatureSha256": "26ac94e24810a50c45c041da1e7222d0fa73425acae326f9684b5fcc9b90031b",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "RequestsStructuredSuffix serializes as requests_structured_suffix",
+          "python": "Literal requests_structured_suffix"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::TypedFileMagic",
+      "kind": "variant",
+      "signatureSha256": "323433ab850db6ae57a64d06693ad6bcc07be28da5dfff0365c1532e872b9462",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "TypedFileMagic serializes as typed_file_magic",
+          "python": "Literal typed_file_magic"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::clone",
+      "kind": "function",
+      "signatureSha256": "f4bbeb91d9896afa65415ed6d9129d0e596e616f8346f78c1b41f07f4b6bd371",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::eq",
+      "kind": "function",
+      "signatureSha256": "95d3a3ad8f7f156aedf34b06b5ab3969cdb1befd434432ba95aeabcfcd3ed5e4",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProjectionBasis",
+      "kind": "enum",
+      "signatureSha256": "eae8dff29342ff993e70482e86ad0185e76eeb7852b680c1185777392a36997a",
+      "pythonTarget": "yosoi.surface.NetworkProjectionBasis",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "e94d00ab5e59f7176f19b9d9565480bf1a5099d6dc54dd34057261b4ec977770"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::CdpMonotonic",
+      "kind": "variant",
+      "signatureSha256": "0d8c844c6e632ba734c0a02be475a79cd0517cda47134060fabdec2f14750149",
+      "pythonTarget": "yosoi.surface.NetworkProviderClock",
+      "defaults": [
+        {
+          "id": "variant-tag:value",
+          "rust": "CdpMonotonic serializes as cdp_monotonic",
+          "python": "Literal cdp_monotonic"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b7bed9c02c3becc9b5dcefcdd458897208cdbdd72748bb25a353698a56d93c77"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::clone",
+      "kind": "function",
+      "signatureSha256": "f67e218dcd041c415afd464f9865327fc6bad29a683b0ec04724167ad1a76a45",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::eq",
+      "kind": "function",
+      "signatureSha256": "73cb9d0651d2ce4c72a58c89df766bb7566b5b6449d978efd14b72117620f1ae",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkProviderClock",
+      "kind": "enum",
+      "signatureSha256": "770fe007e28fbc410dc579b587af56c13c0dc1a7fc53d157a25f8234d59962a6",
+      "pythonTarget": "yosoi.surface.NetworkProviderClock",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b7bed9c02c3becc9b5dcefcdd458897208cdbdd72748bb25a353698a56d93c77"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::allowed_methods",
+      "kind": "struct_field",
+      "signatureSha256": "c4544ef37c302aeb541771365c167f832042f964546d5775c713ecc318982603",
+      "pythonTarget": "yosoi.surface.NetworkRetention.allowed_methods",
+      "cardinality": [
+        {
+          "id": "sequence:allowed_methods",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8d7ea2b32899eeabfba9c7f91513433a7b4570366a140a0ec2418dcab9f8d48c"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::allowed_origins",
+      "kind": "struct_field",
+      "signatureSha256": "e4b10d96c52b3ec5ed7abfd9e3baad165f8a5cacab9bccd576a1a712cf18bce6",
+      "pythonTarget": "yosoi.surface.NetworkRetention.allowed_origins",
+      "cardinality": [
+        {
+          "id": "sequence:allowed_origins",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8e9ccf35d6f45333f3e3b2aadf6cde4d67e03ddca11c5a8bd54e3b1817804640"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::clone",
+      "kind": "function",
+      "signatureSha256": "5ca34b5acccbc62adec4766424914e87471bc8e9cc986a243af00d7c87aaeec3",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::eq",
+      "kind": "function",
+      "signatureSha256": "1c9069b967cecafae3eedb4ed9c6c5f6bf52083d9fc817a51b8524307dff3b4b",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "5c940c68b9a716010eba8c98bb4e316381d1765063373ffdb70016018cc5b21f",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_body_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "635402c0c844699e73f08335d751477501e0dd45b1847d4f331f2560dc21a8b5"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_buffered_events",
+      "kind": "struct_field",
+      "signatureSha256": "aab566ddf0de0a252087e78dafab8a4f56f74407d1a8719ef68bfc9548038038",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_buffered_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2e82412015f02eb78d776757c9b0a1f7caaff843bd584a74ba1d2f5c85263093"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_duration_ms",
+      "kind": "struct_field",
+      "signatureSha256": "c29ca21b1ee0ac91746bf4a688993e26a062396df790cddee37dc314b69845d4",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_duration_ms",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "aef555b98b19d8c68b9ee592e9aeae31cdb30f971898b72c8cb55cf24ac66a5d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_event_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "0479f7ef4b8f30e6edebbc104e612223efd63baedc56ef9d41a5605dc3cb2dc3",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_event_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "6f2d9b0105d8ca72930f937bfb830137e8c5d5c55d9d6a922b72d0b9e194af03"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_events",
+      "kind": "struct_field",
+      "signatureSha256": "4d9a50ea70be7e2da36e4fb8dbeed9686823e5160591f498f888ae55a60066a0",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9c025eaa5e81cd6b9653d859dceef875f877a47058466c695966db565fcc6b0d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_response_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "e774645214ef86789b806745118b95a144b1607b177d225af107b3bf7ea7baac",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_response_bodies",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8f6611ae30089b7ac290dbe212f76ad452bce0db7cb9b07375385692f5c504a2"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_total_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "e14f1f3fc65d6c3a64e92877e4786629ed499464147c9503aeaa5ab5587e819f",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_total_body_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "788d22c34987acff822bcbf6c39c0012377ae6749cbc44bcac81e1c51e7765fa"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::max_windows",
+      "kind": "struct_field",
+      "signatureSha256": "4ff0ee6cfe331f24b3464fbcd55142877e88838370b670231272207970a9dbc6",
+      "pythonTarget": "yosoi.surface.NetworkRetention.max_windows",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "acd7ead6d2262350d97ffe9669087cfbbb60d9b04983e0a80e76458134a14f29"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::provider_resource_buffer_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "42b8598c8d1fbb03c3064ecff0279d4381325492a762f935891ee25cce41b348",
+      "pythonTarget": "yosoi.surface.NetworkRetention.provider_resource_buffer_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "b0aed920b01876e509c3bf88d23119e5085aa015925d66e01a52defb638a0b92"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::provider_total_buffer_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "afc2aefe4fe6eacf1a8d583853a18785270506447b7503670a9d2cb8d2a64dea",
+      "pythonTarget": "yosoi.surface.NetworkRetention.provider_total_buffer_bytes",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "16272f1a738f4c1b491b056a70a0f4ac15590b7a5e7d42134da7b5aa7a0b7ce6"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::retain_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "54d6a005a9de3020da06b392ad26a2c49cc21af6cedfc292eb61a8f71b0070a4",
+      "pythonTarget": "yosoi.surface.NetworkRetention.retain_bodies",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "fc2968b85df0aaaf2ac00118528fca64483c971b246832970628ea0ab22a7762"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::retain_url_path",
+      "kind": "struct_field",
+      "signatureSha256": "9ff4298cae00e2aaa749693f3fa5eb409d347dc05b0a4b29b423e905f06cfc15",
+      "pythonTarget": "yosoi.surface.NetworkRetention.retain_url_path",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "66e7394e701ff233e8f3e8462505c2039de06111dd073751d1a727737704c124"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::retain_url_query",
+      "kind": "struct_field",
+      "signatureSha256": "cd99905b89f645191078024b5514e9cb1cceeb70e7f92716da605a88326460b8",
+      "pythonTarget": "yosoi.surface.NetworkRetention.retain_url_query",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "270811cbd0740792a6ead58826268411f9abe0f5b6786479748af6fecd132a67"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::retained_header_names",
+      "kind": "struct_field",
+      "signatureSha256": "722ff17c30e67f0122a81692e4cc9968e16caa36329881b95fb1dd98443365fb",
+      "pythonTarget": "yosoi.surface.NetworkRetention.retained_header_names",
+      "cardinality": [
+        {
+          "id": "sequence:retained_header_names",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "d624db358842e47f172ba2dc0169d1ced13baa2beb63006524d6f668a964e93d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::session_max_response_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "92f96403b6480c01e961ac0de62c5b89923531ce13d9e854d8a99acf1a3ecbe3",
+      "pythonTarget": "yosoi.surface.NetworkRetention.session_max_response_bodies",
+      "defaults": [
+        {
+          "id": "optional-default:session_max_response_bodies",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "5b63a9e46cbecd07ec608bf78d6e50ae550c4905a0a0a8ce16812c5a2137fc35"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention::session_max_total_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "b8285093ab948a55459683d2beb4fb388b395520c7a0f902fd0681818d9fdec6",
+      "pythonTarget": "yosoi.surface.NetworkRetention.session_max_total_body_bytes",
+      "defaults": [
+        {
+          "id": "optional-default:session_max_total_body_bytes",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2eaedd1a60b9abadd1c7f250e37dc0540f03c3738b11bef9c19927c9ac909ed9"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkRetention",
+      "kind": "struct",
+      "signatureSha256": "62d68f2f4420070ee99a5e2168cc193f88fee30a62d51a665aca8fb4fe3310ef",
+      "pythonTarget": "yosoi.surface.NetworkRetention",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2675ed43f997b885cdd1394ab21fc3d2aa51ba8257716e475c90b6db7a94a25c"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::active",
+      "kind": "struct_field",
+      "signatureSha256": "dc28bf9a7c5c5919282607dd98857d5f59b3b2854f70e6010a6524cea3878861",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.active",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "cb70216f5461516412475dfec50a0f62d5503b78d60fd3f5d7c53fb8ae0b66a2"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::body_retention",
+      "kind": "struct_field",
+      "signatureSha256": "693af107f9d0e05564b9260cee549b93c02cbd5b6b547af7e0fed20fd7f7aaad",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.body_retention",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "6d2778fddb07b9f01f0c469635e32e445f78fbc0fdf7319a4793d7b6ce320d1e"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::clone",
+      "kind": "function",
+      "signatureSha256": "f0bf8e4d0c5f82513ed2ca6b56e47c82510a05553c48c41e290019a7196f11c1",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::eq",
+      "kind": "function",
+      "signatureSha256": "cdaf775838ffef4d40e4320785b4c800c58cb650a4fe15d2976a1e865b699c42",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::max_duration_ms",
+      "kind": "struct_field",
+      "signatureSha256": "c29ca21b1ee0ac91746bf4a688993e26a062396df790cddee37dc314b69845d4",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.max_duration_ms",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "70a863d37bfaaf7f558eace8d51a965329cb8684f9022dfb7715f65606da7776"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::max_events",
+      "kind": "struct_field",
+      "signatureSha256": "4d9a50ea70be7e2da36e4fb8dbeed9686823e5160591f498f888ae55a60066a0",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.max_events",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8dfdf22435167ff5a3a52941b14220c2997aea5705edcac73d8edc662a71c3ea"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::provider",
+      "kind": "struct_field",
+      "signatureSha256": "e675f20056981e415719b44d819817834b323c56c2c57c59ed42d9a65d771bbb",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.provider",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c7056e25d582c2d90ffa0a9a6b0eb555de801ee90d6b320ff4e15233815063b5"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::session_max_response_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "92f96403b6480c01e961ac0de62c5b89923531ce13d9e854d8a99acf1a3ecbe3",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.session_max_response_bodies",
+      "defaults": [
+        {
+          "id": "optional-default:session_max_response_bodies",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "0349eebd02d31979e8d95fd98eca53eccc806b5c661b3262e9e9809663384225"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::session_max_total_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "b8285093ab948a55459683d2beb4fb388b395520c7a0f902fd0681818d9fdec6",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.session_max_total_body_bytes",
+      "defaults": [
+        {
+          "id": "optional-default:session_max_total_body_bytes",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "5ba1d7e0a5f7bbb977566f32477cbb34fd639235d5e3dd4926708a81a04082f7"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::session_retained_body_bytes",
+      "kind": "struct_field",
+      "signatureSha256": "855b59c2d11d18b07d7a0b30412828fc3a4d89f4b8bab743ccb4bd1797583006",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.session_retained_body_bytes",
+      "defaults": [
+        {
+          "id": "optional-default:session_retained_body_bytes",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "58d99341e14a0364686f322fa62a822961894e394790120aad3f8b4bfd62af8d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::session_retained_response_bodies",
+      "kind": "struct_field",
+      "signatureSha256": "c62affb950bc431665103acee5c4cf1abbef3440d9374e1d3b882f5e0b87d682",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.session_retained_response_bodies",
+      "defaults": [
+        {
+          "id": "optional-default:session_retained_response_bodies",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c2cb85ec68c5fe06ad4c039dbe9ea67463708b13219f05b5ec12420b5b457054"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription::subscription_id",
+      "kind": "struct_field",
+      "signatureSha256": "43ea76cdd46508075c1c6506a8ba0a2c369cd124619b4425f09c912189ecca0b",
+      "pythonTarget": "yosoi.surface.NetworkSubscription.subscription_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2fc720b46b96637b0b1ac1ab4546a058e8115b6ff29dde0aeafd220800e5e9c7"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkSubscription",
+      "kind": "struct",
+      "signatureSha256": "50b0cccbc99ef52b10810dde7579a57f5c1a81c3a9d3a6158863d9907dab64c6",
+      "pythonTarget": "yosoi.surface.NetworkSubscription",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "1b3e25e6b303de8caf3463ddaa67001c661c9889f327586303a61cb743c3a9fd"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::clone",
+      "kind": "function",
+      "signatureSha256": "962a52fa7fb765fca811a79b385bb3676ef705a44a59cc0c36371db315a9bc45",
+      "trait": "Clone",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::coverage",
+      "kind": "struct_field",
+      "signatureSha256": "867d390ec00361a7bf795b84135cbcd16994cfd7b61cebcce6fbd1f25da6ee03",
+      "pythonTarget": "yosoi.surface.NetworkWindow.coverage",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "570f1ddfef48fd09b5a5f7d3c14c3b0a0bd906fe9a66e1bd8361bfe79108baaa"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::deserialize",
+      "kind": "function",
+      "signatureSha256": "f54522ef2b22352cb5cfeb6558203c3acc5de8e8a051318fe649fa63c74c9982",
+      "trait": "Deserialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::ended_at_unix_us",
+      "kind": "struct_field",
+      "signatureSha256": "2964e9e83d7e8b2becd7da83550c9d7c2425171babfb51f9028590f7f3d874e9",
+      "pythonTarget": "yosoi.surface.NetworkWindow.ended_at_unix_us",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "2b735ff3c1c6529a2cd49d61c8a6ba77789d9a9c1947e2b049d5d1f1bd82d153"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::eq",
+      "kind": "function",
+      "signatureSha256": "b3f6430126f12df8d9fb66434aeddb89896d834e696d9d02e618062815b2832a",
+      "trait": "PartialEq",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::events",
+      "kind": "struct_field",
+      "signatureSha256": "d15bc94ecf340afcb40cb49794524e726e30776395f7a512426961a41af155af",
+      "pythonTarget": "yosoi.surface.NetworkWindow.events",
+      "cardinality": [
+        {
+          "id": "sequence:events",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "46cf0444a4e2eb9ef06383797edca4e4e5802d6290a4bc18f6279d3dc9afc277"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::first_sequence",
+      "kind": "struct_field",
+      "signatureSha256": "dac7d77fbd56a2ade8133173ba1ddaf89d8fbf75efdd8207e29c0e17e5d33eae",
+      "pythonTarget": "yosoi.surface.NetworkWindow.first_sequence",
+      "defaults": [
+        {
+          "id": "optional-default:first_sequence",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "114497c4b634f0009bda2a2919eb35544b8e437d211b48b1fa3479337e48f000"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::fmt",
+      "kind": "function",
+      "signatureSha256": "6d390f1916fcc1b0a75ed2d6e1fc2fdc8073bd4655c35eec819f4455e606476e",
+      "trait": "Debug",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::from_document",
+      "kind": "function",
+      "signatureSha256": "c0755c22c112e64ed2b2665121bfff1bea653b9a1e8396642283ba721dca36b6",
+      "pythonTarget": "yosoi.surface.NetworkWindow.from_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "document",
+          "pythonArgument": "document",
+          "conversion": "Python Document converts to the Rust parameter type"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "136245a5da0fc8cda20c8e89819041bee89da127b0896c80223c22c279f31db1"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::gaps",
+      "kind": "struct_field",
+      "signatureSha256": "a23633352132f86bbc0fafc197af5368b45a2f25f098a03b3ddc38561a33e401",
+      "pythonTarget": "yosoi.surface.NetworkWindow.gaps",
+      "cardinality": [
+        {
+          "id": "sequence:gaps",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c01d204d832ba3485734e6872dd025547daccde52f7c0292c8d54232df042908"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::in_flight_at_start",
+      "kind": "struct_field",
+      "signatureSha256": "a62f391354f4b6f830423734a3c038009f591762489d0a7ad4afcca16673a901",
+      "pythonTarget": "yosoi.surface.NetworkWindow.in_flight_at_start",
+      "cardinality": [
+        {
+          "id": "sequence:in_flight_at_start",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "f6ca9ea6e7de4662209e0e74a142a38da9ecd95c69a888426064c2aff4bcd162"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::in_flight",
+      "kind": "struct_field",
+      "signatureSha256": "4890f1a27d5bec15e389bd99a97371db15df660bfcf3d55a1c96b5fe0f36f8dc",
+      "pythonTarget": "yosoi.surface.NetworkWindow.in_flight",
+      "cardinality": [
+        {
+          "id": "sequence:in_flight",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "376a9c16a40ea37c74e550236eca4be043a8dcfc094fcd92164c783a429a3554"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::last_sequence",
+      "kind": "struct_field",
+      "signatureSha256": "983f16500dbfcc228ba492c54db3aee70f272b03135012a7b8a8cc9a831ab5cd",
+      "pythonTarget": "yosoi.surface.NetworkWindow.last_sequence",
+      "defaults": [
+        {
+          "id": "optional-default:last_sequence",
+          "rust": "optional value; no constructor default",
+          "python": "None default"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "6339646e2f0b06bc67ee695d90adaabeec240356da16731c9a3bf1d3d162ddfe"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::payloads",
+      "kind": "struct_field",
+      "signatureSha256": "119d39468e33a0ab0ca192aaf76171b287bea7a1806693e743218283c53ff1ce",
+      "pythonTarget": "yosoi.surface.NetworkWindow.payloads",
+      "cardinality": [
+        {
+          "id": "sequence:payloads",
+          "rust": "ordered sequence",
+          "python": "ordered tuple/list"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "c7cd9b06fb079b3af67156bd96db211f5002cc059d1690e731a93209a925ce48"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::retention",
+      "kind": "struct_field",
+      "signatureSha256": "d6ca9240b9cf86c9e7fa073c922a6452aa7e870dcd5ad9a691376c6a5bfe147b",
+      "pythonTarget": "yosoi.surface.NetworkWindow.retention",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "3044c0a0dbd74b6140638589bc9fd4588aad44489e572ea1053137d4d8c67982"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::schema_version",
+      "kind": "struct_field",
+      "signatureSha256": "c3a3d1c62b4a8b7ed1ef5f94c877049d884ab29955ba250a95a01af22207f635",
+      "pythonTarget": "yosoi.surface.NetworkWindow.schema_version",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "76dd049216e2139fd40947c07b3d76a39de7102fcf9617fda372c2a1de9819f2"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::schema",
+      "kind": "struct_field",
+      "signatureSha256": "84f68e36242a25f6775712fff6c70fce0782aabd15f1273c8869c47d68876ba6",
+      "pythonTarget": "yosoi.surface.NetworkWindow.schema_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "1f156deb52a15cea285bde02137e10ffc36c9dfbdb96278d8873c45b31495f57"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::serialize",
+      "kind": "function",
+      "signatureSha256": "0c289c4c8a7a384c76d7c1523e739102c2c3e0aafd3453237ceda3b0b7922a7e",
+      "trait": "Serialize",
+      "mechanic": true
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::session_id",
+      "kind": "struct_field",
+      "signatureSha256": "a5e014366337a0b1dd962fba02cd7fc41aa1263b607490b016679ce792f1779f",
+      "pythonTarget": "yosoi.surface.NetworkWindow.session_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9e5404d9654eaa3b0db19a1019f6eda521d1705459b3b830d41ef47c78fea596"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::started_at_unix_us",
+      "kind": "struct_field",
+      "signatureSha256": "368a8fbce2e1b4739e869492c06d91e2bb13bb3986044e7d0e91d540dbc8c922",
+      "pythonTarget": "yosoi.surface.NetworkWindow.started_at_unix_us",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "7b1dab723abc0b005849217dc96521bb84cce9f14e62f3c78a5457cd3606339d"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::subscription_id",
+      "kind": "struct_field",
+      "signatureSha256": "43ea76cdd46508075c1c6506a8ba0a2c369cd124619b4425f09c912189ecca0b",
+      "pythonTarget": "yosoi.surface.NetworkWindow.subscription_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "8da482928965082d04a99091510e5fd39d46a75fcd1f05d7f3ffa74b942b1178"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::tab_id",
+      "kind": "struct_field",
+      "signatureSha256": "dba75309fae5d306f9e64c8afe3885ce9904a7b413135d4d18d08075ef597c5b",
+      "pythonTarget": "yosoi.surface.NetworkWindow.tab_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "76ced5b2485735f91ff63324920afe59ab5673cdf99cee4fa092508148f66538"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::to_document",
+      "kind": "function",
+      "signatureSha256": "42fe1b0430d00a57fed5d6a85b2837454c6597a69874ad29fc2b582b6d1c168b",
+      "pythonTarget": "yosoi.surface.NetworkWindow.to_document",
+      "argumentMappings": [
+        {
+          "rustArgument": "id",
+          "pythonArgument": "id",
+          "conversion": "Rust string-like input maps to Python str"
+        }
+      ],
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "40ac6c87907746ce4686d7b8a1431fc20ac94a6e84f2b901175cf91c4bec2fbd"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::validate",
+      "kind": "function",
+      "signatureSha256": "d60eeb9c5921cb667dad6f236ff5fd0d8ab3612f83bacea3c747a2e627fd7f35",
+      "pythonTarget": "yosoi.surface.NetworkWindow.validate_window",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "1edb7dbb7a8c33123dfd73261535451e1136fe197fe9858ddd1543fdbc881404"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow::window_id",
+      "kind": "struct_field",
+      "signatureSha256": "6b4ade9a797ad2852c13136e00bdc2b87f2a3abac8f49b81a6368485d0576c2a",
+      "pythonTarget": "yosoi.surface.NetworkWindow.window_id",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "9eec248059ae7c0d486be94863096eb0d0b132f4a3e1d2fe223becf08cfc5949"
+    },
+    {
+      "rustPath": "yosoi::surface::NetworkWindow",
+      "kind": "struct",
+      "signatureSha256": "fdd031f732437abf05d393d4f1a7d6b03832a3ec7cf5a3a01343259eaa07e652",
+      "pythonTarget": "yosoi.surface.NetworkWindow",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
+      "pythonTargetSha256": "739c1d1f54c616a2f6d416008bca05b03cb9759cdcf967d3f05aefdc68b0dbae"
     },
     {
       "rustPath": "yosoi::surface::Outcome::clone",
@@ -9564,6 +12250,14 @@
       "pythonTarget": "yosoi.surface",
       "semanticEquivalent": "The Rust surface/model/web/video modules organize the same Python surface facade; module grouping adds no runtime capability.",
       "rationale": "Python delegates this capability to the same Rust Surface implementation.",
+      "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
+    },
+    {
+      "rustPath": "yosoi::surface::network",
+      "kind": "module",
+      "signatureSha256": "59cbe78f851e23053d5bffe34187ef04c7dd529b3520d218f0b8e1766da65e0b",
+      "pythonTarget": "yosoi.surface",
+      "rationale": "Python preserves the same bounded network evidence, typed payload, explicit document policy and native ownership boundary.",
       "pythonTargetSha256": "b2d74ad6fcee1c9025b5268fcd4b8023a8eedb5c2d7a00f1f7f08594abf1f282"
     },
     {

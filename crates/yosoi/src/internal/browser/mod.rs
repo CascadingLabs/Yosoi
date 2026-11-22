@@ -103,9 +103,9 @@ pub use observation::{
 };
 pub use page::{
     AccessibilityChangeKind, Bbox, CompletedResponseCandidate, DownloadCapture, DownloadOutcome,
-    ObservationChange, ObservationResponseBody, ObservationResponseFilter, ObservationWatch,
-    ObservationWatchOptions, Page, PageResponse, ScreenshotOptions, ScreenshotOutput,
-    TabInstrumentationState,
+    NetworkObservationEvent, NetworkObservationSubscription, ObservationChange,
+    ObservationResponseBody, ObservationResponseFilter, ObservationWatch, ObservationWatchOptions,
+    Page, PageResponse, ScreenshotOptions, ScreenshotOutput, TabInstrumentationState,
 };
 pub use profile_context::ManagedProfileContext;
 pub use recording::{

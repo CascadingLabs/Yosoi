@@ -60,6 +60,8 @@ use std::{error::Error, path::PathBuf};
 pub struct SurfacePolicy {
     /// Per-representation capture, tree-depth and serialized response bounds.
     pub documents: super::DocumentPolicies,
+    /// Provider subscription, URL/header retention, event and optional body bounds.
+    pub network_observation: super::NetworkObservationPolicy,
     /// Whether execution retains a portable outcome. Defaults to off.
     pub archive: ArchivePolicy,
     /// Bounded evidence retention, separate from response budgets.
@@ -73,6 +75,7 @@ impl Default for SurfacePolicy {
     fn default() -> Self {
         Self {
             documents: super::DocumentPolicies::default(),
+            network_observation: super::NetworkObservationPolicy::default(),
             archive: ArchivePolicy::Off,
             archive_limits: ArchiveLimits::default(),
             archive_root: None,

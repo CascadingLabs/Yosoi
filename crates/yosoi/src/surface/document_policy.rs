@@ -1,6 +1,6 @@
 //! Per-representation preparation and reading limits.
 use super::{Budget, Limits, SurfaceError};
-use crate::documents::{Document, DocumentClass};
+use crate::documents::{Document, DocumentClass, DocumentSchemaProfile};
 use serde::{Deserialize, Serialize};
 
 /// Independent source-tree and response limits for one evidence representation.
@@ -145,16 +145,7 @@ impl DocumentPolicies {
             DocumentClass::SourceHtml => self.html,
             DocumentClass::SourceXml => self.xml,
             DocumentClass::SourceJson => {
-                if serde_json::from_slice::<serde_json::Value>(document.bytes())
-                    .ok()
-                    .and_then(|v| {
-                        v.get("schema")
-                            .and_then(serde_json::Value::as_str)
-                            .map(str::to_owned)
-                    })
-                    .as_deref()
-                    == Some("yosoi.network.v1")
-                {
+                if document.profile().schema() == DocumentSchemaProfile::YosoiNetworkObservationV1 {
                     self.network
                 } else {
                     self.json
