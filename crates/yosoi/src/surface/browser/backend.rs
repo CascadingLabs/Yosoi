@@ -4,12 +4,12 @@ use crate::{
     documents::Document,
     session::Work,
     surface::{
-        DocumentPolicies, Surface,
+        DocumentPolicies, PixelArtifact, Surface,
         connection::{Result, Trace},
     },
 };
 use serde_json::Value;
-use std::{io, path::Path};
+use std::io;
 
 pub(super) enum Source {
     Driver(Box<process::Browser>),
@@ -96,10 +96,10 @@ impl Browser {
         }
     }
 
-    pub async fn screenshot(&self, output: &Path, name: &str) -> Result<()> {
+    pub async fn screenshot(&self) -> Result<PixelArtifact> {
         match &self.source {
-            Source::Driver(browser) => browser.screenshot(output, name).await,
-            Source::Native(browser) => browser.screenshot(output, name).await,
+            Source::Driver(browser) => browser.screenshot().await,
+            Source::Native(browser) => browser.screenshot().await,
         }
     }
 

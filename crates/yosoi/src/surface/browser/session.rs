@@ -1,9 +1,10 @@
 use super::archive::repeating;
 use super::{backend::Browser, process::ELEMENT};
+use crate::archive::FileDocumentArchiveRef;
 use crate::session::{Session as NativeSession, Tab, Work};
 use crate::surface::{
-    ActionStatus, ArchivePolicy, Budget, Cursor, ExecutionError, Outcome, Reference, Session,
-    SessionPolicy, SurfaceConnection, SurfacePolicy,
+    ActionStatus, ArchivePolicy, ArchivedSource, Budget, Cursor, ExecutionError, Outcome,
+    Reference, Session, SessionPolicy, SurfaceConnection, SurfacePolicy,
     archive::Recording,
     browser::WebSurface,
     connection::{
@@ -132,9 +133,16 @@ impl Driver {
                 self.cursor.focus(&native)?;
                 self.status()
             }
-            Operation::Seek { .. } | Operation::Frame { .. } | Operation::Crop { .. } => Err(
-                io::Error::other("web surface does not advertise video read capabilities").into(),
-            ),
+            Operation::Seek { .. }
+            | Operation::Frame { .. }
+            | Operation::Crop { .. }
+            | Operation::ImageDirect
+            | Operation::OverviewImage { .. }
+            | Operation::ResizeImage { .. }
+            | Operation::CropImage { .. } => Err(io::Error::other(
+                "web surface does not advertise pixel materialization capabilities",
+            )
+            .into()),
             Operation::Status => self.status(),
             Operation::Attach => {
                 self.session.attach()?;
@@ -192,10 +200,31 @@ impl Driver {
             }
             Operation::Article => self.browser.script("article", json!({})).await,
             Operation::Screenshot => {
-                self.browser
-                    .screenshot(&self.trace.output, "surface")
-                    .await?;
-                Ok(json!({"path":self.trace.output.join("surface.png")}))
+                let artifact = self.browser.screenshot().await?;
+                let path = self.trace.output.join("surface.png");
+                fs::write(&path, artifact.bytes())?;
+                let archive_ref = if let Some(recording) = &mut self.recording {
+                    let image_reference = recording.archive.write(artifact.document()).await?;
+                    let reference = artifact.write_to(&recording.archive).await?;
+                    let document = recording.archive.read_document(&reference.document).await?;
+                    let mut pixel_source = ArchivedSource::new_pixel_artifact(
+                        artifact.info().identity.clone(),
+                        &artifact,
+                        1,
+                        None,
+                    );
+                    pixel_source.file_archive =
+                        Some(FileDocumentArchiveRef::Image(image_reference));
+                    recording.outcome.retain(pixel_source)?;
+                    let mut metadata_source =
+                        ArchivedSource::new(reference.document.to_string(), &document, None);
+                    metadata_source.document_archive = Some(reference.document.clone());
+                    recording.outcome.retain(metadata_source)?;
+                    Some(reference)
+                } else {
+                    None
+                };
+                Ok(json!({"path":path,"info":artifact.info(),"archive_ref":archive_ref}))
             }
             Operation::Click { reference, .. }
             | Operation::Fill { reference, .. }

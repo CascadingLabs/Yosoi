@@ -45,6 +45,8 @@ pub enum DocumentSchemaProfile {
     YosoiRenderedDomV1,
     /// Yosoi version-1 accessibility-tree JSON schema with snapshot-local node identities.
     YosoiAccessibilityTreeV1,
+    /// Yosoi version-1 network observation JSON with typed retained body dependencies.
+    YosoiNetworkObservationV1,
 }
 
 /// One of the six document classes in the first locator slice.
@@ -150,6 +152,14 @@ impl DocumentProfile {
         Self::source(SourceFormat::Json, DocumentSchemaProfile::JsonRfc8259)
     }
 
+    /// Creates version-1 network observation metadata with typed payload dependencies.
+    pub const fn network_observation_v1() -> Self {
+        Self::source(
+            SourceFormat::Json,
+            DocumentSchemaProfile::YosoiNetworkObservationV1,
+        )
+    }
+
     /// Creates UTF-8 source text metadata without an epoch or acquisition.
     pub const fn source_text() -> Self {
         Self::source(SourceFormat::Text, DocumentSchemaProfile::Utf8Text)
@@ -231,7 +241,8 @@ impl DocumentProfile {
             (
                 DocumentRepresentation::Source,
                 SourceFormat::Json,
-                DocumentSchemaProfile::JsonRfc8259,
+                DocumentSchemaProfile::JsonRfc8259
+                | DocumentSchemaProfile::YosoiNetworkObservationV1,
                 None,
             ) => Ok(DocumentClass::SourceJson),
             (
