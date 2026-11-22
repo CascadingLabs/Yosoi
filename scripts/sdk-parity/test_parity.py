@@ -12,6 +12,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator, ValidationError
+from referencing import Registry, Resource
+
 SCRIPT = Path(__file__).with_name("parity.py")
 SPEC = importlib.util.spec_from_file_location("sdk_parity", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
@@ -654,6 +657,331 @@ class InventoryTests(unittest.TestCase):
             ),
         )
 
+    def test_file_document_union_member_output_requires_matching_typed_payload(self):
+        rust_item = {
+            "kind": "variant",
+            "rustPath": "yosoi::documents::FileDocument::Image",
+            "parentRustPath": "yosoi::documents::FileDocument",
+            "rustArguments": [
+                {
+                    "name": "0",
+                    "type": "yosoi::documents::ImageDocument",
+                    "receiver": False,
+                }
+            ],
+        }
+        python_targets = {
+            "yosoi.documents.FileDocument": {
+                "kind": "type-alias",
+                "alias": {
+                    "kind": "union",
+                    "unionMembers": [
+                        {
+                            "name": "ImageDocument",
+                            "target": "yosoi.media.ImageDocument",
+                        },
+                        {
+                            "name": "VideoDocument",
+                            "target": "yosoi.media.VideoDocument",
+                        },
+                    ],
+                },
+            },
+            "yosoi.media.ImageDocument": {
+                "kind": "class",
+                "canonicalTarget": "yosoi.ImageDocument",
+            },
+            "yosoi.documents.ImageDocument": {
+                "kind": "class",
+                "canonicalTarget": "yosoi.ImageDocument",
+            },
+            "yosoi.media.VideoDocument": {
+                "kind": "class",
+                "canonicalTarget": "yosoi.VideoDocument",
+            },
+            "yosoi.documents.VideoDocument": {
+                "kind": "class",
+                "canonicalTarget": "yosoi.VideoDocument",
+            },
+            "yosoi.documents.FileMetadata": {"kind": "class"},
+        }
+        entry = {
+            "pythonTarget": "yosoi.documents.ImageDocument",
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "union-member",
+                "schemaTarget": "yosoi.documents.FileDocument",
+                "rustType": "yosoi::documents::ImageDocument",
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(
+                rust_item,
+                entry,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            )
+        )
+
+        wrong_rust_type = {
+            **entry,
+            "outputBinding": {
+                **entry["outputBinding"],
+                "rustType": "yosoi::documents::VideoDocument",
+            },
+        }
+        self.assertIn(
+            "rustType",
+            parity._mapping_configuration_problem(
+                rust_item,
+                wrong_rust_type,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        missing_rust_type = {
+            **entry,
+            "outputBinding": {
+                "kind": "union-member",
+                "schemaTarget": "yosoi.documents.FileDocument",
+            },
+        }
+        self.assertIn(
+            "rustType",
+            parity._mapping_configuration_problem(
+                rust_item,
+                missing_rust_type,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        extra_payload = {
+            **rust_item,
+            "rustArguments": [
+                *rust_item["rustArguments"],
+                {"name": "1", "type": "FileMetadata", "receiver": False},
+            ],
+        }
+        self.assertIn(
+            "exactly one Rust payload type",
+            parity._mapping_configuration_problem(
+                extra_payload,
+                entry,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        missing_payload_type = {
+            **rust_item,
+            "rustArguments": [{"name": "0", "receiver": False}],
+        }
+        self.assertIn(
+            "typed tuple field",
+            parity._mapping_configuration_problem(
+                missing_payload_type,
+                entry,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        foreign_payload = {
+            **rust_item,
+            "rustArguments": [
+                {
+                    "name": "0",
+                    "type": "foreign::ImageDocument",
+                    "receiver": False,
+                }
+            ],
+        }
+        foreign_binding = {
+            **entry,
+            "outputBinding": {
+                **entry["outputBinding"],
+                "rustType": "foreign::ImageDocument",
+            },
+        }
+        self.assertIn(
+            "not a public FileDocument media type",
+            parity._mapping_configuration_problem(
+                foreign_payload,
+                foreign_binding,
+                python_targets[entry["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        wrong_python_member = {
+            **entry,
+            "pythonTarget": "yosoi.documents.VideoDocument",
+        }
+        self.assertIn(
+            "not the Rust payload's union member",
+            parity._mapping_configuration_problem(
+                rust_item,
+                wrong_python_member,
+                python_targets[wrong_python_member["pythonTarget"]],
+                python_targets,
+            ),
+        )
+        nonmember_target = {
+            **entry,
+            "pythonTarget": "yosoi.documents.FileMetadata",
+        }
+        self.assertIn(
+            "not the Rust payload's union member",
+            parity._mapping_configuration_problem(
+                rust_item,
+                nonmember_target,
+                python_targets[nonmember_target["pythonTarget"]],
+                python_targets,
+            ),
+        )
+
+    def test_ledger_loader_accepts_only_typed_union_member_output_shape(self):
+        valid = ledger()
+        valid["entries"][0]["mappingDirection"] = "output"
+        valid["entries"][0]["outputBinding"] = {
+            "kind": "union-member",
+            "schemaTarget": "yosoi.documents.FileDocument",
+            "rustType": "yosoi::documents::ImageDocument",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "ledger.json"
+            write_json(path, valid)
+            loaded = parity.load_ledger(path)
+            self.assertEqual(
+                loaded["entries"][0]["outputBinding"],
+                valid["entries"][0]["outputBinding"],
+            )
+
+            invalid = ledger()
+            invalid["entries"][0]["mappingDirection"] = "output"
+            invalid["entries"][0]["outputBinding"] = {
+                "kind": "union-member",
+                "schemaTarget": "yosoi.documents.FileDocument",
+                "rustType": "yosoi::documents::ImageDocument",
+                "discriminator": "class",
+            }
+            write_json(path, invalid)
+            with self.assertRaisesRegex(
+                parity.ParityError, "only kind, schemaTarget, and rustType"
+            ):
+                parity.load_ledger(path)
+
+    def test_typed_file_constructor_overloads_map_to_from_bytes_aliases(self):
+        for document in (
+            "ImageDocument",
+            "VideoDocument",
+            "AudioDocument",
+            "BinaryDocument",
+        ):
+            for method in ("from_bytes_with_limits", "from_bytes_with_metadata"):
+                rust_path = f"yosoi::documents::{document}::{method}"
+                with self.subTest(rust_path=rust_path):
+                    self.assertEqual(
+                        seed_ledger.MEMBER_TARGETS[rust_path],
+                        f"yosoi.documents.{document}.from_bytes",
+                    )
+
+    def test_byte_argument_conversion_respects_python_parameter_annotation(self):
+        rust_bytes = "impl Into<Vec<u8>>"
+        self.assertEqual(
+            seed_ledger._conversion(rust_bytes, {"annotation": "builtins.bytes"}),
+            "Python bytes are preserved exactly; str is rejected",
+        )
+        self.assertEqual(
+            seed_ledger._conversion(rust_bytes, {"annotation": "str | bytes"}),
+            "Python str is UTF-8 encoded; bytes are preserved",
+        )
+        self.assertEqual(
+            seed_ledger._conversion(rust_bytes, {"annotation": "str"}),
+            "Python str is UTF-8 encoded to Rust bytes; bytes are rejected",
+        )
+
+    def test_output_binding_json_schemas_validate_legacy_and_union_member_shapes(self):
+        root = Path(__file__).resolve().parents[2]
+        ledger_schema = json.loads(
+            (root / "python/parity/ledger.schema.json").read_text()
+        )
+        surface_schema = json.loads(
+            (root / "python/parity/surface-contract.schema.json").read_text()
+        )
+        Draft202012Validator.check_schema(ledger_schema)
+        Draft202012Validator.check_schema(surface_schema)
+        ledger_validator = Draft202012Validator(ledger_schema)
+        valid_bindings = (
+            {
+                "kind": "error-details",
+                "schemaTarget": "yosoi.errors.RustErrorDetails",
+                "discriminator": "variant",
+                "tag": "TooLarge",
+                "rustType": "yosoi::documents::FileDocumentError",
+                "pythonFields": [],
+            },
+            {
+                "kind": "outcome-view",
+                "schemaTarget": "yosoi.contracts.ContractOutcome",
+                "discriminator": "status",
+                "tag": "no_match",
+                "pythonFields": [],
+            },
+            {
+                "kind": "union-member",
+                "schemaTarget": "yosoi.documents.FileDocument",
+                "rustType": "yosoi::documents::ImageDocument",
+            },
+        )
+        for binding in valid_bindings:
+            with self.subTest(binding_kind=binding["kind"]):
+                candidate = ledger()
+                candidate["entries"][0]["mappingDirection"] = "output"
+                candidate["entries"][0]["outputBinding"] = binding
+                ledger_validator.validate(candidate)
+        for binding in (
+            {
+                "kind": "union-member",
+                "schemaTarget": "yosoi.documents.FileDocument",
+            },
+            {**valid_bindings[-1], "discriminator": "class"},
+        ):
+            candidate = ledger()
+            candidate["entries"][0]["mappingDirection"] = "output"
+            candidate["entries"][0]["outputBinding"] = binding
+            with (
+                self.subTest(invalid_binding=binding),
+                self.assertRaises(ValidationError),
+            ):
+                ledger_validator.validate(candidate)
+
+        registry = Registry().with_resource(
+            ledger_schema["$id"], Resource.from_contents(ledger_schema)
+        )
+        surface_validator = Draft202012Validator(surface_schema, registry=registry)
+        surface = {
+            "schemaVersion": 1,
+            "kind": "yosoi-surface-sdk-contract",
+            "declarations": [
+                {
+                    "rustPath": "yosoi::Surface",
+                    "kind": "struct",
+                    "signatureSha256": "a" * 64,
+                    "pythonTarget": "yosoi.documents.ImageDocument",
+                    "pythonTargetSha256": "b" * 64,
+                    "rationale": "Class-selected member of the public file union.",
+                    "mappingDirection": "output",
+                    "outputBinding": valid_bindings[-1],
+                }
+            ],
+        }
+        surface_validator.validate(surface)
+        surface["declarations"][0]["outputBinding"] = {
+            "kind": "union-member",
+            "schemaTarget": "yosoi.documents.FileDocument",
+        }
+        with self.assertRaises(ValidationError):
+            surface_validator.validate(surface)
+
     def test_output_discriminated_union_uses_literal_tag_before_payload_fields(self):
         item = {
             "kind": "variant",
@@ -901,6 +1229,52 @@ class InventoryTests(unittest.TestCase):
         self.assertFalse(seed_ledger._matches_prior_mapping(entry, other))
         self.assertFalse(
             seed_ledger._matches_prior_mapping(entry, {**same, "trait": "TryFrom"})
+        )
+
+    def test_seed_migration_matches_compact_page_pin_only_when_signature_is_exact(
+        self,
+    ) -> None:
+        path = "yosoi::BrowserSurface"
+        signature = "pub struct BrowserSurface"
+        entry = {
+            "rustPath": path,
+            "symbolKey": (
+                f"page:struct:{path}@signature:{parity.digest_bytes(signature.encode('utf-8'))}"
+            ),
+        }
+        current = {
+            "rustPath": path,
+            "symbolKey": f"page:struct:{path}",
+            "kind": "struct",
+            "surface": "item",
+            "signature": signature,
+            "aliases": [],
+        }
+        self.assertTrue(seed_ledger._matches_prior_mapping(entry, current))
+        self.assertFalse(
+            seed_ledger._matches_prior_mapping(
+                entry,
+                {**current, "signature": "pub struct BrowserSurface { value: u8 }"},
+            )
+        )
+        self.assertFalse(
+            seed_ledger._matches_prior_mapping(entry, {**current, "kind": "enum"})
+        )
+        self.assertFalse(
+            seed_ledger._matches_prior_mapping(entry, {**current, "trait": "TryFrom"})
+        )
+
+    def test_surface_try_from_error_targets_public_native_exception_alias(self) -> None:
+        item = {
+            "kind": "assoc_type",
+            "rustPath": "yosoi::surface::model::AddressToken::Error",
+            "signature": "type Error = SurfaceError",
+        }
+        self.assertEqual(
+            seed_ledger._mapped_error_target(
+                item, {"targets": {"yosoi.SurfaceError": {}}}
+            ),
+            "yosoi.SurfaceError",
         )
 
     def test_union_properties_require_every_concrete_member(self) -> None:

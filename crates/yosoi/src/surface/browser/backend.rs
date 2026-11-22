@@ -2,7 +2,7 @@
 use super::{native::NativeBrowser, process};
 use crate::{
     documents::Document,
-    session::Work,
+    session::{ScreenshotCaptureMetadata, Work},
     surface::{
         DocumentPolicies, NetworkObservationPolicy, NetworkPayloadRef, NetworkPayloadValue,
         PixelArtifact, Surface,
@@ -180,11 +180,22 @@ impl Browser {
         Ok(())
     }
 
-    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
+    pub async fn screenshot_capture(
+        &self,
+    ) -> Result<(PixelArtifact, Option<ScreenshotCaptureMetadata>)> {
         match &self.source {
-            Source::Driver(browser) => browser.screenshot().await,
-            Source::Native(browser) => browser.screenshot_artifact().await,
+            Source::Driver(browser) => Ok((browser.screenshot().await?, None)),
+            Source::Native(browser) => browser
+                .screenshot_capture_artifact()
+                .await
+                .map(|(artifact, metadata)| (artifact, Some(metadata))),
         }
+    }
+
+    pub async fn screenshot_artifact(&self) -> Result<PixelArtifact> {
+        self.screenshot_capture()
+            .await
+            .map(|(artifact, _)| artifact)
     }
 
     pub async fn close(&mut self) -> Result<()> {

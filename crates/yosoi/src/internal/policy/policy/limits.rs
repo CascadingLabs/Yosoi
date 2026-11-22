@@ -40,6 +40,10 @@ impl AddressableByteLimit {
         Self(16_000_000)
     }
 
+    pub(super) const fn default_observation_recording_bytes() -> Self {
+        Self(64_000_000)
+    }
+
     pub(super) const fn default_document_input() -> Self {
         Self(67_108_864)
     }

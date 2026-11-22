@@ -17,6 +17,7 @@ from pydantic import (
     PrivateAttr,
     StrictBool,
     StrictBytes,
+    StrictFloat,
     StrictStr,
     TypeAdapter,
     field_serializer,
@@ -33,13 +34,16 @@ from .downloads import (
     DownloadOptions,
 )
 from .locators import LocateOutcome, Plan
+from .media import ImageDocument, VideoDocument, _FileDocument
 from .policy import BrowserConfig as BrowserConfig
 from .policy import BrowserEngine as BrowserEngine
 from .policy import Continuation, Policy, _SnapshotFlowPolicy
 from .policy import MoliProfile as MoliProfile
+from .scalars import AddressableByteLimit
 
 if TYPE_CHECKING:
     from . import browser_surface as surface
+    from .archive import Archive, DocumentArchiveRef
     from .request import BoundPageRequest, PageRequest, Response
 
 BrowserError = _native.BrowserError
@@ -94,6 +98,7 @@ ActionKind = Literal[
     "enter_text",
     "scroll",
     "screenshot",
+    "record",
     "wait",
     "assert",
     "evaluate",
@@ -243,6 +248,732 @@ class Screenshot(ImmutableModel):
     """
 
     kind: Literal["screenshot"] = "screenshot"
+
+
+ScreenshotCoordinate = Annotated[int, Field(strict=True, ge=0, le=(1 << 32) - 1)]
+"""Nonnegative u32 coordinate in the browser screenshot's CSS-pixel space."""
+ScreenshotExtent = Annotated[int, Field(strict=True, ge=0, le=(1 << 32) - 1)]
+"""Nonnegative u32 screenshot width or height in CSS pixels."""
+ScreenshotDimension = ScreenshotExtent
+"""Nonnegative u32 screenshot dimension or segment ordinal."""
+ScreenshotCoordinateSpace = Literal["viewport", "page"]
+"""CSS-pixel origin used to interpret retained screenshot bounds."""
+
+
+class ScreenshotRectangle(ImmutableModel):
+    """Page-coordinate crop bounds in CSS pixels.
+
+    Attributes:
+        x: Left coordinate in CSS pixels.
+        y: Top coordinate in CSS pixels.
+        width: Crop width in CSS pixels.
+        height: Crop height in CSS pixels.
+    """
+
+    x: ScreenshotCoordinate
+    y: ScreenshotCoordinate
+    width: ScreenshotExtent
+    height: ScreenshotExtent
+
+
+class ScreenshotBounds(ImmutableModel):
+    """Resolved crop bounds and the CSS-pixel origin used by the provider.
+
+    Attributes:
+        x: Left coordinate in CSS pixels.
+        y: Top coordinate in CSS pixels.
+        width: Captured width in CSS pixels.
+        height: Captured height in CSS pixels.
+        coordinate_space: Viewport or page origin for the retained bounds.
+    """
+
+    x: ScreenshotCoordinate
+    y: ScreenshotCoordinate
+    width: ScreenshotExtent
+    height: ScreenshotExtent
+    coordinate_space: ScreenshotCoordinateSpace
+
+
+class ScreenshotRoleValue(ImmutableModel):
+    """Role-based screenshot target parameters passed to native target resolution.
+
+    Attributes:
+        role: Accessible role requested from the current browser document.
+        name: Exact accessible name used to resolve the target.
+        nth: Optional zero-based occurrence among matching targets.
+    """
+
+    role: StrictStr
+    name: StrictStr
+    nth: ScreenshotCoordinate | None = None
+
+
+class RoleScreenshotTarget(ImmutableModel):
+    """Target identified by its accessible role and optional name/position.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: Role, exact accessible name, and optional zero-based occurrence.
+    """
+
+    kind: Literal["role"] = "role"
+    target: ScreenshotRoleValue
+
+
+class CssScreenshotTarget(ImmutableModel):
+    """Target resolved from a CSS selector by the native browser adapter.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: CSS selector resolved by the native browser adapter.
+    """
+
+    kind: Literal["css"] = "css"
+    target: StrictStr
+
+
+class XpathScreenshotTarget(ImmutableModel):
+    """Target resolved from an XPath expression by the native browser adapter.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: XPath expression resolved by the native browser adapter.
+    """
+
+    kind: Literal["xpath"] = "xpath"
+    target: StrictStr
+
+
+class AttributeScreenshotTargetValue(ImmutableModel):
+    """Attribute matching parameters for an attribute-based screenshot target.
+
+    Attributes:
+        selector: Native selector declaration evaluated for the target.
+        name: Attribute name used by the selector declaration.
+    """
+
+    selector: StrictStr
+    name: StrictStr
+
+
+class AttributeScreenshotTarget(ImmutableModel):
+    """Target resolved from an attribute selector and attribute name.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: Selector and attribute name evaluated by the native adapter.
+    """
+
+    kind: Literal["attr"] = "attr"
+    target: AttributeScreenshotTargetValue
+
+
+class GlobalIdScreenshotTargetValue(ImmutableModel):
+    """Global identity prefix used to resolve a screenshot target.
+
+    Attributes:
+        prefix: Native global identity prefix used for target resolution.
+    """
+
+    prefix: StrictStr
+
+
+class GlobalIdScreenshotTarget(ImmutableModel):
+    """Target resolved by the configured global identity prefix.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: Prefix used by the native browser adapter.
+    """
+
+    kind: Literal["global_id"] = "global_id"
+    target: GlobalIdScreenshotTargetValue
+
+
+class PointScreenshotTargetValue(ImmutableModel):
+    """CSS-pixel point passed to native screenshot target hit testing.
+
+    Attributes:
+        x: Nonnegative horizontal coordinate in CSS pixels.
+        y: Nonnegative vertical coordinate in CSS pixels.
+    """
+
+    x: StrictFloat
+    y: StrictFloat
+
+
+class PointScreenshotTarget(ImmutableModel):
+    """Target selected at one CSS-pixel point in the browser viewport.
+
+    Attributes:
+        kind: Native target discriminator.
+        target: CSS-pixel point sent to native hit testing.
+    """
+
+    kind: Literal["point"] = "point"
+    target: PointScreenshotTargetValue
+
+
+ScreenshotTarget = Annotated[
+    RoleScreenshotTarget
+    | CssScreenshotTarget
+    | XpathScreenshotTarget
+    | AttributeScreenshotTarget
+    | GlobalIdScreenshotTarget
+    | PointScreenshotTarget,
+    Field(discriminator="kind"),
+]
+"""Native target declaration used by screenshot regions."""
+
+
+class ViewportScreenshotRegion(ImmutableModel):
+    """Capture the current visible viewport.
+
+    Attributes:
+        kind: Native screenshot region discriminator.
+    """
+
+    kind: Literal["viewport"] = "viewport"
+
+
+class FullPageScreenshotRegion(ImmutableModel):
+    """Capture the full scrollable page.
+
+    Attributes:
+        kind: Native screenshot region discriminator.
+    """
+
+    kind: Literal["full_page"] = "full_page"
+
+
+class BoundingBoxScreenshotRegion(ImmutableModel):
+    """Capture a rectangular CSS-pixel region of the current page.
+
+    Attributes:
+        kind: Native screenshot region discriminator.
+        value: Page-coordinate rectangle in CSS pixels.
+    """
+
+    kind: Literal["bounding_box"] = "bounding_box"
+    value: ScreenshotRectangle
+
+
+class TargetScreenshotRegion(ImmutableModel):
+    """Capture the rendered bounds of one native-resolved target.
+
+    Attributes:
+        kind: Native screenshot region discriminator.
+        value: Target declaration resolved by the native browser adapter.
+    """
+
+    kind: Literal["target"] = "target"
+    value: ScreenshotTarget
+
+
+ScreenshotRegion = Annotated[
+    ViewportScreenshotRegion
+    | FullPageScreenshotRegion
+    | BoundingBoxScreenshotRegion
+    | TargetScreenshotRegion,
+    Field(discriminator="kind"),
+]
+"""Visible viewport, full page, rectangular crop, or target-bounds capture."""
+
+
+class ScreenshotOptions(ImmutableModel):
+    """Bounds and selects one explicit browser screenshot.
+
+    Attributes:
+        region: Visible viewport by default, or a full page, crop, or native target.
+        max_bytes: Positive native-addressable byte cap, defaulting to 16 MB.
+        expected_document_epoch: Optional freshness assertion for target selection.
+    """
+
+    region: ScreenshotRegion = Field(default_factory=ViewportScreenshotRegion)
+    max_bytes: AddressableByteLimit = AddressableByteLimit(16_000_000)
+    expected_document_epoch: U64 | None = None
+
+    def to_json(self) -> str:
+        """Validate these options in Rust and return canonical capture JSON."""
+        return _native.validate_screenshot_options(
+            self.model_dump_json(exclude_none=True)
+        )
+
+
+class ScreenshotCaptureMetadata(ImmutableModel):
+    """Serializable provenance and completeness facts for one screenshot.
+
+    Attributes:
+        capture_id: Stable identity for this explicit capture.
+        source_id: Native capture source identity.
+        tab_id: Browser tab identity used for capture.
+        captured_at_unix_ms: Optional capture time in Unix milliseconds.
+        region: Requested screenshot region.
+        width_pixels: Optional output width in physical pixels.
+        height_pixels: Optional output height in physical pixels.
+        document_epoch: Native document generation observed during capture.
+        bounds: Optional actual CSS-pixel crop bounds.
+        viewport_width: Optional viewport width in CSS pixels.
+        viewport_height: Optional viewport height in CSS pixels.
+        device_scale_factor: Optional device-pixel ratio used for capture.
+        complete: Whether the resulting image covers the requested region.
+    """
+
+    capture_id: StrictStr
+    source_id: StrictStr
+    tab_id: StrictStr
+    captured_at_unix_ms: U64 | None = None
+    region: ScreenshotRegion
+    width_pixels: ScreenshotDimension | None = None
+    height_pixels: ScreenshotDimension | None = None
+    document_epoch: U64 | None = None
+    bounds: ScreenshotBounds | None = None
+    viewport_width: ScreenshotDimension | None = None
+    viewport_height: ScreenshotDimension | None = None
+    device_scale_factor: StrictFloat | None = None
+    complete: StrictBool
+
+
+class ScreenshotCapture(ScreenshotCaptureMetadata):
+    """Typed screenshot metadata paired with its immutable native image document.
+
+    Attributes:
+        document: Exact image bytes owned by the native media document.
+    """
+
+    document: ImageDocument
+
+
+AutomaticEvidencePhase = Literal["before", "after", "failure"]
+"""Automatic screenshot phase relative to its associated browser action."""
+EvidenceGapReason = Literal[
+    "screenshot_denied",
+    "target_unavailable",
+    "retention_limit",
+    "buffer_limit",
+    "entry_limit",
+    "capture_failed",
+]
+"""Explicit native reason one configured screenshot was unavailable."""
+
+
+class AutomaticEvidence(ImmutableModel):
+    """Capture or explicit gap linked to its associated operation receipt.
+
+    Attributes:
+        operation_id: ID shared with the associated operation receipt.
+        phase: Before, after, or failure capture phase.
+        capture: Typed screenshot and image bytes when capture succeeded.
+        gap: Native reason capture was unavailable, when it failed or was omitted.
+    """
+
+    operation_id: StrictStr
+    phase: AutomaticEvidencePhase
+    capture: ScreenshotCapture | None = None
+    gap: EvidenceGapReason | None = None
+
+
+class SessionEvidence(ImmutableModel):
+    """Immutable Session snapshot of automatic screenshot bytes and capture gaps.
+
+    Attributes:
+        entries: Captures and explicit gaps in capture completion order.
+        retained_bytes: Exact image bytes still retained for this Session.
+        maximum_bytes: Session lifetime evidence byte ceiling.
+        omitted_entries: Outcomes omitted after the bounded entry count was reached.
+    """
+
+    entries: tuple[AutomaticEvidence, ...]
+    retained_bytes: U64
+    maximum_bytes: U64
+    omitted_entries: U64
+
+    @property
+    def has_gaps(self) -> bool:
+        """Return whether a capture gap or omitted evidence entry is present."""
+        return self.omitted_entries > 0 or any(
+            entry.gap is not None for entry in self.entries
+        )
+
+    async def write_to(self, archive: Archive) -> DocumentArchiveRef:
+        """Archive this screenshot snapshot as a manifest plus raw image documents.
+
+        Args:
+            archive: Open Yosoi Archive that will retain the manifest and image bytes.
+
+        Returns:
+            Generic DocumentArchiveRef naming the versioned evidence manifest.
+        """
+        from .archive import Archive as ArchiveType
+
+        if not isinstance(archive, ArchiveType):
+            raise TypeError("archive must be a Yosoi Archive")
+        return await archive._write_session_evidence(self)
+
+    @classmethod
+    async def read_from(
+        cls, archive: Archive, reference: DocumentArchiveRef
+    ) -> SessionEvidence:
+        """Restore typed screenshot documents and gaps without Session authority.
+
+        Args:
+            archive: Open Yosoi Archive containing the evidence manifest.
+            reference: Generic document reference returned by ``write_to``.
+
+        Returns:
+            Immutable screenshot evidence with native-owned image bytes.
+
+        Raises:
+            TypeError: Archive or reference has the wrong SDK type.
+            ArchiveError: The manifest, image reference, or restored identities fail.
+        """
+        from .archive import Archive as ArchiveType
+        from .archive import DocumentArchiveRef as RefType
+
+        if not isinstance(archive, ArchiveType):
+            raise TypeError("archive must be a Yosoi Archive")
+        if not isinstance(reference, RefType):
+            raise TypeError("reference must be a DocumentArchiveRef")
+        metadata_json, native_documents = await archive._read_session_evidence(
+            reference.value
+        )
+        return _session_evidence_from_native(metadata_json, native_documents)
+
+
+class RecordingOptions(ImmutableModel):
+    """Set independent output, buffer, duration, rate and audio bounds.
+
+    Attributes:
+        max_bytes: Maximum encoded output per recording, defaulting to 64 MB.
+        max_buffer_bytes: Maximum buffered capture bytes, defaulting to 16 MB.
+        max_duration_ms: Hard stop deadline in milliseconds, defaulting to one minute.
+        frames_per_second: Client-side frame rate ceiling, defaulting to 15.
+        include_audio: Whether supported tab audio accompanies captured video.
+    """
+
+    max_bytes: AddressableByteLimit = AddressableByteLimit(64_000_000)
+    max_buffer_bytes: AddressableByteLimit = AddressableByteLimit(16_000_000)
+    max_duration_ms: PositiveU64 = 60_000
+    frames_per_second: PositiveU32 = 15
+    include_audio: StrictBool = False
+
+    def to_json(self) -> str:
+        """Validate these bounds in Rust and return canonical recording JSON."""
+        return _native.validate_recording_options(
+            self.model_dump_json(exclude_none=True)
+        )
+
+
+class BrowserVisibleRecordingScope(ImmutableModel):
+    """Record the browser-visible display surface.
+
+    Attributes:
+        kind: Native recording scope discriminator.
+    """
+
+    kind: Literal["browser_visible"] = "browser_visible"
+
+
+class TabRecordingScope(ImmutableModel):
+    """Record one explicitly identified browser tab.
+
+    Attributes:
+        kind: Native recording scope discriminator.
+        tab_id: Native tab identity selected for capture.
+    """
+
+    kind: Literal["tab"] = "tab"
+    tab_id: StrictStr
+
+
+RecordingScope = Annotated[
+    BrowserVisibleRecordingScope | TabRecordingScope, Field(discriminator="kind")
+]
+"""Browser display or explicitly identified tab recording scope."""
+
+
+RecordingSourceKind = Literal["tab_media_stream", "browser_display"]
+"""Native source kind that produced a recording."""
+RecordingGapReason = Literal[
+    "navigation",
+    "source_rearming",
+    "byte_limit",
+    "buffer_limit",
+    "retention_limit",
+    "tab_closed",
+    "source_failure",
+]
+"""Reason that a bounded recording timeline contains a gap."""
+RecordingStopReason = Literal[
+    "requested",
+    "duration_limit",
+    "byte_limit",
+    "buffer_limit",
+    "retention_limit",
+    "tab_closed",
+    "session_closed",
+    "source_failure",
+]
+"""Native reason the recording reached a terminal state."""
+
+
+class RecordingSource(ImmutableModel):
+    """Identify one native recording source and its requested scope.
+
+    Attributes:
+        id: Native identity for the source stream.
+        scope: Browser-visible display or explicit tab source.
+        kind: Native source implementation that produced the stream.
+        started_at_unix_ms: Optional start time in Unix milliseconds.
+    """
+
+    id: StrictStr
+    scope: RecordingScope
+    kind: RecordingSourceKind
+    started_at_unix_ms: U64 | None = None
+
+
+class RecordingAction(ImmutableModel):
+    """Payload-free receipt marker observed after a browser operation settled.
+
+    The timestamp is when the Session published the settled receipt, not
+    when the action was dispatched. Markers never copy page content or operation data.
+
+    Attributes:
+        operation_id: Receipt identity shared with the browser operation log.
+        kind: Receipt operation kind, such as navigation or click.
+        status: Observed, rejected, or unknown effect certainty.
+        tab_id: Optional tab identity from receipt observation metadata.
+        settled_at_unix_ms: Wall-clock time when the observer received the receipt.
+    """
+
+    operation_id: StrictStr
+    kind: StrictStr
+    status: OperationStatus
+    tab_id: StrictStr | None = None
+    settled_at_unix_ms: U64
+
+
+class RecordingGap(ImmutableModel):
+    """Describe an interval where a source did not produce complete video.
+
+    Attributes:
+        start_offset_ms: Gap start relative to recording start.
+        end_offset_ms: Gap end relative to recording start.
+        reason: Native reason that frames were unavailable for this interval.
+    """
+
+    start_offset_ms: U64
+    end_offset_ms: U64
+    reason: RecordingGapReason
+
+
+class RecordingSegmentMetadata(ImmutableModel):
+    """Retain the typed identity, digest, timing, and completeness of a segment.
+
+    Attributes:
+        document_id: Identity of the typed native video document.
+        sha256: Digest of the exact retained video bytes.
+        byte_len: Exact retained payload length in bytes.
+        sequence: Zero-based output order among segments from this source.
+        start_offset_ms: Segment start relative to recording start.
+        end_offset_ms: Segment end relative to recording start.
+        media_start_ms: MediaRecorder timestamp at segment start in media time.
+        media_end_ms: MediaRecorder timestamp at segment end in media time.
+        mime_type: Detected media type of the retained bytes.
+        complete: Whether the segment satisfies the source's requested coverage.
+    """
+
+    document_id: StrictStr
+    sha256: StrictStr
+    byte_len: U64
+    sequence: ScreenshotDimension
+    start_offset_ms: U64
+    end_offset_ms: U64
+    media_start_ms: StrictFloat
+    media_end_ms: StrictFloat
+    mime_type: StrictStr
+    complete: StrictBool
+
+
+class RecordingSegment(RecordingSegmentMetadata):
+    """Pair segment metadata with its immutable native video document.
+
+    Attributes:
+        document: Exact video bytes owned by the native media document.
+    """
+
+    document: VideoDocument
+
+
+class RecordingOutcome(ImmutableModel):
+    """Typed terminal result for one bounded native recording.
+
+    Attributes:
+        id: Stable identity for this recording operation.
+        source: Native source identity, scope, and start time.
+        segments: Ordered video payloads with per-segment metadata.
+        gaps: Explicit intervals where capture was incomplete or unavailable.
+        actions: Up to 4,096 payload-free markers for receipts observed as settled in
+            this recording.
+        lost_action_events: Receipt markers lost to watch lag or configured bounds.
+        stopped_at_unix_ms: Optional terminal time in Unix milliseconds.
+        stop_reason: Native stop event, including request, bounds, and closure.
+        complete: Whether the retained timeline satisfies the requested capture.
+    """
+
+    id: StrictStr
+    source: RecordingSource
+    segments: tuple[RecordingSegment, ...]
+    gaps: tuple[RecordingGap, ...]
+    actions: tuple[RecordingAction, ...] = Field(default=(), max_length=4_096)
+    lost_action_events: U64 = 0
+    stopped_at_unix_ms: U64 | None = None
+    stop_reason: RecordingStopReason
+    complete: StrictBool
+
+    async def write_to(self, archive: Archive) -> DocumentArchiveRef:
+        """Archive this outcome's video documents and timeline manifest.
+
+        Args:
+            archive: Open Yosoi Archive that retains the manifest and exact segments.
+
+        Returns:
+            Generic DocumentArchiveRef naming the versioned recording manifest.
+        """
+        from .archive import Archive as ArchiveType
+
+        if not isinstance(archive, ArchiveType):
+            raise TypeError("archive must be a Yosoi Archive")
+        return await archive._write_recording_outcome(self)
+
+    @classmethod
+    async def read_from(
+        cls, archive: Archive, reference: DocumentArchiveRef
+    ) -> RecordingOutcome:
+        """Restore recording metadata and raw video segments without a browser.
+
+        Args:
+            archive: Open Yosoi Archive containing the recording manifest.
+            reference: Generic document reference returned by ``write_to``.
+
+        Returns:
+            Typed output with exact video documents, timing, gaps, and stop reason.
+
+        Raises:
+            TypeError: Archive or reference has the wrong SDK type.
+            ArchiveError: The manifest, video reference, or restored identities fail.
+        """
+        from .archive import Archive as ArchiveType
+        from .archive import DocumentArchiveRef as RefType
+
+        if not isinstance(archive, ArchiveType):
+            raise TypeError("archive must be a Yosoi Archive")
+        if not isinstance(reference, RefType):
+            raise TypeError("reference must be a DocumentArchiveRef")
+        metadata_json, native_documents = await archive._read_recording_outcome(
+            reference.value
+        )
+        return _recording_outcome_from_native(metadata_json, native_documents)
+
+
+def _screenshot_capture_from_native(
+    metadata_json: str, native_document: _native.FileDocument
+) -> ScreenshotCapture:
+    """Attach the native image owner to its serializable capture metadata."""
+    metadata = json.loads(metadata_json)
+    document = _FileDocument._from_native(native_document)
+    if not isinstance(document, ImageDocument):
+        raise BrowserError("native screenshot result did not contain an image document")
+    if document.metadata.capture_id != metadata.get("capture_id"):
+        raise BrowserError("native screenshot metadata and image identity disagree")
+    return ScreenshotCapture.model_validate({**metadata, "document": document})
+
+
+def _recording_outcome_from_native(
+    metadata_json: str, native_documents: list[_native.FileDocument]
+) -> RecordingOutcome:
+    """Attach ordered native video owners to the metadata-only stop result."""
+    outcome = json.loads(metadata_json)
+    segments = outcome.get("segments")
+    if not isinstance(segments, list) or len(segments) != len(native_documents):
+        raise BrowserError("native recording metadata and video segments disagree")
+    typed_segments: list[dict[str, Any]] = []
+    for metadata, native_document in zip(segments, native_documents, strict=True):
+        if not isinstance(metadata, dict):
+            raise BrowserError("native recording segment metadata is invalid")
+        document = _FileDocument._from_native(native_document)
+        if not isinstance(document, VideoDocument):
+            raise BrowserError("native recording result contained a non-video document")
+        if document.id != metadata.get(
+            "document_id"
+        ) or document.sha256 != metadata.get("sha256"):
+            raise BrowserError("native video segment metadata and payload disagree")
+        typed_segments.append({**metadata, "document": document})
+    return RecordingOutcome.model_validate({**outcome, "segments": typed_segments})
+
+
+def _session_evidence_from_native(
+    metadata_json: str, native_documents: list[_native.FileDocument]
+) -> SessionEvidence:
+    """Attach ordered image owners to metadata-only Session evidence."""
+    evidence = json.loads(metadata_json)
+    entries = evidence.get("entries")
+    if not isinstance(entries, list):
+        raise BrowserError("native Session evidence entries are invalid")
+    documents = iter(native_documents)
+    typed_entries: list[dict[str, Any]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise BrowserError("native automatic evidence entry is invalid")
+        capture_metadata = entry.get("capture")
+        if capture_metadata is None:
+            capture = None
+        else:
+            try:
+                native_document = next(documents)
+            except StopIteration as error:
+                raise BrowserError(
+                    "native Session evidence omitted a captured image document"
+                ) from error
+            capture = _screenshot_capture_from_native(
+                json.dumps(capture_metadata), native_document
+            )
+        typed_entries.append({**entry, "capture": capture})
+    if next(documents, None) is not None:
+        raise BrowserError("native Session evidence returned an unreferenced image")
+    return SessionEvidence.model_validate({**evidence, "entries": typed_entries})
+
+
+def _recording_outcomes_from_native(
+    metadata_json: str, native_documents: list[_native.FileDocument]
+) -> tuple[RecordingOutcome, ...]:
+    """Attach ordered automatic video owners to Session recording metadata."""
+    metadata_values = json.loads(metadata_json)
+    if not isinstance(metadata_values, list):
+        raise BrowserError("native Session recording outcomes are invalid")
+    documents = iter(native_documents)
+    outcomes: list[RecordingOutcome] = []
+    for metadata in metadata_values:
+        if not isinstance(metadata, dict):
+            raise BrowserError("native automatic recording metadata is invalid")
+        segments = metadata.get("segments")
+        if not isinstance(segments, list):
+            raise BrowserError("native automatic recording segments are invalid")
+        owned_documents: list[_native.FileDocument] = []
+        for _ in segments:
+            try:
+                owned_documents.append(next(documents))
+            except StopIteration as error:
+                raise BrowserError(
+                    "native Session recording outcome omitted a video segment"
+                ) from error
+        outcomes.append(
+            _recording_outcome_from_native(json.dumps(metadata), owned_documents)
+        )
+    if next(documents, None) is not None:
+        raise BrowserError("native Session returned an unreferenced video segment")
+    return tuple(outcomes)
 
 
 class Assert(ImmutableModel):
@@ -1448,6 +2179,7 @@ def _native_session_allowed_actions() -> tuple[ActionKind, ...]:
         "EnterText": "enter_text",
         "Scroll": "scroll",
         "Screenshot": "screenshot",
+        "Record": "record",
         "Wait": "wait",
         "Assert": "assert",
         "Evaluate": "evaluate",
@@ -1566,6 +2298,7 @@ class SessionPolicy(Model):
                 "EnterText": "enter_text",
                 "Scroll": "scroll",
                 "Screenshot": "screenshot",
+                "Record": "record",
                 "Wait": "wait",
                 "Assert": "assert",
                 "Evaluate": "evaluate",
@@ -1590,6 +2323,7 @@ class SessionPolicy(Model):
             "enter_text": "EnterText",
             "scroll": "Scroll",
             "screenshot": "Screenshot",
+            "record": "Record",
             "wait": "Wait",
             "assert": "Assert",
             "evaluate": "Evaluate",
@@ -2287,11 +3021,125 @@ def _native_request_binding(
     raise TypeError("request must be a Yosoi PageRequest")
 
 
+class RecordingHandle:
+    """One Rust-owned recording source with bounded, idempotent async cleanup.
+
+    The native hard duration limit stops abandoned recordings. Use this wrapper as an
+    async context manager to retain the typed outcome on every normal exit. Caller task
+    cancellation is shielded until native stop settles, then re-raised.
+
+    Attributes:
+        options: Bounds used to start this recording.
+        outcome: Typed result once stop has settled, otherwise None.
+    """
+
+    def __init__(self, handle: Any, options: RecordingOptions) -> None:
+        """Wrap a native recording handle returned by Session or Work.
+
+        Args:
+            handle: Rust owner whose drop reaps the bounded recording source.
+            options: Validated duration and memory bounds for this recording.
+        """
+        if not isinstance(options, RecordingOptions):
+            raise TypeError("options must be a Yosoi RecordingOptions")
+        self._handle: Any | None = handle
+        self.options = options
+        self._stop_lock = asyncio.Lock()
+        self._stop_task: asyncio.Task[RecordingOutcome] | None = None
+        self._outcome: RecordingOutcome | None = None
+
+    async def __aenter__(self) -> RecordingHandle:
+        """Return this already-started recording for use in an async context."""
+        if self._handle is None:
+            raise BrowserError("recording has already stopped")
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        """Stop and retain the recording outcome without suppressing body errors.
+
+        Args:
+            exc_type: Exception type supplied by async context management.
+            exc: Original operation exception, if any.
+            traceback: Original traceback supplied by async context management.
+
+        Returns:
+            False so a recording context never suppresses the original exception.
+
+        Raises:
+            BrowserCleanupError: Stop fails while an operation exception is active.
+        """
+        try:
+            await self.stop()
+        except BaseException as cleanup_error:
+            if exc is None:
+                raise
+            raise BrowserCleanupError(exc, (cleanup_error,)) from exc
+        return False
+
+    @property
+    def outcome(self) -> RecordingOutcome | None:
+        """Return the typed terminal evidence after stop, or None while recording."""
+        return self._outcome
+
+    async def stop(self) -> RecordingOutcome:
+        """Stop once and return native metadata paired with retained video documents.
+
+        Concurrent and repeated calls share the same native stop task and result.
+        Cancelling the caller task waits for native cleanup to settle, then propagates
+        cancellation. Rust's hard duration bound also stops an abandoned handle.
+
+        Returns:
+            Ordered video segments, gaps, terminal reason, and completeness facts.
+
+        Raises:
+            BrowserError: Native stop or output conversion fails.
+            BrowserCleanupError: Stop fails while caller cancellation is pending.
+        """
+        async with self._stop_lock:
+            if self._outcome is not None:
+                return self._outcome
+            task = self._stop_task
+            if task is None:
+                handle = self._handle
+                if handle is None:
+                    raise BrowserError("recording handle is unavailable")
+
+                async def settle() -> RecordingOutcome:
+                    metadata_json, native_documents = await handle.stop()
+                    return _recording_outcome_from_native(
+                        metadata_json, native_documents
+                    )
+
+                task = asyncio.create_task(settle())
+                self._stop_task = task
+        cancellation = await _settle_cleanup_task(task)
+        try:
+            outcome = task.result()
+        except BaseException as cleanup_error:
+            if cancellation is not None:
+                raise BrowserCleanupError(
+                    cancellation, (cleanup_error,)
+                ) from cancellation
+            raise
+        async with self._stop_lock:
+            if self._stop_task is task:
+                self._outcome = outcome
+                self._handle = None
+        if cancellation is not None:
+            raise cancellation
+        return outcome
+
+
 class Session:
     """An acquired Rust Session, released by async context exit.
 
-    This Python bridge exposes one Work lease at a time. Rust watcher streams
-    and explicit tab creation are not exposed through this first pass.
+    Work can target the initial tab or retained tabs created by ``new_tab``.
+    Rust watcher streams are not exposed through this Python bridge.
     Omitted settings inherit the bound policy's browser mode; explicit settings
     retain their configured mode and must agree with that policy.
 
@@ -2374,8 +3222,9 @@ class Session:
 
     @property
     def closed(self) -> bool:
-        """Return whether no native handle is held, including before first entry."""
-        return self._handle is None
+        """Return whether browser authority is unavailable or has closed."""
+        handle = self._handle
+        return handle is None or handle.closed
 
     def work(self) -> Work:
         """Create a lazy Work wrapper for this acquired Session.
@@ -2386,9 +3235,65 @@ class Session:
         Raises:
             BrowserError: The Session has not been entered or is closed.
         """
-        if self._handle is None:
+        if self.closed:
             raise BrowserError("enter the browser Session before creating Work")
         return Work(self)
+
+    async def new_tab(self) -> Tab:
+        """Create a retained tab within this Session's configured tab bound.
+
+        The returned tab has no browser control until its ``work()`` lease is
+        entered or used. Closing the tab does not close sibling tabs or the
+        owning Session.
+
+        Returns:
+            Retained tab whose identity can be used in recording scopes.
+
+        Raises:
+            BrowserError: The Session is not acquired, is closed, or tab creation
+                fails or is cancelled.
+        """
+        handle = self._handle
+        if handle is None or handle.closed:
+            raise BrowserError("enter the browser Session before creating a tab")
+        native_tab = await handle.new_tab(_token(self._cancellation))
+        return Tab(self, native_tab)
+
+    async def start_recording(
+        self,
+        scope: RecordingScope,
+        options: RecordingOptions | None = None,
+    ) -> RecordingHandle:
+        """Start one bounded recording source owned by this Session.
+
+        Args:
+            scope: Browser-visible display or explicitly identified tab source.
+            options: Independent byte, buffer, duration, frame-rate and audio bounds.
+
+        Returns:
+            A handle whose ``stop()`` returns typed video documents and timeline gaps.
+
+        Raises:
+            TypeError: Scope or options have the wrong SDK type.
+            BrowserError: Session is closed or native capture is denied or unsupported.
+        """
+        handle = self._handle
+        if handle is None or handle.closed:
+            raise BrowserError("enter the browser Session before recording")
+        if not isinstance(scope, (BrowserVisibleRecordingScope, TabRecordingScope)):
+            raise TypeError("scope must be a Yosoi RecordingScope")
+        selected_options = RecordingOptions() if options is None else options
+        if not isinstance(selected_options, RecordingOptions):
+            raise TypeError("options must be Yosoi RecordingOptions")
+        scope_json = _native.validate_recording_scope(
+            scope.model_dump_json(exclude_none=True)
+        )
+        recording = await handle.start_recording(
+            scope_json,
+            selected_options.to_json(),
+            _token(self._cancellation),
+        )
+        return RecordingHandle(recording, selected_options)
 
     async def run(
         self,
@@ -2432,7 +3337,7 @@ class Session:
     ) -> Response:
         """Send a PageRequest through this retained Session without closing it."""
         handle = self._handle
-        if handle is None:
+        if handle is None or handle.closed:
             raise BrowserError("enter the browser Session before sending a request")
         request_handle, policy_json = _native_request_binding(request)
         response = await handle.send_request(
@@ -2444,12 +3349,53 @@ class Session:
 
         return RequestResponse._from_native(response)
 
+    def evidence(self) -> SessionEvidence:
+        """Return automatic screenshot captures and explicit gaps retained by Rust.
+
+        The snapshot shares operation IDs with Flow receipts. It reports automatic
+        evidence only; manual ``Work.screenshot_with`` results are returned directly
+        to their caller.
+
+        Returns:
+            Captured image documents, gap reasons, and Session retention counts.
+
+        Raises:
+            BrowserError: The Session has not been acquired or its owner is busy.
+        """
+        handle = self._handle
+        if handle is None:
+            raise BrowserError("enter the browser Session before reading evidence")
+        metadata_json, native_documents = handle.evidence()
+        return _session_evidence_from_native(metadata_json, native_documents)
+
+    async def recording_outcomes(self) -> tuple[RecordingOutcome, ...]:
+        """Return completed automatic recordings retained by this Session.
+
+        Outcomes are independent from the screenshot evidence snapshot and remain
+        readable after ``close()``. They contain exact native video documents and
+        explicit timeline gaps.
+
+        Returns:
+            Completed recording outcomes in Session completion order.
+
+        Raises:
+            BrowserError: The Session has not been acquired or its owner is busy.
+        """
+        handle = self._handle
+        if handle is None:
+            raise BrowserError(
+                "enter the browser Session before reading recording outcomes"
+            )
+        metadata_json, native_documents = await handle.recording_outcomes()
+        return _recording_outcomes_from_native(metadata_json, native_documents)
+
     async def close(self) -> None:
-        """Await owned Session cleanup, then clear its native handle.
+        """Await owned browser cleanup while retaining typed evidence snapshots.
 
         Repeated calls on a closed Session are harmless. Cleanup settlement is shielded
         from caller task cancellation; cancellation is re-raised after settlement.
-        Closing does not undo already dispatched browser operations.
+        Closing does not undo already dispatched browser operations. The closed handle
+        remains available to read SessionEvidence and completed recording outcomes.
 
         Raises:
             BrowserError: Native cleanup fails; retained state is not claimed closed.
@@ -2470,7 +3416,81 @@ class Session:
         cancellation = await _settle_cleanup_task(task)
         async with self._close_lock:
             if self._close_task is task:
-                self._handle = None
+                self._close_task = None
+        if cancellation is not None:
+            raise cancellation
+
+
+class Tab:
+    """A retained tab belonging to a caller-owned browser Session.
+
+    A Tab grants no browser mutation authority until its lazy Work wrapper is
+    entered or used. Closing it revokes only this tab's authority.
+
+    Attributes:
+        id: Opaque Session-scoped identity suitable for tab recording scopes.
+        closed: Whether this tab or its owning Session has closed.
+    """
+
+    def __init__(self, session: Session, handle: Any) -> None:
+        """Retain a native tab handle owned by ``session``.
+
+        Args:
+            session: Python owner whose native Session created the tab.
+            handle: Native tab handle returned by that Session.
+        """
+        self._session = session
+        self._handle = handle
+        self._close_lock = asyncio.Lock()
+        self._close_task: asyncio.Task[None] | None = None
+
+    @property
+    def id(self) -> str:
+        """Return this tab's opaque identity, including after tab close."""
+        return self._handle.id
+
+    @property
+    def closed(self) -> bool:
+        """Return whether tab control is unavailable or this tab has closed."""
+        return self._session.closed or self._handle.closed
+
+    def work(self) -> Work:
+        """Create a lazy Work wrapper targeting this tab.
+
+        Returns:
+            Caller-owned Work wrapper; tab control is acquired on entry or its
+            first operation.
+
+        Raises:
+            BrowserError: The owning Session or this tab has closed.
+        """
+        if self.closed:
+            raise BrowserError("browser Tab or its Session is closed")
+        return Work(self._session, tab=self)
+
+    async def close(self) -> None:
+        """Close this tab and await cleanup without closing its Session.
+
+        Repeated calls are harmless. Cleanup is shielded from caller task
+        cancellation and cancellation is re-raised after native settlement.
+
+        Raises:
+            BrowserError: Native tab cleanup fails.
+        """
+        async with self._close_lock:
+            if self.closed:
+                return
+            task = self._close_task
+            if task is None:
+
+                async def settle() -> None:
+                    await self._handle.close()
+
+                task = asyncio.create_task(settle())
+                self._close_task = task
+        cancellation = await _settle_cleanup_task(task)
+        async with self._close_lock:
+            if self._close_task is task:
                 self._close_task = None
         if cancellation is not None:
             raise cancellation
@@ -2483,15 +3503,17 @@ class Work:
     dispatched operation or close the caller-owned Session.
     """
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, tab: Tab | None = None) -> None:
         """Prepare a lazy control lease tied to a caller-owned Session.
 
         Args:
             session: Session whose tab authority will be borrowed on acquisition.
+            tab: Optional retained tab to control instead of the initial tab.
 
         No control is acquired until context entry or the first operation.
         """
         self._session = session
+        self._tab = tab
         self._handle: Any | None = None
         self._released = False
         self._acquire_lock = asyncio.Lock()
@@ -2583,6 +3605,78 @@ class Work:
             FlowInvocationError: Native failure carries partial or cleanup evidence.
         """
         return await _invoke_flow(flow, policy, lease=self, cancellation=cancellation)
+
+    async def start_recording(
+        self, options: RecordingOptions | None = None
+    ) -> RecordingHandle:
+        """Start an independent recording source for this Work tab.
+
+        The method serializes only handle creation. Each returned handle owns its
+        recording and can stop independently, so one Work may retain multiple
+        simultaneous handles.
+
+        Args:
+            options: Per-recording output, buffer, duration, frame-rate, and audio
+                bounds.
+
+        Returns:
+            A handle whose ``stop()`` returns typed video documents and timeline gaps.
+
+        Raises:
+            TypeError: Options have the wrong SDK type.
+            BrowserError: Work or tab capture permission is unavailable.
+        """
+        selected_options = RecordingOptions() if options is None else options
+        if not isinstance(selected_options, RecordingOptions):
+            raise TypeError("options must be Yosoi RecordingOptions")
+        async with self._operation_lock:
+            await self._acquire()
+            handle = self._handle
+            if handle is None:
+                raise BrowserError("browser Work lease is unavailable")
+            recording = await handle.start_recording(
+                selected_options.to_json(),
+                _token(self._session._cancellation),
+            )
+        return RecordingHandle(recording, selected_options)
+
+    async def screenshot_with(
+        self,
+        options: ScreenshotOptions | None = None,
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> ScreenshotCapture:
+        """Capture one explicit, bounded screenshot from this Work tab.
+
+        This is independent from the legacy Flow ``screenshot()`` step, which still
+        returns an OperationReceipt embedded in Flow evidence.
+
+        Args:
+            options: Capture region, byte cap and optional document freshness check.
+            cancellation: Explicit cancellation token, or the Session token by default.
+
+        Returns:
+            Native image document and capture provenance/completeness metadata.
+
+        Raises:
+            TypeError: Options or cancellation have the wrong SDK type.
+            BrowserError: Work is unavailable, capture fails, or selection is stale.
+        """
+        selected_options = ScreenshotOptions() if options is None else options
+        if not isinstance(selected_options, ScreenshotOptions):
+            raise TypeError("options must be Yosoi ScreenshotOptions")
+        async with self._operation_lock:
+            await self._acquire()
+            handle = self._handle
+            if handle is None:
+                raise BrowserError("browser Work lease is unavailable")
+            native_cancellation = _token(
+                self._session._cancellation if cancellation is None else cancellation
+            )
+            metadata_json, native_document = await handle.screenshot_with(
+                selected_options.to_json(), native_cancellation
+            )
+        return _screenshot_capture_from_native(metadata_json, native_document)
 
     async def send(
         self,
@@ -2705,8 +3799,13 @@ class Work:
             session_handle = self._session._handle
             if session_handle is None:
                 raise BrowserError("browser Session is closed")
+            tab_handle = None
+            if self._tab is not None:
+                if self._tab.closed:
+                    raise BrowserError("browser Tab or its Session is closed")
+                tab_handle = self._tab._handle
             self._handle = await session_handle.work(
-                _token(self._session._cancellation)
+                _token(self._session._cancellation), tab_handle
             )
 
 
@@ -2779,6 +3878,49 @@ __all__ = [
     "OperationStatus",
     "ResponseExpectation",
     "Screenshot",
+    "ScreenshotBounds",
+    "ScreenshotCapture",
+    "ScreenshotCaptureMetadata",
+    "ScreenshotCoordinate",
+    "ScreenshotDimension",
+    "ScreenshotExtent",
+    "ScreenshotOptions",
+    "ScreenshotRegion",
+    "ScreenshotTarget",
+    "ScreenshotCoordinateSpace",
+    "ScreenshotRectangle",
+    "AutomaticEvidencePhase",
+    "EvidenceGapReason",
+    "AutomaticEvidence",
+    "SessionEvidence",
+    "ViewportScreenshotRegion",
+    "FullPageScreenshotRegion",
+    "BoundingBoxScreenshotRegion",
+    "TargetScreenshotRegion",
+    "RoleScreenshotTarget",
+    "ScreenshotRoleValue",
+    "CssScreenshotTarget",
+    "XpathScreenshotTarget",
+    "AttributeScreenshotTarget",
+    "AttributeScreenshotTargetValue",
+    "GlobalIdScreenshotTarget",
+    "GlobalIdScreenshotTargetValue",
+    "PointScreenshotTarget",
+    "PointScreenshotTargetValue",
+    "RecordingOptions",
+    "RecordingScope",
+    "RecordingSourceKind",
+    "RecordingGapReason",
+    "RecordingStopReason",
+    "BrowserVisibleRecordingScope",
+    "TabRecordingScope",
+    "RecordingHandle",
+    "RecordingSource",
+    "RecordingAction",
+    "RecordingGap",
+    "RecordingSegmentMetadata",
+    "RecordingSegment",
+    "RecordingOutcome",
     "Session",
     "SessionPolicy",
     "Step",

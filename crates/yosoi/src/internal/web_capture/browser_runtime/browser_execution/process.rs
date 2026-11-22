@@ -30,6 +30,24 @@ impl BrowserExecutionManager {
         } else {
             builder.headless()
         };
+        if let Some(display) = &self.inner.config.private_display {
+            builder = builder
+                .env("DISPLAY", display)
+                .env("WAYLAND_DISPLAY", "")
+                .env("GDK_BACKEND", "x11")
+                .env("GDK_SCALE", "1")
+                .env("GDK_DPI_SCALE", "1")
+                .env("XDG_SESSION_TYPE", "x11")
+                .arg("--ozone-platform=x11");
+        }
+        if self.inner.config.native_tab_capture {
+            // Opt-in applies only to a fresh anonymous Session profile and its own tabs.
+            // Browser sandbox and process/site isolation remain at their ordinary defaults.
+            if managed_profile_launch.is_some() {
+                return Err(BrowserExecutionManagerError::ProviderUnavailable);
+            }
+            builder = builder.arg("--auto-accept-this-tab-capture");
+        }
         if let Some(proxy) = self.inner.config.proxy {
             builder = builder
                 .proxy(proxy)

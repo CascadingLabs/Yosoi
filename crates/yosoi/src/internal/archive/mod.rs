@@ -55,6 +55,7 @@ pub(crate) use dispatch::sealed;
 #[doc(hidden)]
 pub use dispatch::{ArchiveReference, ArchiveValue};
 pub use document::MAX_ARCHIVED_DOCUMENT_BYTES;
+pub use document::read_document_bounded;
 pub use error::ArchiveError;
 pub use evaluation_run::{
     ArchivedDocumentInput, EvaluationRunError, EvaluationRunRecord, MAX_EVALUATION_DOCUMENTS,

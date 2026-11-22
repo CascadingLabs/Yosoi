@@ -2,14 +2,13 @@
 
 use std::{error::Error, path::PathBuf, sync::Arc};
 
-use pyo3::{prelude::*, types::PyBytes};
+use pyo3::{exceptions::PyValueError, prelude::*, types::PyBytes};
 use serde_json::json;
 use yosoi::documents::{
     AudioDocument, BinaryDocument, FileDocument, FileDocumentError as SdkFileDocumentError,
-    FileLimits, FileMetadata, ImageDocument, VideoDocument,
+    FileLimits, FileMetadata, ImageDocument, MAX_FILE_BYTES, VideoDocument, file_from_bytes,
+    read_file as sdk_read_file,
 };
-
-use yosoi::documents::{MAX_FILE_BYTES, file_from_bytes, read_file as sdk_read_file};
 
 use crate::{async_runtime, errors};
 
@@ -66,6 +65,37 @@ pub fn file_document_error(error: &SdkFileDocumentError) -> PyErr {
 fn decode_metadata(py: Python<'_>, value: &str) -> PyResult<FileMetadata> {
     serde_json::from_str(value).map_err(|error| {
         errors::serde_decode_error(
+            py,
+            errors::FileDocumentError::new_err(error.to_string()),
+            &error,
+        )
+    })
+}
+
+/// Applies one Rust-validated FileMetadata builder and returns the retained JSON value.
+#[pyfunction]
+pub fn file_metadata_with(
+    py: Python<'_>,
+    metadata_json: &str,
+    field: &str,
+    value: &str,
+) -> PyResult<String> {
+    let metadata = decode_metadata(py, metadata_json)?;
+    let metadata = match field {
+        "filename" => metadata.with_filename(value),
+        "declared_media_type" => metadata.with_declared_media_type(value),
+        "source" => metadata.with_source(value),
+        "capture_id" => metadata.with_capture_id(value),
+        "session_id" => metadata.with_session_id(value),
+        "tab_id" => metadata.with_tab_id(value),
+        "download_id" => metadata.with_download_id(value),
+        _ => {
+            return Err(PyValueError::new_err("unknown FileMetadata field"));
+        }
+    }
+    .map_err(|error| file_document_error(&error))?;
+    serde_json::to_string(&metadata).map_err(|error| {
+        errors::serde_encode_error(
             py,
             errors::FileDocumentError::new_err(error.to_string()),
             &error,

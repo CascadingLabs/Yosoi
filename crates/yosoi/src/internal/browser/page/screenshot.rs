@@ -13,8 +13,9 @@ use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::page::Viewport as CdpClipViewport;
 use crate::internal::browser::vendor::chromiumoxide::page::ScreenshotParams;
 use crate::internal::browser::viewport::ScrollTarget;
+use std::env;
 use std::fs;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::time;
 
 impl Page {
@@ -45,6 +46,73 @@ impl Page {
     /// * `scroll` moves the page before capturing (see [`ScrollTarget`]) and
     ///   restores the original scroll position after, even on error.
     pub async fn screenshot(&self, opts: ScreenshotOptions) -> Result<ScreenshotOutput> {
+        let _capture_guard = self.capture_lock.lock().await;
+        self.prepare_screenshot_target().await?;
+        self.screenshot_with_resolved_target(opts, None).await
+    }
+
+    /// Makes this tab the compositor target before layout or crop resolution.
+    ///
+    /// Headful sessions use Page.bringToFront for hidden targets. Target.activateTarget
+    /// remains reserved for headless and attached sessions, where native visibility is unknown.
+    pub(super) async fn prepare_screenshot_target(&self) -> Result<()> {
+        let started = Instant::now();
+        capture_trace("visibility_prepare_start", started);
+        let headful = matches!(
+            &self.browser_mode,
+            EnvironmentObservation::Known {
+                value: yosoi_types::BrowserMode::Headful
+            }
+        );
+        if headful {
+            let before_scope = self.top_level_document_scope().await?;
+            let visibility = self.evaluate_js("document.visibilityState").await?;
+            if visibility.as_str() == Some("hidden") {
+                capture_trace("headful_bring_to_front_start", started);
+                time::timeout(Duration::from_secs(2), self.inner.bring_to_front())
+                    .await
+                    .map_err(|_| VoidCrawlError::Timeout("headful screenshot bringToFront".into()))?
+                    .map_err(|error| VoidCrawlError::ScreenshotError(error.to_string()))?;
+                time::timeout(
+                    Duration::from_secs(2),
+                    self.evaluate_js(
+                        "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+                    ),
+                )
+                .await
+                .map_err(|_| VoidCrawlError::Timeout("headful screenshot repaint".into()))?
+                .map_err(|_| VoidCrawlError::ScreenshotError("headful screenshot repaint".into()))?;
+                if self.top_level_document_scope().await? != before_scope {
+                    return Err(VoidCrawlError::NavigationStateUncertain);
+                }
+                let after_visibility = self.evaluate_js("document.visibilityState").await?;
+                if after_visibility.as_str() != Some("visible") {
+                    return Err(VoidCrawlError::ScreenshotError(
+                        "headful screenshot target did not become visible".into(),
+                    ));
+                }
+                capture_trace("headful_bring_to_front_done", started);
+            } else if visibility.as_str() != Some("visible") {
+                return Err(VoidCrawlError::ScreenshotError(
+                    "headful screenshot target visibility is unavailable".into(),
+                ));
+            }
+        } else {
+            self.inner
+                .activate()
+                .await
+                .map_err(|error| VoidCrawlError::ScreenshotError(error.to_string()))?;
+        }
+        capture_trace("visibility_prepare_done", started);
+        Ok(())
+    }
+
+    /// Captures a previously resolved semantic target without a second DOM lookup.
+    pub(super) async fn screenshot_with_resolved_target(
+        &self,
+        opts: ScreenshotOptions,
+        resolved_target: Option<Bbox>,
+    ) -> Result<ScreenshotOutput> {
         if opts.bbox.is_some() && opts.selector.is_some() {
             return Err(VoidCrawlError::Other(
                 "ScreenshotOptions: `bbox` and `selector` are mutually exclusive".into(),
@@ -63,7 +131,7 @@ impl Page {
             None
         };
 
-        let result = self.screenshot_inner(&opts).await;
+        let result = self.screenshot_inner(&opts, resolved_target).await;
 
         if let Some(prev) = restore_viewport {
             let restored = match prev {
@@ -76,7 +144,12 @@ impl Page {
         result
     }
 
-    async fn screenshot_inner(&self, opts: &ScreenshotOptions) -> Result<ScreenshotOutput> {
+    async fn screenshot_inner(
+        &self,
+        opts: &ScreenshotOptions,
+        resolved_target: Option<Bbox>,
+    ) -> Result<ScreenshotOutput> {
+        let capture_started = Instant::now();
         // Scroll before cropping — lets a fixed viewport (e.g. a 4K
         // desktop) be paged through and a specific on-screen region cropped
         // from wherever it lands, the way a human scrolling and
@@ -98,7 +171,9 @@ impl Page {
         // numeric `bbox` — specified relative to the page and shifted by
         // `bbox_shift` below — it needs no shift: `getBoundingClientRect`
         // already reflects wherever the page is currently scrolled to.
-        let effective_bbox: Option<(Bbox, bool)> = if let Some(bbox) = opts.bbox {
+        let effective_bbox: Option<(Bbox, bool)> = if let Some(bbox) = resolved_target {
+            Some((bbox, false))
+        } else if let Some(bbox) = opts.bbox {
             Some((bbox, true))
         } else if let Some(entry) = &opts.selector {
             if !entry.supports_geometry() {
@@ -153,32 +228,13 @@ impl Page {
         // that skipped apply_stealth) — leave unset and take whatever
         // Chrome currently considers the visible viewport.
 
-        // Headless Chrome only reliably composites a frame for the
-        // foregrounded tab. With several tabs sharing one browser process,
-        // an un-guarded capture on a backgrounded
-        // tab can fail with CDP -32000 ("Unable to capture screenshot").
-        // Headful Chromium already composites its visible target and can stall
-        // indefinitely while acknowledging Target.activateTarget, so do not
-        // issue that headless workaround in known headful mode. Attached mode
-        // remains conservative because its visibility is unknown.
-        let capture_guard = self.capture_lock.lock().await;
-        if !matches!(
-            &self.browser_mode,
-            EnvironmentObservation::Known {
-                value: yosoi_types::BrowserMode::Headful
-            }
-        ) {
-            self.inner
-                .activate()
-                .await
-                .map_err(|e| VoidCrawlError::ScreenshotError(e.to_string()))?;
-        }
+        capture_trace("capture_screenshot_command_start", capture_started);
         let bytes = self
             .inner
             .screenshot(builder.build())
             .await
             .map_err(|e| VoidCrawlError::ScreenshotError(e.to_string()))?;
-        drop(capture_guard);
+        capture_trace("capture_screenshot_command_done", capture_started);
 
         if let Some((x, y)) = restore_scroll {
             let _ = self
@@ -273,5 +329,14 @@ impl Page {
             .pdf(params)
             .await
             .map_err(|e| VoidCrawlError::PdfError(e.to_string()))
+    }
+}
+
+fn capture_trace(stage: &'static str, started: Instant) {
+    if env::var_os("YOSOI_CAPTURE_TRACE").is_some() {
+        eprintln!(
+            "YOSOI_CAPTURE_TRACE stage={stage} elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
     }
 }

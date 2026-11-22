@@ -7,6 +7,7 @@ use super::shared::unix_millis_now;
 use super::validation::positive_u32;
 use crate::internal::browser::error::Result;
 use crate::internal::browser::error::VoidCrawlError;
+use crate::internal::browser::selector::TargetResolution;
 use crate::internal::browser::visual_snapshot::ContentSizeMetrics;
 use crate::internal::browser::visual_snapshot::LayoutSnapshot;
 use crate::internal::browser::visual_snapshot::LayoutViewportMetrics;
@@ -15,6 +16,8 @@ use crate::internal::browser::visual_snapshot::VisualCaptureRegion;
 use crate::internal::browser::visual_snapshot::VisualSnapshot;
 use crate::internal::browser::visual_snapshot::VisualViewportMetrics;
 use crate::internal::browser::visual_snapshot::visual_snapshot;
+use std::env;
+use std::time::Instant;
 
 impl Page {
     // ── Screenshots & PDF ───────────────────────────────────────────────
@@ -67,24 +70,49 @@ impl Page {
     /// This method always returns owned bytes. Use [`Page::screenshot`] when a
     /// filesystem output path is desired.
     pub async fn visual_snapshot(&self, mut opts: ScreenshotOptions) -> Result<VisualSnapshot> {
+        let capture_started = Instant::now();
         if opts.path.is_some() {
             return Err(VoidCrawlError::InvalidInput {
                 operation: "visual_snapshot",
                 reason: "filesystem output paths are not accepted",
             });
         }
-        let region = if let Some(bbox) = opts.bbox {
-            VisualCaptureRegion::BoundingBox { bbox }
-        } else if let Some(target) = &opts.selector {
-            VisualCaptureRegion::BrowserTarget {
-                target_kind: target.kind,
-            }
-        } else if opts.full_page {
-            VisualCaptureRegion::FullPage
-        } else {
-            VisualCaptureRegion::Viewport
-        };
+        capture_trace("capture_lock_wait_start", capture_started);
+        let _capture_guard = self.capture_lock.lock().await;
+        capture_trace("capture_lock_acquired", capture_started);
+        self.prepare_screenshot_target().await?;
+        capture_trace("capture_visibility_prepared", capture_started);
+        capture_trace("visual_layout_start", capture_started);
         let layout = self.layout_snapshot().await?;
+        capture_trace("visual_layout_done", capture_started);
+        let (region, resolved_bounds) = if let Some(bbox) = opts.bbox {
+            (VisualCaptureRegion::BoundingBox { bbox }, Some(bbox))
+        } else if let Some(target) = &opts.selector {
+            if !target.supports_geometry() {
+                return Err(VoidCrawlError::UnsupportedVisualTarget);
+            }
+            capture_trace("visual_target_resolve_start", capture_started);
+            let bounds = match self.resolve_target(target).await? {
+                TargetResolution::Resolved { bbox } => bbox,
+                TargetResolution::Empty { reason } => {
+                    return Err(VoidCrawlError::ElementNotVisible(reason));
+                }
+                TargetResolution::Ambiguous { reason, .. } => {
+                    return Err(VoidCrawlError::AmbiguousSelector(reason));
+                }
+            };
+            capture_trace("visual_target_resolve_done", capture_started);
+            (
+                VisualCaptureRegion::BrowserTarget {
+                    target_kind: target.kind,
+                },
+                Some(bounds),
+            )
+        } else if opts.full_page {
+            (VisualCaptureRegion::FullPage, None)
+        } else {
+            (VisualCaptureRegion::Viewport, None)
+        };
         let (capture_viewport, device_scale_factor) = if let Some(viewport) = &opts.viewport {
             (
                 yosoi_types::Viewport::try_from_pixels(viewport.width, viewport.height).map_err(
@@ -109,7 +137,15 @@ impl Page {
             )
         };
         opts.path = None;
-        let bytes = match self.screenshot(opts).await? {
+        let resolved_target = if opts.selector.is_some() {
+            resolved_bounds
+        } else {
+            None
+        };
+        let bytes = match self
+            .screenshot_with_resolved_target(opts, resolved_target)
+            .await?
+        {
             ScreenshotOutput::Bytes(bytes) => bytes,
             ScreenshotOutput::Path(_) => {
                 return Err(VoidCrawlError::ScreenshotError(
@@ -117,10 +153,15 @@ impl Page {
                 ));
             }
         };
+        capture_trace("visual_screenshot_done", capture_started);
+        if self.top_level_document_scope().await? != layout.scope {
+            return Err(VoidCrawlError::NavigationStateUncertain);
+        }
         visual_snapshot(
             bytes,
             layout.scope,
             region,
+            resolved_bounds,
             capture_viewport,
             device_scale_factor,
         )
@@ -145,5 +186,14 @@ impl Page {
             ));
         }
         Ok(PairedLayoutVisualSnapshot { layout, visual })
+    }
+}
+
+fn capture_trace(stage: &'static str, started: Instant) {
+    if env::var_os("YOSOI_CAPTURE_TRACE").is_some() {
+        eprintln!(
+            "YOSOI_CAPTURE_TRACE stage={stage} elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
     }
 }

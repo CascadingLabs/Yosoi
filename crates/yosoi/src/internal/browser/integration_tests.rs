@@ -30,3 +30,4 @@ mod stealth_ua;
 mod visual_snapshot;
 
 mod scoped_input;
+mod tab_av_spike;
